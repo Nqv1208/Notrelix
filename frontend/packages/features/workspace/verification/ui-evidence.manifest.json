@@ -63,27 +63,27 @@
           {
             "state": "Loading",
             "reason": "Invitations render resolved data passed by its parent; query loading presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Invitations render resolved data passed by its parent; query error presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "Invitations render a bounded popover list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
@@ -282,6 +282,10 @@
         },
         {
           "id": "docs-tree",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "collapse",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         }
       ]
@@ -1124,6 +1128,14 @@
         {
           "id": "validation",
           "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-template",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "template",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
         }
       ]
     },
@@ -1501,6 +1513,14 @@
         {
           "id": "high-density",
           "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "create-form",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
+        },
+        {
+          "id": "waiting-bare",
+          "testFile": "src/web/home/__tests__/workspace-my-work.interaction.component.test.tsx"
         }
       ]
     },
@@ -1642,7 +1662,7 @@
         "notApplicable": [
           {
             "state": "ReadOnly",
-            "reason": "Reading is the only mode: every write (Đã xử lý, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
+            "reason": "Reading is the only mode: every write (\u0110\u00e3 x\u1eed l\u00fd, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
             "authority": "docs/product/collaboration.md"
           },
           {
@@ -2096,6 +2116,18 @@
         },
         {
           "id": "tabs",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "invitation-role",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite-many",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "resend",
           "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
         }
       ]

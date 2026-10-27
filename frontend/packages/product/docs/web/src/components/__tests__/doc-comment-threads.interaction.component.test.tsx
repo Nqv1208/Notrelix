@@ -43,7 +43,7 @@ function panel(callbacks = {}) {
 }
 
 describe("docs comment threads", () => {
-  it("FUI[docs.page.side-panel:comment-resolve] hides resolved threads until Show resolved is on, and counts the open ones", () => {
+  it("FUI[docs.page.side-panel:comment-resolved-hidden] hides resolved threads until Show resolved is on, and counts the open ones", () => {
     panel();
     expect(screen.getByText("Still open")).toBeTruthy();
     expect(screen.queryByText("Already handled")).toBeNull();
