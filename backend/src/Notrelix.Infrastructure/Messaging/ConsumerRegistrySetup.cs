@@ -186,6 +186,117 @@ public static class ConsumerRegistrySetup
 
             new ConsumerDefinition
             {
+                ConsumerName = "ItemCreatedActivityConsumer",
+                EventName = "board.item.created",
+                EventVersion = 2,
+                EndpointName = "notrelix-activity-item-created-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item being created",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemRenamedActivityConsumer",
+                EventName = "board_item.renamed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-renamed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item being renamed",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemFieldChangedActivityConsumer",
+                EventName = "board.item.field_value.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-field-changed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a status or field value change",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemMovedActivityConsumer",
+                EventName = "board_item.moved",
+                EventVersion = 2,
+                EndpointName = "notrelix-activity-item-moved-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item moving to another group",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemMovedToBoardActivityConsumer",
+                EventName = "work-management.board-item-moved-to-board",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-moved-to-board-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item moving to another Board",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemAssignedActivityConsumer",
+                EventName = "work-management.board-item-member-assigned",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-assigned-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a person being assigned",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemUnassignedActivityConsumer",
+                EventName = "work-management.board-item-member-unassigned",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-unassigned-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a person being removed from an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemArchivedActivityConsumer",
+                EventName = "board_item.archived",
+                EventVersion = 2,
+                EndpointName = "notrelix-activity-item-archived-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item being archived",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemUnarchivedActivityConsumer",
+                EventName = "work-management.board-item-unarchived",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-unarchived-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item leaving the archive",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemDeletedActivityConsumer",
+                EventName = "work-management.board-item-deleted",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-deleted-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item being deleted",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemRestoredActivityConsumer",
+                EventName = "work-management.board-item-restored",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-restored-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a deleted Item being restored",
+                Maturity = ConsumerMaturity.Implemented
+            },
+
+            new ConsumerDefinition
+            {
                 ConsumerName = "PageBlocksSavedMentionConsumer",
                 EventName = "page.blocks-saved",
                 EventVersion = 1,

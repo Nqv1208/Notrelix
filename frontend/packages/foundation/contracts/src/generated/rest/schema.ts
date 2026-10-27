@@ -6434,6 +6434,42 @@ export interface components {
             availablePlans?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"][] | null;
             canChangePlan?: boolean;
         };
+        "Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityChangeDto": {
+            fieldName?: string | null;
+            from?: string | null;
+            to?: string | null;
+            /** Format: uuid */
+            personId?: string | null;
+            personName?: string | null;
+            itemKey?: string | null;
+        };
+        "Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityLogDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            actorId?: string;
+            actorName?: string | null;
+            action?: string | null;
+            resourceKind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            resourceTitle?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            actorAvatarUrl?: string | null;
+            type?: string | null;
+            kind?: string | null;
+            change?: components["schemas"]["Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityChangeDto"];
+        };
+        "Notrelix.Application.Features.Collaboration.Activity.DTOs.ResourceActivityPageDto": {
+            data?: components["schemas"]["Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityLogDto"][] | null;
+            /** Format: int32 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            pageSize?: number;
+        };
         "Notrelix.Application.Features.Collaboration.Attachments.DTOs.AttachmentDto": {
             /** Format: uuid */
             id?: string;
@@ -8458,7 +8494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Activity.DTOs.ResourceActivityPageDto"];
                 };
             };
         };

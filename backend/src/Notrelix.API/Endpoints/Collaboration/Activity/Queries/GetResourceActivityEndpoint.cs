@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Collaboration.Activity.DTOs;
 using Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity;
 
 namespace Notrelix.API.Endpoints.Collaboration.Activity.Queries;
@@ -9,6 +10,7 @@ public static class GetResourceActivityEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("Collaboration.Activity.GetBoardItemActivity")
+            .Produces<ResourceActivityPageDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("Collaboration.Activity")
             .WithSummary("Get activity log for a board item");
         return group;
