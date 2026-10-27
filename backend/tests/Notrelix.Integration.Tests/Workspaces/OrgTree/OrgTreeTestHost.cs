@@ -204,6 +204,7 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp => sp.GetRequiredService<IdempotencyExecutionContext>());
 
         configure?.Invoke(services);
+        services.AddProductionCrossContextAdapters();
         return services.BuildServiceProvider();
     }
 

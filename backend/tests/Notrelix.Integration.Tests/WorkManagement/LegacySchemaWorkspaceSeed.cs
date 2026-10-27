@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Metadata;
+using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
 
@@ -20,27 +22,33 @@ internal static class LegacySchemaWorkspaceSeed
             """);
 
     /// <summary>
-    /// The Item columns that later migrations add. The current model writes them when a test seeds
-    /// Items through the domain, so a database held at an older schema gets them for the seed.
+    /// The Item columns the current model writes that the held-back schema does not have yet, read from
+    /// the model so a later migration that changes board_items never breaks the seed. They are added
+    /// nullable; the returned names go to <see cref="DropLaterItemColumnsAsync"/>.
     /// </summary>
-    public static Task<int> AddLaterItemColumnsAsync(ApplicationDbContext context) =>
-        context.Database.ExecuteSqlRawAsync("""
-            ALTER TABLE work.board_items
-                ADD COLUMN IF NOT EXISTS archived_at timestamptz NULL,
-                ADD COLUMN IF NOT EXISTS archived_by uuid NULL,
-                ADD COLUMN IF NOT EXISTS completed_by uuid NULL,
-                ADD COLUMN IF NOT EXISTS status_before_completion_option_id uuid NULL,
-                ADD COLUMN IF NOT EXISTS archived_with_parent boolean NOT NULL DEFAULT false
-            """);
+    // Identifiers come from the EF model, never from input, so the interpolated DDL is safe.
+#pragma warning disable EF1002
+    public static async Task<IReadOnlyList<string>> AddLaterItemColumnsAsync(ApplicationDbContext context)
+    {
+        var entity = context.Model.FindEntityType(typeof(BoardItem))!;
+        var table = StoreObjectIdentifier.Table(entity.GetTableName()!, entity.GetSchema());
+        var existing = await context.Database
+            .SqlQuery<string>($"SELECT column_name AS \"Value\" FROM information_schema.columns WHERE table_schema = {table.Schema} AND table_name = {table.Name}")
+            .ToListAsync();
+        var missing = entity.GetProperties()
+            .Select(p => (Name: p.GetColumnName(table), Type: p.GetColumnType(table)))
+            .Where(c => c.Name is not null && !existing.Contains(c.Name))
+            .ToList();
+        foreach (var column in missing)
+            await context.Database.ExecuteSqlRawAsync($"ALTER TABLE \"{table.Schema}\".\"{table.Name}\" ADD COLUMN \"{column.Name}\" {column.Type} NULL");
+        return missing.Select(c => c.Name!).ToList();
+    }
 
-    /// <summary>Takes them off again so the migrations that own them can add them.</summary>
-    public static Task<int> DropLaterItemColumnsAsync(ApplicationDbContext context) =>
-        context.Database.ExecuteSqlRawAsync("""
-            ALTER TABLE work.board_items
-                DROP COLUMN IF EXISTS archived_at,
-                DROP COLUMN IF EXISTS archived_by,
-                DROP COLUMN IF EXISTS completed_by,
-                DROP COLUMN IF EXISTS status_before_completion_option_id,
-                DROP COLUMN IF EXISTS archived_with_parent
-            """);
+    /// <summary>Takes the columns added for the seed off again so the migrations that own them can add them.</summary>
+    public static async Task DropLaterItemColumnsAsync(ApplicationDbContext context, IReadOnlyList<string> added)
+    {
+        foreach (var column in added)
+            await context.Database.ExecuteSqlRawAsync($"ALTER TABLE work.board_items DROP COLUMN IF EXISTS \"{column}\"");
+    }
+#pragma warning restore EF1002
 }
