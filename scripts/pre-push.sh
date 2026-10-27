@@ -79,9 +79,9 @@ fi
 
 if grep -q '^backend/' <<<"$changed"; then
   cd "$root" || exit 1
-  run "dotnet restore" dotnet restore backend.slnx --verbosity quiet
-  run "dotnet format" dotnet format backend.slnx --verify-no-changes --no-restore
-  run "dotnet build" dotnet build backend.slnx --no-restore --verbosity quiet
+  run "dotnet restore" dotnet restore backend/backend.slnx --verbosity quiet
+  run "dotnet format" dotnet format backend/backend.slnx --verify-no-changes --no-restore
+  run "dotnet build" dotnet build backend/backend.slnx --no-restore --verbosity quiet
   run "Domain tests" dotnet test backend/tests/Notrelix.Domain.Tests --no-build --verbosity quiet
   run "Application tests" dotnet test backend/tests/Notrelix.Application.Tests --no-build --verbosity quiet
 fi
