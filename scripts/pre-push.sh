@@ -4,7 +4,9 @@
 # stacks the pushed commits touch:
 #   frontend/ -> prettier on changed files, architecture/UI/i18n/mock/codegen
 #                gates, typecheck and lint of affected packages, node tests,
-#                and UI test markers against the ui-evidence manifests
+#                UI test markers against the ui-evidence manifests, and the
+#                mock e2e specs of the UI areas touched (see
+#                frontend/scripts/run-affected-mock-e2e.mjs)
 #   backend/  -> dotnet format, build, Domain and Application tests
 # Not covered (CI only): container image CVE scans, Linux visual baselines,
 # Testcontainers/integration suites, the full web component suite.
@@ -75,6 +77,8 @@ if grep -q '^frontend/' <<<"$changed"; then
   # is not resolvable from a local install; its lint runs in CI only.
   run "lint (affected packages)" pnpm -s turbo run lint --continue --filter="...[$base_ref]" --filter='!@notrelix/app-marketing' --output-logs=errors-only
   run "node tests" pnpm -s test:node
+  # The mock e2e specs of the UI areas the push touches (own dev server, free port).
+  run "mock e2e (affected specs)" bash -c 'printf "%s\n" "$0" | xargs node scripts/run-affected-mock-e2e.mjs' "$changed"
 fi
 
 if grep -q '^backend/' <<<"$changed"; then

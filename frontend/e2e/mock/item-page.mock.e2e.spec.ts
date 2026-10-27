@@ -142,7 +142,9 @@ test.describe("Item page", () => {
     await expect(
       page.getByRole("button", { name: "Trạng thái", exact: true }),
     ).toContainText("Chờ duyệt");
-    await expect(page.getByText(/trong Chờ duyệt$/)).toBeVisible();
+    await expect(
+      page.getByText(/^Việc \d+\/\d+ trong Chờ duyệt$/),
+    ).toBeVisible();
   });
 
   test("says the item is not there and goes back", async ({ page }) => {

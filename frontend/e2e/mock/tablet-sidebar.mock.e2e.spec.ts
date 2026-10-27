@@ -37,7 +37,7 @@ test.describe("tablet sidebar (Final-T-* shell)", () => {
     ).toBe(44);
 
     await toggle.click();
-    const reopen = page.getByRole("button", { name: "Mở thanh bên" });
+    const reopen = page.getByRole("button", { name: "Mở rộng thanh bên" });
     await expect(reopen).toHaveAttribute("aria-expanded", "false");
     await expect.poll(() => sidebarWidth(page)).toBe(64);
     // Counts stay visible as badges and the links keep their names.
@@ -45,7 +45,7 @@ test.describe("tablet sidebar (Final-T-* shell)", () => {
 
     await page.reload();
     await expect(
-      page.getByRole("button", { name: "Mở thanh bên" }),
+      page.getByRole("button", { name: "Mở rộng thanh bên" }),
     ).toBeVisible();
     expect(await sidebarWidth(page)).toBe(64);
   });
@@ -54,15 +54,19 @@ test.describe("tablet sidebar (Final-T-* shell)", () => {
 test.describe("desktop sidebar is unchanged", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("keeps 256 px, no tablet toggle", async ({ page }) => {
+  test("keeps 256 px and ignores the tablet preference", async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem("notrelix-sidebar-tablet", "mini");
     });
     await page.goto(board);
     await expect(page.getByRole("link", { name: "Trang chủ" })).toBeVisible();
     expect(await sidebarWidth(page)).toBe(256);
+    // The edge arrow is the only toggle, and it is open.
     await expect(page.getByRole("button", { name: /thanh bên/ })).toHaveCount(
-      0,
+      1,
     );
+    await expect(
+      page.getByRole("button", { name: "Thu gọn thanh bên" }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 });

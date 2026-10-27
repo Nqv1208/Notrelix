@@ -44,7 +44,7 @@ test.describe("Item page states (owner)", () => {
       page.getByRole("heading", { level: 1, name: "Không tìm thấy ERP-171" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Tìm bằng ⌘K" }),
+      page.getByRole("button", { name: "Tìm kiếm", exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Về trang chủ" }).click();
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary\/?$/);
@@ -191,21 +191,20 @@ test.describe("Item page states (owner)", () => {
     await expect(due).toContainText("13/10");
   });
 
-  test("@ lists the workspace's people and warns about who cannot see the item", async ({
+  test("@ suggests only people who can see the board: someone outside it is not offered", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-142");
     const field = page.getByRole("textbox", { name: "Viết bình luận" });
     await field.scrollIntoViewIfNeeded();
     await field.click();
+    // The author is the only person on this board, and Jordan Lee cannot see
+    // it: a mention of them would not notify, so nobody is suggested.
     await field.pressSequentially("Chị @Jo");
-    const list = page.getByRole("listbox", {
-      name: "Người và nhóm để nhắc tên",
-    });
-    await expect(list).toContainText("Jordan Lee (Member)");
-    await expect(list).toContainText("sẽ không báo cho");
-    await field.press("Enter");
-    await expect(field).toHaveValue("Chị @Jordan Lee (Member) ");
+    await expect(field).toHaveValue("Chị @Jo");
+    await expect(
+      page.getByRole("listbox", { name: "Người và nhóm để nhắc tên" }),
+    ).toHaveCount(0);
   });
 
   test("offline: the notice counts what waits, and goes when the network is back", async ({

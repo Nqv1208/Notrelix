@@ -1056,19 +1056,34 @@ export class MockStore {
       createdAt: created,
       updatedAt: "2026-10-11T09:40:00.000Z",
     });
-    INVOICE_BLOCKS.forEach((block, index) => {
-      this.createBlock(INVOICE_DOC_ID, {
-        type: block.type as MockBlockRecord["type"],
-        properties: JSON.stringify(block.properties),
-        position: (index + 1) * 1000,
-      });
-    });
+    const invoiceBlockIds = INVOICE_BLOCKS.map(
+      (block, index) =>
+        this.createBlock(INVOICE_DOC_ID, {
+          type: block.type as MockBlockRecord["type"],
+          properties: JSON.stringify(block.properties),
+          position: (index + 1) * 1000,
+        }).id,
+    );
     for (const comment of INVOICE_COMMENTS) {
+      const target = comment.anchor
+        ? INVOICE_BLOCKS[comment.anchor.blockIndex]
+        : undefined;
+      const start = comment.anchor
+        ? String(target?.properties.text ?? "").indexOf(comment.anchor.quote)
+        : -1;
       this.createPageComment(
         INVOICE_DOC_ID,
         comment.userId,
         comment.body,
         comment.at,
+        comment.anchor && start >= 0
+          ? {
+              blockId: invoiceBlockIds[comment.anchor.blockIndex] as string,
+              quote: comment.anchor.quote,
+              start,
+              end: start + comment.anchor.quote.length,
+            }
+          : undefined,
       );
     }
     [...INVOICE_HISTORY].reverse().forEach((entry) => {

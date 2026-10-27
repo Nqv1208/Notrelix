@@ -331,10 +331,17 @@ test.describe("Sign-in pages (owner)", () => {
     );
     await page.getByLabel("Email").fill(MOCK_AUTH.personalEmail);
     await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+    // The email step becomes the password step in place, then the code step.
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Nhập mật khẩu" }),
+    ).toBeVisible();
     await page
       .getByLabel("Mật khẩu", { exact: true })
       .fill(MOCK_AUTH.personalPassword);
     await page.locator("form button[type=submit]").click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Xác minh hai bước" }),
+    ).toBeVisible();
     for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
       await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
     await page.getByRole("button", { name: "Xác minh" }).click();

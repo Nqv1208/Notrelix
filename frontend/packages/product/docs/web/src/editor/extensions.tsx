@@ -18,7 +18,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
 import { isSafeHref, type BlockDraft } from "@notrelix/docs-core";
-import type { DocPageCopy } from "../components/doc-page.copy";
+import { fillDocCopy, type DocPageCopy } from "../components/doc-page.copy";
 import {
   DocTableOfContents,
   jumpToBlock,
@@ -478,11 +478,14 @@ export const Callout = Node.create({
 });
 
 /** A checklist line: a checkbox beside the text. */
-export const TodoItem = Node.create({
+export const TodoItem = Node.create<{ context: ContextHolder }>({
   name: "todoItem",
   group: "block",
   content: "inline*",
   defining: true,
+  addOptions() {
+    return { context: undefined as unknown as ContextHolder };
+  },
   addAttributes() {
     return { checked: { default: false, rendered: false } };
   },
@@ -509,6 +512,7 @@ export const TodoItem = Node.create({
     return exitKeys("todoItem");
   },
   addNodeView() {
+    const holder = this.options.context;
     return ({ node, editor, getPos }) => {
       const dom = document.createElement("div");
       dom.dataset.docNode = "todoItem";
@@ -526,7 +530,61 @@ export const TodoItem = Node.create({
       box.contentEditable = "false";
       const content = document.createElement("div");
       content.className = "doc-todo-text min-w-0 flex-1";
-      dom.append(box, content);
+      // "Chuyển thành việc": offered on an open line that is not a task yet.
+      const convert = document.createElement("button");
+      convert.type = "button";
+      convert.contentEditable = "false";
+      convert.className =
+        "ml-auto inline-flex h-7 shrink-0 items-center rounded-[7px] border border-line-strong bg-doc-panel px-2.5 text-crumb leading-[1.45] font-semibold text-brand-subtle-foreground opacity-0 outline-none group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
+      convert.addEventListener("mousedown", (event) => event.preventDefault());
+      convert.addEventListener("click", () => {
+        const id = String(dom.dataset.block ?? "");
+        holder.current.callbacks?.onTodoConvert?.(id);
+      });
+      dom.append(box, content, convert);
+      const label = (current: typeof node) => {
+        const { copy, callbacks } = holder.current;
+        const name = current.textContent;
+        box.setAttribute(
+          "aria-label",
+          fillDocCopy(copy.blocks.checkbox, { name }),
+        );
+        const linked =
+          Boolean(
+            (current.attrs.rest as { linkedTaskId?: string } | null)
+              ?.linkedTaskId,
+          ) ||
+          (() => {
+            let found = false;
+            current.descendants((child) => {
+              if (child.type.name === "taskRef") found = true;
+            });
+            return found;
+          })();
+        convert.style.display =
+          linked || Boolean(current.attrs.checked) || !editor.isEditable
+            ? "none"
+            : "";
+        convert.setAttribute(
+          "aria-label",
+          fillDocCopy(copy.blocks.convertToTaskNamed, { name }),
+        );
+        convert.textContent = copy.blocks.convertToTask;
+        if (callbacks?.onTodoConvert) {
+          convert.removeAttribute("aria-disabled");
+          convert.removeAttribute("title");
+        } else {
+          convert.setAttribute("aria-disabled", "true");
+          convert.title = copy.blocks.convertUnavailable;
+        }
+      };
+      let latest = node;
+      label(node);
+      // The page's callbacks arrive after the editor is built: read them again
+      // when the line is reached.
+      const refresh = () => label(latest);
+      dom.addEventListener("pointerenter", refresh);
+      dom.addEventListener("focusin", refresh);
       apply(Boolean(node.attrs.checked));
       box.addEventListener("mousedown", (event) => event.preventDefault());
       box.addEventListener("click", () => {
@@ -545,10 +603,15 @@ export const TodoItem = Node.create({
       return {
         dom,
         contentDOM: content,
+        // The checkbox and the convert button change on their own.
+        ignoreMutation: (mutation) =>
+          mutation.type !== "selection" && !content.contains(mutation.target),
         update: (next) => {
           if (next.type.name !== "todoItem") return false;
           dom.dataset.block = String(next.attrs.blockId ?? "");
           apply(Boolean(next.attrs.checked));
+          latest = next;
+          label(next);
           return true;
         },
       };
@@ -879,7 +942,7 @@ export function createDocExtensions({
     Quote,
     Toggle,
     Callout,
-    TodoItem,
+    TodoItem.configure({ context }),
     ...TABLE_EXTENSIONS,
     BoardReference.configure({ context }),
     PageReference.configure({ context }),

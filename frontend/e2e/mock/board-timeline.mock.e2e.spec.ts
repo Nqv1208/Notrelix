@@ -153,11 +153,15 @@ test.describe("Board Timeline (owner)", () => {
     const groupBy = page.getByRole("button", { name: /^Nhóm theo/ });
     const barSpan = page.getByRole("button", { name: /^Thanh dài từ/ });
     const add = page.getByRole("button", { name: /^Thêm công việc/ });
-    for (const control of [groupBy, barSpan, add]) {
+    for (const control of [groupBy, barSpan]) {
       await expect(control).toHaveAttribute("aria-disabled", "true");
       await expect(control).toHaveAttribute("title", /.+/);
     }
-    await add.click({ force: true });
+    // Adding works from the Timeline: it opens the create dialog.
+    await expect(add).not.toHaveAttribute("aria-disabled", "true");
+    await add.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     // The seven finish-to-start arrows of the board are drawn.
     await expect(links).toHaveAttribute("aria-pressed", "true");

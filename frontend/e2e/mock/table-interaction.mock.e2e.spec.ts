@@ -212,7 +212,9 @@ test.describe("Board table interaction (owner)", () => {
     expect(box.y).toBeGreaterThanOrEqual(last.y + last.height - 1);
     expect(box.height).toBeCloseTo(36, 0);
     const grid = (await page.locator("[data-table-scroll]").boundingBox())!;
-    expect(box.width).toBeGreaterThan(grid.width - 4);
+    // A compact control at the table's left edge, not a full-width row.
+    expect(box.x - grid.x).toBeLessThan(64);
+    expect(box.width).toBeLessThan(grid.width / 2);
 
     await control.click();
     await page

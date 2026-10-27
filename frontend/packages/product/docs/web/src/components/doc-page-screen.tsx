@@ -563,6 +563,10 @@ export function createDocPageScreen({
           onOpenBoardPicker: (blockId) =>
             callbacksRef.current?.onOpenBoardPicker?.(blockId),
           onOpenComment: (id) => callbacksRef.current?.onOpenComment?.(id),
+          onTodoConvert:
+            host.canEdit && host.canConvertTodo !== false
+              ? (blockId) => callbacksRef.current?.onTodoConvert?.(blockId)
+              : undefined,
           onEditorCommand: (command) =>
             callbacksRef.current?.onEditorCommand?.(command),
         },

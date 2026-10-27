@@ -190,9 +190,12 @@ describe("Page comments anchored to text in the mock world", () => {
     expect(comments.find((c) => c.contentMd === "why?")?.anchor).toEqual(
       anchor,
     );
+    // The world's own comments: one is anchored to its quoted text, the reply is not.
     expect(
-      comments.filter((c) => c.contentMd !== "why?").every((c) => !c.anchor),
-    ).toBe(true);
+      comments
+        .filter((c) => c.contentMd !== "why?" && c.anchor)
+        .map((c) => c.anchor?.quote),
+    ).toEqual(["trong tối đa 2 ngày làm việc"]);
   });
 
   it("refuses an anchor on a block that is not on the page, a range that disagrees with its quote, and a reply", async () => {

@@ -47,7 +47,7 @@ test.describe("Document page (owner)", () => {
       .first();
     await expect(crumb).toContainText("Quy trình");
     await expect(crumb).toContainText("Nhập hoá đơn đầu vào");
-    await expect(page.getByText("Chờ duyệt")).toHaveCount(0);
+    await expect(page.getByText("Chờ duyệt", { exact: true })).toHaveCount(0);
     await expect(
       page.getByText("Đỗ Khánh Linh sửa lúc 16:40 hôm qua"),
     ).toBeVisible();
@@ -86,26 +86,22 @@ test.describe("Document page (owner)", () => {
         .first(),
     ).toBeVisible();
     await expect(page.getByText("Tiêu đề 2").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /^In đậm/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+    await expect(page.getByRole("combobox", { name: "Kiểu đoạn" })).toHaveText(
+      "Tiêu đề 2",
     );
   });
 
-  test("links: the mentioned work items in reading order and the private one, then what mentions the page", async ({
+  test("links: the work items mentioned in the text in reading order, then what mentions the page", async ({
     page,
   }) => {
     await openDoc(page);
-    await expect(tab(page, /^Liên kết 6/)).toBeVisible();
+    // The board block lists its board live; only mentions in the text count.
+    await expect(tab(page, /^Liên kết 2/)).toBeVisible();
     const panel = page.getByRole("tabpanel");
-    await expect(panel).toContainText("ERP-129");
     const text = await panel.innerText();
-    const order = ["ERP-144", "ERP-142", "ERP-151", "ERP-149", "ERP-129"].map(
-      (key) => text.indexOf(key),
-    );
+    const order = ["ERP-144", "ERP-151"].map((key) => text.indexOf(key));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    await expect(panel.getByText("Việc riêng tư")).toBeVisible();
     await expect(panel.getByText("Được nhắc tới ở")).toBeVisible();
     await expect(panel.getByText("Đặc tả triển khai ERP")).toBeVisible();
     await expect(panel.getByText("Tài liệu · Công nghệ")).toBeVisible();
@@ -126,14 +122,14 @@ test.describe("Document page (owner)", () => {
     await convert.click();
     // The writer picks a board they can edit and a group; the item is created there.
     const dialog = page.getByRole("dialog", { name: "Chuyển thành việc" });
-    await dialog.getByRole("combobox", { name: "Board" }).selectOption({
-      label: "Triển khai ERP Q4",
-    });
+    await dialog.getByRole("combobox", { name: "Board" }).click();
+    await page.getByRole("option", { name: "Triển khai ERP Q4" }).click();
     const group = dialog.getByRole("combobox", { name: "Nhóm" });
     await expect(group).toBeEnabled();
-    await group.selectOption({ index: 1 });
+    await group.click();
+    await page.getByRole("option").first().click();
     await dialog.getByRole("button", { name: "Tạo việc" }).click();
-    await expect(tab(page, /^Liên kết 7/)).toBeVisible();
+    await expect(tab(page, /^Liên kết 3/)).toBeVisible();
     await expect(
       page
         .getByRole("tabpanel")
@@ -170,18 +166,20 @@ test.describe("Document page (owner)", () => {
     const panel = page.getByRole("tabpanel");
     await expect(panel.getByText("Lý Thu Trang")).toBeVisible();
     await expect(panel.getByText("Đỗ Khánh Linh")).toBeVisible();
-    await expect(page.locator("mark")).toHaveText(
+    await expect(page.locator(".comment-anchor")).toHaveText(
       "trong tối đa 2 ngày làm việc",
     );
   });
 
-  test("versions: the compare opens on the 10/10 15:42 version with what changed since", async ({
+  test("versions: the compare opens on the newest version and follows the one picked, with what changed since", async ({
     page,
   }) => {
     await openDoc(page);
-    await page.getByRole("button", { name: "Tệp", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Tệp", exact: true }).click();
     await page.getByRole("menuitem", { name: /Lịch sử phiên bản/ }).click();
     const bar = page.getByRole("region", { name: /phiên bản/i }).first();
+    await expect(bar).toContainText("11/10 16:40");
+    await page.getByRole("button", { name: /^15:42 Lý Thu Trang/ }).click();
     await expect(bar).toContainText("10/10 15:42");
     await expect(bar).toContainText("Lý Thu Trang");
     // Step 3 as it read, and the two checklist lines added after it.

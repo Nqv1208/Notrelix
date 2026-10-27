@@ -194,17 +194,18 @@ test("The sidebar still collapses and expands while the system rail is pinned", 
     .poll(async () => (await container.boundingBox())?.x ?? -1)
     .toBeGreaterThanOrEqual(railRight - 0.5);
 
-  // Collapse: the sidebar container leaves the screen and main is uncovered.
+  // Collapse: the sidebar shrinks to its 64 px icon column beside the rail
+  // and main sits right of it, uncovered.
   await toggle.click();
   await expect
-    .poll(async () => {
-      const current = await container.boundingBox();
-      return current ? current.x + current.width : 0;
-    })
-    .toBeLessThanOrEqual(0.5);
+    .poll(async () => (await container.boundingBox())?.width ?? -1)
+    .toBeCloseTo(64, 0);
+  await expect
+    .poll(async () => (await container.boundingBox())?.x ?? -1)
+    .toBeCloseTo(railRight, 0);
   await expect
     .poll(async () => (await main.boundingBox())?.x ?? -1)
-    .toBeLessThanOrEqual(railRight + 0.5);
+    .toBeLessThanOrEqual(railRight + 64 + 0.5);
   const mainBox = await main.boundingBox();
   const hit = await page.evaluate(
     ({ x, y }) =>

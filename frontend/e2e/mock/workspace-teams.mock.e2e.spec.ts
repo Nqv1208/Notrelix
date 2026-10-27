@@ -96,9 +96,10 @@ test.describe("Teams (owner)", () => {
     await page.getByRole("button", { name: "Tạo nhóm" }).click();
     const dialog = page.getByRole("dialog", { name: "Tạo nhóm" });
     await dialog.getByLabel("Tên nhóm").fill("Nhóm Triển khai kho");
-    await dialog
-      .getByLabel(/Trưởng nhóm/)
-      .selectOption({ label: "Đặng Quốc Bảo · bao.dang@minhan.vn" });
+    await dialog.getByRole("combobox", { name: /Trưởng nhóm/ }).click();
+    await page
+      .getByRole("option", { name: "Đặng Quốc Bảo · bao.dang@minhan.vn" })
+      .click();
     const members = dialog.getByPlaceholder("Gõ tên hoặc email");
     await members.fill("minh.lam");
     await page.keyboard.press("Enter");
