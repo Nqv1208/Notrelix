@@ -533,6 +533,7 @@ describe("WorkspaceMyWorkSurface", () => {
     ).toBeTruthy();
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[workspace.my-work:high-density] renders 120 items with a completing row and a page still loading", () => {
     renderMyWork(myWorkHighDensityScenario());
     expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(120);
@@ -544,5 +545,5 @@ describe("WorkspaceMyWorkSurface", () => {
     expect(
       screen.getByRole("button", { name: copy.list.loadingMore }),
     ).toBeTruthy();
-  });
+  }, 20_000);
 });

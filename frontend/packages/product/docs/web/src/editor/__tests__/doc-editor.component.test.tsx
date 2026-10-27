@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, renderPureUi, screen } from "@notrelix/testing";
+import {
+  act,
+  fireEvent,
+  renderPureUi,
+  screen,
+  within,
+} from "@notrelix/testing";
 import { richText, type BlockDraft } from "@notrelix/docs-core";
 import { docsCopy } from "../../verification/docs-ui-fixtures";
 import { DocEditorSurface } from "../doc-editor-surface";
@@ -72,10 +78,13 @@ describe("doc editor", () => {
   it("renders the blocks, reflects marks in the toolbar and saves them as runs", async () => {
     renderPureUi(<Harness />);
     expect(await screen.findByText("Hello world")).toBeTruthy();
-    expect(
-      screen.getByRole("toolbar", { name: docsCopy.toolbar.label }),
-    ).toBeTruthy();
-    const bold = screen.getByRole("button", { name: docsCopy.toolbar.bold });
+    // The bubble menu over a selection carries its own bold button.
+    const toolbar = screen.getByRole("toolbar", {
+      name: docsCopy.toolbar.label,
+    });
+    const bold = within(toolbar).getByRole("button", {
+      name: docsCopy.toolbar.bold,
+    });
     expect(bold.getAttribute("aria-pressed")).toBe("false");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "select" }));
@@ -84,7 +93,7 @@ describe("doc editor", () => {
       fireEvent.click(bold);
     });
     expect(
-      screen
+      within(toolbar)
         .getByRole("button", { name: docsCopy.toolbar.bold })
         .getAttribute("aria-pressed"),
     ).toBe("true");

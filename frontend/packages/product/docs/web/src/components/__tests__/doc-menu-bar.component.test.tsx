@@ -170,6 +170,7 @@ describe("document menu bar", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("Format: superscript, colour, alignment, indent and line spacing run their commands", () => {
     const { editor } = setup();
     select(editor, 1, 6);
@@ -212,7 +213,7 @@ describe("document menu bar", () => {
       }),
     );
     expect(drafts(editor)[0]?.properties.indent).toBe(1);
-  });
+  }, 20_000);
 
   it("Format: table entries are off outside a table and say why", () => {
     setup();

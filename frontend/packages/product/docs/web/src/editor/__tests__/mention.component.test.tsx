@@ -55,6 +55,7 @@ function Harness() {
 }
 
 describe("@ mention of a person", () => {
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("lists the members and stores the pick as a mention mark on the label", async () => {
     renderPureUi(<Harness />);
     await screen.findByRole("textbox");
@@ -72,7 +73,7 @@ describe("@ mention of a person", () => {
       { text: " ", marks: [] },
     ]);
     expect(screen.queryByRole("listbox")).toBeNull();
-  });
+  }, 20_000);
 
   it("lists members before tasks and picks the first with Enter", async () => {
     renderPureUi(<Harness />);

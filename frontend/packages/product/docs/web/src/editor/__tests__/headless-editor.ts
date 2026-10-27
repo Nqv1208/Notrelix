@@ -1,3 +1,4 @@
+import { afterEach } from "vitest";
 import { Editor } from "@tiptap/core";
 import { richText, type BlockDraft } from "@notrelix/docs-core";
 import type { DocPageCallbacks } from "../../components/doc-page-models";
@@ -35,6 +36,13 @@ export function paragraph(id: string, text = ""): BlockDraft {
   };
 }
 
+// ProseMirror's DOM observer keeps a timer; an editor left alive can fire it
+// after the test environment is gone ("document is not defined").
+const created: Editor[] = [];
+afterEach(() => {
+  for (const editor of created.splice(0)) editor.destroy();
+});
+
 /** An editor over the page's blocks, without React. */
 export function headlessEditor(
   drafts: readonly BlockDraft[],
@@ -51,7 +59,7 @@ export function headlessEditor(
     version: 0,
     listeners: new Set(),
   };
-  return new Editor({
+  const editor = new Editor({
     element: document.createElement("div"),
     extensions: createDocExtensions({
       context: holder,
@@ -60,6 +68,8 @@ export function headlessEditor(
     }),
     content: draftsToDoc(drafts),
   });
+  created.push(editor);
+  return editor;
 }
 
 /** Types text the way the keyboard does, so input rules run. */
