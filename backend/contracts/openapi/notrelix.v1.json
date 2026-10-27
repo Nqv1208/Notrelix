@@ -8751,7 +8751,7 @@
         "tags": [
           "WorkManagement.BoardFields"
         ],
-        "summary": "Remove an option from a field",
+        "summary": "Remove an option from a field and move the Items that use it to a replacement option",
         "operationId": "WorkManagement.BoardFields.RemoveFieldOption",
         "parameters": [
           {
@@ -8788,6 +8788,14 @@
             "schema": {
               "type": "integer",
               "format": "int64"
+            }
+          },
+          {
+            "name": "replacementOptionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           },
           {

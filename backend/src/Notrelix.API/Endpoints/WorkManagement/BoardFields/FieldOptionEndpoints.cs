@@ -17,7 +17,7 @@ public static class FieldOptionEndpoints
         group.MapResourceDelete("/{fieldId:guid}/options/{optionId:guid}", HandleRemoveFieldOption)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.RemoveFieldOption")
-            .WithSummary("Remove an option from a field");
+            .WithSummary("Remove an option from a field and move the Items that use it to a replacement option");
         group.MapResourcePatch("/{fieldId:guid}/options/{optionId:guid}", HandleUpdateFieldOption)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.UpdateFieldOption")
@@ -46,10 +46,11 @@ public static class FieldOptionEndpoints
         Guid fieldId,
         Guid optionId,
         [FromQuery] long expectedVersion,
+        [FromQuery] Guid? replacementOptionId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RemoveFieldOptionCommand(boardId, fieldId, optionId, expectedVersion), cancellationToken);
+        var result = await sender.Send(new RemoveFieldOptionCommand(boardId, fieldId, optionId, expectedVersion, replacementOptionId), cancellationToken);
         return result.ToNoContentResult();
     }
 

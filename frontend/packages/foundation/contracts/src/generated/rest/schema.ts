@@ -2363,7 +2363,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove an option from a field */
+        /** Remove an option from a field and move the Items that use it to a replacement option */
         delete: operations["WorkManagement.BoardFields.RemoveFieldOption"];
         options?: never;
         head?: never;
@@ -13305,6 +13305,7 @@ export interface operations {
         parameters: {
             query: {
                 expectedVersion: number;
+                replacementOptionId?: string;
             };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
