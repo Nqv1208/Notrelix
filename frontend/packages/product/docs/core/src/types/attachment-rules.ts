@@ -122,7 +122,8 @@ export const CAPTION_MARK_TYPES = ["bold", "italic", "code", "link"] as const;
 export function sanitizeCaptionRuns(runs: readonly Run[]): Run[] {
   return normalizeRuns(
     runs.map((run) => ({
-      text: run.text.replace(/\s*\n\s*/g, " "),
+      // One linear pass: a whitespace run that holds a line break becomes one space.
+      text: run.text.replace(/\s+/g, (ws) => (ws.includes("\n") ? " " : ws)),
       marks: run.marks.filter(
         (mark): mark is Mark =>
           (CAPTION_MARK_TYPES as readonly string[]).includes(mark.type) &&

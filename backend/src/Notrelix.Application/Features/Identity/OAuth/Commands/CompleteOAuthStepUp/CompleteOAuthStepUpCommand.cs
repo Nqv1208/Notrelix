@@ -140,7 +140,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         var purpose = StepUpPurposeMapping.FromChallengePurpose(stepUpPurpose);
         var proof = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, cancellationToken);
 
-        _logger.LogInformation("OAuth step-up completed for {UserId} (purpose {Purpose})", userId, purpose);
+        _logger.LogInformation("OAuth step-up completed for {UserId}", userId);
 
         return proof;
     }

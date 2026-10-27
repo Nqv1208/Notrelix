@@ -33,7 +33,7 @@ export interface AuthVerifyEmailSurfaceProps {
   readonly onBack: () => void;
 }
 
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 export function AuthVerifyEmailSurface(props: AuthVerifyEmailSurfaceProps) {
   const t = props.copy.verifyEmail;

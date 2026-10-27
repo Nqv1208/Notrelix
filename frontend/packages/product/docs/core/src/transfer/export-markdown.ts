@@ -74,7 +74,7 @@ function paragraphText(text: string): string {
 }
 
 function cell(text: string): string {
-  return text.replace(/\n/g, " ").replace(/\|/g, "\\|");
+  return text.replace(/\n/g, " ").replace(/[\\|]/g, "\\$&");
 }
 
 /**

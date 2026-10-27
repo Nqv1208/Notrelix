@@ -84,7 +84,7 @@ export interface AuthSignInSurfaceProps {
   readonly onBack: () => void;
 }
 
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 /** "0:48". */
 export function formatCountdown(seconds: number): string {

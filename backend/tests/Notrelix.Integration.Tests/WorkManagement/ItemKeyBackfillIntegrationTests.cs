@@ -38,12 +38,14 @@ public sealed class ItemKeyBackfillIntegrationTests : IAsyncLifetime
         .WithCleanUp(true)
         .Build();
 
+    private IReadOnlyList<string> _laterItemColumns = [];
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
         await using var context = CreateContext();
         await context.GetService<IMigrator>().MigrateAsync(MigrationBefore);
-        await LegacySchemaWorkspaceSeed.AddLaterItemColumnsAsync(context);
+        _laterItemColumns = await LegacySchemaWorkspaceSeed.AddLaterItemColumnsAsync(context);
     }
 
     public async Task DisposeAsync() => await _container.DisposeAsync();
@@ -81,7 +83,7 @@ public sealed class ItemKeyBackfillIntegrationTests : IAsyncLifetime
 
         await using (var context = CreateContext())
         {
-            await LegacySchemaWorkspaceSeed.DropLaterItemColumnsAsync(context);
+            await LegacySchemaWorkspaceSeed.DropLaterItemColumnsAsync(context, _laterItemColumns);
             await context.Database.MigrateAsync();
         }
 

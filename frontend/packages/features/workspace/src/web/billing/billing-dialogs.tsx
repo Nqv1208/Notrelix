@@ -412,7 +412,7 @@ export interface BillingSeatInviteDialogProps {
   readonly onClose: () => void;
 }
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 /** The invitation dialog that stops at the seats the account owns. */
 export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {

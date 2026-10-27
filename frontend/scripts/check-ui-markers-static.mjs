@@ -2,7 +2,7 @@
 // hook: fails when a test carries an FUI[surface:case] marker that no
 // ui-evidence manifest declares, without running Vitest. CI still runs the
 // report-based check; this only catches the drift before a push.
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36,7 +36,6 @@ const declared = new Set();
 for (const root of roots) {
   walk(root, (path) => {
     if (!path.endsWith(join("verification", manifestFileName))) return;
-    if (!statSync(path).isFile()) return;
     const manifest = JSON.parse(readFileSync(path, "utf8"));
     for (const surface of manifest.surfaces ?? []) {
       if (!surface.checks?.includes("interaction")) continue;

@@ -593,7 +593,7 @@ export const workspaceOperations = [
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
       const email = (body?.email ?? "").trim();
       const role = parseRole(body?.role);
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
         return validationError({ Email: ["Email is not a valid address."] });
       }
       if (!role || role === "owner") {
