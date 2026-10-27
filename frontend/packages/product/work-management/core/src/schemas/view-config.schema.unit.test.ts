@@ -59,9 +59,10 @@ describe("viewConfigSchema Kanban settings", () => {
 describe("resolveKanbanSettings", () => {
   it("gives today's behaviour for an empty or unknown-shaped config", () => {
     const defaults = {
-      laneCardLimit: 3,
+      laneCardLimit: DEFAULT_KANBAN_LANE_CARD_LIMIT,
       statusManageRoles: ["manager", "editor"],
       keyboardMove: true,
+      wipLimits: {},
     };
     expect(resolveKanbanSettings({})).toEqual(defaults);
     expect(
