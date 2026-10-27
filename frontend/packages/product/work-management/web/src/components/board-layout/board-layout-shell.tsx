@@ -11,6 +11,8 @@ interface BoardLayoutShellProps {
   onAddView?: (viewType: string) => void;
   /** Opens the active view's settings; absent: Settings stays disabled. */
   onOpenSettings?: () => void;
+  /** Opens the board's deleted items; absent: no entry in the menu. */
+  onOpenTrash?: () => void;
   children: React.ReactNode;
 }
 
@@ -23,6 +25,7 @@ export function BoardLayoutShell({
   savedViews,
   onAddView,
   onOpenSettings,
+  onOpenTrash,
   children,
 }: BoardLayoutShellProps) {
   return (
@@ -34,6 +37,7 @@ export function BoardLayoutShell({
         savedViews={savedViews}
         onAddView={onAddView}
         onOpenSettings={onOpenSettings}
+        onOpenTrash={onOpenTrash}
       />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>

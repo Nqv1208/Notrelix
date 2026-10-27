@@ -32,6 +32,11 @@ export function useDeleteCard(boardId: string, workspaceId?: string) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
+      if (workspaceId) {
+        queryClient.invalidateQueries({
+          queryKey: wmQueryKeys.boardTrash(workspaceId, boardId),
+        });
+      }
     },
   });
 }

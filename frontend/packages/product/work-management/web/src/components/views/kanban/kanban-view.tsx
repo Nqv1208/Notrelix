@@ -80,6 +80,7 @@ import {
   kanbanCollapsedLanesKey,
   useKanbanCollapsedLanes,
 } from "./use-kanban-collapsed-lanes";
+import { useItemRemoval } from "../../item-lifecycle/use-item-removal";
 import { useKanbanCardCopy } from "./use-kanban-card-copy";
 import { useKanbanLaneCopy } from "./use-kanban-lane-copy";
 import { useKanbanToolbarCopy } from "./use-kanban-toolbar-copy";
@@ -272,6 +273,17 @@ export function KanbanView({
     kanbanSettings.statusManageRoles,
   );
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
+  const removal = useItemRemoval({
+    workspaceId,
+    boardId,
+    titleOf: (itemId) =>
+      kanban.groups
+        .flatMap((group) => group.cards)
+        .find((candidate) => candidate.id === itemId)?.title ?? "",
+    onGone: (itemId) => {
+      if (selectedItemId === itemId) onSelectedItemChange?.(undefined);
+    },
+  });
   const updateCardDetails = useUpdateCard(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
     onError: (_error, cardId) =>
@@ -638,6 +650,10 @@ export function KanbanView({
               archiveCard.mutate(cardId);
             }
           : undefined,
+        onDelete: capabilities.canDelete ? removal.requestDelete : undefined,
+        onMoveToBoard: capabilities.canMoveCard
+          ? removal.requestMove
+          : undefined,
       }
     : undefined;
 
@@ -888,6 +904,7 @@ export function KanbanView({
           }}
         />
       ) : null}
+      {removal.dialogs}
     </div>
   );
 }
@@ -995,61 +1012,75 @@ function KanbanSelectedItemReady({
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
   const linksCopy = useItemPageCopy();
+  const removal = useItemRemoval({
+    workspaceId: card.workspaceId,
+    boardId: card.boardId,
+    titleOf: () => card.title,
+    onGone: () => onClose(),
+  });
 
   return (
-    <KanbanCardDetailPanel
-      board={board}
-      card={card}
-      capabilities={capabilities}
-      departmentMark={departmentMark}
-      groups={groups}
-      onCloseAutoFocus={onCloseAutoFocus}
-      detailData={{
-        files: files.data ?? card.files,
-        filesLoading: files.isLoading,
-        activity: activity.data ?? card.activity,
-        activityLoading: activity.isLoading,
-        activityFetching: activity.isFetching,
-        updates: updates.data ?? card.updates,
-        updatesLoading: updates.isLoading,
-        boardLabels: boardLabels.data,
-        links: itemLinks.data,
-        linkCandidates,
-        linksCopy,
-      }}
-      callbacks={{
-        onClose,
-        onAddLink: (itemId, relation) =>
-          itemLinks.addLink({ itemId, relation }),
-        onRemoveLink: (linkId) => itemLinks.removeLink(linkId),
-        onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
-        onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
-        onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
-        onToggleWatch: () => undefined,
-        onDuplicate,
-        onArchive: (cardId) => {
-          onArchive(cardId);
-          onClose();
-        },
-        onUpdateFieldValue,
-        onRefreshActivity: () => {
-          void activity.refetch();
-        },
-        onCreateUpdate: (input, options) =>
-          createUpdate.mutate(input, {
-            onSuccess: options?.onSuccess,
-            onSettled: options?.onSettled,
-          }),
-        onUpdateUpdate: (updateId, body) =>
-          updateUpdate.mutate({ updateId, body }),
-        onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
-        onSelectTab: () => undefined,
-        onPrevious,
-        onNext,
-        onCopyLink,
-        onOpenFullPage,
-        onMoveToGroup,
-      }}
-    />
+    <>
+      <KanbanCardDetailPanel
+        board={board}
+        card={card}
+        capabilities={capabilities}
+        departmentMark={departmentMark}
+        groups={groups}
+        onCloseAutoFocus={onCloseAutoFocus}
+        detailData={{
+          files: files.data ?? card.files,
+          filesLoading: files.isLoading,
+          activity: activity.data ?? card.activity,
+          activityLoading: activity.isLoading,
+          activityFetching: activity.isFetching,
+          updates: updates.data ?? card.updates,
+          updatesLoading: updates.isLoading,
+          boardLabels: boardLabels.data,
+          links: itemLinks.data,
+          linkCandidates,
+          linksCopy,
+        }}
+        callbacks={{
+          onClose,
+          onAddLink: (itemId, relation) =>
+            itemLinks.addLink({ itemId, relation }),
+          onRemoveLink: (linkId) => itemLinks.removeLink(linkId),
+          onRenameTitle: (cardId, patch) =>
+            updateCard.mutate({ cardId, patch }),
+          onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+          onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
+          onToggleWatch: () => undefined,
+          onDuplicate,
+          onArchive: (cardId) => {
+            onArchive(cardId);
+            onClose();
+          },
+          onUpdateFieldValue,
+          onRefreshActivity: () => {
+            void activity.refetch();
+          },
+          onCreateUpdate: (input, options) =>
+            createUpdate.mutate(input, {
+              onSuccess: options?.onSuccess,
+              onSettled: options?.onSettled,
+            }),
+          onUpdateUpdate: (updateId, body) =>
+            updateUpdate.mutate({ updateId, body }),
+          onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
+          onSelectTab: () => undefined,
+          onPrevious,
+          onNext,
+          onCopyLink,
+          onOpenFullPage,
+          onMoveToGroup,
+          onDelete: capabilities.canDelete ? removal.requestDelete : undefined,
+          onMoveToBoard: capabilities.canMoveCard
+            ? removal.requestMove
+            : undefined,
+        }}
+      />
+      {removal.dialogs}
+    </>
   );
 }

@@ -35,6 +35,8 @@ export const en = {
   copyLink: "Copy link",
   duplicate: "Duplicate",
   archive: "Archive",
+  delete: "Delete…",
+  moveToBoard: "Move to another board…",
 };
 
 export type KanbanCardCopy = typeof en;
@@ -65,6 +67,8 @@ export const vi: KanbanCardCopy = {
   copyLink: "Sao chép liên kết",
   duplicate: "Nhân bản",
   archive: "Lưu trữ",
+  delete: "Xoá…",
+  moveToBoard: "Chuyển sang board khác…",
 };
 
 export function kanbanCardCopy(locale: "vi" | "en"): KanbanCardCopy {

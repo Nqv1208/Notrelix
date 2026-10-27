@@ -157,6 +157,8 @@ export const en = {
     more: "More",
     duplicate: "Duplicate",
     archive: "Archive",
+    delete: "Delete…",
+    moveToBoard: "Move to another board…",
   },
   meta: {
     createdBy: "{{name}} created on {{date}}",
@@ -544,6 +546,8 @@ export const vi: ItemPageCopy = {
     more: "Thêm thao tác",
     duplicate: "Nhân bản",
     archive: "Lưu trữ",
+    delete: "Xoá…",
+    moveToBoard: "Chuyển sang board khác…",
   },
   meta: {
     createdBy: "{{name}} tạo ngày {{date}}",

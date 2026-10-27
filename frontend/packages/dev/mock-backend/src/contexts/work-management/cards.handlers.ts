@@ -15,7 +15,9 @@
  *   cards.childItems.add    — POST /board-items/:id/child-items
  *   cards.attachments.uploadFile — POST /board-items/:id/attachments/files (Collaboration.Attachments.UploadFile)
  *   cards.attachments.content    — GET /board-items/:id/attachments/:attachmentId/content (Collaboration.Attachments.GetContent)
- *   cards.moveToBoard       — POST /board-items/:id/move-to-board (gap)
+ *   cards.moveToBoard       — POST /board-items/:id/move-to-board
+ *   cards.trash             — GET /boards/:boardId/items/trash
+ *   cards.restoreDeleted    — POST /board-items/:id/restore
  *   cards.fieldValues       — PATCH /board-items/:id/values/:fieldId
  *   cards.status            — PATCH /board-items/:id/status
  *   cards.bulkUpdate        — POST /boards/:boardId/items/bulk (one change for several items, all or nothing)
@@ -503,11 +505,24 @@ export const cardsOperations = [
   }),
 
   // ─── POST /board-items/:id/move-to-board ────────────────────────────────────────
-  // Gap CTR-GAP-WM-TABLE-BULK: the table's "Chuyển board".
 
-  defineMockOperation<{ id: string }, { boardId?: string }, void>({
+  defineMockOperation<
+    { id: string },
+    { boardId?: string },
+    {
+      boardId: string;
+      groupId: string;
+      itemKey: string;
+      droppedFields: string[];
+      droppedLabels: number;
+      droppedAssignees: number;
+    }
+  >({
     id: "wm.boardItems.moveToBoard",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-TABLE-BULK" },
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.MoveToBoard",
+    },
     method: "POST",
     route: "/board-items/:id/move-to-board",
     async handle({ params, body, store, request }) {
@@ -526,8 +541,76 @@ export const cardsOperations = [
         return forbidden();
       const moved = store.moveItemToBoard(params.id, targetBoardId);
       if (moved.result === "not-found") return notFound("Card not found");
-      if (moved.result === "invalid")
+      if (moved.result !== "ok")
         return badRequest({ boardId: ["Not another board with groups."] });
+      return ok({
+        boardId: targetBoardId,
+        groupId: moved.card.listId,
+        itemKey: moved.card.itemKey ?? "",
+        droppedFields: [],
+        droppedLabels: 0,
+        droppedAssignees: 0,
+      });
+    },
+  }),
+
+  // ─── GET /boards/:boardId/items/trash ───────────────────────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    never,
+    {
+      id: string;
+      name: string;
+      itemKey: string | null;
+      groupId: string;
+      deletedAt: string;
+      deletedBy: string | null;
+      restorableUntil: string;
+    }[]
+  >({
+    id: "wm.boardItems.trash",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Trash",
+    },
+    method: "GET",
+    route: "/boards/:boardId/items/trash",
+    async handle({ params, store }) {
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      return ok(
+        store
+          .getTrashedCards(params.boardId)
+          .map(({ card, deletedAt, deletedBy }) => ({
+            id: card.id,
+            name: card.title,
+            itemKey: card.itemKey ?? null,
+            groupId: card.listId,
+            deletedAt,
+            deletedBy,
+            restorableUntil: new Date(
+              new Date(deletedAt).getTime() + 30 * 24 * 60 * 60 * 1000,
+            ).toISOString(),
+          })),
+      );
+    },
+  }),
+
+  // ─── POST /board-items/:id/restore ──────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "wm.boardItems.restoreDeleted",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Restore",
+    },
+    method: "POST",
+    route: "/board-items/:id/restore",
+    async handle({ params, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const restored = store.restoreDeletedCard(params.id);
+      if (!restored) return notFound("Card not found");
       return noContent();
     },
   }),

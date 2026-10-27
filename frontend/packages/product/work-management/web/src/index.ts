@@ -10,6 +10,8 @@ export * from "./components/board-workspace-view-content";
 
 // Board layout
 export * from "./components/board-layout/board-layout-shell";
+export { BoardTrashHost } from "./components/item-lifecycle/board-trash-host";
+export { itemLifecycleCatalog } from "./components/item-lifecycle/item-lifecycle.catalog";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
 export * from "./components/board-layout/board-header-surface";
