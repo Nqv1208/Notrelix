@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
@@ -175,6 +177,28 @@ public class M7IngressEndpointTests : IClassFixture<NotrelixApiFactory>
                             Guid.Parse(TestAccountId),
                             Guid.Parse(TestWorkspaceId)));
                     return mock.Object;
+                });
+
+                // An item comment only mentions people who can view the item's board (fail closed), so the
+                // posted item resolves to a board that every mentioned user can see.
+                var boardId = Guid.NewGuid();
+                services.RemoveAll<IWorkItemNotificationFacts>();
+                services.AddScoped<IWorkItemNotificationFacts>(_ =>
+                {
+                    var facts = new Moq.Mock<IWorkItemNotificationFacts>();
+                    facts.Setup(x => x.FindAsync(
+                            Moq.It.IsAny<Guid>(), Moq.It.IsAny<Guid>(), Moq.It.IsAny<Guid?>(), Moq.It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(new WorkItemNotificationFacts(boardId, "Item", false, null));
+                    return facts.Object;
+                });
+                services.RemoveAll<IResourceVisibility>();
+                services.AddScoped<IResourceVisibility>(_ =>
+                {
+                    var visibility = new Moq.Mock<IResourceVisibility>();
+                    visibility.Setup(x => x.VisibleBoardIdsAsync(
+                            Moq.It.IsAny<Guid>(), Moq.It.IsAny<Guid>(), Moq.It.IsAny<CancellationToken>()))
+                        .ReturnsAsync([boardId]);
+                    return visibility.Object;
                 });
             });
         });
