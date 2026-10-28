@@ -78,7 +78,7 @@ test.describe("Board forms (owner)", () => {
     const list = page.getByRole("list", { name: "Câu hỏi" });
     await expect(list.getByRole("listitem")).toHaveCount(5);
     await list
-      .getByRole("button", { name: "Mức độ ưu tiên", exact: true })
+      .getByRole("button", { name: /^Mức độ ưu tiên Chọn một/ })
       .click();
     const panel = page.getByRole("complementary", {
       name: "Thiết lập câu hỏi",
