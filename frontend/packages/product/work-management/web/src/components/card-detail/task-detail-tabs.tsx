@@ -306,6 +306,7 @@ function ActivitySection({
             now={now}
             timeZone={timeZone}
             onCreateUpdate={callbacks.onCreateUpdate}
+            onToggleReaction={callbacks.onToggleReaction}
             onUpdateUpdate={callbacks.onUpdateUpdate}
             onDeleteUpdate={callbacks.onDeleteUpdate}
           />

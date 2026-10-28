@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import {
   Avatar,
@@ -18,8 +19,13 @@ import type {
 } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
 import { describeSheetTime } from "./item-sheet-format";
+import { fillSheetCopy, pluralSheetCopy } from "./item-sheet.copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
+import { ReactionBar } from "../comment-thread/reaction-bar";
+import { ReplyBox } from "../comment-thread/reply-box";
+import { VISIBLE_REPLIES, splitThreads } from "../comment-thread/thread-model";
 import { useCommentEdit } from "./use-comment-edit";
+import { canWriteComment } from "./task-detail-types";
 import type {
   TaskDetailCallbacks,
   TaskDetailCapabilities,
@@ -27,6 +33,7 @@ import type {
 
 /** "Bình luận" subtab: the item's comments, oldest first. */
 export function TaskUpdatesTab({
+  card,
   updates,
   events = [],
   isLoading,
@@ -34,6 +41,8 @@ export function TaskUpdatesTab({
   copy,
   now,
   timeZone,
+  onCreateUpdate,
+  onToggleReaction,
   onUpdateUpdate,
   onDeleteUpdate,
 }: {
@@ -47,6 +56,7 @@ export function TaskUpdatesTab({
   now: Date;
   timeZone?: string;
   onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
+  onToggleReaction?: TaskDetailCallbacks["onToggleReaction"];
   onUpdateUpdate: TaskDetailCallbacks["onUpdateUpdate"];
   onDeleteUpdate: TaskDetailCallbacks["onDeleteUpdate"];
 }) {
@@ -65,10 +75,11 @@ export function TaskUpdatesTab({
       </p>
     );
   }
+  const { top, repliesOf } = splitThreads(updates);
   return (
     <ul className="m-0 flex list-none flex-col p-0">
       {[
-        ...updates.map((update) => ({ kind: "comment" as const, update })),
+        ...top.map((update) => ({ kind: "comment" as const, update })),
         ...events.map((event) => ({ kind: "event" as const, event })),
       ]
         .sort((a, b) =>
@@ -82,19 +93,18 @@ export function TaskUpdatesTab({
         .map((entry) =>
           entry.kind === "comment" ? (
             <li key={entry.update.id}>
-              <CommentItem
+              <CommentThread
+                cardId={card.id}
                 update={entry.update}
-                canEdit={capabilities.canEditFields}
-                canDelete={capabilities.canDelete}
+                replies={repliesOf(entry.update.id)}
+                capabilities={capabilities}
                 copy={copy}
-                time={describeSheetTime(
-                  entry.update.createdAt,
-                  now,
-                  copy,
-                  timeZone,
-                )}
-                onSave={(body) => onUpdateUpdate(entry.update.id, body)}
-                onDelete={() => onDeleteUpdate(entry.update.id)}
+                now={now}
+                timeZone={timeZone}
+                onCreateUpdate={onCreateUpdate}
+                onToggleReaction={onToggleReaction}
+                onUpdateUpdate={onUpdateUpdate}
+                onDeleteUpdate={onDeleteUpdate}
               />
             </li>
           ) : (
@@ -128,22 +138,125 @@ export function TaskUpdatesTab({
   );
 }
 
+/** A comment with its replies (oldest first, three shown) and the box a reply is written in. */
+function CommentThread({
+  cardId,
+  update,
+  replies,
+  capabilities,
+  copy,
+  now,
+  timeZone,
+  onCreateUpdate,
+  onToggleReaction,
+  onUpdateUpdate,
+  onDeleteUpdate,
+}: {
+  cardId: string;
+  update: CardUpdate;
+  replies: readonly CardUpdate[];
+  capabilities: TaskDetailCapabilities;
+  copy: ItemSheetCopy;
+  now: Date;
+  timeZone?: string;
+  onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
+  onToggleReaction?: TaskDetailCallbacks["onToggleReaction"];
+  onUpdateUpdate: TaskDetailCallbacks["onUpdateUpdate"];
+  onDeleteUpdate: TaskDetailCallbacks["onDeleteUpdate"];
+}) {
+  const [replying, setReplying] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const shown = showAll ? replies : replies.slice(0, VISIBLE_REPLIES);
+  const more = replies.length - shown.length;
+  const canReply = canWriteComment(capabilities);
+  const item = (entry: CardUpdate) => (
+    <CommentItem
+      key={entry.id}
+      update={entry}
+      canEdit={capabilities.canEditFields}
+      canDelete={capabilities.canDelete}
+      canReply={canReply}
+      copy={copy}
+      time={describeSheetTime(entry.createdAt, now, copy, timeZone)}
+      onSave={(body) => onUpdateUpdate(entry.id, body)}
+      onDelete={() => onDeleteUpdate(entry.id)}
+      onReply={() => setReplying(true)}
+      onToggleReaction={
+        canReply && onToggleReaction
+          ? (emoji, on) => onToggleReaction(entry.id, emoji, on)
+          : undefined
+      }
+    />
+  );
+  return (
+    <>
+      {item(update)}
+      {replies.length > 0 || replying ? (
+        <div
+          role="group"
+          aria-label={fillSheetCopy(copy.thread.replies, {
+            name: update.author.name,
+          })}
+          className="ml-9"
+        >
+          {shown.map(item)}
+          {more > 0 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAll(true)}
+            >
+              {pluralSheetCopy(
+                copy.thread.showMore_one,
+                copy.thread.showMore_other,
+                more,
+              )}
+            </Button>
+          ) : null}
+          {replying ? (
+            <div className="pb-2 pl-9">
+              <ReplyBox
+                cardId={cardId}
+                parentCommentId={update.id}
+                authorName={update.author.name}
+                copy={copy.thread}
+                onCreateUpdate={onCreateUpdate}
+                onClose={() => {
+                  setReplying(false);
+                  setShowAll(true);
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function CommentItem({
   update,
   canEdit,
   canDelete,
+  canReply,
   copy,
   time,
   onSave,
   onDelete,
+  onReply,
+  onToggleReaction,
 }: {
   update: CardUpdate;
   canEdit: boolean;
   canDelete: boolean;
+  canReply: boolean;
   copy: ItemSheetCopy;
   time: string;
   onSave: (body: string) => void;
   onDelete: () => void;
+  onReply: () => void;
+  onToggleReaction?: (emoji: string, on: boolean) => void;
 }) {
   const edit = useCommentEdit(update.body, onSave);
   const t = copy.comment;
@@ -171,7 +284,7 @@ function CommentItem({
           >
             {time}
           </time>
-          {canEdit || canDelete ? (
+          {canEdit || canDelete || canReply ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -185,6 +298,11 @@ function CommentItem({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {canReply ? (
+                  <DropdownMenuItem onSelect={onReply}>
+                    {copy.thread.reply}
+                  </DropdownMenuItem>
+                ) : null}
                 {canEdit ? (
                   <DropdownMenuItem onSelect={edit.start}>
                     {t.edit}
@@ -226,6 +344,15 @@ function CommentItem({
             {update.body}
           </p>
         )}
+        {(update.reactions?.length ?? 0) > 0 || onToggleReaction ? (
+          <div className="mt-1.5">
+            <ReactionBar
+              reactions={update.reactions ?? []}
+              copy={copy.thread}
+              onToggle={onToggleReaction}
+            />
+          </div>
+        ) : null}
       </div>
     </article>
   );

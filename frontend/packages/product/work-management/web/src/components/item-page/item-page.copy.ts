@@ -1,3 +1,4 @@
+import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
 import {
   ACTIVITY_WORDS_EN,
   ACTIVITY_WORDS_VI,
@@ -12,6 +13,8 @@ import {
  * (property labels, priorities, times) comes from the `item-sheet` catalog.
  */
 export const en = {
+  /** Replies and reactions of a comment. */
+  thread: threadEn,
   loading: "Loading the item",
   /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
   activityEvents: ACTIVITY_WORDS_EN,
@@ -296,10 +299,6 @@ export const en = {
       "History keeps every change, including from automations and integrations. Nobody can edit or delete a line of it.",
     today: "Today",
     yesterday: "Yesterday",
-    reply: "Reply",
-    react: "React",
-    replyUnavailable: "Replies are not available yet",
-    reactUnavailable: "Reactions are not available yet",
     actions: "Comment actions",
     edit: "Edit",
     delete: "Delete",
@@ -413,6 +412,7 @@ export const en = {
 export type ItemPageCopy = typeof en;
 
 export const vi: ItemPageCopy = {
+  thread: threadVi,
   loading: "Đang tải công việc",
   activityEvents: ACTIVITY_WORDS_VI,
   unavailable: {
@@ -694,10 +694,6 @@ export const vi: ItemPageCopy = {
       "Lịch sử giữ đủ mọi thay đổi, kể cả từ tự động hoá và tích hợp. Không ai sửa hay xoá được dòng lịch sử.",
     today: "Hôm nay",
     yesterday: "Hôm qua",
-    reply: "Trả lời",
-    react: "Thả cảm xúc",
-    replyUnavailable: "Trả lời bình luận chưa khả dụng",
-    reactUnavailable: "Thả cảm xúc chưa khả dụng",
     actions: "Thao tác với bình luận",
     edit: "Sửa",
     delete: "Xoá",

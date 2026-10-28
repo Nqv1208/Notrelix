@@ -32,6 +32,7 @@ import {
   useArchiveCard,
   useCreateCardUpdate,
   useDeleteCardUpdate,
+  useToggleCommentReaction,
   useDuplicateCard,
   useMoveFieldOption,
   useRemoveFieldOption,
@@ -1075,6 +1076,7 @@ function KanbanSelectedItemReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
   const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
   const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
@@ -1164,6 +1166,8 @@ function KanbanSelectedItemReady({
               onSuccess: options?.onSuccess,
               onSettled: options?.onSettled,
             }),
+          onToggleReaction: (commentId, emoji, on) =>
+            toggleReaction.mutate({ commentId, emoji, on }),
           onUpdateUpdate: (updateId, body) =>
             updateUpdate.mutate({ updateId, body }),
           onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),

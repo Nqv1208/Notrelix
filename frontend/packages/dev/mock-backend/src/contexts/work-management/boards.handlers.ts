@@ -418,6 +418,15 @@ export function canEditBoard(boardId: string, store: MockStore): boolean {
   return level !== undefined && LEVEL_RANK[level] >= LEVEL_RANK.editor;
 }
 
+/** Whether the caller may comment and react on a board's items (a Commenter or more). */
+export function canCommentOnBoard(boardId: string, store: MockStore): boolean {
+  const board = store.getBoard(boardId);
+  if (!board) return false;
+  const level = projectBoardAccess(board, store)?.myLevel as
+    AccessLevel | undefined;
+  return level !== undefined && LEVEL_RANK[level] >= LEVEL_RANK.commenter;
+}
+
 /** Whether the caller manages a board: only a manager opens its settings. */
 export function canManageBoard(boardId: string, store: MockStore): boolean {
   const board = store.getBoard(boardId);

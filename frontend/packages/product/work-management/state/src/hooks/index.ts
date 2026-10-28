@@ -27,6 +27,7 @@ export * from "../mutations/use-update-card";
 export * from "../mutations/use-update-card-update";
 export * from "../mutations/use-delete-card";
 export * from "../mutations/use-delete-card-update";
+export * from "../mutations/use-toggle-comment-reaction";
 export * from "../mutations/use-move-card";
 export * from "../mutations/use-duplicate-card";
 export * from "../mutations/use-update-field-value";

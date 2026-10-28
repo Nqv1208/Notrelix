@@ -74,6 +74,20 @@ export interface CardUpdate {
   attachmentIds: string[];
   createdAt: string;
   updatedAt?: string;
+  /** The top-level comment this one answers; replies are one level deep. */
+  parentId?: string;
+  /** One entry per emoji anyone chose, with who and whether the viewer did. */
+  reactions?: CardReaction[];
+}
+
+/** The fixed palette a person may react with. */
+export const REACTION_PALETTE = ["👍", "❤️", "😄", "🎉", "👀", "🚀"] as const;
+
+export interface CardReaction {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
+  users: { userId: string; name: string }[];
 }
 
 /**
@@ -241,6 +255,12 @@ export interface CommentDtoApi {
   createdAt: string;
   /** Files that came with the comment (gap `CTR-GAP-WM-ITEM-DETAIL`). */
   attachmentIds?: string[];
+  reactions?: {
+    emoji: string;
+    count: number;
+    reactedByMe: boolean;
+    users: { userId: string; name: string }[];
+  }[];
 }
 
 export interface ActivityLogDtoApi {

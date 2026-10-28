@@ -375,12 +375,6 @@ describe.each([
       // A disabled control never acts.
       fireEvent.click(control);
     }
-    expect(screen.getAllByText(copy.activity.reply).length).toBeGreaterThan(0);
-    expect(
-      screen
-        .getAllByRole("button", { name: copy.activity.reply })[0]
-        ?.getAttribute("aria-disabled"),
-    ).toBe("true");
   });
 
   it(`${fui("wm.item-page.surface:edge", locale)}renders an item with no data (${locale})`, async () => {

@@ -68,12 +68,13 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         }
         else
         {
-            var parentComment = await _context.Comments
-                .AsNoTracking()
-                // DeletedAt is the mapped soft-delete column on Comment
-                // (IsDeleted is a Domain-only flag ignored in EF mapping).
-                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && c.DeletedAt == null, ct)
-                ?? throw new NotFoundException(nameof(Comment), request.ParentCommentId.Value);
+            var parentComment = await FindLiveCommentAsync(request.ParentCommentId.Value, ct);
+
+            // Replies are one level deep: replying to a reply joins the thread of its top-level comment.
+            if (parentComment.ParentId is { } topLevelId)
+            {
+                parentComment = await FindLiveCommentAsync(topLevelId, ct);
+            }
 
             var parentContext = ParentCommentContext.Create(parentComment.AccountId, parentComment.WorkspaceId, parentComment.Id, parentComment.Target, parentComment.IsDeleted);
             comment = Comment.CreateReply(accountId, workspaceId, target, request.ContentMd, userId, now, parentContext);
@@ -106,6 +107,11 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
         return Result<Guid>.Success(comment.Id);
     }
+
+    // DeletedAt is the mapped soft-delete column on Comment (IsDeleted is a Domain-only flag ignored in EF mapping).
+    private async Task<Comment> FindLiveCommentAsync(Guid id, CancellationToken ct) =>
+        await _context.Comments.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null, ct)
+        ?? throw new NotFoundException(nameof(Comment), id);
 
     /// <summary>
     /// For an Item comment, the Board that decides who may be notified (Work Management fact). An Item that no

@@ -65,11 +65,41 @@ import {
 } from "../../state/mock-work-feed";
 import type { ChildItemDto } from "../../state/mock-work-feed";
 import {
+  canCommentOnBoard,
   canReadBoard,
   canWriteBoardItems,
   projectItemMembers,
   projectItemReadValues,
 } from "./boards.handlers";
+
+const REACTION_PALETTE: readonly string[] = [
+  "👍",
+  "❤️",
+  "😄",
+  "🎉",
+  "👀",
+  "🚀",
+];
+
+/** One summary per emoji in first-chosen order: count, whether `me` chose it, and who. */
+function summariseReactions(
+  reactions: readonly { emoji: string; userId: string }[],
+  me: string,
+  store: MockStore,
+) {
+  const byEmoji = new Map<string, string[]>();
+  for (const r of reactions)
+    byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.userId]);
+  return [...byEmoji].map(([emoji, userIds]) => ({
+    emoji,
+    count: userIds.length,
+    reactedByMe: userIds.includes(me),
+    users: userIds.map((userId) => ({
+      userId,
+      name: store.getUser(userId)?.name ?? "User",
+    })),
+  }));
+}
 
 /** 400 with field errors, as the real API answers a validation failure. */
 function badRequest(errors: Record<string, string[]>) {
@@ -1355,6 +1385,7 @@ export const cardsOperations = [
       const c = store.getCard(params.cardId);
       if (!c) return notFound("Card not found");
       const comments = store.getCardComments(params.cardId);
+      const me = store.getCurrentUser().id;
       return ok<CommentDtoApi[]>(
         comments.map((cmt) => {
           const user = store.getUser(cmt.userId);
@@ -1369,6 +1400,8 @@ export const cardsOperations = [
             updatedAt: cmt.updatedAt ?? null,
             isEdited: Boolean(cmt.updatedAt),
             attachmentIds: cmt.attachmentIds ?? [],
+            parentCommentId: cmt.parentId ?? null,
+            reactions: summariseReactions(cmt.reactions ?? [], me, store),
           };
         }),
       );
@@ -1377,7 +1410,11 @@ export const cardsOperations = [
 
   // ─── POST /board-items/:cardId/comments ─────────────────────────────────────────
 
-  defineMockOperation<{ cardId: string }, { contentMd: string }, void>({
+  defineMockOperation<
+    { cardId: string },
+    { contentMd: string; parentCommentId?: string | null },
+    void
+  >({
     id: "comments.create",
     contract: {
       kind: "openapi",
@@ -1386,7 +1423,7 @@ export const cardsOperations = [
     method: "POST",
     route: "/board-items/:cardId/comments",
     async handle({ params, body, store }) {
-      const data = body as { contentMd: string };
+      const data = body as { contentMd: string; parentCommentId?: string };
       const card = store.getCard(params.cardId);
       if (!card) return notFound("Card not found");
       const user = store.getCurrentUser();
@@ -1394,6 +1431,7 @@ export const cardsOperations = [
         params.cardId,
         user.id,
         data.contentMd,
+        data.parentCommentId ?? undefined,
       );
       return ok<void>(undefined);
     },
@@ -1436,4 +1474,45 @@ export const cardsOperations = [
       return ok<void>(undefined);
     },
   }),
+
+  // ─── PUT / DELETE /board-items/:cardId/comments/:commentId/reactions/:emoji ───
+
+  ...(["PUT", "DELETE"] as const).map((method) =>
+    defineMockOperation<
+      { cardId: string; commentId: string; emoji: string },
+      never,
+      void
+    >({
+      id:
+        method === "PUT" ? "comments.reaction.add" : "comments.reaction.remove",
+      contract: {
+        kind: "openapi",
+        operationId:
+          method === "PUT"
+            ? "Collaboration.Comments.AddReaction"
+            : "Collaboration.Comments.RemoveReaction",
+      } as any,
+      method,
+      route: "/board-items/:cardId/comments/:commentId/reactions/:emoji",
+      async handle({ params, store }) {
+        const card = store.getCard(params.cardId);
+        if (!card) return notFound("Card not found");
+        // Reacting needs what commenting needs: a Commenter or more on the board.
+        if (!canCommentOnBoard(card.boardId, store)) return forbidden();
+        const emoji = decodeURIComponent(params.emoji);
+        if (!REACTION_PALETTE.includes(emoji))
+          return badRequest({ emoji: ["Emoji is not in the palette."] });
+        const user = store.getCurrentUser();
+        const done = store.setCardCommentReaction(
+          params.cardId,
+          params.commentId,
+          user.id,
+          emoji,
+          method === "PUT",
+        );
+        if (!done) return notFound("Comment not found");
+        return ok<void>(undefined);
+      },
+    }),
+  ),
 ];
