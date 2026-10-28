@@ -17,7 +17,6 @@ import {
   findStatusField,
   type Board,
   type CardDetail,
-  type CardLabel,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
 
