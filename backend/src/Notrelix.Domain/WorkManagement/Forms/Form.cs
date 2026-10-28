@@ -147,6 +147,22 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedAt));
     }
 
+    public void RemoveQuestion(Guid questionId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotAddQuestionToClosed, "Cannot remove a question from a closed form.");
+
+        var question = _questions.FirstOrDefault(q => q.Id == questionId);
+        if (question is null) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        _questions.Remove(question);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);

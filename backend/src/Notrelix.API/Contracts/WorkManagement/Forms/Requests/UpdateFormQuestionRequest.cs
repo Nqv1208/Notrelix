@@ -4,4 +4,5 @@ public record UpdateFormQuestionRequest(
     string Label,
     bool IsRequired = false,
     string? ConfigJson = null,
-    string? Position = null);
+    string? Position = null,
+    Guid? BoardFieldId = null);

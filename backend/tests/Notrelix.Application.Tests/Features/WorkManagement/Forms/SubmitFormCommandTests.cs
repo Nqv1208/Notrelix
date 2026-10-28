@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.SubmitForm;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.RemoveFormQuestion;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Forms;
 using AppValidation = Notrelix.Application.Common.Exceptions.ValidationException;
@@ -133,5 +134,22 @@ public class SubmitFormCommandTests : WorkManagementHandlerTestBase
 
         await _handler.Invoking(h => h.Handle(new SubmitFormCommand(form.Id, Answers("{\"pick\":\"x\"}")), CancellationToken.None))
             .Should().ThrowAsync<AppValidation>();
+    }
+
+    [Fact]
+    public async Task RemoveQuestion_DropsItFromTheForm_AndRefusesAClosedForm()
+    {
+        var form = FormWithQuestions(publish: false);
+        SetupForms(form);
+        DbContextMock.Setup(c => c.FormQuestions).Returns(CreateAsyncDbSet(form.Questions.ToList()));
+        var handler = new RemoveFormQuestionCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        var qid = form.Questions.First().Id;
+
+        (await handler.Handle(new RemoveFormQuestionCommand(form.Id, qid), CancellationToken.None)).Succeeded.Should().BeTrue();
+        form.Questions.Should().NotContain(q => q.Id == qid);
+
+        form.Close(TestUserId, TestNow);
+        await handler.Invoking(h => h.Handle(new RemoveFormQuestionCommand(form.Id, form.Questions.First().Id), CancellationToken.None))
+            .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
     }
 }

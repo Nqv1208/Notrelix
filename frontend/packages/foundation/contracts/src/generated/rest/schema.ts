@@ -3731,7 +3731,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/forms/{formId}/{questionId}": {
+    "/api/v1/forms/{formId}/questions/{questionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3741,7 +3741,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Remove a question from a form */
+        delete: operations["WorkManagement.Forms.RemoveQuestion"];
         options?: never;
         head?: never;
         /** Update a form question */
@@ -5998,6 +5999,8 @@ export interface components {
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
+            /** Format: uuid */
+            boardFieldId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Labels.Requests.CreateLabelRequest": {
             color?: string | null;
@@ -17355,6 +17358,48 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Forms.RemoveQuestion": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                formId: string;
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Forms.UpdateQuestion": {
         parameters: {
             query?: never;
@@ -17363,6 +17408,7 @@ export interface operations {
                 "Idempotency-Key": string;
             };
             path: {
+                formId: string;
                 questionId: string;
             };
             cookie?: never;

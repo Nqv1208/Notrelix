@@ -27,6 +27,7 @@ public static class MapFormEndpoints
         group.MapRestoreForm();
         group.MapAddFormQuestion();
         group.MapUpdateFormQuestion();
+        group.MapRemoveFormQuestion();
         group.MapGetForm();
         group.MapListFormSubmissions();
         group.MapSubmitForm();

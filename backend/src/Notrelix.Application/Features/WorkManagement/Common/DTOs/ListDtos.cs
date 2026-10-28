@@ -84,5 +84,6 @@ public record FormDetailDto(
     string Visibility,
     long Version,
     DateTimeOffset CreatedAt,
-    List<FormQuestionDto> Questions
+    List<FormQuestionDto> Questions,
+    string? Description = null
 );
