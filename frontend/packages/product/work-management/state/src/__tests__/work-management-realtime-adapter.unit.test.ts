@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { wmQueryKeys } from "../queries/keys";
-import { workManagementRealtimeAdapter as adapter } from "../realtime";
+import {
+  boardRealtimeQueryKeys,
+  workManagementRealtimeAdapter as adapter,
+} from "../realtime";
 
 function frame(
   overrides: Partial<Parameters<typeof adapter.supports>[0]> = {},
@@ -37,9 +40,9 @@ describe("workManagementRealtimeAdapter", () => {
     await adapter.validateAndHandle(frame(), context);
 
     expect(invalidateQueries).toHaveBeenCalledTimes(1);
-    expect(invalidateQueries).toHaveBeenCalledWith([
-      [...wmQueryKeys.all("ws1")],
-    ]);
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      boardRealtimeQueryKeys("ws1", "b1"),
+    );
   });
 
   it("the invalidation reaches board, item detail, comments, checklists, labels and saved filters of the workspace only", async () => {
@@ -52,6 +55,8 @@ describe("workManagementRealtimeAdapter", () => {
       labels: wmQueryKeys.boardLabels("ws1", "b1"),
       filters: wmQueryKeys.boardSavedFilters("ws1", "b1"),
       otherWorkspace: wmQueryKeys.fullBoard("ws2", "b1"),
+      otherBoard: wmQueryKeys.fullBoard("ws1", "b2"),
+      myWork: ["workspace", "ws1", "work-management", "my-work"],
     };
     Object.values(keys).forEach((key) => client.setQueryData(key, { v: 1 }));
 
@@ -66,7 +71,7 @@ describe("workManagementRealtimeAdapter", () => {
 
     for (const [name, key] of Object.entries(keys)) {
       expect(client.getQueryState(key)?.isInvalidated, name).toBe(
-        name !== "otherWorkspace",
+        !["otherWorkspace", "otherBoard", "myWork"].includes(name),
       );
     }
   });

@@ -1,3 +1,4 @@
+import { workspaceQueryKey } from "@notrelix/query";
 import { wmQueryKeys } from "../queries/keys";
 
 /**
@@ -24,12 +25,46 @@ export interface WorkManagementRealtimeContext {
 /** The Board topic the backend announces every Board change on (`board.board`). */
 const BOARD_EVENT_TYPE = "board.board";
 
+/** Item-keyed query families (their keys carry the item id, not the board). */
+const ITEM_FAMILIES = [
+  "cards",
+  "item-children",
+  "item-following",
+  "item-approvals",
+  "item-links",
+  "item-lifecycle",
+  "plan-items",
+] as const;
+
+/**
+ * The queries one board change can make stale: the board's own reads and the
+ * item families of the workspace. Other boards and workspace-level reads
+ * (My work, board lists, templates) are not touched.
+ */
+export function boardRealtimeQueryKeys(
+  workspaceId: string,
+  boardId: string,
+): unknown[][] {
+  return [
+    wmQueryKeys.fullBoard(workspaceId, boardId),
+    wmQueryKeys.view(workspaceId, boardId),
+    wmQueryKeys.groups(workspaceId, boardId),
+    wmQueryKeys.columns(workspaceId, boardId),
+    wmQueryKeys.boardLabels(workspaceId, boardId),
+    wmQueryKeys.boardSavedFilters(workspaceId, boardId),
+    wmQueryKeys.boardAccess(workspaceId, boardId),
+    wmQueryKeys.boardTrash(workspaceId, boardId),
+    ...ITEM_FAMILIES.map((family) =>
+      workspaceQueryKey(workspaceId, "work-management", family),
+    ),
+  ].map((key) => [...key]);
+}
+
 /**
  * Work Management realtime adapter (WM-032).
  *
  * A frame is notify-only: it says something on one Board changed, not what.
- * The adapter therefore never patches a cache; it marks the workspace's Work
- * Management queries stale and the mounted ones (board read, item detail,
+ * The adapter therefore never patches a cache; it marks the open board's queries stale and the mounted ones (board read, item detail,
  * comments, checklists, labels, saved filters, ...) refetch over REST, where
  * authorization is evaluated again.
  *
@@ -53,8 +88,8 @@ export const workManagementRealtimeAdapter = {
     if (envelope.workspaceId !== context.workspaceId) return;
     if (!context.boardId || envelope.resourceId !== context.boardId) return;
 
-    await context.invalidateQueries([
-      [...wmQueryKeys.all(context.workspaceId)],
-    ]);
+    await context.invalidateQueries(
+      boardRealtimeQueryKeys(context.workspaceId, context.boardId),
+    );
   },
 };
