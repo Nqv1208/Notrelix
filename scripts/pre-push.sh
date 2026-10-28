@@ -4,12 +4,14 @@
 # stacks the pushed commits touch:
 #   frontend/ -> prettier on changed files, architecture/UI/i18n/mock/codegen
 #                gates, typecheck and lint of affected packages, node tests,
-#                UI test markers against the ui-evidence manifests, and the
-#                mock e2e specs of the UI areas touched (see
-#                frontend/scripts/run-affected-mock-e2e.mjs)
-#   backend/  -> dotnet format, build, Domain and Application tests
+#                UI test markers and source classification against the
+#                ui-evidence manifests, and the mock e2e specs of the UI areas
+#                touched (see frontend/scripts/run-affected-mock-e2e.mjs)
+#   backend/  -> dotnet format, build, Domain, Application and API tests, and
+#                the integration tests of the contexts touched (needs Docker)
 # Not covered (CI only): container image CVE scans, Linux visual baselines,
-# Testcontainers/integration suites, the full web component suite.
+# Storybook story evidence, other personas/scenarios of the mock e2e matrix,
+# the full integration and web component suites.
 # Emergency skip for one push: NOTRELIX_SKIP_PREPUSH=1 git push ...
 set -uo pipefail
 
@@ -72,6 +74,8 @@ if grep -q '^frontend/' <<<"$changed"; then
   run "mock freeze" pnpm -s mock:freeze:check
   run "generated contracts" pnpm -s codegen:check
   run "ui test markers" node scripts/check-ui-markers-static.mjs
+  # The source half of check:ui-evidence; the story half needs a Storybook build (CI).
+  run "ui evidence sources" bash -c '! pnpm -s exec tsx tooling/storybook/web/src/evidence/check-ui-evidence.ts /dev/null/no-index 2>&1 | grep -E "unclassified governed source|is classified [0-9]+ times|is governed by a different owner"'
   run "typecheck (affected packages)" pnpm -s turbo run typecheck --continue --filter="...[$base_ref]" --output-logs=errors-only
   # The marketing host lints with eslint-config-next, whose react-hooks plugin
   # is not resolvable from a local install; its lint runs in CI only.
@@ -88,6 +92,26 @@ if grep -q '^backend/' <<<"$changed"; then
   run "dotnet build" dotnet build backend/backend.slnx --no-restore --verbosity quiet
   run "Domain tests" dotnet test backend/tests/Notrelix.Domain.Tests --no-build --verbosity quiet
   run "Application tests" dotnet test backend/tests/Notrelix.Application.Tests --no-build --verbosity quiet
+  run "API tests" dotnet test backend/tests/Notrelix.API.Tests --no-build --verbosity quiet
+  # Integration tests of the contexts the push touches: a context is an Integration.Tests
+  # folder whose name appears as a path segment of a changed backend file.
+  integration="backend/tests/Notrelix.Integration.Tests"
+  filters=()
+  for dir in "$integration"/*/; do
+    name="$(basename "$dir")"
+    [[ "$name" == bin || "$name" == obj ]] && continue
+    grep -q "^backend/.*/$name/" <<<"$changed" && filters+=("FullyQualifiedName~Notrelix.Integration.Tests.$name.")
+  done
+  # A shared host helper change reaches every hand-composed host.
+  grep -q "^$integration/Containers/" <<<"$changed" && filters=("FullyQualifiedName~Notrelix.Integration.Tests.")
+  if ((${#filters[@]} > 0)); then
+    if docker info >/dev/null 2>&1; then
+      filter="$(IFS='|'; echo "${filters[*]}")"
+      run "integration tests (touched contexts)" dotnet test "$integration" --no-build --verbosity quiet --filter "$filter"
+    else
+      echo "[pre-push] WARNING: Docker is not running; integration tests of the touched contexts were not run (CI runs them)" >&2
+    fi
+  fi
 fi
 
 if ((${#failures[@]} > 0)); then

@@ -75,6 +75,13 @@ public sealed class IdentityUserFactsProvider : IIdentityUserFacts
         return rows.ToDictionary(r => r.Id, r => r.NormalizedEmail);
     }
 
+    public Task<string?> FindLocaleAsync(Guid userId, CancellationToken cancellationToken) =>
+        _context.UserProfiles
+            .AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .Select(p => (string?)p.Locale)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken)
     {
         var normalized = email.Trim().ToLowerInvariant();

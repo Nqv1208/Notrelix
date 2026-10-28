@@ -3,6 +3,7 @@ using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardFiel
 using BoardGroupEntity = global::Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -32,6 +33,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
     private readonly IBoardSpacePlacement _placement;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IIdentityUserFacts _identity;
     private readonly IRealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>? _realtime;
     private readonly IIntegrationEventCollector? _events;
 
@@ -40,6 +42,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         IBoardSpacePlacement placement,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
+        IIdentityUserFacts identity,
         IRealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>? realtime = null,
         IIntegrationEventCollector? events = null)
     {
@@ -47,6 +50,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         _placement = placement;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _identity = identity;
         _realtime = realtime;
         _events = events;
     }
@@ -74,13 +78,14 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _requestContext.UserId, createdAt, isSystem: true),
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _requestContext.UserId, createdAt, isSystem: true),
         };
-        // A new board starts with the default work statuses on its Status field.
-        defaultFields.Single(f => f.Type == FieldType.Status).AddDefaultStatusOptions(_requestContext.UserId, createdAt);
+        // A new board starts with the default work statuses, named in the creator's profile language.
+        var locale = await _identity.FindLocaleAsync(_requestContext.UserId, ct);
+        defaultFields.Single(f => f.Type == FieldType.Status).AddDefaultStatusOptions(_requestContext.UserId, createdAt, locale);
         _context.BoardFields.AddRange(defaultFields);
 
         // A new board also starts with one group per default status, so an item can be added at once
         // (an Item always belongs to a group).
-        var statuses = DefaultWorkStatuses.All;
+        var statuses = DefaultWorkStatuses.For(locale);
         var groupPositions = FractionalIndexGenerator.GenerateNKeysBetween(lower: null, upper: null, count: statuses.Count);
         for (var i = 0; i < statuses.Count; i++)
         {

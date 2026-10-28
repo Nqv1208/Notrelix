@@ -185,6 +185,27 @@ public class StatusOptionCategoryTests
         field.Options.Should().HaveCount(2);
     }
 
+    [Theory]
+    [InlineData("en")]
+    [InlineData("en-US")]
+    [InlineData("vi")]
+    [InlineData("fr")]
+    [InlineData(null)]
+    public void DefaultStatuses_FollowTheCreatorLocale_KeepingColoursAndCategories(string? locale)
+    {
+        var field = StatusField();
+
+        field.AddDefaultStatusOptions(Actor, Now, locale);
+
+        var english = locale is "en" or "en-US";
+        var o = field.Options.OrderBy(x => x.Position).ToList();
+        o.Select(x => x.Name).Should().Equal(english
+            ? new[] { "To do", "In progress", "In review", "Done" }
+            : new[] { "Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành" });
+        o.Select(x => x.Category).Should().Equal(WorkStatusCategory.Todo, WorkStatusCategory.InProgress, WorkStatusCategory.Review, WorkStatusCategory.Done);
+        o.Select(x => x.Color.Value).Should().Equal("#7A8391", "#1E7BE0", "#C18A12", "#2E8B57");
+    }
+
     [Fact]
     public void DefaultStatuses_AreSeededInOrder_WithTheirCategories()
     {
