@@ -133,8 +133,10 @@ public static class BoardItemFieldProjection
                 return FormulaValue.Error(ErrInvalidDefinition);
             }
 
-            return FormulaEvaluator.Evaluate(node, name =>
-                fields.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase)) is { } target
+            return FormulaEvaluator.Evaluate(node, reference =>
+                (Guid.TryParse(reference, out var id)
+                    ? fields.FirstOrDefault(f => f.Id == id)
+                    : fields.FirstOrDefault(f => string.Equals(f.Name, reference, StringComparison.OrdinalIgnoreCase))) is { } target
                     ? Value(itemId, target)
                     : FormulaValue.Error(ErrUnknownField));
         }

@@ -51,6 +51,29 @@ public static class FormulaLanguage
         return names;
     }
 
+    /// <summary>
+    /// Rewrites every <c>[reference]</c> outside text literals with <paramref name="map"/>; everything
+    /// else is kept character for character. Used to store ids and to show names again.
+    /// </summary>
+    public static string RewriteReferences(string expression, Func<string, string> map)
+    {
+        var sb = new StringBuilder(expression.Length);
+        var inText = false;
+        for (var i = 0; i < expression.Length; i++)
+        {
+            var c = expression[i];
+            if (c == '"') { inText = !inText; sb.Append(c); continue; }
+            if (!inText && c == '[' && expression.IndexOf(']', i) is var end and > 0)
+            {
+                sb.Append('[').Append(map(expression[(i + 1)..end].Trim())).Append(']');
+                i = end;
+                continue;
+            }
+            sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
     private static BusinessRuleException Syntax(string message) =>
         new(WorkManagementRuleCodes.WorkManagement_FieldSettings_FormulaSyntaxInvalid, message);
 

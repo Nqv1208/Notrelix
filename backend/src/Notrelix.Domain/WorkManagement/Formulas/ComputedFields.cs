@@ -74,6 +74,36 @@ public static class ComputedFieldGraph
             ? e.GetString() : null;
     }
 
+    /// <summary>A saved reference is a field id; a name is accepted for older data and resolved case-insensitively.</summary>
+    public static ComputedFieldInput? Resolve(IEnumerable<ComputedFieldInput> board, string reference) =>
+        Guid.TryParse(reference, out var id)
+            ? board.FirstOrDefault(f => f.Id == id)
+            : board.FirstOrDefault(f => string.Equals(f.Name, reference, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Settings with every name reference replaced by the field id, so a rename keeps the formula working. Unknown references throw.</summary>
+    public static string NormalizeToIds(string settingsJson, IReadOnlyList<ComputedFieldInput> board)
+    {
+        string? expression;
+        try { expression = ExpressionOf(settingsJson); } catch (JsonException) { return settingsJson; } // the settings validator reports it
+        if (expression is null) return settingsJson;
+        FormulaLanguage.Parse(expression);
+        var rewritten = FormulaLanguage.RewriteReferences(expression, reference =>
+            Resolve(board, reference)?.Id.ToString()
+            ?? throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField, $"Formula references [{reference}], which is not a field of this Board."));
+        return JsonSerializer.Serialize(new Dictionary<string, string> { ["expression"] = rewritten });
+    }
+
+    /// <summary>The settings as shown and edited: ids replaced by the fields' current names (an id without a field stays as it is).</summary>
+    public static string RenderNames(string settingsJson, IReadOnlyList<ComputedFieldInput> board)
+    {
+        string? expression;
+        try { expression = ExpressionOf(settingsJson); } catch (JsonException) { return settingsJson; }
+        if (expression is null) return settingsJson;
+        var rendered = FormulaLanguage.RewriteReferences(expression, reference =>
+            Guid.TryParse(reference, out var id) && board.FirstOrDefault(f => f.Id == id) is { } field ? field.Name : reference);
+        return JsonSerializer.Serialize(new Dictionary<string, string> { ["expression"] = rendered });
+    }
+
     /// <summary>The ids of the fields a Formula or Rollup depends on; throws for an unknown one.</summary>
     public static IReadOnlyList<Guid> DependenciesOf(ComputedFieldInput field, IReadOnlyList<ComputedFieldInput> board)
     {
@@ -90,7 +120,7 @@ public static class ComputedFieldGraph
         var ids = new List<Guid>();
         foreach (var name in FormulaLanguage.References(node))
         {
-            var target = board.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
+            var target = Resolve(board, name);
             if (target is null)
                 throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField, $"Formula '{field.Name}' references [{name}], which is not a field of this Board.");
             ids.Add(target.Id);

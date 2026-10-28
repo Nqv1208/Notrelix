@@ -50,7 +50,7 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             ct);
 
         var settings = request.Settings is not null
-            ? FieldSettings.Create(JsonValue.Create(request.Settings)!)
+            ? FieldSettings.Create(JsonValue.Create(await ComputedFieldGuard.NormalizeAsync(_context, board.Id, null, type, request.Settings, ct))!)
             : type == FieldType.Status
                 ? FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!)
                 : FieldSettings.Empty();

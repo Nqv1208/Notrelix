@@ -94,6 +94,26 @@ public class FormulaLanguageTests
     }
 
     [Fact]
+    public void Rename_KeepsAFormulaWorking_BecauseReferencesAreStoredAsIds()
+    {
+        var effort = new ComputedFieldInput(Guid.NewGuid(), "Effort", FieldType.Number, "{}");
+        var board = new[] { effort };
+
+        var saved = ComputedFieldGraph.NormalizeToIds("""{"expression":"[effort] * 2 & \"[Effort]\""}""", board);
+
+        ComputedFieldGraph.ExpressionOf(saved).Should().Contain($"[{effort.Id}]").And.Contain("\"[Effort]\"", "text literals are left alone");
+        var renamed = new[] { effort with { Name = "Hours" } };
+        ComputedFieldGraph.EnsureValid([.. renamed, new ComputedFieldInput(Guid.NewGuid(), "Double", FieldType.Formula, saved)]);
+        var node = FormulaLanguage.Parse(ComputedFieldGraph.ExpressionOf(saved));
+        FormulaEvaluator.Evaluate(node, r => Guid.Parse(r) == effort.Id ? FormulaValue.Of(4m) : FormulaValue.Error("unknown-field"))
+            .Kind.Should().Be(FormulaValueKind.Text);
+        ComputedFieldGraph.RenderNames(saved, renamed).Should().Contain("[Hours]");
+
+        var deleted = () => ComputedFieldGraph.EnsureValid([new ComputedFieldInput(Guid.NewGuid(), "Double", FieldType.Formula, saved)]);
+        deleted.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField);
+    }
+
+    [Fact]
     public void Graph_RejectsCycles_AndUnknownReferences()
     {
         ComputedFieldInput Formula(string name, string expression) =>
