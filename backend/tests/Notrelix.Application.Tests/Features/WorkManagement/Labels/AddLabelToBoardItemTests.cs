@@ -29,6 +29,11 @@ public class AddLabelToBoardItemTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+        var added = Mock.Get(DbContextMock.Object.BoardItemLabels).Invocations
+            .Where(i => i.Method.Name == "Add")
+            .Select(i => (BoardItemLabel)i.Arguments[0]).Single();
+        added.DomainEvents.OfType<BoardItemLabelAddedDomainEvent>().Should()
+            .ContainSingle(e => e.ItemId == item.Id && e.LabelId == label.Id && e.LabelName == label.Name && e.AddedBy == TestUserId);
     }
 
     [Fact]

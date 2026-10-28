@@ -251,7 +251,27 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-activity-item-unassigned-v1",
                 BoundedContext = "Collaboration",
-                Description = "Records the history row for a person being removed from an Item",
+                Description = "Records the history row for a person being taken off an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemLabelAddedActivityConsumer",
+                EventName = "work-management.board-item-label-added",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-label-added-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a label being put on an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemLabelRemovedActivityConsumer",
+                EventName = "work-management.board-item-label-removed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-label-removed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a label being taken off an Item",
                 Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition

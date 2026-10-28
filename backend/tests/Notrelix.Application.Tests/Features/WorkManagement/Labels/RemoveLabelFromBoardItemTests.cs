@@ -8,7 +8,7 @@ public class RemoveLabelFromBoardItemTests : WorkManagementHandlerTestBase
 
     public RemoveLabelFromBoardItemTests()
     {
-        _handler = new RemoveLabelFromBoardItemCommandHandler(DbContextMock.Object);
+        _handler = new RemoveLabelFromBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
     }
 
     [Fact]
@@ -26,6 +26,7 @@ public class RemoveLabelFromBoardItemTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+        link.DomainEvents.OfType<BoardItemLabelRemovedDomainEvent>().Should().ContainSingle(e => e.ItemId == itemId && e.LabelId == labelId);
     }
 
     [Fact]

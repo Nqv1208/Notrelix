@@ -54,7 +54,7 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
         var result = workspaces.Select(w => new WorkspaceDto(
             w.Id, w.Name, w.Slug, w.Description, w.IsPersonal,
             "free", null, null,
-            null, w.Status == WorkspaceStatus.Archived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt.DateTime,
+            null, w.Status == WorkspaceStatus.Archived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt.UtcDateTime,
             null,
             w.Version,
             w.Settings.Size,

@@ -65,7 +65,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
                 _context.ChecklistItems.AsNoTracking()
                     .Where(i => i.ChecklistId == c.Id)
                     .OrderBy(i => i.Position)
-                    .Select(i => new ChecklistItemDto(i.Id, i.Title, i.Status.ToString(), i.DueAt.HasValue ? i.DueAt.Value.DateTime : null, i.AssigneeUserId, i.Position.Value))
+                    .Select(i => new ChecklistItemDto(i.Id, i.Title, i.Status.ToString(), i.DueAt.HasValue ? i.DueAt.Value.UtcDateTime : null, i.AssigneeUserId, i.Position.Value))
                     .ToList()
             )).ToListAsync(ct);
 
@@ -93,7 +93,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             members, labels, checklists,
             itemCounts.CommentCount, itemCounts.AttachmentCount,
             card.Position.Value,
-            card.CreatedAt.DateTime, card.UpdatedAt?.DateTime,
+            card.CreatedAt.UtcDateTime, card.UpdatedAt?.UtcDateTime,
             card.Version,
             card.ItemKey,
             card.ParentItemId,

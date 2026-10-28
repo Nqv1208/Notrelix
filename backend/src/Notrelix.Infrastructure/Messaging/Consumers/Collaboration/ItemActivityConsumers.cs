@@ -176,6 +176,42 @@ public sealed class ItemUnassignedActivityConsumer : IConsumer<BoardItemMemberUn
 }
 
 [OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemLabelAddedActivityConsumer : IConsumer<BoardItemLabelAddedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemLabelAddedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemLabelAddedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var label = ItemChangeWords.Truncate(msg.LabelName);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.LabelAdded, msg.EventId, msg.AddedBy, msg.OccurredAt,
+            $"added the label \"{label}\"", null,
+            new Dictionary<string, string?> { ["to"] = label }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemLabelRemovedActivityConsumer : IConsumer<BoardItemLabelRemovedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemLabelRemovedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemLabelRemovedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var label = ItemChangeWords.Truncate(msg.LabelName);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.LabelRemoved, msg.EventId, msg.RemovedBy, msg.OccurredAt,
+            $"removed the label \"{label}\"", null,
+            new Dictionary<string, string?> { ["to"] = label }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
 public sealed class ItemArchivedActivityConsumer : IConsumer<BoardItemArchivedIntegrationEventV2>
 {
     private readonly ItemActivityRecorder _recorder;

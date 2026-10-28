@@ -13,8 +13,8 @@ internal static class DocumentDtoMapper
         page.Title,
         page.Icon,
         page.CoverImage,
-        page.CreatedAt.DateTime,
-        page.UpdatedAt?.DateTime,
+        page.CreatedAt.UtcDateTime,
+        page.UpdatedAt?.UtcDateTime,
         page.Version,
         page.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
     );
@@ -28,8 +28,8 @@ internal static class DocumentDtoMapper
         ToJson(block.Properties?.Data.Value),
         block.Position.Value,
         (int)block.Version,
-        block.CreatedAt.DateTime,
-        block.UpdatedAt?.DateTime
+        block.CreatedAt.UtcDateTime,
+        block.UpdatedAt?.UtcDateTime
     );
 
     public static PageVersionDto ToVersionDto(Notrelix.Domain.Documents.Versions.DocumentVersion version) => new(
@@ -39,7 +39,7 @@ internal static class DocumentDtoMapper
         KindName(version.Kind),
         version.ChangeSummary,
         version.CreatedBy,
-        version.CreatedAt.DateTime
+        version.CreatedAt.UtcDateTime
     );
 
     public static string KindName(Notrelix.Domain.Documents.Versions.DocumentVersionKind kind) => kind switch

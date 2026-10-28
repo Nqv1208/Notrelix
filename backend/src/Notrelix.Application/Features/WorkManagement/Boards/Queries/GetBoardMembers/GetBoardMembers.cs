@@ -42,7 +42,7 @@ public class GetBoardMembersQueryHandler : IRequestHandler<GetBoardMembersQuery,
                 actorMap.TryGetValue(m.UserId, out var actor) ? actor.Name : "Unknown",
                 actorMap.TryGetValue(m.UserId, out var a) ? a.AvatarUrl : null,
                 m.Role.ToString(),
-                m.JoinedAt.DateTime))
+                m.JoinedAt.UtcDateTime))
             .ToList();
 
         return Result<List<BoardMemberDto>>.Success(members);
