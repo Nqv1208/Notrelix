@@ -4,7 +4,6 @@ using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Duplicat
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ordering;
-using Notrelix.Domain.WorkManagement.Checklists;
 using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;

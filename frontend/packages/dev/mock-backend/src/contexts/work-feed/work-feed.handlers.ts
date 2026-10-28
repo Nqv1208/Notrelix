@@ -32,6 +32,7 @@ import {
   setFollowing,
   type FeedWriteResult,
 } from "../../state/mock-work-feed";
+import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
 import { commandSearch } from "../../state/mock-command-search";
 import { spaceOverview } from "../../state/mock-space-overview";
@@ -368,7 +369,7 @@ export const workFeedOperations = [
       remindSentAt.set(store, sent);
       const last = sent.get(params.id);
       const next = (iso: string) =>
-        new Date(Date.parse(iso) + 24 * 3_600_000).toISOString();
+        isoOfMs(Date.parse(iso) + 24 * 3_600_000);
       if (last && Date.parse(next(last)) > Date.parse(now))
         return {
           status: 409,

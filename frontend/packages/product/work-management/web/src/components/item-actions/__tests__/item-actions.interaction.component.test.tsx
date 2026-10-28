@@ -52,7 +52,7 @@ function renderMenu(
 }
 
 describe("ItemActionsMenuItems", () => {
-  it("FUI[wm.item-actions:menu] lists every action in one order and runs the one picked", () => {
+  it("FUI[wm.item-lifecycle:menu] lists every action in one order and runs the one picked", () => {
     const on = renderMenu();
     const names = screen
       .getAllByRole("menuitem")
@@ -71,7 +71,7 @@ describe("ItemActionsMenuItems", () => {
     expect(on.duplicate).toHaveBeenCalledWith("i1");
   });
 
-  it("FUI[wm.item-actions:menu-viewer] keeps a locked entry visible, disabled, with its reason read through aria-describedby", () => {
+  it("FUI[wm.item-lifecycle:menu-viewer] keeps a locked entry visible, disabled, with its reason read through aria-describedby", () => {
     renderMenu({
       can: { edit: false, create: false, move: false, remove: false },
     });
@@ -91,7 +91,7 @@ describe("ItemActionsMenuItems", () => {
     ).toBeNull();
   });
 
-  it("FUI[wm.item-actions:menu-states] offers Reopen for a completed item and Unarchive for an archived one, and says why the rest is locked", () => {
+  it("FUI[wm.item-lifecycle:menu-states] offers Reopen for a completed item and Unarchive for an archived one, and says why the rest is locked", () => {
     renderMenu({
       item: { itemId: "i1", archived: true, completed: false },
       can: { edit: false, create: false, move: false, remove: false },
@@ -104,7 +104,7 @@ describe("ItemActionsMenuItems", () => {
     ).toContain(en.reasonUnarchiveFirst);
   });
 
-  it("FUI[wm.item-actions:menu-vi] speaks Vietnamese", () => {
+  it("FUI[wm.item-lifecycle:menu-vi] speaks Vietnamese", () => {
     renderMenu({}, viCopy);
     expect(
       screen.getByRole("menuitem", { name: viCopy.moveBoard }),
@@ -148,7 +148,7 @@ function renderMove(
 }
 
 describe("MoveBoardDialog", () => {
-  it("FUI[wm.item-actions:move] asks for a board first and says what carries over before it moves", () => {
+  it("FUI[wm.item-lifecycle:move] asks for a board first and says what carries over before it moves", () => {
     const onPick = vi.fn();
     const onConfirm = renderMove({ onPick, preview: losing });
     const move = screen.getByRole("button", { name: /Move and drop 3/ });
@@ -160,7 +160,7 @@ describe("MoveBoardDialog", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it("FUI[wm.item-actions:move-ack] needs the tick that names the losses before the button works", () => {
+  it("FUI[wm.item-lifecycle:move-ack] needs the tick that names the losses before the button works", () => {
     const onConfirm = renderMove({ preview: losing });
     fireEvent.click(screen.getByRole("option", { name: "Kế hoạch Q4" }));
     const move = screen.getByRole("button", { name: /Move and drop 3/ });
@@ -175,14 +175,14 @@ describe("MoveBoardDialog", () => {
     expect(onConfirm).toHaveBeenCalledWith("b1");
   });
 
-  it("FUI[wm.item-actions:move-clean] moves without a tick when nothing is lost", () => {
+  it("FUI[wm.item-lifecycle:move-clean] moves without a tick when nothing is lost", () => {
     const onConfirm = renderMove({ preview: { ...losing, losses: [] } });
     fireEvent.click(screen.getByRole("option", { name: "Kế hoạch Q4" }));
     fireEvent.click(screen.getByRole("button", { name: en.moveConfirm }));
     expect(onConfirm).toHaveBeenCalledWith("b1");
   });
 
-  it("FUI[wm.item-actions:move-refused] shows a refusal with its way out and no confirm for an archived item", () => {
+  it("FUI[wm.item-lifecycle:move-refused] shows a refusal with its way out and no confirm for an archived item", () => {
     const onUnarchive = vi.fn();
     renderMove({ status: "archived", onUnarchive });
     expect(screen.getByRole("alert").textContent).toContain(
@@ -193,7 +193,7 @@ describe("MoveBoardDialog", () => {
     expect(screen.queryByRole("button", { name: en.moveConfirm })).toBeNull();
   });
 
-  it("FUI[wm.item-actions:move-dependencies] names the dependency refusal and offers to open the blocking item", () => {
+  it("FUI[wm.item-lifecycle:move-dependencies] names the dependency refusal and offers to open the blocking item", () => {
     const onOpenBlocking = vi.fn();
     renderMove({ status: "deps", blockingKey: "ERP-140", onOpenBlocking });
     expect(screen.getByRole("alert").textContent).toContain(en.moveRefusedDeps);
@@ -201,7 +201,7 @@ describe("MoveBoardDialog", () => {
     expect(onOpenBlocking).toHaveBeenCalled();
   });
 
-  it("FUI[wm.item-actions:move-busy] offers no Cancel once the request is sent", () => {
+  it("FUI[wm.item-lifecycle:move-busy] offers no Cancel once the request is sent", () => {
     renderMove({ status: "busy", preview: losing });
     expect(screen.queryByRole("button", { name: en.cancel })).toBeNull();
     expect(
@@ -210,7 +210,7 @@ describe("MoveBoardDialog", () => {
     ).toBe(true);
   });
 
-  it("FUI[wm.item-actions:move-empty] says so when no board accepts items", () => {
+  it("FUI[wm.item-lifecycle:move-empty] says so when no board accepts items", () => {
     renderMove({ boards: [] });
     expect(screen.getByText(en.moveNoBoards)).toBeTruthy();
   });
@@ -236,7 +236,7 @@ describe("DuplicateItemDialog", () => {
     return onConfirm;
   };
 
-  it("FUI[wm.item-actions:duplicate] ticks every copyable part by default and sends the choices", () => {
+  it("FUI[wm.item-lifecycle:duplicate] ticks every copyable part by default and sends the choices", () => {
     const onConfirm = renderDup();
     fireEvent.click(screen.getByRole("checkbox", { name: en.dupLabels }));
     fireEvent.click(screen.getByRole("button", { name: en.dupConfirm }));
@@ -249,7 +249,7 @@ describe("DuplicateItemDialog", () => {
     });
   });
 
-  it("FUI[wm.item-actions:duplicate-locked] draws files, comments and history as locked rows with the reason", () => {
+  it("FUI[wm.item-lifecycle:duplicate-locked] draws files, comments and history as locked rows with the reason", () => {
     renderDup();
     for (const [label, reason] of [
       [en.dupFiles, en.dupFilesLocked],
@@ -262,7 +262,7 @@ describe("DuplicateItemDialog", () => {
     }
   });
 
-  it("FUI[wm.item-actions:duplicate-long] counts the name and blocks one over 200 characters", () => {
+  it("FUI[wm.item-lifecycle:duplicate-long] counts the name and blocks one over 200 characters", () => {
     renderDup({ defaultName: "x".repeat(212) });
     expect(screen.getByText("212/200")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toBe(en.dupNameTooLong);
@@ -272,7 +272,7 @@ describe("DuplicateItemDialog", () => {
     ).toBe(true);
   });
 
-  it("FUI[wm.item-actions:duplicate-failed] says the original is unchanged and offers Try again", () => {
+  it("FUI[wm.item-lifecycle:duplicate-failed] says the original is unchanged and offers Try again", () => {
     renderDup({ failed: true });
     expect(screen.getByRole("alert").textContent).toContain(en.dupFailed);
     expect(screen.getByRole("button", { name: en.retry })).toBeTruthy();
@@ -300,27 +300,27 @@ describe("RemindDialog", () => {
     return onConfirm;
   };
 
-  it("FUI[wm.item-actions:remind] names who will get the reminder and sends on confirm", () => {
+  it("FUI[wm.item-lifecycle:remind] names who will get the reminder and sends on confirm", () => {
     const onConfirm = renderRemind();
     expect(screen.getByText(/Ha, Minh will get a notice/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: en.remindSend }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[wm.item-actions:remind-limit] says when the next reminder is possible when the server refuses", () => {
+  it("FUI[wm.item-lifecycle:remind-limit] says when the next reminder is possible when the server refuses", () => {
     renderRemind({ state: "tooSoon", nextRemindAt: "13/10 14:30" });
     expect(screen.getByRole("alert").textContent).toContain("13/10 14:30");
     expect(screen.queryByRole("button", { name: en.remindSend })).toBeNull();
   });
 
-  it("FUI[wm.item-actions:remind-nobody] offers to assign someone when nobody else is in charge", () => {
+  it("FUI[wm.item-lifecycle:remind-nobody] offers to assign someone when nobody else is in charge", () => {
     const onAssign = vi.fn();
     renderRemind({ recipients: [], state: "nobody", onAssign });
     fireEvent.click(screen.getByRole("button", { name: en.remindAssign }));
     expect(onAssign).toHaveBeenCalled();
   });
 
-  it("FUI[wm.item-actions:remind-error] keeps the dialog open with Try again after a failure", () => {
+  it("FUI[wm.item-lifecycle:remind-error] keeps the dialog open with Try again after a failure", () => {
     renderRemind({ state: "error" });
     expect(screen.getByRole("alert").textContent).toContain(en.remindFailed);
     expect(screen.getByRole("button", { name: en.retry })).toBeTruthy();
