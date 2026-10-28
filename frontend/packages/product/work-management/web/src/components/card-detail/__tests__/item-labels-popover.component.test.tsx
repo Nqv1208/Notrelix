@@ -8,7 +8,9 @@ const labels = [
   { id: "l-doc", name: "Docs", color: "#8A8F98" },
 ];
 
-function renderPicker(onCreate: (name: string) => Promise<boolean>) {
+function renderPicker(
+  onCreate: (name: string, color?: string) => Promise<boolean>,
+) {
   const onToggle = vi.fn();
   renderPureUi(
     <ItemLabelsPopover
@@ -18,7 +20,10 @@ function renderPicker(onCreate: (name: string) => Promise<boolean>) {
       emptyText="none"
       readOnly={false}
       onToggle={onToggle}
-      create={labelCreate(en.properties, onCreate)}
+      create={labelCreate(en.properties, onCreate, {
+        nextColor: "#2F6FD6",
+        href: "/workspaces/w/boards/b/settings?section=labels",
+      })}
     >
       <button type="button">Add label</button>
     </ItemLabelsPopover>,
@@ -39,14 +44,16 @@ describe("the item label picker", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Create label “Urgent”/ }),
     );
-    await waitFor(() => expect(onCreate).toHaveBeenCalledWith("Urgent"));
+    await waitFor(() =>
+      expect(onCreate).toHaveBeenCalledWith("Urgent", "#2F6FD6"),
+    );
     await waitFor(() => expect((input as HTMLInputElement).value).toBe(""));
   });
 
   it("offers no create row when a label already has that name, ignoring case", async () => {
     renderPicker(vi.fn());
     fireEvent.change(await search(), { target: { value: "bug" } });
-    expect(screen.queryByRole("button", { name: /Create label/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Create label “/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Bug" })).toBeTruthy();
   });
 

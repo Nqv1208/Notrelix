@@ -7,6 +7,7 @@ import {
   useCardComments,
   useBoardLabels,
   useCardFiles,
+  useDeleteCardFile,
   useCardLabelWrites,
   useChecklistWrites,
   useCreateCardUpdate,
@@ -277,6 +278,7 @@ function ItemPageReady({
   const fileUploads = useItemFileUploads(card.id, card.workspaceId);
   const { cards: cardServices } = useWorkManagementServices();
   const files = useCardFiles(card.id, card.workspaceId);
+  const deleteFile = useDeleteCardFile(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
@@ -521,9 +523,12 @@ function ItemPageReady({
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
     onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
-    onCreateLabel: (name) =>
+    onCreateLabel: (name, color) =>
       labelWrites
-        .createAndApply(name, nextLabelColor(boardLabels.data?.length ?? 0))
+        .createAndApply(
+          name,
+          color ?? nextLabelColor(boardLabels.data?.length ?? 0),
+        )
         .then(
           () => true,
           () => false,
@@ -540,6 +545,11 @@ function ItemPageReady({
     onRemoveLink: (linkId) => links.removeLink(linkId),
     onAddFile: fileUploads.start,
     onDownloadFile: downloadFile,
+    onDeleteFile: (file) =>
+      deleteFile.mutateAsync(file.id).then(
+        () => true,
+        () => false,
+      ),
     onDuplicate: (cardId) => duplicateCard.mutate(cardId),
     // "Lưu trữ" archives the item (it can be restored); it is not a delete.
     onArchive: (cardId) => {

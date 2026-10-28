@@ -62,6 +62,7 @@ import type {
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
 import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
 import { findItemFields } from "../../card-detail/item-field-editors";
+import { useItemSheetExtras } from "../../card-detail/use-item-sheet-extras";
 import { useBoardViewerId } from "../../shared/board-viewer";
 import { KanbanBoard } from "./kanban-board";
 import { prefersReducedMotion } from "./kanban-chrome";
@@ -1102,6 +1103,7 @@ function KanbanSelectedItemReady({
   const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
   const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
+  const extras = useItemSheetExtras(card);
   const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
   const viewerUserId = useBoardViewerId();
   const linksCopy = useItemPageCopy();
@@ -1130,6 +1132,7 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          ...extras.detailData,
           checklists: {
             ...checklistWrites,
             checklists: card.checklists,
@@ -1170,17 +1173,17 @@ function KanbanSelectedItemReady({
             updateCard.mutate({ cardId, patch }),
           onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
           onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
-          onCreateLabel: (name) =>
+          onCreateLabel: (name, color) =>
             labelWrites
               .createAndApply(
                 name,
-                nextLabelColor(boardLabels.data?.length ?? 0),
+                color ?? nextLabelColor(boardLabels.data?.length ?? 0),
               )
               .then(
                 () => true,
                 () => false,
               ),
-          onToggleWatch: () => undefined,
+          ...extras.callbacks,
           onDuplicate,
           onArchive: (cardId) => {
             onArchive(cardId);
