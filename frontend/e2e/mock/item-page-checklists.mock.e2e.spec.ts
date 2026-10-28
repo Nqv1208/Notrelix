@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
  * The Checklist section of an item on the mock world, on the full page and in
@@ -162,12 +162,27 @@ test.describe("Checklists (owner)", () => {
     await expect(
       sheet.getByRole("button", { name: "Thêm checklist" }),
     ).toBeVisible({ timeout: 20_000 });
-    const headings = await sheet
-      .getByRole("heading", { level: 3 })
-      .allTextContents();
-    const at = (label: RegExp) => headings.findIndex((h) => label.test(h));
-    expect(at(/^Mô tả/)).toBeLessThan(at(/^Checklist/));
-    expect(at(/^Checklist/)).toBeLessThan(at(/^Việc con/));
+    // An empty section collapses to its add row, so order is read from the regions.
+    const follows = async (a: Locator, b: Locator) =>
+      a.evaluate(
+        (first, second) =>
+          Boolean(
+            second &&
+            first.compareDocumentPosition(second) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
+        await b.elementHandle(),
+      );
+    const checklist = sheet.getByRole("region", { name: "Checklist" });
+    expect(
+      await follows(sheet.getByRole("heading", { name: /^Mô tả/ }), checklist),
+    ).toBe(true);
+    expect(
+      await follows(
+        checklist,
+        sheet.getByRole("region", { name: /^Việc con/ }).first(),
+      ),
+    ).toBe(true);
     await sheet.getByRole("button", { name: "Thêm checklist" }).click();
     const name = sheet.getByRole("textbox", { name: "Tên checklist" });
     await name.fill("Trong sheet");

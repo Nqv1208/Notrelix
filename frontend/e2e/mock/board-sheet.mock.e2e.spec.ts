@@ -58,27 +58,24 @@ test.describe("Board header, lanes and item sheet (owner)", () => {
     ).toBeVisible();
   });
 
-  test("the sheet shows the child progress and offers no child list", async ({
+  test("the sheet shows the child progress and lists the child items", async ({
     page,
   }) => {
     await open(page, "?item=mock-erp-item-142");
     const sheet = page.getByRole("dialog");
     await expect(sheet.getByText("3/5")).toBeVisible();
-    await expect(
-      sheet.getByRole("checkbox", { name: /^Xuất dữ liệu từ hệ thống cũ/ }),
-    ).toHaveCount(0);
+    await expect(sheet.getByRole("checkbox").first()).toBeVisible();
   });
 
-  test("the sheet offers no follow chip, there is nothing to follow through", async ({
-    page,
-  }) => {
+  test("the sheet offers the follow chip and flips it", async ({ page }) => {
     await open(page, "?item=mock-erp-item-142");
-    await expect(
-      page.getByRole("dialog").getByText("ERP-142", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("dialog").locator('[data-f="follow"]'),
-    ).toHaveCount(0);
+    const sheet = page.getByRole("dialog");
+    await expect(sheet.getByText("ERP-142", { exact: true })).toBeVisible();
+    const chip = sheet.locator('[data-f="follow"]');
+    await expect(chip).toBeVisible();
+    const before = await chip.getAttribute("aria-pressed");
+    await chip.click();
+    await expect(chip).not.toHaveAttribute("aria-pressed", before ?? "");
   });
 
   test("comments show the recorded change among them and the composer posts", async ({
