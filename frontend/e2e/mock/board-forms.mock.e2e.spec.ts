@@ -23,7 +23,7 @@ async function open(page: Page, path: string) {
       // Private mode: the default locale applies.
     }
   });
-  await page.goto(path);
+  await page.goto(path, { waitUntil: "domcontentloaded" });
 }
 
 test.describe("Board forms (owner)", () => {
