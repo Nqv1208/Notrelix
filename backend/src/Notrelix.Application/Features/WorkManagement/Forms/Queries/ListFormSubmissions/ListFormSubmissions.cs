@@ -34,7 +34,8 @@ public class ListFormSubmissionsQueryHandler : IRequestHandler<ListFormSubmissio
                 s.SubmitterEmail,
                 s.Status.ToString(),
                 s.SubmittedAt,
-                s.ProcessedAt))
+                s.ProcessedAt,
+                s.PayloadJson))
             .ToListAsync(ct);
 
         return Result<List<FormSubmissionDto>>.Success(submissions);

@@ -21,6 +21,8 @@ public sealed class ResourceLocator : IResourceLocator
     private static readonly ResourceKind BoardView = ResourceKind.Create("work-management.board-view");
     private static readonly ResourceKind BoardItem = ResourceKind.Create("work-management.board-item");
     private static readonly ResourceKind SavedFilter = ResourceKind.Create("work-management.saved-filter");
+    private static readonly ResourceKind Form = ResourceKind.Create("work-management.form");
+    private static readonly ResourceKind FormSubmission = ResourceKind.Create("work-management.form-submission");
     private static readonly ResourceKind Label = ResourceKind.Create("work-management.label");
     private static readonly ResourceKind Checklist = ResourceKind.Create("work-management.checklist");
     private static readonly ResourceKind ChecklistItem = ResourceKind.Create("work-management.checklist-item");
@@ -126,6 +128,18 @@ public sealed class ResourceLocator : IResourceLocator
                 .FirstOrDefaultAsync(cancellationToken)),
 
             "work-management.saved-filter" => ToLocation(SavedFilter, await _workDb.SavedFilters
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
+
+            "work-management.form" => ToLocation(Form, await _workDb.Forms
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
+
+            "work-management.form-submission" => ToLocation(FormSubmission, await _workDb.FormSubmissions
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
                 .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))

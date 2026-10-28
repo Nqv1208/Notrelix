@@ -43,6 +43,14 @@ public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizati
                 boardId = await _context.SavedFilters.IgnoreQueryFilters().AsNoTracking()
                     .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
                 break;
+            case "work-management.form":
+                boardId = await _context.Forms.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.form-submission":
+                boardId = await _context.FormSubmissions.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
             case "work-management.label":
                 boardId = await _context.Labels.IgnoreQueryFilters().AsNoTracking()
                     .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
