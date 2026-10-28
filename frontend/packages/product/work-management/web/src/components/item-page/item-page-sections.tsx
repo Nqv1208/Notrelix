@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
   AlertTriangle,
   Check,
   Download,
   Plus,
   Search,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import {
   type FileKind,
 } from "./item-page-format";
 import {
+  AddRow,
   BUTTON_SM_VARIANT_CLASS,
   DisabledControl,
   ICON_BUTTON_CLASS,
@@ -148,16 +150,6 @@ export function ItemPageDescription({
         >
           {copy.states.empty.description}
         </button>
-      ) : editable ? (
-        <DisabledControl reason={copy.description.editUnavailable}>
-          <button
-            type="button"
-            aria-disabled="true"
-            className="m-0 w-full border-0 bg-transparent p-0 text-left text-item-text text-meta-foreground"
-          >
-            {copy.states.empty.description}
-          </button>
-        </DisabledControl>
       ) : (
         <p className="m-0 text-item-text text-muted-foreground">
           {copy.description.empty}
@@ -185,7 +177,10 @@ export function ItemPageChildItems({
   now,
   timeZone,
   pending = false,
+  collapseEmpty = false,
 }: {
+  /** Nothing yet folds into one "+ Thêm việc con" row; a reader sees nothing. */
+  collapseEmpty?: boolean;
   card: CardDetail;
   items: readonly ItemSheetChildItem[] | undefined;
   capabilities: TaskDetailCapabilities;
@@ -215,8 +210,9 @@ export function ItemPageChildItems({
   const percent = progress
     ? Math.round((progress.done / progress.total) * 100)
     : null;
-  const showAdd = capabilities.canEditFields;
-  const canAdd = showAdd && Boolean(callbacks.onAddChildItem);
+  const canAdd =
+    capabilities.canEditFields && Boolean(callbacks.onAddChildItem);
+  const showAdd = canAdd;
 
   const submit = () => {
     const title = draft.trim();
@@ -251,6 +247,23 @@ export function ItemPageChildItems({
     </label>
   );
 
+  if (collapseEmpty && rows.length === 0 && !progress) {
+    if (!canAdd) return null;
+    return (
+      <section aria-label={t.heading}>
+        {adding ? (
+          <div className="overflow-hidden rounded-[10px] border border-line bg-popover">
+            {addInput}
+          </div>
+        ) : (
+          <AddRow onClick={() => setAdding(true)}>
+            {copy.states.empty.addChild}
+          </AddRow>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section aria-labelledby="item-page-children">
       <SectionHeading
@@ -284,18 +297,10 @@ export function ItemPageChildItems({
           {fillSheetCopy(t.rollup, { percent })}
         </div>
       ) : null}
-      {rows.length === 0 && showAdd && canAdd && !adding ? (
-        <div className="flex min-h-10.5 items-center gap-2.5 rounded-[10px] border border-dashed border-line-strong px-3 text-item-text text-meta-foreground">
-          <Plus aria-hidden="true" className="size-4" />
-          {copy.states.empty.children}
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground"
-          >
-            {copy.states.empty.addChild}
-          </button>
-        </div>
+      {rows.length === 0 && showAdd && !adding ? (
+        <AddRow onClick={() => setAdding(true)}>
+          {copy.states.empty.addChild}
+        </AddRow>
       ) : rows.length > 0 || showAdd ? (
         <div className="overflow-hidden rounded-[10px] border border-line bg-popover">
           <div role="list">
@@ -328,15 +333,7 @@ export function ItemPageChildItems({
                   })}
             </button>
           ) : null}
-          {showAdd ? (
-            canAdd ? (
-              addInput
-            ) : (
-              <DisabledControl reason={t.addUnavailable}>
-                {addInput}
-              </DisabledControl>
-            )
-          ) : null}
+          {showAdd ? addInput : null}
         </div>
       ) : (
         <p className="m-0 text-item-text text-muted-foreground">
@@ -451,7 +448,10 @@ export function ItemPageLinks({
   itemKey,
   place,
   named = false,
+  collapseEmpty = false,
 }: {
+  /** Nothing yet folds into one "+ Thêm liên kết" row; a reader sees nothing. */
+  collapseEmpty?: boolean;
   itemKey?: string | null;
   place?: string | null;
   /** Names the add button in full ("Add a link"): set where another "Add" shares the screen. */
@@ -465,6 +465,23 @@ export function ItemPageLinks({
   const t = copy.links;
   const canEdit = capabilities.canEditFields && Boolean(callbacks.onAddLink);
   const rows = links ?? [];
+  if (collapseEmpty && rows.length === 0) {
+    if (!canEdit || !links) return null;
+    return (
+      <section aria-label={t.heading}>
+        <LinkPicker
+          candidates={candidates ?? []}
+          links={rows}
+          itemKey={itemKey ?? null}
+          place={place ?? null}
+          copy={copy}
+          named
+          row
+          onPick={(itemId, relation) => callbacks.onAddLink?.(itemId, relation)}
+        />
+      </section>
+    );
+  }
   return (
     <section aria-labelledby="item-page-links">
       <SectionHeading
@@ -483,25 +500,12 @@ export function ItemPageLinks({
                 callbacks.onAddLink?.(itemId, relation)
               }
             />
-          ) : !capabilities.canEditFields ? null : (
-            <DisabledControl reason={t.addUnavailable}>
-              <button
-                type="button"
-                aria-disabled="true"
-                className={BUTTON_SM_VARIANT_CLASS.ghost}
-              >
-                <Plus aria-hidden="true" className="size-4" />
-                {t.add}
-              </button>
-            </DisabledControl>
-          )
+          ) : null
         }
       >
         {t.heading}
       </SectionHeading>
-      {!links ? (
-        <p className="m-0 text-item-text text-muted-foreground">{t.empty}</p>
-      ) : rows.length === 0 ? (
+      {!links ? null : rows.length === 0 ? (
         <p className="m-0 text-item-text text-muted-foreground">{t.none}</p>
       ) : (
         LINK_GROUPS.map((group) => {
@@ -573,8 +577,11 @@ function LinkPicker({
   place,
   copy,
   named = false,
+  row = false,
   onPick,
 }: {
+  /** The trigger is the dashed "+ …" row of a collapsed section. */
+  row?: boolean;
   /** The trigger carries its full name (the side sheet has another "Add" beside it). */
   named?: boolean;
   candidates: readonly ItemSheetLinkCandidate[];
@@ -638,16 +645,22 @@ function LinkPicker({
         if (next) setQuery("");
       }}
     >
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={named ? t.picker.label : undefined}
-          className={BUTTON_SM_VARIANT_CLASS.ghost}
-        >
-          <Plus aria-hidden="true" className="size-4" />
-          {t.add}
-        </button>
-      </PopoverTrigger>
+      {row ? (
+        <PopoverTrigger asChild>
+          <AddRow>{t.picker.label}</AddRow>
+        </PopoverTrigger>
+      ) : (
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={named ? t.picker.label : undefined}
+            className={BUTTON_SM_VARIANT_CLASS.ghost}
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            {t.add}
+          </button>
+        </PopoverTrigger>
+      )}
       <PopoverContent
         align="end"
         aria-label={t.picker.label}
@@ -939,7 +952,13 @@ export function ItemPageFiles({
   uploads = [],
   onRetryUpload,
   onDismissUpload,
+  collapseEmpty = false,
+  notice = null,
 }: {
+  /** Nothing yet folds into one "+ Thêm tệp" row (still a drop target); a reader sees nothing. */
+  collapseEmpty?: boolean;
+  /** A download that did not go through, said once under the list. */
+  notice?: string | null;
   uploads?: readonly ItemPageUpload[];
   onRetryUpload?: (uploadId: string) => void;
   onDismissUpload?: (uploadId: string) => void;
@@ -947,7 +966,10 @@ export function ItemPageFiles({
   /** The comments, to tell which file came with one. */
   updates: readonly CardUpdate[];
   capabilities: TaskDetailCapabilities;
-  callbacks: Pick<TaskDetailCallbacks, "onAddFile" | "onDownloadFile">;
+  callbacks: Pick<
+    TaskDetailCallbacks,
+    "onAddFile" | "onDownloadFile" | "onDeleteFile"
+  >;
   copy: ItemPageCopy;
   locale: string;
   now: Date;
@@ -956,67 +978,110 @@ export function ItemPageFiles({
   const t = copy.files;
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  // One file at a time asks to be deleted; a failed delete stays on its row with a retry.
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [failedId, setFailedId] = useState<string | null>(null);
   const canAdd = capabilities.canEditFields && Boolean(callbacks.onAddFile);
+  const canDelete =
+    capabilities.canEditFields && Boolean(callbacks.onDeleteFile);
   const withComment = new Set(
     updates.flatMap((update) => update.attachmentIds),
   );
   const add = (list: FileList | null) => {
     for (const file of Array.from(list ?? [])) callbacks.onAddFile?.(file);
   };
-  const zone = (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={canAdd ? () => input.current?.click() : undefined}
-      onKeyDown={
-        canAdd
-          ? (event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                input.current?.click();
-              }
-            }
-          : undefined
+  const remove = async (file: CardFile) => {
+    setDeletingId(file.id);
+    setFailedId(null);
+    const ok = await callbacks.onDeleteFile?.(file);
+    setDeletingId(null);
+    if (ok) setConfirmId(null);
+    else setFailedId(file.id);
+  };
+  const empty = files.length === 0 && uploads.length === 0;
+  if (collapseEmpty && empty && !canAdd) return null;
+  const picker = canAdd ? (
+    <input
+      ref={input}
+      type="file"
+      multiple
+      hidden
+      aria-label={t.choose}
+      onChange={(event) => {
+        add(event.target.files);
+        event.target.value = "";
+      }}
+    />
+  ) : null;
+  const zoneProps = canAdd
+    ? {
+        onClick: () => input.current?.click(),
+        onDragOver: (event: DragEvent<HTMLElement>) => {
+          event.preventDefault();
+          setOver(true);
+        },
+        onDragLeave: () => setOver(false),
+        onDrop: (event: DragEvent<HTMLElement>) => {
+          event.preventDefault();
+          setOver(false);
+          add(event.dataTransfer.files);
+        },
       }
-      onDragOver={
-        canAdd
-          ? (event) => {
-              event.preventDefault();
-              setOver(true);
-            }
-          : undefined
-      }
-      onDragLeave={canAdd ? () => setOver(false) : undefined}
-      onDrop={
-        canAdd
-          ? (event) => {
-              event.preventDefault();
-              setOver(false);
-              add(event.dataTransfer.files);
-            }
-          : undefined
-      }
-      className={cn(
-        "mt-1.5 flex h-10.5 items-center justify-center gap-2 rounded-[8px] border border-dashed border-line-strong text-item-small text-meta-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-        canAdd && "cursor-pointer",
-        over && "border-primary bg-state-selected",
-      )}
-    >
-      <Upload aria-hidden="true" className="size-4" />
-      <span>{t.drop}</span>
-      <u className="font-medium text-brand-subtle-foreground no-underline">
-        {t.choose}
-      </u>
-    </div>
-  );
-  return (
-    <section aria-labelledby="item-page-files">
-      <SectionHeading
-        id="item-page-files"
-        count={files.length > 0 ? files.length : undefined}
+    : {};
+  const zone =
+    collapseEmpty && empty ? (
+      <AddRow
+        {...zoneProps}
+        className={cn(over && "border-primary bg-state-selected")}
       >
-        {t.heading}
-      </SectionHeading>
+        {t.add}
+      </AddRow>
+    ) : (
+      <div
+        role="button"
+        tabIndex={0}
+        {...zoneProps}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            input.current?.click();
+          }
+        }}
+        className={cn(
+          "mt-1.5 flex h-10.5 cursor-pointer items-center justify-center gap-2 rounded-[8px] border border-dashed border-line-strong text-item-small text-meta-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+          over && "border-primary bg-state-selected",
+        )}
+      >
+        <Upload aria-hidden="true" className="size-4" />
+        <span>{t.drop}</span>
+        <u className="font-medium text-brand-subtle-foreground no-underline">
+          {t.choose}
+        </u>
+      </div>
+    );
+  return (
+    <section
+      aria-labelledby="item-page-files"
+      // A file pasted while focus is in the section is attached.
+      onPaste={
+        canAdd
+          ? (event) => {
+              if (event.clipboardData.files.length === 0) return;
+              event.preventDefault();
+              add(event.clipboardData.files);
+            }
+          : undefined
+      }
+    >
+      {collapseEmpty && empty ? null : (
+        <SectionHeading
+          id="item-page-files"
+          count={files.length > 0 ? files.length : undefined}
+        >
+          {t.heading}
+        </SectionHeading>
+      )}
       {uploads.map((upload) => (
         <UploadRow
           key={upload.id}
@@ -1040,6 +1105,47 @@ export function ItemPageFiles({
         const date = sameDay
           ? t.today
           : (formatItemDate(file.createdAt, now, timeZone) ?? "");
+        if (confirmId === file.id) {
+          return (
+            <div
+              key={file.id}
+              role="alertdialog"
+              aria-label={fillSheetCopy(t.deleteTitle, { name: file.name })}
+              className="mb-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-danger-text/40 bg-danger-subtle px-2.5 py-2"
+            >
+              <p className="m-0 min-w-0 flex-1 text-item-ui text-foreground">
+                {fillSheetCopy(t.deleteAsk, { name: file.name })}
+                {failedId === file.id ? (
+                  <span
+                    role="alert"
+                    className="block text-item-note text-danger-text"
+                  >
+                    {t.deleteFailed}
+                  </span>
+                ) : null}
+              </p>
+              <button
+                type="button"
+                autoFocus
+                className={BUTTON_SM_VARIANT_CLASS.outline}
+                onClick={() => {
+                  setConfirmId(null);
+                  setFailedId(null);
+                }}
+              >
+                {t.deleteKeep}
+              </button>
+              <button
+                type="button"
+                disabled={deletingId === file.id}
+                className={BUTTON_SM_VARIANT_CLASS.primary}
+                onClick={() => void remove(file)}
+              >
+                {failedId === file.id ? t.retry : t.deleteConfirm}
+              </button>
+            </div>
+          );
+        }
         return (
           <div
             key={file.id}
@@ -1069,59 +1175,61 @@ export function ItemPageFiles({
                 )}
               </small>
             </span>
-            {file.kind === "file" && callbacks.onDownloadFile ? (
-              <button
-                type="button"
-                aria-label={fillSheetCopy(t.download, { name: file.name })}
-                onClick={() => callbacks.onDownloadFile?.(file)}
-                className={cn(ICON_BUTTON_CLASS, "ml-auto size-7")}
-              >
-                <Download aria-hidden="true" />
-              </button>
-            ) : file.url ? (
-              <a
-                href={file.url}
-                download={file.name}
-                aria-label={fillSheetCopy(t.download, { name: file.name })}
-                className={cn(ICON_BUTTON_CLASS, "ml-auto size-7")}
-              >
-                <Download aria-hidden="true" />
-              </a>
-            ) : (
-              <DisabledControl reason={t.downloadUnavailable}>
+            <span className="ml-auto flex items-center">
+              {file.kind === "file" && callbacks.onDownloadFile ? (
                 <button
                   type="button"
-                  aria-disabled="true"
                   aria-label={fillSheetCopy(t.download, { name: file.name })}
-                  className={cn(ICON_BUTTON_CLASS, "ml-auto size-7")}
+                  onClick={() => callbacks.onDownloadFile?.(file)}
+                  className={cn(ICON_BUTTON_CLASS, "size-7")}
                 >
                   <Download aria-hidden="true" />
                 </button>
-              </DisabledControl>
-            )}
+              ) : file.url ? (
+                <a
+                  href={file.url}
+                  download={file.name}
+                  aria-label={fillSheetCopy(t.download, { name: file.name })}
+                  className={cn(ICON_BUTTON_CLASS, "size-7")}
+                >
+                  <Download aria-hidden="true" />
+                </a>
+              ) : (
+                <DisabledControl reason={t.downloadUnavailable}>
+                  <button
+                    type="button"
+                    aria-disabled="true"
+                    aria-label={fillSheetCopy(t.download, { name: file.name })}
+                    className={cn(ICON_BUTTON_CLASS, "size-7")}
+                  >
+                    <Download aria-hidden="true" />
+                  </button>
+                </DisabledControl>
+              )}
+              {canDelete ? (
+                <button
+                  type="button"
+                  aria-label={fillSheetCopy(t.delete, { name: file.name })}
+                  onClick={() => {
+                    setFailedId(null);
+                    setConfirmId(file.id);
+                  }}
+                  className={cn(ICON_BUTTON_CLASS, "size-7")}
+                >
+                  <Trash2 aria-hidden="true" />
+                </button>
+              ) : null}
+            </span>
           </div>
         );
       })}
-      {capabilities.canEditFields ? (
-        <>
-          <input
-            ref={input}
-            type="file"
-            multiple
-            hidden
-            aria-label={t.choose}
-            onChange={(event) => {
-              add(event.target.files);
-              event.target.value = "";
-            }}
-          />
-          {canAdd ? (
-            zone
-          ) : (
-            <DisabledControl reason={t.dropUnavailable}>{zone}</DisabledControl>
-          )}
-        </>
+      {notice ? (
+        <p role="alert" className="m-0 mt-1 text-item-note text-danger-text">
+          {notice}
+        </p>
       ) : null}
+      {picker}
+      {canAdd ? zone : null}
     </section>
   );
 }

@@ -333,5 +333,12 @@ export function createCardApi(client: NotrelixClient) {
         options,
       );
     },
+
+    /** `DELETE /board-items/{id}/attachments/{attachmentId}`: removes a stored file. */
+    async deleteCardFile(cardId: string, attachmentId: string): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.boardItems.attachments(cardId)}/${attachmentId}`,
+      );
+    },
   };
 }

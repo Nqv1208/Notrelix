@@ -1,6 +1,7 @@
 import {
   Bell,
   CalendarDays,
+  Check,
   ChartNoAxesGantt,
   ChevronDown,
   Flag,
@@ -26,7 +27,14 @@ import {
   calendarDaysFromToday,
   formatItemDate,
   itemLabelTone,
+  nextLabelColor,
 } from "../shared/item-display";
+import { boardSettingsHref } from "../shared/board-settings-href";
+import {
+  ItemMultiPopover,
+  ItemTextPopover,
+  multiValueIds,
+} from "../card-detail/item-field-more-editors";
 import { ItemApprovalSection } from "./item-page-approval";
 import { PendingMark } from "./item-page-states";
 import {
@@ -118,6 +126,9 @@ function PropertyValue({
   className?: string;
   children: ReactNode;
   "aria-label"?: string;
+  role?: "checkbox";
+  "aria-checked"?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
@@ -285,6 +296,79 @@ function CustomFieldRow({
           noValue={t.noValue}
           onChange={onChange}
         />
+      </PropertyRow>
+    );
+  }
+  if (field.fieldType === "text") {
+    const value = typeof raw === "string" ? raw : "";
+    return (
+      <PropertyRow label={field.name}>
+        <ItemTextPopover
+          value={value}
+          label={field.name}
+          readOnly={!editable}
+          onChange={onChange}
+        >
+          <PropertyValue
+            editable={editable}
+            aria-label={field.name}
+            className={value ? undefined : "font-normal text-meta-foreground"}
+          >
+            {value || t.noValue}
+          </PropertyValue>
+        </ItemTextPopover>
+      </PropertyRow>
+    );
+  }
+  if (field.fieldType === "checkbox") {
+    const on = raw === true;
+    return (
+      <PropertyRow label={field.name}>
+        <PropertyValue
+          editable={editable}
+          role="checkbox"
+          aria-checked={on}
+          aria-label={field.name}
+          onClick={editable ? () => onChange(!on) : undefined}
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "grid size-4 shrink-0 place-items-center rounded-[4px] border",
+              on
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-line-strong",
+            )}
+          >
+            {on ? <Check className="size-3" strokeWidth={3} /> : null}
+          </span>
+        </PropertyValue>
+      </PropertyRow>
+    );
+  }
+  if (field.fieldType === "multi_select") {
+    const ids = multiValueIds(raw);
+    const names = field.options
+      .filter((entry) => ids.includes(entry.id))
+      .map((entry) => entry.label);
+    return (
+      <PropertyRow label={field.name}>
+        <ItemMultiPopover
+          field={field}
+          value={ids}
+          readOnly={!editable}
+          onChange={onChange}
+        >
+          <PropertyValue
+            editable={editable}
+            aria-label={field.name}
+            className={
+              names.length ? "flex-wrap" : "font-normal text-meta-foreground"
+            }
+          >
+            {names.length ? names.join(", ") : t.noValue}
+          </PropertyValue>
+        </ItemMultiPopover>
       </PropertyRow>
     );
   }
@@ -584,15 +668,12 @@ export function ItemPageRail({
         <RailHeading
           action={
             editable ? (
-              <DisabledControl reason={t.manageFieldsUnavailable}>
-                <button
-                  type="button"
-                  aria-disabled="true"
-                  className="border-0 bg-transparent p-0 text-item-note font-medium text-brand-subtle-foreground"
-                >
-                  {t.manageFields}
-                </button>
-              </DisabledControl>
+              <a
+                href={boardSettingsHref(board.workspaceId, board.id, "fields")}
+                className="text-item-note font-medium text-brand-subtle-foreground"
+              >
+                {t.manageFields}
+              </a>
             ) : null
           }
         >
@@ -895,7 +976,14 @@ export function ItemPageRail({
                 onToggle={(labelId, on) =>
                   callbacks.onToggleLabel?.(labelId, on)
                 }
-                create={labelCreate(p, callbacks.onCreateLabel)}
+                create={labelCreate(p, callbacks.onCreateLabel, {
+                  href: boardSettingsHref(
+                    board.workspaceId,
+                    board.id,
+                    "labels",
+                  ),
+                  nextColor: nextLabelColor(data?.boardLabels?.length ?? 0),
+                })}
               >
                 <PropertyValue
                   editable={labelsEditable}

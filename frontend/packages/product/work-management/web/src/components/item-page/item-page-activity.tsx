@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { ChevronDown, MoreHorizontal, Paperclip, Zap } from "lucide-react";
 import {
   Avatar,
@@ -16,7 +16,6 @@ import type {
   CardActivity,
   CardDetail,
   CardFile,
-  CardMember,
   CardUpdate,
 } from "@notrelix/work-management-core";
 import { personInitials } from "@notrelix/work-management-core";
@@ -34,13 +33,7 @@ import type {
 import { canWriteComment } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
 import { describeActivityEvent } from "../card-detail/activity-words";
-import {
-  MentionList,
-  mentionCandidates,
-  mentionToken,
-  type MentionCandidate,
-  type MentionToken,
-} from "./item-page-mention";
+import { MentionList, useMentionField } from "./item-page-mention";
 import { fillSheetCopy, pluralSheetCopy } from "../card-detail/item-sheet.copy";
 import { ReactionBar } from "../comment-thread/reaction-bar";
 import { ReplyBox } from "../comment-thread/reply-box";
@@ -92,7 +85,6 @@ export function ItemPageActivity({
   timeZone,
   tab,
   onSelectTab,
-  members,
   viewer,
   people,
 }: {
@@ -105,7 +97,6 @@ export function ItemPageActivity({
   timeZone?: string;
   tab: ItemPageTab;
   onSelectTab: (tab: ItemPageTab) => void;
-  members: readonly CardMember[];
   /** The signed-in person, for the composer's mark. */
   viewer?: ItemPagePerson;
   people?: ItemPagePeople;
@@ -318,7 +309,6 @@ export function ItemPageActivity({
       {tab !== "history" ? (
         <PageComposer
           cardId={card.id}
-          members={members}
           capabilities={capabilities}
           callbacks={callbacks}
           copy={copy}
@@ -791,7 +781,6 @@ function CommentCard({
 
 function PageComposer({
   cardId,
-  members,
   capabilities,
   callbacks,
   copy,
@@ -799,7 +788,6 @@ function PageComposer({
   people,
 }: {
   cardId: string;
-  members: readonly CardMember[];
   capabilities: TaskDetailCapabilities;
   callbacks: TaskDetailCallbacks;
   copy: ItemPageCopy;
@@ -810,31 +798,27 @@ function PageComposer({
   const disabled = !canWriteComment(capabilities);
   const draft = useCommentDraft({
     cardId,
-    members,
     disabled,
     onCreateUpdate: callbacks.onCreateUpdate,
   });
-  const fieldRef = useRef<HTMLTextAreaElement>(null);
-  // The "@name" the caret is in, the people it matches and the one in focus.
-  const [token, setToken] = useState<MentionToken | null>(null);
-  const [active, setActive] = useState(0);
-  const candidates = mentionCandidates(token, people, copy, viewer?.userId);
-  const listOpen = candidates.length > 0;
-  const pickMention = (candidate: MentionCandidate) => {
-    if (!token) return;
-    draft.insertMention(token, candidate.name, candidate.userIds);
-    setToken(null);
-    const caret = token.from + candidate.name.length + 2;
-    requestAnimationFrame(() => {
-      fieldRef.current?.focus();
-      fieldRef.current?.setSelectionRange(caret, caret);
-    });
-  };
-  const readToken = (text: string, caret: number) => {
-    const next = mentionToken(text, caret);
-    setToken(next);
-    setActive(0);
-  };
+  const {
+    fieldRef,
+    token,
+    candidates,
+    listOpen,
+    activeIndex,
+    setActive,
+    pick: pickMention,
+    readToken,
+    dismiss,
+    handleKey,
+    openAtEnd,
+  } = useMentionField({
+    draft,
+    people,
+    copy,
+    viewerUserId: viewer?.userId,
+  });
 
   return (
     <div className="mt-3 flex gap-3">
@@ -850,7 +834,7 @@ function PageComposer({
           <MentionList
             candidates={candidates}
             query={token?.query ?? ""}
-            activeIndex={Math.min(active, candidates.length - 1)}
+            activeIndex={activeIndex}
             copy={copy}
             onPick={pickMention}
             onHover={setActive}
@@ -878,34 +862,9 @@ function PageComposer({
                 event.currentTarget.selectionStart,
               )
             }
-            onBlur={() => setToken(null)}
+            onBlur={dismiss}
             onKeyDown={(event) => {
-              if (listOpen) {
-                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                  event.preventDefault();
-                  const step = event.key === "ArrowDown" ? 1 : -1;
-                  setActive(
-                    (current) =>
-                      (current + step + candidates.length) % candidates.length,
-                  );
-                  return;
-                }
-                if (
-                  (event.key === "Enter" && !event.metaKey && !event.ctrlKey) ||
-                  event.key === "Tab"
-                ) {
-                  event.preventDefault();
-                  const pick =
-                    candidates[Math.min(active, candidates.length - 1)];
-                  if (pick) pickMention(pick);
-                  return;
-                }
-                if (event.key === "Escape") {
-                  event.preventDefault();
-                  setToken(null);
-                  return;
-                }
-              }
+              if (handleKey(event)) return;
               draft.handleKeyDown(event);
             }}
             className="h-12 min-h-11 resize-none rounded-none border-0 bg-transparent p-0.5 text-item-text shadow-none focus-visible:ring-0"
@@ -926,15 +885,7 @@ function PageComposer({
               aria-label={t.mention}
               title={t.mention}
               disabled={disabled || !people}
-              onClick={() => {
-                const field = fieldRef.current;
-                const text = draft.body;
-                const spaced =
-                  text === "" || /\s$/.test(text) ? text : `${text} `;
-                draft.changeBody(`${spaced}@`);
-                readToken(`${spaced}@`, spaced.length + 1);
-                field?.focus();
-              }}
+              onClick={openAtEnd}
               className={cn(ICON_BUTTON_CLASS, "size-7 disabled:opacity-40")}
             >
               <span aria-hidden="true" className="text-item-ui font-medium">

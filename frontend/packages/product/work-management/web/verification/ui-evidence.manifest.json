@@ -2056,7 +2056,9 @@
       "surfaceKind": "composition",
       "pureEntry": "src/components/card-detail/task-detail-panel-surface.tsx",
       "coveredSources": [
+        "src/components/card-detail/item-add-property.tsx",
         "src/components/card-detail/item-field-editors.tsx",
+        "src/components/card-detail/item-field-more-editors.tsx",
         "src/components/card-detail/item-labels-popover.tsx",
         "src/components/card-detail/task-activity-tab.tsx",
         "src/components/card-detail/task-detail-empty-state.tsx",

@@ -35,19 +35,26 @@ export type UpdateColumnInput = {
 export function createColumnApi(client: NotrelixClient) {
   const api = client.api;
   return {
-    async createColumn(input: CreateColumnInput): Promise<void> {
+    /** Creates the field and resolves with its id. */
+    async createColumn(input: CreateColumnInput): Promise<string> {
       const body: CreateFieldBody = {
         name: input.name,
-        type: input.fieldType,
+        // The domain enum is `MultiSelect`; the read model says `multi_select`.
+        type:
+          input.fieldType === "multi_select" ? "multiselect" : input.fieldType,
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
         // Backend-first cut-over (SPEC WM-V3-DEC-017): the server owns placement;
         // until WM-V3-FE-001 sends neighbor ids, omitting both appends.
       };
-      await api.post<void>(endpoints.boardFields.create(input.boardId), body, {
-        headers: { "Idempotency-Key": crypto.randomUUID() },
-      });
+      return api.post<string>(
+        endpoints.boardFields.create(input.boardId),
+        body,
+        {
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+        },
+      );
     },
 
     async updateColumn(input: UpdateColumnInput): Promise<void> {

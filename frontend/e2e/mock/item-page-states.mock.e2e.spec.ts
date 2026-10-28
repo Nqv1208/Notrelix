@@ -60,8 +60,8 @@ test.describe("Item page states (owner)", () => {
     await expect(
       page.getByText("Thêm mô tả…", { exact: true }).first(),
     ).toBeVisible();
-    // Sub-items: an empty list that says so and offers a way to add one.
-    await expect(page.getByText("Chưa có việc con.")).toBeVisible();
+    // Sub-items: no empty block, one row that offers a way to add one.
+    await expect(page.getByText("Chưa có việc con.")).toHaveCount(0);
     await expect(page.getByText("vừa xong", { exact: false })).toHaveCount(0);
     const rail = page.getByRole("complementary");
     // The due and start dates are always shown, empty or not, so a new item
