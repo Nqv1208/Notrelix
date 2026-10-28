@@ -8,7 +8,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
     /// nullable (expand step; nothing to contract). The target model is the model snapshot at this migration.
     /// </summary>
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261028180000_AddSavedFilterCriteria")]
+    [Migration("20261028190000_AddSavedFilterCriteria")]
     public partial class AddSavedFilterCriteria : Migration
     {
         /// <inheritdoc />
