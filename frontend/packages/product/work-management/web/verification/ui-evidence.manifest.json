@@ -3472,6 +3472,14 @@
           "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
         },
         {
+          "id": "from-response",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "from-response-empty-title",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
           "id": "dates",
           "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
         },

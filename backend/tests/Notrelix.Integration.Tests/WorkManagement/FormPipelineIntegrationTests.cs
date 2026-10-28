@@ -1,5 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.WorkManagement.Forms.Queries.ListForms;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +31,6 @@ using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using System.Text.Json;

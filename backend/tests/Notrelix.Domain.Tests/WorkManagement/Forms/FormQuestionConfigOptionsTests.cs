@@ -1,5 +1,4 @@
 using FluentAssertions;
-using System.Linq;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Forms;
 
