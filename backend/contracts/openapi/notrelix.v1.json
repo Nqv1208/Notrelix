@@ -27286,6 +27286,10 @@
           "category": {
             "type": "string",
             "nullable": true
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

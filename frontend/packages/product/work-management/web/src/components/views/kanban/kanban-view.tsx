@@ -83,6 +83,7 @@ import {
   boardCapabilities,
   canManageStatuses,
 } from "../../shared/board-capabilities";
+import { nextLabelColor } from "../../shared/item-display";
 import {
   kanbanCollapsedLanesKey,
   useKanbanCollapsedLanes,
@@ -1140,6 +1141,16 @@ function KanbanSelectedItemReady({
             updateCard.mutate({ cardId, patch }),
           onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
           onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
+          onCreateLabel: (name) =>
+            labelWrites
+              .createAndApply(
+                name,
+                nextLabelColor(boardLabels.data?.length ?? 0),
+              )
+              .then(
+                () => true,
+                () => false,
+              ),
           onToggleWatch: () => undefined,
           onDuplicate,
           onArchive: (cardId) => {

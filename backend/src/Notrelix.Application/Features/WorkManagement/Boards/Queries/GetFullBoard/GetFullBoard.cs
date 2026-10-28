@@ -125,6 +125,22 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .GroupBy(fieldId => fieldId)
             .Select(group => new { FieldId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(row => row.FieldId, row => row.Count, cancellationToken);
+        // Live Items per option of Select/Status fields. shortcut: counted in memory from one projected read; push into SQL if boards grow past tens of thousands of Items.
+        var optionFieldIds = fields.Where(f => f.Type is FieldType.Select or FieldType.Status).Select(f => f.Id).ToList();
+        var optionValues = await _context.BoardItemValues
+            .AsNoTracking()
+            .Where(value => optionFieldIds.Contains(value.FieldId))
+            .Join(
+                _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
+                value => value.ItemId,
+                item => item.Id,
+                (value, item) => new { value.FieldId, value.Value })
+            .ToListAsync(cancellationToken);
+        var optionCounts = optionValues
+            .Select(row => WorkItemSemanticFields.ReadOptionId(row.Value))
+            .OfType<Guid>()
+            .GroupBy(id => id)
+            .ToDictionary(group => group.Key, group => group.Count());
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
 
         var membersByCardId = cardMembers
@@ -203,7 +219,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.IsSystem,
                 column.DeletedAt != null,
                 column.Version,
-                OptionsOf(column),
+                OptionsOf(column, optionCounts),
                 valueCounts.GetValueOrDefault(column.Id)
             ))
             .ToList();
@@ -269,7 +285,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
         ));
     }
 
-    private static List<BoardFieldOptionDto>? OptionsOf(BoardField field) =>
+    private static List<BoardFieldOptionDto>? OptionsOf(BoardField field, IReadOnlyDictionary<Guid, int> optionCounts) =>
         field.Type is FieldType.Select or FieldType.Status
             ? field.Options
                 .OrderBy(option => option.Position)
@@ -279,7 +295,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                     option.Name,
                     option.Color.Value,
                     option.Position.Value,
-                    WorkStatusCategoryNames.ToName(option.Category)))
+                    WorkStatusCategoryNames.ToName(option.Category),
+                    optionCounts.GetValueOrDefault(option.Id)))
                 .ToList()
             : null;
 

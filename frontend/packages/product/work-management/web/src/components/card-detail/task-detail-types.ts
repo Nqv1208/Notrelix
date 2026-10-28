@@ -179,6 +179,8 @@ export interface TaskDetailCallbacks {
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
   /** Puts a board label on the item or takes it off; labels stay read-only without it. */
   readonly onToggleLabel?: (labelId: string, on: boolean) => void;
+  /** Creates a label of the board and puts it on the item; resolves false when it did not go through. */
+  readonly onCreateLabel?: (name: string) => Promise<boolean>;
   readonly onRefreshActivity: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after

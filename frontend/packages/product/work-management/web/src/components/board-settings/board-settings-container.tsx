@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import {
   useBoardAccess,
+  useBoardLabels,
+  useBoardLabelWrites,
   useBoardSettings,
   useBoardView,
   useFullBoard,
@@ -23,6 +25,7 @@ import type {
   BoardSettingsActions,
   BoardSettingsSection,
   BoardSettingsSpace,
+  BoardLabelsPanelProps,
   WorkspaceRulesPanelProps,
 } from "./board-settings-types";
 
@@ -152,6 +155,33 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     [copy, savedViews.views, write],
   );
 
+  const boardLabels = useBoardLabels(boardId, workspaceId);
+  const labelWrites = useBoardLabelWrites(boardId, workspaceId);
+  const labels = useMemo<BoardLabelsPanelProps>(() => {
+    // Items per label from the board read; unknown until the board is loaded.
+    const counts = board ? new Map<string, number>() : null;
+    if (counts)
+      for (const group of groups)
+        for (const card of group.cards)
+          for (const label of card.labels)
+            counts.set(label.id, (counts.get(label.id) ?? 0) + 1);
+    return {
+      status: boardLabels.isError
+        ? "error"
+        : boardLabels.isLoading
+          ? "loading"
+          : "ready",
+      labels: (boardLabels.data ?? []).map((label) => ({
+        ...label,
+        ...(counts ? { itemCount: counts.get(label.id) ?? 0 } : {}),
+      })),
+      onReload: () => void boardLabels.refetch(),
+      onCreate: labelWrites.create,
+      onUpdate: labelWrites.update,
+      onDelete: labelWrites.remove,
+    };
+  }, [board, boardLabels, groups, labelWrites]);
+
   const rules = useWorkspaceAutomations(
     workspaceId,
     boardId,
@@ -229,6 +259,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onSelectView={props.onSelectView}
       actions={actions}
       workspaceRules={workspaceRules}
+      labels={labels}
       kanbanSettings={
         <KanbanSettingsPanel
           copy={laneCopy}
