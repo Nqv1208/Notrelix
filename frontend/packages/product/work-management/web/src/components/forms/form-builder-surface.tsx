@@ -562,7 +562,6 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
           <QuestionPanel
             key={selected.id}
             copy={copy}
-            form={form}
             q={selected}
             n={questions.findIndex((q) => q.id === selected.id) + 1}
             fields={fields}
@@ -792,7 +791,6 @@ function QuestionRow({
 
 function QuestionPanel({
   copy,
-  form,
   q,
   n,
   fields,
@@ -802,7 +800,6 @@ function QuestionPanel({
   onRemove,
 }: {
   copy: FormsCopy;
-  form: FormDetail;
   q: FormQuestion;
   n: number;
   fields: readonly FormBoardField[];
@@ -1247,7 +1244,6 @@ function QuestionPanel({
           </button>
         </div>
       )}
-      <span className="sr-only">{form.title}</span>
     </aside>
   );
 }
