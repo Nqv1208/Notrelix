@@ -49,6 +49,8 @@ export interface MainTableSurfaceProps {
   canEdit: boolean;
   /** In-place editors of assignee, due date and priority; absent = read-only. */
   editors?: TableEditors;
+  /** Saves a row's title typed in place; absent = titles are read-only here. */
+  onRename?: (rowId: string, title: string) => void;
   /** The viewer may add items. */
   canCreate: boolean;
   /** Opens the full "Add item" form; without it "Add item" starts the first group's inline row. */
@@ -142,6 +144,7 @@ export function MainTableSurface({
   openItemId,
   canEdit,
   editors,
+  onRename,
   canCreate,
   onOpenCreateDialog,
   onNoGroup,
@@ -373,6 +376,11 @@ export function MainTableSurface({
                           tabStop={tabStop === row.id}
                           canEdit={canEdit}
                           editors={editors}
+                          onRename={
+                            onRename
+                              ? (title) => onRename(row.id, title)
+                              : undefined
+                          }
                           actions={
                             rowActions
                               ? {

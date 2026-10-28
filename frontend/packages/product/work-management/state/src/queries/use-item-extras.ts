@@ -90,7 +90,7 @@ export function useItemFollowing(itemId: string, workspaceId: string) {
 const approvalsKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-approvals", itemId);
 
-/** The approvals asked about the item, and the write that asks a person for one. */
+/** The approvals asked about the item, the write that asks a person for one, and the answers to it. */
 export function useItemApprovals(itemId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();
   const queryClient = useQueryClient();
@@ -109,12 +109,48 @@ export function useItemApprovals(itemId: string, workspaceId: string) {
       });
     },
   });
+  const refresh = () => {
+    void queryClient.invalidateQueries({
+      queryKey: approvalsKey(workspaceId, itemId),
+    });
+    // The item's history and the feeds that list approvals waiting for a person change with it.
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.cardActivity(workspaceId, itemId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "workspace-feed"),
+    });
+  };
+  const decide = useMutation({
+    mutationFn: (input: {
+      requestId: string;
+      decision: "approve" | "reject";
+      comment: string | null;
+    }) =>
+      itemExtras.decideApproval(
+        workspaceId,
+        input.requestId,
+        input.decision,
+        input.comment,
+      ),
+    onSettled: refresh,
+  });
+  const cancel = useMutation({
+    mutationFn: (requestId: string) => itemExtras.cancelApproval(requestId),
+    onSettled: refresh,
+  });
   return {
     approvals: query.data,
     request: request.mutate,
     requesting: request.isPending,
+    /** The named approver approves or rejects, with an optional comment. */
+    decide: decide.mutate,
+    /** The requester withdraws a pending request. */
+    cancel: cancel.mutate,
     /** The server's refusal of the last request (a person already asked, an approver who cannot read the item). */
     error: request.error,
+    /** The server's refusal of the last decision or cancel (already decided, not allowed). */
+    answerError: decide.error ?? cancel.error,
   };
 }
 

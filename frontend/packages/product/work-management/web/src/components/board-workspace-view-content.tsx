@@ -1,4 +1,5 @@
 import { useFullBoard } from "@notrelix/work-management-state";
+import { BoardViewerContext } from "./shared/board-viewer";
 import { MainTableView } from "./views/table/main-table-view";
 import { BoardCalendarView } from "./views/calendar/board-calendar-view";
 import { KanbanView } from "./views/kanban/kanban-view";
@@ -54,7 +55,15 @@ export function BoardScreen(props: BoardScreenProps) {
   return <BoardWorkspaceViewContent {...props} />;
 }
 
-export function BoardWorkspaceViewContent({
+export function BoardWorkspaceViewContent(props: BoardScreenProps) {
+  return (
+    <BoardViewerContext.Provider value={props.currentUserId ?? null}>
+      <BoardViewSwitch {...props} />
+    </BoardViewerContext.Provider>
+  );
+}
+
+function BoardViewSwitch({
   workspaceId,
   boardId,
   view,

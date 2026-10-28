@@ -607,7 +607,10 @@ describe("MainTableView on the ERP board", () => {
         name: /Chuyển dữ liệu khách hàng/,
       }),
     );
-    expect(onItem).toHaveBeenCalledWith(erpItemId("ERP-142"));
+    // An editor's click waits out a possible double click (rename).
+    await waitFor(() =>
+      expect(onItem).toHaveBeenCalledWith(erpItemId("ERP-142")),
+    );
     await screen.findByRole("dialog", {
       name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
     });
