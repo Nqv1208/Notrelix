@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSav
 public record RestoreSavedFilterCommand(Guid FilterId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);
 }
 
@@ -33,7 +33,7 @@ public class RestoreSavedFilterCommandHandler : IRequestHandler<RestoreSavedFilt
         var filter = await _context.SavedFilters
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(f => f.Id == request.FilterId && f.AccountId == accountId && f.WorkspaceId == workspaceId, ct);
-        if (filter is null) throw new NotFoundException("SavedFilter", request.FilterId);
+        if (filter is null || !SavedFilterAccess.IsVisibleTo(filter, _requestContext.UserId)) throw new NotFoundException("SavedFilter", request.FilterId);
 
         filter.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

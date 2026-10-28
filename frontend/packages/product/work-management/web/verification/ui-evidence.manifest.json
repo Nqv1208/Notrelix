@@ -67,6 +67,11 @@
         "path": "src/components/item-lifecycle/use-item-removal.tsx",
         "category": "container",
         "reason": "Stateful hook owning the delete and move requests, their commands and toasts, and rendering the registered DeleteItemDialog and MoveItemDialog."
+      },
+      {
+        "path": "src/components/saved-filters/saved-filters-control.tsx",
+        "category": "container",
+        "reason": "Container composing SavedFiltersMenu with the saved-filter read and writes (useSavedFilters, useSavedFilterWrites) and the delete-with-undo toast; the filter bars of the table, Kanban and calendar views host it."
       }
     ]
   },
@@ -1070,6 +1075,111 @@
         {
           "id": "no-results",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.saved-filters.menu",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/saved-filters/saved-filters-menu.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-saved-filters-menu--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-saved-filters-menu--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-saved-filters-menu--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "ReadOnly", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "save",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "save-failed",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "save-name",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "apply",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "rename",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "rename-failed",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "share",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "locale",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
         }
       ]
     },
@@ -2247,6 +2357,7 @@
       "surfaceKind": "composition",
       "pureEntry": "src/components/item-page/item-page-surface.tsx",
       "coveredSources": [
+        "src/components/checklists/item-checklists.tsx",
         "src/components/comment-thread/reaction-bar.tsx",
         "src/components/comment-thread/reply-box.tsx",
         "src/components/item-page/item-page-activity.tsx",

@@ -33,6 +33,8 @@
  *   checklistItems.create   — POST /checklists/:id/items (returns string itemId)
  *   checklistItems.update   — PATCH /checklist-items/:id
  *   checklistItems.delete   — DELETE /checklist-items/:id
+ *   checklistItems.toggle   — POST /checklist-items/:id/toggle
+ *   checklists.move / checklistItems.move — POST .../move (neighbour ids)
  *   comments.list           — GET /board-items/:cardId/comments
  *   comments.create         — POST /board-items/:cardId/comments (returns string commentId)
  *   comments.update         — PATCH /comments/:id
@@ -1389,6 +1391,75 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const deleted = store.deleteChecklistItem(params.id);
       if (!deleted) return notFound("ChecklistItem not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /checklist-items/:id/toggle ─────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "checklistItems.toggle",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.ToggleItem",
+    } as any,
+    method: "POST",
+    route: "/checklist-items/:id/toggle",
+    async handle({ params, store }) {
+      if (!store.toggleChecklistItem(params.id))
+        return notFound("ChecklistItem not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /checklists/:id/move ────────────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { previousSiblingId?: string | null; nextSiblingId?: string | null },
+    void
+  >({
+    id: "checklists.move",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.Move",
+    } as any,
+    method: "POST",
+    route: "/checklists/:id/move",
+    async handle({ params, body, store }) {
+      const placement = body ?? {};
+      const moved = store.moveChecklist(
+        params.id,
+        placement.previousSiblingId ?? null,
+        placement.nextSiblingId ?? null,
+      );
+      if (!moved) return notFound("Checklist not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /checklist-items/:id/move ───────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { previousSiblingId?: string | null; nextSiblingId?: string | null },
+    void
+  >({
+    id: "checklistItems.move",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.MoveItem",
+    } as any,
+    method: "POST",
+    route: "/checklist-items/:id/move",
+    async handle({ params, body, store }) {
+      const placement = body ?? {};
+      const moved = store.moveChecklistItem(
+        params.id,
+        placement.previousSiblingId ?? null,
+        placement.nextSiblingId ?? null,
+      );
+      if (!moved) return notFound("ChecklistItem not found");
       return ok<void>(undefined);
     },
   }),

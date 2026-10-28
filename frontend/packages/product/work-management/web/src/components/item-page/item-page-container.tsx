@@ -9,6 +9,7 @@ import {
   useCardFiles,
   useDeleteCardFile,
   useCardLabelWrites,
+  useChecklistWrites,
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useToggleCommentReaction,
@@ -294,6 +295,12 @@ function ItemPageReady({
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
+  const checklistWrites = useChecklistWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+    card.checklists,
+  );
   const follow = useItemFollowing(card.id, card.workspaceId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
   const links = useItemLinks(card.id, card.workspaceId, card.boardId);
@@ -647,6 +654,12 @@ function ItemPageReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          checklists: {
+            ...checklistWrites,
+            checklists: card.checklists,
+            canEdit: capabilities.canEditFields,
+            canConvert: !card.parentItemId,
+          },
           childItems: children.data?.map((child) => ({
             ...child,
             itemKey: child.key,

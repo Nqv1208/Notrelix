@@ -25,6 +25,7 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useChecklistWrites,
   useItemApprovals,
   useItemLinks,
   usePeopleDirectory,
@@ -78,6 +79,7 @@ import {
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanToolbar } from "./kanban-toolbar";
+import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { buildCardLink } from "./kanban-view-helpers";
 import {
@@ -770,6 +772,21 @@ export function KanbanView({
             if (onGroupByChange) onGroupByChange(fieldId);
             else setLocalGroupBy(fieldId);
           }}
+          savedFilters={
+            <SavedFiltersControl
+              workspaceId={workspaceId}
+              boardId={boardId}
+              filter={filterValue}
+              groupBy={kanban.groupByField?.id ?? null}
+              canEdit={capabilities.canEditFields}
+              onApply={(criteria) => {
+                setFilterValue(criteria.filter || undefined);
+                if (!criteria.groupBy) return;
+                if (onGroupByChange) onGroupByChange(criteria.groupBy);
+                else setLocalGroupBy(criteria.groupBy);
+              }}
+            />
+          }
           canAdd={capabilities.canCreateCard}
           onAddItem={() => setCreate({ kind: "toolbar" })}
           noResults={
@@ -1067,6 +1084,12 @@ function KanbanSelectedItemReady({
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
+  const checklistWrites = useChecklistWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+    card.checklists,
+  );
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
   const boardLabels = useBoardLabels(card.boardId, card.workspaceId);
   const labelWrites = useCardLabelWrites(
@@ -1110,6 +1133,12 @@ function KanbanSelectedItemReady({
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
           ...extras.detailData,
+          checklists: {
+            ...checklistWrites,
+            checklists: card.checklists,
+            canEdit: capabilities.canEditFields,
+            canConvert: !card.parentItemId,
+          },
           boardLabels: boardLabels.data,
           links: itemLinks.data,
           linkCandidates,

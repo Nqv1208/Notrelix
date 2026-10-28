@@ -1,4 +1,5 @@
 import type { ItemPageCopy } from "../item-page/item-page.copy";
+import type { ItemChecklistsModel } from "../checklists/item-checklists";
 import type {
   ItemPagePeople,
   ItemPageUpload,
@@ -145,6 +146,8 @@ export interface TaskDetailData {
   readonly fileNotice?: string | null;
   /** Who a comment can mention (people who can view the board); absent: the item's own people. */
   readonly people?: ItemPagePeople;
+  /** The item's checklists with their writes; absent: the section is not shown. */
+  readonly checklists?: ItemChecklistsModel;
 }
 
 /** A custom property the sheet asks the board to create. */

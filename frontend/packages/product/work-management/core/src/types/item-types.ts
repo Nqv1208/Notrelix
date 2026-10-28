@@ -50,6 +50,8 @@ export interface Card {
   statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
   /** Due date and time as an ISO 8601 string. */
   dueAt?: string | null;
+  /** Checklist items done over all items; null when the item has no checklist item. */
+  checklistProgress?: { done: number; total: number } | null;
   /** Child item progress; a card shows it only when `total > 0`. */
   childProgress?: { done: number; total: number } | null;
 }

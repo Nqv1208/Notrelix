@@ -126,6 +126,7 @@ import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { MockBoardSavedViews } from "./mock-board-saved-views";
+import { MockBoardSavedFilters } from "./mock-board-saved-filters";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -327,6 +328,8 @@ export class MockStore {
   readonly sharing = new MockBoardSharing();
   /** The saved views of the boards (shared with members or private). */
   readonly savedViews = new MockBoardSavedViews(() => this);
+  /** The saved filters of the boards (personal or shared with the board). */
+  readonly savedFilters = new MockBoardSavedFilters(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
@@ -1793,6 +1796,7 @@ export class MockStore {
     this.pagesById.clear();
     this.boardViewsByBoardId.clear();
     this.savedViews.clear();
+    this.savedFilters.clear();
     this.columnsById.clear();
     this.labelsById.clear();
     this.checklistsById.clear();
@@ -3249,6 +3253,48 @@ export class MockStore {
       item.id,
     );
     this.checklistItemsById.delete(itemId);
+    return true;
+  }
+
+  toggleChecklistItem(itemId: string): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    return this.updateChecklistItem(itemId, { isChecked: !item.isChecked });
+  }
+
+  /** Puts a list between two siblings of its item; the others are renumbered. */
+  moveChecklist(
+    checklistId: string,
+    previousSiblingId: string | null,
+    nextSiblingId: string | null,
+  ): boolean {
+    const chk = this.checklistsById.get(checklistId);
+    if (!chk) return false;
+    const ids = this.getCardChecklists(chk.cardId)
+      .map((entry) => entry.id)
+      .filter((id) => id !== checklistId);
+    const at = placeAmong(ids, previousSiblingId, nextSiblingId);
+    ids.splice(at, 0, checklistId);
+    ids.forEach((id, index) => {
+      const current = this.checklistsById.get(id)!;
+      this.checklistsById.set(id, { ...current, position: index + 1 });
+    });
+    return true;
+  }
+
+  /** Puts an item between two siblings of its list. */
+  moveChecklistItem(
+    itemId: string,
+    previousSiblingId: string | null,
+    nextSiblingId: string | null,
+  ): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    const set = this.checklistItemIdsByChecklistId.get(item.checklistId);
+    if (!set) return false;
+    const ids = Array.from(set).filter((id) => id !== itemId);
+    ids.splice(placeAmong(ids, previousSiblingId, nextSiblingId), 0, itemId);
+    this.checklistItemIdsByChecklistId.set(item.checklistId, new Set(ids));
     return true;
   }
 
@@ -4785,4 +4831,16 @@ export class MockStore {
       ...this.spaces.snapshot(),
     };
   }
+}
+
+/** Where an entry lands among `ids` given its neighbours (the end when neither is known). */
+function placeAmong(
+  ids: readonly string[],
+  previousSiblingId: string | null,
+  nextSiblingId: string | null,
+): number {
+  const previous = previousSiblingId ? ids.indexOf(previousSiblingId) : -1;
+  if (previous >= 0) return previous + 1;
+  const next = nextSiblingId ? ids.indexOf(nextSiblingId) : -1;
+  return next >= 0 ? next : ids.length;
 }

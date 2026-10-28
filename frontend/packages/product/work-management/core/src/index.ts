@@ -12,6 +12,7 @@ export * from "./types/field-types";
 export * from "./types/group-types";
 export * from "./types/item-types";
 export * from "./types/label-types";
+export * from "./types/saved-filter-types";
 export * from "./types/shared-types";
 export * from "./types/board-access-types";
 export * from "./types/board-settings-types";
@@ -28,6 +29,7 @@ export * from "./utils/board-cache-updaters";
 export * from "./utils/table-projection";
 export * from "./utils/person-initials";
 export * from "./utils/item-file-rules";
+export * from "./utils/checklist-ops";
 
 // Kanban types
 export * from "./types/kanban-types";

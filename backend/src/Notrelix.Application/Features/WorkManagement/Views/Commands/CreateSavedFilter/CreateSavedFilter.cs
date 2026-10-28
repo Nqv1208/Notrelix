@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.CreateSavedFilter;
 
 [IdempotencyOperation("work-management.views.create-saved-filter.v1")]
-public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null)
+public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null, string? Criteria = null, SavedFilterVisibility Visibility = SavedFilterVisibility.Private)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     // A saved filter is a view (Editor), not Board management.
@@ -39,7 +39,9 @@ public class CreateSavedFilterCommandHandler : IRequestHandler<CreateSavedFilter
             request.Rules ?? [],
             _requestContext.UserId,
             _dateTimeProvider.UtcNow,
-            request.ViewId);
+            request.ViewId,
+            visibility: request.Visibility,
+            criteria: request.Criteria);
 
         _context.SavedFilters.Add(filter);
         return Result<Guid>.Success(filter.Id);

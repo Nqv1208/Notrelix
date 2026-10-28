@@ -68,6 +68,7 @@ export * from "./components/views/kanban/kanban-filter-menu";
 export * from "./components/views/kanban/kanban-skeleton";
 export * from "./components/views/kanban/kanban-toolbar";
 export { kanbanToolbarCatalog } from "./components/views/kanban/kanban-toolbar.catalog";
+export { savedFiltersCatalog } from "./components/saved-filters/saved-filters.catalog";
 export {
   kanbanToolbarCopy,
   type KanbanToolbarCopy,
@@ -128,6 +129,7 @@ export * from "./components/card-detail/task-activity-tab";
 export * from "./components/card-detail/task-updates-tab";
 export * from "./components/card-detail/update-composer";
 export { itemSheetCatalog } from "./components/card-detail/item-sheet.catalog";
+export { itemChecklistsCatalog } from "./components/checklists/item-checklists.catalog";
 export {
   itemSheetCopy,
   type ItemSheetCopy,

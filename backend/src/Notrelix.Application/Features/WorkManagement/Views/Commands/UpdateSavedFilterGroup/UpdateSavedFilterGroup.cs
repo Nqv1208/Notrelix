@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSave
 public record UpdateSavedFilterGroupCommand(Guid FilterId, GroupRule? GroupRule, long ExpectedVersion)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
@@ -30,7 +30,7 @@ public class UpdateSavedFilterGroupCommandHandler : IRequestHandler<UpdateSavedF
     {
         var filter = await _context.SavedFilters
             .FirstOrDefaultAsync(f => f.Id == request.FilterId, ct);
-        if (filter is null) throw new NotFoundException("SavedFilter", request.FilterId);
+        if (filter is null || !SavedFilterAccess.IsVisibleTo(filter, _requestContext.UserId)) throw new NotFoundException("SavedFilter", request.FilterId);
 
         filter.UpdateGroup(request.GroupRule, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
