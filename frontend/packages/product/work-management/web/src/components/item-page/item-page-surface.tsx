@@ -20,6 +20,8 @@ import {
   ItemPageReadOnlyNotice,
   ItemPageTitleBlock,
 } from "./item-page-header";
+import { ItemChecklists } from "../checklists/item-checklists";
+import { checklistCopy } from "../checklists/item-checklists.copy";
 import { ItemPageRail } from "./item-page-rail";
 import {
   ItemPageChildItems,
@@ -325,6 +327,14 @@ export function ItemPageSurface({
                     callbacks.onRenameTitle(card.id, { descriptionMd })
                   }
                 />
+                {detailData.checklists ? (
+                  <ItemChecklists
+                    model={detailData.checklists}
+                    copy={checklistCopy(
+                      sheetCopy.locale === "vi" ? "vi" : "en",
+                    )}
+                  />
+                ) : null}
                 {/* Sub-items are one level: a sub-item lists none. */}
                 {!card.parentItemId &&
                 (detailData.childItems !== undefined ||

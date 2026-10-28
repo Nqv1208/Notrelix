@@ -5,7 +5,6 @@ export * from "./use-board-templates";
 export * from "./use-board-trash";
 export * from "./use-card";
 export * from "./use-card-activity";
-export * from "./use-card-checklists";
 export * from "./use-card-comments";
 export * from "./use-card-detail";
 export * from "./use-card-files";

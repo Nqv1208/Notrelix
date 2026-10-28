@@ -8,6 +8,8 @@ export interface ChecklistItem {
 export interface Checklist {
   id: string;
   title: string;
+  /** Aggregate version of the list and its items; a write sends it as `expectedVersion`. */
+  version?: number;
   items: ChecklistItem[];
   position: number;
 }

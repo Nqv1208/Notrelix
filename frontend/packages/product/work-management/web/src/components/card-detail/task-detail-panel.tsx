@@ -8,6 +8,7 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useChecklistWrites,
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useToggleCommentReaction,
@@ -196,6 +197,12 @@ function TaskDetailReadyContainer({
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
+  const checklistWrites = useChecklistWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+    card.checklists,
+  );
 
   return (
     <TaskDetailPanelSurface
@@ -215,6 +222,12 @@ function TaskDetailReadyContainer({
         activityError: activity.isError && activity.data === undefined,
         updates: updates.data ?? card.updates,
         updatesLoading: updates.isLoading,
+        checklists: {
+          ...checklistWrites,
+          checklists: card.checklists,
+          canEdit: capabilities.canEditFields,
+          canConvert: !card.parentItemId,
+        },
       }}
       callbacks={{
         onClose,

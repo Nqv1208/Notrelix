@@ -277,17 +277,15 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     await checklistApi.createChecklistItem({
       checklistId: chkId,
       title: "Verify tests",
+      expectedVersion: 0,
     });
     const itemId = (await checklistApi.getChecklists(createdCard.id))[0]!
       .items[0]!.id;
-    await checklistApi.updateChecklistItem({
-      itemId,
-      isChecked: true,
-    });
+    await checklistApi.toggleChecklistItem({ itemId, expectedVersion: 0 });
     const checklists = await checklistApi.getChecklists(createdCard.id);
     const foundChk = checklists.find((c) => c.id === chkId);
-    expect(foundChk?.items[0]?.isChecked).toBe(true);
-    await checklistApi.deleteChecklistItem(itemId);
+    expect(foundChk?.items[0]?.isDone).toBe(true);
+    await checklistApi.deleteChecklistItem({ itemId, expectedVersion: 0 });
     await checklistApi.deleteChecklist(chkId);
 
     // Comments / Updates
