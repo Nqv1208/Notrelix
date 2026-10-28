@@ -110,7 +110,7 @@ public class BoardReadContractOpenApiTests
     private static JsonElement Load()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "contracts", "openapi", "notrelix.v1.json")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "backend.slnx")))
             dir = dir.Parent;
         dir.Should().NotBeNull("the checked-in producer contract must be found");
         return JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!.FullName, "contracts", "openapi", "notrelix.v1.json"))).RootElement;

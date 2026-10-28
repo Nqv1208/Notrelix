@@ -66,7 +66,7 @@ public class PageHistoryAndTemplatesContractOpenApiTests
     {
         // Resolved from this source file, so the lookup does not depend on where build output goes.
         var dir = new DirectoryInfo(Path.GetDirectoryName(sourceFile)!);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "contracts", "openapi", "notrelix.v1.json")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "backend.slnx")))
             dir = dir.Parent;
         dir.Should().NotBeNull("the checked-in producer contract must be found");
         return JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!.FullName, "contracts", "openapi", "notrelix.v1.json"))).RootElement.Clone();
