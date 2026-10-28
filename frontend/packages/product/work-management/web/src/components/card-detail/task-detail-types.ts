@@ -178,6 +178,12 @@ export interface TaskDetailCallbacks {
       readonly onSettled?: () => void;
     },
   ) => void;
+  /** Adds (`on`) or withdraws the viewer's emoji on a comment; absent: reactions are read-only. */
+  readonly onToggleReaction?: (
+    updateId: string,
+    emoji: string,
+    on: boolean,
+  ) => void;
   readonly onUpdateUpdate: (updateId: string, body: string) => void;
   readonly onDeleteUpdate: (updateId: string) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;

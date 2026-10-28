@@ -10,6 +10,7 @@ import {
   useCardLabelWrites,
   useCreateCardUpdate,
   useDeleteCardUpdate,
+  useToggleCommentReaction,
   useDuplicateCard,
   useFullBoard,
   useItemChildItems,
@@ -289,6 +290,7 @@ function ItemPageReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
   const follow = useItemFollowing(card.id, card.workspaceId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
@@ -547,6 +549,8 @@ function ItemPageReady({
         onSuccess: options?.onSuccess,
         onSettled: options?.onSettled,
       }),
+    onToggleReaction: (commentId, emoji, on) =>
+      toggleReaction.mutate({ commentId, emoji, on }),
     onUpdateUpdate: (updateId, body) => updateUpdate.mutate({ updateId, body }),
     onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
     onSelectTab: () => undefined,

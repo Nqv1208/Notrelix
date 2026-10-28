@@ -1,4 +1,5 @@
 import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
+import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
 
 /**
  * Item side sheet copy, vi and en, registered as the `item-sheet` catalog
@@ -8,6 +9,8 @@ import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
  * `fillSheetCopy`; counted messages carry `_one` / `_other` forms.
  */
 export const en = {
+  /** Replies and reactions of a comment. */
+  thread: threadEn,
   /** BCP 47 tag the sheet formats times with. */
   locale: "en",
   /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
@@ -134,6 +137,7 @@ export const en = {
 export type ItemSheetCopy = typeof en;
 
 export const vi: ItemSheetCopy = {
+  thread: threadVi,
   locale: "vi",
   activityEvents: ACTIVITY_WORDS_VI,
   dialogLabel: "Chi tiết công việc",

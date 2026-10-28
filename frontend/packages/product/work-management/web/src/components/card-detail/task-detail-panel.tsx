@@ -10,6 +10,7 @@ import {
   useCardFiles,
   useCreateCardUpdate,
   useDeleteCardUpdate,
+  useToggleCommentReaction,
   useDuplicateCard,
   useUpdateCard,
   useUpdateCardUpdate,
@@ -194,6 +195,7 @@ function TaskDetailReadyContainer({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
 
   return (
     <TaskDetailPanelSurface
@@ -233,6 +235,8 @@ function TaskDetailReadyContainer({
             onSuccess: options?.onSuccess,
             onSettled: options?.onSettled,
           }),
+        onToggleReaction: (commentId, emoji, on) =>
+          toggleReaction.mutate({ commentId, emoji, on }),
         onUpdateUpdate: (updateId, body) =>
           updateUpdate.mutate({ updateId, body }),
         onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),

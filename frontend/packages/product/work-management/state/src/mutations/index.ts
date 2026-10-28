@@ -6,6 +6,7 @@ export * from "./use-create-group";
 export * from "./use-create-kanban-column";
 export * from "./use-delete-card";
 export * from "./use-delete-card-update";
+export * from "./use-toggle-comment-reaction";
 export * from "./use-delete-column";
 export * from "./use-delete-group";
 export * from "./use-delete-kanban-column";

@@ -127,6 +127,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,
+    useToggleCommentReaction: mutation,
   };
 });
 
