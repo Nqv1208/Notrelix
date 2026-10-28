@@ -1433,6 +1433,9 @@ export class MockStore {
         userId: comment.userId,
         contentMd: comment.contentMd,
         createdAt: comment.createdAt,
+        ...(comment.reactions
+          ? { reactions: comment.reactions.map((r) => ({ ...r })) }
+          : {}),
       });
     }
     for (const comment of ERP_EXTRA_COMMENTS) {
