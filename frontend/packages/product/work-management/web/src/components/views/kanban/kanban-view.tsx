@@ -25,6 +25,7 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useChecklistWrites,
   useItemApprovals,
   useItemLinks,
   usePeopleDirectory,
@@ -1066,6 +1067,12 @@ function KanbanSelectedItemReady({
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
+  const checklistWrites = useChecklistWrites(
+    card.id,
+    card.boardId,
+    card.workspaceId,
+    card.checklists,
+  );
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
   const boardLabels = useBoardLabels(card.boardId, card.workspaceId);
   const labelWrites = useCardLabelWrites(
@@ -1107,6 +1114,12 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          checklists: {
+            ...checklistWrites,
+            checklists: card.checklists,
+            canEdit: capabilities.canEditFields,
+            canConvert: !card.parentItemId,
+          },
           boardLabels: boardLabels.data,
           links: itemLinks.data,
           linkCandidates,
