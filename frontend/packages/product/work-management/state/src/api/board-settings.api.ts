@@ -392,12 +392,22 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       fieldId: string,
       optionId: string,
       changes: { name?: string; color?: string },
-    ) =>
-      api.patch<void>(
+    ) => {
+      // The producer replaces name and colour together: send the one not edited too.
+      const current = fieldOf(s, fieldId).options.find(
+        (option) => option.id === optionId,
+      );
+      return api.patch<void>(
         endpoints.boardFields.option(s.boardId, fieldId, optionId),
-        { ...changes, expectedVersion: optionVersion(s, fieldId) },
+        {
+          name: current?.name,
+          color: current?.color,
+          ...changes,
+          expectedVersion: optionVersion(s, fieldId),
+        },
         quiet,
-      ),
+      );
+    },
     deleteOption: (s: BoardSettingsDto, fieldId: string, optionId: string) =>
       api.delete<void>(
         `${endpoints.boardFields.option(s.boardId, fieldId, optionId)}?expectedVersion=${optionVersion(s, fieldId)}`,
