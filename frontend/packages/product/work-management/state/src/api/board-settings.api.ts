@@ -116,7 +116,7 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     id: option.id ?? "",
     name: option.name ?? "",
     color: option.color ?? DEFAULT_COLOR,
-    itemCount: 0,
+    itemCount: option.itemCount ?? 0,
   }));
   return {
     id: column.id ?? "",
