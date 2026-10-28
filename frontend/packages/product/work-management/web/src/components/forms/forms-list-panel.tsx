@@ -208,7 +208,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-line bg-popover">
-            <div className="hidden min-h-[34px] grid-cols-[minmax(0,1fr)_110px_120px_230px] items-center gap-2.5 bg-background px-3.5 text-metadata font-semibold text-meta-foreground @[640px]:grid">
+            <div className="hidden min-h-[34px] grid-cols-[minmax(0,1fr)_110px_120px_290px] items-center gap-2.5 bg-background px-3.5 text-metadata font-semibold text-meta-foreground @[640px]:grid">
               <span>{t.colForm}</span>
               <span>{t.colStatus}</span>
               <span>{t.colResponses}</span>
@@ -222,7 +222,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                 >
                   <div
                     className={cn(
-                      "grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 px-3.5 py-2 @[640px]:grid-cols-[minmax(0,1fr)_110px_120px_230px] @[640px]:py-0",
+                      "grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 px-3.5 py-2 @[640px]:grid-cols-[minmax(0,1fr)_110px_120px_290px] @[640px]:py-0",
                       form.status === "draft" && "bg-brand-subtle/40",
                     )}
                   >
@@ -267,7 +267,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                         {responsesText(form, copy)}
                       </button>
                     )}
-                    <span className="col-span-2 flex flex-wrap items-center justify-end gap-1 @[640px]:col-span-1">
+                    <span className="col-span-2 flex flex-wrap items-center justify-end gap-1 @[640px]:col-span-1 @[640px]:flex-nowrap">
                       {form.status === "published" ? (
                         <button
                           type="button"
