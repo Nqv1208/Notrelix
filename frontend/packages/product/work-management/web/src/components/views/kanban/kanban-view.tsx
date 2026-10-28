@@ -25,7 +25,9 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useItemApprovals,
   useItemLinks,
+  usePeopleDirectory,
   useAddFieldOption,
   useArchiveCard,
   useCreateCardUpdate,
@@ -59,6 +61,7 @@ import type {
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
 import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
 import { findItemFields } from "../../card-detail/item-field-editors";
+import { useBoardViewerId } from "../../shared/board-viewer";
 import { KanbanBoard } from "./kanban-board";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
@@ -1074,6 +1077,9 @@ function KanbanSelectedItemReady({
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
   const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
+  const approvals = useItemApprovals(card.id, card.workspaceId);
+  const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
+  const viewerUserId = useBoardViewerId();
   const linksCopy = useItemPageCopy();
   const removal = useItemRemoval({
     workspaceId: card.workspaceId,
@@ -1104,12 +1110,32 @@ function KanbanSelectedItemReady({
           links: itemLinks.data,
           linkCandidates,
           linksCopy,
+          viewerUserId,
+          approvals: approvals.approvals?.map((approval) => ({
+            id: approval.id,
+            status: approval.status,
+            approverUserId: approval.approverUserId,
+            approverName:
+              directory?.people.find(
+                (person) => person.userId === approval.approverUserId,
+              )?.name ??
+              board.members.find(
+                (member) => member.userId === approval.approverUserId,
+              )?.name ??
+              null,
+            decisionNote: approval.decisionNote,
+            requestedByUserId: approval.requestedByUserId,
+          })),
+          approvalAnswerError: approvals.answerError !== null,
         }}
         callbacks={{
           onClose,
           onAddLink: (itemId, relation) =>
             itemLinks.addLink({ itemId, relation }),
           onRemoveLink: (linkId) => itemLinks.removeLink(linkId),
+          onDecideApproval: (requestId, decision, comment) =>
+            approvals.decide({ requestId, decision, comment }),
+          onCancelApproval: (requestId) => approvals.cancel(requestId),
           onRenameTitle: (cardId, patch) =>
             updateCard.mutate({ cardId, patch }),
           onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),

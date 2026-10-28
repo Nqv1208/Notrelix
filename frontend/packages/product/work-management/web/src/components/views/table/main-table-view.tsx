@@ -732,6 +732,14 @@ export function MainTableView({
           openItemId={selectedItemId}
           canEdit={capabilities.canEditFields}
           editors={editors}
+          onRename={
+            capabilities.canEditFields
+              ? (cardId, title) => {
+                  noteTitle(cardId);
+                  updateCard.mutate({ cardId, patch: { title } });
+                }
+              : undefined
+          }
           canCreate={capabilities.canCreateCard}
           onOpenCreateDialog={() => setCreateOpen(true)}
           canArchive={capabilities.canDelete}

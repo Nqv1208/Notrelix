@@ -82,6 +82,8 @@ export interface ItemSheetApproval {
   readonly status: "pending" | "approved" | "rejected" | "cancelled";
   readonly approverUserId: string | null;
   readonly approverName: string | null;
+  /** Who asked: only they may cancel a pending request. */
+  readonly requestedByUserId?: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote?: string | null;
 }
@@ -121,6 +123,10 @@ export interface TaskDetailData {
   readonly approvals?: readonly ItemSheetApproval[];
   /** Why the last approval request was refused, when it was. */
   readonly approvalError?: "alreadyAsked" | "failed" | null;
+  /** Why the last approve, reject or cancel was refused, when it was. */
+  readonly approvalAnswerError?: boolean;
+  /** The signed-in member: the named approver decides, the requester cancels. */
+  readonly viewerUserId?: string | null;
   /** Links to other items; absent: the page says links are not available. */
   readonly links?: readonly ItemSheetLink[];
   /** Items a new link can point at. */
@@ -142,6 +148,14 @@ export interface TaskDetailCallbacks {
   readonly onToggleWatch: (watched: boolean) => void;
   /** Asks a board member to approve the item; "Request approval" is absent without it. */
   readonly onRequestApproval?: (approverUserId: string) => void;
+  /** The named approver approves or rejects a pending request; the buttons are absent without it. */
+  readonly onDecideApproval?: (
+    requestId: string,
+    decision: "approve" | "reject",
+    comment: string | null,
+  ) => void;
+  /** The requester cancels a pending request; the button is absent without it. */
+  readonly onCancelApproval?: (requestId: string) => void;
   /** Ticks or unticks a child item; the checkboxes stay inert without it. */
   readonly onToggleChildItem?: (childId: string, done: boolean) => void;
   /** Adds a child item with this title; the input stays inert without it. */
