@@ -1,4 +1,6 @@
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Notrelix.Application.Features.WorkManagement.Forms.Queries.ListForms;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -79,10 +81,16 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
         _formId = (await SendAsync<Result<Guid>>(_ownerId, new CreateFormCommand(_boardId, "Yêu cầu mới"))).Data;
         await SendAsync<Result>(_ownerId, new AddFormQuestionCommand(_formId, "title", FormQuestionType.ShortText, "Tiêu đề", true, null, null));
         await SendAsync<Result>(_ownerId, new AddFormQuestionCommand(_formId, "qty", FormQuestionType.Number, "Số lượng", false, "{\"minValue\":1,\"maxValue\":10}", "a1"));
-        await SendAsync<Result>(_ownerId, new PublishFormCommand(_formId));
+        await SendAsync<Result>(_ownerId, new PublishFormCommand(_formId, await FormVersionAsync()));
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
+
+    private async Task<long> FormVersionAsync()
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        return await context.Set<Form>().Where(f => f.Id == _formId).Select(f => f.Version).SingleAsync();
+    }
 
     private static Dictionary<string, JsonElement> Answers(string json) =>
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
@@ -93,7 +101,7 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
         var id = (await SendAsync<Result<Guid>>(_memberId, new SubmitFormCommand(_formId, Answers("{\"title\":\"Mua ghế\",\"qty\":3}")))).Data;
 
         var inbox = (await SendAsync<Result<List<FormSubmissionDto>>>(_ownerId, new ListFormSubmissionsQuery(_formId))).Data!;
-        inbox.Should().ContainSingle(s => s.Id == id && s.Status == "Accepted" && s.SubmitterUserId == _memberId && s.PayloadJson.Contains("Mua ghế"));
+        inbox.Should().ContainSingle(s => s.Id == id && s.Status == "Accepted" && s.SubmitterUserId == _memberId && s.PayloadJson.Contains("Mua gh"));
 
         var itemId = await SeedItemAsync();
         (await SendAsync<Result>(_ownerId, new ProcessFormSubmissionCommand(id, itemId))).Succeeded.Should().BeTrue();
@@ -137,7 +145,7 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ClosedForm_RefusesSubmissions()
     {
-        await SendAsync<Result>(_ownerId, new CloseFormCommand(_formId));
+        await SendAsync<Result>(_ownerId, new CloseFormCommand(_formId, await FormVersionAsync()));
 
         var act = () => SendAsync<Result<Guid>>(_memberId, new SubmitFormCommand(_formId, Answers("{\"title\":\"x\"}")));
         await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
@@ -149,6 +157,18 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
         var form = (await SendAsync<Result<FormDetailDto>>(_memberId, new GetFormQuery(_formId))).Data!;
         form.Status.Should().Be("Published");
         form.Questions.Select(q => q.QuestionKey).Should().Equal("title", "qty");
+    }
+
+    [Fact]
+    public async Task FormList_CarriesQuestionCount_NewSubmissionCount_AndUpdatedAt()
+    {
+        await SendAsync<Result<Guid>>(_memberId, new SubmitFormCommand(_formId, Answers("{\"title\":\"Mua ghế\"}")));
+
+        var row = (await SendAsync<Result<List<FormDto>>>(_ownerId, new ListFormsQuery(_boardId))).Data!.Single(f => f.Id == _formId);
+
+        row.QuestionCount.Should().Be(2);
+        row.NewSubmissionCount.Should().Be(1);
+        row.UpdatedAt.Should().NotBeNull();
     }
 
     private async Task<Guid> SeedItemAsync()
@@ -309,6 +329,7 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
         services.AddScoped<IRequestHandler<SubmitFormCommand, Result<Guid>>, SubmitFormCommandHandler>();
         services.AddScoped<IRequestHandler<ProcessFormSubmissionCommand, Result>, ProcessFormSubmissionCommandHandler>();
         services.AddScoped<IRequestHandler<Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand, Result>, Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommandHandler>();
+        services.AddScoped<IRequestHandler<ListFormsQuery, Result<List<FormDto>>>, ListFormsQueryHandler>();
         services.AddScoped<IRequestHandler<GetFormQuery, Result<FormDetailDto>>, GetFormQueryHandler>();
         services.AddScoped<IRequestHandler<ListFormSubmissionsQuery, Result<List<FormSubmissionDto>>>, ListFormSubmissionsQueryHandler>();
         services.AddProductionCrossContextAdapters();

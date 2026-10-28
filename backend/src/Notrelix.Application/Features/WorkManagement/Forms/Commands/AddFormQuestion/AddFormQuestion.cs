@@ -38,7 +38,7 @@ public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionComm
 
     public async Task<Result> Handle(AddFormQuestionCommand request, CancellationToken ct)
     {
-        var form = await _context.Forms
+        var form = await _context.Forms.Include(f => f.Questions)
             .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
 
