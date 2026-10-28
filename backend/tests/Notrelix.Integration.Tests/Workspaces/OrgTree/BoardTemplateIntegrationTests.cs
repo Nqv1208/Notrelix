@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Application.Features.WorkManagement.Templates.Commands.ArchiveBoardTemplate;

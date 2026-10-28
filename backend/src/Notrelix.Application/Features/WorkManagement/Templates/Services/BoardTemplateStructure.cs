@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.Templates.Services;
 
