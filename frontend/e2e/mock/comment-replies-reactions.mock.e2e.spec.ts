@@ -107,7 +107,10 @@ test.describe("owner", () => {
 });
 
 test.describe("viewer", () => {
-  test.skip(persona !== "viewer", "Needs VITE_MOCK_PERSONA=viewer");
+  test.skip(
+    persona !== "viewer" || scenario !== "default",
+    "Needs the default viewer scenario",
+  );
 
   test("sees the chips and who reacted but cannot react or reply", async ({
     page,

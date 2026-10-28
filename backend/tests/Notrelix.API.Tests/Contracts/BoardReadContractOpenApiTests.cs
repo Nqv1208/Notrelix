@@ -55,11 +55,13 @@ public class BoardReadContractOpenApiTests
     }
 
     [Fact]
-    public void FieldOptions_CarryIdentityLabelColorOrderAndStatusCategory()
+    public void FieldOptions_CarryIdentityLabelColorOrderStatusCategoryAndItemCount()
     {
-        Properties("BoardFieldOptionDto").Should().BeEquivalentTo(["id", "name", "color", "position", "category"]);
+        Properties("BoardFieldOptionDto").Should().BeEquivalentTo(["id", "name", "color", "position", "category", "itemCount"]);
         IsNullable(Schema("BoardFieldOptionDto").GetProperty("properties").GetProperty("category")).Should().BeTrue(
             "only options of a Status field carry a category");
+        Schema("BoardFieldOptionDto").GetProperty("properties").GetProperty("itemCount").GetProperty("type").GetString()
+            .Should().Be("integer", "the count of live items holding the option");
     }
 
     [Fact]
