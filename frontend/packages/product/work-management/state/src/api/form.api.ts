@@ -7,10 +7,11 @@ import {
   parseFormStatus,
   parseFormSubmissionStatus,
   type Form,
+  type FormQuestionChanges,
+  type FormQuestionSettings,
+  type NewFormQuestion,
   type FormDetail,
   type FormQuestion,
-  type FormQuestionOption,
-  type FormQuestionType,
   type FormSubmission,
 } from "@notrelix/work-management-core";
 
@@ -58,32 +59,6 @@ interface SubmissionWire {
 type AddQuestionBody = OperationRequestBody<"WorkManagement.Forms.AddQuestion">;
 type UpdateQuestionBody =
   OperationRequestBody<"WorkManagement.Forms.UpdateQuestion">;
-
-/** What a question's own settings keep, in the producer's `configJson`. */
-export interface FormQuestionSettings {
-  readonly placeholder?: string | null;
-  readonly helpText?: string | null;
-  readonly maxLength?: number | null;
-  readonly minValue?: number | null;
-  readonly maxValue?: number | null;
-  readonly options?: readonly FormQuestionOption[];
-}
-
-export interface NewFormQuestion extends FormQuestionSettings {
-  readonly key: string;
-  readonly type: FormQuestionType;
-  readonly label: string;
-  readonly required: boolean;
-  readonly boardFieldId: string | null;
-  readonly position: string;
-}
-
-export interface FormQuestionChanges extends FormQuestionSettings {
-  readonly label: string;
-  readonly required: boolean;
-  readonly boardFieldId: string | null;
-  readonly position: string;
-}
 
 /** The `configJson` of a question: only the settings it has. */
 export function serializeFormQuestionConfig(

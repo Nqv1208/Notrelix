@@ -6,7 +6,7 @@ import type {
   FormDetail,
   FormQuestion,
 } from "@notrelix/work-management-core";
-import type { FormWriteResult } from "@notrelix/work-management-state";
+import type { FormWriteResult } from "@notrelix/work-management-core";
 import {
   BUTTON_CLASS,
   FIELD_LABEL_CLASS,
@@ -39,6 +39,8 @@ export interface FormFillSurfaceProps {
   readonly onBack: () => void;
   readonly onHome?: () => void;
   readonly onReload: () => void;
+  /** Copies text for the member ("Sao chép câu trả lời"); resolves false when the browser refused. */
+  readonly onCopyText?: (text: string) => Promise<boolean>;
   /** Sends the answers; `key` is the same on a retry of the same attempt. */
   readonly onSubmit: (
     answers: Readonly<Record<string, unknown>>,
@@ -388,13 +390,13 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
             <button
               type="button"
               onClick={() => {
-                void navigator.clipboard
-                  ?.writeText(
+                void props
+                  .onCopyText?.(
                     questions
                       .map((q) => `${q.label}: ${String(answers[q.key] ?? "")}`)
                       .join("\n"),
                   )
-                  .then(() => setCopiedAnswers(true));
+                  .then((copied) => setCopiedAnswers(copied));
               }}
               className={cn(BUTTON_CLASS.outline, "h-7 self-start")}
             >

@@ -26,7 +26,7 @@ import type {
   FormQuestionChanges,
   FormWriteResult,
   NewFormQuestion,
-} from "@notrelix/work-management-state";
+} from "@notrelix/work-management-core";
 import {
   BUTTON_CLASS,
   FIELD_LABEL_CLASS,

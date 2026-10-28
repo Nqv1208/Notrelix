@@ -2352,6 +2352,176 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.Forms.List",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.List",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.Create",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.Create",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.UpdateDetails",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.UpdateDetails",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.SoftDelete",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.SoftDelete",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.Get",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.Get",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.Publish",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.Publish",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.Close",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.Close",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.Restore",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.Restore",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.AddQuestion",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.AddQuestion",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.UpdateQuestion",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.UpdateQuestion",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.RemoveQuestion",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.RemoveQuestion",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.ListSubmissions",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.ListSubmissions",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.Submit",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.Submit",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.ProcessSubmission",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.ProcessSubmission",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.RejectSubmission",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.RejectSubmission",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.MarkAsSpam",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.MarkAsSpam",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Forms.DeleteSubmission",
+    consumerSymbol: "createFormApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Forms.DeleteSubmission",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.BoardViews.Create",
     consumerSymbol: "createBoardApi",
     consumerFile:

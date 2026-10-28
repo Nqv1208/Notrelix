@@ -1,20 +1,12 @@
 import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { FormAnswerErrors } from "@notrelix/work-management-core";
-import type { FormQuestionChanges, NewFormQuestion } from "../api/form.api";
+import type {
+  FormQuestionChanges,
+  FormWriteResult,
+  NewFormQuestion,
+} from "@notrelix/work-management-core";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
-
-/** How a form write ended; the page says why a refusal did not apply. */
-export type FormWriteResult =
-  | { readonly ok: true; readonly id?: string }
-  | {
-      readonly ok: false;
-      readonly reason:
-        "forbidden" | "missing" | "conflict" | "validation" | "failed";
-      /** Per question key, for a refused submit. */
-      readonly errors?: FormAnswerErrors;
-    };
 
 function failure(error: unknown): FormWriteResult {
   const caught = (error ?? {}) as {

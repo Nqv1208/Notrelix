@@ -10,10 +10,10 @@ import {
   useFormWrites,
   useFullBoard,
   useSubmitForm,
-  type FormWriteResult,
 } from "@notrelix/work-management-state";
 import type {
   FormSubmission,
+  FormWriteResult,
   FormSubmissionStatus,
 } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
@@ -261,6 +261,7 @@ export function FormFillPage({
       onBack={onBack}
       onHome={onHome}
       onReload={() => void query.refetch()}
+      onCopyText={copyText}
       onSubmit={submit}
     />
   );

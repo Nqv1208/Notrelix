@@ -15,7 +15,7 @@ import type {
   FormSubmission,
   FormSubmissionStatus,
 } from "@notrelix/work-management-core";
-import type { FormWriteResult } from "@notrelix/work-management-state";
+import type { FormWriteResult } from "@notrelix/work-management-core";
 import {
   BUTTON_CLASS,
   HINT_CLASS,

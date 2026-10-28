@@ -263,3 +263,40 @@ export function orderKeyBetween(a: string | null, b: string | null): string {
   if (next === null) throw new Error("cannot increment any more");
   return next < b ? next : ia + midpoint(fa, null);
 }
+
+/** How a form write ended; the page says why a refusal did not apply. */
+export type FormWriteResult =
+  | { readonly ok: true; readonly id?: string }
+  | {
+      readonly ok: false;
+      readonly reason:
+        "forbidden" | "missing" | "conflict" | "validation" | "failed";
+      /** Per question key, for a refused submit. */
+      readonly errors?: FormAnswerErrors;
+    };
+
+/** What a question's own settings keep, in the producer's `configJson`. */
+export interface FormQuestionSettings {
+  readonly placeholder?: string | null;
+  readonly helpText?: string | null;
+  readonly maxLength?: number | null;
+  readonly minValue?: number | null;
+  readonly maxValue?: number | null;
+  readonly options?: readonly FormQuestionOption[];
+}
+
+export interface NewFormQuestion extends FormQuestionSettings {
+  readonly key: string;
+  readonly type: FormQuestionType;
+  readonly label: string;
+  readonly required: boolean;
+  readonly boardFieldId: string | null;
+  readonly position: string;
+}
+
+export interface FormQuestionChanges extends FormQuestionSettings {
+  readonly label: string;
+  readonly required: boolean;
+  readonly boardFieldId: string | null;
+  readonly position: string;
+}
