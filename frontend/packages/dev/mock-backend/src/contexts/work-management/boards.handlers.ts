@@ -919,16 +919,19 @@ export const boardsOperations = [
     method: "POST",
     route: "/boards/:boardId/fields",
     async handle({ params, body, store }) {
+      // The producer's request names the type `type`, with `settingsJson`.
       const data = body as {
         name: string;
-        fieldType: string;
+        fieldType?: string;
+        type?: string;
         settings?: string;
+        settingsJson?: string;
         position?: number;
       };
       const col = store.createColumn(params.boardId, {
         name: data.name,
-        fieldType: data.fieldType,
-        settings: data.settings,
+        fieldType: data.type ?? data.fieldType ?? "text",
+        settings: data.settingsJson ?? data.settings,
         position: data.position,
       });
       return created<string>(col.id);

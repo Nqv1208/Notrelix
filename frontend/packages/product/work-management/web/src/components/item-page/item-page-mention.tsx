@@ -1,3 +1,4 @@
+import { useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "@notrelix/ui-web";
 import { personInitials } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
@@ -84,6 +85,111 @@ export function mentionCandidates(
             }),
     }));
   return [...persons, ...teams].slice(0, MAX_CANDIDATES);
+}
+
+/** The draft the field writes to (`useCommentDraft`). */
+interface MentionDraft {
+  readonly body: string;
+  changeBody(next: string): void;
+  insertMention(
+    range: { readonly from: number; readonly to: number },
+    label: string,
+    userIds: readonly string[],
+  ): void;
+}
+
+/**
+ * The "@" behaviour of a comment box: the token the caret is in, the people it
+ * matches, arrows and Enter/Tab to choose, Escape to dismiss, and the "@"
+ * button. The field and the list stay with the caller.
+ */
+export function useMentionField({
+  draft,
+  people,
+  copy,
+  viewerUserId,
+}: {
+  draft: MentionDraft;
+  people: ItemPagePeople | undefined;
+  copy: ItemPageCopy;
+  viewerUserId?: string | null;
+}) {
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+  const [token, setToken] = useState<MentionToken | null>(null);
+  const [active, setActive] = useState(0);
+  const candidates = mentionCandidates(
+    token,
+    people,
+    copy,
+    viewerUserId ?? undefined,
+  );
+  const listOpen = candidates.length > 0;
+  const activeIndex = Math.min(active, candidates.length - 1);
+
+  const pick = (candidate: MentionCandidate) => {
+    if (!token) return;
+    draft.insertMention(token, candidate.name, candidate.userIds);
+    setToken(null);
+    const caret = token.from + candidate.name.length + 2;
+    requestAnimationFrame(() => {
+      fieldRef.current?.focus();
+      fieldRef.current?.setSelectionRange(caret, caret);
+    });
+  };
+  const readToken = (text: string, caret: number) => {
+    setToken(mentionToken(text, caret));
+    setActive(0);
+  };
+  /** True when the key was the list's (the caller then skips its own handling). */
+  const handleKey = (event: KeyboardEvent<HTMLTextAreaElement>): boolean => {
+    if (!listOpen) return false;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setActive(
+        (current) => (current + step + candidates.length) % candidates.length,
+      );
+      return true;
+    }
+    if (
+      (event.key === "Enter" && !event.metaKey && !event.ctrlKey) ||
+      event.key === "Tab"
+    ) {
+      event.preventDefault();
+      const chosen = candidates[activeIndex];
+      if (chosen) pick(chosen);
+      return true;
+    }
+    if (event.key === "Escape") {
+      // The sheet closes on Escape: this one only dismisses the list.
+      event.preventDefault();
+      event.stopPropagation();
+      setToken(null);
+      return true;
+    }
+    return false;
+  };
+  const openAtEnd = () => {
+    const text = draft.body;
+    const spaced = text === "" || /\s$/.test(text) ? text : `${text} `;
+    draft.changeBody(`${spaced}@`);
+    readToken(`${spaced}@`, spaced.length + 1);
+    fieldRef.current?.focus();
+  };
+
+  return {
+    fieldRef,
+    token,
+    candidates,
+    listOpen,
+    activeIndex,
+    setActive,
+    pick,
+    readToken,
+    dismiss: () => setToken(null),
+    handleKey,
+    openAtEnd,
+  };
 }
 
 function Matched({ text, query }: { text: string; query: string }) {

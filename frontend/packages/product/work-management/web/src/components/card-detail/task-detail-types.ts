@@ -1,5 +1,9 @@
 import type { ItemPageCopy } from "../item-page/item-page.copy";
 import type {
+  ItemPagePeople,
+  ItemPageUpload,
+} from "../item-page/item-page-types";
+import type {
   CardActivity,
   CardLabel,
   CardDetailTab,
@@ -135,6 +139,24 @@ export interface TaskDetailData {
   readonly linksCopy?: ItemPageCopy;
   /** The labels the board offers; absent: labels cannot be edited here. */
   readonly boardLabels?: readonly CardLabel[];
+  /** Files on their way to the item (progress, failures); absent: none. */
+  readonly uploads?: readonly ItemPageUpload[];
+  /** Why the last download did not go through, when it did not. */
+  readonly fileNotice?: string | null;
+  /** Who a comment can mention (people who can view the board); absent: the item's own people. */
+  readonly people?: ItemPagePeople;
+}
+
+/** A custom property the sheet asks the board to create. */
+export interface ItemSheetNewField {
+  readonly name: string;
+  readonly fieldType:
+    "text" | "number" | "checkbox" | "select" | "multi_select";
+  /** Select and MultiSelect only: the first choices, each with its colour. */
+  readonly options: readonly {
+    readonly name: string;
+    readonly color: string;
+  }[];
 }
 
 export interface TaskDetailCallbacks {
@@ -179,8 +201,21 @@ export interface TaskDetailCallbacks {
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
   /** Puts a board label on the item or takes it off; labels stay read-only without it. */
   readonly onToggleLabel?: (labelId: string, on: boolean) => void;
-  /** Creates a label of the board and puts it on the item; resolves false when it did not go through. */
-  readonly onCreateLabel?: (name: string) => Promise<boolean>;
+  /**
+   * Creates a label of the board and puts it on the item; resolves false when
+   * it did not go through. Without a colour the next palette tone is used.
+   */
+  readonly onCreateLabel?: (name: string, color?: string) => Promise<boolean>;
+  /**
+   * Creates a custom property of the board; resolves with its id, or null when
+   * it did not go through. Absent: the sheet offers no "Thêm thuộc tính".
+   */
+  readonly onCreateField?: (input: ItemSheetNewField) => Promise<string | null>;
+  /** Retries or drops a file row of `uploads`. */
+  readonly onRetryUpload?: (uploadId: string) => void;
+  readonly onDismissUpload?: (uploadId: string) => void;
+  /** Deletes a stored file; resolves false when it did not go through. */
+  readonly onDeleteFile?: (file: CardFile) => Promise<boolean>;
   readonly onRefreshActivity: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after

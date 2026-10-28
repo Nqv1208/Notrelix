@@ -4151,6 +4151,29 @@ export class MockStore {
       ?.find((file) => file.id === attachmentId);
   }
 
+  /** Removes a stored file of an item; false when it was not there. */
+  removeAttachment(cardId: string, attachmentId: string): boolean {
+    const file = this.getAttachment(cardId, attachmentId);
+    if (!file) return false;
+    this.attachmentsByCardId.set(
+      cardId,
+      (this.attachmentsByCardId.get(cardId) ?? []).filter(
+        (entry) => entry.id !== attachmentId,
+      ),
+    );
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `xoá tệp ${file.filename}`,
+      undefined,
+      {
+        verb: "xoá tệp",
+        detail: { kind: "file", name: file.filename },
+      },
+    );
+    return true;
+  }
+
   addAttachment(
     cardId: string,
     file: { filename: string; sizeBytes: number; contentType: string },
