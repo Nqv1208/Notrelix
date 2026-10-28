@@ -238,6 +238,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>,
             CreateBoardInWorkspaceCommandHandler>();
+        services.AddProductionCrossContextAdapters();
 
         return services.BuildServiceProvider();
     }

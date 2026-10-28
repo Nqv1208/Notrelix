@@ -5,8 +5,10 @@ namespace Notrelix.Integration.Tests.Containers;
 
 /// <summary>
 /// Hand-composed test hosts bind every production cross-context fact adapter (every class under
-/// Notrelix.Infrastructure.CrossContext) to the Application ports it implements, so a new port a
-/// handler needs can never be missing from a test graph. Explicit registrations made before the call win.
+/// Notrelix.Infrastructure.CrossContext) and every producer-owned public fact port (an Application
+/// interface under a Features.*.Public namespace) to their production implementations, so a new port a
+/// handler needs can never be missing from a test graph. Every context DbContext port resolves to the host's
+/// ApplicationDbContext, as production does. Explicit registrations made before the call win.
 /// </summary>
 internal static class CrossContextAdapterBindings
 {
@@ -21,6 +23,21 @@ internal static class CrossContextAdapterBindings
             foreach (var port in adapter.GetInterfaces().Where(i => i.Assembly == applicationAssembly && !i.IsGenericType))
                 services.TryAddScoped(port, adapter);
 
+        // Every context's DbContext port is the one ApplicationDbContext, as in production.
+        foreach (var dbPort in typeof(Notrelix.Infrastructure.Data.ApplicationDbContext).GetInterfaces()
+                     .Where(i => i.Assembly == applicationAssembly && i.Name.EndsWith("DbContext", StringComparison.Ordinal)))
+            services.TryAddScoped(dbPort, sp => sp.GetRequiredService<Notrelix.Infrastructure.Data.ApplicationDbContext>());
+
+        var publicFactProviders = applicationAssembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false });
+        foreach (var provider in publicFactProviders)
+            foreach (var port in provider.GetInterfaces().Where(IsPublicFactPort))
+                services.TryAddScoped(port, provider);
+
         return services;
+
+        bool IsPublicFactPort(Type port) =>
+            port.Assembly == applicationAssembly && !port.IsGenericType
+            && port.Namespace?.Contains(".Public.", StringComparison.Ordinal) == true;
     }
 }
