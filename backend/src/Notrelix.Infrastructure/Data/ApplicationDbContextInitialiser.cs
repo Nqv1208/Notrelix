@@ -101,11 +101,7 @@ public class ApplicationDbContextInitialiser
             var result = await DevelopmentSeedRepair.RunAsync(_context, DateTimeOffset.UtcNow);
             if (result.ChangedAnything)
             {
-                _logger.LogInformation(
-                    "Development seed repair: EmailsConfirmed={Emails}, OwnersRepaired={Owners}, " +
-                    "SpacesCreated={Spaces}, BoardsPlaced={Boards}, FieldsRenamed={Fields}, DueDatesMarked={DueDates}",
-                    result.EmailsConfirmed, result.OwnersRepaired, result.SpacesCreated, result.BoardsPlaced,
-                    result.FieldsRenamed, result.DueDatesMarked);
+                _logger.LogInformation("Development seed repair applied changes.");
             }
         }
         catch (Exception ex)
