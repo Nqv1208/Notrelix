@@ -3,6 +3,8 @@ import {
   useBoardAccess,
   useBoardLabels,
   useBoardLabelWrites,
+  useBoardTemplates,
+  useBoardTemplateWrites,
   useBoardSettings,
   useBoardView,
   useFullBoard,
@@ -26,6 +28,7 @@ import type {
   BoardSettingsSection,
   BoardSettingsSpace,
   BoardLabelsPanelProps,
+  BoardTemplatesPanelProps,
   WorkspaceRulesPanelProps,
 } from "./board-settings-types";
 
@@ -182,6 +185,32 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     };
   }, [board, boardLabels, groups, labelWrites]);
 
+  const boardTemplates = useBoardTemplates(workspaceId);
+  const templateWrites = useBoardTemplateWrites(workspaceId);
+  const templates = useMemo<BoardTemplatesPanelProps>(() => {
+    let itemCount: number | undefined;
+    if (board) {
+      itemCount = 0;
+      for (const group of groups) itemCount += group.cards.length;
+    }
+    return {
+      status: boardTemplates.isError
+        ? "error"
+        : boardTemplates.isLoading
+          ? "loading"
+          : "ready",
+      templates: (boardTemplates.data ?? []).filter(
+        (template) => template.builtInKey === null,
+      ),
+      ...(itemCount === undefined ? {} : { itemCount }),
+      onReload: () => void boardTemplates.refetch(),
+      onSave: (input) => templateWrites.save(boardId, input),
+      onPublish: templateWrites.publish,
+      onArchive: templateWrites.archive,
+      onDelete: templateWrites.remove,
+    };
+  }, [board, boardId, boardTemplates, groups, templateWrites]);
+
   const rules = useWorkspaceAutomations(
     workspaceId,
     boardId,
@@ -260,6 +289,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       actions={actions}
       workspaceRules={workspaceRules}
       labels={labels}
+      templates={templates}
       kanbanSettings={
         <KanbanSettingsPanel
           copy={laneCopy}

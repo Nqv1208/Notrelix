@@ -19,7 +19,13 @@ import type { BoardSettingsCopy } from "./board-settings.copy";
 export type { BoardSettingsWriteResult };
 
 export type BoardSettingsSection =
-  "general" | "fields" | "views" | "groups" | "labels" | "automations";
+  | "general"
+  | "fields"
+  | "views"
+  | "groups"
+  | "labels"
+  | "templates"
+  | "automations";
 
 export const BOARD_SETTINGS_SECTIONS: readonly BoardSettingsSection[] = [
   "general",
@@ -27,6 +33,7 @@ export const BOARD_SETTINGS_SECTIONS: readonly BoardSettingsSection[] = [
   "views",
   "groups",
   "labels",
+  "templates",
   "automations",
 ];
 
@@ -52,6 +59,35 @@ export interface BoardLabelsPanelProps {
     changes: { name?: string; color?: string },
   ) => Promise<BoardSettingsWriteResult>;
   readonly onDelete: (labelId: string) => Promise<BoardSettingsWriteResult>;
+}
+
+/** One template of the workspace (the built-in starters are not listed here). */
+export interface BoardTemplateRow {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly status: "draft" | "published" | "archived";
+}
+
+/**
+ * The workspace's board templates and the writes on them. `onSave` saves the
+ * board whose settings are open; publish, archive and delete need the owner or
+ * an admin of the workspace, which the server decides (a refusal is a failed write).
+ */
+export interface BoardTemplatesPanelProps {
+  readonly status: "loading" | "error" | "ready";
+  readonly templates: readonly BoardTemplateRow[];
+  /** How many items the board has, for "include the items"; unknown until the board is read. */
+  readonly itemCount?: number;
+  readonly onReload: () => void;
+  readonly onSave: (input: {
+    name: string;
+    description?: string;
+    includeItems: boolean;
+  }) => Promise<BoardSettingsWriteResult>;
+  readonly onPublish: (templateId: string) => Promise<BoardSettingsWriteResult>;
+  readonly onArchive: (templateId: string) => Promise<BoardSettingsWriteResult>;
+  readonly onDelete: (templateId: string) => Promise<BoardSettingsWriteResult>;
 }
 
 /** The writes the settings page makes, each answering whether it went through. */
@@ -151,6 +187,8 @@ export interface BoardSettingsSurfaceProps {
   workspaceRules?: WorkspaceRulesPanelProps;
   /** The labels of the board: when given, the page has a "Labels" section. */
   labels?: BoardLabelsPanelProps;
+  /** The workspace's board templates: when given, the page has a "Board templates" section. */
+  templates?: BoardTemplatesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
   /** Reads the settings again (after a conflict or an error). */

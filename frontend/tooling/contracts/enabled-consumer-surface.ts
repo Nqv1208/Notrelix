@@ -2451,6 +2451,78 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.Templates.List",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/template.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Templates.List",
+    method: "GET", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Templates.Create",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/template.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Templates.Create",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Templates.Publish",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/template.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Templates.Publish",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Templates.Archive",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/template.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Templates.Archive",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Templates.Delete",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/template.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Templates.Delete",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Templates.CreateBoard",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/template.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Templates.CreateBoard",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.Labels.Create",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",

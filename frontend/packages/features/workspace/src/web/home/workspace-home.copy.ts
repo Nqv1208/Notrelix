@@ -53,6 +53,12 @@ export const en = {
     inSpace: "It will be placed in {{space}}.",
     templateLabel: "Start from",
     templateBlank: "Blank page",
+    startersLabel: "Starters",
+    workspaceTemplatesLabel: "Workspace templates",
+    noWorkspaceTemplates:
+      "No workspace template yet. Open a board, go to Board settings, then Board templates to save one.",
+    templateCopies:
+      "Copies the fields, statuses, groups, labels and views of the template. The new board is not linked to it.",
   },
   work: {
     weekdays: {
@@ -423,6 +429,12 @@ export const vi: WorkspaceHomeCopy = {
     inSpace: "Mục này sẽ được đặt trong {{space}}.",
     templateLabel: "Bắt đầu từ",
     templateBlank: "Trang trống",
+    startersLabel: "Mẫu có sẵn",
+    workspaceTemplatesLabel: "Mẫu của workspace",
+    noWorkspaceTemplates:
+      "Workspace chưa có mẫu nào. Mở một board, vào Thiết lập board › Mẫu board để lưu một mẫu.",
+    templateCopies:
+      "Sao chép trường, trạng thái, nhóm việc, nhãn và view của mẫu. Board mới không liên kết với mẫu.",
   },
   work: {
     weekdays: {

@@ -15,6 +15,7 @@ import { cardsOperations } from "./cards.handlers";
 import { myWorkOperations } from "./my-work.handlers";
 import { workspaceAutomationsOperations } from "./workspace-automations.handlers";
 import { itemStatesOperations } from "./item-states.handlers";
+import { templatesOperations } from "./templates.handlers";
 
 export {
   workspaceAutomationsOperations,
@@ -24,6 +25,7 @@ export {
   listsOperations,
   cardsOperations,
   myWorkOperations,
+  templatesOperations,
 };
 
 export const workManagementOperations = [
@@ -35,4 +37,5 @@ export const workManagementOperations = [
   ...myWorkOperations,
   ...workspaceAutomationsOperations,
   ...itemStatesOperations,
+  ...templatesOperations,
 ];
