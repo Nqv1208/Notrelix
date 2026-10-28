@@ -102,6 +102,19 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rejecting_KeepsTheReason_AndMemberCannotReject()
+    {
+        var id = (await SendAsync<Result<Guid>>(_memberId, new SubmitFormCommand(_formId, Answers("{\"title\":\"x\"}")))).Data;
+
+        var act = () => SendAsync<Result>(_memberId, new Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand(id, "không được"));
+        await act.Should().ThrowAsync<Exception>();
+
+        await SendAsync<Result>(_ownerId, new Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand(id, "Trùng ERP-168"));
+        (await SendAsync<Result<List<FormSubmissionDto>>>(_ownerId, new ListFormSubmissionsQuery(_formId))).Data!
+            .Should().ContainSingle(s => s.Id == id && s.Status == "Rejected" && s.Reason == "Trùng ERP-168");
+    }
+
+    [Fact]
     public async Task InvalidAnswers_AreRefused_AndNothingIsStored()
     {
         var act = () => SendAsync<Result<Guid>>(_memberId, new SubmitFormCommand(_formId, Answers("{\"qty\":99}")));
@@ -295,6 +308,7 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
         services.AddScoped<IRequestHandler<CloseFormCommand, Result>, CloseFormCommandHandler>();
         services.AddScoped<IRequestHandler<SubmitFormCommand, Result<Guid>>, SubmitFormCommandHandler>();
         services.AddScoped<IRequestHandler<ProcessFormSubmissionCommand, Result>, ProcessFormSubmissionCommandHandler>();
+        services.AddScoped<IRequestHandler<Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand, Result>, Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommandHandler>();
         services.AddScoped<IRequestHandler<GetFormQuery, Result<FormDetailDto>>, GetFormQueryHandler>();
         services.AddScoped<IRequestHandler<ListFormSubmissionsQuery, Result<List<FormSubmissionDto>>>, ListFormSubmissionsQueryHandler>();
         services.AddProductionCrossContextAdapters();

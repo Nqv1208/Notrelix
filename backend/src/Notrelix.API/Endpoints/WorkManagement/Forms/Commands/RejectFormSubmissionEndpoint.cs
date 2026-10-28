@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.Forms.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission;
 
@@ -17,10 +18,11 @@ public static class RejectFormSubmissionEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid submissionId,
+        RejectFormSubmissionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RejectFormSubmissionCommand(submissionId), cancellationToken);
+        var result = await sender.Send(new RejectFormSubmissionCommand(submissionId, body.Reason), cancellationToken);
         return result.ToNoContentResult();
     }
 }

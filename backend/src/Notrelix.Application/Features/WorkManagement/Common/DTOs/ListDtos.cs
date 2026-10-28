@@ -53,7 +53,8 @@ public record FormSubmissionDto(
     string Status,
     DateTimeOffset SubmittedAt,
     DateTimeOffset? ProcessedAt,
-    string PayloadJson = "{}"
+    string PayloadJson = "{}",
+    string? Reason = null
 );
 
 public record FormQuestionDto(

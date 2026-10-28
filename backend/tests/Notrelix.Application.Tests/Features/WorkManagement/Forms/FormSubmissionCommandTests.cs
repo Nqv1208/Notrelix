@@ -117,7 +117,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission();
             SetupFormSubmissions(submission);
 
-            var command = new RejectFormSubmissionCommand(submission.Id);
+            var command = new RejectFormSubmissionCommand(submission.Id, "Trùng ERP-168");
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -127,7 +127,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
         [Fact]
         public async Task Handle_SubmissionNotFound_ThrowsNotFoundException()
         {
-            var command = new RejectFormSubmissionCommand(Guid.CreateVersion7());
+            var command = new RejectFormSubmissionCommand(Guid.CreateVersion7(), "x");
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<NotFoundException>();
@@ -139,7 +139,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission(status: FormSubmissionStatus.Rejected);
             SetupFormSubmissions(submission);
 
-            var command = new RejectFormSubmissionCommand(submission.Id);
+            var command = new RejectFormSubmissionCommand(submission.Id, "Trùng ERP-168");
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();

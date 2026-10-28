@@ -17,6 +17,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
     public FormSubmissionStatus Status { get; private set; } = FormSubmissionStatus.Accepted;
     public DateTimeOffset SubmittedAt { get; private set; }
     public DateTimeOffset? ProcessedAt { get; private set; }
+    public string? RejectionReason { get; private set; }
 
     private FormSubmission() : base() { }
 
@@ -73,12 +74,13 @@ public class FormSubmission : Entity, IWorkspaceScoped
         return submission;
     }
 
-    public void Reject(DateTimeOffset processedAt)
+    public void Reject(DateTimeOffset processedAt, string? reason = null)
     {
         if (Status != FormSubmissionStatus.Accepted)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_CannotRejectUnlessAccepted, "Only accepted submissions can be rejected.");
 
         Status = FormSubmissionStatus.Rejected;
+        RejectionReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
         ProcessedAt = processedAt;
         RaiseDomainEvent(new FormSubmissionRejectedDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
     }
