@@ -48,6 +48,26 @@ export const ITEM_LABEL_TONE_CLASS: Readonly<Record<ItemLabelTone, string>> = {
   test: "bg-label-test text-label-test-foreground",
 };
 
+/**
+ * The colours a label is created with: one per tone. The chip is painted with
+ * the tone (never the raw colour), and each hue below lands in its own tone
+ * (`itemLabelTone`), so a chosen colour shows as itself on every item.
+ */
+export const ITEM_LABEL_COLORS: Readonly<Record<ItemLabelTone, string>> = {
+  data: "#2F6FD6",
+  security: "#D6453D",
+  training: "#2E9B5E",
+  report: "#D9A21B",
+  doc: "#8A8F98",
+  test: "#7A4FD1",
+};
+
+/** The colour a new label takes: the tones in turn, so neighbours differ. */
+export function nextLabelColor(existing: number): string {
+  const tones = Object.values(ITEM_LABEL_COLORS);
+  return tones[existing % tones.length] ?? ITEM_LABEL_COLORS.data;
+}
+
 /** Whole-word name keywords (normalised: lower case, no diacritics). */
 const LABEL_TONE_KEYWORDS: ReadonlyArray<
   readonly [ItemLabelTone, readonly string[]]

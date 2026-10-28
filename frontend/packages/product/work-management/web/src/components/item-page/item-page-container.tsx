@@ -37,7 +37,7 @@ import {
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { boardCapabilities } from "../shared/board-capabilities";
-import { formatItemDate } from "../shared/item-display";
+import { formatItemDate, nextLabelColor } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
@@ -512,6 +512,13 @@ function ItemPageReady({
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
     onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
+    onCreateLabel: (name) =>
+      labelWrites
+        .createAndApply(name, nextLabelColor(boardLabels.data?.length ?? 0))
+        .then(
+          () => true,
+          () => false,
+        ),
     onToggleWatch: (watched) => follow.setFollowing(watched),
     onRequestApproval: (approverUserId) =>
       approvals.request({ approverUserId, note: null }),

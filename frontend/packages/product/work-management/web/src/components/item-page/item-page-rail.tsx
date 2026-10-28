@@ -48,6 +48,7 @@ import {
 } from "../card-detail/item-sheet.copy";
 import {
   ItemLabelsPopover,
+  labelCreate,
   ItemOptionMenu,
   customItemFields,
   PRIORITY_CLASS,
@@ -889,6 +890,7 @@ export function ItemPageRail({
                 onToggle={(labelId, on) =>
                   callbacks.onToggleLabel?.(labelId, on)
                 }
+                create={labelCreate(p, callbacks.onCreateLabel)}
               >
                 <PropertyValue
                   editable={labelsEditable}

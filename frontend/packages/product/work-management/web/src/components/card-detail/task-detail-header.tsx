@@ -56,6 +56,7 @@ import {
   ItemAssigneePopover,
   ItemDuePopover,
   ItemLabelsPopover,
+  labelCreate,
   ItemNumberPopover,
   ItemOptionMenu,
   PRIORITY_CLASS,
@@ -472,6 +473,7 @@ export function TaskDetailProperties({
   onUpdateItem,
   boardLabels,
   onToggleLabel,
+  onCreateLabel,
 }: {
   board: Board;
   card: CardDetail;
@@ -485,6 +487,7 @@ export function TaskDetailProperties({
   /** The labels the board offers; labels are read-only without them. */
   boardLabels?: readonly CardLabel[];
   onToggleLabel?: (labelId: string, on: boolean) => void;
+  onCreateLabel?: (name: string) => Promise<boolean>;
 }) {
   const readOnly = !capabilities.canEditFields;
   const addPropertyReasonId = useId();
@@ -707,6 +710,7 @@ export function TaskDetailProperties({
         emptyText={t.boardHasNoLabels}
         readOnly={!labelsEditable}
         onToggle={(labelId, on) => onToggleLabel?.(labelId, on)}
+        create={labelCreate(t, onCreateLabel)}
       >
         <PropertyPill
           readOnly={!labelsEditable}

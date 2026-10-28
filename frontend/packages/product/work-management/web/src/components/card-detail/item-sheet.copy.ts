@@ -60,6 +60,11 @@ export const en = {
     noLabels: "No labels",
     addLabel: "Add label",
     boardHasNoLabels: "This board has no labels yet.",
+    labelSearch: "Find or create a label",
+    labelSearchPlaceholder: "Find or create a label",
+    createLabel: "Create label “{{name}}”",
+    createLabelFailed: "The label could not be created. Try again.",
+    createLabelRetry: "Retry",
     priority: "Priority",
     noPriority: "No priority",
     priorities: {
@@ -185,6 +190,11 @@ export const vi: ItemSheetCopy = {
     noLabels: "Chưa có nhãn",
     addLabel: "Thêm nhãn",
     boardHasNoLabels: "Board này chưa có nhãn nào.",
+    labelSearch: "Tìm hoặc tạo nhãn",
+    labelSearchPlaceholder: "Tìm hoặc tạo nhãn",
+    createLabel: "Tạo nhãn “{{name}}”",
+    createLabelFailed: "Chưa tạo được nhãn. Hãy thử lại.",
+    createLabelRetry: "Thử lại",
     priority: "Ưu tiên",
     noPriority: "Chưa có ưu tiên",
     priorities: {

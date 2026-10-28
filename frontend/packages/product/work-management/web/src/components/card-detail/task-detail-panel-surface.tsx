@@ -190,6 +190,7 @@ export function TaskDetailPanelSurface({
                 onUpdateItem={callbacks.onUpdateItem}
                 boardLabels={detailData.boardLabels}
                 onToggleLabel={callbacks.onToggleLabel}
+                onCreateLabel={callbacks.onCreateLabel}
               />
             </div>
             <TaskDetailTabs

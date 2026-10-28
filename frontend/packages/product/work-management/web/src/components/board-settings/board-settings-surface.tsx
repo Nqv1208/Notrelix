@@ -6,6 +6,7 @@ import {
   Eye,
   Lock,
   Sun,
+  Tag,
   Table2,
   TriangleAlert,
   Zap,
@@ -22,6 +23,7 @@ import { FieldsSection } from "./board-settings-fields";
 import { fillCopy } from "./board-settings-format";
 import { GeneralSection } from "./board-settings-general";
 import { GroupsSection } from "./board-settings-groups";
+import { LabelsSection } from "./board-settings-labels";
 import { BUTTON_CLASS, Callout } from "./board-settings-parts";
 import {
   BOARD_SETTINGS_SECTIONS,
@@ -44,6 +46,7 @@ const SECTION_ICON: Readonly<Record<BoardSettingsSection, LucideIcon>> = {
   fields: Table2,
   views: Eye,
   groups: AlignLeft,
+  labels: Tag,
   automations: Zap,
 };
 
@@ -230,11 +233,12 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
   const unavailable = data.unavailable ?? {};
   const hidden: Partial<Record<BoardSettingsSection, boolean>> = {
     views: unavailable.views,
+    labels: !props.labels,
     automations: unavailable.automations && !props.workspaceRules,
   };
   // A section the product has no contract for is not opened by its address.
   const section = hidden[props.section] ? "general" : props.section;
-  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 4).filter(
+  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 5).filter(
     (key) => !hidden[key],
   );
   const t = copy.menu;
@@ -248,6 +252,8 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     fields: data.fields.length + data.systemFields.length,
     views: data.views.length,
     groups: data.groups.length,
+    labels:
+      props.labels?.status === "ready" ? props.labels.labels.length : undefined,
     automations: running,
   };
 
@@ -286,6 +292,8 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
       />
     );
   else if (section === "groups") content = <GroupsSection />;
+  else if (section === "labels" && props.labels)
+    content = <LabelsSection panel={props.labels} />;
   else if (section === "automations" && props.workspaceRules)
     content = <WorkspaceRulesSection panel={props.workspaceRules} />;
   else if (section === "automations") {
