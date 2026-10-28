@@ -58,6 +58,6 @@ public class GetSpaceQueryHandler : IRequestHandler<GetSpaceQuery, Result<SpaceD
             space.Visibility.ToString(),
             space.SpaceType.ToString(),
             space.Status == SpaceStatus.Archived,
-            space.CreatedAt.DateTime));
+            space.CreatedAt.UtcDateTime));
     }
 }

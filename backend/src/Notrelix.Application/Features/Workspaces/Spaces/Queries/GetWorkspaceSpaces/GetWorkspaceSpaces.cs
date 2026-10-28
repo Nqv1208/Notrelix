@@ -46,7 +46,7 @@ public class GetWorkspaceSpacesQueryHandler : IRequestHandler<GetWorkspaceSpaces
             s.Visibility.ToString(),
             s.SpaceType.ToString(),
             s.Status == SpaceStatus.Archived,
-            s.CreatedAt.DateTime)).ToList();
+            s.CreatedAt.UtcDateTime)).ToList();
 
         return Result<List<SpaceDto>>.Success(result);
     }

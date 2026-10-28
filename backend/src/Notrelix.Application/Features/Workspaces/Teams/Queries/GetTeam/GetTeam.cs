@@ -54,6 +54,6 @@ public class GetTeamQueryHandler : IRequestHandler<GetTeamQuery, Result<TeamDto>
             team.Status.ToString(),
             memberCount,
             team.Version,
-            team.CreatedAt.DateTime));
+            team.CreatedAt.UtcDateTime));
     }
 }

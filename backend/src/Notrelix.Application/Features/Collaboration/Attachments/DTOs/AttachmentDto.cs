@@ -32,7 +32,7 @@ public record AttachmentDto(
         attachment.Type.ToString(),
         attachment.CreatedBy!.Value,
         uploadedByName,
-        attachment.CreatedAt.DateTime,
+        attachment.CreatedAt.UtcDateTime,
         attachment.IsStoredFile ? FileKind : LinkKind);
 }
 

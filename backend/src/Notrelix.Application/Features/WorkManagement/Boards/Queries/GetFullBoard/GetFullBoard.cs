@@ -180,8 +180,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         collaborationStats?.CommentCount ?? 0,
                         collaborationStats?.AttachmentCount ?? 0,
                         card.Position.Value,
-                        card.CreatedAt.DateTime,
-                        card.UpdatedAt?.DateTime,
+                        card.CreatedAt.UtcDateTime,
+                        card.UpdatedAt?.UtcDateTime,
                         card.Version,
                         card.ItemKey,
                         card.ParentItemId,
@@ -256,7 +256,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 boardMemberActorMap.TryGetValue(m.UserId, out var actor) ? actor.Name : "Unknown",
                 boardMemberActorMap.TryGetValue(m.UserId, out var a) ? a.AvatarUrl : null,
                 m.Role.ToString(),
-                m.JoinedAt.DateTime
+                m.JoinedAt.UtcDateTime
             ))
             .ToList();
 
