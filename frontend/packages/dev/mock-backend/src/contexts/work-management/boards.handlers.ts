@@ -621,9 +621,7 @@ export const boardsOperations = [
       if (title === "") return validationError({ title: ["Required."] });
       store.patchBoard(board.id, {
         ...(title ? { title } : {}),
-        ...(body?.description != null
-          ? { description: body.description }
-          : {}),
+        ...(body?.description != null ? { description: body.description } : {}),
         ...(body?.background
           ? { background: { type: "color" as const, value: body.background } }
           : {}),
