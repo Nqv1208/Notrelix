@@ -7,5 +7,9 @@ public sealed record ChecklistItemToggledDomainEvent(
     Guid ChecklistId,
     Guid ItemId,
     bool IsDone,
+    Guid BoardItemId,
+    string ItemTitle,
+    string ChecklistTitle,
+    Guid UpdatedBy,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

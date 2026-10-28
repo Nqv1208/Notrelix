@@ -1,10 +1,12 @@
 import {
   cloneElement,
   useId,
+  type ComponentProps,
   type MouseEvent,
   type ReactElement,
   type ReactNode,
 } from "react";
+import { Plus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, cn } from "@notrelix/ui-web";
 import type { CardMember } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
@@ -60,6 +62,32 @@ export function SectionHeading({
       ) : null}
       {action ? <span className="ml-auto">{action}</span> : null}
     </h2>
+  );
+}
+
+/**
+ * The one row an empty section folds into: "+ Thêm …". A dashed target that
+ * opens the section's own input in place.
+ */
+export function AddRow({
+  children,
+  className,
+  onClick,
+  ...rest
+}: ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      {...rest}
+      onClick={onClick}
+      className={cn(
+        "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-line-strong bg-transparent px-3 text-left text-item-ui font-medium text-brand-subtle-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring",
+        className,
+      )}
+    >
+      <Plus aria-hidden="true" className="size-4 shrink-0" />
+      {children}
+    </button>
   );
 }
 
