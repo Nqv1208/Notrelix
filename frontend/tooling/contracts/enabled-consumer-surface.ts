@@ -765,6 +765,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemApprovals",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Approvals.Decide",
+    operationId: "WorkManagement.Approvals.Decide",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemApprovals",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Approvals.Cancel",
+    operationId: "WorkManagement.Approvals.Cancel",
+    mutation: true,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useDecideApproval",
@@ -1694,6 +1714,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/apps/web/src/shell/workspace/board-placement-bridge.ts",
     capability: "WorkManagement.Boards.MoveToSpace",
     operationId: "WorkManagement.Boards.MoveToSpace",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "updateGeneral",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Rename",
+    operationId: "WorkManagement.Boards.Rename",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "archiveBoard",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Archive",
+    operationId: "WorkManagement.Boards.Archive",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "deleteBoard",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Delete",
+    operationId: "WorkManagement.Boards.Delete",
     mutation: true,
   },
   {

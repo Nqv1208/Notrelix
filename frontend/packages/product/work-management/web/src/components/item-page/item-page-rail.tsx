@@ -573,7 +573,12 @@ export function ItemPageRail({
         copy={copy}
       />
 
-      <ItemApprovalSection data={data} copy={copy} />
+      <ItemApprovalSection
+        data={data}
+        copy={copy}
+        viewerUserId={viewerUserId}
+        callbacks={callbacks}
+      />
 
       <div>
         <RailHeading

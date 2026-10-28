@@ -284,6 +284,27 @@ export function createItemExtrasApi(
       );
       return (dto ?? []).map(toItemApproval);
     },
+    /** The named approver answers (`WorkManagement.Approvals.Decide`); the comment is optional. */
+    async decideApproval(
+      workspaceId: string,
+      requestId: string,
+      decision: "approve" | "reject",
+      comment: string | null,
+    ): Promise<void> {
+      await api.post<void>(
+        `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
+        { decision, comment },
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
+    /** The requester withdraws a pending request (`WorkManagement.Approvals.Cancel`). */
+    async cancelApproval(requestId: string): Promise<void> {
+      await api.post<void>(
+        `/approvals/${requestId}/cancel`,
+        {},
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
     /** Asks a person to approve the item (`WorkManagement.Approvals.RequestForItem`). */
     async requestApproval(
       itemId: string,

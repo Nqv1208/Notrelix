@@ -374,6 +374,7 @@ export function MyWorkPage() {
       workspaceId={workspaceId}
       boardId={openItem.boardId}
       itemId={openItem.id}
+      viewerUserId={user?.id ?? null}
       departmentMark={
         openItem.department
           ? {

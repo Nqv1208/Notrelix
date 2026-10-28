@@ -213,7 +213,6 @@ export function KanbanBoard({
       activationConstraint: { delay: 220, tolerance: 8 },
     }),
   );
-  const none = useSensors();
   const lanesRef = useRef<HTMLDivElement | null>(null);
   // The card Alt+Arrow just moved: shown even past the lane limit and given
   // focus again once it is in its new lane (it is a new element there).
@@ -459,7 +458,7 @@ export function KanbanBoard({
 
   return (
     <DndContext
-      sensors={canDrag ? sensors : none}
+      sensors={sensors}
       collisionDetection={kanbanCollisionDetection}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       autoScroll={{

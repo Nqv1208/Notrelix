@@ -522,6 +522,9 @@ function ItemPageReady({
     onToggleWatch: (watched) => follow.setFollowing(watched),
     onRequestApproval: (approverUserId) =>
       approvals.request({ approverUserId, note: null }),
+    onDecideApproval: (requestId, decision, comment) =>
+      approvals.decide({ requestId, decision, comment }),
+    onCancelApproval: (requestId) => approvals.cancel(requestId),
     onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
@@ -653,7 +656,10 @@ function ItemPageReady({
               )?.name ??
               null,
             decisionNote: approval.decisionNote,
+            requestedByUserId: approval.requestedByUserId,
           })),
+          approvalAnswerError: approvals.answerError !== null,
+          viewerUserId: viewer?.userId ?? null,
           approvalError: approvals.error
             ? isConflictError(approvals.error)
               ? "alreadyAsked"

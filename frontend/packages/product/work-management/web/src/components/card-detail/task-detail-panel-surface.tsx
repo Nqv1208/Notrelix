@@ -11,6 +11,7 @@ import {
   TaskDetailProperties,
   TaskDetailTitle,
 } from "./task-detail-header";
+import { ItemApprovalSection } from "../item-page/item-page-approval";
 import { TaskDetailTabs } from "./task-detail-tabs";
 import { UpdateComposer } from "./update-composer";
 import type { ItemSheetCopy } from "./item-sheet.copy";
@@ -192,6 +193,13 @@ export function TaskDetailPanelSurface({
                 onToggleLabel={callbacks.onToggleLabel}
                 onCreateLabel={callbacks.onCreateLabel}
               />
+              {detailData.linksCopy ? (
+                <ItemApprovalSection
+                  data={detailData}
+                  copy={detailData.linksCopy}
+                  callbacks={callbacks}
+                />
+              ) : null}
             </div>
             <TaskDetailTabs
               key={card.id}

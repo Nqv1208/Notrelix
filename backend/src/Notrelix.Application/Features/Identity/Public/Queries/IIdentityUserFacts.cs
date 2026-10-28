@@ -29,4 +29,7 @@ public interface IIdentityUserFacts
     /// expose the answer; it must never back an anonymous "does this account exist" lookup.
     /// </summary>
     Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken);
+
+    /// <summary>The user's stored profile language (e.g. "en", "vi"); null when the user has no profile yet.</summary>
+    Task<string?> FindLocaleAsync(Guid userId, CancellationToken cancellationToken);
 }

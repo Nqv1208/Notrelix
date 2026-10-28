@@ -606,7 +606,83 @@ export const boardsOperations = [
         memberCount: 1,
         listCount: store.getLists(b.id).length,
         createdAt: b.createdAt,
+        version: b.version ?? 1,
+        itemKeyPrefix: b.itemKeyPrefix ?? null,
+      } as BoardDtoApi);
+    },
+  }),
+
+  // ─── PATCH /boards/:id (board settings: name, description, colour, key) ───
+
+  defineMockOperation<
+    { id: string },
+    {
+      expectedVersion?: number;
+      title?: string | null;
+      description?: string | null;
+      background?: string | null;
+      itemKeyPrefix?: string | null;
+    },
+    void
+  >({
+    id: "boards.rename",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Rename" },
+    method: "PATCH",
+    route: "/boards/:id",
+    async handle({ params, body, store }) {
+      const board = store.getBoard(params.id);
+      if (!board) return notFound("Board not found");
+      if (!canManageBoard(board.id, store)) return forbidden();
+      if (
+        body?.expectedVersion !== undefined &&
+        body.expectedVersion !== (board.version ?? 1)
+      )
+        return preconditionFailed();
+      const title = body?.title?.trim();
+      if (title === "") return validationError({ title: ["Required."] });
+      store.patchBoard(board.id, {
+        ...(title ? { title } : {}),
+        ...(body?.description != null ? { description: body.description } : {}),
+        ...(body?.background
+          ? { background: { type: "color" as const, value: body.background } }
+          : {}),
+        ...(body?.itemKeyPrefix
+          ? { itemKeyPrefix: body.itemKeyPrefix.toUpperCase() }
+          : {}),
       });
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /boards/:id/archive ─────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "boards.archive",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Archive" },
+    method: "POST",
+    route: "/boards/:id/archive",
+    async handle({ params, store }) {
+      const board = store.getBoard(params.id);
+      if (!board) return notFound("Board not found");
+      if (!canManageBoard(board.id, store)) return forbidden();
+      store.patchBoard(board.id, { isArchived: true });
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── DELETE /boards/:id ───────────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "boards.delete",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Delete" },
+    method: "DELETE",
+    route: "/boards/:id",
+    async handle({ params, store }) {
+      const board = store.getBoard(params.id);
+      if (!board) return notFound("Board not found");
+      if (!canManageBoard(board.id, store)) return forbidden();
+      store.deleteBoard(board.id);
+      return ok<void>(undefined);
     },
   }),
 

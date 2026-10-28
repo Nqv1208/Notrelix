@@ -1,9 +1,11 @@
+using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Boards;
 
 public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
 {
+    private readonly Mock<IIdentityUserFacts> _identity = new();
     private readonly CreateBoardInWorkspaceCommandHandler _handler;
 
     public CreateBoardInWorkspaceTests()
@@ -12,7 +14,8 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
             DbContextMock.Object,
             Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(),
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            _identity.Object);
     }
 
     [Fact]
@@ -95,5 +98,29 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("en", "To do", "In progress", "In review", "Done")]
+    [InlineData("en-US", "To do", "In progress", "In review", "Done")]
+    [InlineData("vi", "Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành")]
+    [InlineData(null, "Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành")] // no profile yet
+    public async Task Handle_NamesStatusesAndGroupsInTheCreatorsProfileLanguage(string? locale, params string[] expected)
+    {
+        _identity.Setup(i => i.FindLocaleAsync(TestUserId, It.IsAny<CancellationToken>())).ReturnsAsync(locale);
+        var fields = new List<BoardField>();
+        var fieldSet = new Mock<Microsoft.EntityFrameworkCore.DbSet<BoardField>>();
+        fieldSet.Setup(s => s.AddRange(It.IsAny<BoardField[]>())).Callback<BoardField[]>(fields.AddRange);
+        DbContextMock.Setup(c => c.BoardFields).Returns(fieldSet.Object);
+        var groups = new List<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>();
+        var groupSet = new Mock<Microsoft.EntityFrameworkCore.DbSet<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>>();
+        groupSet.Setup(s => s.Add(It.IsAny<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>()))
+            .Callback<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>(groups.Add);
+        DbContextMock.Setup(c => c.BoardGroups).Returns(groupSet.Object);
+
+        await _handler.Handle(new CreateBoardInWorkspaceCommand(TestWorkspaceId, "New Board", null, null, null), CancellationToken.None);
+
+        fields.Single(f => f.Type == FieldType.Status).Options.OrderBy(o => o.Position).Select(o => o.Name).Should().Equal(expected);
+        groups.OrderBy(g => g.Position).Select(g => g.Title).Should().Equal(expected);
     }
 }
