@@ -2887,6 +2887,7 @@
         "src/components/board-settings/board-settings-labels.tsx",
         "src/components/board-settings/board-settings-parts.tsx",
         "src/components/board-settings/board-settings-sortable.tsx",
+        "src/components/board-settings/board-settings-templates.tsx",
         "src/components/board-settings/board-settings-view-panel.tsx",
         "src/components/board-settings/board-settings-views.tsx",
         "src/components/board-settings/board-settings-write-error.tsx"

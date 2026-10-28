@@ -30,9 +30,6 @@ public class DomainTenantScopeTests
         "Notrelix.Domain.Identity.Profiles.UserProfile",
         "Notrelix.Domain.Identity.Mfa.UserMfaMethod",
 
-        // WorkManagement templates (global scope, not tied to a specific workspace)
-        "Notrelix.Domain.WorkManagement.Templates.BoardTemplate",
-
         // Documents templates
         "Notrelix.Domain.Documents.Templates.PageTemplate",
 

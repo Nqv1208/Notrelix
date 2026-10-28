@@ -51,6 +51,7 @@ import {
 } from "./mock-board-settings";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
 import { MockDocsHistoryState } from "./mock-docs-history";
+import { MockBoardTemplateState } from "./mock-board-templates";
 import { MockWorkFeedState } from "./mock-work-feed";
 import {
   defaultStatusOptions,
@@ -351,6 +352,8 @@ export class MockStore {
   readonly spaces = new MockSpaceState();
   /** The pages' history entries and the workspace page templates. */
   readonly docsHistory = new MockDocsHistoryState(this);
+  /** The workspace's board templates (the built-in starters are fixed). */
+  readonly boardTemplates = new MockBoardTemplateState();
 
   /** The member's work feed: relationships, approvals, mentions, inbox. */
   readonly feed = new MockWorkFeedState();
@@ -1823,6 +1826,7 @@ export class MockStore {
     this.boardAudienceByBoardId.clear();
     this.spaces.clear();
     this.docsHistory.clear();
+    this.boardTemplates.clear();
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();

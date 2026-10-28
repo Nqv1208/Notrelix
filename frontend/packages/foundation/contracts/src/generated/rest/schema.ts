@@ -6023,6 +6023,7 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Templates.Requests.CreateBoardTemplateRequest": {
             name?: string | null;
             description?: string | null;
+            includeItems?: boolean;
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.AcceptInvitationWithRegistrationRequest": {
             token?: string | null;
@@ -7529,6 +7530,14 @@ export interface components {
             isMine?: boolean;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            status?: string | null;
+            builtInKey?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.AccountWorkspaceDto": {
             /** Format: uuid */
@@ -18268,15 +18277,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -18436,15 +18445,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -18480,7 +18489,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto"][];
                 };
             };
         };

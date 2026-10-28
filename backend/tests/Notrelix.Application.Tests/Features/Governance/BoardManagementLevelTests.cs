@@ -34,7 +34,7 @@ namespace Notrelix.Application.Tests.Features.Governance;
 /// deleting or restoring it, and its members — needs Manager; Editors only edit
 /// content. A Guest is capped at Editor, so a Guest never manages a Board, also
 /// on an unplaced Workspace-visible Board. Content-structure commands (groups,
-/// labels, the default view, saved filters, forms, templates, relations, approval
+/// labels, the default view, saved filters, forms, relations, approval
 /// requests) stay Editor actions by declaring the content action they perform.
 /// </summary>
 public sealed class BoardManagementLevelTests
@@ -67,6 +67,7 @@ public sealed class BoardManagementLevelTests
         { typeof(AddBoardMemberCommand), Board },
         { typeof(RemoveBoardMemberCommand), Board },
         { typeof(UpdateBoardMemberRoleCommand), Board },
+        { typeof(CreateBoardTemplateCommand), Board },
     };
 
     public static TheoryData<Type, string> ContentCommands() => new()
@@ -84,7 +85,6 @@ public sealed class BoardManagementLevelTests
         { typeof(SetDefaultViewCommand), Board },
         { typeof(CreateSavedFilterCommand), Board },
         { typeof(CreateFormCommand), Board },
-        { typeof(CreateBoardTemplateCommand), Board },
         { typeof(CreateBoardRelationCommand), Board },
         { typeof(CreateApprovalRequestCommand), Board },
     };

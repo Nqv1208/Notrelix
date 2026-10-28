@@ -1365,6 +1365,8 @@ A Work Management Template can seed:
 - Views;
 - Forms/Automation hooks where approved.
 
+A Board template is workspace-scoped creation input. Saving a Board as a template needs the right to manage that Board and copies its fields, Status options, groups, labels and Board-visible views; items only when the person asks (top-level items with their field values, at most 500; never comments, files, members or sub-items). A saved template is a draft until a workspace Owner or Admin publishes it; only Owners and Admins publish, archive or delete (an archived template is not published again). "New board" offers the published templates of the workspace plus built-in starters that every workspace has.
+
 ---
 
 # 97. WM-028 — Work template instantiation creates owned identities

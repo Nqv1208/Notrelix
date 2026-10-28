@@ -146,6 +146,7 @@ export {
   CreateResourceDialog,
   type CreateResourceDialogProps,
   type CreateResourceTemplate,
+  type CreateBoardTemplateChoice,
   type CreatableResource,
 } from "./home/create-resource-dialog";
 

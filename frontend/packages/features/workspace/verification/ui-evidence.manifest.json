@@ -1122,6 +1122,14 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
+          "id": "board-gallery",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "board-gallery-empty",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
           "id": "submit",
           "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
         },
