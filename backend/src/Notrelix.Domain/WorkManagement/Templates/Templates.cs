@@ -28,7 +28,7 @@ public class BoardTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
             Name = name.Trim(),
             Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             Structure = structure,
-            Status = TemplateStatus.Published
+            Status = TemplateStatus.Draft
         };
 
         template.SetAuditOnCreate(null, createdAt);

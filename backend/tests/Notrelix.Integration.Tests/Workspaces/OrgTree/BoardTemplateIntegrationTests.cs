@@ -43,6 +43,14 @@ public sealed class BoardTemplateIntegrationTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    /// <summary>Saves the board as a template and publishes it, as a workspace manager would.</summary>
+    private static async Task<Guid> SaveAndPublishAsync(ServiceProvider provider, Guid boardId, string name, string? description, bool includeItems)
+    {
+        var id = await SendForIdAsync(provider, new CreateBoardTemplateCommand(boardId, name, description, includeItems));
+        await OrgTreeTestHost.SendIdempotentAsync(provider, new PublishBoardTemplateCommand(id));
+        return id;
+    }
+
     private static async Task<Guid> SendForIdAsync(ServiceProvider provider, object request) =>
         ((IdResult)(await OrgTreeTestHost.SendIdempotentAsync(provider, request))!).Data;
 
@@ -72,7 +80,7 @@ public sealed class BoardTemplateIntegrationTests : IAsyncLifetime
         using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
         var source = await SeedSourceBoardAsync(stack, owner);
 
-        var templateId = await SendForIdAsync(owner, new CreateBoardTemplateCommand(source, "Sprint template", "Reusable", false));
+        var templateId = await SaveAndPublishAsync(owner, source, "Sprint template", "Reusable", false);
         var boardId = await SendForIdAsync(owner, new CreateBoardFromTemplateCommand(templateId, stack.WorkspaceId, "Sprint 2"));
 
         await _host.ReadAsync(async c =>
@@ -98,7 +106,7 @@ public sealed class BoardTemplateIntegrationTests : IAsyncLifetime
         using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
         var source = await SeedSourceBoardAsync(stack, owner);
 
-        var templateId = await SendForIdAsync(owner, new CreateBoardTemplateCommand(source, "With items", null, true));
+        var templateId = await SaveAndPublishAsync(owner, source, "With items", null, true);
         var boardId = await SendForIdAsync(owner, new CreateBoardFromTemplateCommand(templateId, stack.WorkspaceId, "Copy"));
 
         await _host.ReadAsync(async c =>
@@ -133,6 +141,21 @@ public sealed class BoardTemplateIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ADraftTemplate_IsNotOffered_UntilPublished()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var source = await SeedSourceBoardAsync(stack, owner);
+        var templateId = await SendForIdAsync(owner, new CreateBoardTemplateCommand(source, "Draft", null, false));
+
+        var draft = () => OrgTreeTestHost.SendIdempotentAsync(owner, new CreateBoardFromTemplateCommand(templateId, stack.WorkspaceId, "Early"));
+        await draft.Should().ThrowAsync<AppNotFound>();
+
+        await OrgTreeTestHost.SendIdempotentAsync(owner, new PublishBoardTemplateCommand(templateId));
+        await SendForIdAsync(owner, new CreateBoardFromTemplateCommand(templateId, stack.WorkspaceId, "On time"));
+    }
+
+    [Fact]
     public async Task ManagingATemplate_NeedsWorkspaceAdmin()
     {
         var stack = await _host.SeedWorkspaceAsync();
@@ -163,7 +186,7 @@ public sealed class BoardTemplateIntegrationTests : IAsyncLifetime
         using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
         using var otherOwner = _host.CreateProvider(other.AccountId, other.OwnerId);
         var source = await SeedSourceBoardAsync(stack, owner);
-        var templateId = await SendForIdAsync(owner, new CreateBoardTemplateCommand(source, "Sprint template", null, false));
+        var templateId = await SaveAndPublishAsync(owner, source, "Sprint template", null, false);
 
         var fromOtherWorkspace = () => OrgTreeTestHost.SendIdempotentAsync(otherOwner, new CreateBoardFromTemplateCommand(templateId, other.WorkspaceId, "Leak"));
         await fromOtherWorkspace.Should().ThrowAsync<AppNotFound>();

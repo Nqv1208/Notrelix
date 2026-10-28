@@ -110,6 +110,7 @@ public sealed class SpacePlacementIntegrationTests : IAsyncLifetime
         var s = await SeedAsync();
         await _host.SeedBoardAsync(s.Stack, "Existing");
         var template = BoardTemplate.Create(s.Stack.AccountId, s.Stack.WorkspaceId, "Budget template", null, Notrelix.Domain.SharedKernel.JsonValue.Create("{}")!, OrgTreeTestHost.BaseTime);
+        template.Publish(s.Stack.OwnerId, OrgTreeTestHost.BaseTime);
         await _host.WithSystemContextAsync(c => { c.BoardTemplates.Add(template); return Task.CompletedTask; });
         using var accountant = _host.CreateProvider(s.Stack.AccountId, s.Accountant);
 

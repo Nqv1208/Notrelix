@@ -17,7 +17,7 @@ public class TemplateTests
 
         template.CreatedAt.Should().Be(Now);
         template.Name.Should().Be("Template");
-        template.Status.Should().Be(TemplateStatus.Published);
+        template.Status.Should().Be(TemplateStatus.Draft);
     }
 
     [Fact]

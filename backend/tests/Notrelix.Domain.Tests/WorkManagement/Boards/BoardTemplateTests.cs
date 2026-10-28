@@ -17,7 +17,7 @@ public class BoardTemplateTests
         template.WorkspaceId.Should().Be(WorkspaceId);
         template.Name.Should().Be("Sprint");
         template.Description.Should().Be("Two-week sprint");
-        template.Status.Should().Be(TemplateStatus.Published);
+        template.Status.Should().Be(TemplateStatus.Draft, "a saved template is published by a workspace manager");
         template.DomainEvents.Should().ContainSingle(e => e is BoardTemplateCreatedDomainEvent);
     }
 
