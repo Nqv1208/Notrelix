@@ -1,5 +1,7 @@
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
+  ActivityChange,
+  ActivityChangeApi,
   ActivityLogResponseApi,
   AttachmentDtoApi,
   Board,
@@ -381,8 +383,15 @@ export function mapActivityResponse(
     ...(item.detail ? { detail: item.detail } : {}),
     ...(item.compact ? { compact: item.compact } : {}),
     ...(item.type ? { code: item.type } : {}),
-    ...(item.change ? { change: item.change } : {}),
+    ...(item.change ? { change: presentChange(item.change) } : {}),
   }));
+}
+
+/** Drops the sides the API sends as null, so the client reads them as absent. */
+function presentChange(change: ActivityChangeApi): ActivityChange {
+  return Object.fromEntries(
+    Object.entries(change).filter(([, value]) => value != null),
+  ) as ActivityChange;
 }
 
 // ─── Element mappers ─────────────────────────────────────────────────────────

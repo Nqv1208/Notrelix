@@ -137,6 +137,11 @@ export interface ActivityChange {
   readonly itemKey?: string;
 }
 
+/** The API's change: a side with no value (a first status, a label's "from") arrives as null. */
+export type ActivityChangeApi = {
+  readonly [K in keyof ActivityChange]?: string | null;
+};
+
 export interface CardActivity {
   id: string;
   cardId: string;
@@ -282,7 +287,7 @@ export interface ActivityLogDtoApi {
   compact?: ActivityCompact | null;
   /** The stable type of the fact and its language-neutral detail (`GET /board-items/{id}/activity`). */
   type?: string | null;
-  change?: ActivityChange | null;
+  change?: ActivityChangeApi | null;
   actorAvatarUrl?: string | null;
 }
 
