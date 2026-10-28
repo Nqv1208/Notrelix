@@ -275,3 +275,115 @@ public sealed class ItemRestoredActivityConsumer : IConsumer<BoardItemRestoredIn
             msg.OccurredAt, "restored this item from deleted", null, null, context.CancellationToken);
     }
 }
+
+// Checklist history reuses the read model's keys: `to` is the checklist (or to-do) title and, for a to-do, `fieldName` is its checklist.
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemChecklistAddedActivityConsumer : IConsumer<BoardItemChecklistAddedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemChecklistAddedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemChecklistAddedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var list = ItemChangeWords.Truncate(msg.ChecklistTitle);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.ChecklistAdded, msg.EventId, msg.AddedBy, msg.OccurredAt,
+            $"added the checklist \"{list}\"", null,
+            new Dictionary<string, string?> { ["to"] = list }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemChecklistRenamedActivityConsumer : IConsumer<BoardItemChecklistRenamedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemChecklistRenamedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemChecklistRenamedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var list = ItemChangeWords.Truncate(msg.ChecklistTitle);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.ChecklistRenamed, msg.EventId, msg.RenamedBy, msg.OccurredAt,
+            $"renamed a checklist to \"{list}\"", null,
+            new Dictionary<string, string?> { ["to"] = list }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemChecklistDeletedActivityConsumer : IConsumer<BoardItemChecklistDeletedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemChecklistDeletedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemChecklistDeletedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var list = ItemChangeWords.Truncate(msg.ChecklistTitle);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.ChecklistDeleted, msg.EventId, msg.DeletedBy, msg.OccurredAt,
+            $"deleted the checklist \"{list}\"", null,
+            new Dictionary<string, string?> { ["to"] = list }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemChecklistItemAddedActivityConsumer : IConsumer<BoardItemChecklistItemAddedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemChecklistItemAddedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemChecklistItemAddedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var list = ItemChangeWords.Truncate(msg.ChecklistTitle);
+        var todo = ItemChangeWords.Truncate(msg.ChecklistItemTitle);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.ChecklistItemAdded, msg.EventId, msg.AddedBy, msg.OccurredAt,
+            $"added \"{todo}\" to the checklist \"{list}\"", null,
+            new Dictionary<string, string?> { ["fieldName"] = list, ["to"] = todo }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemChecklistItemCompletedActivityConsumer : IConsumer<BoardItemChecklistItemCompletionChangedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemChecklistItemCompletedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemChecklistItemCompletionChangedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var list = ItemChangeWords.Truncate(msg.ChecklistTitle);
+        var todo = ItemChangeWords.Truncate(msg.ChecklistItemTitle);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, msg.IsCompleted ? ItemActivityTypes.ChecklistItemCompleted : ItemActivityTypes.ChecklistItemReopened, msg.EventId, msg.ChangedBy, msg.OccurredAt,
+            msg.IsCompleted ? $"completed \"{todo}\" in the checklist \"{list}\"" : $"marked \"{todo}\" as not done in the checklist \"{list}\"", null,
+            new Dictionary<string, string?> { ["fieldName"] = list, ["to"] = todo }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemChecklistItemRemovedActivityConsumer : IConsumer<BoardItemChecklistItemRemovedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemChecklistItemRemovedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    public Task Consume(ConsumeContext<BoardItemChecklistItemRemovedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var list = ItemChangeWords.Truncate(msg.ChecklistTitle);
+        var todo = ItemChangeWords.Truncate(msg.ChecklistItemTitle);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.ChecklistItemRemoved, msg.EventId, msg.RemovedBy, msg.OccurredAt,
+            $"removed \"{todo}\" from the checklist \"{list}\"", null,
+            new Dictionary<string, string?> { ["fieldName"] = list, ["to"] = todo }, context.CancellationToken);
+    }
+}

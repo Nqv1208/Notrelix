@@ -13,6 +13,13 @@ import {
  * complete).
  */
 export const en = {
+  priority: {
+    urgent: "Priority Urgent",
+    high: "Priority High",
+    medium: "Priority Medium",
+    low: "Priority Low",
+  },
+  blockedBy: "blocked by {{count}} items",
   today: "Today",
   todayMarker: "Today",
   previous: {
@@ -163,6 +170,13 @@ export const en = {
 export type CalendarCopy = typeof en;
 
 export const vi: CalendarCopy = {
+  priority: {
+    urgent: "Ưu tiên Khẩn",
+    high: "Ưu tiên Cao",
+    medium: "Ưu tiên Trung bình",
+    low: "Ưu tiên Thấp",
+  },
+  blockedBy: "bị chặn bởi {{count}} việc",
   today: "Hôm nay",
   todayMarker: "Hôm nay",
   previous: {

@@ -1,5 +1,10 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
+import { Ban } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import {
+  PRIORITY_TONE_CLASS,
+  PriorityGlyph,
+} from "../../shared/priority-glyph";
 import type { CalendarCopy } from "./calendar.copy";
 import type { CalendarEntry, CalendarTone } from "./calendar-model";
 
@@ -192,7 +197,15 @@ export function CalendarEvent({
       )}
       style={style}
       title={text}
-      aria-label={entryLabel(entry)}
+      aria-label={[
+        entryLabel(entry),
+        entry.priority ? copy.priority[entry.priority] : null,
+        entry.openBlockerCount
+          ? copy.blockedBy.replace("{{count}}", String(entry.openBlockerCount))
+          : null,
+      ]
+        .filter(Boolean)
+        .join(", ")}
       onClick={(event: MouseEvent) => {
         event.stopPropagation();
         onOpen(entry.id);
@@ -203,6 +216,22 @@ export function CalendarEvent({
     >
       {dot}
       {label}
+      {entry.openBlockerCount ? (
+        <Ban
+          data-blocked={entry.openBlockerCount}
+          aria-hidden="true"
+          className="size-3.25 flex-none text-danger-text"
+        />
+      ) : null}
+      {entry.priority ? (
+        <span
+          data-priority={entry.priority}
+          aria-hidden="true"
+          className={cn("flex-none", PRIORITY_TONE_CLASS[entry.priority])}
+        >
+          <PriorityGlyph level={entry.priority} />
+        </span>
+      ) : null}
       {entry.assignee ? <CalendarMark assignee={entry.assignee} /> : null}
     </button>
   );

@@ -570,6 +570,9 @@ function mapCardSummaryDto(
     statusCategory,
     dueAt: dueDate,
     childProgress: values.childProgress,
+    openBlockerCount: legacy
+      ? 0
+      : ((dto as GeneratedItemSummary).openBlockerCount ?? 0),
   };
 }
 

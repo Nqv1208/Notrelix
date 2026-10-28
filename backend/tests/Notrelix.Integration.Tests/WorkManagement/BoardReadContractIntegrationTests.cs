@@ -92,6 +92,11 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         seed.BoardGroups.Add(_group);
         seed.BoardFields.AddRange(_status, _priority);
         seed.BoardItems.AddRange(_parent, _doneChild, _todoChild, _archivedChild, _archivedRoot, _plain);
+        // Plain is blocked by the open Parent and by the completed child: only the open one counts.
+        var itemKind = ResourceKind.Create("work-management.board-item");
+        seed.BoardItemLinks.AddRange(
+            BoardItemLink.Create(_accountId, workspace.Id, _board.Id, _plain.Id, ResourceRef.Create(itemKind, _parent.Id, workspace.Id), BoardItemLinkType.Dependency, _userId, Now),
+            BoardItemLink.Create(_accountId, workspace.Id, _board.Id, _plain.Id, ResourceRef.Create(itemKind, _doneChild.Id, workspace.Id), BoardItemLinkType.Dependency, _userId, Now));
         await seed.SaveChangesAsync();
     }
 
@@ -123,6 +128,8 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         plain.StatusOptionId.Should().BeNull();
         plain.PriorityOptionId.Should().BeNull();
         plain.ChildProgress.Should().BeNull("an Item without child Items has no derived progress");
+        plain.OpenBlockerCount.Should().Be(1, "only the not-completed blocker counts");
+        parent.OpenBlockerCount.Should().Be(0);
     }
 
     [Fact]

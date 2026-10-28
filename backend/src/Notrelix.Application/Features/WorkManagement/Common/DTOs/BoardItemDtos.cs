@@ -24,7 +24,9 @@ public record BoardItemSummaryDto(
     DateTimeOffset? StartedAt = null,
     DateTimeOffset? CompletedAt = null,
     // Derived from non-archived child Items; null when the Item has none.
-    BoardItemChildProgressDto? ChildProgress = null
+    BoardItemChildProgressDto? ChildProgress = null,
+    // Derived: live, not-completed Items this Item is blocked by (Dependency links where it is the source).
+    int OpenBlockerCount = 0
 );
 
 /// <summary>

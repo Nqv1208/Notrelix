@@ -227,6 +227,10 @@ export function createDocPageScreen({
       namedOnly: boolean;
     } | null>(null);
     const [activeTocId, setActiveTocId] = useState<string | null>(null);
+    // A heading picked in the contents stays the current one while the page
+    // scrolls to it (the scroll passes other headings, and can be cut short by
+    // a layout shift); the viewer's own wheel, touch, key or click releases it.
+    const tocPinned = useRef(false);
     // The selection a comment is being written on, and the thread being looked at.
     const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(
       null,
@@ -646,7 +650,9 @@ export function createDocPageScreen({
         scroller = scroller.parentElement;
       }
       const target: HTMLElement | Window = scroller ?? window;
+      tocPinned.current = false;
       const update = () => {
+        if (tocPinned.current) return;
         const box = scroller?.getBoundingClientRect();
         const top = box?.top ?? 0;
         const middle = top + (box?.height ?? window.innerHeight) / 2;
@@ -663,9 +669,20 @@ export function createDocPageScreen({
         }
         if (best) setActiveTocId(best.id);
       };
+      const release = () => {
+        tocPinned.current = false;
+      };
+      const viewerInput = ["wheel", "touchstart", "keydown", "pointerdown"];
       update();
       target.addEventListener("scroll", update, { passive: true });
-      return () => target.removeEventListener("scroll", update);
+      for (const type of viewerInput) {
+        target.addEventListener(type, release, { passive: true });
+      }
+      return () => {
+        target.removeEventListener("scroll", update);
+        for (const type of viewerInput)
+          target.removeEventListener(type, release);
+      };
     }, [outlineIds, panelTab]);
 
     // Spell check follows the viewer's choice (Tools menu).
@@ -1149,6 +1166,7 @@ export function createDocPageScreen({
       onPanelTab: setPanelTab,
       onPanelOpenChange: setPanelOpen,
       onTocSelect: (id) => {
+        tocPinned.current = true;
         setActiveTocId(id);
         if (
           id !== "title" &&

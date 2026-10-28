@@ -25,6 +25,13 @@ export type ActivityEventWords = {
   readonly unassigned: string;
   readonly labelAdded: string;
   readonly labelRemoved: string;
+  readonly checklistAdded: string;
+  readonly checklistRenamed: string;
+  readonly checklistDeleted: string;
+  readonly checklistItemAdded: string;
+  readonly checklistItemCompleted: string;
+  readonly checklistItemReopened: string;
+  readonly checklistItemRemoved: string;
   readonly movedToGroup: string;
   readonly movedToGroupPlain: string;
   readonly movedToBoard: string;
@@ -52,6 +59,13 @@ export const ACTIVITY_WORDS_EN: ActivityEventWords = {
   unassigned: "removed {{person}} from the assignees",
   labelAdded: "added the label {{to}}",
   labelRemoved: "removed the label {{to}}",
+  checklistAdded: "added the checklist {{to}}",
+  checklistRenamed: "renamed a checklist to {{to}}",
+  checklistDeleted: "deleted the checklist {{to}}",
+  checklistItemAdded: "added {{to}} to the checklist {{field}}",
+  checklistItemCompleted: "completed {{to}} in the checklist {{field}}",
+  checklistItemReopened: "marked {{to}} as not done in the checklist {{field}}",
+  checklistItemRemoved: "removed {{to}} from the checklist {{field}}",
   movedToGroup: "moved this item from {{from}} to {{to}}",
   movedToGroupPlain: "moved this item to another group",
   movedToBoard: "moved this item from {{from}} to {{to}}",
@@ -79,6 +93,15 @@ export const ACTIVITY_WORDS_VI: ActivityEventWords = {
   unassigned: "bỏ {{person}} khỏi người phụ trách",
   labelAdded: "thêm nhãn {{to}}",
   labelRemoved: "gỡ nhãn {{to}}",
+  checklistAdded: "thêm danh sách kiểm tra {{to}}",
+  checklistRenamed: "đổi tên một danh sách kiểm tra thành {{to}}",
+  checklistDeleted: "xóa danh sách kiểm tra {{to}}",
+  checklistItemAdded: "thêm {{to}} vào danh sách kiểm tra {{field}}",
+  checklistItemCompleted:
+    "hoàn thành {{to}} trong danh sách kiểm tra {{field}}",
+  checklistItemReopened:
+    "bỏ hoàn thành {{to}} trong danh sách kiểm tra {{field}}",
+  checklistItemRemoved: "xóa {{to}} khỏi danh sách kiểm tra {{field}}",
   movedToGroup: "chuyển việc từ {{from}} sang {{to}}",
   movedToGroupPlain: "chuyển việc sang nhóm khác",
   movedToBoard: "chuyển việc từ bảng {{from}} sang bảng {{to}}",
@@ -179,6 +202,21 @@ export function describeActivityEvent(
       return sentence(words.labelAdded);
     case "work.item-label-removed":
       return sentence(words.labelRemoved);
+    // A checklist's title, or a to-do's title with its checklist's name as the field, travels in the change.
+    case "work.item-checklist-added":
+      return sentence(words.checklistAdded);
+    case "work.item-checklist-renamed":
+      return sentence(words.checklistRenamed);
+    case "work.item-checklist-deleted":
+      return sentence(words.checklistDeleted);
+    case "work.item-checklist-item-added":
+      return sentence(words.checklistItemAdded);
+    case "work.item-checklist-item-completed":
+      return sentence(words.checklistItemCompleted);
+    case "work.item-checklist-item-reopened":
+      return sentence(words.checklistItemReopened);
+    case "work.item-checklist-item-removed":
+      return sentence(words.checklistItemRemoved);
     case "work.item-moved":
       return sentence(
         from !== undefined && to !== undefined

@@ -673,6 +673,37 @@ describe("MainTableSurface", () => {
     expect(headers).toContain("Người phụ trách");
   });
 
+  it("offers Checklist, Bình luận and Tệp columns once they are shown", () => {
+    renderTable(erpTableProps({ hiddenColumnIds: [] }));
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent);
+    expect(headers).toEqual(
+      expect.arrayContaining(["Checklist", "Bình luận", "Tệp"]),
+    );
+    // ERP-142 has 4 comments; the counter keeps an accessible name.
+    expect(within(row("ERP-142")).getByText("4 bình luận")).toBeTruthy();
+  });
+
+  it("keeps the three counter columns hidden by default", () => {
+    renderTable(erpTableProps());
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent);
+    expect(headers).not.toContain("Checklist");
+    expect(headers).not.toContain("Tệp");
+  });
+
+  it("shows every priority level with its own glyph and word", () => {
+    renderTable(erpTableProps());
+    const levels = new Set<string>();
+    for (const marker of document.querySelectorAll("[data-priority]")) {
+      levels.add(marker.getAttribute("data-priority")!);
+      expect(marker.querySelector("svg")).not.toBeNull();
+    }
+    expect(levels.has("medium")).toBe(true);
+  });
+
   it("marks the sorted column and the open item", () => {
     renderTable(erpTableProps({ openItemId: ERP_TABLE_ITEM("ERP-142") }));
     expect(

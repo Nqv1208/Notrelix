@@ -14,10 +14,17 @@ import type {
 import { mapBoardDto, mapFullBoardDto } from "./board-api-mappers";
 
 /**
- * Table columns a new view does not show ("Cột 9/12"): start date, created
+ * Table columns a new view does not show ("Cột 9/15"): start date, created
  * and completed. The ids are the table's column ids, not field ids.
  */
-export const DEFAULT_HIDDEN_TABLE_COLUMNS = ["start", "created", "completed"];
+export const DEFAULT_HIDDEN_TABLE_COLUMNS = [
+  "start",
+  "created",
+  "completed",
+  "checklist",
+  "comments",
+  "files",
+];
 
 export const defaultTableViewConfig: ViewConfig = {
   groupBy: "list",

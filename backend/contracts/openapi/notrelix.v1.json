@@ -27777,6 +27777,10 @@
           },
           "childProgress": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"
+          },
+          "openBlockerCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

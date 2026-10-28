@@ -7368,6 +7368,8 @@ export interface components {
             /** Format: date-time */
             completedAt?: string | null;
             childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
+            /** Format: int32 */
+            openBlockerCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto": {
             /** Format: uuid */
