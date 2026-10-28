@@ -368,8 +368,7 @@ export const workFeedOperations = [
       const sent = remindSentAt.get(store) ?? new Map<string, string>();
       remindSentAt.set(store, sent);
       const last = sent.get(params.id);
-      const next = (iso: string) =>
-        isoOfMs(Date.parse(iso) + 24 * 3_600_000);
+      const next = (iso: string) => isoOfMs(Date.parse(iso) + 24 * 3_600_000);
       if (last && Date.parse(next(last)) > Date.parse(now))
         return {
           status: 409,
