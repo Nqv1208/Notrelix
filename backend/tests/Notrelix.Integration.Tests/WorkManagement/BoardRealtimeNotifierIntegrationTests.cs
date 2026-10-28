@@ -138,8 +138,9 @@ public sealed class BoardRealtimeNotifierIntegrationTests : IAsyncLifetime
         execution.Setup(c => c.UserId).Returns(_userId);
         execution.Setup(c => c.CorrelationId).Returns(Guid.NewGuid());
         var notifier = new BoardRealtimeNotifier(
+            execution.Object, new FixedClock(),
             new BoardRealtimeScopeAdapter(new BoardChildAuthorizationFactsAdapter(context), context, context),
-            collector, execution.Object, new FixedClock());
+            collector);
 
         await notifier.NotifyResourceAsync(kind, id, "TestChange", response, CancellationToken.None);
         await context.SaveChangesAsync();

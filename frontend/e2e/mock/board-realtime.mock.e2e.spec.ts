@@ -113,16 +113,15 @@ test.describe("Board realtime convergence (owner)", () => {
     const itemId = (await card.getAttribute("data-card-id"))!;
 
     await otherPersonWrites(page, itemId, "PATCH", { title: RENAMED });
-    await expect(page.getByText(RENAMED)).toHaveCount(0);
+    const renamed = lane.locator(`button[data-card-id="${itemId}"]`);
+    await expect(renamed).not.toHaveAttribute("aria-label", RENAMED);
 
     // A late frame of a board that is not open must not refetch this one.
     await deliverBoardFrame(page, "mock-board-previous", "UpdateBoardItem");
-    await expect(page.getByText(RENAMED)).toHaveCount(0);
+    await expect(renamed).not.toHaveAttribute("aria-label", RENAMED);
 
     await deliverBoardFrame(page, BOARD_ID, "UpdateBoardItem");
-    await expect(
-      lane.locator(`button[data-card-id="${itemId}"]`),
-    ).toContainText(RENAMED);
+    await expect(renamed).toHaveAttribute("aria-label", RENAMED);
   });
 
   test("a delete by someone else removes the card from the open board when its frame arrives", async ({

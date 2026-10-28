@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Ports.Realtime;
-using Notrelix.Application.Features.WorkManagement.Public.BoardRealtime;
 
 namespace Notrelix.Application.Features.WorkManagement.Realtime;
 
@@ -10,16 +9,16 @@ public sealed class BoardRealtimeNotifier : IBoardRealtimeNotifier
     private const string BoardKind = "work-management.board";
     private static readonly JsonElement EmptyPayload = JsonSerializer.SerializeToElement(new { });
 
-    private readonly IBoardRealtimeScopeFacts _scope;
-    private readonly IIntegrationEventCollector _events;
+    private readonly IBoardRealtimeScopeFacts? _scope;
+    private readonly IIntegrationEventCollector? _events;
     private readonly IExecutionContextReader _context;
     private readonly IDateTimeProvider _time;
 
     public BoardRealtimeNotifier(
-        IBoardRealtimeScopeFacts scope,
-        IIntegrationEventCollector events,
         IExecutionContextReader context,
-        IDateTimeProvider time)
+        IDateTimeProvider time,
+        IBoardRealtimeScopeFacts? scope = null,
+        IIntegrationEventCollector? events = null)
     {
         _scope = scope;
         _events = events;
@@ -43,7 +42,7 @@ public sealed class BoardRealtimeNotifier : IBoardRealtimeNotifier
 
         var boardId = resourceKind == BoardKind
             ? resourceId
-            : await _scope.ResolveBoardIdAsync(resourceKind, resourceId, cancellationToken);
+            : _scope is null ? null : await _scope.ResolveBoardIdAsync(resourceKind, resourceId, cancellationToken);
         if (boardId is { } id) await NotifyBoardAsync(id, changeKind, cancellationToken);
     }
 
@@ -51,7 +50,8 @@ public sealed class BoardRealtimeNotifier : IBoardRealtimeNotifier
     {
         var correlationId = _context.CorrelationId == Guid.Empty ? Guid.NewGuid() : _context.CorrelationId;
         var now = _time.UtcNow;
-        _events.Add(new RealtimeResourceChangedV1(
+        // Hosts that collect no integration events (partial test graphs) announce nothing.
+        _events?.Add(new RealtimeResourceChangedV1(
             Guid.CreateVersion7(),
             _context.AccountId,
             _context.WorkspaceId,
