@@ -65,6 +65,7 @@ import {
   type TableStatusOption,
 } from "./table-model";
 import { useAddGroup } from "../../status-option/use-add-group";
+import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
@@ -682,6 +683,21 @@ export function MainTableView({
             density: table.density,
             onDensityChange: table.setDensity,
             canAdd: capabilities.canCreateCard,
+            savedFilters: (
+              <SavedFiltersControl
+                workspaceId={workspaceId}
+                boardId={boardId}
+                filter={filterValue}
+                groupBy={table.groupByField?.id ?? null}
+                canEdit={capabilities.canEditFields}
+                onApply={(criteria) => {
+                  setFilterValue(criteria.filter || undefined);
+                  if (!criteria.groupBy) return;
+                  if (onGroupByChange) onGroupByChange(criteria.groupBy);
+                  else setLocalGroupBy(criteria.groupBy);
+                }}
+              />
+            ),
           }}
           groups={groups}
           statusOptions={statusOptions}

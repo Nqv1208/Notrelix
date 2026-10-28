@@ -10,6 +10,9 @@ public class SavedFilter : SoftDeletableAggregateRoot, IWorkspaceScoped
     public string Name { get; private set; } = null!;
     public SavedFilterVisibility Visibility { get; private set; }
 
+    /// <summary>The web filter bar state (filter facets, group, sort) as an opaque JSON object, set at creation.</summary>
+    public string? Criteria { get; private set; }
+
     private readonly List<FilterRule> _rules = new();
     private readonly List<SortRule> _sortRules = new();
 
@@ -30,7 +33,8 @@ public class SavedFilter : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guid? viewId = null,
         SavedFilterVisibility visibility = SavedFilterVisibility.Private,
         IEnumerable<SortRule>? sortRules = null,
-        GroupRule? groupRule = null)
+        GroupRule? groupRule = null,
+        string? criteria = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -46,7 +50,8 @@ public class SavedFilter : SoftDeletableAggregateRoot, IWorkspaceScoped
             ViewId = viewId,
             Name = name.Trim(),
             Visibility = visibility,
-            GroupRule = groupRule
+            GroupRule = groupRule,
+            Criteria = criteria
         };
 
         filter._rules.AddRange(rules);

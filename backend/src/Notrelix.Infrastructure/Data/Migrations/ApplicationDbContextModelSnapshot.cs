@@ -7932,6 +7932,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("Criteria")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("criteria");
+
                     b.Property<string>("DeleteReason")
                         .HasColumnType("text")
                         .HasColumnName("delete_reason");

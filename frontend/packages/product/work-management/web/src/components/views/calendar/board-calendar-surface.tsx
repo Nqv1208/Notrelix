@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 import { Button } from "@notrelix/ui-web";
 import { calendarOutlineButtonClass } from "./calendar-chrome";
 import {
@@ -62,6 +69,8 @@ export interface BoardCalendarSurfaceProps {
   filterActive: boolean;
   filterOptions: KanbanToolbarFilterOptions;
   onFilterChange: (filter: KanbanFilterState) => void;
+  /** The saved-filter controls, shown in the toolbar after the filter pill. */
+  savedFilters?: ReactNode;
   /** Items the filter hides; with `entries` empty it shows "no results". */
   hiddenCount: number;
   /** False for a viewer: no add, no drag, no quick create. */
@@ -108,6 +117,7 @@ export function BoardCalendarSurface({
   filterActive,
   filterOptions,
   onFilterChange,
+  savedFilters,
   hiddenCount,
   canEdit,
   onOpenItem,
@@ -235,6 +245,7 @@ export function BoardCalendarSurface({
         filter={filter}
         filterOptions={filterOptions}
         onFilterChange={onFilterChange}
+        savedFilters={savedFilters}
         zoneLabel={zoneLabel}
         canAdd={canEdit}
         onAddItem={addItem}
