@@ -302,7 +302,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
           aria-label={b.aria}
           className="min-w-0 flex-1 overflow-hidden rounded-xl border border-line bg-popover"
         >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3.5 sm:px-5">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line px-4 py-3.5 sm:px-5 xl:flex-nowrap">
             <button
               type="button"
               onClick={props.onBack}
@@ -315,7 +315,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
               aria-hidden="true"
               className="hidden h-5 w-px bg-line sm:block"
             />
-            <div className="min-w-[180px] flex-1 sm:max-w-[320px]">
+            <div className="min-w-[160px] flex-1 sm:max-w-[300px]">
               <input
                 value={title}
                 disabled={closed}
@@ -331,7 +331,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
               />
             </div>
             <FormStatusChip status={form.status} copy={copy} />
-            <span className={cn(HINT_CLASS, "flex-1 whitespace-nowrap")}>
+            <span className={cn(HINT_CLASS, "min-w-0 flex-1 truncate")}>
               {props.savedAt
                 ? fillFormsCopy(b.savedAt, { time: props.savedAt })
                 : ""}

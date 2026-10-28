@@ -102,7 +102,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
       aria-labelledby="bs-forms-h"
       className="min-w-0 flex-1 overflow-auto px-6 pt-5 pb-6"
     >
-      <div className="@container max-w-[780px]">
+      <div className="@container max-w-[1100px]">
         <SectionHeader
           id="bs-forms-h"
           title={t.title}
@@ -243,14 +243,30 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                     <span className="justify-self-end @[640px]:justify-self-start">
                       <FormStatusChip status={form.status} copy={copy} />
                     </span>
-                    <span
-                      className={cn(
-                        HINT_CLASS,
-                        "col-span-2 @[640px]:col-span-1",
-                      )}
-                    >
-                      {responsesText(form, copy)}
-                    </span>
+                    {form.status === "draft" ? (
+                      <span
+                        className={cn(
+                          HINT_CLASS,
+                          "col-span-2 @[640px]:col-span-1",
+                        )}
+                      >
+                        {responsesText(form, copy)}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-label={fillFormsCopy(t.openResponses, {
+                          name: form.title,
+                        })}
+                        onClick={() => props.onOpenResponses(form.id)}
+                        className={cn(
+                          HINT_CLASS,
+                          "col-span-2 w-fit cursor-pointer border-0 bg-transparent p-0 text-left outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring @[640px]:col-span-1",
+                        )}
+                      >
+                        {responsesText(form, copy)}
+                      </button>
+                    )}
                     <span className="col-span-2 flex flex-wrap items-center justify-end gap-1 @[640px]:col-span-1">
                       {form.status === "published" ? (
                         <button
@@ -295,21 +311,6 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                           )}
                         >
                           {t.publish}
-                        </button>
-                      ) : null}
-                      {form.status !== "draft" ? (
-                        <button
-                          type="button"
-                          onClick={() => props.onOpenResponses(form.id)}
-                          aria-label={fillFormsCopy(t.openResponses, {
-                            name: form.title,
-                          })}
-                          className={cn(
-                            BUTTON_CLASS.ghost,
-                            "h-7 px-2 text-crumb",
-                          )}
-                        >
-                          {copy.inbox.form}
                         </button>
                       ) : null}
                       <button

@@ -157,6 +157,7 @@ export function answerText(
       .map((entry) => optionLabel(question, entry, fields))
       .join(", ");
   if (typeof value === "boolean") return value ? "✓" : "";
+  if (question.type === "date") return dayText(String(value));
   return optionLabel(question, value, fields);
 }
 

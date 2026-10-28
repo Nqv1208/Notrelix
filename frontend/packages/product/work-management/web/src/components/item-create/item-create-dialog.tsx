@@ -157,7 +157,7 @@ function SourceNote({ text }: { text?: string }) {
   return text ? (
     <span
       data-item-create-source=""
-      className="ml-2 rounded-[6px] bg-brand-subtle px-1.5 py-0.5 text-metadata font-semibold text-brand-subtle-foreground"
+      className="-mt-1 w-fit rounded-[6px] bg-brand-subtle px-1.5 py-0.5 text-metadata font-semibold text-brand-subtle-foreground"
     >
       {text}
     </span>
@@ -457,8 +457,8 @@ export function ItemCreateDialog({
                 <span aria-hidden="true" className="text-danger-text">
                   *
                 </span>
-                <SourceNote text={sources?.name} />
               </FieldLabel>
+              <SourceNote text={sources?.name} />
               <Input
                 ref={nameRef}
                 id={ids.name}
@@ -481,8 +481,8 @@ export function ItemCreateDialog({
                 <span className="font-normal text-meta-foreground">
                   {copy.optional}
                 </span>
-                <SourceNote text={sources?.description} />
               </FieldLabel>
+              <SourceNote text={sources?.description} />
               <textarea
                 ref={descriptionRef}
                 id={ids.description}
@@ -549,8 +549,8 @@ export function ItemCreateDialog({
                     <span className="font-normal text-meta-foreground">
                       {copy.optional}
                     </span>
-                    <SourceNote text={sources?.priority} />
                   </FieldLabel>
+                  <SourceNote text={sources?.priority} />
                   <Select
                     value={priorityId ?? NONE}
                     onValueChange={(value) =>
@@ -589,10 +589,8 @@ export function ItemCreateDialog({
                 </div>
               </Field>
               <Field data-invalid={dueBad || datesBackwards ? true : undefined}>
-                <FieldLabel htmlFor={ids.due}>
-                  {copy.dueDate}
-                  <SourceNote text={sources?.due} />
-                </FieldLabel>
+                <FieldLabel htmlFor={ids.due}>{copy.dueDate}</FieldLabel>
+                <SourceNote text={sources?.due} />
                 <div ref={dueWrapRef}>
                   <DayField
                     id={ids.due}

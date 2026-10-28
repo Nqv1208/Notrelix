@@ -133,7 +133,7 @@ export function seedErpForms(store: MockStore): void {
     {
       id: "mock-fsub-1",
       status: "Accepted",
-      submitterUserId: mockIds.users.commenter,
+      submitterUserId: "mock-user-erp-trang",
       submitterEmail: null,
       submittedAt: "2026-10-12T02:12:00.000Z",
       payloadJson: answer("Làm mới tên máy kế toán Đà Nẵng", {
