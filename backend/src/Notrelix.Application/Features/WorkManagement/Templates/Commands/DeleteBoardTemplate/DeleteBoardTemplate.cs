@@ -8,7 +8,7 @@ public record DeleteBoardTemplateCommand(Guid TemplateId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), TemplateId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-template"), TemplateId);
 }
 
 public class DeleteBoardTemplateCommandHandler : IRequestHandler<DeleteBoardTemplateCommand, Result>

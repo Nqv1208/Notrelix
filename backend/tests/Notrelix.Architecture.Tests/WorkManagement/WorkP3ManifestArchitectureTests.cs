@@ -171,6 +171,7 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Services/MoveBoardItemUseCase.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
@@ -186,18 +187,21 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["BoardFields (board_fields: board_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/CreateBoardField/CreateBoardField.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveBoardField/MoveBoardField.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["FieldOptions (field_options: field_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/AddFieldOption/AddFieldOption.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveFieldOption/MoveFieldOption.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
         ],
         ["ItemChecklists (checklists: item_id)"] =
         [

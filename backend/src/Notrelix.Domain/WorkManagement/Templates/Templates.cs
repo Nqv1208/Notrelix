@@ -1,9 +1,10 @@
 using Notrelix.Domain.WorkManagement.Templates.Events;
 namespace Notrelix.Domain.WorkManagement.Templates;
 
-public class BoardTemplate : SoftDeletableAggregateRoot
+public class BoardTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
-    public Guid? WorkspaceId { get; private set; }
+    public Guid AccountId { get; private set; }
+    public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public JsonValue Structure { get; private set; } = null!;
@@ -11,21 +12,27 @@ public class BoardTemplate : SoftDeletableAggregateRoot
 
     private BoardTemplate() : base() { }
 
-    public static BoardTemplate Create(string name, JsonValue structure, DateTimeOffset createdAt, Guid? workspaceId = null)
+    public static BoardTemplate Create(Guid accountId, Guid workspaceId, string name, string? description, JsonValue structure, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
+        Guard.MaxLength(description, 5000);
         Guard.NotNull(structure);
 
         var template = new BoardTemplate
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             Structure = structure,
             Status = TemplateStatus.Published
         };
 
         template.SetAuditOnCreate(null, createdAt);
-        template.RaiseDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
+        template.RaiseDomainEvent(new BoardTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 

@@ -15,6 +15,7 @@ namespace Notrelix.Infrastructure.Services;
 public sealed class ResourceLocator : IResourceLocator
 {
     private static readonly ResourceKind Board = ResourceKind.Create("work-management.board");
+    private static readonly ResourceKind BoardTemplate = ResourceKind.Create("work-management.board-template");
     private static readonly ResourceKind BoardGroup = ResourceKind.Create("work-management.board-group");
     private static readonly ResourceKind BoardField = ResourceKind.Create("work-management.board-field");
     private static readonly ResourceKind BoardView = ResourceKind.Create("work-management.board-view");
@@ -87,6 +88,12 @@ public sealed class ResourceLocator : IResourceLocator
         return resource.Kind.Value switch
         {
             "work-management.board" => ToLocation(Board, await _workDb.Boards
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
+
+            "work-management.board-template" => ToLocation(BoardTemplate, await _workDb.BoardTemplates
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
                 .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))

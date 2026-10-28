@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Templates.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Templates.Queries.ListBoardTemplates;
 
@@ -9,6 +10,7 @@ public static class ListBoardTemplatesEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.Templates.List")
+            .Produces<List<BoardTemplateDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Templates")
             .WithSummary("List all board templates for a workspace");
         return group;
