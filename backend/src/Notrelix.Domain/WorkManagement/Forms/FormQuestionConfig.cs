@@ -4,13 +4,15 @@ namespace Notrelix.Domain.WorkManagement.Forms;
 
 public sealed class FormQuestionConfig : ValueObject
 {
-    public bool Required { get; }
-    public string? Placeholder { get; }
-    public string? HelpText { get; }
-    public int? MaxLength { get; }
-    public int? MinValue { get; }
-    public int? MaxValue { get; }
-    public int? MaxFileSizeMb { get; }
+    public bool Required { get; private set; }
+    public string? Placeholder { get; private set; }
+    public string? HelpText { get; private set; }
+    public int? MaxLength { get; private set; }
+    public int? MinValue { get; private set; }
+    public int? MaxValue { get; private set; }
+    public int? MaxFileSizeMb { get; private set; }
+    public IReadOnlyList<FormQuestionOption> Options { get; private set; } = new List<FormQuestionOption>();
+    public const int MaxOptions = 50;
 
     private FormQuestionConfig() { }
 
@@ -21,8 +23,10 @@ public sealed class FormQuestionConfig : ValueObject
         int? maxLength,
         int? minValue,
         int? maxValue,
-        int? maxFileSizeMb)
+        int? maxFileSizeMb,
+        IReadOnlyList<FormQuestionOption>? options = null)
     {
+        Options = options ?? new List<FormQuestionOption>();
         Required = required;
         Placeholder = placeholder;
         HelpText = helpText;
@@ -57,8 +61,9 @@ public sealed class FormQuestionConfig : ValueObject
         var maxFileSizeMb = GetInt(root, "maxFileSizeMb");
 
         ValidateConfig(type, maxLength, minValue, maxValue, maxFileSizeMb);
+        var options = ReadOptions(type, root);
 
-        return new FormQuestionConfig(required, placeholder, helpText, maxLength, minValue, maxValue, maxFileSizeMb);
+        return new FormQuestionConfig(required, placeholder, helpText, maxLength, minValue, maxValue, maxFileSizeMb, options);
     }
 
     private static void ValidateConfig(FormQuestionType type, int? maxLength, int? minValue, int? maxValue, int? maxFileSizeMb)
@@ -80,6 +85,30 @@ public sealed class FormQuestionConfig : ValueObject
 
         if (minValue.HasValue && maxValue.HasValue && minValue.Value > maxValue.Value)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MinCannotExceedMax, "MinValue cannot be greater than MaxValue.");
+    }
+
+    private static List<FormQuestionOption> ReadOptions(FormQuestionType type, JsonElement root)
+    {
+        var options = new List<FormQuestionOption>();
+        if (!root.TryGetProperty("options", out var el) || el.ValueKind != JsonValueKind.Array || el.GetArrayLength() == 0)
+            return options;
+
+        if (type is not (FormQuestionType.Select or FormQuestionType.MultiSelect))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_OptionsInvalidForType, "Options are only supported for Select and MultiSelect questions.");
+        if (el.GetArrayLength() > MaxOptions)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_OptionsInvalid, $"At most {MaxOptions} options.");
+
+        foreach (var item in el.EnumerateArray())
+        {
+            var key = GetString(item, "key")?.Trim();
+            var label = GetString(item, "label")?.Trim();
+            if (string.IsNullOrEmpty(key) || key.Length > 100 || string.IsNullOrEmpty(label) || label.Length > 200)
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_OptionsInvalid, "Every option needs a key (max 100) and a label (max 200).");
+            if (options.Any(o => o.Key.Equals(key, StringComparison.OrdinalIgnoreCase)))
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_OptionsInvalid, $"Duplicate option key '{key}'.");
+            options.Add(new FormQuestionOption(key, label));
+        }
+        return options;
     }
 
     private static bool? GetBool(JsonElement root, string property)
@@ -112,5 +141,6 @@ public sealed class FormQuestionConfig : ValueObject
         yield return MinValue;
         yield return MaxValue;
         yield return MaxFileSizeMb;
+        foreach (var option in Options) yield return option;
     }
 }

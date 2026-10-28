@@ -12940,6 +12940,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                             b1.Property<Guid>("FormQuestionId")
                                 .HasColumnType("uuid");
 
+                            b1.Property<string>("HelpText")
+                                .HasColumnType("text");
+
+                            b1.Property<int?>("MaxFileSizeMb")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("MaxLength")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("MaxValue")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("MinValue")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("Placeholder")
+                                .HasColumnType("text");
+
+                            b1.Property<bool>("Required")
+                                .HasColumnType("boolean");
+
                             b1.HasKey("FormQuestionId");
 
                             b1.ToTable("form_questions", "work");
@@ -12949,6 +12970,36 @@ namespace Notrelix.Infrastructure.Data.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("FormQuestionId")
                                 .HasConstraintName("fk_form_questions_form_questions_id");
+
+                            b1.OwnsMany("Notrelix.Domain.WorkManagement.Forms.FormQuestionOption", "Options", b2 =>
+                                {
+                                    b2.Property<Guid>("FormQuestionConfigFormQuestionId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    b2.Property<string>("Key")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("Label")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("FormQuestionConfigFormQuestionId", "__synthesizedOrdinal");
+
+                                    b2.ToTable("form_questions", "work");
+
+                                    b2.ToJson("config");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("FormQuestionConfigFormQuestionId")
+                                        .HasConstraintName("fk_form_questions_form_questions_form_question_config_form_questio");
+                                });
+
+                            b1.Navigation("Options");
                         });
 
                     b.Navigation("Config");

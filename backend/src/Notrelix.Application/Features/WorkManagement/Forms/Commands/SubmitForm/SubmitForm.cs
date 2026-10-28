@@ -88,7 +88,11 @@ public static class FormAnswerValidator
                 continue;
             }
 
-            var error = Check(q, value, q.BoardFieldId is { } id && optionIdsByField.TryGetValue(id, out var o) ? o : null);
+            // A mapped question takes the board field's options; an unmapped choice question takes its own configured keys.
+            var options = q.BoardFieldId is { } id
+                ? (optionIdsByField.TryGetValue(id, out var o) ? o : null)
+                : q.Config?.Options.Select(x => x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
+            var error = Check(q, value, options);
             if (error is not null) failures.Add(new ValidationFailure(q.QuestionKey, error));
         }
         return failures;

@@ -97,4 +97,41 @@ public class SubmitFormCommandTests : WorkManagementHandlerTestBase
         await _handler.Invoking(h => h.Handle(new SubmitFormCommand(Guid.CreateVersion7(), Answers("{}")), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
+
+    private Form FormWithChoice(FormQuestionType type, string? configJson)
+    {
+        var form = CreateForm();
+        form.AddQuestion(Question(form, "pick", type, true, configJson), TestUserId, TestNow);
+        form.Publish(TestUserId, TestNow);
+        return form;
+    }
+
+    private const string Opts = "{\"options\":[{\"key\":\"low\",\"label\":\"Thấp\"},{\"key\":\"high\",\"label\":\"Cao\"}]}";
+
+    [Theory]
+    [InlineData(FormQuestionType.Select, "{\"pick\":\"high\"}", true)]
+    [InlineData(FormQuestionType.Select, "{\"pick\":\"urgent\"}", false)]
+    [InlineData(FormQuestionType.MultiSelect, "{\"pick\":[\"low\",\"high\"]}", true)]
+    [InlineData(FormQuestionType.MultiSelect, "{\"pick\":[\"low\",\"nope\"]}", false)]
+    public async Task Handle_UnmappedChoice_ChecksAnswerAgainstConfiguredOptions(FormQuestionType type, string answers, bool valid)
+    {
+        var form = FormWithChoice(type, Opts);
+        SetupForms(form);
+        DbContextMock.Setup(c => c.FormSubmissions).Returns(CreateAsyncDbSet(new List<FormSubmission>()));
+
+        var act = () => _handler.Handle(new SubmitFormCommand(form.Id, Answers(answers)), CancellationToken.None);
+
+        if (valid) (await act()).Succeeded.Should().BeTrue();
+        else (await act.Should().ThrowAsync<AppValidation>()).Which.Errors.Should().ContainKey("pick");
+    }
+
+    [Fact]
+    public async Task Handle_UnmappedChoiceWithoutOptions_RefusesEveryAnswer()
+    {
+        var form = FormWithChoice(FormQuestionType.Select, null);
+        SetupForms(form);
+
+        await _handler.Invoking(h => h.Handle(new SubmitFormCommand(form.Id, Answers("{\"pick\":\"x\"}")), CancellationToken.None))
+            .Should().ThrowAsync<AppValidation>();
+    }
 }

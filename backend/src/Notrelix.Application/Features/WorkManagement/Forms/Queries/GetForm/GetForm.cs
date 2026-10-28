@@ -24,7 +24,7 @@ public class GetFormQueryHandler : IRequestHandler<GetFormQuery, Result<FormDeta
         if (form is null) throw new NotFoundException("Form", request.FormId);
 
         var questions = form.Questions.OrderBy(q => q.Position.Value, StringComparer.Ordinal)
-            .Select(q => new FormQuestionDto(q.Id, q.QuestionKey, q.Label, q.QuestionType.ToString(), q.IsRequired, q.BoardFieldId, q.Position.Value, q.Config?.Placeholder, q.Config?.HelpText, q.Config?.MaxLength, q.Config?.MinValue, q.Config?.MaxValue))
+            .Select(q => new FormQuestionDto(q.Id, q.QuestionKey, q.Label, q.QuestionType.ToString(), q.IsRequired, q.BoardFieldId, q.Position.Value, q.Config?.Placeholder, q.Config?.HelpText, q.Config?.MaxLength, q.Config?.MinValue, q.Config?.MaxValue, q.Config?.Options.Select(x => new FormQuestionOptionDto(x.Key, x.Label)).ToList()))
             .ToList();
         return Result<FormDetailDto>.Success(new FormDetailDto(form.Id, form.Name, form.Slug, form.BoardId, form.Status.ToString(), form.Visibility.ToString(), form.Version, form.CreatedAt, questions));
     }

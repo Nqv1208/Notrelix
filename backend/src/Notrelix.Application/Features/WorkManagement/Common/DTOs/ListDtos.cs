@@ -69,8 +69,11 @@ public record FormQuestionDto(
     string? HelpText,
     int? MaxLength,
     int? MinValue,
-    int? MaxValue
+    int? MaxValue,
+    List<FormQuestionOptionDto>? Options = null
 );
+
+public record FormQuestionOptionDto(string Key, string Label);
 
 public record FormDetailDto(
     Guid Id,
