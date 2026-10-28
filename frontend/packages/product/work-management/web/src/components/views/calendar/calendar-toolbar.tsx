@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -54,6 +54,8 @@ export interface CalendarToolbarProps {
   /** False for a viewer who cannot add items: the add button is not shown. */
   canAdd: boolean;
   onAddItem: () => void;
+  /** The saved-filter controls, after the filter pill. */
+  savedFilters?: ReactNode;
 }
 
 /**
@@ -76,6 +78,7 @@ export function CalendarToolbar({
   zoneLabel,
   canAdd,
   onAddItem,
+  savedFilters,
 }: CalendarToolbarProps) {
   const segments = filterSegments(copy.filter, filter, filterOptions);
   const filtered = segments.length > 0;
@@ -230,6 +233,8 @@ export function CalendarToolbar({
           onFilterChange={onFilterChange}
         />
       </DropdownMenu>
+
+      {savedFilters}
 
       <span className="flex-1" />
 

@@ -39,6 +39,7 @@ import {
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
   mainTableCatalog,
+  savedFiltersCatalog,
   statusOptionFormCatalog,
   timelineCatalog,
 } from "@notrelix/work-management-web";
@@ -70,6 +71,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   kanbanToolbarCatalog,
   statusOptionFormCatalog,
   mainTableCatalog,
+  savedFiltersCatalog,
   calendarCatalog,
   timelineCatalog,
   itemSheetCatalog,

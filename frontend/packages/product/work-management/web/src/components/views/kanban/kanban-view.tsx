@@ -77,6 +77,7 @@ import {
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanToolbar } from "./kanban-toolbar";
+import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { buildCardLink } from "./kanban-view-helpers";
 import {
@@ -769,6 +770,21 @@ export function KanbanView({
             if (onGroupByChange) onGroupByChange(fieldId);
             else setLocalGroupBy(fieldId);
           }}
+          savedFilters={
+            <SavedFiltersControl
+              workspaceId={workspaceId}
+              boardId={boardId}
+              filter={filterValue}
+              groupBy={kanban.groupByField?.id ?? null}
+              canEdit={capabilities.canEditFields}
+              onApply={(criteria) => {
+                setFilterValue(criteria.filter || undefined);
+                if (!criteria.groupBy) return;
+                if (onGroupByChange) onGroupByChange(criteria.groupBy);
+                else setLocalGroupBy(criteria.groupBy);
+              }}
+            />
+          }
           canAdd={capabilities.canCreateCard}
           onAddItem={() => setCreate({ kind: "toolbar" })}
           noResults={

@@ -40,6 +40,7 @@ import {
 } from "../kanban/kanban-filter";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { BoardCalendarSurface } from "./board-calendar-surface";
+import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import {
   buildCalendarEntries,
   cardDue,
@@ -312,6 +313,15 @@ export function BoardCalendarView({
         }}
         onFilterChange={(next: KanbanFilterState) =>
           setFilterValue(serializeKanbanFilter(next) || undefined)
+        }
+        savedFilters={
+          <SavedFiltersControl
+            workspaceId={workspaceId}
+            boardId={boardId}
+            filter={filterValue}
+            canEdit={capabilities.canEditFields}
+            onApply={(criteria) => setFilterValue(criteria.filter || undefined)}
+          />
         }
         hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}
         canEdit={canEdit}

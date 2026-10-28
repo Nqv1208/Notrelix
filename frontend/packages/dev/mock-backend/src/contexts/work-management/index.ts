@@ -9,6 +9,7 @@
 
 import { boardsOperations } from "./boards.handlers";
 import { boardViewsOperations } from "./board-views.handlers";
+import { savedFiltersOperations } from "./saved-filters.handlers";
 import { boardSharingOperations } from "./board-sharing.handlers";
 import { listsOperations } from "./lists.handlers";
 import { cardsOperations } from "./cards.handlers";
@@ -21,6 +22,7 @@ export {
   boardSharingOperations,
   boardsOperations,
   itemStatesOperations,
+  savedFiltersOperations,
   listsOperations,
   cardsOperations,
   myWorkOperations,
@@ -30,6 +32,7 @@ export const workManagementOperations = [
   ...boardsOperations,
   ...boardSharingOperations,
   ...boardViewsOperations,
+  ...savedFiltersOperations,
   ...listsOperations,
   ...cardsOperations,
   ...myWorkOperations,

@@ -280,6 +280,14 @@ export const endpoints = {
     option: (boardId: string, fieldId: string, optionId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
   },
+  // WorkManagement.SavedFilters.*: listed and created per board, changed by filter id.
+  savedFilters: {
+    forBoard: (boardId: string) => `/boards/${boardId}/saved-filters`,
+    detail: (filterId: string) => `/saved-filters/${filterId}`,
+    rename: (filterId: string) => `/saved-filters/${filterId}/rename`,
+    visibility: (filterId: string) => `/saved-filters/${filterId}/visibility`,
+    restore: (filterId: string) => `/saved-filters/${filterId}/restore`,
+  },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
     saved: (boardId: string) => `/boards/${boardId}/views/saved`,
