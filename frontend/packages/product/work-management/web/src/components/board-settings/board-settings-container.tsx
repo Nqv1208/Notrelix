@@ -103,9 +103,14 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         write((api, s) => api.updateGeneral(s, changes)),
       archiveBoard: () => write((api, s) => api.archiveBoard(s)),
       deleteBoard: () => write((api, s) => api.deleteBoard(s)),
-      createField: (type) =>
+      createField: (type, input) =>
         write((api, s) =>
-          api.createField(s, type, newFieldName(copy.types[type], s)),
+          api.createField(
+            s,
+            type,
+            input?.name ?? newFieldName(copy.types[type], s),
+            input?.settings,
+          ),
         ),
       reorderFields: (ids) => write((api, s) => api.reorderFields(s, ids)),
       updateField: (fieldId, changes) =>

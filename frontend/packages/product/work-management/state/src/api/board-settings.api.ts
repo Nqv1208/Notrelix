@@ -2,6 +2,7 @@ import type { NotrelixClient, OperationResponse } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
+  BoardSettingsComputedDto,
   BoardSettingsFieldDto,
   BoardSettingsFieldPatch,
   BoardSettingsFieldType,
@@ -37,14 +38,6 @@ const CREATABLE_FIELD_TYPES: readonly BoardSettingsFieldType[] = [
   "rollup",
 ];
 
-/**
- * What the page offers to create. Formula and Rollup wait for their editors: the
- * backend rejects them without an expression or a function.
- */
-const OFFERED_FIELD_TYPES = CREATABLE_FIELD_TYPES.filter(
-  (type) => type !== "formula" && type !== "rollup",
-);
-
 /** What the product has not defined yet: the page hides or locks these. */
 const UNAVAILABLE: BoardSettingsUnavailable = {
   locale: true,
@@ -54,7 +47,7 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
   views: false,
   viewSplit: true,
   automations: true,
-  creatableFieldTypes: OFFERED_FIELD_TYPES,
+  creatableFieldTypes: CREATABLE_FIELD_TYPES,
 };
 
 const DEFAULT_COLOR = "#1E6FD0";
@@ -143,7 +136,42 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     required: false,
     guidance: "",
     usedIn: [],
+    ...computedOf(type, column.settings),
   };
+}
+
+/** The definition of a Formula or Rollup from its settings JSON. */
+function computedOf(
+  type: BoardSettingsFieldType,
+  settings: string | null | undefined,
+): { computed: BoardSettingsComputedDto } | Record<string, never> {
+  if ((type !== "formula" && type !== "rollup") || !settings) return {};
+  try {
+    const parsed = JSON.parse(settings) as Record<string, unknown>;
+    return type === "formula"
+      ? {
+          computed: {
+            ...(typeof parsed.expression === "string"
+              ? { expression: parsed.expression }
+              : {}),
+          },
+        }
+      : {
+          computed: {
+            ...(typeof parsed.function === "string"
+              ? {
+                  rollupFunction:
+                    parsed.function as BoardSettingsComputedDto["rollupFunction"],
+                }
+              : {}),
+            ...(typeof parsed.fieldId === "string"
+              ? { sourceFieldId: parsed.fieldId }
+              : {}),
+          },
+        };
+  } catch {
+    return {};
+  }
 }
 
 function mapSystemField(column: OverviewField): BoardSettingsSystemFieldDto {
@@ -349,10 +377,11 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       s: BoardSettingsDto,
       type: BoardSettingsFieldType,
       name: string,
+      settings?: string,
     ) =>
       api.post<unknown>(
         endpoints.boardFields.create(s.boardId),
-        { name, type },
+        { name, type, ...(settings ? { settings } : {}) },
         quiet,
       ),
     deleteField: (s: BoardSettingsDto, fieldId: string) =>
@@ -382,6 +411,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         {
           expectedVersion: fieldOf(s, fieldId).version ?? 0,
           name: changes.name,
+          ...(changes.settings ? { settings: changes.settings } : {}),
         },
         quiet,
       ),

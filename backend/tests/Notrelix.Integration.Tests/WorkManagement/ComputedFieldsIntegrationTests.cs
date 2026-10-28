@@ -140,8 +140,8 @@ public sealed class ComputedFieldsIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Cycle_IsRejectedOnSave_WithItsRuleCode()
     {
-        var a = Field(_workspaceId, _board.Id, "Loop A", FieldType.Formula, """{"expression":"[Loop B]+1"}""", "b1");
-        var b = Field(_workspaceId, _board.Id, "Loop B", FieldType.Formula, """{"expression":"[Effort]"}""", "b2");
+        var a = Field(_workspaceId, _board.Id, "Loop A", FieldType.Formula, """{"expression":"[Loop B]+1"}""", "a6");
+        var b = Field(_workspaceId, _board.Id, "Loop B", FieldType.Formula, """{"expression":"[Effort]"}""", "a7");
         await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.BoardFields.AddRange(a, b);
@@ -154,7 +154,7 @@ public sealed class ComputedFieldsIntegrationTests : IAsyncLifetime
 
         var act = () => ComputedFieldGuard.EnsureAsync(context, field, CancellationToken.None);
 
-        (await act.Should().ThrowAsync<BusinessRuleException>())
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_ComputedFieldCycle);
     }
 

@@ -29,6 +29,11 @@ function errorKind(error: unknown): string | null {
 }
 
 /** The first field a validation error names. */
+function ruleCodeOf(error: unknown): { code?: string } {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "string" && code !== "" ? { code } : {};
+}
+
 function invalidField(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
   const errors = (error as { validationErrors?: Record<string, string[]> })
@@ -101,7 +106,12 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
           return { ok: false, reason: "conflict" };
         }
         if (errorKind(caught) === "validation") {
-          return { ok: false, reason: "invalid", field: invalidField(caught) };
+          return {
+            ok: false,
+            reason: "invalid",
+            field: invalidField(caught),
+            ...ruleCodeOf(caught),
+          };
         }
         return { ok: false, reason: "failed" };
       }
