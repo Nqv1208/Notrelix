@@ -3256,6 +3256,48 @@ export class MockStore {
     return true;
   }
 
+  toggleChecklistItem(itemId: string): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    return this.updateChecklistItem(itemId, { isChecked: !item.isChecked });
+  }
+
+  /** Puts a list between two siblings of its item; the others are renumbered. */
+  moveChecklist(
+    checklistId: string,
+    previousSiblingId: string | null,
+    nextSiblingId: string | null,
+  ): boolean {
+    const chk = this.checklistsById.get(checklistId);
+    if (!chk) return false;
+    const ids = this.getCardChecklists(chk.cardId)
+      .map((entry) => entry.id)
+      .filter((id) => id !== checklistId);
+    const at = placeAmong(ids, previousSiblingId, nextSiblingId);
+    ids.splice(at, 0, checklistId);
+    ids.forEach((id, index) => {
+      const current = this.checklistsById.get(id)!;
+      this.checklistsById.set(id, { ...current, position: index + 1 });
+    });
+    return true;
+  }
+
+  /** Puts an item between two siblings of its list. */
+  moveChecklistItem(
+    itemId: string,
+    previousSiblingId: string | null,
+    nextSiblingId: string | null,
+  ): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    const set = this.checklistItemIdsByChecklistId.get(item.checklistId);
+    if (!set) return false;
+    const ids = Array.from(set).filter((id) => id !== itemId);
+    ids.splice(placeAmong(ids, previousSiblingId, nextSiblingId), 0, itemId);
+    this.checklistItemIdsByChecklistId.set(item.checklistId, new Set(ids));
+    return true;
+  }
+
   // ── Comments ──
   getCardComments(cardId: string): MockCommentRecord[] {
     const ids = this.commentIdsByCardId.get(cardId);
@@ -4766,4 +4808,16 @@ export class MockStore {
       ...this.spaces.snapshot(),
     };
   }
+}
+
+/** Where an entry lands among `ids` given its neighbours (the end when neither is known). */
+function placeAmong(
+  ids: readonly string[],
+  previousSiblingId: string | null,
+  nextSiblingId: string | null,
+): number {
+  const previous = previousSiblingId ? ids.indexOf(previousSiblingId) : -1;
+  if (previous >= 0) return previous + 1;
+  const next = nextSiblingId ? ids.indexOf(nextSiblingId) : -1;
+  return next >= 0 ? next : ids.length;
 }

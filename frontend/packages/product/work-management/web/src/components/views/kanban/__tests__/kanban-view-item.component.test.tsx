@@ -149,6 +149,26 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,
     useToggleCommentReaction: mutation,
+    useChecklistWrites: () => ({
+      addList: vi.fn(),
+      renameList: vi.fn(),
+      deleteList: vi.fn(),
+      moveList: vi.fn(),
+      addItem: vi.fn(),
+      renameItem: vi.fn(),
+      toggleItem: vi.fn(),
+      deleteItem: vi.fn(),
+      moveItem: vi.fn(),
+      convertItem: vi.fn(),
+      undo: vi.fn(),
+      retry: vi.fn(),
+      discard: vi.fn(),
+      dismissConflict: vi.fn(),
+      failure: null,
+      conflict: false,
+      pendingDelete: null,
+      busy: false,
+    }),
   };
 });
 
