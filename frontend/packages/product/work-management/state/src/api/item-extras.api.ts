@@ -141,6 +141,8 @@ export interface ItemApprovalDto {
   readonly decidedAt: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote: string | null;
+  /** The request's version, sent back as the expected version when it is cancelled. */
+  readonly version: number;
 }
 
 interface ItemApprovalWire {
@@ -149,6 +151,7 @@ interface ItemApprovalWire {
   readonly description?: string | null;
   readonly requestedByUserId: string;
   readonly createdAt: string;
+  readonly version: number;
   readonly steps?:
     | readonly {
         readonly approverUserId?: string | null;
@@ -173,6 +176,7 @@ function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
     requestedAt: wire.createdAt,
     decidedAt: step?.decidedAt ?? null,
     decisionNote: step?.note ?? null,
+    version: wire.version,
   };
 }
 
@@ -298,10 +302,13 @@ export function createItemExtrasApi(
       );
     },
     /** The requester withdraws a pending request (`WorkManagement.Approvals.Cancel`). */
-    async cancelApproval(requestId: string): Promise<void> {
+    async cancelApproval(
+      requestId: string,
+      expectedVersion: number,
+    ): Promise<void> {
       await api.post<void>(
         `/approvals/${requestId}/cancel`,
-        {},
+        { expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
     },

@@ -1158,6 +1158,7 @@ export interface ItemApprovalWire {
   status: RequestedApprovalRecord["status"];
   requestedByUserId: string;
   createdAt: string;
+  version: number;
   steps: {
     id: string;
     approverUserId: string;
@@ -1187,6 +1188,7 @@ function approvalWire(
     status,
     requestedByUserId: record.requestedById,
     createdAt: record.requestedAt,
+    version: 1,
     steps: [
       {
         id: `${record.id}:step`,
@@ -1277,7 +1279,10 @@ export function requestItemApproval(
 export function cancelApproval(
   store: MockStore,
   requestId: string,
+  expectedVersion: number | undefined,
 ): FeedWriteResult {
+  // The producer refuses a missing or non-positive expected version.
+  if (!expectedVersion || expectedVersion < 1) return "invalid";
   const record = store.feed.requestedApprovals.find(
     (candidate) => candidate.id === requestId,
   );

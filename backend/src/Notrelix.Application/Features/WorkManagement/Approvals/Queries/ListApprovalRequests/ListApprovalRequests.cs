@@ -55,7 +55,8 @@ public class ListApprovalRequestsQueryHandler : IRequestHandler<ListApprovalRequ
             a.Status.ToString(),
             a.RequestedByUserId,
             a.CreatedAt,
-            stepsByRequest.GetValueOrDefault(a.Id) ?? new List<ApprovalStepDto>())).ToList();
+            stepsByRequest.GetValueOrDefault(a.Id) ?? new List<ApprovalStepDto>(),
+            a.Version)).ToList();
 
         return Result<List<ApprovalRequestDto>>.Success(result);
     }

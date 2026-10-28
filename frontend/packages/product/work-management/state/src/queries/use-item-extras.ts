@@ -136,7 +136,13 @@ export function useItemApprovals(itemId: string, workspaceId: string) {
     onSettled: refresh,
   });
   const cancel = useMutation({
-    mutationFn: (requestId: string) => itemExtras.cancelApproval(requestId),
+    mutationFn: (requestId: string) => {
+      const version = query.data?.find((a) => a.id === requestId)?.version;
+      if (version === undefined) {
+        return Promise.reject(new Error("The approval is no longer loaded."));
+      }
+      return itemExtras.cancelApproval(requestId, version);
+    },
     onSettled: refresh,
   });
   return {

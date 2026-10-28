@@ -8093,6 +8093,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -22548,6 +22558,16 @@
             "type": "string",
             "nullable": true
           },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest": {
+        "type": "object",
+        "properties": {
           "expectedVersion": {
             "type": "integer",
             "format": "int64"

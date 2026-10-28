@@ -231,7 +231,7 @@ export const workFeedOperations = [
     },
   }),
 
-  defineMockOperation<{ requestId: string }>({
+  defineMockOperation<{ requestId: string }, { expectedVersion?: number }>({
     id: "wsFeed.approvals.cancel",
     contract: {
       kind: "openapi",
@@ -239,8 +239,10 @@ export const workFeedOperations = [
     },
     method: "POST",
     route: "/approvals/:requestId/cancel",
-    async handle({ params, store }) {
-      return outcome(cancelApproval(store, params.requestId));
+    async handle({ params, body, store }) {
+      return outcome(
+        cancelApproval(store, params.requestId, body?.expectedVersion),
+      );
     },
   }),
 

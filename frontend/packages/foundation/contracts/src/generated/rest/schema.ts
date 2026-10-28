@@ -5637,6 +5637,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CreateApprovalRequestRequest": {
             title?: string | null;
             description?: string | null;
@@ -12955,7 +12959,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

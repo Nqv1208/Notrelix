@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.Approvals.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.CancelApprovalRequest;
 
@@ -17,11 +18,12 @@ public static class CancelApprovalRequestEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid requestId,
+        CancelApprovalRequestRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CancelApprovalRequestCommand(requestId, 0),
+            new CancelApprovalRequestCommand(requestId, body.ExpectedVersion),
             cancellationToken);
         return result.ToNoContentResult();
     }

@@ -16,7 +16,8 @@ public record ApprovalRequestDto(
     string Status,
     Guid RequestedByUserId,
     DateTimeOffset CreatedAt,
-    List<ApprovalStepDto> Steps
+    List<ApprovalStepDto> Steps,
+    long Version
 );
 
 public record ApprovalStepDto(
