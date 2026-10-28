@@ -77,7 +77,10 @@ export function GeneralSection({
   const unavailable = settings.unavailable ?? {};
   const trimmed = title.trim();
   const prefixOk =
-    unavailable.itemKeyPrefix || /^[A-Za-z0-9]{2,6}$/.test(prefix.trim());
+    unavailable.itemKeyPrefix ||
+    // A board without a key yet may still save its other fields.
+    prefix.trim().toUpperCase() === general.itemKeyPrefix ||
+    /^[A-Za-z0-9]{2,6}$/.test(prefix.trim());
   const dirty =
     trimmed !== general.title ||
     description !== general.description ||

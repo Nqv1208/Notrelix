@@ -849,7 +849,7 @@ export function KanbanView({
               key={side}
               data-scroll-edge={side}
               className={cn(
-                "pointer-events-none absolute inset-y-0 z-sticky flex w-14 items-center",
+                "pointer-events-none absolute inset-y-0 z-10 flex w-14 items-center",
                 side === "right"
                   ? "right-0 justify-end bg-gradient-to-l from-background via-background/70 to-transparent pr-2"
                   : "left-0 justify-start bg-gradient-to-r from-background via-background/70 to-transparent pl-2",

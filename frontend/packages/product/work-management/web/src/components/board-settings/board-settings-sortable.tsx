@@ -28,12 +28,10 @@ import { cn } from "@notrelix/ui-web";
 export function SortableList({
   ids,
   onReorder,
-  disabled,
   children,
 }: {
   ids: readonly string[];
   onReorder: (ids: string[]) => void;
-  disabled?: boolean;
   children: (order: readonly string[]) => ReactNode;
 }) {
   const [order, setOrder] = useState<readonly string[]>(ids);
@@ -58,7 +56,7 @@ export function SortableList({
 
   return (
     <DndContext
-      sensors={disabled ? [] : sensors}
+      sensors={sensors}
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
       // The live region and the hidden instructions render outside the list, so

@@ -503,6 +503,28 @@ describe.each([
     );
   });
 
+  it(`renames a board that has no item key yet without asking for one (${locale})`, async () => {
+    const actions = spyActions();
+    const settings = erpBoardSettings();
+    renderPage(copy, {
+      section: "general",
+      settings: {
+        ...settings,
+        general: { ...settings.general, itemKeyPrefix: "" },
+      },
+      actions: actions as unknown as BoardSettingsActions,
+    });
+    fireEvent.change(screen.getByLabelText(copy.general.name), {
+      target: { value: "Triển khai ERP Q1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.common.save }));
+    await waitFor(() =>
+      expect(actions.updateGeneral).toHaveBeenCalledWith({
+        title: "Triển khai ERP Q1",
+      }),
+    );
+  });
+
   it(`${fui("wm.board-settings:groups", locale)}deletes a group by moving its items first (${locale})`, async () => {
     const actions = spyActions();
     renderPage(copy, {
