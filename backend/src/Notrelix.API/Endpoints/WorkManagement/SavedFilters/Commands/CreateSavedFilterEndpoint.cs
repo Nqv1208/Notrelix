@@ -23,7 +23,7 @@ public static class CreateSavedFilterEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateSavedFilterCommand(boardId, body.Name, body.Rules, Criteria: body.Criteria), cancellationToken);
+        var result = await sender.Send(new CreateSavedFilterCommand(boardId, body.Name, body.Rules, Criteria: body.Criteria, Visibility: body.Visibility), cancellationToken);
         return result.ToCreatedResult();
     }
 }

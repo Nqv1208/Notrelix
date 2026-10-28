@@ -31,22 +31,7 @@ using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
-
-using System.Text.Json;
-using Notrelix.Application.Features.Collaboration.Comments.DTOs;
-using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
-using Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction;
-using Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction;
-using Notrelix.Application.Features.WorkManagement.Approvals.Commands.CancelApprovalRequest;
-using Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel;
-using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.SharedKernel;
-using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.WorkManagement.Approvals;
-using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.CreateSavedFilter;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSavedFilter;
@@ -138,6 +123,15 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
         var version = await VersionAsync(id);
         var act = () => SendAsync<Result>(_memberId, new UpdateSavedFilterVisibilityCommand(id, SavedFilterVisibility.Private, version));
         await act.Should().ThrowAsync<AppForbidden>();
+    }
+
+    [Fact]
+    public async Task FilterCreatedAsShared_IsVisibleToBoardViewersRightAway()
+    {
+        var id = (await SendAsync<Result<Guid>>(_ownerId,
+            new CreateSavedFilterCommand(_boardId, "Chung ngay", Criteria: Criteria, Visibility: SavedFilterVisibility.Public))).Data;
+
+        (await ListAsync(_memberId)).Should().ContainSingle(f => f.Id == id && f.Visibility == "Public" && !f.IsMine);
     }
 
     [Fact]

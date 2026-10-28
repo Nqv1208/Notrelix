@@ -5987,6 +5987,7 @@ export interface components {
             name?: string | null;
             rules?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
             criteria?: string | null;
+            visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SavedFilterVisibility"];
         };
         "Notrelix.API.Contracts.WorkManagement.SavedFilters.Requests.RenameSavedFilterRequest": {
             name?: string | null;

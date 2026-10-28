@@ -23696,6 +23696,9 @@
           "criteria": {
             "type": "string",
             "nullable": true
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.SavedFilterVisibility"
           }
         },
         "additionalProperties": false

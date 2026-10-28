@@ -2,4 +2,4 @@ using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.API.Contracts.WorkManagement.SavedFilters.Requests;
 
-public record CreateSavedFilterRequest(string Name, List<FilterRule>? Rules = null, string? Criteria = null);
+public record CreateSavedFilterRequest(string Name, List<FilterRule>? Rules = null, string? Criteria = null, SavedFilterVisibility Visibility = SavedFilterVisibility.Private);
