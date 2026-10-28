@@ -1,4 +1,9 @@
 import {
+  describeComputed,
+  ItemLinkPopover,
+  ItemLongTextPopover,
+} from "../card-detail/item-field-extra-editors";
+import {
   Bell,
   CalendarDays,
   Check,
@@ -317,6 +322,60 @@ function CustomFieldRow({
             {value || t.noValue}
           </PropertyValue>
         </ItemTextPopover>
+      </PropertyRow>
+    );
+  }
+  if (field.fieldType === "long_text" || field.fieldType === "link") {
+    const value = typeof raw === "string" ? raw : "";
+    const Editor =
+      field.fieldType === "link" ? ItemLinkPopover : ItemLongTextPopover;
+    return (
+      <PropertyRow label={field.name}>
+        <Editor
+          value={value}
+          label={field.name}
+          readOnly={!editable}
+          copy={t}
+          onChange={onChange}
+        >
+          <PropertyValue
+            editable={editable}
+            aria-label={field.name}
+            className={value ? undefined : "font-normal text-meta-foreground"}
+          >
+            {value || t.noValue}
+          </PropertyValue>
+        </Editor>
+      </PropertyRow>
+    );
+  }
+  if (field.fieldType === "formula" || field.fieldType === "rollup") {
+    const shown = describeComputed(
+      field,
+      card.computedValues?.[field.id],
+      t.calculated,
+    );
+    return (
+      <PropertyRow label={field.name}>
+        <span
+          title={shown.title}
+          aria-label={`${field.name}: ${shown.text}. ${t.calculated.label}`}
+          className={
+            shown.tone === "error"
+              ? "font-semibold text-danger-text"
+              : shown.tone === "value"
+                ? undefined
+                : "text-meta-foreground"
+          }
+        >
+          <span
+            aria-hidden="true"
+            className="mr-1.5 rounded-[5px] bg-state-hover-strong px-1 font-mono text-[11px] text-muted-foreground"
+          >
+            ƒx
+          </span>
+          {shown.text}
+        </span>
       </PropertyRow>
     );
   }

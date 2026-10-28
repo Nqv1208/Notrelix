@@ -70,10 +70,7 @@ describe("null rule", () => {
   it("sorts empty values last ascending and first descending", () => {
     const values = [3, null, 1, "", 2];
     expect(sorted("number", values, "asc")).toEqual([1, 2, 3, null, ""]);
-    expect(sorted("number", values, "desc")).toEqual([null, "", 3,
-      2,
-      1,
-    ]);
+    expect(sorted("number", values, "desc")).toEqual([null, "", 3, 2, 1]);
   });
 
   it("treats an unticked checkbox as a value, not as empty", () => {
