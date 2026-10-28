@@ -29,6 +29,7 @@ export * from "./utils/board-cache-updaters";
 export * from "./utils/table-projection";
 export * from "./utils/person-initials";
 export * from "./utils/item-file-rules";
+export * from "./utils/checklist-ops";
 
 // Kanban types
 export * from "./types/kanban-types";
