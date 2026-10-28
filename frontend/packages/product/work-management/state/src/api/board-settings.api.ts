@@ -37,6 +37,14 @@ const CREATABLE_FIELD_TYPES: readonly BoardSettingsFieldType[] = [
   "rollup",
 ];
 
+/**
+ * What the page offers to create. Formula and Rollup wait for their editors: the
+ * backend rejects them without an expression or a function.
+ */
+const OFFERED_FIELD_TYPES = CREATABLE_FIELD_TYPES.filter(
+  (type) => type !== "formula" && type !== "rollup",
+);
+
 /** What the product has not defined yet: the page hides or locks these. */
 const UNAVAILABLE: BoardSettingsUnavailable = {
   locale: true,
@@ -46,7 +54,7 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
   views: false,
   viewSplit: true,
   automations: true,
-  creatableFieldTypes: CREATABLE_FIELD_TYPES,
+  creatableFieldTypes: OFFERED_FIELD_TYPES,
 };
 
 const DEFAULT_COLOR = "#1E6FD0";

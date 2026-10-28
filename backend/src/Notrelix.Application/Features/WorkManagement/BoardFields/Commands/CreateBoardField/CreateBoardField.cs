@@ -66,6 +66,7 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             _requestContext.UserId,
             now);
 
+        await ComputedFieldGuard.EnsureAsync(_context, column, ct);
         _context.BoardFields.Add(column);
         return Result<Guid>.Success(column.Id);
     }

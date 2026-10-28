@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 public record BoardItemSummaryDto(
@@ -24,7 +26,11 @@ public record BoardItemSummaryDto(
     DateTimeOffset? StartedAt = null,
     DateTimeOffset? CompletedAt = null,
     // Derived from non-archived child Items; null when the Item has none.
-    BoardItemChildProgressDto? ChildProgress = null
+    BoardItemChildProgressDto? ChildProgress = null,
+    // Stored values of the Board's custom fields (excluding Status and priority), by field id; empty values are omitted.
+    Dictionary<string, JsonElement>? FieldValues = null,
+    // Formula and Rollup results by field id, evaluated on this read and never stored.
+    Dictionary<string, ComputedValueDto>? ComputedValues = null
 );
 
 /// <summary>
@@ -33,6 +39,12 @@ public record BoardItemSummaryDto(
 /// non-archived children.
 /// </summary>
 public record BoardItemChildProgressDto(int Done, int Total);
+
+/// <summary>
+/// One Formula or Rollup result. <see cref="State"/> is <c>ok</c>, <c>empty</c> or <c>error</c>;
+/// <see cref="ErrorCode"/> names the error (for example <c>divide-by-zero</c>, <c>unknown-field</c>).
+/// </summary>
+public record ComputedValueDto(string State, JsonElement? Value, string? ErrorCode);
 
 public record BoardItemDto(
     Guid Id,
@@ -65,7 +77,9 @@ public record BoardItemDto(
     Guid? ArchivedBy = null,
     string? ArchivedByName = null,
     // The item's Markdown description; null when it has none.
-    string? DescriptionMd = null
+    string? DescriptionMd = null,
+    Dictionary<string, JsonElement>? FieldValues = null,
+    Dictionary<string, ComputedValueDto>? ComputedValues = null
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);

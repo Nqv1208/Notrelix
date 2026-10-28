@@ -45,6 +45,7 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
         {
             var settings = FieldSettings.Create(JsonValue.Create(request.Settings)!);
             column.UpdateSettings(settings, _currentUser.UserId, now);
+            await ComputedFieldGuard.EnsureAsync(_context, column, ct);
         }
 
         return Result.Success();

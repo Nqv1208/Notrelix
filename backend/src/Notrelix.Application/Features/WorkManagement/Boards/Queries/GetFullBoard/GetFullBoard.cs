@@ -142,6 +142,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .GroupBy(id => id)
             .ToDictionary(group => group.Key, group => group.Count());
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
+        var fieldProjection = await BoardItemFieldProjection.LoadAsync(_context, fields, cardIds, cancellationToken);
 
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
@@ -168,6 +169,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                     checklistStatsByCardId.TryGetValue(card.Id, out var checklistStats);
                     collaborationCounts.TryGetValue(card.Id, out var collaborationStats);
                     var values = readValues[card.Id];
+                    var projected = fieldProjection[card.Id];
 
                     return new BoardItemSummaryDto(
                         card.Id,
@@ -190,7 +192,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         card.DueAt,
                         card.StartedAt,
                         card.CompletedAt,
-                        values.ChildProgress
+                        values.ChildProgress,
+                        projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+                        projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value)
                     );
                 })
                 .ToList());

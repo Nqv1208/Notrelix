@@ -1,4 +1,5 @@
 import type { Checklist, ChecklistDtoApi } from "./checklist-types";
+import type { ComputedValue } from "./field-types";
 import type { CardLabel } from "./label-types";
 
 export interface CardMember {
@@ -30,6 +31,8 @@ export interface Card {
   labels: CardLabel[];
   checklists: Checklist[];
   fieldValues: Record<string, unknown>;
+  /** Formula and Rollup results by field id; never written back. */
+  computedValues?: Record<string, ComputedValue>;
   _count: { comments: number; attachments: number; checklistItems: number };
   createdAt: string;
   updatedAt?: string;
