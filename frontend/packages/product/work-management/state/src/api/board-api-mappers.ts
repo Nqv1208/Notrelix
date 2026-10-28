@@ -1,5 +1,6 @@
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
+  ComputedValue,
   ActivityChange,
   ActivityChangeApi,
   ActivityLogResponseApi,
@@ -223,7 +224,10 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     labels: (dto.labels ?? []).map(mapLabel),
     checklists,
     checklistProgress: checklistProgressOf(checklists),
-    fieldValues: legacy ? parseFieldValues(legacy.fieldValues) : {},
+    fieldValues: legacy
+      ? parseFieldValues(legacy.fieldValues)
+      : generatedFieldValues(dto),
+    computedValues: generatedComputedValues(dto),
     _count: {
       comments: dto.commentCount ?? 0,
       attachments: dto.attachmentCount ?? 0,
@@ -434,7 +438,9 @@ function mapCardSummaryDto(
   const values = readItemValues(dto);
   const statusField = findStatusField(fields);
   const priorityField = findPriorityField(fields);
-  const customValues = legacy ? parseFieldValues(legacy.fieldValues) : {};
+  const customValues = legacy
+    ? parseFieldValues(legacy.fieldValues)
+    : generatedFieldValues(dto);
   const title = itemTitle(dto);
 
   // Legacy reads carry a status/priority word; generated reads carry option ids.
@@ -545,6 +551,7 @@ function mapCardSummaryDto(
     labels: (dto.labels ?? []).map(mapLabel),
     checklists: [],
     fieldValues: { ...customValues, ...semanticValues },
+    computedValues: generatedComputedValues(dto),
     _count: {
       comments: dto.commentCount ?? 0,
       attachments: dto.attachmentCount ?? 0,
@@ -740,6 +747,42 @@ function normalizeCategory(value: string): WorkStatusCategory | null {
     return normalized;
   return null;
 }
+/** The stored custom values the board and item reads carry, by field id. */
+export function generatedFieldValues(dto: unknown): Record<string, unknown> {
+  const value = (dto as { fieldValues?: unknown }).fieldValues;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
+/**
+ * The Formula and Rollup results of a read, by field id. A result of an
+ * unknown shape is dropped (the cell then shows nothing), never guessed.
+ */
+export function generatedComputedValues(
+  dto: unknown,
+): Record<string, ComputedValue> {
+  const raw = (dto as { computedValues?: unknown }).computedValues;
+  const result: Record<string, ComputedValue> = {};
+  if (!raw || typeof raw !== "object") return result;
+  for (const [fieldId, entry] of Object.entries(raw)) {
+    const item = entry as {
+      state?: string;
+      value?: unknown;
+      errorCode?: string | null;
+    } | null;
+    if (item?.state === "ok")
+      result[fieldId] = { state: "ok", value: item.value };
+    else if (item?.state === "empty") result[fieldId] = { state: "empty" };
+    else if (item?.state === "error")
+      result[fieldId] = {
+        state: "error",
+        errorCode: item.errorCode ?? "unknown",
+      };
+  }
+  return result;
+}
+
 function parseFieldValues(
   value: CardSummaryDtoApi["fieldValues"] | CardDtoApi["fieldValues"],
 ): Record<string, unknown> {
@@ -876,7 +919,8 @@ function normalizeFieldType(value: string): FieldDefinition["fieldType"] {
   // Backend field types: a Status field is option-backed like a Select.
   if (normalized === "status") return "select";
   if (normalized === "multiselect") return "multi_select";
-  if (normalized === "longtext") return "text";
+  if (normalized === "longtext") return "long_text";
+  if (normalized === "link" || normalized === "rollup") return normalized;
   if (
     normalized === "text" ||
     normalized === "number" ||
