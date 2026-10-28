@@ -18,11 +18,22 @@ namespace Notrelix.Infrastructure.Email
                 // (the confirmation link, the invitation link) is the only way to follow it.
                 logger.LogInformation(
                     "Development email to {Recipient}: {BodyText}",
-                    request.RecipientEmail,
+                    MaskEmail(request.RecipientEmail),
                     request.BodyText);
             }
 
             return Task.FromResult(new EmailDeliveryResult("noop", request.IdempotencyKey));
+        }
+
+        private static string MaskEmail(string email)
+        {
+            var atIndex = email.IndexOf('@');
+            if (atIndex <= 1 || atIndex == email.Length - 1)
+            {
+                return "***";
+            }
+
+            return $"{email[0]}***{email[(atIndex - 1)..]}";
         }
     }
 }
