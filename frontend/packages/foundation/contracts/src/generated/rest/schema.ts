@@ -7180,6 +7180,8 @@ export interface components {
             color?: string | null;
             position?: string | null;
             category?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldSchemaDto": {
             /** Format: uuid */

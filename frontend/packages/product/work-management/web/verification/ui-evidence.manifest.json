@@ -1946,6 +1946,7 @@
       "pureEntry": "src/components/card-detail/task-detail-panel-surface.tsx",
       "coveredSources": [
         "src/components/card-detail/item-field-editors.tsx",
+        "src/components/card-detail/item-labels-popover.tsx",
         "src/components/card-detail/task-activity-tab.tsx",
         "src/components/card-detail/task-detail-empty-state.tsx",
         "src/components/card-detail/task-detail-header.tsx",
@@ -2771,10 +2772,12 @@
         "src/components/board-settings/board-settings-fields.tsx",
         "src/components/board-settings/board-settings-general.tsx",
         "src/components/board-settings/board-settings-groups.tsx",
+        "src/components/board-settings/board-settings-labels.tsx",
         "src/components/board-settings/board-settings-parts.tsx",
         "src/components/board-settings/board-settings-sortable.tsx",
         "src/components/board-settings/board-settings-view-panel.tsx",
-        "src/components/board-settings/board-settings-views.tsx"
+        "src/components/board-settings/board-settings-views.tsx",
+        "src/components/board-settings/board-settings-write-error.tsx"
       ],
       "stories": [
         {

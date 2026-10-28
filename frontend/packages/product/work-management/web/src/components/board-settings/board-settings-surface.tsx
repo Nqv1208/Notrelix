@@ -6,6 +6,7 @@ import {
   Eye,
   Lock,
   Sun,
+  Tag,
   Table2,
   TriangleAlert,
   Zap,
@@ -22,6 +23,7 @@ import { FieldsSection } from "./board-settings-fields";
 import { fillCopy } from "./board-settings-format";
 import { GeneralSection } from "./board-settings-general";
 import { GroupsSection } from "./board-settings-groups";
+import { LabelsSection } from "./board-settings-labels";
 import { BUTTON_CLASS, Callout } from "./board-settings-parts";
 import {
   BOARD_SETTINGS_SECTIONS,
@@ -44,6 +46,7 @@ const SECTION_ICON: Readonly<Record<BoardSettingsSection, LucideIcon>> = {
   fields: Table2,
   views: Eye,
   groups: AlignLeft,
+  labels: Tag,
   automations: Zap,
 };
 
@@ -121,6 +124,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
             actions={props.actions}
             timeZone={props.timeZone}
             defaultFeedback={props.defaultFeedback}
+            onReload={props.onReload}
           >
             <ReadyBody {...props} />
           </BoardSettingsProvider>
@@ -224,16 +228,17 @@ function ErrorBody({ copy, onReload }: BoardSettingsSurfaceProps) {
 
 function ReadyBody(props: BoardSettingsSurfaceProps) {
   const { copy, settings, onSelectSection } = props;
-  const { feedback, clearFeedback } = useSettings();
+  const { feedback, failure, clearFeedback } = useSettings();
   const data = settings!;
   const unavailable = data.unavailable ?? {};
   const hidden: Partial<Record<BoardSettingsSection, boolean>> = {
     views: unavailable.views,
+    labels: !props.labels,
     automations: unavailable.automations && !props.workspaceRules,
   };
   // A section the product has no contract for is not opened by its address.
   const section = hidden[props.section] ? "general" : props.section;
-  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 4).filter(
+  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 5).filter(
     (key) => !hidden[key],
   );
   const t = copy.menu;
@@ -247,6 +252,8 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     fields: data.fields.length + data.systemFields.length,
     views: data.views.length,
     groups: data.groups.length,
+    labels:
+      props.labels?.status === "ready" ? props.labels.labels.length : undefined,
     automations: running,
   };
 
@@ -285,6 +292,8 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
       />
     );
   else if (section === "groups") content = <GroupsSection />;
+  else if (section === "labels" && props.labels)
+    content = <LabelsSection panel={props.labels} />;
   else if (section === "automations" && props.workspaceRules)
     content = <WorkspaceRulesSection panel={props.workspaceRules} />;
   else if (section === "automations") {
@@ -407,16 +416,13 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
                   <span>{copy.feedback.conflictBody}</span>
                 ) : null}
                 <span className="mt-1 flex gap-2">
-                  {feedback === "conflict" ? (
+                  {failure?.retry ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        clearFeedback();
-                        props.onReload();
-                      }}
+                      onClick={failure.retry}
                       className={cn(BUTTON_CLASS.outline, "h-7")}
                     >
-                      {copy.feedback.conflictAction}
+                      {copy.feedback.retry}
                     </button>
                   ) : null}
                   <button

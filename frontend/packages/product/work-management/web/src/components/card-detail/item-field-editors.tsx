@@ -17,7 +17,6 @@ import {
   findStatusField,
   type Board,
   type CardDetail,
-  type CardLabel,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
 
@@ -238,64 +237,8 @@ export function customItemFields(board: Board): FieldDefinition[] {
     .sort((a, b) => a.position - b.position);
 }
 
-/** The board's labels as a toggle list; a pick adds or removes that label. */
-export function ItemLabelsPopover({
-  labels,
-  selectedIds,
-  label,
-  emptyText,
-  readOnly,
-  onToggle,
-  children,
-}: {
-  labels: readonly CardLabel[];
-  selectedIds: ReadonlySet<string>;
-  label: string;
-  /** Said when the board has no labels. */
-  emptyText: string;
-  readOnly: boolean;
-  onToggle: (labelId: string, on: boolean) => void;
-  children: ReactNode;
-}) {
-  if (readOnly) return <>{children}</>;
-  return (
-    <Popover>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-1">
-        {labels.length === 0 ? (
-          <p className="m-0 px-2 py-1.5 text-sm text-muted-foreground">
-            {emptyText}
-          </p>
-        ) : (
-          <ul aria-label={label} className="flex flex-col gap-0.5">
-            {labels.map((entry) => {
-              const selected = selectedIds.has(entry.id);
-              return (
-                <li key={entry.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selected}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-state-hover aria-pressed:bg-state-selected"
-                    onClick={() => onToggle(entry.id, !selected)}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: entry.color }}
-                    />
-                    <span className="min-w-0 flex-1 truncate">
-                      {entry.name || entry.color}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
+export { ItemLabelsPopover, labelCreate } from "./item-labels-popover";
+export type { ItemLabelCreate } from "./item-labels-popover";
 
 /** A number typed into a small popover; Enter or leaving the box saves it. */
 export function ItemNumberPopover({

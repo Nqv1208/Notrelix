@@ -244,7 +244,17 @@ function projectItemSummary(
 function projectField(
   column: ReturnType<MockStore["getColumns"]>[number],
   index: number,
+  itemIds: readonly string[],
+  store: MockStore,
 ): FullBoardField {
+  // Live Items holding each option, as the backend counts them.
+  const holders = (optionId: string) =>
+    itemIds.filter((id) => {
+      const value = store.getFieldValues(id)[column.id];
+      return Array.isArray(value)
+        ? value.includes(optionId)
+        : value === optionId;
+    }).length;
   const fieldType =
     FIELD_TYPE_NAMES[column.fieldType.trim().toLowerCase()] ?? "Text";
   return {
@@ -266,6 +276,7 @@ function projectField(
             color: option.color,
             position: option.position,
             category: option.category ?? null,
+            itemCount: holders(option.id),
           })),
         }
       : {}),
@@ -277,6 +288,11 @@ function projectFullBoard(
   board: MockBoardRecord,
   store: MockStore,
 ): GeneratedFullBoardDto {
+  const itemIds = store
+    .getLists(board.id)
+    .flatMap((list) => store.getCards(list.id))
+    .filter((card) => !card.isArchived)
+    .map((card) => card.id);
   const titleField: FullBoardField = {
     // Like the backend: a synthetic, read-only title column with the Board id.
     id: board.id,
@@ -297,7 +313,12 @@ function projectFullBoard(
     description: board.description ?? null,
     background: JSON.stringify(board.background),
     visibility: board.visibility === "private" ? "Private" : "Workspace",
-    columns: [titleField, ...store.getColumns(board.id).map(projectField)],
+    columns: [
+      titleField,
+      ...store
+        .getColumns(board.id)
+        .map((column, index) => projectField(column, index, itemIds, store)),
+    ],
     lists: store.getLists(board.id).map((list, index) => ({
       id: list.id,
       title: list.title,
