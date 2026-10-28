@@ -8,13 +8,17 @@ import {
   authRegisterDefaultScenario,
   authSignInScenario,
   authSsoStep,
+  authVerifyEmailScenario,
 } from "../../../verification/auth-ui-fixtures";
+import { PASSWORD_MIN_LENGTH } from "../../../core/schemas/password-policy";
 import { authCopy } from "../../copy/auth.copy";
+import { fillAuthCopy } from "../../copy/fill-auth-copy";
 import { AuthForgotSurface } from "../auth-forgot-surface";
 import { AuthInviteSurface } from "../auth-invite-surface";
 import { AuthRegisterFormSurface } from "../auth-form-surfaces";
 import { AuthShell } from "../auth-shell";
 import { AuthSignInSurface } from "../auth-sign-in-surface";
+import { AuthVerifyEmailSurface } from "../auth-verify-email-surface";
 
 const copy = authCopy("vi");
 
@@ -81,7 +85,9 @@ describe("auth sign-in surface", () => {
         })}
       />,
     );
-    expect(screen.getByText(AUTH_PERSONAL_EMAIL)).toBeTruthy();
+    // The email stays in its own (now read-only) field above the password.
+    const emailField = screen.getByDisplayValue(AUTH_PERSONAL_EMAIL);
+    expect(emailField.hasAttribute("readonly")).toBe(true);
     const field = screen.getByLabelText(
       copy.password.label,
     ) as HTMLInputElement;
@@ -101,7 +107,7 @@ describe("auth sign-in surface", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[auth.sign-in:wrong] says the password is wrong and how many tries are left", () => {
+  it("FUI[auth.sign-in:wrong] says the password is wrong and never counts tries", () => {
     renderPureUi(
       <AuthSignInSurface
         {...authSignInScenario({
@@ -109,7 +115,6 @@ describe("auth sign-in surface", () => {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
             error: "wrong",
-            attemptsLeft: 2,
           },
         })}
       />,
@@ -117,7 +122,7 @@ describe("auth sign-in surface", () => {
     expect(screen.getByRole("alert").textContent).toContain(
       copy.password.wrong,
     );
-    expect(screen.getByText(/Còn 2 lần thử/)).toBeTruthy();
+    expect(screen.queryByText(/lần thử/)).toBeNull();
     expect(
       screen.getByLabelText(copy.password.label).getAttribute("aria-invalid"),
     ).toBe("true");
@@ -131,8 +136,7 @@ describe("auth sign-in surface", () => {
           step: {
             kind: "password",
             email: AUTH_PERSONAL_EMAIL,
-            error: "wrong",
-            attemptsLeft: 0,
+            error: null,
             lockedSeconds: 48,
           },
           onSubmitPassword,
@@ -193,12 +197,8 @@ describe("auth sign-in surface", () => {
     expect([1, 2, 3, 4, 5, 6].map((index) => box(index).value).join("")).toBe(
       "482931",
     );
-    fireEvent.click(screen.getByLabelText(copy.otp.remember));
     fireEvent.click(verify);
-    expect(onVerify).toHaveBeenCalledWith({
-      code: "482931",
-      rememberDevice: true,
-    });
+    expect(onVerify).toHaveBeenCalledWith({ code: "482931" });
   });
 
   it("FUI[auth.sign-in:otp-backup] asks for a backup code instead and says when a code is wrong", () => {
@@ -212,7 +212,6 @@ describe("auth sign-in surface", () => {
             email: AUTH_PERSONAL_EMAIL,
             backup: true,
             error: "wrong",
-            attemptsLeft: 3,
           },
           onVerify,
           onToggleBackup,
@@ -223,11 +222,8 @@ describe("auth sign-in surface", () => {
       target: { value: "BK7Q-M2XN-91TD" },
     });
     fireEvent.click(screen.getByRole("button", { name: copy.otp.verify }));
-    expect(onVerify).toHaveBeenCalledWith({
-      code: "BK7Q-M2XN-91TD",
-      rememberDevice: false,
-    });
-    expect(screen.getByRole("alert").textContent).toContain("Còn 3 lần thử");
+    expect(onVerify).toHaveBeenCalledWith({ code: "BK7Q-M2XN-91TD" });
+    expect(screen.getByRole("alert").textContent).toContain(copy.otp.wrong);
     fireEvent.click(screen.getByRole("button", { name: copy.otp.useApp }));
     expect(onToggleBackup).toHaveBeenCalledTimes(1);
   });
@@ -286,6 +282,67 @@ describe("auth forgot-password surface", () => {
   });
 });
 
+describe("auth verify-email surface", () => {
+  it("FUI[auth.verify-email:confirm] says it is confirming, then that the email is confirmed and continues", () => {
+    const onContinue = vi.fn();
+    const { rerender } = renderPureUi(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "confirming" } })}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      copy.verifyEmail.confirmingTitle,
+    );
+    rerender(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({ step: { kind: "done" }, onContinue })}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      copy.verifyEmail.doneTitle,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.continue }),
+    );
+    expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[auth.verify-email:resend] offers a new link for a dead link, rejects a malformed email, sends a good one and goes back", () => {
+    const onResend = vi.fn();
+    const onBack = vi.fn();
+    renderPureUi(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({
+          step: { kind: "failed" },
+          onResend,
+          onBack,
+        })}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      copy.verifyEmail.failedTitle,
+    );
+    const field = screen.getByLabelText(copy.verifyEmail.label);
+    fireEvent.change(field, { target: { value: "sai" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.send }),
+    );
+    expect(onResend).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.verifyEmail.invalid,
+    );
+    fireEvent.change(field, { target: { value: AUTH_PERSONAL_EMAIL } });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.send }),
+    );
+    expect(onResend).toHaveBeenCalledWith(AUTH_PERSONAL_EMAIL);
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.verifyEmail.back }),
+    );
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("auth invite surface", () => {
   it("FUI[auth.invite:accept] shows who invited, the guest level and its end, keeps the email fixed and checks the name and password", () => {
     const onAccept = vi.fn();
@@ -306,7 +363,17 @@ describe("auth invite surface", () => {
     });
     fireEvent.click(accept);
     expect(onAccept).not.toHaveBeenCalled();
-    expect(screen.getByText(copy.invite.passwordShort)).toBeTruthy();
+    expect(
+      screen.getByText(
+        fillAuthCopy(copy.invite.passwordShort, { count: PASSWORD_MIN_LENGTH }),
+      ),
+    ).toBeTruthy();
+    // The minimum is the backend policy (8): seven characters are refused, eight pass.
+    fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
+      target: { value: "x".repeat(PASSWORD_MIN_LENGTH - 1) },
+    });
+    fireEvent.click(accept);
+    expect(onAccept).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
       target: { value: "mot-mat-khau-du-dai" },
     });

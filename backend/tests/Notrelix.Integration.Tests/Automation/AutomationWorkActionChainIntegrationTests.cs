@@ -38,7 +38,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -82,7 +82,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Create("a1"), ownerId, Now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Initial(), ownerId, Now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(executorUser);
         seed.Users.Add(memberUser);
         seed.Workspaces.Add(workspace);
@@ -94,7 +94,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
 
-        await using var grant = _db.CreateContext(SystemTenant());
+        await using var grant = _db.CreateOwnerContext(SystemTenant());
         var projection = new Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService(grant);
         await projection.SyncWorkspaceMemberGrantAsync(
             accountId, workspace.Id, executorUser.Id, WorkspaceRole.Owner, Now, CancellationToken.None);
@@ -111,7 +111,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         // context of the automation execution's workspace. The delivery
         // pipeline commits the scoped context after the consumer returns.
         var tenant = WorkspaceTenant(graph.AccountId, graph.WorkspaceId, graph.ExecutorUserId);
-        var workContext = _db.CreateContext(tenant);
+        var workContext = _db.CreateOwnerContext(tenant);
         var clockMock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
         var workItemActions = new Application.Features.WorkManagement.BoardItems.Services.MoveBoardItemUseCase(
@@ -129,7 +129,8 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         // connection and transaction exactly like the canonical behaviors.
         var authorizer = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActionAuthorizer(
             new Notrelix.Infrastructure.Services.ResourceLocator(
-                workContext, workContext, workContext, workContext, workContext, workContext),
+                workContext, workContext, workContext, workContext, workContext, workContext,
+                new Moq.Mock<Notrelix.Application.Common.Data.Rls.IRlsSessionContext>().Object),
             Notrelix.Application.Common.Requests.Execution.RequestDescriptorRegistry
                 .Create(typeof(Application.Features.WorkManagement.Public.ItemMovement.IWorkItemActions).Assembly),
             new Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider(
@@ -143,7 +144,9 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
             workItemActions,
             workContext,
             authorizer,
-            idempotencyStore);
+            idempotencyStore,
+            Moq.Mock.Of<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver>(),
+            Moq.Mock.Of<Notrelix.Application.Common.Time.IDateTimeProvider>());
         return (new WorkItemActionAdapter(actions), workContext);
     }
 
@@ -166,7 +169,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         result.GroupId.Should().Be(graph.TargetGroupId);
 
         // Verify through a fresh producer-owned read.
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
         item.GroupId.Should().Be(graph.TargetGroupId);
     }
@@ -193,7 +196,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         second.Should().Be(first, "the duplicate retries one logical move through the committed dedup record");
         await tx.CommitAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
         item.GroupId.Should().Be(graph.TargetGroupId);
         item.Version.Should().Be(2, "exactly one move mutation: creation seeds version 1, one move increments to 2");
@@ -242,7 +245,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
 
         await tx.RollbackAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
         item.GroupId.Should().Be(graph.SourceGroupId, "the rejected mutation must not change Work state");
     }
@@ -259,7 +262,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         // the canonical decision denies and nothing else may bypass it.
         var graph = await SeedChainAsync();
 
-        await using (var restrict = _db.CreateContext(SystemTenant()))
+        await using (var restrict = _db.CreateOwnerContext(SystemTenant()))
         {
             var restricted = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
             restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
@@ -280,7 +283,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
 
         await tx.RollbackAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
         item.GroupId.Should().Be(graph.SourceGroupId, "no Work mutation for a denied executor");
         item.Version.Should().Be(1, "the denied request never mutated the aggregate");

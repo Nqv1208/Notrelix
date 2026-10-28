@@ -20,7 +20,7 @@ public class MigrationResiliencyTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -31,7 +31,7 @@ public class MigrationResiliencyTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();

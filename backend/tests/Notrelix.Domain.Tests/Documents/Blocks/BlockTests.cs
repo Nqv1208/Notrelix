@@ -10,7 +10,7 @@ public class BlockTests
     {
         var workspaceId = Guid.NewGuid();
         var pageId = Guid.NewGuid();
-        var content = BlockContent.Create(JsonValue.Create("{\"text\":\"Hello\"}"));
+        var content = BlockContent.Create(JsonValue.Create("{\"v\":1,\"runs\":[{\"text\":\"Hello\",\"marks\":[]}]}"));
         var position = FractionalIndex.Create("a0");
         var createdBy = Guid.NewGuid();
 
@@ -43,7 +43,7 @@ public class BlockTests
         var workspaceId = Guid.NewGuid();
         var pageId = Guid.NewGuid();
         var parentPath = BlockAncestorPath.Create(accountId, workspaceId, pageId, Guid.NewGuid(), new[] { Guid.NewGuid() });
-        var content = BlockContent.Create(JsonValue.Create("{\"text\":\"Child\"}"));
+        var content = BlockContent.Create(JsonValue.Create("{\"v\":1,\"runs\":[{\"text\":\"Child\",\"marks\":[]}]}"));
         var position = FractionalIndex.Create("a1");
         var createdBy = Guid.NewGuid();
 
@@ -70,7 +70,7 @@ public class BlockTests
         var block = Block.CreateRoot(Guid.NewGuid(), workspaceId, Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
-        var newContent = BlockContent.Create(JsonValue.Create("{\"text\":\"New\"}"));
+        var newContent = BlockContent.Create(JsonValue.Create("{\"v\":1,\"runs\":[{\"text\":\"New\",\"marks\":[]}]}"));
         var updatedBy = Guid.NewGuid();
 
         block.UpdateContent(newContent, updatedBy, DateTimeOffset.UtcNow);
@@ -108,7 +108,7 @@ public class BlockTests
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
-        var newProps = BlockProperties.Create(JsonValue.Create("{\"color\":\"red\"}"));
+        var newProps = BlockProperties.Create(JsonValue.Create("{\"align\":\"center\"}"));
 
         block.UpdateProperties(newProps, Guid.NewGuid(), DateTimeOffset.UtcNow);
 

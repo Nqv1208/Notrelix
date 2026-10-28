@@ -174,7 +174,10 @@ describe("WorkspaceSidebarSurface", () => {
       const search = screen.getByRole("button", {
         name: new RegExp(shellCopyFixture(locale).sidebar.search),
       });
-      expect(search.textContent).toContain("⌘K");
+      // The shortcut is a tooltip and aria-keyshortcuts, never a visible chip.
+      expect(search.textContent).not.toContain("⌘K");
+      expect(search.getAttribute("title")).toContain("⌘K");
+      expect(search.getAttribute("aria-keyshortcuts")).toBe("Meta+K Control+K");
       fireEvent.click(search);
       expect(props.onOpenCommand).toHaveBeenCalledTimes(1);
       unmount();
@@ -398,6 +401,37 @@ describe("WorkspaceSidebarSurface", () => {
 
     expect(props.onOpenSystemRail).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("FUI[workspace.sidebar:collapse] collapses to the icon column and opens again from the edge arrow, in vi and en", () => {
+    for (const locale of LOCALES) {
+      const text = locale === "vi" ? viCopy : copy;
+      const { unmount } = renderSidebar({ copy: text });
+      const collapse = screen.getByRole("button", {
+        name: text.sidebar.collapse,
+      });
+      expect(collapse.getAttribute("aria-expanded")).toBe("true");
+      expect(collapse.getAttribute("aria-keyshortcuts")).toContain("Meta+B");
+
+      fireEvent.click(collapse);
+
+      const expand = screen.getByRole("button", { name: text.sidebar.expand });
+      expect(expand.getAttribute("aria-expanded")).toBe("false");
+      expect(
+        document
+          .querySelector('[data-slot="sidebar"]')
+          ?.getAttribute("data-collapsible"),
+      ).toBe("icon");
+
+      fireEvent.click(expand);
+
+      expect(
+        screen
+          .getByRole("button", { name: text.sidebar.collapse })
+          .getAttribute("aria-expanded"),
+      ).toBe("true");
+      unmount();
+    }
   });
 
   it("FUI[workspace.sidebar:states] shows a workspace placeholder while loading and no counts when unavailable", () => {

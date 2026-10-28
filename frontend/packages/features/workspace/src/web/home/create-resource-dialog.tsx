@@ -11,9 +11,13 @@ import {
   FieldError,
   FieldLabel,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@notrelix/ui-web";
 import { formatCopy } from "../shell/shell-models";
-import type { MyWorkCreateBoard } from "./my-work-types";
 import type { WorkspaceHomeCopy } from "./workspace-home.copy";
 
 export type CreatableResource = "board" | "doc";
@@ -28,8 +32,21 @@ export interface CreateResourceDialogProps {
   /** The Space the resource is created in (OT-5); `null` = workspace level. */
   readonly spaceName?: string | null;
   readonly onOpenChange: (open: boolean) => void;
-  readonly onSubmit: (kind: CreatableResource, name: string) => void;
+  /** The workspace's page templates a new Doc can start from (none = a blank page only). */
+  readonly templates?: readonly CreateResourceTemplate[];
+  readonly onSubmit: (
+    kind: CreatableResource,
+    name: string,
+    templateId?: string,
+  ) => void;
 }
+
+export interface CreateResourceTemplate {
+  readonly id: string;
+  readonly name: string;
+}
+
+const BLANK = "__blank__";
 
 /** Names a new Board or Doc (WX-HOME-002, WX-DIR-001). */
 export function CreateResourceDialog({
@@ -38,17 +55,21 @@ export function CreateResourceDialog({
   pending,
   error,
   spaceName = null,
+  templates = [],
   onOpenChange,
   onSubmit,
 }: CreateResourceDialogProps) {
   const [name, setName] = useState("");
+  const [templateId, setTemplateId] = useState(BLANK);
   const [touched, setTouched] = useState(false);
   const inputId = useId();
+  const templateFieldId = useId();
   const errorId = useId();
 
   useEffect(() => {
     if (kind === null) {
       setName("");
+      setTemplateId(BLANK);
       setTouched(false);
     }
   }, [kind]);
@@ -62,7 +83,11 @@ export function CreateResourceDialog({
     event.preventDefault();
     setTouched(true);
     if (!kind || trimmed === "" || pending) return;
-    onSubmit(kind, trimmed);
+    const chosen = templates.some((entry) => entry.id === templateId)
+      ? templateId
+      : undefined;
+    if (kind === "doc" && chosen) onSubmit(kind, trimmed, chosen);
+    else onSubmit(kind, trimmed);
   };
 
   return (
@@ -102,6 +127,28 @@ export function CreateResourceDialog({
             />
             {message ? <FieldError id={errorId}>{message}</FieldError> : null}
           </Field>
+          {!isBoard && templates.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor={templateFieldId}>
+                {copy.create.templateLabel}
+              </FieldLabel>
+              <Select value={templateId} onValueChange={setTemplateId}>
+                <SelectTrigger id={templateFieldId} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={BLANK}>
+                    {copy.create.templateBlank}
+                  </SelectItem>
+                  {templates.map((entry) => (
+                    <SelectItem key={entry.id} value={entry.id}>
+                      {entry.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"
@@ -116,106 +163,6 @@ export function CreateResourceDialog({
                 : isBoard
                   ? copy.create.submitBoard
                   : copy.create.submitDoc}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-export interface AddItemDialogProps {
-  readonly copy: WorkspaceHomeCopy;
-  readonly open: boolean;
-  /** Boards the member can add an item to. */
-  readonly boards: readonly MyWorkCreateBoard[];
-  readonly pending: boolean;
-  readonly error: string | null;
-  readonly onOpenChange: (open: boolean) => void;
-  readonly onSubmit: (input: { boardId: string; name: string }) => void;
-}
-
-/** "Thêm công việc" on Home: names an item assigned to the member on a Board. */
-export function AddItemDialog({
-  copy,
-  open,
-  boards,
-  pending,
-  error,
-  onOpenChange,
-  onSubmit,
-}: AddItemDialogProps) {
-  const [name, setName] = useState("");
-  const [boardId, setBoardId] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
-  const nameId = useId();
-  const boardIdField = useId();
-  const chosen = boards.find((board) => board.id === boardId) ?? boards[0];
-
-  useEffect(() => {
-    if (!open) {
-      setName("");
-      setTouched(false);
-    }
-  }, [open]);
-
-  const trimmed = name.trim();
-  const message = touched && trimmed === "" ? copy.create.required : error;
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    setTouched(true);
-    if (!chosen || trimmed === "" || pending) return;
-    onSubmit({ boardId: chosen.id, name: trimmed });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-          <DialogHeader>
-            <DialogTitle>{copy.list.addTitle}</DialogTitle>
-            <DialogDescription>{copy.list.addNote}</DialogDescription>
-          </DialogHeader>
-          <Field data-invalid={message ? true : undefined}>
-            <FieldLabel htmlFor={nameId}>{copy.list.addName}</FieldLabel>
-            <Input
-              id={nameId}
-              value={name}
-              autoFocus
-              maxLength={300}
-              placeholder={copy.list.addNamePlaceholder}
-              aria-invalid={message ? true : undefined}
-              onChange={(event) => setName(event.target.value)}
-            />
-            {message ? <FieldError>{message}</FieldError> : null}
-          </Field>
-          <Field>
-            <FieldLabel htmlFor={boardIdField}>{copy.list.addBoard}</FieldLabel>
-            <select
-              id={boardIdField}
-              value={chosen?.id ?? ""}
-              onChange={(event) => setBoardId(event.target.value)}
-              className="h-9 rounded-[8px] border border-line-strong bg-popover px-2.5 text-compact text-foreground dark:bg-card"
-            >
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.departmentName
-                    ? `${board.name} · ${board.departmentName}`
-                    : board.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {copy.list.addCancel}
-            </Button>
-            <Button type="submit" disabled={pending || !chosen}>
-              {copy.list.addSubmit}
             </Button>
           </DialogFooter>
         </form>

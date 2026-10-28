@@ -16,6 +16,14 @@ const loadedBoard = vi.hoisted(() => ({
 
 vi.mock("@notrelix/work-management-state", () => ({
   useFullBoard: () => ({ board: loadedBoard.current }),
+  useSavedViews: () => ({ views: [], create: vi.fn() }),
+  pickSavedView: () => undefined,
+  BoardViewSelectionProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+}));
+
+vi.mock("@notrelix/features-auth", () => ({
+  useCurrentUser: () => ({ id: "user-1" }),
 }));
 
 vi.mock("../shell/workspace/board-share-dialog", () => ({
@@ -34,6 +42,7 @@ vi.mock("@notrelix/work-management-web", () => ({
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
   useBoardHeaderCopy: () => ({ untitledBoard: "Bảng chưa tải" }),
+  BoardTrashHost: () => null,
   BoardLayoutShell: ({
     boardTitle,
     onViewChange,

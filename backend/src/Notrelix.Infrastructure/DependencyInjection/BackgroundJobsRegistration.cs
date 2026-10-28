@@ -24,6 +24,11 @@ public static class BackgroundJobsRegistration
         services.AddScoped<AttachmentObjectReaper>();
         services.AddHostedService<AttachmentObjectReaperService>();
 
+        // Identity: remove profile photo objects that no user references (replaced, removed or never committed).
+        services.AddScoped<IAvatarReaperStore, PostgresAvatarReaperStore>();
+        services.AddScoped<AvatarObjectReaper>();
+        services.AddHostedService<AvatarObjectReaperService>();
+
         // User-visible security activity feed: delete entries past the retention (default 90 days).
         services.AddOptions<SecurityActivityRetentionOptions>()
             .Bind(configuration.GetSection(SecurityActivityRetentionOptions.SectionName))
@@ -31,6 +36,22 @@ public static class BackgroundJobsRegistration
         services.AddSingleton<IValidateOptions<SecurityActivityRetentionOptions>, SecurityActivityRetentionOptionsValidator>();
         services.AddScoped<SecurityActivityRetentionSweeper>();
         services.AddHostedService<SecurityActivityRetentionService>();
+
+        // Workspaces: delete onboarding drafts past their 30-day expiry (reads already treat them as absent).
+        services.AddOptions<OnboardingDraftSweepOptions>()
+            .Bind(configuration.GetSection(OnboardingDraftSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<OnboardingDraftSweepOptions>, OnboardingDraftSweepOptionsValidator>();
+        services.AddScoped<OnboardingDraftSweeper>();
+        services.AddHostedService<OnboardingDraftSweepService>();
+
+        // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
+        services.AddOptions<DueDateNotificationOptions>()
+            .Bind(configuration.GetSection(DueDateNotificationOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DueDateNotificationOptions>, DueDateNotificationOptionsValidator>();
+        services.AddScoped<DueDateNotificationSweeper>();
+        services.AddHostedService<DueDateNotificationService>();
 
         return services;
     }

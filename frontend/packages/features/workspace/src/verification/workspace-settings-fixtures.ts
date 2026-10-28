@@ -23,6 +23,8 @@ export function workspaceSettingsFixture(
     allowGuestInvites: true,
     allowPublicSharing: false,
     enforceMfa: false,
+    timeZone: "Asia/Ho_Chi_Minh",
+    weekStart: "monday",
     ...overrides,
   };
 }

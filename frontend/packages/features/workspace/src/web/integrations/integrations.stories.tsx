@@ -12,6 +12,7 @@ import {
   IntegrationConnectDialog,
   IntegrationDetailSurface,
   IntegrationDisconnectDialog,
+  IntegrationSecretDialog,
   IntegrationUpgradeSheet,
   IntegrationsListSurface,
 } from "./integrations-surface";
@@ -150,4 +151,53 @@ export const UpgradeSheet: Story = {
     />
   ),
   tags: ["fui-surface--workspace.integrations", "fui-state--ReadOnly"],
+};
+
+export const ListNotConfigured: Story = {
+  render: () =>
+    list({
+      status: "ready",
+      data: {
+        ...listFixture(),
+        catalog: CATALOG_FIXTURE.map((entry, index) =>
+          index === 0 ? { ...entry, configured: false } : entry,
+        ),
+      },
+    }),
+  tags: ["fui-surface--workspace.integrations", "fui-state--EdgeData"],
+};
+export const WebhookConnectDialog: Story = {
+  render: () => (
+    <IntegrationConnectDialog
+      copy={copy}
+      links={links}
+      open
+      item={CATALOG_FIXTURE[0]!}
+      workspaceName="Minh An Group"
+      scope="workspace"
+      hideScope
+      submitting={false}
+      onScope={noop}
+      onNext={noop}
+      onClose={noop}
+      url={{
+        value: "https://hooks.example.com/notrelix",
+        error: null,
+        onChange: noop,
+      }}
+    />
+  ),
+  tags: ["fui-surface--workspace.integrations", "fui-state--Default"],
+};
+export const SecretDialog: Story = {
+  render: () => (
+    <IntegrationSecretDialog
+      copy={copy}
+      links={links}
+      open
+      secret="whsec_example_0000000000000000000000000000"
+      onClose={noop}
+    />
+  ),
+  tags: ["fui-surface--workspace.integrations", "fui-state--Default"],
 };

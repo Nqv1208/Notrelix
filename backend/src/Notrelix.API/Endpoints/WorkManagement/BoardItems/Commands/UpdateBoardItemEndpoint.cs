@@ -22,7 +22,7 @@ public static class UpdateBoardItemEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateBoardItemCommand(
-            itemId, body.Title, body.DueDate, body.StartDate, body.ExpectedVersion), cancellationToken);
+            itemId, body.Title, body.DueDate, body.StartDate, body.ExpectedVersion, body.DescriptionMd, body.ClearDueDate, body.ClearStartDate), cancellationToken);
         return result.ToApiResult();
     }
 }

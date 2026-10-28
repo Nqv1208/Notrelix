@@ -7,12 +7,16 @@ import {
   BoardHeaderSurface,
   type BoardHeaderData,
 } from "./board-header-surface";
-import { ViewTabs, AddViewMenu } from "./view-tabs";
+import { ViewTabs, AddViewMenu, type ViewTabSavedView } from "./view-tabs";
 
 interface BoardToolbarProps {
   boardTitle: string;
   activeView: string;
-  onViewChange: (viewType: string) => void;
+  onViewChange: (viewKey: string) => void;
+  /** The board's saved views, one tab each. */
+  savedViews?: readonly ViewTabSavedView[];
+  /** Makes a saved view of a layout; absent: the layout is only shown. */
+  onAddView?: (viewType: string) => void;
   /**
    * Header data (Space crumb, access summary, actions). Defaults to the data
    * the board route provides through `BoardHeaderDataContext`.
@@ -28,6 +32,8 @@ interface BoardToolbarProps {
    * button is enabled and calls it (it wins over the header data's own).
    */
   onOpenSettings?: () => void;
+  /** Opens the board's deleted items from the More options menu. */
+  onOpenTrash?: () => void;
 }
 
 /**
@@ -40,9 +46,12 @@ export function BoardToolbar({
   boardTitle,
   activeView,
   onViewChange,
+  savedViews,
+  onAddView,
   header: headerProp,
   copy: copyProp,
   onOpenSettings,
+  onOpenTrash,
 }: BoardToolbarProps) {
   const contextCopy = useContext(BoardHeaderCopyContext);
   const contextHeader = useContext(BoardHeaderDataContext);
@@ -50,14 +59,19 @@ export function BoardToolbar({
   const header = headerProp ?? contextHeader;
   // Only Final-Board's header carries the "More options" button; the
   // Table, Calendar and Timeline headers end at Settings and Share.
+  const activeLayout =
+    savedViews?.find((view) => view.id === activeView)?.viewMode ?? activeView;
   const headerForView =
-    activeView === "kanban" ? header : { ...header, onCopyLink: undefined };
+    activeLayout === "kanban" ? header : { ...header, onCopyLink: undefined };
+  const headerWithTrash = onOpenTrash
+    ? { ...headerForView, onOpenTrash }
+    : headerForView;
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface
         title={boardTitle}
         copy={copy}
-        {...headerForView}
+        {...headerWithTrash}
         {...(onOpenSettings ? { onOpenSettings } : {})}
       />
       <div
@@ -73,9 +87,10 @@ export function BoardToolbar({
             activeView={activeView}
             onViewChange={onViewChange}
             copy={copy}
+            savedViews={savedViews}
           />
         </div>
-        <AddViewMenu onAddView={onViewChange} copy={copy} />
+        <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
       </div>
     </div>
   );

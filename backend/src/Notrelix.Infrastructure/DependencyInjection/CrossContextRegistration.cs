@@ -1,9 +1,11 @@
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
+using Notrelix.Application.Features.Identity.Profiles.Ports;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
+using Notrelix.Infrastructure.CrossContext.Identity.Avatars;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 
@@ -27,6 +29,7 @@ public static class CrossContextRegistration
         // Cross-context read ports.
         services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
         services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
+        services.AddScoped<IAvatarAudienceReadPort, AvatarAudienceReadAdapter>();
 
         // Cross-context target-action port: Automation -> WorkManagement
         services.AddScoped<IWorkActionPort, WorkItemActionAdapter>();

@@ -1,3 +1,8 @@
+import {
+  ACTIVITY_WORDS_EN,
+  ACTIVITY_WORDS_VI,
+} from "../card-detail/activity-words";
+
 /**
  * Item page copy, vi and en, registered as the `item-page` catalog
  * (`item-page.catalog.ts`). The pure page surface takes a `copy` prop;
@@ -8,6 +13,8 @@
  */
 export const en = {
   loading: "Loading the item",
+  /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
+  activityEvents: ACTIVITY_WORDS_EN,
   unavailable: {
     title: "Item unavailable",
     body: "This item could not be loaded or no longer exists.",
@@ -19,7 +26,7 @@ export const en = {
       title: "{{key}} was not found",
       titleNoKey: "This item was not found",
       body: "This key does not exist or the item was deleted for good. If it only moved to another board, the old link still leads to its new place.",
-      search: "Search with ⌘K",
+      search: "Search",
       home: "Back to home",
     },
     completed: {
@@ -49,7 +56,7 @@ export const en = {
       pending: "waiting to save",
     },
     empty: {
-      description: "Add a description… type / to insert a table, item or doc",
+      description: "Add a description…",
       children: "No sub-items yet.",
       addChild: "Add a sub-item",
       created: "{{name}} created this item",
@@ -157,6 +164,8 @@ export const en = {
     more: "More",
     duplicate: "Duplicate",
     archive: "Archive",
+    delete: "Delete…",
+    moveToBoard: "Move to another board…",
   },
   meta: {
     createdBy: "{{name}} created on {{date}}",
@@ -176,7 +185,6 @@ export const en = {
   readOnly: {
     body: "You have {{level}} access on this board{{source}}.",
     source: ", added by {{name}}",
-    expires: ", expires {{date}}",
     detail:
       " You can read, comment and send a file with a comment. Only people with edit access change the properties, sub-items and files of the item.",
     levels: {
@@ -192,6 +200,10 @@ export const en = {
     heading: "Description",
     empty: "This item has no description yet.",
     editUnavailable: "Editing the description is not available yet",
+    edit: "Edit description",
+    save: "Save",
+    cancel: "Cancel",
+    tooLong: "The description is longer than 20,000 characters",
   },
   children: {
     heading: "Sub-items",
@@ -310,7 +322,6 @@ export const en = {
   composer: {
     placeholder: "Write a comment, type @ to mention someone…",
     label: "Write a comment",
-    shortcut: "⌘↵",
     submit: "Send",
     attach: "Attach a file to the comment",
     attachUnavailable: "Attaching files to a comment is not available yet",
@@ -324,11 +335,22 @@ export const en = {
       editor: "can edit",
       manager: "can manage",
     },
-    mentionNoAccess:
-      "Cannot see this item, mentioning them will not notify {{name}}",
     mentionTeamAll: "{{count}} people · all {{count}} can see the item",
     mentionTeamSome: "{{count}} people · {{viewable}} can see the item",
     mentionList: "People and teams to mention",
+  },
+  approval: {
+    heading: "Approval",
+    request: "Request approval",
+    searchLabel: "Who should approve this item",
+    list: "Approval requests",
+    pending: "Waiting for {{name}}",
+    approved: "Approved by {{name}}",
+    rejected: "{{name}} asked for changes",
+    cancelled: "Request to {{name}} cancelled",
+    unknownPerson: "someone",
+    alreadyAsked: "That person was already asked about this item.",
+    failed: "The request could not be sent. Try again.",
   },
   rail: {
     label: "Item properties",
@@ -383,6 +405,7 @@ export type ItemPageCopy = typeof en;
 
 export const vi: ItemPageCopy = {
   loading: "Đang tải công việc",
+  activityEvents: ACTIVITY_WORDS_VI,
   unavailable: {
     title: "Không mở được công việc",
     body: "Công việc này không tải được hoặc không còn tồn tại.",
@@ -394,7 +417,7 @@ export const vi: ItemPageCopy = {
       title: "Không tìm thấy {{key}}",
       titleNoKey: "Không tìm thấy việc này",
       body: "Mã này không có hoặc việc đã bị xoá hẳn. Nếu việc chỉ chuyển sang board khác, liên kết cũ vẫn dẫn tới chỗ mới.",
-      search: "Tìm bằng ⌘K",
+      search: "Tìm kiếm",
       home: "Về trang chủ",
     },
     completed: {
@@ -422,7 +445,7 @@ export const vi: ItemPageCopy = {
       pending: "chờ lưu",
     },
     empty: {
-      description: "Thêm mô tả… gõ / để chèn bảng, việc, tài liệu",
+      description: "Thêm mô tả…",
       children: "Chưa có việc con.",
       addChild: "Thêm việc con",
       created: "{{name}} tạo việc này",
@@ -531,6 +554,8 @@ export const vi: ItemPageCopy = {
     more: "Thêm thao tác",
     duplicate: "Nhân bản",
     archive: "Lưu trữ",
+    delete: "Xoá…",
+    moveToBoard: "Chuyển sang board khác…",
   },
   meta: {
     createdBy: "{{name}} tạo ngày {{date}}",
@@ -550,7 +575,6 @@ export const vi: ItemPageCopy = {
   readOnly: {
     body: "Bạn có quyền {{level}} trên board này{{source}}.",
     source: ", được {{name}} thêm riêng",
-    expires: ", hết hạn {{date}}",
     detail:
       " Bạn xem, bình luận và gửi tệp kèm bình luận được. Thuộc tính, việc con và danh sách tệp của việc chỉ người có quyền sửa thay đổi được.",
     levels: {
@@ -566,6 +590,10 @@ export const vi: ItemPageCopy = {
     heading: "Mô tả",
     empty: "Công việc này chưa có mô tả.",
     editUnavailable: "Chưa sửa được mô tả ở đây",
+    edit: "Sửa mô tả",
+    save: "Lưu",
+    cancel: "Huỷ",
+    tooLong: "Mô tả dài hơn 20.000 ký tự",
   },
   children: {
     heading: "Việc con",
@@ -682,7 +710,6 @@ export const vi: ItemPageCopy = {
   composer: {
     placeholder: "Viết bình luận, gõ @ để nhắc ai đó…",
     label: "Viết bình luận",
-    shortcut: "⌘↵",
     submit: "Gửi",
     attach: "Đính kèm tệp vào bình luận",
     attachUnavailable: "Đính kèm tệp vào bình luận chưa khả dụng",
@@ -696,11 +723,22 @@ export const vi: ItemPageCopy = {
       editor: "quyền sửa",
       manager: "quyền quản lý",
     },
-    mentionNoAccess:
-      "Không xem được việc này, nhắc tên sẽ không báo cho {{name}}",
     mentionTeamAll: "{{count}} người · cả {{count}} xem được việc",
     mentionTeamSome: "{{count}} người · {{viewable}} xem được việc",
     mentionList: "Người và nhóm để nhắc tên",
+  },
+  approval: {
+    heading: "Phê duyệt",
+    request: "Yêu cầu phê duyệt",
+    searchLabel: "Ai sẽ duyệt công việc này",
+    list: "Yêu cầu phê duyệt",
+    pending: "Đang chờ {{name}}",
+    approved: "{{name}} đã duyệt",
+    rejected: "{{name}} yêu cầu chỉnh sửa",
+    cancelled: "Đã hủy yêu cầu gửi {{name}}",
+    unknownPerson: "một người",
+    alreadyAsked: "Người này đã được yêu cầu duyệt công việc này.",
+    failed: "Không gửi được yêu cầu. Hãy thử lại.",
   },
   rail: {
     label: "Thuộc tính công việc",

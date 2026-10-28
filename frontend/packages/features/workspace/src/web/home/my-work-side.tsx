@@ -268,11 +268,17 @@ export function MyWorkRail({
                   </ShellLink>
                 </p>
                 <div className="mt-[3px] mb-2 text-xs leading-[1.45] text-meta-foreground">
-                  <span className="font-mono">{entry.key}</span> · {entry.note}{" "}
-                  ·{" "}
-                  <b className="font-semibold whitespace-nowrap text-warning-text">
-                    {entry.dueNote}
-                  </b>
+                  <span className="font-mono">{entry.key}</span>
+                  {entry.note ? <> · {entry.note}</> : null}
+                  {entry.dueNote ? (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <b className="font-semibold whitespace-nowrap text-warning-text">
+                        {entry.dueNote}
+                      </b>
+                    </>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -742,32 +748,6 @@ function Suggestion({
     >
       {body}
     </button>
-  );
-}
-
-/** The keyboard hint under the list. */
-export function MyWorkFoot({ copy }: { copy: WorkspaceHomeCopy }) {
-  const key =
-    "rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground";
-  return (
-    <div
-      data-f="foot"
-      aria-label={copy.list.shortcuts.label}
-      className="flex flex-none flex-wrap items-center gap-1.5 border-t border-border px-7 pt-[9px] pb-[11px] text-crumb leading-[1.45] text-meta-foreground"
-    >
-      <span className={key}>J</span>
-      <span className={key}>K</span>
-      {copy.list.shortcuts.move}
-      <span className="w-2.5" />
-      <span className={key}>X</span>
-      {copy.list.shortcuts.select}
-      <span className="w-2.5" />
-      <span className={key}>E</span>
-      {copy.list.shortcuts.done}
-      <span className="w-2.5" />
-      <span className={key}>⌘K</span>
-      {copy.list.shortcuts.command}
-    </div>
   );
 }
 

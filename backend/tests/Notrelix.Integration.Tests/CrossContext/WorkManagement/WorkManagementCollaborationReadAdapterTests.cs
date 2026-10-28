@@ -22,7 +22,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -41,7 +41,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var firstItem = Guid.NewGuid();
@@ -55,7 +55,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
             AttachmentType.Document, FileMetadata.Create("a.pdf", 10, "application/pdf"), AccountId, now));
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context), new Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers(context));
         var counts = await sut.GetCountsAsync([firstItem, secondItem], CancellationToken.None);
 
         counts[firstItem].Should().Be(new WorkItemCollaborationCounts(2, 1));
@@ -67,9 +67,9 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
 
-        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context), new Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers(context));
         var counts = await sut.GetCountsAsync([Guid.NewGuid()], CancellationToken.None);
 
         counts.Values.Single().Should().Be(new WorkItemCollaborationCounts(0, 0));
@@ -80,7 +80,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var item = Guid.NewGuid();
@@ -91,7 +91,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
         context.Comments.Add(deleted);
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context), new Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers(context));
         var counts = await sut.GetCountsAsync([item], CancellationToken.None);
 
         counts[item].CommentCount.Should().Be(1);
@@ -102,7 +102,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var item = Guid.NewGuid();
@@ -112,7 +112,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
             JsonContent("board comment"), AccountId, now));
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context), new Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers(context));
         var counts = await sut.GetCountsAsync([item], CancellationToken.None);
 
         counts[item].CommentCount.Should().Be(0);
@@ -126,7 +126,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
         // different resources never overwrite each other.
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var sharedId = Guid.NewGuid();

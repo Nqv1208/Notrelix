@@ -38,17 +38,11 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
         if (view == null)
             throw new NotFoundException("BoardView", request.ViewId);
 
+        BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         var config = BoardViewConfig.Create(JsonValue.Create(request.ConfigJson));
         view.UpdateConfig(config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
-        var response = new BoardViewDto(
-            view.Id,
-            view.BoardId,
-            view.Name,
-            view.Type.ToString(),
-            view.Config.Data.Value,
-            view.IsDefault
-        );
+        var response = BoardViewDto.From(view);
         if (_realtime is not null && _events is not null)
             _events.Add(_realtime.Map(request, response, view.Version));
         return response;

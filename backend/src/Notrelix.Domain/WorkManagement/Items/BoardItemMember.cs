@@ -27,7 +27,7 @@ public class BoardItemMember : Entity, IWorkspaceScoped
         Guard.NotEmpty(userId);
         Guard.NotEmpty(accountId);
 
-        return new BoardItemMember
+        var member = new BoardItemMember
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
@@ -37,5 +37,18 @@ public class BoardItemMember : Entity, IWorkspaceScoped
             AssignedByUserId = assignedByUserId,
             AssignedAt = assignedAt
         };
+
+        // The fact other contexts react to (followers, automation); a system assignment has no one to name.
+        if (assignedByUserId is { } assignedBy)
+            member.RaiseDomainEvent(new Events.BoardItemMemberAssignedDomainEvent(accountId, workspaceId, itemId, userId, assignedBy, assignedAt, boardId));
+
+        return member;
+    }
+
+    /// <summary>The assignment follows its Item to the board the Item moved to.</summary>
+    public void FollowItemToBoard(Guid boardId)
+    {
+        Guard.NotEmpty(boardId);
+        BoardId = boardId;
     }
 }

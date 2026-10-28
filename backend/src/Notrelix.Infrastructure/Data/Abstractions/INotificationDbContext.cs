@@ -10,6 +10,7 @@ public interface INotificationDbContext
     DbSet<NotificationRecipientRecord> NotificationRecipients { get; }
     DbSet<NotificationPreferenceSet> NotificationPreferenceSets { get; }
     DbSet<NotificationCounterRecord> NotificationCounters { get; }
+    DbSet<NotificationThreadMuteRecord> NotificationThreadMutes { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

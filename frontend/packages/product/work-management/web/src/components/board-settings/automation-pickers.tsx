@@ -107,13 +107,11 @@ function SearchRow({
   onChange,
   placeholder,
   label,
-  esc,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   label: string;
-  esc: string;
 }) {
   return (
     <div className="flex h-[42px] items-center gap-2 border-b border-line px-3.5 text-item-ui text-meta-foreground">
@@ -127,12 +125,6 @@ function SearchRow({
         aria-label={label}
         className="min-w-0 flex-1 border-0 bg-transparent p-0 text-item-ui text-foreground outline-none placeholder:text-meta-foreground"
       />
-      <kbd
-        aria-hidden="true"
-        className="rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key leading-[18px] text-muted-foreground"
-      >
-        {esc}
-      </kbd>
     </div>
   );
 }
@@ -265,7 +257,6 @@ export function EventPicker({
           onChange={setQuery}
           placeholder={t.eventSearch}
           label={t.eventSearchAria}
-          esc={t.esc}
         />
         {groups.map((group) =>
           group.keys.some((key) => matches(key)) ? (
@@ -498,7 +489,6 @@ export function ActionPicker({
           onChange={setQuery}
           placeholder={t.actionSearch}
           label={t.actionSearchAria}
-          esc={t.esc}
         />
         {ACTION_GROUPS.map((group) =>
           group.kinds.some(visible) ? (

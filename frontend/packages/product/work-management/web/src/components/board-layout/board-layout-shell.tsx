@@ -1,13 +1,18 @@
 import { BoardToolbar } from "./board-toolbar";
+import type { ViewTabSavedView } from "./view-tabs";
 
 interface BoardLayoutShellProps {
   workspaceId: string;
   boardId: string;
   boardTitle: string;
   activeView: string;
-  onViewChange: (viewType: string) => void;
+  onViewChange: (viewKey: string) => void;
+  savedViews?: readonly ViewTabSavedView[];
+  onAddView?: (viewType: string) => void;
   /** Opens the active view's settings; absent: Settings stays disabled. */
   onOpenSettings?: () => void;
+  /** Opens the board's deleted items; absent: no entry in the menu. */
+  onOpenTrash?: () => void;
   children: React.ReactNode;
 }
 
@@ -17,7 +22,10 @@ export function BoardLayoutShell({
   boardTitle,
   activeView,
   onViewChange,
+  savedViews,
+  onAddView,
   onOpenSettings,
+  onOpenTrash,
   children,
 }: BoardLayoutShellProps) {
   return (
@@ -26,7 +34,10 @@ export function BoardLayoutShell({
         boardTitle={boardTitle}
         activeView={activeView}
         onViewChange={onViewChange}
+        savedViews={savedViews}
+        onAddView={onAddView}
         onOpenSettings={onOpenSettings}
+        onOpenTrash={onOpenTrash}
       />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>

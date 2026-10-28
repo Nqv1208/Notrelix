@@ -98,7 +98,6 @@ export const spaceMembersEn = {
         manager: "Manages",
       },
       guestLine: "{{company}} · {{level}} in {{board}}",
-      guestUntil: " · access ends {{date}}",
       label: "What the roles mean",
       roles: "Roles in the department",
       adminHint:
@@ -269,7 +268,6 @@ export const spaceMembersVi: SpaceMembersCopy = {
         manager: "Quản lý",
       },
       guestLine: "{{company}} · {{level}} ở {{board}}",
-      guestUntil: " · hết quyền {{date}}",
       label: "Giải thích vai trò",
       roles: "Vai trò trong phòng ban",
       adminHint:

@@ -20,6 +20,7 @@ import {
   toValidDate,
 } from "../shared/item-display";
 import { ItemDescriptionBody } from "../shared/item-description";
+import { ItemDescriptionEditor } from "../shared/item-description-editor";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
 import { PendingMark } from "./item-page-states";
 import { foldForSearch } from "./item-pickers";
@@ -56,13 +57,18 @@ export function ItemPageDescription({
   card,
   copy,
   editable = false,
+  onSave,
 }: {
   card: CardDetail;
   copy: ItemPageCopy;
   /** The viewer may edit the item: an empty description invites writing one. */
   editable?: boolean;
+  /** Saves the description (an empty text clears it). Without it the section reads only. */
+  onSave?: (descriptionMd: string) => void;
 }) {
   const text = card.descriptionMd?.trim();
+  const [editing, setEditing] = useState(false);
+  const canEdit = editable && onSave !== undefined;
   const bodyRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -78,7 +84,20 @@ export function ItemPageDescription({
       <SectionHeading id="item-page-description">
         {copy.description.heading}
       </SectionHeading>
-      {text ? (
+      {editing && canEdit ? (
+        <ItemDescriptionEditor
+          initial={card.descriptionMd ?? ""}
+          labels={{
+            heading: copy.description.heading,
+            placeholder: copy.states.empty.description,
+            save: copy.description.save,
+            cancel: copy.description.cancel,
+            tooLong: copy.description.tooLong,
+          }}
+          onSave={onSave}
+          onClose={() => setEditing(false)}
+        />
+      ) : text ? (
         <>
           <div
             ref={bodyRef}
@@ -99,17 +118,36 @@ export function ItemPageDescription({
               className="text-item-prose"
             />
           </div>
-          {overflows || expanded ? (
-            <button
-              type="button"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((open) => !open)}
-              className="mt-2 border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
-            >
-              {expanded ? t.hideDescription : t.showDescription}
-            </button>
-          ) : null}
+          <div className="mt-2 flex items-center gap-4">
+            {overflows || expanded ? (
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((open) => !open)}
+                className="border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
+              >
+                {expanded ? t.hideDescription : t.showDescription}
+              </button>
+            ) : null}
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="border-0 bg-transparent p-0 text-item-ui font-semibold text-brand-subtle-foreground"
+              >
+                {copy.description.edit}
+              </button>
+            ) : null}
+          </div>
         </>
+      ) : canEdit ? (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="m-0 w-full cursor-text rounded-[6px] border-0 bg-transparent p-0 text-left text-item-text text-meta-foreground hover:text-muted-foreground"
+        >
+          {copy.states.empty.description}
+        </button>
       ) : editable ? (
         <DisabledControl reason={copy.description.editUnavailable}>
           <button
@@ -412,9 +450,12 @@ export function ItemPageLinks({
   copy,
   itemKey,
   place,
+  named = false,
 }: {
   itemKey?: string | null;
   place?: string | null;
+  /** Names the add button in full ("Add a link"): set where another "Add" shares the screen. */
+  named?: boolean;
   links: readonly ItemSheetLink[] | undefined;
   candidates: readonly ItemSheetLinkCandidate[] | undefined;
   capabilities: TaskDetailCapabilities;
@@ -437,6 +478,7 @@ export function ItemPageLinks({
               itemKey={itemKey ?? null}
               place={place ?? null}
               copy={copy}
+              named={named}
               onPick={(itemId, relation) =>
                 callbacks.onAddLink?.(itemId, relation)
               }
@@ -530,8 +572,11 @@ function LinkPicker({
   itemKey,
   place,
   copy,
+  named = false,
   onPick,
 }: {
+  /** The trigger carries its full name (the side sheet has another "Add" beside it). */
+  named?: boolean;
   candidates: readonly ItemSheetLinkCandidate[];
   links: readonly ItemSheetLink[];
   /** Key of the item the link is added to. */
@@ -594,7 +639,11 @@ function LinkPicker({
       }}
     >
       <PopoverTrigger asChild>
-        <button type="button" className={BUTTON_SM_VARIANT_CLASS.ghost}>
+        <button
+          type="button"
+          aria-label={named ? t.picker.label : undefined}
+          className={BUTTON_SM_VARIANT_CLASS.ghost}
+        >
           <Plus aria-hidden="true" className="size-4" />
           {t.add}
         </button>
@@ -602,7 +651,7 @@ function LinkPicker({
       <PopoverContent
         align="end"
         aria-label={t.picker.label}
-        className="w-96 gap-0 overflow-hidden rounded-[10px] border border-line-strong bg-popover p-0 shadow-lg ring-0"
+        className="max-h-(--radix-popover-content-available-height) w-96 gap-0 overflow-x-hidden overflow-y-auto rounded-[10px] border border-line-strong bg-popover p-0 shadow-lg ring-0"
       >
         <div
           role="radiogroup"

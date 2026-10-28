@@ -34,7 +34,11 @@ FROM ${NGINX_BASE_IMAGE} AS production
 # the fixed 10.49-r0 and 4.7.2-r0. Same floor approach, same removal condition.
 # CVE-2026-88806 (libx11, HIGH): the digest bakes libx11 1.8.13-r0; the
 # repository publishes the fixed 1.8.14-r0. Same floor approach and condition.
-RUN apk add --no-cache "libexpat>=2.8.5" "pcre2>=10.49-r0" "tiff>=4.7.2-r0" "libx11>=1.8.14-r0"
+# CVE-2026-111497 (brotli, HIGH): the digest bakes brotli-libs 1.2.0-r1; the
+# repository publishes the fixed 1.2.1-r0. Same floor approach and condition.
+# CVE-2026-92392 (curl and libcurl, HIGH): the digest bakes 8.22.0-r0; the
+# repository publishes the fixed 8.23.0-r0. Same floor approach and condition.
+RUN apk add --no-cache "libexpat>=2.8.5" "pcre2>=10.49-r0" "tiff>=4.7.2-r0" "libx11>=1.8.14-r0" "brotli-libs>=1.2.1-r0" "curl>=8.23.0-r0" "libcurl>=8.23.0-r0"
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.

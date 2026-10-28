@@ -11,7 +11,7 @@ export function createUseDeleteBlock(
   return function useDeleteBlock(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: blockApi.delete,
+      mutationFn: (blockId: string) => blockApi.delete(pageId, blockId),
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.blocks(workspaceId, pageId),

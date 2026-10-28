@@ -12,7 +12,7 @@ export interface MockHttpResult<T = unknown> {
   readonly headers?: HeadersInit;
   readonly body?: T;
   /** A non-JSON body (a file's bytes); `headers` carry its Content-Type. */
-  readonly rawBody?: string;
+  readonly rawBody?: string | Uint8Array;
 }
 
 export function createMockResponse<T>(result: MockHttpResult<T>): Response {
@@ -24,7 +24,7 @@ export function createMockResponse<T>(result: MockHttpResult<T>): Response {
   }
 
   if (result.rawBody !== undefined) {
-    return new Response(result.rawBody, {
+    return new Response(result.rawBody as BodyInit, {
       status: result.status,
       headers: result.headers,
     });

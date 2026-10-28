@@ -1,5 +1,7 @@
 export * from "./keys";
 export * from "./use-board-access";
+export * from "./use-board-labels";
+export * from "./use-board-trash";
 export * from "./use-card";
 export * from "./use-card-activity";
 export * from "./use-card-checklists";
@@ -11,5 +13,5 @@ export * from "./use-resolved-workspace-board";
 export * from "./use-workspace-boards";
 export * from "./use-item-extras";
 export * from "./use-board-settings";
-export * from "./use-board-automations";
+export * from "./use-workspace-automations";
 export * from "./use-offline-writes";

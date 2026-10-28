@@ -106,6 +106,52 @@ describe.each([
     expect(callbacks.onClose).toHaveBeenCalledTimes(1);
   });
 
+  it(`${fui("wm.task-detail.panel:labels-start", locale)}edits labels from the board's list and offers the start date only with the item write (${locale})`, () => {
+    const item = erpSheetItem();
+    const callbacks = {
+      ...callbacksMock(),
+      onUpdateItem: vi.fn(),
+      onToggleLabel: vi.fn(),
+    };
+    renderSheet(copy, {
+      callbacks,
+      detailData: {
+        ...erpSheetDetailData(item),
+        boardLabels: [
+          { id: "label-a", name: "Dữ liệu", color: "#3b82f6" },
+          { id: "label-b", name: "Khẩn cấp", color: "#ef4444" },
+        ],
+      },
+    });
+    const start = screen.getByRole("button", {
+      name: new RegExp(`^${copy.properties.start}:`),
+    });
+    expect(start.getAttribute("aria-disabled")).toBeNull();
+    const labelsPill = screen.getByRole("button", {
+      name: new RegExp(`^${copy.properties.labels}:`),
+    });
+    fireEvent.click(labelsPill);
+    const list = screen.getByRole("list", { name: copy.properties.labels });
+    fireEvent.click(within(list).getByRole("button", { name: /Khẩn cấp/ }));
+    expect(callbacks.onToggleLabel).toHaveBeenCalledWith("label-b", true);
+  });
+
+  it(`${fui("wm.task-detail.panel:labels-readonly", locale)}keeps start date and labels read-only without the writes (${locale})`, () => {
+    renderSheet(copy);
+    expect(
+      screen
+        .getByRole("button", { name: new RegExp(`^${copy.properties.start}:`) })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    expect(
+      screen
+        .getByRole("button", {
+          name: new RegExp(`^${copy.properties.labels}:`),
+        })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+  });
+
   it(`${fui("wm.task-detail.panel:ready", locale)}renders the non-modal sheet at the mockup (${locale})`, () => {
     renderSheet(copy);
     const dialog = screen.getByRole("dialog", { name: TITLE });
@@ -151,7 +197,7 @@ describe.each([
         name: copy.sections.description,
       }),
     ).toBeTruthy();
-    expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
+    expect(screen.getByText(copy.sections.descriptionAdd)).toBeTruthy();
     expect(
       screen.queryByRole("textbox", { name: copy.sections.description }),
     ).toBeNull();
@@ -185,7 +231,7 @@ describe.each([
     expect(composer.getAttribute("placeholder")).toBe(
       copy.composer.placeholder,
     );
-    expect(screen.getByText("⌘↵")).toBeTruthy();
+    expect(screen.queryByText("⌘↵")).toBeNull();
   });
 
   it(`${fui("wm.task-detail.panel:focus-in", locale)}moves focus into the sheet on open (${locale})`, () => {
@@ -357,6 +403,24 @@ describe.each([
     expect(callbacks.onSelectTab).toHaveBeenCalledWith("activity");
   });
 
+  it(`${fui("wm.task-detail.panel:description-edit", locale)}edits the description in the sheet and a commenter only reads it (${locale})`, () => {
+    const item = erpSheetItem({ descriptionMd: "Existing text" });
+    const { callbacks } = renderSheet(copy, { card: item });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.sections.descriptionEdit }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: copy.sections.description }),
+      { target: { value: "Rewritten" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.sections.descriptionSave }),
+    );
+    expect(callbacks.onRenameTitle).toHaveBeenCalledWith(item.id, {
+      descriptionMd: "Rewritten",
+    });
+  });
+
   it(`${fui("wm.task-detail.panel:submit", locale)}submits a comment with the button and with ⌘↵ (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     const composer = screen.getByRole("textbox", { name: copy.composer.label });
@@ -461,7 +525,7 @@ describe.each([
     expect(screen.getByText(copy.properties.unassigned)).toBeTruthy();
     expect(screen.getByText(copy.properties.noDue)).toBeTruthy();
     expect(screen.getByText(copy.properties.noPriority)).toBeTruthy();
-    expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
+    expect(screen.getByText(copy.sections.descriptionAdd)).toBeTruthy();
     expect(screen.getByText(copy.sections.noChildItems)).toBeTruthy();
     expect(screen.getByText(copy.sections.noComments)).toBeTruthy();
   });

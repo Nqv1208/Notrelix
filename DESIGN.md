@@ -1616,6 +1616,21 @@ Critical state change must remain understandable with motion reduced or removed.
 
 ---
 
+## 39.4 Progressive forms grow in place
+
+A form that asks for more as the user answers (email then password, a choice that unlocks options, an error or lock notice) stays one surface.
+
+- Do not swap the whole form or page for the next step; what the user already entered stays where it was, read-only with a way to change it when it is settled.
+- New fields open in place with a height and opacity transition; the controls below them, including the primary action, slide rather than jump.
+- A changing heading crossfades instead of popping.
+- Focus moves to the field that now needs input, and back when the user steps back.
+- Collapsed parts are inert and hidden from assistive technology, not merely invisible.
+- With reduced motion the same steps happen without animation.
+
+The user should never have to re-find the form after answering one field.
+
+---
+
 # 40. Responsive design
 
 Responsive design changes composition without changing product semantics.

@@ -460,12 +460,16 @@ test.describe("editing the layout", () => {
     await expect(
       dialog.getByRole("img", { name: /Trần Minh Quân 2/ }),
     ).toBeVisible();
-    await dialog.getByLabel("Nhóm theo").selectOption("week");
+    await dialog.getByRole("combobox", { name: "Nhóm theo" }).click();
+    await page.getByRole("option", { name: "Tuần", exact: true }).click();
     await expect(
       dialog.getByRole("radio", { name: "Đường" }),
     ).not.toHaveAttribute("aria-disabled", "true");
     await dialog.getByRole("radio", { name: "Cột" }).click();
-    await dialog.getByLabel("Nhóm theo").selectOption("assignee");
+    await dialog.getByRole("combobox", { name: "Nhóm theo" }).click();
+    await page
+      .getByRole("option", { name: "Người phụ trách", exact: true })
+      .click();
     await dialog.getByLabel("Tên widget").fill("Việc mở theo người");
     await dialog
       .getByRole("button", { name: "Bỏ điều kiện lọc Trạng thái" })

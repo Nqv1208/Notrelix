@@ -16,6 +16,7 @@ public class DocumentVersionConfiguration : IEntityTypeConfiguration<DocumentVer
         builder.Property(x => x.PageId).HasColumnName("page_id").IsRequired();
         builder.Property(x => x.VersionNumber).HasColumnName("version_number").IsRequired();
         builder.Property(x => x.Snapshot).HasColumnName("snapshot").IsRequired();
+        builder.Property(x => x.Kind).HasColumnName("kind").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ChangeSummary).HasColumnName("change_summary").HasMaxLength(2048);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

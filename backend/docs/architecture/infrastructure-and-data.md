@@ -15,6 +15,7 @@ evidence:
   - backend/src/Notrelix.Infrastructure/Integrations/
   - backend/src/Notrelix.Infrastructure/Storage/
   - backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
+  - backend/docs/decisions/ADR-011-database-principal-model.md
   - backend/tests/Notrelix.Infrastructure.Tests/
   - backend/tests/Notrelix.Integration.Tests/
 review_on:
@@ -644,6 +645,247 @@ EF query filters and PostgreSQL RLS are separate controls.
 
 ---
 
+# 34A. Owner and serving database connections
+
+Three identities exist on purpose:
+
+```text
+owner     migrations, --rls-apply, seed        ConnectionStrings:NotrelixMigrationDb
+serving   requests (notrelix_app)              ConnectionStrings:NotrelixDb
+worker    dispatchers, deduplication, consumers, sweeps, reapers, job locks (notrelix_worker)
+                                               ConnectionStrings:NotrelixWorkerDb
+```
+
+`OwnerDbContextProvider` supplies the owner `ApplicationDbContext` to the initialiser and the policy
+applier only (an architecture test restricts who may name it); the serving path never receives it.
+`NotrelixMigrationDb` is required while `Rls:RoleEnforcement` is `Enforce` (the default of every environment,
+the Compose stacks and the container smoke included); only a host that opted out with `Warn` or `Off` (test hosts
+on one privileged login) falls back to the serving string. `RuntimeDatabaseRoleGuard` inspects BOTH serving connections at startup (`Rls:RoleEnforcement`:
+`Off`, `Warn`, `Enforce`; `Enforce` is the default) and rejects a superuser, BYPASSRLS,
+an owner-privileged login, or a login that could leave a `SET ROLE` constraint. The application login must
+not be a member of `notrelix_worker`; the background login must be one; and a missing
+`ConnectionStrings:NotrelixWorkerDb` (background work would run as the application login) is refused too.
+`PostgresTestContainer` migrates and applies the pack as the owner and hands out the application login
+(`ConnectionString`, what every host and pipeline under test uses), the worker login
+(`WorkerConnectionString`) and the owner (`OwnerConnectionString`: seeding, reset, verification only,
+`CreateOwnerContext`). An architecture test (`IntegrationFleetRoleBoundaryTests`) keeps a host from being
+given the owner connection and names the few tests that build a container of their own (migrations and
+backfills, the policy pack on a database of the test's own making).
+
+**The worker connection.** A dependency-injection scope's `ApplicationDbContext` connects as the principal
+the scope chose before its first use (`DatabasePrincipal`, `Data/DatabasePrincipal.cs`). Request scopes are
+the application principal. Background loops (`OutboxDispatcher`, `EmailDispatcher`,
+`OnboardingDraftSweepService`, `SecurityActivityRetentionService`, the two object reaper services) create
+their scopes with `IServiceScopeFactory.CreateWorkerAsyncScope()`; every message-consume scope is switched by
+`WorkerPrincipalConsumeFilter`, the first filter of each transport's consume pipeline, so the deduplication
+claim, the consumer's own writes and the commands it dispatches (the first-workspace provisioning command
+included) share one worker-login context and keep their single-transaction atomicity. Switching after the
+connection was resolved throws. `ConnectionStrings:NotrelixWorkerDb` is required while `Rls:RoleEnforcement` is
+`Enforce` (configuration binding refuses the host); only a host that opted out with `Warn` or `Off` falls back to
+`NotrelixDb`. The worker login is the only connection for which
+`ops.is_worker_scope()` is true (see 34B); `ops.job_locks` and every `messaging.*` table have `p_worker_all`
+for it and no policy for the application role. Architecture tests
+(`InternalPrincipalArchitectureTests`) pin that every `BackgroundService` creates worker scopes, that the
+worker filter precedes every other consume filter, and where a system context may be entered.
+
+**Provisioning the two logins.** `notrelix_app` and `notrelix_worker` are LOGIN roles used directly (no
+`SET ROLE`). `001_roles.sql` creates them NOLOGIN so the grants have a target; the owner then makes them logins
+with `RlsLoginRoleProvisioner` at the end of `--rls-apply` (and of the Development startup policy application):
+`ALTER ROLE ... LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD ...`, re-asserted on
+every run, and any worker membership of the application login is revoked. The password is the one inside the
+login's own connection string (`NotrelixDb` must name `notrelix_app`, `NotrelixWorkerDb` must name
+`notrelix_worker`, both with a password), so the secret that opens the connection is the single source of the role's
+password and rotating it is a secret change plus an `--rls-apply`. The server quotes the password
+(`format('%L')`); it is never logged. On a fresh compose-managed data directory the init script
+`infra/postgres/init/20-create-runtime-logins.sh` creates the same roles from `NOTRELIX_APP_DB_PASSWORD` and
+`NOTRELIX_WORKER_DB_PASSWORD` (init scripts run only on an empty volume; existing volumes and external databases
+rely on `--rls-apply`).
+
+---
+
+# 34B. Bounded principal scopes
+
+`RlsSqlScripts/012_principal_scopes.sql` adds the scopes of ADR-011 next to `app` and `worker`. None of them
+is a member of `ops.is_worker_scope()` (an architecture test pins that list). `ops.is_worker_scope()` itself
+is the scope value `worker` AND a connection whose login (`session_user`) is a member of `notrelix_worker`:
+the scope value is a session setting any connection can write, so an application login that sets it, or
+sets `system`, `migration` or `migrator`, sees nothing extra:
+
+```text
+user    authenticated user, no tenant        ApplyUserScopeAsync(userId)
+token   one account/workspace named by a    EnterTokenScopeAsync(request)  ->  ops.enter_token_scope(...)
+        presented token digest
+```
+
+`DataSessionBehavior` applies the user scope to every Global authenticated request
+(`RequestDataSessionOptions.UserScopeUserId`; mutually exclusive with the tenant scope). `ResourceLocator`
+runs its lookup in a short transaction in the user scope when no data session is open, so a row the
+caller holds no grant on is not found; inside an open data session the session's own scope applies. Both
+scope entries are transaction-local and require an open transaction. `ApplyUserScopeAsync` is a no-op while
+`Rls:SetSessionContext` is false. `EnterTokenScopeAsync` is the only way to enter a token scope: the database
+derives account and workspace from the digest, logs the entry with its reason, and counts it
+(`rls_scope_entry`); the token value is never logged. The invitation flows (34D) and API-token authentication
+use it; the scope records its purpose (`app.scope_token_purpose`: `workspace-invitation` or `api-token`) and
+every policy written for one purpose checks it.
+
+---
+
+# 34C. Co-member display facts
+
+`identity.users` exposes only the caller's own row to the application role: the row carries the email, the
+password hash and security state, and a row policy cannot hide columns. Display name and avatar of another
+person resolve through owner-defined functions in `RlsSqlScripts/013_co_member_profiles.sql`:
+
+```text
+ops.co_member_profiles(uuid[])          -> (user_id, name, avatar)      ActorLookupService
+ops.co_member_avatar_storage_key(uuid)  -> storage key                  AvatarStorageKeyLookup
+ops.shares_workspace_with_caller(uuid)  the relationship rule both use
+```
+
+Relationship: the caller (`app.current_user_id`, in the `app` or `user` scope) and the requested person hold a
+`workspace.workspace_members` row in the same workspace, in any membership state (active, suspended,
+removed) and any role (guests included), so historical attribution keeps resolving. A person always resolves
+themselves; the worker scope (a worker login only) resolves any id; a token (other than the inviter case of an
+invitation), credential or registration scope resolves nobody. The
+functions are `SECURITY DEFINER` with a pinned `search_path`, revoked from PUBLIC and executable by the
+application role only. Which members a person may LIST remains an Application authorization rule; the
+functions resolve display facts for ids the Application already decided to show. Email and phone are not
+reachable through them. The avatar endpoint additionally keeps its Application rule (an active shared
+workspace) on top of the function's relationship.
+
+---
+
+# 34D. Anonymous credential flows
+
+`RlsSqlScripts/014_anonymous_scopes.sql` gives the flows that run before the caller has a tenant their own
+bounded scopes. Each is entered through an owner-defined `SECURITY DEFINER` function (pinned `search_path`,
+revoked from PUBLIC, executable by the application role only), each derives its bound from a presented digest
+or from the rows it is about to create rather than from identifiers the application asserts, and each ends
+with its transaction. None is a member of `ops.is_worker_scope()`.
+
+```text
+token         one invitation: account + workspace + digest        enter_token_scope        (preview, decline)
+invitee       token + the person the invitation is addressed to   enter_invitee_scope       (accept while signed in)
+registration  one brand-new user and the one account it creates   enter_registration_scope  (register, register-and-accept)
+credential    one existing user derived from a credential         enter_credential_scope    (login, refresh, verify, reset)
+```
+
+How they work together:
+
+- `InvitationTokenScope.FindAsync` enters the token scope from the digest of the presented secret; the database
+  derives the invitation's own account and workspace. A bare token scope reads exactly the invitation row, the
+  invited workspace row and (for a resource invitation) the one named board or page, may update only that
+  invitation, may insert the internal event/outbox/audit rows the decline raises, and resolves only the inviter's
+  display name. Unknown, malformed, expired or used tokens enter nothing that can be written through.
+- `enter_invitee_scope(user)` binds the person accepting: the user must be the authenticated caller, the
+  invitation pending and unexpired, and the invited address the person's own. The person is then provisionally
+  inside the invited account/workspace for that request (`ops.has_workspace_access`/`has_account_access`
+  honour `ops.has_invitee_scope`, never as admin), so the acceptance can read what it validates and every
+  grant-derived policy applies unchanged.
+- `enter_registration_scope(user)` is refused for an id that already exists. A registration may insert exactly
+  that user (and, when it carries an invitation binding, only with the invited address) and exactly the one
+  account named by its first grant. Whether an address is already registered is answered by
+  `ops.email_registered`, a boolean, never a row.
+- Grants (Q7): inside a registration or invitee scope `AccessGrantProjectionService` writes the grant
+  immediately through `ops.upsert_access_grant`, which derives the role codes and admin flags itself and
+  accepts only the owner grant of the one new account (registration) or the invitee's account-level Member grant
+  and the invitation's own role in the invitation's own workspace (invitee). Outside those scopes the grant
+  projection is unchanged. Account and user rows are written with INSERT-only policies bound to the scope, not
+  broad policies.
+- `enter_credential_scope(kind, credential, hash_version)` finds the ONE user a presented credential names (a
+  normalized address, a refresh token digest, an email-verification digest, a linked provider identity) and binds
+  the scope to that user alone: the ordinary own-row policies then apply, and one-time credential rows
+  (`email_verification_tokens`, `password_reset_tokens`) are readable and writable only for the scope's user. An
+  unknown credential enters nothing, so the handler's own lookups find nothing, exactly like today. Login,
+  forgot/reset password, resend/confirm verification, refresh and OAuth sign-in use it (`CredentialScope`); MFA
+  completion and OAuth step-up use the ordinary user scope for the user their server-held challenge or state
+  record names. There is no broad SELECT policy on `identity.users` for any of this.
+- Boolean probes and exact-row reads replace row reads that no scope may have: `ops.email_registered` (an
+  address is taken; registration, invited registration, invitation preview, email change, OAuth sign-up),
+  `ops.oauth_identity_linked` (a provider identity is linked to someone else), and
+  `ops.resolve_workspace_slug` (the public resolve-by-slug card of one active workspace). Each returns only its
+  answer or its fixed columns.
+- Audit (Q3): entering a bounded scope writes a structured log line (scope kind, reason, derived ids, never a
+  token or password) and increments `rls_scope_entry`; durable `audit.security_events` rows of the flows are
+  unchanged.
+
+---
+
+# 34E. Internal principals: API tokens, audit, grant writes, member email and phone
+
+`RlsSqlScripts/015_internal_principals.sql` (and the `ops.upsert_access_grant` / `ops.revoke_access_grant` part
+of `014`) add the bounded paths that remain for the application login:
+
+- **API-token authentication.** `ApiTokenAuthenticationHandler` hashes the presented bearer secret and enters
+  the token scope with purpose `api-token` (`ops.enter_token_scope`), inside a short transaction of its own.
+  The function finds the token by digest and enters the scope only for a token that is active, unexpired and
+  bound to a user; an unknown, revoked, expired or user-less token enters nothing. Policies
+  (`ops.has_api_token_binding`) let the scope read and update that single `identity.api_tokens` row (recording
+  its use) and insert the internal event and outbox rows that recording raises for the token's own
+  tenant; nothing else of the tenant opens up. The request then runs through the ordinary pipeline as the
+  token's user and workspace.
+- **Security audit.** `SecurityAuditSink` writes `audit.security_events` through the insert-only
+  `ops.record_security_event` (known event types only; actor and tenant derived from the scope it enters, never
+  supplied). A failed write is logged at error level and counted (`security_audit_event_write`). On
+  PostgreSQL the sink always uses the function; only a provider without it inserts directly.
+- **Admin-driven grant writes.** `AccessGrantProjectionService` writes grants through `ops.upsert_access_grant`
+  and ends them through `ops.revoke_access_grant` whenever the scope runs as the application principal on
+  PostgreSQL (a service built without a session context, such as an owner seeding connection, writes directly): add, remove, suspend, activate and re-role a member, create a workspace, transfer
+  ownership. Inside the tenant scope a write lands only in the request's own account and workspace; Owner only
+  by the current Owner (transfer) or for the caller creating a new workspace of their account; the
+  account-level grant is Member only and never replaces an administrator's. A person leaving still ends their
+  own grant through the own-grant update policy. A worker-principal scope (consumers: the first-workspace
+  provisioning) writes the rows directly through its worker policy.
+- **Other people's email and phone.** `ops.disclosable_member_emails` and `ops.shared_member_phones` mirror the
+  Application rules (email: active Owner/Admin reader, active non-guest subjects; phone: active non-guest reader
+  and subject, subject opted in) and take the Workspace as a parameter, which is why
+  `IIdentityUserFacts.FindEmailsAsync` and `IMemberPhoneLookup.FindSharedPhonesAsync` take a workspace id.
+  `MemberEmailReader` and `MemberPhoneLookup` always call them on PostgreSQL.
+
+---
+
+# 34F. Policy coverage, derived scopes and the webhook scope
+
+**Every application table has forced row-level security and a policy.** `RlsPolicyApplier` verifies the
+catalog after applying the pack and fails the apply for ANY base table of ANY schema (except the migration
+history `ops.__EFMigrationsHistory`) that has RLS disabled, not forced, or no policy; `PolicyCoverageTests`
+asserts the same against the database the migrations produced, and that no policy of the application role is
+unconditional except the read-only shared catalogs (`billing.plans`, `plan_prices`, `plan_limits`,
+`automation.automation_templates`). The generic helpers no longer skip silently: `apply_scoped_business_policies`
+raises for a table with no `account_id`/`workspace_id`, `apply_user_owned_policies` raises for a missing owner
+column, and `apply_worker_internal_policies` creates an application INSERT policy only when a tenant scope
+exists (a tenantless internal log is the worker's alone; the old fallback of `true` admitted any insert).
+
+`016_policies_derived_scope.sql` declares the tables without a tenant column of their own, which had been
+open to the application login because the generic helper skipped them: `automation.automation_execution_steps`,
+`automation.automation_templates` (shared catalog), `billing.invoice_line_items`, `subscription_items`,
+`usage_metric_history`, `governance.custom_role_permissions`, `governance.member_role_assignments`,
+`identity.mfa_recovery_batches`, `identity.mfa_recovery_codes`, `integration.calendar_events`,
+`calendar_event_links`, `integration_scopes`, `integration_secret_versions`, `integration_sync_cursors`,
+`integration_secret_blobs`, `inbound_webhook_receipts`, `notifications.notification_recipients` (owner column
+`recipient_user_id`; the earlier call named a column that does not exist) and `ops.idempotency_records`
+(partition string `account:{N}[:workspace:{N}|:user:{N}]` checked with `ops.has_idempotency_scope`; `system` is
+the worker's). A child inherits its parent's scope; `DerivedScopePolicyTests` proves the application login
+reads and writes only inside a scope it holds.
+
+**Tenantless person events.** A Global request, and a tenant-scoped request that changes one of the person's
+own facts (choosing the default workspace changes the profile), raises domain events with no tenant. The
+INSERT-only policies `p_app_insert_user_scope` on `events.domain_event_logs` and `messaging.outbox_messages`
+admit such a row (`ops.has_tenantless_actor_scope`) in the user scope or the `app` scope of the person who
+raised it, never for another actor.
+
+**Verified calendar webhook.** `HandleCalendarWebhook` authenticates by provider signature, so no user's
+grants exist for a policy to read. After verification the handler enters a token-kind scope with purpose
+`calendar-webhook` (`RlsSessionContext.EnterWebhookScopeAsync` -> `ops.enter_webhook_scope(path)`), which the
+database derives from the active, undeleted calendar binding the webhook path identifies. The scope admits
+only the receipt claim (`integration.inbound_webhook_receipts` INSERT and the RETURNING read-back) and the
+processing message (`messaging.outbox_messages` INSERT) for that account and workspace
+(`ops.has_webhook_binding`, `017_webhook_scope.sql`); the tenant-scoped consumer then runs on the worker
+principal. The entry is logged with its reason and counted (`rls_scope_entry`, scope `webhook`); the path is
+never logged.
+
+---
+
 # 35. Same physical connection
 
 ADR-002 relies on the same scoped DbContext/physical connection lifecycle between bootstrap and later full request scope.
@@ -1253,6 +1495,13 @@ The additive column `collab.attachments.purged_at` (migration `AddAttachmentObje
 Storage usage: soft-deleted rows keep their object (and therefore count toward storage usage) until purged; a future Billing quota must count non-purged stored files, deleted ones included, until `purged_at` is set. No quota is implemented.
 
 Not covered: the reaper does not cascade-delete attachments of a deleted board item or workspace; it only handles rows that are soft-deleted for any reason.
+
+### Profile photo objects and the avatar sweep
+
+A profile photo object is stored under `users/{userId:N}/avatar/{objectId:N}.{png|jpg|webp}` and referenced by `identity.users.avatar_storage_key` (additive nullable column, migration `AddAvatarObjectAndDefaultWorkspace`, together with the nullable `identity.user_profiles.default_workspace_id`). A replaced or removed photo leaves an unreferenced object; `AvatarObjectReaperService` removes it. A pass lists `users/` objects older than `OrphanGracePeriod` (same options as the attachment sweep) and hands each batch to `PostgresAvatarReaperStore`, which runs under the explicit system (worker) tenant context with the RLS worker scope and the same transaction-scoped try-advisory lock as the attachment sweep. It FAILS CLOSED: an object is deleted only when its owner's `identity.users` row is visible to the sweep and names a different object; an owner row that cannot be read (missing policy, wrong scope, deleted owner) keeps its objects and logs a warning, and a query error deletes nothing. For the application role the sweep reads users through the worker-scope SELECT policy `p_app_select_worker_scope` (`006_policies_identity.sql`), which `ops.is_worker_scope()` gates; a request session never satisfies it. Policies are applied by the RLS script (`--rls-apply`), not by an EF migration.
+
+The application role also has one narrow write on `authz.access_grants` (`p_app_update_revoke_own`, `007_policies_platform.sql`): a person may end their OWN active grant (the row must be active before and revoked after). It exists for self-leave and cannot create, edit, reactivate or touch another person's grant. `LeaveWorkspace` flushes the membership change before revoking the grant (the leaver's grant is what lets them write the membership row), inside the request transaction.
+
 
 ---
 

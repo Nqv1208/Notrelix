@@ -11,8 +11,14 @@ export const sortConfigSchema = z.object({
   direction: z.enum(["asc", "desc"]),
 });
 
-/** Cards a Kanban lane shows before "Xem thêm N việc" (the former constant). */
-export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 3;
+/**
+ * Cards a Kanban lane renders before "Xem thêm N việc". A lane scrolls inside
+ * its own height, so this only pages very long lanes.
+ */
+export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 20;
+/** A lane's work-in-progress limit: a warning number, never a write rule. */
+export const MIN_KANBAN_WIP_LIMIT = 1;
+export const MAX_KANBAN_WIP_LIMIT = 999;
 export const MIN_KANBAN_LANE_CARD_LIMIT = 1;
 export const MAX_KANBAN_LANE_CARD_LIMIT = 20;
 
@@ -42,7 +48,14 @@ export interface KanbanViewSettings {
   readonly laneCardLimit: number;
   readonly statusManageRoles: readonly KanbanStatusManageRole[];
   readonly keyboardMove: boolean;
+  /** Lane value id (status or Select option) to its WIP limit; absent: none. */
+  readonly wipLimits: Readonly<Record<string, number>>;
 }
+
+const wipLimitsSchema = z.record(
+  z.string(),
+  z.number().int().min(MIN_KANBAN_WIP_LIMIT).max(MAX_KANBAN_WIP_LIMIT),
+);
 
 /**
  * The Kanban settings of a saved view config. A config saved before these
@@ -54,7 +67,9 @@ export function resolveKanbanSettings(config: {
   readonly laneCardLimit?: unknown;
   readonly statusManageRoles?: unknown;
   readonly keyboardMove?: unknown;
+  readonly wipLimits?: unknown;
 }): KanbanViewSettings {
+  const wip = wipLimitsSchema.safeParse(config.wipLimits);
   const limit = config.laneCardLimit;
   const roles = z
     .array(kanbanStatusManageRoleSchema)
@@ -72,6 +87,7 @@ export function resolveKanbanSettings(config: {
     ),
     keyboardMove:
       typeof config.keyboardMove === "boolean" ? config.keyboardMove : true,
+    wipLimits: wip.success ? wip.data : {},
   };
 }
 
@@ -96,6 +112,7 @@ export const viewConfigSchema = z.object({
     .default([...DEFAULT_KANBAN_STATUS_MANAGE_ROLES])
     .transform(normalizeStatusManageRoles),
   keyboardMove: z.boolean().default(true),
+  wipLimits: wipLimitsSchema.optional(),
 });
 
 export type ViewConfigInput = z.infer<typeof viewConfigSchema>;

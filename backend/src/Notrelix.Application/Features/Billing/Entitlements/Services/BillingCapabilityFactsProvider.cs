@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Billing.Abstractions;
+using Notrelix.Application.Features.Billing.Plans;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Domain.Billing.Entitlements;
 using Notrelix.Domain.Billing.Plans;
@@ -14,11 +15,19 @@ public sealed class BillingCapabilityFactsProvider : IBillingCapabilityFacts
 {
     private readonly IBillingDbContext _context;
     private readonly IDateTimeProvider _clock;
+    private readonly IBillingUsageReader _usageReader;
+    private readonly BillingPlanResolver _planResolver;
 
-    public BillingCapabilityFactsProvider(IBillingDbContext context, IDateTimeProvider clock)
+    public BillingCapabilityFactsProvider(
+        IBillingDbContext context,
+        IDateTimeProvider clock,
+        IBillingUsageReader usageReader,
+        BillingPlanResolver planResolver)
     {
         _context = context;
         _clock = clock;
+        _usageReader = usageReader;
+        _planResolver = planResolver;
     }
 
     public async Task<BillingCapabilityFact?> GetCapabilityAsync(
@@ -32,18 +41,20 @@ public sealed class BillingCapabilityFactsProvider : IBillingCapabilityFacts
         var entitlement = await ResolveApplicableEntitlementAsync(
             accountId, workspaceId, capabilityCode, now, cancellationToken);
 
-        // Used authority: the ledger sum for the (account, workspace, capability)
-        // scope in EVERY state — finite, zero, unlimited, or missing. History is
-        // never lossy: a zero or missing grant still reports the actual ledger sum.
-        var used = await _context.FeatureUsageLedger
-            .Where(f => f.AccountId == accountId
-                && f.WorkspaceId == workspaceId
-                && f.FeatureCode == capabilityCode)
-            .SumAsync(f => (decimal?)f.Delta, cancellationToken) ?? 0;
-        var usedAmount = (int)used;
+        var usedAmount = await UsedAsync(accountId, workspaceId, capabilityCode, cancellationToken);
 
         if (entitlement is null)
-            return new BillingCapabilityFact(IsAvailable: false, Limit: null, Used: usedAmount, Remaining: null);
+        {
+            // No explicit grant: the plan the account is on is the base entitlement.
+            var plan = await _planResolver.ResolveAsync(accountId, cancellationToken);
+            if (!plan.TryGetLimit(capabilityCode.Trim().ToUpperInvariant(), out var planLimit))
+                return new BillingCapabilityFact(IsAvailable: false, Limit: null, Used: usedAmount, Remaining: null);
+
+            if (planLimit is null)
+                return new BillingCapabilityFact(IsAvailable: true, Limit: null, Used: usedAmount, Remaining: null);
+
+            return Finite(planLimit.Value, usedAmount, requestedAmount);
+        }
 
         // BILL-LIMIT-001: explicit unlimited is quantified differently from a
         // zero numeric limit. Zero capacity and unlimited are distinct; only the
@@ -54,14 +65,43 @@ public sealed class BillingCapabilityFactsProvider : IBillingCapabilityFacts
         if (entitlement.Limit == 0)
             return new BillingCapabilityFact(IsAvailable: false, Limit: 0, Used: usedAmount, Remaining: 0);
 
-        var isAvailable = usedAmount + requestedAmount <= entitlement.Limit;
-
-        return new BillingCapabilityFact(
-            IsAvailable: isAvailable,
-            Limit: entitlement.Limit,
-            Used: usedAmount,
-            Remaining: Math.Max(0, entitlement.Limit - usedAmount));
+        return Finite(entitlement.Limit, usedAmount, requestedAmount);
     }
+
+    private static BillingCapabilityFact Finite(int limit, int usedAmount, int requestedAmount)
+        => new(
+            IsAvailable: usedAmount + requestedAmount <= limit,
+            Limit: limit,
+            Used: usedAmount,
+            Remaining: Math.Max(0, limit - usedAmount));
+
+    /// <summary>
+    /// Used authority per capability. Automation rules are metered by the usage
+    /// ledger (every state, summed across the account's workspaces so the limit is
+    /// account-wide); seats and storage are counted live across the account.
+    /// Storage is reported in whole GB, rounded up.
+    /// </summary>
+    private async Task<int> UsedAsync(
+        Guid accountId, Guid workspaceId, string capabilityCode, CancellationToken cancellationToken)
+    {
+        switch (capabilityCode.Trim().ToUpperInvariant())
+        {
+            case BillingCapabilityCode.MemberSeat:
+                return (await _usageReader.GetAccountUsageAsync(accountId, workspaceId, cancellationToken)).MemberSeats;
+            case BillingCapabilityCode.GuestSeat:
+                return (await _usageReader.GetAccountUsageAsync(accountId, workspaceId, cancellationToken)).GuestSeats;
+            case BillingCapabilityCode.StorageGb:
+                var usage = await _usageReader.GetAccountUsageAsync(accountId, workspaceId, cancellationToken);
+                return (int)Math.Ceiling(usage.StorageBytes / (double)BytesPerGb);
+            default:
+                var ledger = await _context.FeatureUsageLedger
+                    .Where(f => f.AccountId == accountId && f.FeatureCode == capabilityCode)
+                    .SumAsync(f => (decimal?)f.Delta, cancellationToken) ?? 0;
+                return (int)ledger;
+        }
+    }
+
+    public const long BytesPerGb = 1024L * 1024 * 1024;
 
     /// <summary>
     /// Resolves the single applicable entitlement for an Account/Workspace/

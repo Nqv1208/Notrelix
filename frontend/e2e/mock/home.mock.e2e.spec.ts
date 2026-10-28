@@ -11,6 +11,16 @@ const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const HOME = "/workspaces/mock-workspace-primary";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 
+/** Home's add form: pick the ERP board, name the item and create it. */
+async function addUatItem(page: Page) {
+  await page.getByRole("button", { name: "Thêm công việc" }).click();
+  await page.getByRole("combobox", { name: "Thêm vào board" }).click();
+  await page.getByRole("option", { name: /Triển khai ERP/ }).click();
+  await page.getByLabel("Tên công việc").fill("Gửi biên bản họp UAT");
+  await page.getByRole("button", { name: "Tạo công việc" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+}
+
 async function openHome(page: Page) {
   await page.clock.setFixedTime(NOW);
   await page.addInitScript(() => {
@@ -224,12 +234,8 @@ test.describe("Home (owner)", () => {
     page,
   }) => {
     await openHome(page);
-    await page.getByRole("button", { name: "Thêm công việc" }).click();
-    await page.getByLabel("Tên việc").fill("Gửi biên bản họp UAT");
-    await page.getByRole("button", { name: "Tạo việc" }).click();
-    await expect(
-      page.getByText("Đã tạo Gửi biên bản họp UAT và giao cho bạn."),
-    ).toBeVisible();
+    await addUatItem(page);
+    // The form ticks the member: the item is theirs, so the open count follows.
     await expect(page.getByText(/8 việc đang mở/)).toBeVisible();
   });
 
@@ -275,9 +281,7 @@ test.describe("Home (owner)", () => {
     page,
   }) => {
     await openHome(page);
-    await page.getByRole("button", { name: "Thêm công việc" }).click();
-    await page.getByLabel("Tên việc").fill("Gửi biên bản họp UAT");
-    await page.getByRole("button", { name: "Tạo việc" }).click();
+    await addUatItem(page);
     const region = page.getByRole("region", { name: /^Chưa có hạn/ });
     await expect(region).toContainText("Gửi biên bản họp UAT");
   });

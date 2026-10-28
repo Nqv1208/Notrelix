@@ -258,6 +258,17 @@ public sealed class DeduplicationConsumeFilterClaimLeaseTests : IDisposable
     private sealed class NoopRls : IRlsSessionContext
     {
         public Task ApplyAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ApplyUserScopeAsync(Guid userId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<TokenScopeBinding?> EnterTokenScopeAsync(TokenScopeRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult<TokenScopeBinding?>(null);
+        public bool IsSessionContextEnabled => false;
+        public RlsBoundedScope ActiveBoundedScope => RlsBoundedScope.None;
+        public Task<bool> EnterInviteeScopeAsync(Guid userId, Notrelix.Application.Common.SystemOperations.SystemOperationReason reason, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+        public Task<bool> EnterRegistrationScopeAsync(Guid userId, Notrelix.Application.Common.SystemOperations.SystemOperationReason reason, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+        public Task<Guid?> EnterCredentialScopeAsync(CredentialScopeRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult<Guid?>(null);
     }
 
     /// <summary>Message-id keyed effect: first apply performs the effect, later applies replay.</summary>

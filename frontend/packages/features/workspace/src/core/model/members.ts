@@ -188,6 +188,32 @@ export function pendingInvitationFor(
   );
 }
 
+/** How many people one invite form submission may reach. */
+export const MAX_INVITES_AT_ONCE = 50;
+
+/**
+ * Reads the addresses typed in the invite form: separated by commas,
+ * semicolons, spaces or new lines, compared without case, each once.
+ * `invalid` keeps what is not an address, in the order typed.
+ */
+export function parseInviteList(value: string): {
+  readonly valid: readonly string[];
+  readonly invalid: readonly string[];
+} {
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  for (const raw of value.split(/[\s,;]+/)) {
+    const token = raw.trim();
+    if (!token) continue;
+    const key = token.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    (isPlausibleEmail(token) ? valid : invalid).push(token);
+  }
+  return { valid, invalid };
+}
+
 /** A permissive e-mail shape check for the invite form (the producer decides). */
 export function isPlausibleEmail(value: string): boolean {
   return /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{1,63}$/.test(value.trim());

@@ -29,7 +29,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -45,7 +45,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
     private (EfRequestDataSession Session, ApplicationDbContext Context) Create()
     {
         var tenant = SystemTenant();
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), tenant),
@@ -94,7 +94,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
         result.Data!.Name.Should().Be("New Name");
         result.Data.AvatarUrl.Should().Be("https://example.com/avatar.png");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var persisted = await verify.Users.SingleAsync(u => u.Id == user.Id);
         persisted.Name.Should().Be("New Name");
         persisted.AvatarUrl.Should().Be("https://example.com/avatar.png");
@@ -129,7 +129,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain("User not found");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Users.CountAsync()).Should().Be(0);
     }
 
@@ -178,7 +178,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<InvalidOperationException>();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var persisted = await verify.Users.SingleAsync(u => u.Id == user.Id);
         persisted.Name.Should().Be("Before");
         persisted.AvatarUrl.Should().BeNull();

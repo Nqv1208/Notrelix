@@ -33,6 +33,7 @@ import type {
 } from "../card-detail/task-detail-types";
 import { canWriteComment } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
+import { describeActivityEvent } from "../card-detail/activity-words";
 import {
   MentionList,
   mentionCandidates,
@@ -61,9 +62,6 @@ import type {
   ItemPagePerson,
   ItemPageTab,
 } from "./item-page-types";
-
-const KEY_CLASS =
-  "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
 
 const TAB_ORDER: readonly ItemPageTab[] = ["all", "comments", "history"];
 
@@ -248,6 +246,20 @@ export function ItemPageActivity({
         >
           <Skeleton className="h-12 rounded-lg" />
           <Skeleton className="h-12 rounded-lg" />
+        </div>
+      ) : days.length === 0 && tab !== "comments" && data.activityError ? (
+        <div
+          role="alert"
+          className="flex items-center gap-3 text-item-text text-muted-foreground"
+        >
+          <span>{copy.activityEvents.loadError}</span>
+          <button
+            type="button"
+            onClick={callbacks.onRefreshActivity}
+            className="font-medium text-brand-subtle-foreground underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {copy.activityEvents.retry}
+          </button>
         </div>
       ) : days.length === 0 ? (
         <p className="m-0 text-item-text text-muted-foreground">{empty}</p>
@@ -438,10 +450,20 @@ function EventEntry({
   timeZone?: string;
 }) {
   // The short verb and its accent target when the producer gives them.
-  const compact = tab === "all" ? event.compact : undefined;
-  const sentence = compact?.verb ?? event.verb ?? event.action;
-  const target = compact ? compact.target : event.target;
-  const detail = compact?.hideDetail ? undefined : event.detail;
+  const described = describeActivityEvent(event, copy.activityEvents);
+  const compact = !described && tab === "all" ? event.compact : undefined;
+  const sentence =
+    described?.verb ?? compact?.verb ?? event.verb ?? event.action;
+  const target = described
+    ? undefined
+    : compact
+      ? compact.target
+      : event.target;
+  const detail = described
+    ? described.detail
+    : compact?.hideDetail
+      ? undefined
+      : event.detail;
   return (
     <div className="flex items-start gap-3 py-[5px] text-item-ui text-muted-foreground">
       <span className="grid w-7.5 flex-none place-items-center pt-0.5">
@@ -826,7 +848,6 @@ function PageComposer({
               </span>
             </button>
             <span className="flex-1" />
-            <kbd className={KEY_CLASS}>{t.shortcut}</kbd>
             <button
               type="button"
               disabled={!draft.canSubmit}

@@ -100,6 +100,27 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardGroupDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
 
+    /// <summary>
+    /// A board always keeps at least one group: the last active group cannot be deleted.
+    /// <paramref name="activeGroupsOnBoard"/> counts this group too; the caller supplies it.
+    /// </summary>
+    public void EnsureNotLastGroup(int activeGroupsOnBoard)
+    {
+        if (activeGroupsOnBoard <= 1)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Group_CannotDeleteLast, "The last group of a board cannot be deleted.");
+    }
+
+    /// <summary>
+    /// The items of a group that is being deleted move to <paramref name="target"/>,
+    /// which must be another active group of the same board.
+    /// </summary>
+    public void EnsureCanReceiveItemsOf(BoardGroup removed)
+    {
+        Guard.NotNull(removed);
+        if (Id == removed.Id || BoardId != removed.BoardId || WorkspaceId != removed.WorkspaceId || IsDeleted)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Group_InvalidTargetGroup, "The target group must be another group of the same board.");
+    }
+
     public void ValidateNotDefaultGroup(Guid? defaultGroupId)
     {
         if (defaultGroupId.HasValue && Id == defaultGroupId.Value)

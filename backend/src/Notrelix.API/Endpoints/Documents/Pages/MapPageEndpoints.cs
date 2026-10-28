@@ -15,6 +15,7 @@ public static class MapPageEndpoints
         workspaceGroup.MapListWorkspacePages();
         workspaceGroup.MapGetPageTree();
         workspaceGroup.MapSearchPages();
+        workspaceGroup.MapListTrashedPages();
         workspaceGroup.MapCreatePage();
 
         var pageGroup = app
@@ -25,9 +26,11 @@ public static class MapPageEndpoints
         pageGroup.MapGetPage();
         pageGroup.MapUpdatePage();
         pageGroup.MapArchivePage();
+        pageGroup.MapRestorePage();
         pageGroup.MapDeletePage();
         pageGroup.MapGetPageBreadcrumb();
         pageGroup.MapGetPageHistory();
+        pageGroup.MapGetPageBacklinks();
         pageGroup.MapMovePageToSpace();
 
         return app;

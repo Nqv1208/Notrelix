@@ -19,7 +19,7 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -30,7 +30,7 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var ctx = _db.CreateContext(tenant);
+        await using var ctx = _db.CreateOwnerContext(tenant);
 
         var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
@@ -40,7 +40,7 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
         ctx.ReportingSnapshots.Add(snapshot);
         await ctx.SaveChangesAsync();
 
-        await using var fresh = _db.CreateContext(tenant);
+        await using var fresh = _db.CreateOwnerContext(tenant);
         var loaded = await fresh.ReportingSnapshots
             .IgnoreQueryFilters()
             .FirstAsync(s => s.Id == snapshot.Id);
@@ -55,7 +55,7 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var ctx = _db.CreateContext(tenant);
+        await using var ctx = _db.CreateOwnerContext(tenant);
 
         var payload = ReportSnapshotPayload.CreateV1("BoardVelocity", JsonValue.Create("""{"total":100}"""));
         var snapshot = ReportingSnapshot.Capture(Guid.NewGuid(), Guid.NewGuid(), payload, DateTimeOffset.UtcNow);
@@ -63,7 +63,7 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
         ctx.ReportingSnapshots.Add(snapshot);
         await ctx.SaveChangesAsync();
 
-        await using var fresh = _db.CreateContext(tenant);
+        await using var fresh = _db.CreateOwnerContext(tenant);
         var loaded = await fresh.ReportingSnapshots
             .IgnoreQueryFilters()
             .FirstAsync(s => s.Id == snapshot.Id);
@@ -77,14 +77,14 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var ctx = _db.CreateContext(tenant);
+        await using var ctx = _db.CreateOwnerContext(tenant);
 
         var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
         var data = """{"total":7}""";
         var capturedAt = DateTimeOffset.UtcNow;
 
-        await using var conn = new NpgsqlConnection(_db.ConnectionString);
+        await using var conn = new NpgsqlConnection(_db.OwnerConnectionString);
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
@@ -99,7 +99,7 @@ public class ReportingSnapshotPersistenceTests : IAsyncLifetime
         cmd.Parameters.AddWithValue("capturedAt", capturedAt);
         await cmd.ExecuteNonQueryAsync();
 
-        await using var fresh = _db.CreateContext(tenant);
+        await using var fresh = _db.CreateOwnerContext(tenant);
         var loaded = await fresh.ReportingSnapshots
             .IgnoreQueryFilters()
             .FirstAsync(s => s.WorkspaceId == workspaceId);

@@ -1,3 +1,5 @@
+using Notrelix.API.Endpoints.WorkManagement.Approvals.Commands;
+using Notrelix.API.Endpoints.WorkManagement.Approvals.Queries;
 using Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
 using Notrelix.API.Endpoints.WorkManagement.BoardItems.Queries;
 
@@ -14,6 +16,8 @@ public static class MapBoardItemEndpoints
 
         boardItems.MapCreateBoardItem();
         boardItems.MapListBoardItems();
+        boardItems.MapBulkUpdateBoardItems();
+        boardItems.MapListBoardItemTrash();
 
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}")
@@ -26,7 +30,9 @@ public static class MapBoardItemEndpoints
         itemGroup.MapUnarchiveBoardItem();
         itemGroup.MapDeleteBoardItem();
         itemGroup.MapDuplicateBoardItem();
+        itemGroup.MapRemindBoardItemOwners();
         itemGroup.MapMoveBoardItem();
+        itemGroup.MapMoveBoardItemToBoard();
         itemGroup.MapUpdateBoardItemFieldValues();
         itemGroup.MapLinkPageToBoardItem();
         itemGroup.MapUnlinkPageFromBoardItem();
@@ -38,9 +44,17 @@ public static class MapBoardItemEndpoints
         itemGroup.MapClearFieldValue();
         itemGroup.MapRestoreBoardItem();
         itemGroup.MapCompleteBoardItem();
+        itemGroup.MapReopenBoardItem();
         itemGroup.MapSetBoardItemDueDate();
         itemGroup.MapUpdateBoardItemStatus();
         itemGroup.MapListBoardItemLinks();
+        itemGroup.MapCreateBoardItemLink();
+        itemGroup.MapDeleteBoardItemLink();
+        itemGroup.MapCreateChildItem();
+        itemGroup.MapListChildItems();
+        itemGroup.MapMoveChildItem();
+        itemGroup.MapRequestItemApproval();
+        itemGroup.MapListItemApprovalRequests();
 
         var myWork = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/items")
@@ -48,6 +62,20 @@ public static class MapBoardItemEndpoints
             .WithOpenApi();
 
         myWork.MapListMyWorkItems();
+
+        var myWorkExtended = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/my-work/extended")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        myWorkExtended.MapGetMyWorkExtended();
+
+        var homeFeed = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/home/feed")
+            .WithTags("WorkManagement.BoardItems")
+            .WithOpenApi();
+
+        homeFeed.MapGetHomeFeed();
 
         return app;
     }

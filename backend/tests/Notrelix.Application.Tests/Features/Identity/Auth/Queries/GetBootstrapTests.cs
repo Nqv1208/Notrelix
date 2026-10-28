@@ -14,6 +14,8 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         return new GetBootstrapQueryHandler(port.Object, currentUser.Object);
     }
 
+    private static readonly Guid AccountId = Guid.NewGuid();
+
     private IdentityBootstrapProjection CreateProjection(
         Guid? personalWorkspaceId = null,
         params BootstrapWorkspaceProjection[] workspaces)
@@ -21,7 +23,8 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         return new IdentityBootstrapProjection(
             new BootstrapUserProjection(TestUserId, "test@example.com", "Test User", null, true),
             workspaces,
-            personalWorkspaceId);
+            personalWorkspaceId,
+            AccountId);
     }
 
     [Fact]
@@ -64,7 +67,7 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         port.Setup(p => p.GetAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateProjection(
                 personalWorkspaceId: workspaceId,
-                new BootstrapWorkspaceProjection(workspaceId, "My Workspace", "my-workspace", "Admin")));
+                new BootstrapWorkspaceProjection(workspaceId, "My Workspace", "my-workspace", "Admin", AccountId)));
 
         var sut = CreateSut(port);
         var result = await sut.Handle(new GetBootstrapQuery(), CancellationToken.None);
@@ -77,6 +80,8 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         result.Data.Workspaces[0].Role.Should().Be("Admin");
         result.Data.PersonalWorkspace.Status.Should().Be("ready");
         result.Data.PersonalWorkspace.WorkspaceId.Should().Be(workspaceId);
+        result.Data.Workspaces[0].AccountId.Should().Be(AccountId);
+        result.Data.AccountId.Should().Be(AccountId);
     }
 
     [Fact]

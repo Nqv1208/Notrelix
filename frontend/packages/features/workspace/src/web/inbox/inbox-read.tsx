@@ -340,11 +340,7 @@ export function InboxRead({
                   >
                     {copy.read.send}
                   </button>
-                ) : (
-                  <span className="rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-                    ⌘↵
-                  </span>
-                )}
+                ) : null}
               </form>
             ) : null}
           </>
@@ -366,6 +362,31 @@ export function InboxRead({
           <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
           {copy.read.handled}
         </button>
+        <button
+          data-f="done"
+          type="button"
+          aria-disabled={
+            (item.done ? actions?.onReopen : actions?.onDone) && !busy
+              ? undefined
+              : true
+          }
+          title={actions ? undefined : copy.read.actionUnavailable}
+          onClick={
+            actions && !busy
+              ? item.done
+                ? actions.onReopen
+                  ? () => actions.onReopen?.(item)
+                  : undefined
+                : actions.onDone
+                  ? () => actions.onDone?.(item)
+                  : undefined
+              : undefined
+          }
+          className={OUTLINE_CLASS}
+        >
+          <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          {item.done ? copy.read.reopen : copy.read.done}
+        </button>
         <SnoozeMenu
           copy={copy}
           open={snoozeOpen}
@@ -383,26 +404,8 @@ export function InboxRead({
           onClick={actions && !busy ? () => actions.onMute(item) : undefined}
           className={QUIET_CLASS}
         >
-          {copy.read.mute}
+          {item.muted ? copy.read.unmute : copy.read.mute}
         </button>
-        <div
-          data-f="hint"
-          className="ml-auto flex flex-wrap gap-3 text-xs leading-[1.45] text-meta-foreground"
-        >
-          <span className="inline-flex items-center gap-1">
-            <Key>J</Key>
-            <Key>K</Key>
-            {copy.read.shortcuts.move}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Key>E</Key>
-            {copy.read.shortcuts.handled}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Key>H</Key>
-            {copy.read.shortcuts.snooze}
-          </span>
-        </div>
       </div>
     </main>
   );
@@ -476,14 +479,6 @@ function SnoozeMenu({
           ))}
         </div>
       ) : null}
-    </span>
-  );
-}
-
-function Key({ children }: { children: string }) {
-  return (
-    <span className="rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-      {children}
     </span>
   );
 }

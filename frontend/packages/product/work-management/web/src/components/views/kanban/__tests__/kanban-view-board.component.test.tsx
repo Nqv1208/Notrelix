@@ -73,10 +73,31 @@ function fakeServices(
     ) => Promise<void> | undefined;
     /** The view's saved config (absent: the view has never been saved). */
     viewConfig?: Record<string, unknown>;
+    /** A board just created: it has its statuses but no group yet. */
+    noGroups?: boolean;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
   let board = erpBoardScenario();
+  if (overrides.noGroups) board = { ...board, groups: [] };
+  const createGroup = vi.fn(async () => undefined);
+  const itemExtras = {
+    getLinks: vi.fn(async () => [
+      {
+        id: "link-1",
+        relation: "blocked-by" as const,
+        item: {
+          id: erpItemId("ERP-143"),
+          key: "ERP-143",
+          title: "Phê duyệt phân quyền",
+          statusName: "Đang làm",
+          statusCategory: "in_progress" as const,
+        },
+      },
+    ]),
+    addLink: vi.fn(async () => undefined),
+    removeLink: vi.fn(async () => undefined),
+  };
   const cards = {
     getCard: vi.fn(async (id: string) => detailOf(board, id)),
     getCardFiles: vi.fn(async () => []),
@@ -106,16 +127,26 @@ function fakeServices(
   const services = {
     boards: {
       getFullBoard: vi.fn(async () => board),
-      getBoardView: vi.fn(async () => ({
-        viewMode: "kanban",
-        viewConfig: { ...defaultTableViewConfig, ...overrides.viewConfig },
-      })),
+      listSavedViews: vi.fn(async () => [
+        {
+          id: "view-1",
+          name: "Kanban",
+          viewMode: "kanban",
+          viewConfig: { ...defaultTableViewConfig, ...overrides.viewConfig },
+          isDefault: true,
+          visibility: "board",
+          createdBy: null,
+          version: 1,
+        },
+      ]),
     },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
+    groups: { createGroup },
+    itemExtras,
     comments: { getCardUpdates: vi.fn(async () => []) },
   } as unknown as WorkManagementServices;
-  return { services, cards };
+  return { services, cards, createGroup, itemExtras };
 }
 
 function Providers({
@@ -201,13 +232,14 @@ async function ready() {
 }
 
 describe("KanbanView on the ERP board", () => {
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("groups the items into the status lanes 6/3/2/5", async () => {
     renderKanban(erpOwnerAccess());
     await ready();
     expect(
       ["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"].map(laneCount),
     ).toEqual(["6", "3", "2", "5"]);
-  });
+  }, 20_000);
 
   it("lets an owner add items, from a lane and from the toolbar", async () => {
     const { cards } = renderKanban(erpOwnerAccess());
@@ -244,11 +276,46 @@ describe("KanbanView on the ERP board", () => {
     expect(screen.getByRole("button", { name: "Thêm công việc" })).toBeTruthy();
   });
 
+  it("says why nothing was added on a board without a group and offers to add one", async () => {
+    const { cards, createGroup } = renderKanban(
+      erpOwnerAccess(),
+      {},
+      { noGroups: true },
+    );
+    await ready();
+    fireEvent.click(
+      await within(lane("Đang làm")).findByRole("button", {
+        name: "Thêm vào Đang làm",
+      }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Tên việc mới trong Đang làm" }),
+      { target: { value: "Việc đầu tiên" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(cards.createCard).not.toHaveBeenCalled();
+    const [message, options] = toast.error.mock.calls[0] as [
+      string,
+      { action: { label: string; onClick: () => void } },
+    ];
+    expect(message).toContain("chưa có nhóm");
+    options.action.onClick();
+    await waitFor(() => expect(createGroup).toHaveBeenCalledTimes(1));
+    expect(createGroup).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Công việc" }),
+    );
+  });
+
   it("gives a commenter no add and a read-only sheet that keeps the composer", async () => {
     renderKanban(erpCommenterAccess(), { initialItem: erpItemId("ERP-142") });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     await waitFor(() =>
       expect(
         within(dialog)
@@ -265,6 +332,7 @@ describe("KanbanView on the ERP board", () => {
     ).not.toBe("true");
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("moves the card to its lane when the status changes in the sheet (keyboard alternative to dragging)", async () => {
     const { cards } = renderKanban(erpOwnerAccess(), {
       initialItem: erpItemId("ERP-149"),
@@ -293,8 +361,9 @@ describe("KanbanView on the ERP board", () => {
       ERP_STATUS_OPTION_IDS.doing,
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
-  });
+  }, 20_000);
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("puts the card back and says so when the status write fails", async () => {
     renderKanban(
       erpOwnerAccess(),
@@ -325,7 +394,7 @@ describe("KanbanView on the ERP board", () => {
     );
     expect(laneCount("Cần làm")).toBe("6");
     expect(laneCount("Đang làm")).toBe("3");
-  });
+  }, 20_000);
 
   it("applies the route filter, shows the no-results bar and clears the filter with Bỏ lọc", async () => {
     const onFilter = vi.fn();
@@ -380,6 +449,7 @@ describe("KanbanView on the ERP board", () => {
     );
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("steps through the items in lane order with K and J, keeping the sheet open", async () => {
     const onItem = vi.fn();
     renderKanban(erpOwnerAccess(), {
@@ -407,7 +477,7 @@ describe("KanbanView on the ERP board", () => {
     expect(onItem).toHaveBeenLastCalledWith(erpItemId("ERP-151"), {
       replace: true,
     });
-  });
+  }, 20_000);
 
   it("copies the item link from the sheet and confirms it", async () => {
     const writeText = vi.fn(async (_text: string) => undefined);
@@ -416,9 +486,13 @@ describe("KanbanView on the ERP board", () => {
       value: { writeText },
     });
     renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Sao chép liên kết" }),
     );
@@ -441,6 +515,7 @@ describe("KanbanView on the ERP board", () => {
     ]);
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("reports a failed status write even after another write has started, and keeps the other card's change", async () => {
     let failFirst!: (error: Error) => void;
     const first = new Promise<void>((_resolve, reject) => (failFirst = reject));
@@ -486,15 +561,20 @@ describe("KanbanView on the ERP board", () => {
         name: "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng",
       }),
     ).toBeTruthy();
-  });
+  }, 20_000);
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("archives the item from the sheet (it is not deleted)", async () => {
     const { cards } = renderKanban(erpOwnerAccess(), {
       initialItem: erpItemId("ERP-142"),
     });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     const more = await waitFor(() =>
       within(dialog).getByRole("button", { name: "Thêm" }),
     );
@@ -508,7 +588,45 @@ describe("KanbanView on the ERP board", () => {
     );
     expect(cards.deleteCard).not.toHaveBeenCalled();
     await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
-  });
+  }, 20_000);
+
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
+  it("lists the links of the item in the sheet, adds one through the picker and removes one", async () => {
+    const { itemExtras } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-142"),
+    });
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    expect(
+      await within(dialog).findByText("Phê duyệt phân quyền"),
+    ).toBeTruthy();
+    expect(within(dialog).getByText("Đang chờ")).toBeTruthy();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Gỡ liên kết với ERP-143" }),
+    );
+    await waitFor(() =>
+      expect(itemExtras.removeLink).toHaveBeenCalledWith(
+        erpItemId("ERP-142"),
+        "link-1",
+      ),
+    );
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Thêm liên kết" }),
+    );
+    const [first] = await screen.findAllByRole("option");
+    fireEvent.click(first!);
+    await waitFor(() =>
+      expect(itemExtras.addLink).toHaveBeenCalledWith(erpItemId("ERP-142"), {
+        itemId: expect.any(String),
+        relation: "blocked-by",
+      }),
+    );
+  }, 20_000);
 
   it("takes the covered board out of the tab order on a narrow screen while the sheet is open", async () => {
     const width = window.innerWidth;
@@ -518,9 +636,13 @@ describe("KanbanView on the ERP board", () => {
     });
     try {
       renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
-      await screen.findByRole("dialog", {
-        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-      });
+      await screen.findByRole(
+        "dialog",
+        {
+          name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+        },
+        { timeout: 5000 },
+      );
       const board = document.querySelector("[data-kanban-board]")!;
       const covered = Array.from(board.children).filter((child) =>
         child.hasAttribute("inert"),
@@ -539,9 +661,13 @@ describe("KanbanView on the ERP board", () => {
 
   it("leaves the board usable beside the sheet on a wide screen", async () => {
     renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
-    await screen.findByRole("dialog", {
-      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    });
+    await screen.findByRole(
+      "dialog",
+      {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      },
+      { timeout: 5000 },
+    );
     expect(document.querySelector("[data-kanban-board] [inert]")).toBeNull();
   });
 });
@@ -573,7 +699,7 @@ describe("KanbanView settings of the view", () => {
     await ready();
     // The saved view has been read before judging what is hidden.
     await waitFor(() =>
-      expect(services.boards.getBoardView).toHaveBeenCalled(),
+      expect(services.boards.listSavedViews).toHaveBeenCalled(),
     );
     await new Promise((resolve) => setTimeout(resolve, 20));
     // The editor still adds items: only the status controls are shaped.

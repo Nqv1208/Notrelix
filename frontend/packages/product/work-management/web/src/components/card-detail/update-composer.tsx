@@ -159,9 +159,6 @@ export function UpdateComposer({
               onKeyDown={handleKeyDown}
               className="max-h-32 min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-body shadow-none focus-visible:ring-0"
             />
-            <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-1.25 text-key leading-[18px] text-muted-foreground">
-              {t.shortcut}
-            </kbd>
           </div>
         </PopoverAnchor>
         <PopoverTrigger asChild>

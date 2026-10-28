@@ -16,7 +16,8 @@ on:
 
 concurrency:
   group: notrelix-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # A newer push supersedes an older run everywhere except main, whose runs build release candidates.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read

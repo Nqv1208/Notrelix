@@ -45,7 +45,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
 
         _accountId = Guid.NewGuid();
@@ -56,7 +56,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
         var done = BoardGroup.Create(_accountId, workspace.Id, board.Id, "Done", Color.Create("#808080"), FractionalIndex.Create("a1"), _userId, Now);
         (_workspaceId, _boardId, _todoId, _doneId) = (workspace.Id, board.Id, todo.Id, done.Id);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.AddRange(todo, done);
@@ -74,7 +74,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
         var ids = await Task.WhenAll(Enumerable.Range(0, creates)
             .Select(i => Task.Run(() => CreateAsync($"item {i}", i % 2 == 0 ? _todoId : _doneId))));
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var keys = await verify.BoardItems.Where(i => ids.Contains(i.Id)).Select(i => new { i.ItemKey, i.ItemSequence }).ToListAsync();
         keys.Select(k => k.ItemKey).Should().BeEquivalentTo(Enumerable.Range(1, creates).Select(n => $"WEB-{n}"));
         keys.Select(k => k.ItemSequence).Should().OnlyHaveUniqueItems();
@@ -85,7 +85,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ABoardRename_WithTheVersionReadBeforeItemCreates_Succeeds()
     {
-        await using var editor = _db.CreateContext(Tenant());
+        await using var editor = _db.CreateOwnerContext(Tenant());
         var board = await editor.Boards.SingleAsync(b => b.Id == _boardId);
         var versionRead = board.Version;
 
@@ -97,7 +97,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
         await editor.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var saved = await verify.Boards.SingleAsync(b => b.Id == _boardId);
         saved.Title.Should().Be("Renamed Board");
         saved.Version.Should().Be(versionRead + 1);
@@ -118,7 +118,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
             return true;
         });
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var moved = await verify.BoardItems.SingleAsync(i => i.Id == item);
         moved.GroupId.Should().Be(_doneId);
         moved.ItemKey.Should().Be("WEB-1");
@@ -131,7 +131,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
 
         var act = async () =>
         {
-            await using var context = _db.CreateContext(SystemTenant());
+            await using var context = _db.CreateOwnerContext(SystemTenant());
             context.BoardItems.Add(BoardItem.CreateRoot(_accountId, _workspaceId, _boardId, _todoId, "clash",
                 FractionalIndex.Create("a9"), _userId, Now, itemKey: "WEB-1", itemSequence: 1));
             await context.SaveChangesAsync();
@@ -147,13 +147,13 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
 
     private async Task<long> BoardScalarAsync(System.Linq.Expressions.Expression<Func<Board, long>> selector)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         return await context.Boards.Where(b => b.Id == _boardId).Select(selector).SingleAsync();
     }
 
     private async Task<T> InTransactionAsync<T>(Func<ApplicationDbContext, Task<T>> work)
     {
-        await using var context = _db.CreateContext(Tenant());
+        await using var context = _db.CreateOwnerContext(Tenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var result = await work(context);
         await context.SaveChangesAsync();

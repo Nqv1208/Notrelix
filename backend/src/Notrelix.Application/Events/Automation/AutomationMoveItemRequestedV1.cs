@@ -11,7 +11,10 @@ public sealed record AutomationMoveItemRequestedV1(
     Guid? ActorUserId,
     DateTimeOffset OccurredAt,
     Guid CorrelationId,
-    Guid? CausationId = null
+    Guid? CausationId = null,
+    // AU-1 (additive, nullable): the item the trigger fact was about, which the action moves.
+    // Messages staged before it was added carry null and keep the rule's configured item.
+    Guid? ItemId = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "automation.move-item-requested",

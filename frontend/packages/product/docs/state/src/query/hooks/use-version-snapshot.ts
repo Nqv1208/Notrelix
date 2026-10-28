@@ -1,28 +1,31 @@
 import { useQuery } from "@tanstack/react-query";
-import { createPageExtrasApi } from "../../api/page-extras.api";
+import { createVersionApi } from "../../api/version.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
 import { docsQueryKeys } from "../keys";
 
-/** The blocks of a history entry's version (gap `CTR-GAP-DOCS-PAGE-EXT`). */
+/**
+ * The content one history entry captured (`Documents.Versions.GetPageVersion`).
+ * An entry never changes, so a read stays fresh for a long time.
+ */
 export function createUseVersionSnapshot(
   api: DocsApiClient,
   endpoints: PageApiEndpoints,
 ) {
-  const extras = createPageExtrasApi(api, endpoints);
+  const versionApi = createVersionApi(api, endpoints);
   return function useVersionSnapshot(
     workspaceId: string,
     pageId: string,
-    entryId: string | null,
+    versionId: string | null,
   ) {
     return useQuery({
       queryKey: docsQueryKeys.versionSnapshot(
         workspaceId,
         pageId,
-        entryId ?? "",
+        versionId ?? "",
       ),
-      queryFn: () => extras.getVersionSnapshot(pageId, entryId ?? ""),
-      enabled: !!workspaceId && !!pageId && !!entryId,
-      staleTime: 60_000,
+      queryFn: () => versionApi.get(pageId, versionId ?? ""),
+      enabled: !!workspaceId && !!pageId && !!versionId,
+      staleTime: 5 * 60_000,
     });
   };
 }

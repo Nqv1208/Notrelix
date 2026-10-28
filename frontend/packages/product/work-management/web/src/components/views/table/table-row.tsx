@@ -1,4 +1,5 @@
 import type { CSSProperties, KeyboardEvent } from "react";
+import { ChevronRight } from "lucide-react";
 import {
   cn,
   ContextMenu,
@@ -33,6 +34,10 @@ export interface TableRowActions {
   readonly onCopyLink: () => void;
   /** Absent: the viewer may not archive, so no "Lưu trữ". */
   readonly onArchive?: () => void;
+  /** Absent: the viewer may not delete, so no "Xoá". */
+  readonly onDelete?: () => void;
+  /** Absent: the viewer may not move items, so no "Chuyển sang board khác". */
+  readonly onMoveToBoard?: () => void;
 }
 
 export interface TableRowProps {
@@ -53,6 +58,8 @@ export interface TableRowProps {
   editors?: TableEditors;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
+  /** The sub-items of this row can be shown under it; absent = the row has none. */
+  expand?: { expanded: boolean; count: number; onToggle: () => void };
   /** The status list is open on this row. */
   editing: boolean;
   /** Option highlighted when the status list opens (stories and tests). */
@@ -121,6 +128,7 @@ export function TableRow({
   canEdit,
   editors,
   actions,
+  expand,
   editing,
   highlightStatusId,
   onSelectedChange,
@@ -144,12 +152,36 @@ export function TableRow({
       case "title":
         return (
           <Cell key="title" selected={selected}>
+            {expand ? (
+              <button
+                type="button"
+                data-row-expand=""
+                aria-expanded={expand.expanded}
+                aria-label={fillTableCopy(
+                  expand.expanded
+                    ? copy.row.collapseChildren
+                    : copy.row.expandChildren,
+                  { key: keyLabel, count: expand.count },
+                )}
+                onClick={expand.onToggle}
+                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <ChevronRight
+                  aria-hidden="true"
+                  className={cn(
+                    "size-4 transition-transform duration-150",
+                    expand.expanded && "rotate-90",
+                  )}
+                  strokeWidth={1.8}
+                />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onOpen}
               title={row.title}
               data-row-open=""
-              className="min-w-0 truncate text-left text-nav text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
               {row.title}
             </button>
@@ -469,9 +501,19 @@ export function TableRow({
         <ContextMenuItem onSelect={actions.onCopyLink}>
           {copy.row.menu.copyLink}
         </ContextMenuItem>
+        {actions.onMoveToBoard ? (
+          <ContextMenuItem onSelect={actions.onMoveToBoard}>
+            {copy.row.menu.moveToBoard}
+          </ContextMenuItem>
+        ) : null}
         {actions.onArchive ? (
           <ContextMenuItem onSelect={actions.onArchive}>
             {copy.row.menu.archive}
+          </ContextMenuItem>
+        ) : null}
+        {actions.onDelete ? (
+          <ContextMenuItem variant="destructive" onSelect={actions.onDelete}>
+            {copy.row.menu.delete}
           </ContextMenuItem>
         ) : null}
       </ContextMenuContent>

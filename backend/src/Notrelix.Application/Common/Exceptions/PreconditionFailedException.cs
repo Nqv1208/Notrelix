@@ -10,6 +10,9 @@ public class PreconditionFailedException : Exception
     public long? ExpectedVersion { get; }
     public long? CurrentVersion { get; }
 
+    /// <summary>Extra members of the public problem (for example the current state the caller lost the race to).</summary>
+    public IReadOnlyDictionary<string, object?> Extensions { get; init; } = new Dictionary<string, object?>();
+
     public PreconditionFailedException(
         string message,
         string errorCode = "common.precondition-failed",

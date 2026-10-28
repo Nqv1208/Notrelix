@@ -41,7 +41,7 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
             return;
         }
 
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
         await SeedLargeTenantAsync();
     }
@@ -65,7 +65,7 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
         // JSON so the FULL node tree is captured in one row/column.
         var explainSql = "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + AccessFactsQuery.Sql;
 
-        await using var conn = new NpgsqlConnection(_db.ConnectionString);
+        await using var conn = new NpgsqlConnection(_db.OwnerConnectionString);
         await conn.OpenAsync();
         await using var cmd = new NpgsqlCommand(explainSql, conn);
         cmd.Parameters.AddWithValue("user_id", actingUser);
@@ -150,7 +150,7 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
         _accountId = Guid.NewGuid();
         _workspaceId = Guid.NewGuid();
 
-        await using var conn = new NpgsqlConnection(_db.ConnectionString);
+        await using var conn = new NpgsqlConnection(_db.OwnerConnectionString);
         await conn.OpenAsync();
 
         // One account + one workspace skeleton.

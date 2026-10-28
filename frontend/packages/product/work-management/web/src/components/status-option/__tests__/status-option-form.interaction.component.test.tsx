@@ -1,5 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import {
   statusOptionFormCopyFixture,
   statusOptionFormCreateScenario,
@@ -9,6 +15,8 @@ import {
   statusOptionFormPendingScenario,
   type StatusOptionFormScenario,
 } from "../../../verification/status-option-form-fixtures";
+import { AddGroupPopover } from "../add-group-popover";
+import { RemoveOptionDialog } from "../remove-option-dialog";
 import { StatusOptionForm } from "../status-option-form";
 
 const LOCALES = ["vi", "en"] as const;
@@ -205,6 +213,195 @@ describe("StatusOptionForm", () => {
         name: (nameInput(locale) as HTMLInputElement).value,
         color: "#1E7BE0",
       });
+      view.unmount();
+    }
+  });
+});
+
+const CHOICES = [
+  { id: "o-todo", name: "Cần làm", color: "#7A8391" },
+  { id: "o-doing", name: "Đang làm", color: "#1E7BE0" },
+];
+
+describe("RemoveOptionDialog", () => {
+  it("FUI[wm.status-option.form:remove-with-items] makes the person choose where a status's items go, the first other status preselected", () => {
+    for (const locale of LOCALES) {
+      const copy = statusOptionFormCopyFixture(locale);
+      const onConfirm = vi.fn();
+      const view = renderPureUi(
+        <RemoveOptionDialog
+          copy={copy}
+          subject="status"
+          name="Chờ duyệt"
+          itemCount={2}
+          choices={CHOICES}
+          onCancel={vi.fn()}
+          onConfirm={onConfirm}
+        />,
+      );
+      const dialog = screen.getByRole("alertdialog");
+      expect(
+        within(dialog).getByText(
+          copy.removeTitle.replace("{{name}}", "Chờ duyệt"),
+        ),
+      ).toBeTruthy();
+      expect(
+        within(dialog)
+          .getByRole("radio", { name: "Cần làm" })
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+      // A status has no "no value" way out.
+      expect(
+        within(dialog).queryByRole("radio", { name: copy.removeNoValue }),
+      ).toBeNull();
+      fireEvent.click(within(dialog).getByRole("radio", { name: "Đang làm" }));
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: copy.removeMoveConfirm }),
+      );
+      expect(onConfirm).toHaveBeenCalledWith("o-doing");
+      view.unmount();
+    }
+  });
+
+  it("FUI[wm.status-option.form:remove-empty] confirms a status nobody uses without asking for a replacement", () => {
+    for (const locale of LOCALES) {
+      const copy = statusOptionFormCopyFixture(locale);
+      const onConfirm = vi.fn();
+      const onCancel = vi.fn();
+      const view = renderPureUi(
+        <RemoveOptionDialog
+          copy={copy}
+          subject="status"
+          name="Chờ duyệt"
+          itemCount={0}
+          choices={CHOICES}
+          onCancel={onCancel}
+          onConfirm={onConfirm}
+        />,
+      );
+      const dialog = screen.getByRole("alertdialog");
+      expect(within(dialog).getByText(copy.removeEmptyBody)).toBeTruthy();
+      expect(within(dialog).queryByRole("radio")).toBeNull();
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: copy.cancel }),
+      );
+      expect(onCancel).toHaveBeenCalledTimes(1);
+      expect(onConfirm).not.toHaveBeenCalled();
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: copy.removeConfirm }),
+      );
+      expect(onConfirm).toHaveBeenCalledWith(null);
+      view.unmount();
+    }
+  });
+
+  it("FUI[wm.status-option.form:remove-value] lets the items of a deleted select value lose the value, and keeps the dialog while it runs", () => {
+    for (const locale of LOCALES) {
+      const copy = statusOptionFormCopyFixture(locale);
+      const onConfirm = vi.fn();
+      const view = renderPureUi(
+        <RemoveOptionDialog
+          copy={copy}
+          subject="value"
+          name="Khẩn"
+          itemCount={1}
+          choices={CHOICES}
+          onCancel={vi.fn()}
+          onConfirm={onConfirm}
+        />,
+      );
+      const dialog = screen.getByRole("alertdialog");
+      expect(
+        within(dialog)
+          .getByRole("radio", { name: copy.removeNoValue })
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: copy.removeMoveConfirm }),
+      );
+      expect(onConfirm).toHaveBeenCalledWith(null);
+      view.rerender(
+        <RemoveOptionDialog
+          copy={copy}
+          subject="value"
+          name="Khẩn"
+          itemCount={1}
+          choices={CHOICES}
+          pending
+          onCancel={vi.fn()}
+          onConfirm={onConfirm}
+        />,
+      );
+      expect(
+        (
+          within(screen.getByRole("alertdialog")).getByRole("button", {
+            name: copy.removing,
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      view.unmount();
+    }
+  });
+});
+
+describe("AddGroupPopover", () => {
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = () => undefined;
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.releasePointerCapture = () => undefined;
+    Element.prototype.setPointerCapture = () => undefined;
+  });
+
+  it("FUI[wm.status-option.form:add-group] names a board group with a colour, refuses a taken title and keeps the form when the add fails", async () => {
+    for (const locale of LOCALES) {
+      const copy = statusOptionFormCopyFixture(locale);
+      const onSubmit = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("refused"))
+        .mockResolvedValue(undefined);
+      const view = renderPureUi(
+        <AddGroupPopover
+          copy={copy}
+          label={copy.groupSubmit}
+          existingTitles={["Sprint 1"]}
+          onSubmit={onSubmit}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: copy.groupSubmit }));
+      const name = screen.getByRole("textbox", { name: copy.groupNameLabel });
+      expect(
+        screen.queryByRole("radio", { name: copy.category_done }),
+      ).toBeNull();
+      fireEvent.change(name, { target: { value: "sprint 1" } });
+      fireEvent.submit(name.closest("form")!);
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toBeTruthy();
+
+      fireEvent.change(name, { target: { value: "  Sprint 2  " } });
+      fireEvent.click(screen.getByRole("radio", { name: copy.color_green }));
+      fireEvent.submit(name.closest("form")!);
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit).toHaveBeenCalledWith({
+        title: "Sprint 2",
+        color: "#2E8B57",
+      });
+      // The first add failed: the form stays with its values for another try.
+      await waitFor(() =>
+        expect(
+          (
+            screen.getByRole("textbox", {
+              name: copy.groupNameLabel,
+            }) as HTMLInputElement
+          ).value,
+        ).toBe("  Sprint 2  "),
+      );
+      fireEvent.submit(
+        screen
+          .getByRole("textbox", { name: copy.groupNameLabel })
+          .closest("form")!,
+      );
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
       view.unmount();
     }
   });

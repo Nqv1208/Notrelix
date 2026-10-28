@@ -13,15 +13,16 @@ describe("MFB-FZ-05: Store Relational Invariants and Mutations", () => {
       fetchImpl: mockFetch,
     });
 
-    const created = await client.api.post<{
+    // The producer creates inside an Account and answers with the new id.
+    const id = await client.api.post<string>(
+      endpoints.accounts.workspaces(store.getCurrentUser().id),
+      { name: "Brand New Workspace", slug: "brand-new-ws", isPersonal: false },
+    );
+    const created = await client.api.get<{
       id: string;
       name: string;
       memberCount: number;
-    }>(endpoints.workspaces.list, {
-      name: "Brand New Workspace",
-      slug: "brand-new-ws",
-      isPersonal: false,
-    });
+    }>(endpoints.workspaces.detail(id));
 
     expect(created.name).toBe("Brand New Workspace");
     expect(created.memberCount).toBe(1);

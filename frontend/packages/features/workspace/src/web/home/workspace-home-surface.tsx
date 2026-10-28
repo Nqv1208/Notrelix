@@ -653,7 +653,9 @@ function ReplyCard({
                 >
                   {reply.kind === "approve"
                     ? copy.home.replies.viewAction
-                    : copy.home.replies.openDocAction}
+                    : reply.target.section === "doc"
+                      ? copy.home.replies.openDocAction
+                      : copy.home.replies.openItemAction}
                 </ShellLink>
               ) : null}
             </div>

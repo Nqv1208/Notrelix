@@ -17,6 +17,9 @@ public class IntegrationConnectionConfiguration : IEntityTypeConfiguration<Integ
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ProviderAccountId).HasColumnName("provider_account_id").HasMaxLength(256);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+        builder.Property(x => x.TargetUrl).HasColumnName("target_url").HasMaxLength(2048);
+        builder.Property(x => x.LastSuccessAt).HasColumnName("last_success_at");
+        builder.Property(x => x.LastErrorAt).HasColumnName("last_error_at");
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");

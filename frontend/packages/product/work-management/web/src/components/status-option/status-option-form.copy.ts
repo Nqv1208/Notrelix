@@ -37,6 +37,32 @@ export const en = {
   valueSubmitCreate: "Add value",
   valueErrorEmpty: "Enter a value name.",
   valueErrorDuplicate: "A value named “{{name}}” already exists.",
+  /** Deleting a status (or a value of another Select field) and re-homing its items. */
+  removeTitle: "Delete status “{{name}}”?",
+  removeValueTitle: "Delete value “{{name}}”?",
+  removeEmptyBody: "No items use it.",
+  removeItemsBody_one:
+    "{{count}} item is in “{{name}}”. Choose where it moves.",
+  removeItemsBody_other:
+    "{{count}} items are in “{{name}}”. Choose where they move.",
+  removeReplacementLabel: "Move items to",
+  removeNoValue: "No value",
+  removeConfirm: "Delete status",
+  removeValueConfirm: "Delete value",
+  removeMoveConfirm: "Move items and delete",
+  removing: "Deleting…",
+  removeBlockedStatus:
+    "A board keeps at least one Not started and one Done status.",
+  removeBlockedValue: "A field keeps at least one value.",
+  /** "Add group": a group of the board (it holds items), not a status. */
+  groupTitleCreate: "New group",
+  groupNameLabel: "Group name",
+  groupNamePlaceholder: "Group name…",
+  groupSubmit: "Add group",
+  groupErrorEmpty: "Enter a group name.",
+  groupErrorDuplicate: "A group named “{{name}}” already exists.",
+  groupAdded: "Group “{{name}}” added. Choose it in an item's Group field.",
+  groupAddFailed: "Couldn't add the group.",
 };
 
 export type StatusOptionFormCopy = typeof en;
@@ -73,7 +99,49 @@ export const vi: StatusOptionFormCopy = {
   valueSubmitCreate: "Thêm giá trị",
   valueErrorEmpty: "Nhập tên giá trị.",
   valueErrorDuplicate: "Đã có giá trị tên “{{name}}”.",
+  removeTitle: "Xoá trạng thái “{{name}}”?",
+  removeValueTitle: "Xoá giá trị “{{name}}”?",
+  removeEmptyBody: "Chưa có việc nào dùng mục này.",
+  removeItemsBody_one:
+    "{{count}} việc đang ở “{{name}}”. Chọn nơi chuyển việc đó sang.",
+  removeItemsBody_other:
+    "{{count}} việc đang ở “{{name}}”. Chọn nơi chuyển các việc đó sang.",
+  removeReplacementLabel: "Chuyển các việc sang",
+  removeNoValue: "Không có giá trị",
+  removeConfirm: "Xoá trạng thái",
+  removeValueConfirm: "Xoá giá trị",
+  removeMoveConfirm: "Chuyển việc và xoá",
+  removing: "Đang xoá…",
+  removeBlockedStatus:
+    "Bảng luôn giữ ít nhất một trạng thái Chưa bắt đầu và một trạng thái Hoàn thành.",
+  removeBlockedValue: "Trường luôn giữ ít nhất một giá trị.",
+  groupTitleCreate: "Nhóm mới",
+  groupNameLabel: "Tên nhóm",
+  groupNamePlaceholder: "Nhập tên nhóm…",
+  groupSubmit: "Thêm nhóm",
+  groupErrorEmpty: "Nhập tên nhóm.",
+  groupErrorDuplicate: "Đã có nhóm tên “{{name}}”.",
+  groupAdded: "Đã thêm nhóm “{{name}}”. Chọn nhóm ở trường Nhóm của việc.",
+  groupAddFailed: "Chưa thêm được nhóm.",
 };
+
+/**
+ * The form copy for naming a board group: the same form (name, colour) with
+ * the group wording, so "Add group" never reads like "Add status".
+ */
+export function groupFormCopy(
+  copy: StatusOptionFormCopy,
+): StatusOptionFormCopy {
+  return {
+    ...copy,
+    titleCreate: copy.groupTitleCreate,
+    nameLabel: copy.groupNameLabel,
+    namePlaceholder: copy.groupNamePlaceholder,
+    submitCreate: copy.groupSubmit,
+    errorEmpty: copy.groupErrorEmpty,
+    errorDuplicate: copy.groupErrorDuplicate,
+  };
+}
 
 export function statusOptionFormCopy(
   locale: "vi" | "en",

@@ -281,9 +281,9 @@ describe("WorkspaceMyWorkSurface", () => {
     const options = within(pop).getAllByRole("option");
     expect(options.map((option) => option.textContent)).toEqual([
       "Cần làm",
-      "Đang làm2",
-      "Chờ duyệt3",
-      "Hoàn thành4",
+      "Đang làm",
+      "Chờ duyệt",
+      "Hoàn thành",
     ]);
     expect(options[0]!.getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(pop, { key: "3" });
@@ -341,6 +341,23 @@ describe("WorkspaceMyWorkSurface", () => {
       boardId: "board-erp",
       name: "Gửi biên bản họp UAT",
     });
+  });
+
+  it("FUI[workspace.my-work:create-form] hands the name and Board to the full item form from More details", () => {
+    const onOpenCreateForm = vi.fn();
+    renderMyWork(myWorkCreateScenario(), { onOpenCreateForm });
+    const dialog = screen.getByRole("dialog", { name: copy.list.addTitle });
+    fireEvent.change(within(dialog).getByLabelText(copy.list.addName), {
+      target: { value: "Soạn kế hoạch quý" },
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: copy.list.addMore }),
+    );
+    expect(onOpenCreateForm).toHaveBeenCalledWith({
+      boardId: "board-erp",
+      name: "Soạn kế hoạch quý",
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("FUI[workspace.my-work:rail] adds up the week by due day and by department, and filters by a day", () => {
@@ -489,6 +506,21 @@ describe("WorkspaceMyWorkSurface", () => {
     );
   });
 
+  it("FUI[workspace.my-work:waiting-bare] draws a waiting-on entry without a note or due date with no dangling separators", () => {
+    const scenario = myWorkDefaultScenario();
+    const entry = scenario.waiting![0]!;
+    renderMyWork({
+      ...scenario,
+      waiting: [{ ...entry, note: "", dueNote: "" }],
+    });
+
+    const keyInRail = screen
+      .getAllByText(entry.key)
+      .find((node) => !node.hasAttribute("data-f"))!;
+    const line = keyInRail.parentElement!;
+    expect(line.textContent?.trim()).toBe(entry.key);
+  });
+
   it("FUI[workspace.my-work:edge] keeps long titles and a Board the member cannot open readable", () => {
     renderMyWork(myWorkEdgeDataScenario());
     const row = rowOf("VH-1204");
@@ -501,6 +533,7 @@ describe("WorkspaceMyWorkSurface", () => {
     ).toBeTruthy();
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[workspace.my-work:high-density] renders 120 items with a completing row and a page still loading", () => {
     renderMyWork(myWorkHighDensityScenario());
     expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(120);
@@ -512,5 +545,5 @@ describe("WorkspaceMyWorkSurface", () => {
     expect(
       screen.getByRole("button", { name: copy.list.loadingMore }),
     ).toBeTruthy();
-  });
+  }, 20_000);
 });

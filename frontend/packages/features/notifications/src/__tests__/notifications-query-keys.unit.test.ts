@@ -7,7 +7,6 @@ describe("notificationsQueryKeys Q7 purity tests", () => {
     const keys = [
       notificationsQueryKeys.all("acc-1"),
       notificationsQueryKeys.unreadCount("acc-1"),
-      notificationsQueryKeys.preferences("acc-1"),
     ];
 
     for (const key of keys) {
@@ -16,5 +15,12 @@ describe("notificationsQueryKeys Q7 purity tests", () => {
       expect(key[1]).toBe("acc-1");
       expect(key[2]).toBe("notifications");
     }
+  });
+
+  it("keys the preferences by workspace, never by account", () => {
+    const key = notificationsQueryKeys.preferences("ws-1");
+    expect(() => assertNotrelixQueryKey(key)).not.toThrow();
+    expect(key[0]).toBe("workspace");
+    expect(key[1]).toBe("ws-1");
   });
 });

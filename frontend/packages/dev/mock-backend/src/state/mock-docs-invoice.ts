@@ -106,15 +106,17 @@ export const INVOICE_BLOCKS: readonly InvoiceBlock[] = [
   },
 ];
 
-/** Comments, oldest first; the leading "> " line is the anchored text. */
+/** Comments, oldest first; `anchor` is the text of an `INVOICE_BLOCKS` block it points at. */
 export const INVOICE_COMMENTS: ReadonlyArray<{
   readonly userId: string;
   readonly body: string;
   readonly at: string;
+  readonly anchor?: { readonly blockIndex: number; readonly quote: string };
 }> = [
   {
     userId: TRANG,
-    body: "> trong tối đa 2 ngày làm việc\nCuối tháng lượng hoá đơn gấp ba, đề xuất 3 ngày cho tuần cuối tháng.",
+    body: "Cuối tháng lượng hoá đơn gấp ba, đề xuất 3 ngày cho tuần cuối tháng.",
+    anchor: { blockIndex: 4, quote: "trong tối đa 2 ngày làm việc" },
     at: "2026-10-11T03:10:00.000Z",
   },
   {

@@ -99,6 +99,13 @@ export const en = {
     expired: "Expired",
     revoke: "Revoke invitation to {{email}}",
     revoking: "Revoking invitation to {{email}}…",
+    roleOfInvitation: "Role offered in the invitation to {{email}}",
+    resend: "Resend invitation to {{email}}",
+    resending: "Resending invitation to {{email}}…",
+    emailHint:
+      "Invite several people at once: separate the addresses with commas, spaces or new lines.",
+    emailInvalidMany: "Check these addresses: {{emails}}",
+    tooMany: "Invite up to {{max}} people at a time.",
     adminOnly: "Only workspace admins and owners can invite people.",
   },
   error: {
@@ -119,6 +126,13 @@ export const en = {
     inviteFailed: "The invitation to {{email}} wasn't sent.",
     revoked: "The invitation to {{email}} was revoked.",
     revokeFailed: "The invitation to {{email}} wasn't revoked.",
+    invitationRoleChanged: "The invitation to {{email}} now offers {{role}}.",
+    invitationRoleFailed:
+      "The role in the invitation to {{email}} wasn't changed.",
+    resent: "Invitation sent again to {{email}}.",
+    resendFailed: "The invitation to {{email}} wasn't sent again.",
+    invitedMany: "{{count}} invitations sent.",
+    invitedSome: "{{count}} invitations sent. These were not sent: {{emails}}.",
     forbidden: "You don't have permission to do this. Ask a workspace owner.",
     conflict:
       "Someone else changed this just now. The list was refreshed; review it and try again.",
@@ -229,6 +243,13 @@ export const vi: WorkspaceMembersCopy = {
     expired: "Đã hết hạn",
     revoke: "Thu hồi lời mời gửi {{email}}",
     revoking: "Đang thu hồi lời mời gửi {{email}}…",
+    roleOfInvitation: "Vai trò trong lời mời gửi {{email}}",
+    resend: "Gửi lại lời mời tới {{email}}",
+    resending: "Đang gửi lại lời mời tới {{email}}…",
+    emailHint:
+      "Mời nhiều người một lần: ngăn cách các địa chỉ bằng dấu phẩy, dấu cách hoặc xuống dòng.",
+    emailInvalidMany: "Kiểm tra lại các địa chỉ này: {{emails}}",
+    tooMany: "Mỗi lần mời tối đa {{max}} người.",
     adminOnly: "Chỉ quản trị viên và chủ sở hữu mới mời được người khác.",
   },
   error: {
@@ -250,6 +271,13 @@ export const vi: WorkspaceMembersCopy = {
     inviteFailed: "Chưa gửi được lời mời tới {{email}}.",
     revoked: "Đã thu hồi lời mời gửi {{email}}.",
     revokeFailed: "Chưa thu hồi được lời mời gửi {{email}}.",
+    invitationRoleChanged:
+      "Lời mời gửi {{email}} giờ mời với vai trò {{role}}.",
+    invitationRoleFailed: "Chưa đổi được vai trò trong lời mời gửi {{email}}.",
+    resent: "Đã gửi lại lời mời tới {{email}}.",
+    resendFailed: "Chưa gửi lại được lời mời tới {{email}}.",
+    invitedMany: "Đã gửi {{count}} lời mời.",
+    invitedSome: "Đã gửi {{count}} lời mời. Chưa gửi được tới: {{emails}}.",
     forbidden:
       "Bạn không có quyền làm việc này. Hãy nhờ chủ sở hữu không gian làm việc.",
     conflict:

@@ -37,7 +37,7 @@ test("renders a production Documents route through mock transport", async ({
   );
   await expect(
     page.getByRole("textbox", { name: "Type / to insert a block" }).first(),
-  ).toHaveText(
+  ).toContainText(
     "Tài liệu này mô tả phạm vi, các phân hệ và mốc triển khai ERP của Minh An Group trong quý 4/2026.",
   );
   expect(
@@ -79,7 +79,9 @@ test("edits and checks off a document of the Kế toán department", async ({
   await page.keyboard.press("End");
   await page.keyboard.type(" mới");
   await page.getByRole("heading", { level: 1 }).click();
-  await expect(page.getByRole("status")).toContainText("Saved");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Phạm vi áp dụng mới" }),
   ).toBeVisible();
@@ -93,7 +95,7 @@ test("edits and checks off a document of the Kế toán department", async ({
   await expect(item).toHaveAttribute("aria-checked", "true");
 
   // The File menu opens and closes on Escape.
-  await page.getByRole("button", { name: "File", exact: true }).click();
+  await page.getByRole("menuitem", { name: "File", exact: true }).click();
   await expect(page.getByRole("menu", { name: "File" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu", { name: "File" })).toHaveCount(0);

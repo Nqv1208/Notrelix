@@ -10,6 +10,7 @@ import {
 import {
   ChevronDown,
   ChevronUp,
+  CalendarPlus,
   Clock,
   Eye,
   EyeOff,
@@ -40,6 +41,7 @@ import type {
   Board,
   CardDetail,
   FieldDefinition,
+  CardLabel,
   UpdateCardInput,
   UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
@@ -53,10 +55,13 @@ import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import {
   ItemAssigneePopover,
   ItemDuePopover,
+  ItemLabelsPopover,
+  ItemNumberPopover,
   ItemOptionMenu,
   PRIORITY_CLASS,
   STATUS_DOT_CLASS,
   STATUS_LANE_CLASS,
+  customItemFields,
   describeItemStatus,
   findItemFields,
   isItemDone,
@@ -104,6 +109,8 @@ export function TaskDetailHeader({
   onOpenFullPage,
   onDuplicate,
   onArchive,
+  onDelete,
+  onMoveToBoard,
   onMoveToGroup,
   following,
   onToggleFollow,
@@ -121,6 +128,8 @@ export function TaskDetailHeader({
   onOpenFullPage?: (cardId: string) => void;
   onDuplicate: (cardId: string) => void;
   onArchive: (cardId: string) => void;
+  onDelete?: (cardId: string) => void;
+  onMoveToBoard?: (cardId: string) => void;
   onMoveToGroup?: (cardId: string, groupId: string) => void;
   /** Whether the member follows the item; `null`/absent draws no follow chip. */
   following?: boolean | null;
@@ -131,7 +140,10 @@ export function TaskDetailHeader({
   const canMove =
     capabilities.canMoveCard && !!onMoveToGroup && otherGroups.length > 0;
   const hasMenu =
-    capabilities.canCreateCard || capabilities.canDelete || canMove;
+    capabilities.canCreateCard ||
+    capabilities.canDelete ||
+    canMove ||
+    (capabilities.canMoveCard && Boolean(onMoveToBoard));
 
   return (
     <header className="flex h-12.25 shrink-0 items-center gap-1.5 border-b border-line pr-2.5 pl-4.5">
@@ -273,9 +285,22 @@ export function TaskDetailHeader({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             ) : null}
+            {capabilities.canMoveCard && onMoveToBoard ? (
+              <DropdownMenuItem onSelect={() => onMoveToBoard(card.id)}>
+                {copy.head.moveToBoard}
+              </DropdownMenuItem>
+            ) : null}
             {capabilities.canDelete ? (
               <DropdownMenuItem onSelect={() => onArchive(card.id)}>
                 {copy.head.archive}
+              </DropdownMenuItem>
+            ) : null}
+            {capabilities.canDelete && onDelete ? (
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => onDelete(card.id)}
+              >
+                {copy.head.delete}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>
@@ -444,6 +469,9 @@ export function TaskDetailProperties({
   now,
   timeZone,
   onUpdateFieldValue,
+  onUpdateItem,
+  boardLabels,
+  onToggleLabel,
 }: {
   board: Board;
   card: CardDetail;
@@ -452,6 +480,11 @@ export function TaskDetailProperties({
   now: Date;
   timeZone?: string;
   onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  /** Patches the item's own dates; the Start pill is read-only without it. */
+  onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
+  /** The labels the board offers; labels are read-only without them. */
+  boardLabels?: readonly CardLabel[];
+  onToggleLabel?: (labelId: string, on: boolean) => void;
 }) {
   const readOnly = !capabilities.canEditFields;
   const addPropertyReasonId = useId();
@@ -557,7 +590,25 @@ export function TaskDetailProperties({
     </PropertyPill>
   );
 
-  const label = card.labels[0];
+  // Start
+  const startDate = card.startDate ?? null;
+  const start = describeSheetDue(startDate, now, true, copy, timeZone);
+  const startEditable = !readOnly && !!onUpdateItem;
+  const startPill = (props: Partial<PillProps> = {}) => (
+    <PropertyPill
+      {...props}
+      readOnly={!startEditable}
+      srLabel={t.start}
+      className="text-muted-foreground"
+    >
+      <CalendarPlus aria-hidden="true" className="size-3.5 shrink-0" />
+      {start?.text ?? t.noStart}
+    </PropertyPill>
+  );
+
+  const customFields = customItemFields(board);
+  const labelsEditable = !readOnly && !!boardLabels && !!onToggleLabel;
+  const selectedLabelIds = new Set(card.labels.map((entry) => entry.id));
 
   return (
     <div role="group" aria-label={t.group} className="flex flex-wrap gap-1.5">
@@ -596,19 +647,92 @@ export function TaskDetailProperties({
         {priorityPill()}
       </ItemOptionMenu>
 
-      {label ? (
-        <span className={cn(PILL_CLASS, "hover:bg-popover")}>
-          <span className="sr-only">{`${t.labels}: `}</span>
-          <span
-            className={cn(
-              "inline-flex h-5.5 items-center rounded-sm px-2 text-micro font-semibold",
-              ITEM_LABEL_TONE_CLASS[itemLabelTone(label)],
-            )}
+      <ItemDuePopover
+        dueAt={startDate}
+        clearLabel={t.clearStart}
+        readOnly={!startEditable}
+        onChange={(value) => onUpdateItem?.(card.id, { startDate: value })}
+      >
+        {startPill()}
+      </ItemDuePopover>
+
+      {customFields.map((field) => {
+        const raw = card.fieldValues[field.id];
+        if (field.fieldType === "number") {
+          const value = typeof raw === "number" ? raw : null;
+          return (
+            <ItemNumberPopover
+              key={field.id}
+              value={value}
+              label={fillSheetCopy(t.editNumber, { name: field.name })}
+              readOnly={readOnly}
+              onChange={(next) => update(field, next)}
+            >
+              <PropertyPill
+                readOnly={readOnly}
+                srLabel={field.name}
+                className={value === null ? "text-muted-foreground" : undefined}
+              >
+                {value === null
+                  ? field.name
+                  : `${field.name}: ${value}${field.unit ? ` ${field.unit}` : ""}`}
+              </PropertyPill>
+            </ItemNumberPopover>
+          );
+        }
+        const option = field.options.find((entry) => entry.id === raw);
+        return (
+          <ItemOptionMenu
+            key={field.id}
+            field={field}
+            readOnly={readOnly}
+            onSelect={(optionId) => update(field, optionId)}
           >
-            {label.name}
-          </span>
-        </span>
-      ) : null}
+            <PropertyPill
+              readOnly={readOnly}
+              srLabel={field.name}
+              chevron
+              className={option ? undefined : "text-muted-foreground"}
+            >
+              {option ? option.label : field.name}
+            </PropertyPill>
+          </ItemOptionMenu>
+        );
+      })}
+
+      <ItemLabelsPopover
+        labels={boardLabels ?? []}
+        selectedIds={selectedLabelIds}
+        label={t.labels}
+        emptyText={t.boardHasNoLabels}
+        readOnly={!labelsEditable}
+        onToggle={(labelId, on) => onToggleLabel?.(labelId, on)}
+      >
+        <PropertyPill
+          readOnly={!labelsEditable}
+          srLabel={t.labels}
+          chevron
+          className={
+            card.labels.length === 0 ? "text-muted-foreground" : undefined
+          }
+        >
+          {card.labels.length === 0
+            ? labelsEditable
+              ? t.addLabel
+              : t.noLabels
+            : card.labels.map((entry) => (
+                <span
+                  key={entry.id}
+                  className={cn(
+                    "inline-flex h-5.5 items-center rounded-sm px-2 text-micro font-semibold",
+                    ITEM_LABEL_TONE_CLASS[itemLabelTone(entry)],
+                  )}
+                >
+                  {entry.name}
+                </span>
+              ))}
+        </PropertyPill>
+      </ItemLabelsPopover>
 
       {/* Visible for everyone, inert until custom properties exist. */}
       <button

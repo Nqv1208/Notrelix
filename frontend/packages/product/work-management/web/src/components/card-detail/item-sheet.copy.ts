@@ -1,3 +1,5 @@
+import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
+
 /**
  * Item side sheet copy, vi and en, registered as the `item-sheet` catalog
  * (`item-sheet.catalog.ts`). The pure sheet surface takes a `copy` prop;
@@ -8,6 +10,8 @@
 export const en = {
   /** BCP 47 tag the sheet formats times with. */
   locale: "en",
+  /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
+  activityEvents: ACTIVITY_WORDS_EN,
   dialogLabel: "Item details",
   loading: "Loading item details",
   unavailable: {
@@ -27,6 +31,8 @@ export const en = {
     more: "More",
     duplicate: "Duplicate",
     archive: "Archive",
+    delete: "Delete…",
+    moveToBoard: "Move to another board…",
     moveToGroup: "Move to group",
     close: "Close (Esc)",
   },
@@ -46,6 +52,14 @@ export const en = {
     dueOverdue_one: "{{date}} · {{count}} day overdue",
     dueOverdue_other: "{{date}} · {{count}} days overdue",
     clearDue: "Clear due date",
+    start: "Start",
+    noStart: "No start date",
+    clearStart: "Clear start date",
+    noValue: "Not set",
+    editNumber: "Edit {{name}}",
+    noLabels: "No labels",
+    addLabel: "Add label",
+    boardHasNoLabels: "This board has no labels yet.",
     priority: "Priority",
     noPriority: "No priority",
     priorities: {
@@ -61,6 +75,12 @@ export const en = {
   sections: {
     description: "Description",
     descriptionUnavailable: "Description isn't available yet",
+    descriptionEmpty: "No description yet.",
+    descriptionAdd: "Add a description…",
+    descriptionEdit: "Edit description",
+    descriptionSave: "Save",
+    descriptionCancel: "Cancel",
+    descriptionTooLong: "The description is longer than 20,000 characters",
     childItems: "Sub-items",
     childProgress: "{{done}}/{{total}}",
     noChildItems: "No sub-items yet.",
@@ -82,7 +102,6 @@ export const en = {
   composer: {
     placeholder: "Write a comment, type @ to mention someone…",
     label: "Write a comment",
-    shortcut: "⌘↵",
     submit: "Send",
     mention: "Mention someone",
     searchPeople: "Search people…",
@@ -116,6 +135,7 @@ export type ItemSheetCopy = typeof en;
 
 export const vi: ItemSheetCopy = {
   locale: "vi",
+  activityEvents: ACTIVITY_WORDS_VI,
   dialogLabel: "Chi tiết công việc",
   loading: "Đang tải chi tiết công việc",
   unavailable: {
@@ -135,6 +155,8 @@ export const vi: ItemSheetCopy = {
     more: "Thêm",
     duplicate: "Nhân bản",
     archive: "Lưu trữ",
+    delete: "Xoá…",
+    moveToBoard: "Chuyển sang board khác…",
     moveToGroup: "Chuyển nhóm",
     close: "Đóng (Esc)",
   },
@@ -155,6 +177,14 @@ export const vi: ItemSheetCopy = {
     dueOverdue_one: "{{date}} · quá hạn {{count}} ngày",
     dueOverdue_other: "{{date}} · quá hạn {{count}} ngày",
     clearDue: "Xoá hạn",
+    start: "Bắt đầu",
+    noStart: "Chưa có ngày bắt đầu",
+    clearStart: "Xoá ngày bắt đầu",
+    noValue: "Chưa đặt",
+    editNumber: "Sửa {{name}}",
+    noLabels: "Chưa có nhãn",
+    addLabel: "Thêm nhãn",
+    boardHasNoLabels: "Board này chưa có nhãn nào.",
     priority: "Ưu tiên",
     noPriority: "Chưa có ưu tiên",
     priorities: {
@@ -170,6 +200,12 @@ export const vi: ItemSheetCopy = {
   sections: {
     description: "Mô tả",
     descriptionUnavailable: "Mô tả chưa khả dụng",
+    descriptionEmpty: "Chưa có mô tả.",
+    descriptionAdd: "Thêm mô tả…",
+    descriptionEdit: "Sửa mô tả",
+    descriptionSave: "Lưu",
+    descriptionCancel: "Huỷ",
+    descriptionTooLong: "Mô tả dài hơn 20.000 ký tự",
     childItems: "Việc con",
     childProgress: "{{done}}/{{total}}",
     noChildItems: "Chưa có việc con.",
@@ -191,7 +227,6 @@ export const vi: ItemSheetCopy = {
   composer: {
     placeholder: "Viết bình luận, gõ @ để nhắc ai đó…",
     label: "Viết bình luận",
-    shortcut: "⌘↵",
     submit: "Gửi",
     mention: "Nhắc ai đó",
     searchPeople: "Tìm người…",

@@ -19,13 +19,14 @@ DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --
 	db-up db-restore db-restore-force be-restore be-restore-force db-migrate db-seed db-init db-rls db-psql \
 	be-build be-test be-clean-nuget be-shell backend-image-build \
 	staging staging-up staging-down staging-logs prod prod-up prod-down prod-logs \
-	build build-staging ps config-dev docs-generate docs-check ci-validate clean
+	build build-staging ps config-dev docs-generate docs-check ci-validate clean hooks-install
 
 help:
 	@echo "Notrelix — local development"
 	@echo "  make dev-up/dev-down/dev-logs"
 	@echo "  make db-* / be-*"
 	@echo "  make ci-validate"
+	@echo "  make hooks-install   (run scripts/pre-push.sh before every git push)"
 	@echo ""
 	@echo "Staging/production deploy is intentionally unavailable from Make."
 	@echo "Use GitHub Actions: Release Candidate / Promote Staging-Verified Release."
@@ -154,6 +155,19 @@ ci-validate:
 	python3 -m tools.deliveryctl validate
 	python3 -m tools.deliveryctl architecture-check
 	python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
+
+# Installs a pre-push hook shared by this checkout and its worktrees. Each
+# checkout runs its own scripts/pre-push.sh; one that predates it falls back
+# to this checkout's copy.
+hooks-install:
+	@hooks_dir="$$(git rev-parse --git-common-dir)/hooks"; \
+	fallback="$$(pwd)/scripts/pre-push.sh"; \
+	printf '%s\n' '#!/usr/bin/env bash' \
+		'script="$$(git rev-parse --show-toplevel)/scripts/pre-push.sh"' \
+		"[[ -x \"\$$script\" ]] || script=\"$$fallback\"" \
+		'exec "$$script" "$$@"' > "$$hooks_dir/pre-push"; \
+	chmod +x "$$hooks_dir/pre-push" scripts/pre-push.sh; \
+	echo "pre-push hook installed in $$hooks_dir"
 
 clean:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v

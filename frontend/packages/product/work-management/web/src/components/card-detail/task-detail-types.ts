@@ -1,5 +1,7 @@
+import type { ItemPageCopy } from "../item-page/item-page.copy";
 import type {
   CardActivity,
+  CardLabel,
   CardDetailTab,
   CardFile,
   CardUpdate,
@@ -74,6 +76,16 @@ export interface ItemSheetFollower {
   readonly initials: string;
 }
 
+/** An approval asked about the item, with the name of the person asked. */
+export interface ItemSheetApproval {
+  readonly id: string;
+  readonly status: "pending" | "approved" | "rejected" | "cancelled";
+  readonly approverUserId: string | null;
+  readonly approverName: string | null;
+  /** The approver's comment with the decision. */
+  readonly decisionNote?: string | null;
+}
+
 /** Board group offered by "Chuyển nhóm"; the item's own group is excluded. */
 export interface ItemSheetGroup {
   readonly id: string;
@@ -97,16 +109,26 @@ export interface TaskDetailData {
   readonly activity: readonly CardActivity[];
   readonly activityLoading: boolean;
   readonly activityFetching: boolean;
+  /** The history could not be read and there is nothing to show instead. */
+  readonly activityError?: boolean;
   /** Child items when the item detail carries them; the count falls back to `childProgress`. */
   readonly childItems?: readonly ItemSheetChildItem[];
   /** Whether the member follows the item; `null`/absent hides the follow chip. */
   readonly following?: boolean | null;
   /** Everyone who follows the item (the page's stack of faces). */
   readonly followers?: readonly ItemSheetFollower[];
+  /** Approvals asked about the item; absent: the page offers none. */
+  readonly approvals?: readonly ItemSheetApproval[];
+  /** Why the last approval request was refused, when it was. */
+  readonly approvalError?: "alreadyAsked" | "failed" | null;
   /** Links to other items; absent: the page says links are not available. */
   readonly links?: readonly ItemSheetLink[];
   /** Items a new link can point at. */
   readonly linkCandidates?: readonly ItemSheetLinkCandidate[];
+  /** The item page's words for the links section; without it the sheet shows none. */
+  readonly linksCopy?: ItemPageCopy;
+  /** The labels the board offers; absent: labels cannot be edited here. */
+  readonly boardLabels?: readonly CardLabel[];
 }
 
 export interface TaskDetailCallbacks {
@@ -118,6 +140,8 @@ export interface TaskDetailCallbacks {
    */
   readonly onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
   readonly onToggleWatch: (watched: boolean) => void;
+  /** Asks a board member to approve the item; "Request approval" is absent without it. */
+  readonly onRequestApproval?: (approverUserId: string) => void;
   /** Ticks or unticks a child item; the checkboxes stay inert without it. */
   readonly onToggleChildItem?: (childId: string, done: boolean) => void;
   /** Adds a child item with this title; the input stays inert without it. */
@@ -134,7 +158,13 @@ export interface TaskDetailCallbacks {
   readonly onDownloadFile?: (file: CardFile) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
+  /** Asks before deleting the item (it stays restorable for 30 days); absent: no menu entry. */
+  readonly onDelete?: (cardId: string) => void;
+  /** Opens the board picker for moving the item to another board; absent: no menu entry. */
+  readonly onMoveToBoard?: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  /** Puts a board label on the item or takes it off; labels stay read-only without it. */
+  readonly onToggleLabel?: (labelId: string, on: boolean) => void;
   readonly onRefreshActivity: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after

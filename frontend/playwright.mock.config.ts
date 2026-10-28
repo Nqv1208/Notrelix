@@ -1,10 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
+// A set MOCK_E2E_PORT (the pre-push run) gets its own dev server: the default
+// port may hold another checkout's server, which must never answer for this one.
+const PORT = process.env.MOCK_E2E_PORT ?? "5174";
+
 const baseEnv = {
   VITE_API_URL: "http://127.0.0.1:59999",
   VITE_WS_URL: "ws://127.0.0.1:59998",
-  VITE_APP_URL: "http://127.0.0.1:5174",
+  VITE_APP_URL: `http://127.0.0.1:${PORT}`,
   VITE_RELEASE_SHA: "mock-e2e",
   VITE_MOCK_API: "true",
   VITE_MOCK_LATENCY: "instant",
@@ -64,10 +68,10 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "pnpm --filter @notrelix/app-web dev --host 127.0.0.1 --port 5174",
+    command: `pnpm --filter @notrelix/app-web dev --host 127.0.0.1 --port ${PORT}`,
     url: baseEnv.VITE_APP_URL,
     env: serverEnv,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && !process.env.MOCK_E2E_PORT,
     timeout: 120_000,
   },
   // One Chromium project; persona/state controlled via env variables at launch.

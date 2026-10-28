@@ -564,4 +564,55 @@ describe("ERP board in the mock world", () => {
       ).rejects.toBeTruthy();
     });
   });
+
+  it("changes several items of the board in one bulk request, all or nothing", async () => {
+    const { client, store } = clientFor();
+    const api = createCardApi(client);
+    const ids = ["mock-erp-item-142", "mock-erp-item-144"];
+
+    const updated = await api.bulkUpdate(boardId, ids, {
+      type: "set-due-date",
+      dueDate: "2026-11-03T10:00:00.000Z",
+    });
+    expect(updated).toBe(2);
+    for (const id of ids) {
+      expect(store.getCard(id)?.dueAt).toBe("2026-11-03T10:00:00.000Z");
+    }
+
+    await api.bulkUpdate(boardId, ids, { type: "clear-due-date" });
+    for (const id of ids) expect(store.getCard(id)?.dueAt ?? null).toBeNull();
+
+    // An item that is not on the board stops the whole request: nothing is archived.
+    await expect(
+      api.bulkUpdate(boardId, [ids[0]!, "no-such-item"], { type: "archive" }),
+    ).rejects.toBeDefined();
+    expect(store.getCard(ids[0]!)?.isArchived).toBeFalsy();
+
+    await api.bulkUpdate(boardId, ids, { type: "archive" });
+    for (const id of ids) expect(store.getCard(id)?.isArchived).toBe(true);
+  });
+
+  it("sets the priority and deletes several items in one bulk request", async () => {
+    const { client, store } = clientFor();
+    const api = createCardApi(client);
+    const ids = ["mock-erp-item-146", "mock-erp-item-147"];
+
+    await api.bulkUpdate(boardId, ids, {
+      type: "set-priority",
+      priorityOptionId: "mock-erp-priority-urgent",
+    });
+    for (const id of ids) {
+      expect(store.getFieldValues(id)["mock-erp-col-priority"] ?? null).toBe(
+        "mock-erp-priority-urgent",
+      );
+    }
+
+    await expect(
+      api.bulkUpdate(boardId, [ids[0]!, "no-such-item"], { type: "delete" }),
+    ).rejects.toBeDefined();
+    expect(store.getCard(ids[0]!)).toBeDefined();
+
+    await api.bulkUpdate(boardId, ids, { type: "delete" });
+    for (const id of ids) expect(store.getCard(id)).toBeUndefined();
+  });
 });

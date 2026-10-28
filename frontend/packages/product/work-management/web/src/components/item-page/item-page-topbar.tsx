@@ -10,6 +10,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   cn,
 } from "@notrelix/ui-web";
@@ -28,9 +31,6 @@ import {
 } from "./item-page-parts";
 import type { ItemPageNavigation, ItemPageSpace } from "./item-page-types";
 
-const KEY_CLASS =
-  "rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground";
-
 const CRUMB_LINK_CLASS = "hover:text-foreground hover:underline";
 
 /**
@@ -45,6 +45,7 @@ export function ItemPageTopbar({
   capabilities,
   callbacks,
   copy,
+  approvers = [],
 }: {
   board: Board;
   card: CardDetail;
@@ -53,11 +54,21 @@ export function ItemPageTopbar({
   capabilities: TaskDetailCapabilities;
   callbacks: TaskDetailCallbacks;
   copy: ItemPageCopy;
+  /** The people who may be asked to approve the item; no entry in the menu without any. */
+  approvers?: readonly { id: string; label: string }[];
 }) {
   const t = copy.topbar;
   const { position } = navigation;
   const lane = position?.laneName ?? "";
-  const hasMenu = capabilities.canCreateCard || capabilities.canDelete;
+  const canAsk =
+    capabilities.canEditFields &&
+    callbacks.onRequestApproval !== undefined &&
+    approvers.length > 0;
+  const hasMenu =
+    capabilities.canCreateCard ||
+    capabilities.canDelete ||
+    canAsk ||
+    Boolean(callbacks.onMoveToBoard);
 
   return (
     <header className="flex h-13.25 shrink-0 items-center gap-1.5 border-b border-line bg-background pr-4 pl-3 sm:pl-5">
@@ -126,8 +137,6 @@ export function ItemPageTopbar({
             total: position.total,
             lane,
           })}
-          <kbd className={KEY_CLASS}>K</kbd>
-          <kbd className={KEY_CLASS}>J</kbd>
         </span>
       ) : null}
       <StepButton
@@ -198,9 +207,44 @@ export function ItemPageTopbar({
                 {t.duplicate}
               </DropdownMenuItem>
             ) : null}
+            {canAsk ? (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  {copy.approval.request}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent
+                  aria-label={copy.approval.searchLabel}
+                  className="max-h-72 overflow-y-auto"
+                >
+                  {approvers.map((person) => (
+                    <DropdownMenuItem
+                      key={person.id}
+                      onSelect={() => callbacks.onRequestApproval?.(person.id)}
+                    >
+                      {person.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ) : null}
+            {capabilities.canMoveCard && callbacks.onMoveToBoard ? (
+              <DropdownMenuItem
+                onSelect={() => callbacks.onMoveToBoard?.(card.id)}
+              >
+                {t.moveToBoard}
+              </DropdownMenuItem>
+            ) : null}
             {capabilities.canDelete ? (
               <DropdownMenuItem onSelect={() => callbacks.onArchive(card.id)}>
                 {t.archive}
+              </DropdownMenuItem>
+            ) : null}
+            {capabilities.canDelete && callbacks.onDelete ? (
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => callbacks.onDelete?.(card.id)}
+              >
+                {t.delete}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

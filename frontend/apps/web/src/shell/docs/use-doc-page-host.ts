@@ -10,13 +10,17 @@
  */
 import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  CREATABLE_BLOCK_TYPES,
   createUsePageHistory,
   createUsePagePermissions,
+  createUseSharePage,
   type Page,
 } from "@notrelix/docs-state";
 import type {
+  DocBoardEmbed,
   DocPageHost,
   DocPageHostInput,
   DocPerson,
@@ -33,7 +37,10 @@ import {
   markToneFor,
   spaceAncestors,
 } from "@notrelix/features-workspace/core";
-import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
+import {
+  useAppRuntime,
+  useFeatureRuntimeDependencies,
+} from "@notrelix/runtime-web";
 import {
   useFullBoard,
   useWorkManagementServices,
@@ -41,6 +48,7 @@ import {
   wmQueryKeys,
 } from "@notrelix/work-management-state";
 import type { CardDetail } from "@notrelix/work-management-core";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { destinationHref } from "../workspace/workspace-destinations";
 import { useSpaceHooks } from "../workspace/use-workspace-spaces";
 import { useWorkspaceViewer } from "../workspace/use-workspace-viewer";
@@ -108,10 +116,19 @@ function toTaskRef(card: CardDetail, now: Date, href: string): DocTaskRef {
 export const useDocPageHost: UseDocPageHost = (
   input: DocPageHostInput,
 ): DocPageHost => {
-  const { workspaceId, pageId, page, taskIds, boardIds, mentionQuery } = input;
+  const {
+    workspaceId,
+    pageId,
+    page,
+    taskIds,
+    boardIds,
+    mentionQuery,
+    convertBoardId,
+  } = input;
   const navigate = useNavigate();
   const user = useCurrentUser();
   const featureDeps = useFeatureRuntimeDependencies();
+  const runtime = useAppRuntime();
   const services = useWorkManagementServices();
   const spaceHooks = useSpaceHooks();
   const usePageHistory = useMemo(
@@ -123,6 +140,10 @@ export const useDocPageHost: UseDocPageHost = (
     () => createUsePagePermissions(featureDeps.api, featureDeps.endpoints),
     [featureDeps],
   );
+  const useSharePage = useMemo(
+    () => createUseSharePage(featureDeps.api, featureDeps.endpoints),
+    [featureDeps],
+  );
 
   const viewer = useWorkspaceViewer(workspaceId);
   const members = viewer.members;
@@ -130,6 +151,7 @@ export const useDocPageHost: UseDocPageHost = (
   const boards = useWorkspaceBoards(workspaceId);
   const history = usePageHistory(workspaceId, pageId);
   const permissions = usePagePermissions(workspaceId, pageId);
+  const sharePage = useSharePage(workspaceId, pageId);
 
   const now = useMemo(() => new Date(), []);
   const role = viewer.role;
@@ -245,6 +267,77 @@ export const useDocPageHost: UseDocPageHost = (
     // The query arrays are new each render; their signature drives the memo.
   }, [now, taskIds, workspaceId, tasksSignature]);
 
+  // Boards the page embeds: each read with the viewer's own access, so a
+  // board they cannot read shows as unavailable (never as missing).
+  const embedKey = boardIds.join("|");
+  const embedQueries = useQueries({
+    queries: boardIds.map((id) => ({
+      queryKey: wmQueryKeys.fullBoard(workspaceId, id),
+      queryFn: () => services.boards.getFullBoard(id, { workspaceId }),
+      staleTime: 10_000,
+      retry: false,
+    })),
+  });
+  const embedSignature = embedQueries
+    .map((query) => `${query.status}:${query.dataUpdatedAt}`)
+    .join("|");
+  const embeddedBoards = useMemo(() => {
+    const map = new Map<string, DocBoardEmbed>();
+    boardIds.forEach((id, index) => {
+      const query = embedQueries[index];
+      const title = boards.data?.find((entry) => entry.id === id)?.title ?? "";
+      const href = destinationHref(workspaceId, {
+        section: "board",
+        boardId: id,
+      });
+      const counts = { todo: 0, doing: 0, review: 0, done: 0 };
+      if (!query || query.isPending) {
+        map.set(id, {
+          state: "loading",
+          name: title,
+          href,
+          counts,
+          total: 0,
+          tasks: [],
+        });
+        return;
+      }
+      if (query.isError || !query.data) {
+        map.set(id, {
+          state: "unavailable",
+          name: "",
+          counts,
+          total: 0,
+          tasks: [],
+        });
+        return;
+      }
+      const cards = query.data.groups.flatMap((group) => group.cards ?? []);
+      const refs = cards.map((card) =>
+        toTaskRef(card as unknown as CardDetail, now, href),
+      );
+      for (const ref of refs) counts[ref.status] += 1;
+      map.set(id, {
+        state: "ready",
+        name: title || (query.data as { title?: string }).title || "",
+        href,
+        counts,
+        total: refs.length,
+        tasks: refs.slice(0, 5),
+      });
+    });
+    return map;
+    // The query array is new each render; its signature drives the memo.
+  }, [boards.data, embedKey, embedSignature, now, workspaceId]);
+
+  const boardChoices = useMemo(
+    () =>
+      (boards.data ?? [])
+        .filter((candidate) => !candidate.isArchived)
+        .map((candidate) => ({ id: candidate.id, title: candidate.title })),
+    [boards.data],
+  );
+
   // The board of the page's task table (first referenced board).
   const boardId = boardIds[0] ?? null;
   const board = useMemo(() => {
@@ -255,6 +348,34 @@ export const useDocPageHost: UseDocPageHost = (
       href: destinationHref(workspaceId, { section: "board", boardId }),
     };
   }, [boardId, boards.data, workspaceId]);
+
+  // The convert-to-task dialog: boards the viewer may add to, and the chosen
+  // board's groups (read like the board screen reads them).
+  const convertBoards = useMemo(
+    () =>
+      (boards.data ?? [])
+        .filter((candidate) => candidate.canAddItems && !candidate.isArchived)
+        .map((candidate) => ({ id: candidate.id, title: candidate.title })),
+    [boards.data],
+  );
+  const convertBoard = useFullBoard(convertBoardId ?? undefined, workspaceId);
+  const convertGroups = useMemo(
+    () =>
+      convertBoardId === null || convertBoard.isLoading
+        ? null
+        : convertBoard.groups.map((group) => ({
+            id: group.id,
+            name: group.title,
+          })),
+    [convertBoard.groups, convertBoard.isLoading, convertBoardId],
+  );
+  const spaceNameFor = useCallback(
+    (spaceId: string): string | null =>
+      spaceTree.data
+        ? (buildSpaceIndex(spaceTree.data).byId.get(spaceId)?.name ?? null)
+        : null,
+    [spaceTree.data],
+  );
 
   // Mention suggestions come from the board the page already reads.
   const fullBoard = useFullBoard(boardId ?? undefined, workspaceId);
@@ -285,42 +406,95 @@ export const useDocPageHost: UseDocPageHost = (
     [boardId, fullBoard.groups, mentionQuery, now, workspaceId],
   );
 
+  // The people "@" offers: workspace members by name (a Guest does not read the
+  // member list, so a Guest is offered none).
+  const suggestMembers = useCallback(
+    (query: string): readonly DocPerson[] => {
+      const needle = foldName(query);
+      return (members.data ?? [])
+        .filter(
+          (member) => needle === "" || foldName(member.name).includes(needle),
+        )
+        .slice(0, 5)
+        .map((member) => personFor(member.userId));
+    },
+    [members.data, personFor],
+  );
+
+  // Whom the viewer may give access to: the workspace's members who are not on the
+  // page yet, offered to an owner of the workspace (the producer decides each grant).
+  const candidates = useMemo<readonly DocPerson[] | undefined>(() => {
+    if (role !== "owner") return undefined;
+    const granted = new Set(
+      (permissions.data?.members ?? []).map(
+        (entry) => entry.subjectId ?? entry.userId,
+      ),
+    );
+    return (members.data ?? [])
+      .filter(
+        (member) => member.userId !== user?.id && !granted.has(member.userId),
+      )
+      .map((member) => personFor(member.userId));
+  }, [members.data, permissions.data, personFor, role, user?.id]);
+
+  // A page at the workspace root has no department: it is shared at the workspace level.
+  const { workspace } = useWorkspaceContext();
+  const workspaceSpace = useMemo<DocSpaceView>(
+    () => ({
+      id: workspaceId,
+      name: workspace?.name ?? "",
+      mark: initialsFor(workspace?.name ?? ""),
+      tone: markToneFor(workspaceId),
+      visibility: "workspace",
+      department: false,
+    }),
+    [workspace?.name, workspaceId],
+  );
+
   const share = useMemo<DocShareView | null>(() => {
-    if (!space) return null;
+    const shareSpace = space ?? workspaceSpace;
     // Permissions given on the page itself; a page without any lists its creator.
     const given = permissions.data?.members ?? [];
     if (given.length > 0) {
       return {
-        space,
+        space: shareSpace,
         spaceMemberCount: spaceMembers.data ? spaceMembers.data.length : null,
-        members: given.map((entry) => ({
-          id: entry.id,
-          kind: entry.kind,
-          person:
-            entry.kind === "person"
-              ? {
-                  id: entry.userId ?? entry.id,
-                  name: entry.name,
-                  initials: initialsFor(entry.name),
-                  tone: markToneFor(entry.userId ?? entry.id),
-                }
-              : undefined,
-          name: entry.name,
-          detail: entry.detail,
-          outside: entry.outside,
-          creator: entry.creator,
-          fixed: entry.creator,
-          you: entry.userId !== null && entry.userId === user?.id,
-          level: entry.level,
-        })),
+        candidates,
+        members: given.map((entry) => {
+          const personId = entry.subjectId ?? entry.userId ?? entry.id;
+          const person =
+            entry.kind !== "person"
+              ? undefined
+              : entry.name
+                ? {
+                    id: personId,
+                    name: entry.name,
+                    initials: initialsFor(entry.name),
+                    tone: markToneFor(personId),
+                  }
+                : personFor(personId);
+          return {
+            id: entry.id,
+            kind: entry.kind,
+            person,
+            name: person?.name ?? entry.name,
+            detail: entry.detail,
+            outside: entry.outside,
+            creator: entry.creator,
+            fixed: entry.creator,
+            you: entry.userId !== null && entry.userId === user?.id,
+            level: entry.level,
+          };
+        }),
       };
     }
     const created = (history.data ?? []).find(
       (entry) => entry.action === "created",
     );
     return {
-      space,
+      space: shareSpace,
       spaceMemberCount: spaceMembers.data ? spaceMembers.data.length : null,
+      candidates,
       members: created
         ? [
             {
@@ -338,10 +512,12 @@ export const useDocPageHost: UseDocPageHost = (
         : [],
     };
   }, [
+    candidates,
     history.data,
     permissions.data,
     personFor,
     space,
+    workspaceSpace,
     spaceMembers.data,
     user?.id,
   ]);
@@ -352,6 +528,8 @@ export const useDocPageHost: UseDocPageHost = (
     tasks,
     tasksReady,
     board,
+    boards: embeddedBoards,
+    boardChoices,
     suggestTasks,
     share,
     viewerReason:
@@ -359,9 +537,25 @@ export const useDocPageHost: UseDocPageHost = (
         ? "workspace-admin"
         : null,
     viewerId: user?.id,
+    suggestMembers,
+    realtime: runtime.realtime,
     pageHref: (targetId) =>
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
     canEdit: role !== "guest",
+    blockTypes: CREATABLE_BLOCK_TYPES,
+    canConvertTodo: convertBoards.length > 0,
+    convertBoards,
+    convertGroups,
+    spaceNameFor,
+    notify: (message: string) => void toast.warning(message),
+    leaveDoc: () =>
+      void navigate({
+        to: "/workspaces/$workspaceId/home",
+        params: { workspaceId },
+      }),
+    onShareInvite: candidates
+      ? (userId) => sharePage.mutateAsync({ userId, level: "edit" })
+      : undefined,
     now,
     openPage: (targetId) =>
       void navigate({
@@ -370,3 +564,13 @@ export const useDocPageHost: UseDocPageHost = (
       }),
   };
 };
+
+/** Lower case without accents, so "an" finds "Ân". */
+function foldName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/đ/g, "d")
+    .toLowerCase()
+    .trim();
+}

@@ -125,7 +125,7 @@ describe("KanbanCard interactions", () => {
     expect(article.className).not.toContain("z-dropdown");
   });
 
-  it("has no grip, menu, status badge or count indicators", () => {
+  it("has no grip, menu or status badge, and shows only the comment count of the three counters", () => {
     const { article } = renderCard({
       status: "status-working",
       linkedPageId: "page-1",
@@ -136,7 +136,10 @@ describe("KanbanCard interactions", () => {
     ).toBeNull();
     expect(within(article).queryByRole("button", { name: /menu/i })).toBeNull();
     expect(article.querySelector("[data-slot='badge']")).toBeNull();
-    expect(article.textContent).not.toMatch(/bình luận|tệp|tài liệu|3|2/);
+    // Changed on purpose: the card now shows its comment count (3); files,
+    // linked documents and checklist items stay off the card.
+    expect(article.querySelector("[data-comment-count='3']")).not.toBeNull();
+    expect(article.textContent).not.toMatch(/tệp|tài liệu|checklist/i);
   });
 });
 
@@ -147,9 +150,9 @@ describe("KanbanCard top row", () => {
     expect(key.className).toContain("font-mono");
   });
 
-  it("shows a plain-number key from a board without a prefix", () => {
+  it("shows a plain-number key from a board without a prefix as #number", () => {
     const { article } = renderCard({ itemKey: "42" });
-    expect(within(article).getByText("42").className).toContain("font-mono");
+    expect(within(article).getByText("#42").className).toContain("font-mono");
   });
 
   it("renders no key and no label chip when both are missing", () => {
@@ -198,15 +201,18 @@ describe("KanbanCard top row", () => {
     },
   );
 
-  it("shows only the first label and never paints the raw label colour", () => {
+  it("shows up to two labels then a +N chip, and never paints the raw label colour", () => {
     const { article, container } = renderCard({
       labels: [
         labelFixture({ id: "l-1", name: "Dữ liệu", color: "#ff0000" }),
         labelFixture({ id: "l-2", name: "Bảo mật" }),
+        labelFixture({ id: "l-3", name: "Kiểm thử" }),
       ],
     });
     expect(within(article).getByText("Dữ liệu")).toBeTruthy();
-    expect(within(article).queryByText("Bảo mật")).toBeNull();
+    expect(within(article).getByText("Bảo mật")).toBeTruthy();
+    expect(within(article).queryByText("Kiểm thử")).toBeNull();
+    expect(within(article).getByText("+1")).toBeTruthy();
     expect(container.innerHTML).not.toContain("#ff0000");
   });
 });
@@ -466,7 +472,8 @@ describe("KanbanCard assignee", () => {
     const group = within(article).getByRole("group", {
       name: "Assigned to Trần Minh Quân and 3 more",
     });
-    expect(group.textContent).toBe("MQ");
+    // Changed on purpose: two avatars then a +N chip (4 people: MQ, M2, +2).
+    expect(group.textContent).toBe("MQM2+2");
   });
 
   it("shows no assignee for a card without members", () => {

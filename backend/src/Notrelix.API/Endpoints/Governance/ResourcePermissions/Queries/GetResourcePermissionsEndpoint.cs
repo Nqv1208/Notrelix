@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Queries;
@@ -10,7 +11,8 @@ public static class GetResourcePermissionsEndpoint
         group.MapResourceGet("/", HandleAsync)
             .WithName("Governance.ResourcePermissions.Get")
             .WithTags("Governance.ResourcePermissions")
-            .WithSummary("Get permissions for a resource");
+            .WithSummary("Get permissions for a resource")
+            .Produces<List<ResourcePermissionDto>>();
         return group;
     }
 

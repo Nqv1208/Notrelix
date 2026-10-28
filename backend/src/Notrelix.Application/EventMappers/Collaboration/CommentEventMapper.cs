@@ -61,7 +61,8 @@ public sealed class CommentEventMapper :
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.MentionedByUserId,
             CausationId: null,
-            OccurredAt: domainEvent.OccurredAt
+            OccurredAt: domainEvent.OccurredAt,
+            Excerpt: domainEvent.Excerpt
         );
     }
 

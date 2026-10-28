@@ -2,6 +2,9 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
+using Notrelix.Application.Features.Identity.Registration.Ports;
+using Notrelix.Application.Features.Identity.Registration.Services;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
@@ -39,6 +42,9 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly ILogger<CompleteOAuthLoginCommandHandler> _logger;
+    private readonly CredentialScope? _credentialScope;
+    private readonly RegistrationScope? _registrationScope;
+    private readonly IEmailRegistrationProbe? _registrationProbe;
 
     public CompleteOAuthLoginCommandHandler(
         IOAuthStateStore stateStore,
@@ -51,8 +57,14 @@ public sealed class CompleteOAuthLoginCommandHandler
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector,
-        ILogger<CompleteOAuthLoginCommandHandler> logger)
+        ILogger<CompleteOAuthLoginCommandHandler> logger,
+        CredentialScope? credentialScope = null,
+        RegistrationScope? registrationScope = null,
+        IEmailRegistrationProbe? registrationProbe = null)
     {
+        _credentialScope = credentialScope;
+        _registrationScope = registrationScope;
+        _registrationProbe = registrationProbe;
         _stateStore = stateStore;
         _providerClient = providerClient;
         _optionsProvider = optionsProvider;
@@ -115,6 +127,10 @@ public sealed class CompleteOAuthLoginCommandHandler
 
         var now = _dateTimeProvider.UtcNow;
 
+        // The credential scope is bound to the user this provider identity is linked to (nobody when unlinked).
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByOAuthIdentityAsync(profile.Provider.ToString(), profile.Subject, cancellationToken);
+
         var existingAccount = await _identityContext.OAuthAccounts
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Provider == profile.Provider && a.ProviderId == profile.Subject,
@@ -133,15 +149,17 @@ public sealed class CompleteOAuthLoginCommandHandler
         }
 
         var normalizedEmail = profile.Email.Trim().ToLowerInvariant();
-        var existingUser = await _identityContext.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
+        var emailTaken = _registrationProbe is not null
+            ? await _registrationProbe.IsRegisteredAsync(normalizedEmail, cancellationToken)
+            : await _identityContext.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
 
-        if (existingUser is not null)
+        if (emailTaken)
         {
             _logger.LogWarning(
-                "OAuth login blocked: subject {Subject} unlinked but email {Email} already belongs to user {UserId}",
-                profile.Subject, normalizedEmail, existingUser.Id);
+                "OAuth login blocked: subject {Subject} unlinked but its email already belongs to an account",
+                profile.Subject);
             return Result<AuthResult>.Failure(
                 "An account with this email already exists. Sign in with your existing method, or link this provider from your signed-in account.");
         }
@@ -201,6 +219,8 @@ public sealed class CompleteOAuthLoginCommandHandler
         var sentinelHash = _passwordHasher.HashPassword("OAUTH_ONLY_" + Guid.CreateVersion7().ToString("N"));
 
         var user = User.Create(email, displayName, sentinelHash, now, hasPasswordCredential: false);
+        if (_registrationScope is not null)
+            await _registrationScope.EnterAsync(user.Id, cancellationToken);
         _identityContext.Users.Add(user);
 
         var accountName = $"{displayName}'s Account";

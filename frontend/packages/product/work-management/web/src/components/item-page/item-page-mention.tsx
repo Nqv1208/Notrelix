@@ -1,4 +1,3 @@
-import { AlertTriangle } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { personInitials } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
@@ -35,8 +34,6 @@ export interface MentionCandidate {
   /** Who is notified when this is picked. */
   readonly userIds: readonly string[];
   readonly note: string | null;
-  /** Shown under the name when the mention would not reach anyone. */
-  readonly warning: string | null;
 }
 
 const MAX_CANDIDATES = 6;
@@ -52,23 +49,23 @@ export function mentionCandidates(
   const needle = foldForSearch(token.query);
   const matches = (name: string) =>
     !needle || foldForSearch(name).includes(needle);
+  // Only people who can view the board are offered: a mention of anyone else would not
+  // notify them, so the list never suggests them.
   const persons = people.people
-    .filter((person) => person.userId !== viewerUserId && matches(person.name))
+    .filter(
+      (person) =>
+        person.onBoard &&
+        person.userId !== viewerUserId &&
+        matches(person.name),
+    )
     .map((person): MentionCandidate => {
       const level = person.level ? t.mentionLevels[person.level] : null;
       return {
         key: person.userId,
         kind: "person",
         name: person.name,
-        userIds: person.onBoard ? [person.userId] : [],
-        note: person.onBoard
-          ? [person.department, level].filter(Boolean).join(" · ") || null
-          : person.department,
-        warning: person.onBoard
-          ? null
-          : fillSheetCopy(t.mentionNoAccess, {
-              name: person.name.split(" ").at(-1) ?? person.name,
-            }),
+        userIds: [person.userId],
+        note: [person.department, level].filter(Boolean).join(" · ") || null,
       };
     });
   const teams = (people.teams ?? [])
@@ -85,12 +82,8 @@ export function mentionCandidates(
               count: team.memberCount,
               viewable: team.viewableCount,
             }),
-      warning: null,
     }));
-  // Who the item reaches first, teams between, who it cannot reach last.
-  const reached = persons.filter((candidate) => !candidate.warning);
-  const unreached = persons.filter((candidate) => candidate.warning);
-  return [...reached, ...teams, ...unreached].slice(0, MAX_CANDIDATES);
+  return [...persons, ...teams].slice(0, MAX_CANDIDATES);
 }
 
 function Matched({ text, query }: { text: string; query: string }) {
@@ -163,7 +156,6 @@ export function MentionList({
               candidate.kind === "team"
                 ? "bg-work-status-doing-lane text-work-status-doing-text"
                 : identityMarkClass(candidate.key),
-              candidate.warning && "opacity-60",
             )}
           >
             {personInitials(candidate.name)}
@@ -175,15 +167,6 @@ export function MentionList({
             {candidate.note ? (
               <span className="block text-item-note leading-snug text-meta-foreground">
                 {candidate.note}
-              </span>
-            ) : null}
-            {candidate.warning ? (
-              <span className="mt-0.5 flex items-start gap-1 text-item-note leading-snug text-warning-text">
-                <AlertTriangle
-                  aria-hidden="true"
-                  className="mt-0.5 size-3 shrink-0"
-                />
-                {candidate.warning}
               </span>
             ) : null}
           </span>

@@ -38,7 +38,7 @@ public sealed class WorkspaceInvitationSecretTelemetryTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -57,7 +57,7 @@ public sealed class WorkspaceInvitationSecretTelemetryTests : IAsyncLifetime
         var workspace = Workspace.Create(accountId, actorId, "Invite Workspace", slug, now);
         var workspaceId = workspace.Id;
 
-        await using (var seed = _db.CreateContext(SystemTenant()))
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.Users.Add(user);
             seed.Accounts.Add(account);
@@ -81,7 +81,7 @@ public sealed class WorkspaceInvitationSecretTelemetryTests : IAsyncLifetime
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(now);
 
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var handler = new InviteMemberCommandHandler(
             context,
             new ActorLookupService(context),

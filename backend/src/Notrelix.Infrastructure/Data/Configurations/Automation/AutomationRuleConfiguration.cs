@@ -13,6 +13,8 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
 
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
+        builder.Property(x => x.BoardId).HasColumnName("board_id");
+        builder.Property(x => x.ConfigurationVersion).HasColumnName("configuration_version").HasDefaultValue(1).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
@@ -25,6 +27,8 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         {
             cfg.OwnsOne(c => c.Trigger);
             cfg.OwnsOne(c => c.Action);
+            cfg.OwnsMany(c => c.MoreActions);
+            cfg.Ignore(c => c.Actions);
             cfg.OwnsOne(c => c.Condition);
             cfg.ToJson("configuration");
         });
@@ -39,6 +43,7 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_automation_rules_workspace_id");
+        builder.HasIndex(x => new { x.WorkspaceId, x.BoardId }).HasDatabaseName("idx_automation_rules_workspace_board");
         builder.HasIndex(x => new { x.WorkspaceId, x.ExecutorUserId }).HasDatabaseName("idx_automation_rules_workspace_executor");
     }
 }

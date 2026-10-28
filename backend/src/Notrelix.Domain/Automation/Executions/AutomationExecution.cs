@@ -71,6 +71,12 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     /// <summary>Recursion depth: 0 for a fact not caused by Automation, parent depth + 1 otherwise.</summary>
     public int ChainDepth { get; private set; }
 
+    /// <summary>The version of the rule this execution started on; it finishes on that version.</summary>
+    public long? RuleVersion { get; private set; }
+
+    /// <summary>The rule's configuration as it was when this execution started (Application-owned JSON).</summary>
+    public string? ConfigurationSnapshot { get; private set; }
+
     private readonly List<AutomationExecutionStep> _steps = new();
     public IReadOnlyCollection<AutomationExecutionStep> Steps => _steps.AsReadOnly();
 
@@ -83,7 +89,9 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Guid triggerId,
         DateTimeOffset startedAt,
         Guid? causationExecutionId = null,
-        int chainDepth = 0)
+        int chainDepth = 0,
+        long? ruleVersion = null,
+        string? configurationSnapshot = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -102,12 +110,21 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             StartedAt = startedAt,
             AttemptCount = 0,
             CausationExecutionId = causationExecutionId,
-            ChainDepth = chainDepth
+            ChainDepth = chainDepth,
+            RuleVersion = ruleVersion,
+            ConfigurationSnapshot = configurationSnapshot
         };
 
         execution.SetAuditOnCreate(null, startedAt);
         execution.RaiseDomainEvent(new AutomationExecutionQueuedDomainEvent(accountId, workspaceId, execution.Id, ruleId, startedAt));
         return execution;
+    }
+
+    /// <summary>Records which actions have run and how (Application-owned JSON), so a redelivery resumes after them.</summary>
+    public void RecordProgress(string progress)
+    {
+        LastResponse = progress;
+        IncrementVersion();
     }
 
     public void SetPayload(string payload)

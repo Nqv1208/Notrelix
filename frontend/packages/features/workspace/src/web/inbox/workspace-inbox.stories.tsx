@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   inboxAllScenario,
   inboxDefaultScenario,
+  inboxDoneScenario,
   inboxEdgeDataScenario,
   inboxEmptyScenario,
   inboxErrorScenario,
@@ -84,5 +85,11 @@ export const InboxHighDensity: Story = {
 /** What the host fills today: titles and messages, no type, person or context. */
 export const InboxProducedOnly: Story = {
   render: () => renderInbox(inboxProducedOnlyScenario()),
+  tags: ["fui-surface--workspace.inbox", "fui-state--EdgeData"],
+};
+
+/** The Done filter on: finished notifications, each can go back to the inbox. */
+export const InboxDone: Story = {
+  render: () => renderInbox(inboxDoneScenario()),
   tags: ["fui-surface--workspace.inbox", "fui-state--EdgeData"],
 };

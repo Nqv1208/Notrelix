@@ -55,6 +55,13 @@ public class TimeTrackingEntry : AggregateRoot, IWorkspaceScoped
         return entry;
     }
 
+    /// <summary>The entry follows its Item to the board the Item moved to.</summary>
+    public void FollowItemToBoard(Guid boardId)
+    {
+        Guard.NotEmpty(boardId);
+        BoardId = boardId;
+    }
+
     public void Stop(DateTimeOffset endedAt, Guid stoppedBy)
     {
         Guard.NotEmpty(stoppedBy);

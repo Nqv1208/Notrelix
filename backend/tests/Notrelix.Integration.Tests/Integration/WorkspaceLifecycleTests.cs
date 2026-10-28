@@ -20,7 +20,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -31,7 +31,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
@@ -56,7 +56,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -79,7 +79,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
+        await using var context = _db.CreateOwnerContext(tenant);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 

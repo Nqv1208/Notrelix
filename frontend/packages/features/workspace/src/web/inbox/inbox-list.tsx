@@ -476,10 +476,13 @@ export function InboxToolbar({
   copy,
   unreadOnly,
   onToggleUnread,
+  done,
 }: {
   copy: WorkspaceInboxCopy;
   unreadOnly: boolean;
   onToggleUnread: () => void;
+  /** The Done filter; `null` or omitted draws no such toggle. */
+  done?: { active: boolean; onToggle: () => void } | null;
 }) {
   return (
     <div
@@ -500,6 +503,22 @@ export function InboxToolbar({
       >
         {copy.unreadOnly}
       </button>
+      {done ? (
+        <button
+          data-f="tog-done"
+          type="button"
+          aria-pressed={done.active}
+          onClick={done.onToggle}
+          className={cn(
+            "box-border inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border px-[9px] text-crumb leading-[1.45] outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+            done.active
+              ? "border-transparent bg-state-selected font-semibold text-state-selected-foreground"
+              : "border-line-strong bg-popover font-medium text-muted-foreground dark:bg-card",
+          )}
+        >
+          {copy.doneFilter}
+        </button>
+      ) : null}
       <span className="flex-1" />
       <span className="text-xs leading-[1.45] text-meta-foreground">
         {copy.grouped}

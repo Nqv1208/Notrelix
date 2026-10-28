@@ -1,12 +1,15 @@
-import type {
-  Block,
-  BlockType,
-  PageActivity,
-  PageComment,
+import {
+  exportHtml,
+  exportMarkdown,
+  type Block,
+  type BlockType,
+  type PageVersion,
+  type PageComment,
 } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
   DocBlockView,
+  DocBoardEmbed,
   DocCommentView,
   DocPerson,
   DocTaskResolution,
@@ -17,6 +20,7 @@ import {
   diffSegments,
   markQuotes,
   parseSegments,
+  runsToSegments,
   taskIdsOf,
 } from "./doc-page-text";
 import type { DocToolbarCurrent } from "./doc-toolbar-surface";
@@ -100,6 +104,14 @@ export interface BlockMappingContext {
   readonly board: { readonly name: string; readonly href?: string } | null;
   /** Quotes of the comments to mark in text (comments tab only). */
   readonly quotes: readonly string[];
+  /** The pages the viewer can read, for page references; omitted reads none. */
+  readonly pages?: ReadonlyMap<
+    string,
+    { readonly title: string; readonly icon: string | null }
+  >;
+  readonly pageHref?: (pageId: string) => string;
+  /** The boards board references show, by id. */
+  readonly boards?: ReadonlyMap<string, DocBoardEmbed>;
 }
 
 /** Stored blocks to the view model the article renders. */
@@ -108,6 +120,20 @@ export function toBlockViews(
   context: BlockMappingContext,
 ): DocBlockView[] {
   const sorted = [...blocks].sort((a, b) => a.position - b.position);
+  const headings = sorted.flatMap((block) => {
+    const level =
+      block.type === "heading_1"
+        ? 1
+        : block.type === "heading_2"
+          ? 2
+          : block.type === "heading_3"
+            ? 3
+            : 0;
+    const text = blockText(block).trim();
+    return level && text
+      ? [{ id: block.id, level: level as 1 | 2 | 3, text }]
+      : [];
+  });
   return sorted.map((block): DocBlockView => {
     const text = blockText(block);
     const props = block.properties;
@@ -119,7 +145,12 @@ export function toBlockViews(
       align: props.align,
     };
     const segments = () =>
-      markQuotes(parseSegments(text, context.resolveTask), context.quotes);
+      markQuotes(
+        block.content
+          ? runsToSegments(block.content.runs, context.resolveTask)
+          : parseSegments(text, context.resolveTask),
+        context.quotes,
+      );
     switch (block.type) {
       case "heading_1":
         return { id: block.id, kind: "heading", level: 1, text, format };
@@ -165,15 +196,42 @@ export function toBlockViews(
         return { id: block.id, kind: "code", text };
       case "divider":
         return { id: block.id, kind: "divider" };
-      case "board_reference":
+      case "table_of_contents":
+        return { id: block.id, kind: "tableOfContents", entries: headings };
+      case "page_reference": {
+        const pageId = props.linkedPageId ?? null;
+        const target = pageId ? context.pages?.get(pageId) : undefined;
+        return {
+          id: block.id,
+          kind: "pageReference",
+          pageId,
+          title: target?.title ?? null,
+          icon: target?.icon ?? null,
+          ...(pageId && target && context.pageHref
+            ? { href: context.pageHref(pageId) }
+            : {}),
+          unavailable: Boolean(pageId) && !target,
+        };
+      }
+      case "board_reference": {
+        const boardId = props.linkedBoardId ?? null;
+        const embed = boardId ? context.boards?.get(boardId) : undefined;
         return {
           id: block.id,
           kind: "liveTable",
-          boardName: context.board?.name ?? props.title ?? "",
+          boardId,
+          state: !boardId ? "unset" : (embed?.state ?? "loading"),
+          boardName: embed?.name || context.board?.name || props.title || "",
           filterLabel: props.caption ?? "",
-          boardHref: context.board?.href,
-          tasks: (props.items ?? []).map(context.resolveTask),
+          boardHref: embed?.href ?? context.board?.href,
+          ...(embed && embed.state === "ready"
+            ? { counts: embed.counts, total: embed.total }
+            : {}),
+          tasks: embed
+            ? embed.tasks
+            : (props.items ?? []).map(context.resolveTask),
         };
+      }
       default:
         return {
           id: block.id,
@@ -227,17 +285,25 @@ export function toCommentViews(
   copy: DocPageCopy,
   now: Date,
   personFor: (userId: string) => DocPerson,
+  viewerId?: string,
 ): DocCommentView[] {
   return [...comments]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map((comment) => {
-      const { quote, text } = splitQuote(comment.body);
+      // A stored anchor wins; a "> quote" body is the older way to say it.
+      const { quote: legacyQuote, text } = comment.anchor
+        ? { quote: null, text: comment.body.trim() }
+        : splitQuote(comment.body);
+      const quote = comment.anchor?.quote ?? legacyQuote;
       const date = new Date(comment.createdAt);
       const day = relativeDay(date, now);
       return {
         id: comment.id,
         author: personFor(comment.authorId),
         quote,
+        ...(comment.anchor ? { anchored: true } : {}),
+        ...(comment.resolved ? { resolved: true } : {}),
+        ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
         body: text,
         when:
           day === "today"
@@ -251,20 +317,20 @@ export function toCommentViews(
 
 /** Version entries from the page's history, newest first; the first is current. */
 export function toVersionViews(
-  history: readonly PageActivity[],
+  versions: readonly PageVersion[],
   copy: DocPageCopy,
   now: Date,
   personFor: (userId: string) => DocPerson,
 ): DocVersionView[] {
-  return [...history]
+  return [...versions]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((entry, index) => {
+    .map((entry) => {
       const date = new Date(entry.createdAt);
       const day = relativeDay(date, now);
-      const action = copy.versions.actions[entry.action];
       return {
         id: entry.id,
-        author: personFor(entry.actorId),
+        kind: entry.kind,
+        author: personFor(entry.createdBy ?? ""),
         time: clock(date),
         day:
           day === "today"
@@ -273,9 +339,9 @@ export function toVersionViews(
               ? copy.versions.yesterday
               : dayMonth(date),
         stamp: `${dayMonth(date)} ${clock(date)}`,
-        summary: entry.targetLabel || action,
-        ...(entry.versionName ? { name: entry.versionName } : {}),
-        current: index === 0,
+        // Only a version a person named carries that name; the others read by kind.
+        summary: copy.versions.kinds[entry.kind],
+        ...(entry.kind === "named" && entry.name ? { name: entry.name } : {}),
       };
     });
 }
@@ -317,76 +383,48 @@ export function toolbarCurrent(block: Block | null): DocToolbarCurrent {
   };
 }
 
+/** The text of a task a page names: its key and title, nothing when the viewer cannot read it. */
+function taskLabel(task: DocTaskResolution): string {
+  return "restricted" in task ? "" : `${task.key} ${task.title}`;
+}
+
+const TASK_TOKEN = /\[\[task:([^\]]+)\]\]/g;
+
+/** What a download writes for the page: the core export with the page's task references resolved. */
+function exportOptions(resolveTask: (taskId: string) => DocTaskResolution) {
+  return {
+    mapText: (text: string) =>
+      text.replace(TASK_TOKEN, (_match, id: string) =>
+        taskLabel(resolveTask(id)),
+      ),
+    boardReferenceLines: (block: Block) =>
+      (block.properties.items ?? [])
+        .map((id) => taskLabel(resolveTask(id)))
+        .filter((label) => label !== "")
+        .map((label) => `- ${label}`),
+  };
+}
+
 /** Markdown of the page for the download action. */
 export function toMarkdown(
   title: string,
   blocks: readonly Block[],
   resolveTask: (taskId: string) => DocTaskResolution,
 ): string {
-  const lines: string[] = [`# ${title}`, ""];
-  let number = 0;
-  const text = (block: Block) =>
-    parseSegments(blockText(block), resolveTask)
-      .map((segment) =>
-        segment.kind === "task"
-          ? "restricted" in segment.task
-            ? ""
-            : `${segment.task.key} ${segment.task.title}`
-          : segment.kind === "del"
-            ? ""
-            : segment.text,
-      )
-      .join("");
-  for (const block of [...blocks].sort((a, b) => a.position - b.position)) {
-    if (block.type !== "numbered_list") number = 0;
-    switch (block.type) {
-      case "heading_1":
-        lines.push(`## ${blockText(block)}`, "");
-        break;
-      case "heading_2":
-        lines.push(`## ${blockText(block)}`, "");
-        break;
-      case "heading_3":
-        lines.push(`### ${blockText(block)}`, "");
-        break;
-      case "numbered_list":
-        number += 1;
-        lines.push(`${number}. ${text(block)}`);
-        break;
-      case "bulleted_list":
-        lines.push(`- ${text(block)}`);
-        break;
-      case "todo":
-        lines.push(
-          `- [${block.properties.checked ? "x" : " "}] ${blockText(block)}`,
-        );
-        break;
-      case "quote":
-      case "callout":
-        lines.push(`> ${text(block)}`, "");
-        break;
-      case "code":
-        lines.push("```", blockText(block), "```", "");
-        break;
-      case "divider":
-        lines.push("---", "");
-        break;
-      case "board_reference":
-        for (const id of block.properties.items ?? []) {
-          const task = resolveTask(id);
-          if (!("restricted" in task))
-            lines.push(`- ${task.key} ${task.title}`);
-        }
-        lines.push("");
-        break;
-      default:
-        lines.push(text(block), "");
-    }
-  }
-  return `${lines
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()}\n`;
+  return exportMarkdown(title, blocks, exportOptions(resolveTask));
+}
+
+/** One self-contained, sanitised HTML document of the page for the download action. */
+export function toHtml(
+  title: string,
+  blocks: readonly Block[],
+  resolveTask: (taskId: string) => DocTaskResolution,
+  lang: string,
+): string {
+  return exportHtml(title, blocks, {
+    lang,
+    mapText: exportOptions(resolveTask).mapText,
+  });
 }
 
 /** The position that puts a new block right after `after` (or at the end). */

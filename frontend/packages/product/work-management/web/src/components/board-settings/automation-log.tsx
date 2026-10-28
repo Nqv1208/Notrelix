@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, CircleAlert, RotateCw } from "lucide-react";
-import { Skeleton, cn } from "@notrelix/ui-web";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+  cn,
+} from "@notrelix/ui-web";
 import type {
   AutomationRunDto,
   AutomationRunsDto,
@@ -13,6 +21,9 @@ import { PersonDot, StatusTag } from "./automation-parts";
 import { RunSheet } from "./automation-run-sheet";
 import { dayLabel, ItemKey, WithKey } from "./automation-log-parts";
 import { timeOf } from "./automation-format";
+
+/** Radix items cannot carry an empty value, so "all rules" is a sentinel. */
+const ALL_RULES = "__all__";
 
 /** The run log of the board's automations (mockup `.logw`) and one run's sheet. */
 
@@ -160,19 +171,28 @@ export function AutomationLog({
               <label className="sr-only" htmlFor="lg-rule">
                 {t.ruleFilter}
               </label>
-              <select
-                id="lg-rule"
-                value={ruleId}
-                onChange={(event) => setRuleId(event.target.value)}
-                className="mb-[5px] box-border h-[30px] w-[210px] rounded-[7px] border border-line-strong bg-popover px-2.5 text-item-small text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              <Select
+                value={ruleId === "" ? ALL_RULES : ruleId}
+                onValueChange={(value) =>
+                  setRuleId(value === ALL_RULES ? "" : value)
+                }
               >
-                <option value="">{t.allRules}</option>
-                {data.rules.map((rule) => (
-                  <option key={rule.id} value={rule.id}>
-                    {rule.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="lg-rule"
+                  size="sm"
+                  className="mb-[5px] w-[210px]"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_RULES}>{t.allRules}</SelectItem>
+                  {data.rules.map((rule) => (
+                    <SelectItem key={rule.id} value={rule.id}>
+                      {rule.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div

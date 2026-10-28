@@ -57,7 +57,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
         _aliceSession = aliceSession.Id;
         _bobSession = bobSession.Id;
 
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         context.Users.AddRange(_alice, _bob);
         context.Sessions.AddRange(aliceSession, aliceOther, bobSession);
         await context.SaveChangesAsync();
@@ -109,7 +109,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
     private async Task<Result<StepUpProofResult>> StepUpPasswordAsync(User user, string password)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         return await StepUp(context, CreateThrottle())
             .CompletePasswordAsync(user.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, password, CancellationToken.None);
     }
@@ -155,7 +155,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task StepUpMfa_AfterMaxBadAttempts_IsLocked_WithoutLockingPasswordReverificationOrSignIn()
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var service = StepUp(context, CreateThrottle());
 
         for (var i = 0; i < AccountMax; i++)
@@ -174,7 +174,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
     private async Task<Result> ChangePasswordAsync(User user, string current)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var throttle = CreateThrottle();
         var handler = new ChangePasswordCommandHandler(
             context, new FakeCurrentRequestContext().AsUser(user.Id), Hasher().Object, Mock.Of<IJwtBlacklistService>(),
@@ -195,7 +195,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
         var locked = await ChangePasswordAsync(_alice, GoodPassword);
 
         Code(locked).Should().Be(LoginThrottleErrors.Code);
-        await using var verify = _fixture.CreatePostgresContext();
+        await using var verify = _fixture.CreatePostgresOwnerContext();
         (await verify.Users.SingleAsync(u => u.Id == _alice.Id)).PasswordHash.Should().Be("alice-hash");
         (await verify.UserSecuritySettings.CountAsync()).Should().Be(0);
     }
@@ -212,7 +212,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
     private async Task<Result<AccountSecuritySummaryDto>> SummaryAsync(User user)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var handler = new GetAccountSecuritySummaryQueryHandler(
             context, new FakeCurrentRequestContext().AsUser(user.Id), Clock().Object);
         return await handler.Handle(new GetAccountSecuritySummaryQuery(), CancellationToken.None);
@@ -239,7 +239,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
     private async Task<Result> RevokeAsync(User actor, Guid sessionId, Guid? currentSessionId = null)
     {
-        await using var context = _fixture.CreatePostgresContext();
+        await using var context = _fixture.CreatePostgresOwnerContext();
         var current = new FakeCurrentRequestContext().AsUser(actor.Id);
         current.SessionId = currentSessionId;
         var handler = new RevokeSessionCommandHandler(
@@ -256,7 +256,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
         result.Succeeded.Should().BeFalse();
         result.TypedErrors.Single().Type.Should().Be(ApplicationErrorType.NotFound);
-        await using var verify = _fixture.CreatePostgresContext();
+        await using var verify = _fixture.CreatePostgresOwnerContext();
         (await verify.Sessions.SingleAsync(s => s.Id == _bobSession)).Status.Should().Be(SessionStatus.Active);
     }
 
@@ -273,13 +273,13 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task RevokeSession_OfOwnOtherSession_RevokesItAndKeepsTheCurrentOne()
     {
-        await using (var seed = _fixture.CreatePostgresContext())
+        await using (var seed = _fixture.CreatePostgresOwnerContext())
         {
             var other = await seed.Sessions.Where(s => s.UserId == _alice.Id && s.Id != _aliceSession).SingleAsync();
             (await RevokeAsync(_alice, other.Id, currentSessionId: _aliceSession)).Succeeded.Should().BeTrue();
         }
 
-        await using var verify = _fixture.CreatePostgresContext();
+        await using var verify = _fixture.CreatePostgresOwnerContext();
         (await verify.Sessions.SingleAsync(s => s.Id == _aliceSession)).Status.Should().Be(SessionStatus.Active);
         (await verify.Sessions.CountAsync(s => s.UserId == _alice.Id && s.Status == SessionStatus.Revoked)).Should().Be(1);
         (await SummaryAsync(_alice)).Data!.ActiveSessionCount.Should().Be(1);

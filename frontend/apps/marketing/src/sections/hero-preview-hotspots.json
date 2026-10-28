@@ -1,0 +1,26 @@
+{
+  "table": {
+    "left": 19.444,
+    "top": 8.158,
+    "width": 5.864,
+    "height": 4
+  },
+  "kanban": {
+    "left": 25.417,
+    "top": 8.158,
+    "width": 6.828,
+    "height": 4
+  },
+  "calendar": {
+    "left": 32.338,
+    "top": 8.158,
+    "width": 7.601,
+    "height": 4
+  },
+  "timeline": {
+    "left": 40.033,
+    "top": 8.158,
+    "width": 7.217,
+    "height": 4
+  }
+}

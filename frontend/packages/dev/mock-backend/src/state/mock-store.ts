@@ -28,6 +28,7 @@ import type {
   MockChecklistRecord,
   MockChecklistItemRecord,
   MockAttachmentRecord,
+  MockPageAttachmentRecord,
   MockCommentRecord,
   MockItemLinkRecord,
   MockUserPreferencesRecord,
@@ -49,6 +50,7 @@ import {
   erpSettingsRegistry,
 } from "./mock-board-settings";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
+import { MockDocsHistoryState } from "./mock-docs-history";
 import { MockWorkFeedState } from "./mock-work-feed";
 import {
   defaultStatusOptions,
@@ -114,10 +116,15 @@ import { MockAccountPages } from "./mock-account-pages";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
-import { MockBoardAutomations } from "./mock-board-automations";
+import { MockWorkspaceAutomations } from "./mock-workspace-automations";
+import {
+  ERP_AUTOMATION_EXECUTIONS,
+  ERP_AUTOMATION_RULES,
+} from "./mock-erp-automations";
 import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
+import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -164,6 +171,8 @@ export interface MockWorkspaceSettingsRecord {
   allowGuestInvites: boolean;
   defaultMemberRole: "Admin" | "Member" | "Guest";
   invitationExpiryDays: number;
+  timeZone: string;
+  weekStart: "monday" | "sunday";
 }
 
 /** Mirrors the producer's member-rule outcomes (WSP-008). */
@@ -193,6 +202,16 @@ export interface MockActivityRecord {
   notified?: string;
   detail?: ErpHistoryDetail;
   compact?: ErpHistoryCompact;
+  /** The stable type and language-neutral change the real history read carries. */
+  type?: string;
+  change?: {
+    fieldName?: string;
+    from?: string;
+    to?: string;
+    personId?: string;
+    personName?: string;
+    itemKey?: string;
+  };
 }
 
 /** A board's plan read (gap `CTR-GAP-WM-PLAN-ITEMS`). */
@@ -223,8 +242,8 @@ export class MockStore {
   readonly reports = new MockReports();
   readonly billing = new MockBilling();
   readonly integrations = new MockIntegrations();
-  /** Automation rules, drafts and run log of a board (gap `CTR-GAP-WM-BOARD-AUTOMATIONS`). */
-  readonly automations = new MockBoardAutomations(this);
+  /** The automation rules of each workspace. */
+  readonly workspaceAutomations = new MockWorkspaceAutomations();
   // Primary Maps
   private usersById = new Map<string, MockUserRecord>();
   private workspacesById = new Map<string, MockWorkspaceRecord>();
@@ -235,6 +254,11 @@ export class MockStore {
   readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
   private cardsById = new Map<string, MockCardRecord>();
+  /** Soft-deleted cards (the 30 day trash); the mock keeps the card row only. */
+  private trashedCardsById = new Map<
+    string,
+    { card: MockCardRecord; deletedAt: string; deletedBy: string }
+  >();
   private notificationsById = new Map<string, MockNotificationRecord>();
   private pagesById = new Map<string, MockPageRecord>();
   private boardViewsByBoardId = new Map<string, MockBoardViewRecord>();
@@ -284,6 +308,10 @@ export class MockStore {
   private attachmentsByCardId = new Map<string, MockAttachmentRecord[]>();
   /** Stored results of file uploads by Idempotency-Key (a replay adds no second file). */
   private uploadsByIdempotencyKey = new Map<string, MockAttachmentRecord>();
+  /** Files attached to a Documents page, by page (the bytes are kept). */
+  private attachmentsByPageId = new Map<string, MockPageAttachmentRecord[]>();
+  /** Stored results of page file uploads by page and Idempotency-Key. */
+  private pageUploadsByKey = new Map<string, MockPageAttachmentRecord>();
   /** Links between the items of a board (dependencies and relations). */
   private itemLinks: MockItemLinkRecord[] = [];
   /** People who follow an item besides the member, by card. */
@@ -294,8 +322,10 @@ export class MockStore {
   private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
   /** Explicit board access entries, keyed by board. */
   private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
-  /** The Board permissions the share dialog draws (gap `CTR-GAP-WM-BOARD-SHARING`). */
+  /** The Board permissions `WorkManagement.Boards.GetSharing` answers with. */
   readonly sharing = new MockBoardSharing();
+  /** The saved views of the boards (shared with members or private). */
+  readonly savedViews = new MockBoardSavedViews(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
@@ -316,6 +346,8 @@ export class MockStore {
 
   /** Space org tree, Space members and Teams (OT-5). */
   readonly spaces = new MockSpaceState();
+  /** The pages' history entries and the workspace page templates. */
+  readonly docsHistory = new MockDocsHistoryState(this);
 
   /** The member's work feed: relationships, approvals, mentions, inbox. */
   readonly feed = new MockWorkFeedState();
@@ -360,6 +392,11 @@ export class MockStore {
     const next = current + 1;
     this.sequenceCounters.set(entity, next);
     return next;
+  }
+
+  /** The clock's current time as an ISO string. */
+  now(): string {
+    return this.clock.isoNow();
   }
 
   nextId(entity: string): string {
@@ -506,6 +543,15 @@ export class MockStore {
         this.insertMembership(
           this.factories.membership(w * 10, id, owner.id, { role: "owner" }),
         );
+        // The third workspace has a second owner, so the persona may leave it
+        // while the others still show the last-owner rule.
+        if (w === 2) {
+          this.insertMembership(
+            this.factories.membership(w * 10 + 1, id, admin.id, {
+              role: "owner",
+            }),
+          );
+        }
       }
     }
 
@@ -1010,19 +1056,34 @@ export class MockStore {
       createdAt: created,
       updatedAt: "2026-10-11T09:40:00.000Z",
     });
-    INVOICE_BLOCKS.forEach((block, index) => {
-      this.createBlock(INVOICE_DOC_ID, {
-        type: block.type as MockBlockRecord["type"],
-        properties: JSON.stringify(block.properties),
-        position: (index + 1) * 1000,
-      });
-    });
+    const invoiceBlockIds = INVOICE_BLOCKS.map(
+      (block, index) =>
+        this.createBlock(INVOICE_DOC_ID, {
+          type: block.type as MockBlockRecord["type"],
+          properties: JSON.stringify(block.properties),
+          position: (index + 1) * 1000,
+        }).id,
+    );
     for (const comment of INVOICE_COMMENTS) {
+      const target = comment.anchor
+        ? INVOICE_BLOCKS[comment.anchor.blockIndex]
+        : undefined;
+      const start = comment.anchor
+        ? String(target?.properties.text ?? "").indexOf(comment.anchor.quote)
+        : -1;
       this.createPageComment(
         INVOICE_DOC_ID,
         comment.userId,
         comment.body,
         comment.at,
+        comment.anchor && start >= 0
+          ? {
+              blockId: invoiceBlockIds[comment.anchor.blockIndex] as string,
+              quote: comment.anchor.quote,
+              start,
+              end: start + comment.anchor.quote.length,
+            }
+          : undefined,
       );
     }
     [...INVOICE_HISTORY].reverse().forEach((entry) => {
@@ -1035,6 +1096,7 @@ export class MockStore {
         entry.versionName,
       );
     });
+    this.docsHistory.seedInvoiceHistory();
   }
 
   /**
@@ -1395,7 +1457,6 @@ export class MockStore {
         userId: ERP_COMMENTER.id,
         level: "commenter",
         grantedByUserId: ERP_PEOPLE.HP.id,
-        expiresAt: "2026-12-31T16:59:59.000Z",
       },
       // Đặng Minh Tuấn, from a partner company, edits here until 31/01/2027.
       {
@@ -1403,7 +1464,6 @@ export class MockStore {
         userId: ERP_PEOPLE.DT.id,
         level: "editor",
         grantedByUserId: ERP_PEOPLE.HP.id,
-        expiresAt: "2027-01-31T16:59:59.000Z",
       },
       // The viewer persona (a workspace guest) can only view this board.
       {
@@ -1414,6 +1474,16 @@ export class MockStore {
       },
     ]);
     seedErpSharing(this.sharing);
+    this.workspaceAutomations.seed(
+      ERP_AUTOMATION_RULES.map((rule) => ({
+        ...rule,
+        actions: rule.actions.map((action) => ({ ...action })),
+      })),
+      ERP_AUTOMATION_EXECUTIONS.map((execution) => ({
+        ...execution,
+        steps: execution.steps.map((step) => ({ ...step })),
+      })),
+    );
     this.boardAudienceByBoardId.set(boardId, {
       ...ERP_AUDIENCE,
       sources: ERP_AUDIENCE.sources.map((source) => ({ ...source })),
@@ -1514,7 +1584,9 @@ export class MockStore {
           userId: null,
           teamId: mockIds.teams.oncall,
           level: "viewer",
-          expiresAt: null,
+          grantLevel: "viewer",
+          memberRole: null,
+          guest: false,
           owner: false,
           addedAt: "2026-08-20T02:00:00.000Z",
         },
@@ -1714,6 +1786,7 @@ export class MockStore {
     this.notificationsById.clear();
     this.pagesById.clear();
     this.boardViewsByBoardId.clear();
+    this.savedViews.clear();
     this.columnsById.clear();
     this.labelsById.clear();
     this.checklistsById.clear();
@@ -1728,7 +1801,7 @@ export class MockStore {
     this.reports.reset();
     this.billing.reset();
     this.integrations.reset();
-    this.automations.reset();
+    this.workspaceAutomations.reset();
     this.navigationByMember.clear();
     this.navigationTick = 0;
     this.suspendedMembershipIds.clear();
@@ -1742,11 +1815,14 @@ export class MockStore {
     this.sharing.clear();
     this.boardAudienceByBoardId.clear();
     this.spaces.clear();
+    this.docsHistory.clear();
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
     this.attachmentsByCardId.clear();
     this.uploadsByIdempotencyKey.clear();
+    this.attachmentsByPageId.clear();
+    this.pageUploadsByKey.clear();
     this.itemLinks = [];
     this.followersByCardId.clear();
     this.planByBoardId.clear();
@@ -2189,6 +2265,113 @@ export class MockStore {
     return "ok";
   }
 
+  /**
+   * Removes an option as the producer does: a Status always keeps one Not
+   * started and one Done option, the items holding it move to the replacement
+   * (a Status needs one when any item holds the option; a Select may be cleared).
+   */
+  removeFieldOption(
+    columnId: string,
+    optionId: string,
+    input: { expectedVersion: number; replacementOptionId?: string | null },
+  ):
+    | "ok"
+    | "not-found"
+    | "stale"
+    | "replacement-required"
+    | "replacement-invalid"
+    | "keeps-todo-and-done" {
+    const col = this.columnsById.get(columnId);
+    const option = col?.options?.find((candidate) => candidate.id === optionId);
+    if (!col || !option) return "not-found";
+    if ((col.version ?? 1) !== input.expectedVersion) return "stale";
+    const singleValued =
+      col.fieldType === "status" || col.fieldType === "select";
+    const replacement = input.replacementOptionId
+      ? col.options?.find(
+          (candidate) =>
+            candidate.id === input.replacementOptionId &&
+            candidate.id !== optionId,
+        )
+      : undefined;
+    if (input.replacementOptionId && (!singleValued || !replacement)) {
+      return "replacement-invalid";
+    }
+    const holders = singleValued
+      ? Array.from(this.cardsById.values()).filter(
+          (card) =>
+            card.boardId === col.boardId &&
+            this.fieldValuesByCardId.get(card.id)?.get(columnId) === optionId,
+        )
+      : [];
+    if (holders.length > 0 && col.fieldType === "status" && !replacement) {
+      return "replacement-required";
+    }
+    if (col.fieldType === "status" && option.category) {
+      const category = option.category;
+      const remaining = (col.options ?? []).filter(
+        (candidate) =>
+          candidate.id !== optionId && candidate.category === category,
+      );
+      if (
+        (category === "todo" || category === "done") &&
+        remaining.length === 0
+      ) {
+        return "keeps-todo-and-done";
+      }
+    }
+    for (const card of holders) {
+      const fieldMap = this.fieldValuesByCardId.get(card.id);
+      if (replacement) fieldMap?.set(columnId, replacement.id);
+      else fieldMap?.delete(columnId);
+    }
+    this.columnsById.set(columnId, {
+      ...col,
+      options: (col.options ?? []).filter(
+        (candidate) => candidate.id !== optionId,
+      ),
+      version: (col.version ?? 1) + 1,
+    });
+    return "ok";
+  }
+
+  /** Neighbour-relative option move; the options are re-keyed in the new order. */
+  moveFieldOption(
+    columnId: string,
+    optionId: string,
+    input: {
+      expectedVersion: number;
+      previousSiblingId?: string | null;
+      nextSiblingId?: string | null;
+    },
+  ): "ok" | "not-found" | "stale" {
+    const col = this.columnsById.get(columnId);
+    const options = [...(col?.options ?? [])].sort((a, b) =>
+      a.position < b.position ? -1 : a.position > b.position ? 1 : 0,
+    );
+    const moved = options.find((candidate) => candidate.id === optionId);
+    if (!col || !moved) return "not-found";
+    if ((col.version ?? 1) !== input.expectedVersion) return "stale";
+    const rest = options.filter((candidate) => candidate.id !== optionId);
+    const after = input.previousSiblingId
+      ? rest.findIndex((candidate) => candidate.id === input.previousSiblingId)
+      : -1;
+    const before = input.nextSiblingId
+      ? rest.findIndex((candidate) => candidate.id === input.nextSiblingId)
+      : -1;
+    const at = after >= 0 ? after + 1 : before >= 0 ? before : rest.length;
+    rest.splice(at, 0, moved);
+    this.columnsById.set(columnId, {
+      ...col,
+      options: rest.map((candidate, index) => ({
+        ...candidate,
+        position: `a${String(index).padStart(3, "0")}`,
+      })),
+      version: (col.version ?? 1) + 1,
+    });
+    return "ok";
+  }
+
   deleteColumn(columnId: string): boolean {
     const col = this.columnsById.get(columnId);
     if (!col) return false;
@@ -2519,6 +2702,12 @@ export class MockStore {
         undefined,
         {
           verb: "đổi Hạn chót",
+          type: "work.item-field-changed",
+          change: {
+            fieldName: "Hạn chót",
+            from: card.dueAt ? hanoiShortDay(card.dueAt) : "—",
+            to: patch.dueAt ? hanoiShortDay(patch.dueAt) : "—",
+          },
           detail: {
             kind: "diff",
             from: card.dueAt ? hanoiShortDay(card.dueAt) : "—",
@@ -2543,6 +2732,13 @@ export class MockStore {
     const card = this.cardsById.get(cardId);
     if (!card) return false;
 
+    if (!card.parentItemId) {
+      this.trashedCardsById.set(cardId, {
+        card,
+        deletedAt: this.clock.isoNow(),
+        deletedBy: this.getCurrentUser().id,
+      });
+    }
     this.removeIndex(this.cardIdsByListId, card.listId, card.id);
     this.cardsById.delete(cardId);
     this.labelIdsByCardId.delete(cardId);
@@ -2615,6 +2811,31 @@ export class MockStore {
   }
 
   /** Brings an archived item back to its own place on the board. */
+  /** The board's deleted items of the last 30 days, newest first. */
+  getTrashedCards(boardId: string): {
+    card: MockCardRecord;
+    deletedAt: string;
+    deletedBy: string;
+  }[] {
+    return [...this.trashedCardsById.values()]
+      .filter((entry) => entry.card.boardId === boardId)
+      .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  /** Brings a deleted card back to its list; false when it is not in the trash. */
+  restoreDeletedCard(cardId: string): boolean {
+    const entry = this.trashedCardsById.get(cardId);
+    if (!entry || !this.listsById.has(entry.card.listId)) return false;
+    this.trashedCardsById.delete(cardId);
+    this.cardsById.set(cardId, {
+      ...entry.card,
+      version: (entry.card.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    this.addIndex(this.cardIdsByListId, entry.card.listId, cardId);
+    return true;
+  }
+
   restoreCard(cardId: string): boolean {
     const card = this.cardsById.get(cardId);
     if (!card || !card.isArchived) return false;
@@ -2740,6 +2961,12 @@ export class MockStore {
         undefined,
         {
           verb: "đổi Trạng thái",
+          type: "work.item-status-changed",
+          change: {
+            fieldName: "Trạng thái",
+            from: previous.name,
+            to: option.name,
+          },
           detail: { kind: "diff", from: previous.name, to: option.name },
         },
       );
@@ -2873,6 +3100,11 @@ export class MockStore {
       cardId,
       this.getCurrentUser().id,
       `chuyển việc sang board ${target.title}`,
+      undefined,
+      {
+        type: "work.item-moved-to-board",
+        change: { to: target.title, ...(itemKey ? { itemKey } : {}) },
+      },
     );
     children.forEach((child, index) =>
       relocate(child, itemKey ? `${itemKey}.${index + 1}` : null),
@@ -3042,6 +3274,7 @@ export class MockStore {
       createdAt: this.clock.isoNow(),
     };
     this.insertComment(cmt);
+    this.feed.noteReplyOn({ itemId: cardId });
     return cmt;
   }
 
@@ -3392,6 +3625,31 @@ export class MockStore {
     return id;
   }
 
+  /** Changes the role a waiting invitation offers; `null` when it is not found. */
+  changeInvitationRole(
+    workspaceId: string,
+    invitationId: string,
+    role: MockInvitationRecord["role"],
+  ): boolean | null {
+    const invitation = this.invitationsById.get(invitationId);
+    if (!invitation || invitation.workspaceId !== workspaceId) return null;
+    if (invitation.status !== "pending") return false;
+    invitation.role = role;
+    return true;
+  }
+
+  /**
+   * A resend re-issues the link: the invitation keeps its id and waits seven
+   * more days. Only an invitation that waits or has run out can be sent again.
+   */
+  resendInvitation(workspaceId: string, invitationId: string): boolean | null {
+    const invitation = this.invitationsById.get(invitationId);
+    if (!invitation || invitation.workspaceId !== workspaceId) return null;
+    if (invitation.status !== "pending") return false;
+    invitation.expiresAt = this.clock.offsetDays(7);
+    return true;
+  }
+
   revokeInvitation(workspaceId: string, invitationId: string): boolean {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return false;
@@ -3408,6 +3666,8 @@ export class MockStore {
         allowGuestInvites: true,
         defaultMemberRole: "Member",
         invitationExpiryDays: 7,
+        timeZone: "Asia/Ho_Chi_Minh",
+        weekStart: "monday",
       };
       this.settingsByWorkspaceId.set(workspaceId, settings);
     }
@@ -3786,6 +4046,62 @@ export class MockStore {
     this.uploadsByIdempotencyKey.set(`${cardId}:${key}`, record);
   }
 
+  /** The files of a page, newest first (like the producer's list). */
+  getPageAttachments(pageId: string): MockPageAttachmentRecord[] {
+    return [...(this.attachmentsByPageId.get(pageId) ?? [])].reverse();
+  }
+
+  getPageAttachment(
+    pageId: string,
+    attachmentId: string,
+  ): MockPageAttachmentRecord | undefined {
+    return this.attachmentsByPageId
+      .get(pageId)
+      ?.find((file) => file.id === attachmentId);
+  }
+
+  getPageUploadByKey(
+    pageId: string,
+    key: string,
+  ): MockPageAttachmentRecord | undefined {
+    return this.pageUploadsByKey.get(`${pageId}:${key}`);
+  }
+
+  addPageAttachment(
+    pageId: string,
+    file: {
+      filename: string;
+      contentType: string;
+      bytes: Uint8Array;
+      idempotencyKey: string;
+    },
+  ): MockPageAttachmentRecord | undefined {
+    if (!this.pagesById.has(pageId)) return undefined;
+    const record: MockPageAttachmentRecord = {
+      id: this.nextId("file"),
+      pageId,
+      filename: file.filename,
+      sizeBytes: file.bytes.byteLength,
+      contentType: file.contentType,
+      uploadedBy: this.getCurrentUser().id,
+      createdAt: this.clock.isoNow(),
+      bytes: file.bytes,
+    };
+    const list = this.attachmentsByPageId.get(pageId) ?? [];
+    list.push(record);
+    this.attachmentsByPageId.set(pageId, list);
+    this.pageUploadsByKey.set(`${pageId}:${file.idempotencyKey}`, record);
+    return record;
+  }
+
+  removePageAttachment(pageId: string, attachmentId: string): boolean {
+    const list = this.attachmentsByPageId.get(pageId) ?? [];
+    const next = list.filter((file) => file.id !== attachmentId);
+    if (next.length === list.length) return false;
+    this.attachmentsByPageId.set(pageId, next);
+    return true;
+  }
+
   getAttachment(
     cardId: string,
     attachmentId: string,
@@ -3988,12 +4304,33 @@ export class MockStore {
   }
 
   getPages(workspaceId: string): MockPageRecord[] {
+    return this.pagesOf(workspaceId).filter((p) => !p.trashedAt);
+  }
+
+  /** The workspace's pages in the trash, newest edit first. */
+  getTrashedPages(workspaceId: string): MockPageRecord[] {
+    return this.pagesOf(workspaceId).filter((p) => Boolean(p.trashedAt));
+  }
+
+  private pagesOf(workspaceId: string): MockPageRecord[] {
     const ids = this.pageIdsByWorkspaceId.get(workspaceId);
     if (!ids) return [];
     return Array.from(ids)
       .map((id) => this.pagesById.get(id))
       .filter((p): p is MockPageRecord => p !== undefined)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  /** Moves a page to the trash (`Documents.Pages.ArchivePage`) or brings it back. */
+  setPageTrashed(pageId: string, trashed: boolean): boolean {
+    const page = this.pagesById.get(pageId);
+    if (!page) return false;
+    this.pagesById.set(pageId, {
+      ...page,
+      trashedAt: trashed ? this.clock.isoNow() : null,
+      version: (page.version ?? 1) + 1,
+    });
+    return true;
   }
 
   getPage(id: string): MockPageRecord | undefined {
@@ -4011,10 +4348,11 @@ export class MockStore {
   }
 
   createBlock(pageId: string, data: Partial<MockBlockRecord>): MockBlockRecord {
-    const id = this.nextId("block");
+    const id = data.id ?? this.nextId("block");
     const block: MockBlockRecord = {
       id,
       pageId,
+      parentBlockId: data.parentBlockId ?? null,
       type: data.type || "paragraph",
       properties: data.properties || "{}",
       position: data.position ?? 0,
@@ -4034,12 +4372,25 @@ export class MockStore {
     if (!block) return null;
     if (data.type !== undefined) block.type = data.type;
     if (data.properties !== undefined) block.properties = data.properties;
+    if (data.parentBlockId !== undefined) {
+      block.parentBlockId = data.parentBlockId;
+    }
+    if (data.position !== undefined) block.position = data.position;
+    block.version += 1;
     block.updatedAt = this.clock.isoNow();
     return block;
   }
 
   deleteBlock(id: string): boolean {
     return this.blocksById.delete(id);
+  }
+
+  /** Puts a page's blocks back as they were (a refused batch leaves no trace). */
+  restorePageBlocks(pageId: string, snapshot: readonly MockBlockRecord[]) {
+    for (const block of this.getPageBlocks(pageId)) {
+      this.blocksById.delete(block.id);
+    }
+    for (const block of snapshot) this.blocksById.set(block.id, { ...block });
   }
 
   getPageComments(pageId: string): MockPageCommentRecord[] {
@@ -4053,6 +4404,7 @@ export class MockStore {
     userId: string,
     contentMd: string,
     createdAt?: string,
+    anchor?: MockPageCommentRecord["anchor"],
   ): MockPageCommentRecord {
     const id = this.nextId("pcomment");
     const comment: MockPageCommentRecord = {
@@ -4061,8 +4413,10 @@ export class MockStore {
       userId,
       contentMd,
       createdAt: createdAt ?? this.clock.isoNow(),
+      ...(anchor ? { anchor } : {}),
     };
     this.pageCommentsById.set(id, comment);
+    this.feed.noteReplyOn({ docId: pageId });
     return comment;
   }
 
@@ -4074,6 +4428,21 @@ export class MockStore {
     if (!comment) return null;
     comment.contentMd = contentMd;
     comment.updatedAt = this.clock.isoNow();
+    return comment;
+  }
+
+  resolvePageComment(id: string): MockPageCommentRecord | null {
+    const comment = this.pageCommentsById.get(id);
+    if (!comment) return null;
+    comment.resolvedAt ??= this.clock.isoNow();
+    return comment;
+  }
+
+  /** A resolved thread becomes active again; reopening an active one changes nothing. */
+  reopenPageComment(id: string): MockPageCommentRecord | null {
+    const comment = this.pageCommentsById.get(id);
+    if (!comment) return null;
+    comment.resolvedAt = null;
     return comment;
   }
 
@@ -4346,6 +4715,7 @@ export class MockStore {
       blocks: Array.from(this.blocksById.values()),
       pageComments: Array.from(this.pageCommentsById.values()),
       pageHistory: Array.from(this.pageHistoryById.values()),
+      ...this.docsHistory.snapshot(),
       boardMembers: Array.from(this.boardMembersByBoardId.values()).flat(),
       boardGrants: Array.from(this.boardGrantsByBoardId.values()).flat(),
       boardAudiences: Array.from(this.boardAudienceByBoardId.values()),

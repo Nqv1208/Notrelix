@@ -176,9 +176,15 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             AccountId, Id, WorkspaceId, acceptedUserId, acceptedUserId, acceptedAt));
     }
 
-    public void Decline(Guid declinedBy, DateTimeOffset declinedAt)
+    /// <summary>
+    /// The invitee declines. <paramref name="declinedBy"/> is the signed-in user, or null when the
+    /// holder of the one-time token declines without an identity (a person with no account).
+    /// Only a pending invitation can be declined.
+    /// </summary>
+    public void Decline(Guid? declinedBy, DateTimeOffset declinedAt)
     {
-        Guard.NotEmpty(declinedBy);
+        if (declinedBy is { } actor)
+            Guard.NotEmpty(actor);
 
         var audit = PrepareAuditUpdate(declinedBy, declinedAt);
 

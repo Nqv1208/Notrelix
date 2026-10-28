@@ -50,7 +50,6 @@ import { MyWorkRow, type MyWorkColumns } from "./my-work-row";
 import {
   MyWorkBulkBar,
   MyWorkEmpty,
-  MyWorkFoot,
   MyWorkNote,
   MyWorkRail,
 } from "./my-work-side";
@@ -102,9 +101,17 @@ export interface WorkspaceMyWorkSurfaceProps {
   readonly calendarHref?: string | null;
   /** Boards the member can add an item to. */
   readonly createBoards: readonly MyWorkCreateBoard[];
-  /** Creates an item already assigned to the member; `null` = no write yet. */
+  /** Creates an item assigned to the member; `null` leaves the action inert. */
   readonly onCreate:
     ((input: { boardId: string; name: string }) => void) | null;
+  /**
+   * Opens the full item form (status, priority, people, dates, description)
+   * with the name and Board the popover holds; absent hides "More details".
+   */
+  readonly onOpenCreateForm?: (input: {
+    boardId: string;
+    name: string;
+  }) => void;
   /** The row open in the sheet. */
   readonly openItemId: string | null;
   /** A plain click on a title: open the item (the host shows its sheet). */
@@ -582,6 +589,18 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
               }
             : null
         }
+        onOpenForm={
+          props.onOpenCreateForm && createBoardId
+            ? () => {
+                props.onOpenCreateForm?.({
+                  boardId: createBoardId,
+                  name: createName.trim(),
+                });
+                setCreateName("");
+                setMenu(null);
+              }
+            : null
+        }
         groupAvailable={groupAvailable}
       />
 
@@ -877,7 +896,6 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
         ) : null}
       </div>
 
-      <MyWorkFoot copy={copy} />
       {props.sheet}
     </div>
   );
@@ -985,11 +1003,7 @@ function StatusPop({
                   className="ml-auto size-3.5 text-state-selected-foreground"
                   strokeWidth={1.8}
                 />
-              ) : (
-                <span className="ml-auto rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-                  {index + 1}
-                </span>
-              )}
+              ) : null}
             </div>
           );
         })}

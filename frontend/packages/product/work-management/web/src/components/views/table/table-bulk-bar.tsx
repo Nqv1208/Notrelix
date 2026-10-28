@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { ArrowRight, Calendar, Trash2, User, X } from "lucide-react";
+import { ArrowRight, Calendar, Flag, Trash2, User, X } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   cn,
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +45,17 @@ export interface TableBulkBarProps {
   /** "YYYY-MM-DD", or null to clear the due date. */
   onDue: (day: string | null) => void;
   onArchive: () => void;
+  /** The viewer may delete items; absent: no "Xoá" button. */
+  onDelete?: () => void;
   onClear: () => void;
+  /** Absent: no "Ưu tiên" button (the board has no Priority field). */
+  priority?: {
+    readonly options: readonly {
+      readonly id: string;
+      readonly label: string;
+    }[];
+    readonly onPriority: (optionId: string) => void;
+  };
   /** Absent: "Giao cho" stays disabled and says so. */
   assign?: {
     readonly members: readonly TableEditorMember[];
@@ -66,7 +84,9 @@ export function TableBulkBar({
   onStatus,
   onDue,
   onArchive,
+  onDelete,
   onClear,
+  priority,
   assign,
   move,
 }: TableBulkBarProps) {
@@ -75,6 +95,7 @@ export function TableBulkBar({
   const [day, setDay] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <div
@@ -110,6 +131,32 @@ export function TableBulkBar({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {priority && canEdit ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={BAR_BUTTON_CLASS}>
+              <Flag className="size-4" aria-hidden="true" />
+              {b.priority}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            side="top"
+            aria-label={b.priorityLabel}
+            className="w-48"
+          >
+            {priority.options.map((option) => (
+              <DropdownMenuItem
+                key={option.id}
+                onSelect={() => priority.onPriority(option.id)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
 
       {assign && canEdit ? (
         <Popover open={assignOpen} onOpenChange={setAssignOpen}>
@@ -281,6 +328,40 @@ export function TableBulkBar({
         <Trash2 className="size-4" aria-hidden="true" />
         {b.archive}
       </button>
+
+      {onDelete ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className={cn(BAR_BUTTON_CLASS, "text-inverse-danger")}
+          >
+            <Trash2 className="size-4" aria-hidden="true" />
+            {b.delete}
+          </button>
+          <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {fillTableCopy(b.deleteTitle, { count })}
+                </AlertDialogTitle>
+                <AlertDialogDescription>{b.deleteBody}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{b.deleteCancel}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    onDelete();
+                  }}
+                >
+                  {b.deleteConfirm}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : null}
 
       <button
         type="button"

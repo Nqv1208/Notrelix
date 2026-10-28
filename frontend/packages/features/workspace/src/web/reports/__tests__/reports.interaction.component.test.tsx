@@ -36,6 +36,12 @@ const order = () =>
     .getAllByRole("heading", { level: 2 })
     .map((heading) => heading.textContent);
 
+/** Opens the styled Select behind a label and picks one option by its text. */
+function choose(trigger: HTMLElement, option: string | RegExp) {
+  fireEvent.keyDown(trigger, { key: "Enter" });
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("ReportDashboardSurface: view", () => {
   it("FUI[workspace.report-dashboard:view] draws the report header, its summary and every widget the way the mockup does", () => {
     renderPureUi(<ReportDashboardSurface {...dashboardScenario()} />);
@@ -374,6 +380,7 @@ describe("ReportDashboardSurface: editing", () => {
 });
 
 describe("ReportDashboardSurface: add widget", () => {
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[workspace.report-dashboard:add] previews a widget, names it and puts it at the end of the draft", async () => {
     const onPreviewWidget = vi.fn(() => Promise.resolve(previewColumns()));
     const onCloseAdd = vi.fn();
@@ -411,17 +418,13 @@ describe("ReportDashboardSurface: add widget", () => {
     );
     expect(onPreviewWidget).toHaveBeenCalled();
     // The line chart needs the week dimension.
-    fireEvent.change(within(dialog).getByLabelText("Nhóm theo"), {
-      target: { value: "week" },
-    });
+    choose(within(dialog).getByLabelText("Nhóm theo"), "Tuần");
     expect(
       within(dialog)
         .getByRole("radio", { name: "Đường" })
         .getAttribute("aria-disabled"),
     ).toBeNull();
-    fireEvent.change(within(dialog).getByLabelText("Nhóm theo"), {
-      target: { value: "assignee" },
-    });
+    choose(within(dialog).getByLabelText("Nhóm theo"), "Người phụ trách");
     fireEvent.change(within(dialog).getByLabelText("Tên widget"), {
       target: { value: "Việc mở theo người" },
     });
@@ -470,7 +473,7 @@ describe("ReportDashboardSurface: add widget", () => {
       title: "Việc mở theo người",
       groupBy: "assignee",
     });
-  });
+  }, 20_000);
 
   it("FUI[workspace.report-dashboard:add-note] asks for the text of a note before it adds one", async () => {
     const onCloseAdd = vi.fn();

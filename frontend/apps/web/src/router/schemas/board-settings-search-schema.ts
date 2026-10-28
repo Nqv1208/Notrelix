@@ -1,13 +1,19 @@
 import { z } from "zod";
 
 /**
- * `section` is the settings section ("fields" is the default); `field` and
+ * `section` is the settings section ("fields" is the default, also for an old
+ * `?section=access` link: the board's access is the Share dialog, not a
+ * settings section); `field` and
  * `view` name the field or the saved view whose panel is open; `from` is the
  * board view to go back to.
  */
 export const boardSettingsSearchSchema = z.object({
   section: z
-    .enum(["general", "fields", "views", "groups", "automations"])
+    .preprocess(
+      // Access is the board's Share dialog, not a settings section: an old link opens the default one.
+      (value) => (value === "access" ? "fields" : value),
+      z.enum(["general", "fields", "views", "groups", "automations"]),
+    )
     .default("fields"),
   field: z.string().optional(),
   /** The board view the page was opened from; "Về board" returns to it. */

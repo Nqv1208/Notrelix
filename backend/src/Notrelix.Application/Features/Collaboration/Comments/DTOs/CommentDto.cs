@@ -9,5 +9,9 @@ public record CommentDto(
     Guid? ParentCommentId,
     bool IsEdited,
     DateTime? ResolvedAt,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    CommentAnchorDto? Anchor = null
 );
+
+/// <summary>The quoted text range of a page block a comment points at; it may be stale once the block changed.</summary>
+public record CommentAnchorDto(Guid BlockId, string Quote, int Start, int End);

@@ -63,7 +63,7 @@ export const ERP_COMMENTS: readonly ErpMockComment[] = [
     itemKey: "ERP-138",
     userId: ERP_PEOPLE.MQ.id,
     contentMd:
-      "Đã thử với 5 tài khoản phòng Kế toán, đăng nhập ổn. Chị duyệt giúp trước thứ Tư để kịp thông báo toàn công ty nhé.",
+      "Đã thử với 5 tài khoản phòng Kế toán, đăng nhập ổn. Cần duyệt trước thứ Tư để kịp thông báo toàn công ty, nhờ @Nguyễn Thu Hà.",
     createdAt: "2026-10-12T03:28:00.000Z",
   },
   {

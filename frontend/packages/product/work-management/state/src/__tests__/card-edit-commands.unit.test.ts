@@ -31,6 +31,7 @@ const baseCard = {
   boardId: "b-1",
   workspaceId: "ws-1",
   title: "Việc cũ",
+  version: 3,
   position: 1,
   status: "",
   priority: "low" as const,
@@ -86,6 +87,47 @@ function seeded() {
   queryClient.setQueryData(detailKey, detail);
   return { queryClient, boardKey, detailKey };
 }
+
+const ASSIGNEE = "field-assignee-x";
+const assigneeField: FieldDefinition = {
+  id: ASSIGNEE,
+  boardId: "b-1",
+  name: "Assignee",
+  fieldType: "person",
+  position: 1,
+  isHidden: false,
+  isSystemField: true,
+  options: [],
+};
+
+describe("the Assignee system field is written through the item's assignees", () => {
+  it("adds the chosen person and removes the one no longer chosen, never writing a field value", async () => {
+    const { queryClient, boardKey } = seeded();
+    const board = queryClient.getQueryData<FullBoardResponse>(boardKey)!;
+    board.board.fieldDefinitions = [priorityField, assigneeField];
+    board.groups[0]!.cards[0]!.members = [
+      { id: "m-1", userId: "u-old", name: "Old", initials: "O" },
+    ] as never;
+    queryClient.setQueryData(boardKey, board);
+    const updateFieldValue = vi.fn(async () => undefined);
+    const setAssignees = vi.fn(async () => undefined);
+    await runFieldValueCommand(
+      queryClient,
+      { updateFieldValue, setAssignees },
+      {
+        workspaceId: "ws-1",
+        boardId: "b-1",
+        payload: {
+          cardId: "i-1",
+          fieldDefinitionId: ASSIGNEE,
+          value: ["u-new"],
+        },
+      },
+    );
+    expect(setAssignees).toHaveBeenCalledWith("i-1", ["u-new"], ["u-old"]);
+    expect(updateFieldValue).not.toHaveBeenCalled();
+  });
+});
 
 describe("sheet edits reach the item detail the sheet reads", () => {
   it("a field value shows at once in the board and in the item detail, and both are read again", async () => {
@@ -168,6 +210,11 @@ describe("sheet edits reach the item detail the sheet reads", () => {
     await vi.waitFor(() => expect(updateCard).toHaveBeenCalled());
     expect(queryClient.getQueryData<CardDetail>(detailKey)!.title).toBe(
       "Việc mới",
+    );
+    expect(updateCard).toHaveBeenCalledWith(
+      "i-1",
+      { title: "Việc mới" },
+      expect.objectContaining({ expectedVersion: 3 }),
     );
     release();
     await pending;

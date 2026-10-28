@@ -64,6 +64,45 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     );
   });
 
+  it("names a write with an Idempotency-Key of its own and keeps the key a caller chose", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(url.includes("/auth/csrf") ? { token: "t" } : {}),
+            { status: 200 },
+          ),
+        ),
+      );
+    const client = createNotrelixClient({
+      baseUrl: "http://api.test",
+      fetchImpl: mockFetch as unknown as typeof fetch,
+    });
+
+    await client.api.post("/commands", {});
+    await client.api.post(
+      "/commands",
+      {},
+      {
+        headers: { "Idempotency-Key": "chosen" },
+      },
+    );
+    await client.api.get("/reads");
+
+    const sent = mockFetch.mock.calls
+      .filter(([url]) => !String(url).includes("/auth/csrf"))
+      .map(([url, init]) => [
+        String(url),
+        (init as { headers: Record<string, string> }).headers[
+          "Idempotency-Key"
+        ],
+      ]);
+    expect(sent[0]?.[1]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(sent[1]?.[1]).toBe("chosen");
+    expect(sent[2]?.[1]).toBeUndefined();
+  });
+
   it("triggers refreshOnce only ONCE for multiple concurrent 401 requests", async () => {
     let refreshCallCount = 0;
 

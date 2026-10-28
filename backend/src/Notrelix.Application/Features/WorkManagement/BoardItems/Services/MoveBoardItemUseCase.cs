@@ -36,6 +36,12 @@ public sealed class MoveBoardItemUseCase
         if (item == null)
             throw new NotFoundException("BoardItem", itemId);
 
+        // A sub-item lives in its parent's group and only moves with the parent.
+        if (item.ParentItemId is not null)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Item_SubItemFollowsParentGroup,
+                "A sub-item stays in its parent's group; move the parent instead.");
+
         var group = await _context.BoardGroups
             .FirstOrDefaultAsync(g => g.Id == newGroupId && g.BoardId == item.BoardId, cancellationToken);
 
@@ -50,7 +56,18 @@ public sealed class MoveBoardItemUseCase
             cancellationToken,
             movedEntityId: item.Id);
 
+        var groupBefore = item.GroupId;
         item.MoveToGroup(BoardGroupRef.From(group), position, executorUserId, now);
+
+        // Its sub-items follow it, keeping their place under it.
+        if (groupBefore != group.Id)
+        {
+            var children = await _context.BoardItems
+                .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null)
+                .ToListAsync(cancellationToken);
+            foreach (var child in children)
+                child.MoveToGroupOnGroupRemoval(BoardGroupRef.From(group), null, executorUserId, now);
+        }
 
         var memberIds = await _context.BoardItemMembers
             .Where(m => m.ItemId == item.Id)

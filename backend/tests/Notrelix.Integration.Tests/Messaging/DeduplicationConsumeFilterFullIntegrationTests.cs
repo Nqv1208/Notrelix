@@ -27,7 +27,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
         _consumerExecutionCount = 0;
     }
@@ -38,7 +38,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var store = new MessageDeduplicationStore(context, new DateTimeProvider(), new MetricsService());
         var rls = new RlsSessionContext(
             context,
@@ -288,7 +288,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
 
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var dateTimeProvider = new DateTimeProvider();
         var store = new MessageDeduplicationStore(context, dateTimeProvider, new MetricsService());
         var rls = new RlsSessionContext(
@@ -424,7 +424,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
             tenant.SetSystem();
         }
 
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var dateTimeProvider = new DateTimeProvider();
         var store = new MessageDeduplicationStore(context, dateTimeProvider, new MetricsService());
         var rls = new RlsSessionContext(
@@ -492,7 +492,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
             tenant.SetSystem();
         }
 
-        var context = _db.CreateContext(tenant);
+        var context = _db.CreateOwnerContext(tenant);
         var dateTimeProvider = new DateTimeProvider();
         var store = new MessageDeduplicationStore(context, dateTimeProvider, new MetricsService());
         var rls = new RlsSessionContext(

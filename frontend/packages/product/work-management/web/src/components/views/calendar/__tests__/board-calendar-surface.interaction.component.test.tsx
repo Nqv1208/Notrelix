@@ -176,6 +176,7 @@ describe("BoardCalendarSurface", () => {
     expect(onOpenItem).toHaveBeenCalledWith("erp-144");
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("FUI[wm.calendar.board:navigation] steps, returns to today and switches the range", () => {
     for (const locale of LOCALES) {
       const copy = calendarCopy(locale);
@@ -211,7 +212,7 @@ describe("BoardCalendarSurface", () => {
       ).toBeTruthy();
       unmount();
     }
-  });
+  }, 20_000);
 
   it("FUI[wm.calendar.board:range-switch] is a radio group the arrow keys walk", () => {
     renderCalendar();

@@ -1,4 +1,6 @@
+using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Integrations.Public.Commands;
+using Notrelix.Infrastructure.Integrations.Connections;
 using Notrelix.Infrastructure.Integrations.Providers;
 using Notrelix.Infrastructure.Options;
 
@@ -9,6 +11,32 @@ public static class IntegrationsRegistration
     public static IServiceCollection AddIntegrations(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<IntegrationsOptions>().Bind(configuration.GetSection(IntegrationsOptions.SectionName));
+        services.AddSingleton<IntegrationProviderSettings>();
+        services.AddSingleton<IIntegrationProviderSettings>(sp => sp.GetRequiredService<IntegrationProviderSettings>());
+        services.AddHttpClient<IIntegrationOAuthClient, IntegrationOAuthClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddSingleton<IIntegrationOAuthStateProtector, IntegrationOAuthStateProtector>();
+        services.AddSingleton<IWebhookTargetPolicy, WebhookTargetPolicy>();
+        services.AddScoped<OutboundWebhookSender>();
+        services.AddHttpClient(OutboundWebhookSender.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var policy = (WebhookTargetPolicy)sp.GetRequiredService<IWebhookTargetPolicy>();
+                var options = sp.GetRequiredService<IOptions<IntegrationsOptions>>().Value.Webhook;
+                return new SocketsHttpHandler
+                {
+                    AllowAutoRedirect = false,
+                    UseProxy = false,
+                    ConnectTimeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
+                    ConnectCallback = (context, ct) => OutboundWebhookSender.ConnectAsync(context, policy.AllowPrivate, ct),
+                };
+            })
+            .ConfigureHttpClient((sp, client) =>
+                client.Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<IntegrationsOptions>>().Value.Webhook.TimeoutSeconds));
+
         services
             .AddOptions<N8nOptions>()
             .Bind(configuration.GetSection("N8n"))

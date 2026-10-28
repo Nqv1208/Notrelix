@@ -7,6 +7,7 @@ using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoar
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveChildItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
@@ -175,6 +176,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(UpdateBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(MoveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(MoveChildItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(UpdateBoardItemFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(UpdateBoardItemFieldValuesCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ClearFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),

@@ -125,7 +125,6 @@ export const SPACE: DocSpaceView = {
 export const HEADER: DocHeaderView = {
   title: "Quy trình nhập hoá đơn đầu vào",
   crumbs: ["Kế toán", "Quy trình", "Nhập hoá đơn đầu vào"],
-  status: "review",
   editedBy: "Đỗ Khánh Linh",
   editedAt: "16:40 hôm qua",
   presence: [KL, LT],
@@ -216,6 +215,8 @@ export const BLOCKS: readonly DocBlockView[] = [
   {
     id: "b13",
     kind: "liveTable",
+    boardId: "board-erp",
+    state: "ready",
     boardName: "Triển khai ERP Q4",
     filterLabel: "Phân hệ Kế toán · chưa xong",
     boardHref: "#",
@@ -281,6 +282,7 @@ export const COMMENTS: readonly DocCommentView[] = [
 export const VERSIONS: readonly DocVersionView[] = [
   {
     id: "v1",
+    kind: "automatic",
     author: KL,
     time: "16:40",
     day: "Hôm qua",
@@ -290,6 +292,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v2",
+    kind: "automatic",
     author: KL,
     time: "15:05",
     day: "Hôm qua",
@@ -298,6 +301,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v3",
+    kind: "automatic",
     author: LT,
     time: "15:42",
     day: "10/10",
@@ -306,6 +310,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v4",
+    kind: "named",
     author: KL,
     time: "11:20",
     day: "10/10",
@@ -315,6 +320,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v5",
+    kind: "restore",
     author: KL,
     time: "17:05",
     day: "08/10",
@@ -323,6 +329,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v6",
+    kind: "automatic",
     author: LT,
     time: "09:40",
     day: "08/10",
@@ -331,6 +338,7 @@ export const VERSIONS: readonly DocVersionView[] = [
   },
   {
     id: "v7",
+    kind: "automatic",
     author: KL,
     time: "14:20",
     day: "05/10",
@@ -606,6 +614,79 @@ export function docsPageScreenVersionsScenario(): DocPageScreenSurfaceProps {
       list: VERSIONS,
       selectedId: "v3",
       namedOnly: false,
+    },
+  };
+}
+
+/** The trash with two pages in it (Restore and Delete permanently). */
+export function docsPageScreenTrashScenario(): DocPageScreenSurfaceProps {
+  return {
+    ...docsPageScreenDefaultScenario(),
+    overlay: { kind: "trash" },
+    trash: {
+      pages: [
+        { id: "t1", title: "Quy trình chi tạm ứng (bản cũ)", icon: "📄" },
+        { id: "t2", title: "Biên bản họp kiểm kê", icon: null },
+      ],
+      loading: false,
+      failed: false,
+      busyId: null,
+    },
+  };
+}
+
+/** The page picker opened on an empty page-reference block. */
+export function docsPageScreenPagePickerScenario(): DocPageScreenSurfaceProps {
+  return {
+    ...docsPageScreenDefaultScenario(),
+    blocks: [
+      ...BLOCKS,
+      {
+        id: "ref-1",
+        kind: "pageReference",
+        pageId: null,
+        title: null,
+        icon: null,
+        unavailable: false,
+      },
+    ],
+    overlay: { kind: "pagePicker", blockId: "ref-1" },
+    pickerPages: [
+      {
+        id: "p1",
+        title: "Đặc tả triển khai ERP",
+        icon: "📘",
+        detail: "Công nghệ",
+      },
+      {
+        id: "p2",
+        title: "Quy trình đối chiếu công nợ",
+        icon: "📄",
+        detail: "Kế toán",
+      },
+      { id: "p3", title: "Chính sách chi tạm ứng", icon: null, detail: null },
+    ],
+  };
+}
+
+/** Turning a checklist line into a task: the board and group are chosen. */
+export function docsPageScreenConvertScenario(): DocPageScreenSurfaceProps {
+  return {
+    ...docsPageScreenDefaultScenario(),
+    overlay: { kind: "convertTask", blockId: "b1", boardId: "board-1" },
+    convert: {
+      boards: [
+        { id: "board-1", title: "Triển khai ERP Q4" },
+        { id: "board-2", title: "Kế toán hằng tháng" },
+      ],
+      groups: [
+        { id: "g1", name: "Chuẩn bị" },
+        { id: "g2", name: "Đào tạo và vận hành" },
+      ],
+      boardId: "board-1",
+      lineText: "Đào tạo nhóm Công nợ về đối chiếu tự động",
+      busy: false,
+      failed: false,
     },
   };
 }

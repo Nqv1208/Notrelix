@@ -36,23 +36,18 @@ test.describe("Board table, in-place edits (owner)", () => {
   );
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("the header has round faces and no More options button", async ({
+  test("the header has round faces and a More options menu with the deleted items", async ({
     page,
   }) => {
     await openTable(page);
     await expect(
       page.getByRole("button", { name: /Thêm tuỳ chọn/ }),
-    ).toHaveCount(0);
+    ).toBeVisible();
     const more = page.getByText("+29");
     const box = (await more.boundingBox())!;
     expect(Math.round(box.width)).toBe(Math.round(box.height));
     await expect(
       page.getByRole("button", { name: "Thiết lập", exact: true }),
-    ).toBeVisible();
-    // Only Final-Board's header has it.
-    await page.goto(BOARD);
-    await expect(
-      page.getByRole("button", { name: /Thêm tuỳ chọn/ }),
     ).toBeVisible();
   });
 

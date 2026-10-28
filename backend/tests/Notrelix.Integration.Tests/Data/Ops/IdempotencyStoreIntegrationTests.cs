@@ -47,7 +47,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_DB_001_FirstExecution_InsertsStartedAndCompletes()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
         var store = CreateStore(context);
@@ -63,7 +63,7 @@ public class IdempotencyStoreIntegrationTests
         await tx.CommitAsync();
 
         // Verify persisted
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var record = await verifyContext.Set<IdempotencyRecord>()
             .FirstOrDefaultAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
 
@@ -77,7 +77,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_DB_002_Replay_ReturnsOriginalResult()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
         var store = CreateStore(context);
@@ -91,7 +91,7 @@ public class IdempotencyStoreIntegrationTests
         await tx.CommitAsync();
 
         // Second execution (replay)
-        await using var context2 = _db.CreateContext();
+        await using var context2 = _db.CreateOwnerContext();
         await using var tx2 = await context2.Database.BeginTransactionAsync();
         var store2 = CreateStore(context2);
 
@@ -106,7 +106,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_DB_003_PayloadMismatch_ReturnsConflict()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
         var store = CreateStore(context);
@@ -121,7 +121,7 @@ public class IdempotencyStoreIntegrationTests
         await tx.CommitAsync();
 
         // Second execution with same key but different request hash
-        await using var context2 = _db.CreateContext();
+        await using var context2 = _db.CreateOwnerContext();
         await using var tx2 = await context2.Database.BeginTransactionAsync();
         var store2 = CreateStore(context2);
         var identity2 = CreateIdentity(keyHash: keyHash, requestHash: "hash-B");
@@ -134,7 +134,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_DB_004_HandlerException_BothRollback()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
         var store = CreateStore(context);
@@ -147,7 +147,7 @@ public class IdempotencyStoreIntegrationTests
         await tx.RollbackAsync();
 
         // Verify no record persisted
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var record = await verifyContext.Set<IdempotencyRecord>()
             .FirstOrDefaultAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
 
@@ -159,7 +159,7 @@ public class IdempotencyStoreIntegrationTests
     {
         // The store participates in the request transaction: when the business
         // SaveChanges fails, the idempotency record must roll back with it.
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context);
         var identity = CreateIdentity(
@@ -184,7 +184,7 @@ public class IdempotencyStoreIntegrationTests
 
         await tx.RollbackAsync();
 
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var record = await verifyContext.Set<IdempotencyRecord>()
             .FirstOrDefaultAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
 
@@ -195,7 +195,7 @@ public class IdempotencyStoreIntegrationTests
     public async Task IDEM_DB_006_CommitCancellation_DoesNotPersist()
     {
         // A cancelled/failed commit must leave no idempotency record behind.
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context);
         var identity = CreateIdentity(
@@ -213,7 +213,7 @@ public class IdempotencyStoreIntegrationTests
 
         await tx.RollbackAsync();
 
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var record = await verifyContext.Set<IdempotencyRecord>()
             .FirstOrDefaultAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
 
@@ -230,14 +230,14 @@ public class IdempotencyStoreIntegrationTests
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
 
-        await using var holderContext = _db.CreateContext();
+        await using var holderContext = _db.CreateOwnerContext();
         await using var holderTx = await holderContext.Database.BeginTransactionAsync();
         var holderStore = CreateStore(holderContext);
 
         var holderBegin = await holderStore.BeginAsync(identity, CancellationToken.None);
         holderBegin.Status.Should().Be(IdempotencyBeginStatus.Started);
 
-        await using var waiterContext = _db.CreateContext();
+        await using var waiterContext = _db.CreateOwnerContext();
         await using var waiterTx = await waiterContext.Database.BeginTransactionAsync();
         var waiterStore = CreateStore(waiterContext);
         var waiterTask = Task.Run(() => waiterStore.BeginAsync(identity, CancellationToken.None));
@@ -267,14 +267,14 @@ public class IdempotencyStoreIntegrationTests
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
 
-        await using var holderContext = _db.CreateContext();
+        await using var holderContext = _db.CreateOwnerContext();
         await using var holderTx = await holderContext.Database.BeginTransactionAsync();
         var holderStore = CreateStore(holderContext);
 
         var holderBegin = await holderStore.BeginAsync(identity, CancellationToken.None);
         holderBegin.Status.Should().Be(IdempotencyBeginStatus.Started);
 
-        await using var waiterContext = _db.CreateContext();
+        await using var waiterContext = _db.CreateOwnerContext();
         await using var waiterTx = await waiterContext.Database.BeginTransactionAsync();
         var waiterStore = CreateStore(waiterContext);
         var waiterTask = Task.Run(() => waiterStore.BeginAsync(identity, CancellationToken.None));
@@ -292,7 +292,7 @@ public class IdempotencyStoreIntegrationTests
         await waiterContext.SaveChangesAsync();
         await waiterTx.CommitAsync();
 
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var record = await verifyContext.Set<IdempotencyRecord>()
             .SingleAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
         record.State.Should().Be("Completed");
@@ -308,7 +308,7 @@ public class IdempotencyStoreIntegrationTests
         var deadline = DateTimeOffset.UtcNow.AddSeconds(15);
         while (DateTimeOffset.UtcNow < deadline)
         {
-            await using var conn = _db.CreateConnection();
+            await using var conn = _db.CreateOwnerConnection();
             await conn.OpenAsync();
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = """
@@ -344,7 +344,7 @@ public class IdempotencyStoreIntegrationTests
         var identityB = CreateIdentity(scope: "account:00000000000000000000000000000002", keyHash: keyHash, requestHash: requestHash);
 
         // Tenant A executes
-        await using var contextA = _db.CreateContext();
+        await using var contextA = _db.CreateOwnerContext();
         await using var txA = await contextA.Database.BeginTransactionAsync();
         var storeA = CreateStore(contextA);
         var resultA = await storeA.BeginAsync(identityA, CancellationToken.None);
@@ -354,7 +354,7 @@ public class IdempotencyStoreIntegrationTests
         await txA.CommitAsync();
 
         // Tenant B with same key should also get Started (independent partition)
-        await using var contextB = _db.CreateContext();
+        await using var contextB = _db.CreateOwnerContext();
         await using var txB = await contextB.Database.BeginTransactionAsync();
         var storeB = CreateStore(contextB);
         var resultB = await storeB.BeginAsync(identityB, CancellationToken.None);
@@ -366,7 +366,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_DB_011_NoTransaction_Throws()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         // No transaction started
 
         var store = CreateStore(context);
@@ -390,7 +390,7 @@ public class IdempotencyStoreIntegrationTests
             requestHash: Guid.NewGuid().ToString("N"));
 
         // Simulate a committed Started row left behind by a crashed/partial writer.
-        await using (var seedContext = _db.CreateContext())
+        await using (var seedContext = _db.CreateOwnerContext())
         {
             var now = DateTimeOffset.UtcNow;
             var record = IdempotencyRecord.CreateStarted(
@@ -400,7 +400,7 @@ public class IdempotencyStoreIntegrationTests
             await seedContext.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context);
 
@@ -420,7 +420,7 @@ public class IdempotencyStoreIntegrationTests
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
 
-        await using (var seedContext = _db.CreateContext())
+        await using (var seedContext = _db.CreateOwnerContext())
         {
             var now = DateTimeOffset.UtcNow;
             var record = IdempotencyRecord.CreateStarted(
@@ -431,7 +431,7 @@ public class IdempotencyStoreIntegrationTests
             await seedContext.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context);
 
@@ -449,7 +449,7 @@ public class IdempotencyStoreIntegrationTests
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
 
-        await using (var seedContext = _db.CreateContext())
+        await using (var seedContext = _db.CreateOwnerContext())
         {
             var now = DateTimeOffset.UtcNow;
             var record = IdempotencyRecord.CreateStarted(
@@ -459,7 +459,7 @@ public class IdempotencyStoreIntegrationTests
             await seedContext.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context);
 
@@ -472,7 +472,7 @@ public class IdempotencyStoreIntegrationTests
         await context.SaveChangesAsync();
         await tx.CommitAsync();
 
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var persisted = await verifyContext.Set<IdempotencyRecord>()
             .SingleAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
         persisted.State.Should().Be("Completed");
@@ -486,7 +486,7 @@ public class IdempotencyStoreIntegrationTests
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
 
-        await using (var seedContext = _db.CreateContext())
+        await using (var seedContext = _db.CreateOwnerContext())
         {
             var now = DateTimeOffset.UtcNow;
             var record = IdempotencyRecord.CreateStarted(
@@ -497,7 +497,7 @@ public class IdempotencyStoreIntegrationTests
             await seedContext.SaveChangesAsync();
         }
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context);
 
@@ -518,7 +518,7 @@ public class IdempotencyStoreIntegrationTests
 
         var before = DateTimeOffset.UtcNow;
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context, options);
 
@@ -554,7 +554,7 @@ public class IdempotencyStoreIntegrationTests
         // Spec 3.8 + FZ-IDEM-03 + FZ-INF-IDEM-SCHEMA-01: the database enforces
         // the idempotency state/payload contract — only the Started-empty and
         // Completed-populated row shapes are accepted.
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         // 1. Bogus state with null payload must be rejected by the state enum
@@ -657,7 +657,7 @@ public class IdempotencyStoreIntegrationTests
 
         var before = DateTimeOffset.UtcNow;
 
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateOwnerContext();
         await using var tx = await context.Database.BeginTransactionAsync();
         var store = CreateStore(context, options);
 
@@ -670,7 +670,7 @@ public class IdempotencyStoreIntegrationTests
 
         var after = DateTimeOffset.UtcNow;
 
-        await using var verifyContext = _db.CreateContext();
+        await using var verifyContext = _db.CreateOwnerContext();
         var record = await verifyContext.Set<IdempotencyRecord>()
             .FirstAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
 
@@ -681,7 +681,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_SCHEMA_001_OnlyCanonicalTableExists()
     {
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();
@@ -708,7 +708,7 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_SCHEMA_002_NoLeaseColumns()
     {
-        await using var conn = _db.CreateConnection();
+        await using var conn = _db.CreateOwnerConnection();
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();

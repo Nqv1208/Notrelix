@@ -71,8 +71,8 @@ test.describe("Kanban drag", () => {
   }) => {
     await openBoard(page);
     const idle = await box(card(page, ERP_149));
-    // Idle card geometry is the mockup's (248 wide, 12 padding, radius 11).
-    expect(Math.round(idle.width)).toBe(248);
+    // Idle card geometry is the mockup's (240 wide, 12 padding, radius 11).
+    expect(Math.round(idle.width)).toBe(240);
     const { grab } = await pickUp(page, ERP_149);
 
     const overlay = page.locator("[data-kanban-drag-overlay]");
@@ -101,7 +101,7 @@ test.describe("Kanban drag", () => {
     await expect(gap).toHaveCount(1);
     const gapBox = await box(gap);
     expect(Math.abs(gapBox.height - idle.height)).toBeLessThan(1.5);
-    expect(Math.round(gapBox.width)).toBe(248);
+    expect(Math.round(gapBox.width)).toBe(240);
 
     // Over the "Đang làm" lane: the gap is in that lane and the lane is outlined.
     const doing = lane(page, "Đang làm");
@@ -293,7 +293,7 @@ test.describe("Kanban drag", () => {
     page,
   }) => {
     await openBoard(page, { width: 1000, height: 900 });
-    const scroller = page.locator("[data-kanban-board] > div").nth(1);
+    const scroller = page.locator("[data-kanban-scroller]");
     expect(
       await scroller.evaluate((el) => el.scrollWidth > el.clientWidth),
     ).toBe(true);
@@ -319,7 +319,7 @@ test.describe("Kanban lanes", () => {
     const last = await box(lane(page, "Hoàn thành"));
     const slotBox = await box(slot);
     // As wide as a lane, one gap (12) after the last lane, top aligned.
-    expect(Math.round(slotBox.width)).toBe(264);
+    expect(Math.round(slotBox.width)).toBe(256);
     expect(
       Math.abs(slotBox.x - (last.x + last.width + 12)),
     ).toBeLessThanOrEqual(1);
@@ -344,7 +344,7 @@ test.describe("Kanban lanes", () => {
     // (The lane is drawn again with the server's id once the board is read.)
     await expect
       .poll(async () => Math.round((await added.boundingBox())?.width ?? 0))
-      .toBe(264);
+      .toBe(256);
     expect((await box(added)).x).toBeGreaterThan(
       (await box(lane(page, "Hoàn thành"))).x,
     );

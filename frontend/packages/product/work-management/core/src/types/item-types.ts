@@ -110,6 +110,19 @@ export interface ActivityCompact {
   readonly hideDetail?: boolean;
 }
 
+/**
+ * What a history line changed, without sentences (the backend's `ActivityChangeDto`): names and short values
+ * only. The client words it in the viewer's language from the line's type.
+ */
+export interface ActivityChange {
+  readonly fieldName?: string;
+  readonly from?: string;
+  readonly to?: string;
+  readonly personId?: string;
+  readonly personName?: string;
+  readonly itemKey?: string;
+}
+
 export interface CardActivity {
   id: string;
   cardId: string;
@@ -128,6 +141,9 @@ export interface CardActivity {
   notified?: string;
   detail?: ActivityDetail;
   compact?: ActivityCompact;
+  /** The stable type of the fact ("work.item-status-changed"); the client words it in its language. */
+  code?: string;
+  change?: ActivityChange;
 }
 
 export interface CardFile {
@@ -244,6 +260,10 @@ export interface ActivityLogDtoApi {
   notified?: string | null;
   detail?: ActivityDetail | null;
   compact?: ActivityCompact | null;
+  /** The stable type of the fact and its language-neutral detail (`GET /board-items/{id}/activity`). */
+  type?: string | null;
+  change?: ActivityChange | null;
+  actorAvatarUrl?: string | null;
 }
 
 export interface ActivityLogResponseApi {

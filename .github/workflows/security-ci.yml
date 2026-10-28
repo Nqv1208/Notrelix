@@ -12,6 +12,8 @@ on:
 
 env:
   TRIVY_SEVERITY: CRITICAL,HIGH
+  # New upstream CVEs in base images block main and manual runs only; other runs print the findings.
+  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
 
 permissions:
   contents: read
@@ -116,28 +118,28 @@ jobs:
           image-ref: ${{ env.RUNTIME_REF_POSTGRES }}
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
-          exit-code: "1"
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
       - name: Scan redis
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_REDIS }}
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
-          exit-code: "1"
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
       - name: Scan rabbitmq
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_RABBITMQ }}
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
-          exit-code: "1"
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
       - name: Scan nginx
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_NGINX }}
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
-          exit-code: "1"
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
       - name: Enforce scoped ignore expiry and digest binding
         run: |
           python3 - <<'EOF'

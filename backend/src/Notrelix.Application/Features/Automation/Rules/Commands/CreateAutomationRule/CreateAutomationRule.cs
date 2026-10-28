@@ -1,9 +1,9 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.Automation.Rules.Services;
 using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
-using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
 
@@ -13,17 +13,27 @@ public record CreateAutomationRuleCommand(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
+    string Configuration,
+    Guid? BoardId = null,
+    string? TriggerConfiguration = null,
+    IReadOnlyList<RuleActionInput>? Actions = null,
+    string? Conditions = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
+    // Board-scoped rules are managed by the board's Managers (and workspace Owners/Admins, who are
+    // Managers everywhere); a rule without a board stays workspace settings.
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public ResourceRef Resource => BoardId is { } board
+        ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board, WorkspaceId)
+        : ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
 
     /// <summary>
     /// AUT-020: a Webhook action reaches the n8n integration, so creating such a
     /// Rule also needs ManageIntegrations. Pipeline authorization only.
     /// </summary>
     public IReadOnlyList<string> AdditionalActionNames =>
-        string.Equals(ActionType, "Webhook", StringComparison.Ordinal)
+        BoardId is null && (Actions is { Count: > 0 }
+            ? Actions.Any(a => string.Equals(a.Type, "Webhook", StringComparison.Ordinal))
+            : string.Equals(ActionType, "Webhook", StringComparison.Ordinal))
             ? [nameof(PermissionAction.ManageIntegrations)]
             : [];
 }
@@ -36,6 +46,7 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly IBillingCapabilityFacts _billingCapabilityFacts;
     private readonly IBillingCapacityActions _billingCapacityActions;
     private readonly AutomationExecutorAuthority _executorAuthority;
+    private readonly IWorkActionPort _workActions;
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
@@ -43,8 +54,10 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         IDateTimeProvider dateTimeProvider,
         IBillingCapabilityFacts billingCapabilityFacts,
         IBillingCapacityActions billingCapacityActions,
-        AutomationExecutorAuthority executorAuthority)
+        AutomationExecutorAuthority executorAuthority,
+        IWorkActionPort workActions)
     {
+        _workActions = workActions;
         _executorAuthority = executorAuthority;
         _context = context;
         _requestContext = requestContext;
@@ -68,27 +81,34 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             return Result<Guid>.Failure(
                 "The automation rule limit for this workspace's plan has been reached.");
 
-        var trigger = AutomationTriggerDefinition.Create(request.TriggerEvent, request.Configuration);
-        var action = AutomationActionDefinition.Create(request.ActionType, request.Configuration);
+        // One trigger, optional AND conditions and up to five ordered actions (no branching).
+        IReadOnlyList<RuleActionInput> actions = request.Actions is { Count: > 0 }
+            ? request.Actions
+            : [new RuleActionInput(request.ActionType, request.Configuration)];
+        var config = AutomationRuleAssembler.Assemble(
+            request.TriggerEvent, request.TriggerConfiguration, request.BoardId, actions, request.Conditions);
 
-        // AUT-028: a Webhook rule's path is allow-listed when the rule is created,
-        // not only when it is enabled (the Domain rejects url and unsafe paths).
-        if (string.Equals(action.Type, "Webhook", StringComparison.OrdinalIgnoreCase))
-        {
-            AutomationActionValidator.Validate(action);
-        }
-
-        var config = AutomationConfiguration.Create(trigger, action);
-
-        // AUT-020: the rule runs as its creator, so the creator must hold the
-        // action's permission on the target now (a Private board the creator
-        // cannot see is rejected here, never bound).
-        await _executorAuthority.EnsureCanExecuteAsync(
+        // AUT-020: the rule runs as its creator, so the creator must hold every action's
+        // permission on its targets now (a Private board the creator cannot see is rejected
+        // here, never bound), and every condition must name things of the rule's board.
+        await _executorAuthority.EnsureRuleAsync(
             _requestContext.RequireAccountId(),
             request.WorkspaceId,
             _requestContext.UserId,
-            action,
+            config,
+            request.BoardId,
             cancellationToken);
+
+        // The trigger filter's group must be on the rule's board too.
+        if (request.BoardId is { } boardId
+            && AutomationTriggerFilter.TryReadGroup(request.TriggerConfiguration, out var triggerGroupId))
+        {
+            await _workActions.EnsureBoardGroupAsync(
+                boardId,
+                triggerGroupId,
+                new AutomationPrincipal(_requestContext.RequireAccountId(), _requestContext.UserId, request.WorkspaceId),
+                cancellationToken);
+        }
 
         var rule = AutomationRule.Create(
             _requestContext.RequireAccountId(),
@@ -96,7 +116,8 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             request.Name,
             config,
             _requestContext.UserId,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow,
+            request.BoardId);
 
         _context.AutomationRules.Add(rule);
 

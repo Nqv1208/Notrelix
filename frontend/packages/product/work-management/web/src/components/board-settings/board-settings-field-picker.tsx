@@ -26,9 +26,12 @@ const GROUPS: readonly {
  */
 export function FieldTypePicker({
   copy,
+  allowed,
   onPick,
 }: {
   copy: BoardSettingsCopy;
+  /** The types a field can be created as; absent = all. */
+  allowed?: readonly BoardSettingsFieldType[];
   onPick: (type: BoardSettingsFieldType) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -41,13 +44,14 @@ export function FieldTypePicker({
     return GROUPS.map((group) => ({
       ...group,
       types: group.types.filter((type) => {
+        if (allowed && !allowed.includes(type)) return false;
         if (!needle) return true;
         return `${copy.picker.names[type]} ${copy.picker.hints[type]}`
           .toLowerCase()
           .includes(needle);
       }),
     })).filter((group) => group.types.length > 0);
-  }, [copy, query]);
+  }, [allowed, copy, query]);
   const flat = groups.flatMap((group) => group.types);
   const current = flat.includes(active) ? active : (flat[0] ?? null);
 
@@ -84,9 +88,6 @@ export function FieldTypePicker({
           aria-label={copy.picker.search}
           className="min-w-0 flex-1 border-0 bg-transparent text-item-ui text-foreground outline-none placeholder:text-meta-foreground"
         />
-        <kbd className="rounded-[4px] border border-line-strong bg-keycap px-1.25 font-mono text-key text-muted-foreground">
-          Esc
-        </kbd>
       </div>
       {groups.length === 0 ? (
         <p className="m-0 px-4 py-6 text-center text-item-small text-meta-foreground">

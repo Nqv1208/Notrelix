@@ -1,3 +1,4 @@
+import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -19,6 +20,12 @@ import {
 } from "@notrelix/work-management-core";
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
+import {
+  AddGroupPopover,
+  type AddGroupDraft,
+} from "../../status-option/add-group-popover";
+import { cn } from "@notrelix/ui-web";
+import { kanbanColumnWidthClass } from "./kanban-layout";
 import { KanbanAddLane } from "./kanban-add-lane";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanCardOverlay } from "./kanban-card";
@@ -86,6 +93,24 @@ export interface KanbanBoardProps {
   onUpdateLane?: (lane: KanbanStatusLane, draft: StatusOptionDraft) => void;
   /** A lane create is in flight. */
   lanePending?: boolean;
+  /** Move a lane's option one place before or after its neighbour. */
+  onMoveLane?: (lane: KanbanStatusLane, direction: "before" | "after") => void;
+  /** Delete a lane's option; its items move to the replacement (null: lose the value). */
+  onDeleteLane?: (
+    lane: KanbanStatusLane,
+    replacementOptionId: string | null,
+  ) => void;
+  /** A lane move or delete is in flight. */
+  laneWritePending?: boolean;
+  /**
+   * "Add group": creates a group of the board (not a status). With it the slot
+   * after the last lane offers it under "Add status".
+   */
+  onCreateGroup?: (draft: AddGroupDraft) => Promise<void> | void;
+  /** Titles the board's groups carry (a new group may not repeat them). */
+  groupTitles?: readonly string[];
+  /** A group create is in flight. */
+  groupPending?: boolean;
   /** Cards a lane shows before "Xem thêm N việc" (the view's `laneCardLimit`). */
   laneCardLimit?: number;
   /**
@@ -93,6 +118,20 @@ export interface KanbanBoardProps {
    * needs `canDrag`. Off: those keys do nothing.
    */
   keyboardMove?: boolean;
+  /** Hover and focus actions of the cards; absent: none. */
+  cardActions?: KanbanCardActions;
+  /** Lane value id to its WIP limit (a warning number); absent: no limits. */
+  wipLimits?: Readonly<Record<string, number>>;
+  /** Set or (null) remove a lane's limit; absent: the viewer cannot. */
+  onWipLimitChange?: (lane: KanbanStatusLane, limit: number | null) => void;
+  /** The header "+" and the empty lane's button: the full form for a lane. */
+  onRequestCreate?: (lane: KanbanStatusLane) => void;
+  /** Quick add handed over to the full form with the typed title. */
+  onExpandCreate?: (lane: KanbanStatusLane, title: string) => void;
+  /** The lanes collapsed when the board opens (the member's own preference). */
+  initialCollapsed?: ReadonlySet<string>;
+  /** The collapsed lanes changed: the container remembers them per member and view. */
+  onCollapsedChange?: (collapsed: ReadonlySet<string>) => void;
 }
 
 function laneKey(lane: KanbanStatusLane): string {
@@ -143,10 +182,25 @@ export function KanbanBoard({
   onCreateLane,
   onUpdateLane,
   lanePending = false,
+  onMoveLane,
+  onDeleteLane,
+  laneWritePending = false,
+  onCreateGroup,
+  groupTitles = [],
+  groupPending = false,
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   keyboardMove = true,
+  cardActions,
+  wipLimits,
+  onWipLimitChange,
+  onRequestCreate,
+  onExpandCreate,
+  initialCollapsed,
+  onCollapsedChange,
 }: KanbanBoardProps) {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
+    () => initialCollapsed ?? new Set(),
+  );
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
   // The arrangement of a card just dropped, kept on screen until the lanes
@@ -322,7 +376,13 @@ export function KanbanBoard({
       else next.delete(key);
       return next;
     });
-  const setLaneCollapsed = toggle(setCollapsed);
+  const setLaneCollapsed = (key: string, on: boolean) => {
+    const next = new Set(collapsed);
+    if (on) next.add(key);
+    else next.delete(key);
+    setCollapsed(next);
+    onCollapsedChange?.(next);
+  };
   const setLaneHidden = toggle(setHidden);
 
   // A lane that appears while its popover closes (a new status) keeps nothing
@@ -381,6 +441,21 @@ export function KanbanBoard({
     .map((lane) => lane.name);
   const canManageLanes = formCopy !== undefined && onCreateLane !== undefined;
   const subject = groupKind === "status" ? "status" : "value";
+  // The lanes that are options of the field, in the field's order.
+  const optionLanes = lanes.filter((lane) => lane.optionId !== null);
+  const blockedReasonFor = (lane: KanbanStatusLane): string | undefined => {
+    if (!formCopy) return undefined;
+    if (subject === "value") {
+      return optionLanes.length <= 1 ? formCopy.removeBlockedValue : undefined;
+    }
+    const required = lane.category === "todo" || lane.category === "done";
+    const other = optionLanes.some(
+      (candidate) =>
+        candidate.optionId !== lane.optionId &&
+        candidate.category === lane.category,
+    );
+    return required && !other ? formCopy.removeBlockedStatus : undefined;
+  };
 
   return (
     <DndContext
@@ -429,6 +504,7 @@ export function KanbanBoard({
               dropTarget={drag !== null && currentLaneKey === key}
               laneCardLimit={laneCardLimit}
               draggedCardId={drag?.cardId ?? movedId ?? undefined}
+              cardActions={cardActions}
               onMoveCardByKey={
                 canDrag && keyboardMove ? handleMoveByKey : undefined
               }
@@ -441,7 +517,59 @@ export function KanbanBoard({
                         (laneName) => laneName !== lane.name,
                       ),
                       onSubmit: (draft) => onUpdateLane(original, draft),
+                      move: onMoveLane
+                        ? {
+                            canMoveLeft:
+                              optionLanes.findIndex(
+                                (candidate) =>
+                                  candidate.optionId === lane.optionId,
+                              ) > 0,
+                            canMoveRight:
+                              optionLanes.findIndex(
+                                (candidate) =>
+                                  candidate.optionId === lane.optionId,
+                              ) <
+                              optionLanes.length - 1,
+                            pending: laneWritePending,
+                            onMove: (direction) =>
+                              onMoveLane(original, direction),
+                          }
+                        : undefined,
+                      remove: onDeleteLane
+                        ? {
+                            blockedReason: blockedReasonFor(original),
+                            choices: optionLanes
+                              .filter(
+                                (candidate) =>
+                                  candidate.optionId !== lane.optionId,
+                              )
+                              .map((candidate) => ({
+                                id: candidate.optionId!,
+                                name: candidate.name,
+                                color: candidate.color,
+                              })),
+                            pending: laneWritePending,
+                            onConfirm: (replacementId) =>
+                              onDeleteLane(original, replacementId),
+                          }
+                        : undefined,
                     }
+                  : undefined
+              }
+              wipLimit={lane.optionId ? wipLimits?.[lane.optionId] : undefined}
+              onWipLimitChange={
+                onWipLimitChange && lane.optionId
+                  ? (limit) => onWipLimitChange(original ?? lane, limit)
+                  : undefined
+              }
+              onRequestCreate={
+                onRequestCreate
+                  ? () => onRequestCreate(original ?? lane)
+                  : undefined
+              }
+              onExpandCreate={
+                onExpandCreate
+                  ? (title) => onExpandCreate(original ?? lane, title)
                   : undefined
               }
               collapsed={collapsed.has(key)}
@@ -454,14 +582,38 @@ export function KanbanBoard({
           );
         })}
         {canManageLanes ? (
-          <KanbanAddLane
-            copy={copy}
-            formCopy={formCopy}
-            subject={subject}
-            existingNames={laneNames}
-            pending={lanePending}
-            onCreate={onCreateLane}
-          />
+          onCreateGroup ? (
+            <div className="flex shrink-0 flex-col gap-2">
+              <KanbanAddLane
+                copy={copy}
+                formCopy={formCopy}
+                subject={subject}
+                existingNames={laneNames}
+                pending={lanePending}
+                onCreate={onCreateLane}
+              />
+              <AddGroupPopover
+                copy={formCopy}
+                label={copy.addGroup}
+                existingTitles={groupTitles}
+                pending={groupPending}
+                onSubmit={onCreateGroup}
+                triggerClassName={cn(
+                  "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border-0 bg-transparent px-4 text-compact font-medium text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground aria-expanded:bg-state-hover aria-expanded:text-foreground",
+                  kanbanColumnWidthClass,
+                )}
+              />
+            </div>
+          ) : (
+            <KanbanAddLane
+              copy={copy}
+              formCopy={formCopy}
+              subject={subject}
+              existingNames={laneNames}
+              pending={lanePending}
+              onCreate={onCreateLane}
+            />
+          )
         ) : null}
         {hiddenCount > 0 ? (
           <button

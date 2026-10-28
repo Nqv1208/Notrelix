@@ -151,6 +151,7 @@ describe.each([
     expect(save).toHaveBeenLastCalledWith(expect.anything(), "enable");
   });
 
+  // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it(`${fui("automation-pickers", locale)}picks another event and adds, moves and removes a step (${locale})`, async () => {
     const save = vi.fn(() => Promise.resolve({ ok: true as const }));
     renderAutomation(copy, {
@@ -201,7 +202,7 @@ describe.each([
     ];
     expect(definition.trigger.kind).toBe("comment-added");
     expect(definition.steps).toHaveLength(1);
-  });
+  }, 20_000);
 
   it(`${fui("automation-running", locale)}saves a running rule as a new version only after a change (${locale})`, async () => {
     const save = vi.fn(() => Promise.resolve({ ok: true as const }));

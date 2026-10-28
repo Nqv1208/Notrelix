@@ -30,6 +30,13 @@ namespace Notrelix.Infrastructure;
 /// </summary>
 public static class PersistenceRegistration
 {
+    internal static void ConfigureNpgsql(DbContextOptionsBuilder options, string? connectionString) =>
+        options.UseNpgsql(connectionString, npg =>
+        {
+            npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+            npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
+        }).UseSnakeCaseNamingConvention();
+
     public static IServiceCollection AddPersistence(
         this IServiceCollection services, IConfiguration configuration)
     {
@@ -53,19 +60,28 @@ public static class PersistenceRegistration
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
 
-        var connectionString = configuration.GetConnectionString("NotrelixDb");
+        // The application login (ConnectionStrings:NotrelixDb) serves requests; the background login
+        // (ConnectionStrings:NotrelixWorkerDb) is used by every scope that was switched to the worker
+        // principal (dispatchers, deduplication, consumers, sweeps). Unset, the worker string falls back to
+        // the application one.
+        var connectionStrings = DatabaseConnectionStrings.FromConfiguration(configuration);
+        services.AddSingleton(connectionStrings);
+        services.AddScoped<DatabasePrincipal>();
 
         // Single unified ApplicationDbContext
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
+            ConfigureNpgsql(options, sp.GetRequiredService<DatabasePrincipal>().ResolveConnectionString());
         });
+
+        // Owner connection (migrate, rls-apply, seed). Falls back to the runtime connection string
+        // while ConnectionStrings:NotrelixMigrationDb is unset.
+        services.AddScoped<OwnerDbContextProvider>();
+
+        // Refuses (or warns about) a serving connection that row-level security cannot constrain.
+        services.AddHostedService<RuntimeDatabaseRoleGuard>();
 
         // Provider-independent data session (transaction/RLS/SaveChanges mechanics)
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
@@ -111,6 +127,12 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Watchers.IResourceFollowers,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.INotificationInbox,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Notifications.PostgresNotificationInbox>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Ports.IAutomationMessagePort,
+            global::Notrelix.Infrastructure.CrossContext.Automation.Messaging.AutomationMessageAdapter>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker,
             Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
@@ -126,18 +148,34 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts,
+            global::Notrelix.Infrastructure.CrossContext.WorkManagement.Documents.PageTitleFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageBlocks.IPageBlockFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Documents.PageBlockFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardWork.IBoardWorkSummaryFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardWorkSummaryFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.GettingStarted.IFirstWorkItemFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.FirstWorkItemFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemNotifications.IWorkItemNotificationFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemActivity.IWorkItemActivityFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemActivityFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Activity.Ports.IResourceActivityReader,
+            global::Notrelix.Infrastructure.Data.Collaboration.ResourceActivityReader>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpaceOverviewFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.CommandSearch.IWorkSearchFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.WorkSearchFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageSearch.IPageSearchFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSearchFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,
             Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemReminders,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemReminders>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
@@ -146,6 +184,10 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions,
             Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageBacklinkReader,
+            global::Notrelix.Infrastructure.Documents.Pages.PageBacklinkReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
+            Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts,
             Notrelix.Infrastructure.Data.Authz.GuestResourceInvitationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Abstractions.IResourceAccessEntriesReader,
@@ -156,9 +198,21 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Abstractions.IWorkspaceSlugResolver, Notrelix.Infrastructure.Workspaces.Workspaces.WorkspaceSlugResolver>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.OAuth.Abstractions.IOAuthIdentityProbe, Notrelix.Infrastructure.Identity.OAuth.OAuthIdentityProbe>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe, Notrelix.Infrastructure.Identity.Registration.EmailRegistrationProbe>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Users.Ports.IMemberEmailReadPort, Notrelix.Infrastructure.Identity.Users.MemberEmailReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, Notrelix.Infrastructure.Identity.Profiles.AvatarStorageKeyLookup>();
         services.AddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
-        services.AddScoped<ApplicationDbContextInitialiser>();
-        services.AddScoped<RlsPolicyApplier>();
+        services.AddScoped(sp => ActivatorUtilities.CreateInstance<ApplicationDbContextInitialiser>(
+            sp, sp.GetRequiredService<OwnerDbContextProvider>().Context));
+        services.AddScoped(sp => new RlsPolicyApplier(
+            sp.GetRequiredService<OwnerDbContextProvider>().Context,
+            sp.GetRequiredService<ILogger<RlsPolicyApplier>>()));
+        services.AddScoped(sp => new RlsLoginRoleProvisioningService(
+            sp.GetRequiredService<OwnerDbContextProvider>().Context,
+            configuration,
+            sp.GetRequiredService<ILogger<RlsLoginRoleProvisioningService>>()));
         services.AddScoped<RlsSessionContext>();
         services.AddScoped<IRlsSessionContext>(sp => sp.GetRequiredService<RlsSessionContext>());
 

@@ -14,6 +14,7 @@ import {
 } from "../composition/application-services-context";
 import { GlobalErrorBoundary } from "../components/global-error-boundary";
 import { webCatalogs } from "../i18n/catalogs";
+import { EmailConfirmationToastBridge } from "../shell/workspace/email-confirmation-toast-bridge";
 
 const browserLocales =
   typeof navigator === "undefined" ? [] : [...navigator.languages];
@@ -81,6 +82,7 @@ export function AppProviders({
                     <WorkManagementServicesProvider services={workManagement}>
                       {children}
                       <Toaster />
+                      <EmailConfirmationToastBridge />
                     </WorkManagementServicesProvider>
                   </ThemeProvider>
                 </I18nProvider>

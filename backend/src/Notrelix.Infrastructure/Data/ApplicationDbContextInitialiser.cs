@@ -83,6 +83,38 @@ public class ApplicationDbContextInitialiser
         }
     }
 
+    /// <summary>
+    /// Development only (the caller guards the environment): heals a development database that predates
+    /// the current seed. Touches the seed accounts only, deletes nothing and is a no-op when nothing needs
+    /// repair.
+    /// </summary>
+    public async Task RepairDevelopmentSeedAsync()
+    {
+        if (!_options.Enabled)
+        {
+            return;
+        }
+
+        _tenant.SetSystem();
+        try
+        {
+            var result = await DevelopmentSeedRepair.RunAsync(_context, DateTimeOffset.UtcNow);
+            if (result.ChangedAnything)
+            {
+                _logger.LogInformation("Development seed repair applied changes.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while repairing the development seed data.");
+            throw;
+        }
+        finally
+        {
+            _tenant.Clear();
+        }
+    }
+
     private async Task<SeedResult> TrySeedAsync()
     {
         var targets = _options.GetTargets();
@@ -116,6 +148,9 @@ public class ApplicationDbContextInitialiser
         _context.BoardGroups.RemoveRange(await _context.BoardGroups.IgnoreQueryFilters().ToListAsync());
         _context.Labels.RemoveRange(await _context.Labels.IgnoreQueryFilters().ToListAsync());
         _context.Boards.RemoveRange(await _context.Boards.IgnoreQueryFilters().ToListAsync());
+        _context.SpacePaths.RemoveRange(await _context.SpacePaths.IgnoreQueryFilters().ToListAsync());
+        _context.SpaceMembers.RemoveRange(await _context.SpaceMembers.IgnoreQueryFilters().ToListAsync());
+        _context.Spaces.RemoveRange(await _context.Spaces.IgnoreQueryFilters().ToListAsync());
         _context.WorkspaceMembers.RemoveRange(await _context.WorkspaceMembers.IgnoreQueryFilters().ToListAsync());
         _context.WorkspaceInvitations.RemoveRange(await _context.WorkspaceInvitations.IgnoreQueryFilters().ToListAsync());
         _context.Workspaces.RemoveRange(await _context.Workspaces.IgnoreQueryFilters().ToListAsync());

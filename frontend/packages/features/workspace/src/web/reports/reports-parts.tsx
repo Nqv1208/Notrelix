@@ -163,12 +163,3 @@ export function PriorityFlag({
     />
   );
 }
-
-/** A keycap (Final-Reports `.kbd`). */
-export function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded border border-line-strong bg-keycap px-[5px] font-mono text-key leading-[18px] text-muted-foreground">
-      {children}
-    </span>
-  );
-}

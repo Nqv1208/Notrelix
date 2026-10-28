@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Flag } from "lucide-react";
+import { Flag, MessageCircle } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { Card, CardMember } from "@notrelix/work-management-core";
 import {
@@ -10,6 +10,11 @@ import {
   pluralCopy,
   type KanbanCardCopy,
 } from "./kanban-card.copy";
+import {
+  KanbanCardQuickActions,
+  isAssignedTo,
+  type KanbanCardActions,
+} from "./kanban-card-quick-actions";
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
 import type { KanbanMoveDirection } from "./kanban-dnd";
@@ -31,7 +36,7 @@ function markFor(member: CardMember): string {
 const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
-  date: "font-medium text-meta-foreground",
+  date: "-ml-1.5 font-medium text-muted-foreground",
 };
 
 const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
@@ -42,7 +47,7 @@ const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
 };
 
 const CARD_CLASS =
-  "relative flex flex-col gap-[9px] rounded-[11px] bg-popover p-3 dark:bg-card";
+  "relative flex flex-col gap-2 rounded-[11px] bg-popover px-3 pt-[11px] pb-2.5 dark:bg-card";
 
 /** What a card shows, worked out once for its body and its open control. */
 function cardParts(
@@ -67,9 +72,16 @@ function cardParts(
         ? copy.dueToday
         : (due?.text ?? null);
 
-  const label = card.labels?.[0];
+  // Up to two labels, then "+N"; the first one still names the card's tone.
+  const allLabels = card.labels ?? [];
+  const label = allLabels[0];
   const labelTone = label ? itemLabelTone(label) : null;
-  const itemKey = card.itemKey?.trim() || null;
+  const shownLabels = allLabels.slice(0, 2);
+  const moreLabels = Math.max(allLabels.length - shownLabels.length, 0);
+  // A board with a key shows "ERP-142"; one without shows its number as "#142".
+  const rawKey = card.itemKey?.trim() || null;
+  const itemKey = rawKey && /^\d+$/.test(rawKey) ? `#${rawKey}` : rawKey;
+  const commentCount = Math.max(card._count?.comments ?? 0, 0);
 
   const progress =
     card.childProgress && card.childProgress.total > 0
@@ -88,7 +100,12 @@ function cardParts(
       : null;
 
   const assignee = card.members?.[0];
+  const shownAssignees = (card.members ?? []).slice(0, 2);
   const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
+  const hiddenAssignees = Math.max(
+    (card.members?.length ?? 0) - shownAssignees.length,
+    0,
+  );
   const assigneeLabel = assignee
     ? moreAssignees > 0
       ? fillCopy(copy.assignedToMore, {
@@ -104,14 +121,23 @@ function cardParts(
     dueText,
     label,
     labelTone,
+    shownLabels,
+    moreLabels,
     itemKey,
     progress,
     progressPercent,
     priority,
     assignee,
+    shownAssignees,
+    hiddenAssignees,
     assigneeLabel,
-    hasTop: Boolean(label && labelTone) || itemKey !== null,
-    hasMeta: dueText !== null || priority !== null || Boolean(assignee),
+    commentCount,
+    hasTop: shownLabels.length > 0 || itemKey !== null,
+    hasMeta:
+      dueText !== null ||
+      priority !== null ||
+      commentCount > 0 ||
+      Boolean(assignee),
   };
 }
 
@@ -136,14 +162,17 @@ function KanbanCardContent({
     isDone,
     due,
     dueText,
-    label,
-    labelTone,
+    shownLabels,
+    moreLabels,
     itemKey,
     progress,
     progressPercent,
     priority,
     assignee,
+    shownAssignees,
+    hiddenAssignees,
     assigneeLabel,
+    commentCount,
     hasTop,
     hasMeta,
   } = parts;
@@ -152,21 +181,36 @@ function KanbanCardContent({
       {hasTop ? (
         <div
           id={`${idPrefix}-top`}
-          className="flex min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
+          className="flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
         >
-          {label && labelTone ? (
-            <>
-              <span className="sr-only">{copy.label} </span>
-              <span
-                data-label-tone={labelTone}
-                className={cn(
-                  "inline-flex h-5.5 min-w-0 items-center truncate rounded-sm px-2 text-micro font-semibold",
-                  ITEM_LABEL_TONE_CLASS[labelTone],
-                )}
-              >
-                {label.name}
+          {shownLabels.map((label, index) => {
+            const tone = itemLabelTone(label);
+            return (
+              <span key={label.id} className="inline-flex min-w-0">
+                {index === 0 ? (
+                  <span className="sr-only">{copy.label} </span>
+                ) : null}
+                <span
+                  data-label-tone={tone ?? undefined}
+                  className={cn(
+                    "inline-flex h-5 min-w-0 items-center truncate rounded-[5px] px-[7px] text-micro font-semibold",
+                    tone
+                      ? ITEM_LABEL_TONE_CLASS[tone]
+                      : "bg-state-hover-strong text-muted-foreground",
+                  )}
+                >
+                  {label.name}
+                </span>
               </span>
-            </>
+            );
+          })}
+          {moreLabels > 0 ? (
+            <span
+              title={fillCopy(copy.moreLabels, { count: moreLabels })}
+              className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-state-hover-strong px-[7px] text-micro font-semibold text-muted-foreground"
+            >
+              +{moreLabels}
+            </span>
           ) : null}
           {itemKey ? (
             <span className="ml-auto shrink-0 font-mono text-metadata leading-[1.45]">
@@ -215,7 +259,7 @@ function KanbanCardContent({
       {hasMeta ? (
         <div
           id={`${idPrefix}-meta`}
-          className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-meta-foreground"
+          className="flex min-h-6 min-w-0 flex-wrap items-center gap-2 text-metadata text-meta-foreground"
         >
           {due && dueText ? (
             <span
@@ -246,21 +290,45 @@ function KanbanCardContent({
               {copy.priority[priority]}
             </span>
           ) : null}
+          {commentCount > 0 ? (
+            <span
+              data-comment-count={commentCount}
+              className="inline-flex items-center gap-1 tabular-nums"
+            >
+              <MessageCircle aria-hidden="true" className="size-3.25" />
+              <span aria-hidden="true">{commentCount}</span>
+              <span className="sr-only">
+                {fillCopy(copy.commentCount, { count: commentCount })}
+              </span>
+            </span>
+          ) : null}
           {assignee ? (
             <span
               role="group"
               aria-label={assigneeLabel}
               className="ml-auto flex shrink-0 items-center"
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "flex size-5.5 items-center justify-center rounded-full text-mark-xs select-none",
-                  identityMarkClass(assignee.userId || assignee.id),
-                )}
-              >
-                {markFor(assignee)}
-              </span>
+              {shownAssignees.map((member, index) => (
+                <span
+                  key={member.id}
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-5.5 items-center justify-center rounded-full text-mark-xs ring-2 ring-popover select-none dark:ring-card",
+                    index > 0 && "-ml-1.5",
+                    identityMarkClass(member.userId || member.id),
+                  )}
+                >
+                  {markFor(member)}
+                </span>
+              ))}
+              {hiddenAssignees > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="-ml-1.5 flex size-5.5 items-center justify-center rounded-full bg-state-hover-strong text-mark-xs text-muted-foreground ring-2 ring-popover select-none dark:ring-card"
+                >
+                  +{hiddenAssignees}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </div>
@@ -318,8 +386,8 @@ export function KanbanCardOverlay({
  * plain click still opens, and a touch drag starts after a long press. While
  * it is dragged the card stays in its lane as a gap of its own height at the
  * place it would be dropped at; moving with the keyboard happens from the item
- * sheet. Actions such as copy link, duplicate and archive live in the sheet,
- * not on the card.
+ * sheet. The hover actions (assign to me, due date, options) are a shortcut
+ * to the commonest sheet actions.
  */
 export function KanbanCard({
   card,
@@ -331,6 +399,7 @@ export function KanbanCard({
   dragDisabled = false,
   onMoveKey,
   onOpenDetails,
+  actions,
 }: {
   card: Card;
   /** The lane this card is shown in (the lane it is dragged over while dragging). */
@@ -350,7 +419,10 @@ export function KanbanCard({
    */
   onMoveKey?: (cardId: string, direction: KanbanMoveDirection) => void;
   onOpenDetails: (cardId: string) => void;
+  /** Hover and focus actions; absent: the card has none. */
+  actions?: KanbanCardActions;
 }) {
+  const [dueOpen, setDueOpen] = useState(false);
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
@@ -406,9 +478,15 @@ export function KanbanCard({
         aria-describedby={describedBy || undefined}
         data-card-id={card.id}
         aria-keyshortcuts={
-          onMoveKey
-            ? "Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
-            : undefined
+          [
+            onMoveKey
+              ? "Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown"
+              : null,
+            actions?.onAssignMe ? "A" : null,
+            actions?.onSetDue ? "D" : null,
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined
         }
         onClick={() => onOpenDetails(card.id)}
         onKeyDown={(event) => {
@@ -418,12 +496,39 @@ export function KanbanCard({
             onMoveKey?.(card.id, direction);
             return;
           }
+          const plain = !event.altKey && !event.ctrlKey && !event.metaKey;
+          if (plain && actions && !event.shiftKey) {
+            const key = event.key.toLowerCase();
+            if (
+              key === "a" &&
+              actions.onAssignMe &&
+              !isAssignedTo(card, actions.currentUserId)
+            ) {
+              event.preventDefault();
+              actions.onAssignMe(card);
+              return;
+            }
+            if (key === "d" && actions.onSetDue) {
+              event.preventDefault();
+              setDueOpen(true);
+              return;
+            }
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onOpenDetails(card.id);
           }
         }}
       />
+      {actions && !isDragging ? (
+        <KanbanCardQuickActions
+          card={card}
+          copy={copy}
+          actions={actions}
+          dueOpen={dueOpen}
+          onDueOpenChange={setDueOpen}
+        />
+      ) : null}
       <KanbanCardContent
         card={card}
         copy={copy}

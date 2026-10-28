@@ -127,6 +127,10 @@ public static class DependencyInjection
 
         // Producer-owned public semantic facts (real consumers only)
         services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Registration.Services.RegistrationScope>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Auth.Services.CredentialScope>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.DefaultWorkspace.IIdentityDefaultWorkspace,
+            Notrelix.Application.Features.Identity.Profiles.Services.IdentityDefaultWorkspaceProvider>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
         services.AddScoped<IAccountDomainFacts, AccountDomainFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure,
@@ -136,11 +140,16 @@ public static class DependencyInjection
         services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
 
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationAcceptanceService>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions,
+            Notrelix.Application.Features.Identity.Registration.Services.InvitedUserRegistrationActions>();
 
         // Producer-owned public target actions (WorkManagement item mutations)
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();
         services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
+        services.AddScoped<IBoardItemTargetAuthorizer, BoardItemTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
@@ -152,6 +161,10 @@ public static class DependencyInjection
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
+            Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
+            Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary,
             Notrelix.Application.Features.Governance.Authorization.ResourceAccessSummaryService>();
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>(sp =>
@@ -165,6 +178,12 @@ public static class DependencyInjection
 
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Billing.Plans.BillingPlanResolver>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.Reports.IWorkReportFacts,
+            Notrelix.Application.Features.WorkManagement.BoardItems.Services.WorkReportFactsService>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.SpaceSubtree.ISpaceSubtreeFacts,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceSubtreeFacts>();
+        services.AddScoped<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate, BillingSeatGate>();
 
         // Producer-owned public capacity action (Billing hard-quota consume/release)
         services.AddScoped<IBillingCapacityActions, BillingCapacityActions>();

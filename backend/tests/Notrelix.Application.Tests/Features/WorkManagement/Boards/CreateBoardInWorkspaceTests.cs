@@ -48,6 +48,23 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_CreatesOneGroupPerDefaultStatusSoItemsCanBeAddedAtOnce()
+    {
+        var groups = new List<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>();
+        var groupSet = new Mock<Microsoft.EntityFrameworkCore.DbSet<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>>();
+        groupSet.Setup(s => s.Add(It.IsAny<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>()))
+            .Callback<Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup>(groups.Add);
+        DbContextMock.Setup(c => c.BoardGroups).Returns(groupSet.Object);
+        var command = new CreateBoardInWorkspaceCommand(TestWorkspaceId, "New Board", null, null, null);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        groups.OrderBy(g => g.Position).Select(g => g.Title).Should().Equal("Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành");
+        groups.Should().OnlyContain(g => g.BoardId == result.Data && !g.IsArchived);
+        groups.Select(g => g.Position.Value).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
     public async Task Handle_WithBackground_SetsBackground()
     {
         var command = new CreateBoardInWorkspaceCommand(

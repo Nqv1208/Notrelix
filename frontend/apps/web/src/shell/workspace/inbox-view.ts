@@ -133,11 +133,19 @@ function childView(
 
 const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   approval_requested: "approve",
+  approval_approved: "change",
+  approval_rejected: "change",
   mention: "mention",
   overdue: "overdue",
   assigned: "assign",
   changes_bundle: "change",
   board_invited: "system",
+  followed_status: "change",
+  followed_comment: "change",
+  followed_assignee: "change",
+  automation: "system",
+  due_tomorrow: "overdue",
+  system: "system",
 };
 
 /** The producer's inbox as the Inbox page draws it. */
@@ -168,6 +176,28 @@ export function toInboxEntries(
         );
         context = { department, label: keyLabel };
         break;
+      case "approval_approved":
+      case "approval_rejected": {
+        const approved = entry.type === "approval_approved";
+        segments = sentence(
+          copy,
+          entry.excerpt
+            ? approved
+              ? copy.feed.approvalApprovedNote
+              : copy.feed.approvalRejectedNote
+            : approved
+              ? copy.feed.approvalApproved
+              : copy.feed.approvalRejected,
+          {
+            actor: actorName,
+            title: target.title,
+            excerpt: entry.excerpt ?? "",
+          },
+          ["actor", "title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      }
       case "mention":
         segments = sentence(
           copy,
@@ -189,7 +219,7 @@ export function toInboxEntries(
       case "overdue":
         segments = sentence(
           copy,
-          copy.feed.overdue,
+          entry.dueAt ? copy.feed.overdue : copy.feed.overduePlain,
           {
             title: target.title,
             days: plural(copy, daysOverdue(deps, entry.dueAt)),
@@ -214,6 +244,61 @@ export function toInboxEntries(
           copy,
           due ? copy.feed.assigned : copy.feed.assignedNoDue,
           { actor: actorName, title: target.title, due: due ?? "" },
+          ["actor", "title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      }
+      case "automation":
+        segments = sentence(
+          copy,
+          entry.excerpt ? copy.feed.automation : copy.feed.automationPlain,
+          { title: target.title, excerpt: entry.excerpt ?? "" },
+          ["title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      case "due_tomorrow":
+        segments = sentence(
+          copy,
+          copy.feed.dueTomorrow,
+          { title: target.title },
+          ["title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      case "system":
+        // A type this page does not know: its own text when it has one.
+        segments = sentence(
+          copy,
+          entry.excerpt ? copy.feed.system : copy.feed.systemPlain,
+          { excerpt: entry.excerpt ?? "" },
+          [],
+        );
+        context = null;
+        break;
+      case "followed_status":
+      case "followed_comment":
+      case "followed_assignee": {
+        const template =
+          entry.type === "followed_status"
+            ? entry.excerpt
+              ? copy.feed.followedStatus
+              : copy.feed.followedStatusPlain
+            : entry.type === "followed_comment"
+              ? entry.excerpt
+                ? copy.feed.followedComment
+                : copy.feed.followedCommentPlain
+              : copy.feed.followedAssignee;
+        segments = sentence(
+          copy,
+          template,
+          {
+            actor: actorName,
+            title: target.title,
+            status: entry.excerpt ?? "",
+            excerpt: entry.excerpt ?? "",
+          },
           ["actor", "title"],
         );
         context = { department, label: keyLabel };
@@ -289,7 +374,7 @@ export function toInboxEntries(
       entry.type === "mention" && entry.need === "reply"
         ? copy.feed.needReply
         : null,
-      entry.type === "overdue" ? copy.feed.followingNote : null,
+      entry.type === "overdue" && entry.dueAt ? copy.feed.followingNote : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -313,7 +398,7 @@ export function toInboxEntries(
     } else if (entry.type === "overdue") {
       eventSegments = sentence(
         copy,
-        copy.feed.overdueEvent,
+        entry.dueAt ? copy.feed.overdueEvent : copy.feed.overduePlain,
         {
           title: target.title,
           days: plural(copy, daysOverdue(deps, entry.dueAt)),
@@ -323,23 +408,27 @@ export function toInboxEntries(
     }
 
     const item = detailDto?.item;
+    // The request decides whether the buttons show: while it is pending only.
+    const approvable = entry.approval
+      ? entry.approval.status === "pending"
+      : Boolean(detailDto?.approval);
     const card =
-      entry.type === "approval_requested" && item
+      entry.type === "approval_requested" && (item || entry.approval)
         ? {
             title: target.title,
-            status: item.status
+            status: item?.status
               ? {
                   bucket: item.status.bucket as WorkStatusBucket,
                   label: item.status.label,
                 }
               : undefined,
-            priority: item.priority
+            priority: item?.priority
               ? copy.read.priorities[item.priority]
               : undefined,
-            due: item.dueAt ? shortDate(item.dueAt) : undefined,
-            comments: item.commentCount,
+            due: item?.dueAt ? shortDate(item.dueAt) : undefined,
+            comments: item?.commentCount,
             changes: detailDto?.approval?.changes ?? [],
-            approvable: Boolean(detailDto?.approval),
+            approvable,
           }
         : null;
     const latest =
@@ -390,6 +479,10 @@ export function toInboxEntries(
       context,
       need: entry.need,
       following: entry.following,
+      muted: entry.muted,
+      done: entry.done,
+      itemId: target.kind === "item" ? target.id : null,
+      docId: target.kind === "doc" ? target.id : null,
       bundle: entry.bundle
         ? {
             count: entry.bundle.children.length,
@@ -403,4 +496,25 @@ export function toInboxEntries(
       detail: entry.type === "changes_bundle" ? null : detail,
     };
   });
+}
+
+/**
+ * When a snoozed notification returns: an hour from now, tomorrow 08:00 or the
+ * next Monday 08:00, in the member's own time zone.
+ */
+export function snoozeUntil(
+  option: "hour" | "tomorrow" | "next-week",
+  now: number,
+): string {
+  if (option === "hour") return new Date(now + 60 * 60 * 1000).toISOString();
+  const date = new Date(now);
+  date.setHours(8, 0, 0, 0);
+  if (option === "tomorrow") {
+    date.setDate(date.getDate() + 1);
+  } else {
+    // Monday is 1; the next Monday is always after today.
+    const ahead = (8 - date.getDay()) % 7 || 7;
+    date.setDate(date.getDate() + ahead);
+  }
+  return date.toISOString();
 }

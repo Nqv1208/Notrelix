@@ -12,6 +12,26 @@
         "path": "src/components/doc-page-surfaces.tsx",
         "category": "nonvisual-composition",
         "reason": "Barrel re-exporting the page surfaces so stories, fixtures and tests keep one import path; each surface is registered separately."
+      },
+      {
+        "path": "src/editor/extensions.tsx",
+        "category": "application-adapter",
+        "reason": "Tiptap extension set and node views assembled into the live editor by use-doc-rich-editor; the article surface stories render the editor result, and the behaviour is proven by the editor component tests."
+      },
+      {
+        "path": "src/editor/media.tsx",
+        "category": "application-adapter",
+        "reason": "Tiptap media node views and upload plugin mounted only inside a live editor instance; behaviour is proven by media.component.test.tsx, and no registered story renders a live editor node view."
+      },
+      {
+        "path": "src/editor/code-block.tsx",
+        "category": "application-adapter",
+        "reason": "Tiptap code block node view mounted only inside a live editor instance; behaviour is proven by code-fence.component.test.tsx, and no registered story renders a live editor node view."
+      },
+      {
+        "path": "src/editor/caption-editor.tsx",
+        "category": "application-adapter",
+        "reason": "Nested Tiptap editor for media captions, created by the media node view inside a live editor instance; behaviour is proven by media.component.test.tsx."
       }
     ]
   },
@@ -21,7 +41,12 @@
       "owner": "@notrelix/docs-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/doc-page-screen-surface.tsx",
-      "coveredSources": ["src/components/doc-page-ui.tsx"],
+      "coveredSources": [
+        "src/components/doc-page-ui.tsx",
+        "src/components/doc-dialogs-surface.tsx",
+        "src/components/doc-history-dialogs-surface.tsx",
+        "src/components/doc-tools-dialogs-surface.tsx"
+      ],
       "stories": [
         {
           "id": "docs-page-surfaces--page-screen-default",
@@ -122,6 +147,48 @@
           ]
         },
         {
+          "id": "docs-page-surfaces--page-screen-trash",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-page-picker",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-convert-task",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
           "id": "docs-page-surfaces--page-screen-version-history",
           "state": "Default",
           "visualTargets": [
@@ -200,7 +267,7 @@
           {
             "state": "EdgeData",
             "reason": "Long titles and many blocks reflow inside the same page sheet; the article story carries the long-content case.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -218,6 +285,22 @@
         },
         {
           "id": "versions",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "trash",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "page-reference",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "convert-task",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "panel",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]
@@ -261,12 +344,12 @@
           {
             "state": "Loading",
             "reason": "The bar renders resolved page metadata; loading is owned by docs.page.screen.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "The crumb truncates and the bar wraps; no separate data shape.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -285,7 +368,11 @@
       "owner": "@notrelix/docs-web",
       "surfaceKind": "shell",
       "pureEntry": "src/components/doc-toolbar-surface.tsx",
-      "coveredSources": ["src/components/doc-file-menu-surface.tsx"],
+      "coveredSources": [
+        "src/components/doc-file-menu-surface.tsx",
+        "src/components/doc-menu-bar-surface.tsx",
+        "src/editor/editor-toolbar.tsx"
+      ],
       "stories": [
         {
           "id": "docs-page-surfaces--toolbar-default",
@@ -323,17 +410,17 @@
           {
             "state": "Loading",
             "reason": "The toolbar has no data of its own.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Unavailable tools are disabled with the stated reason, not an error.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "The tool row wraps at narrow widths; no data-dependent content.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -352,7 +439,20 @@
       "owner": "@notrelix/docs-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/doc-article-surface.tsx",
-      "coveredSources": ["src/components/doc-popups-surface.tsx"],
+      "coveredSources": [
+        "src/components/doc-popups-surface.tsx",
+        "src/components/doc-marks.tsx",
+        "src/components/doc-recovery-surface.tsx",
+        "src/components/doc-table-of-contents.tsx",
+        "src/editor/block-handle.tsx",
+        "src/editor/bubble-menu.tsx",
+        "src/editor/doc-editor-surface.tsx",
+        "src/editor/find-panel.tsx",
+        "src/editor/mark-chips.tsx",
+        "src/editor/mention-trigger.tsx",
+        "src/editor/slash-menu.tsx",
+        "src/editor/table-menu.tsx"
+      ],
       "stories": [
         {
           "id": "docs-page-surfaces--article-default",
@@ -428,17 +528,17 @@
           {
             "state": "Loading",
             "reason": "Loading is owned by docs.page.screen.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Save failure is shown by docs.page.bar.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "Long text wraps inside the 700 px sheet; the default story carries long task titles.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -523,17 +623,17 @@
           {
             "state": "Loading",
             "reason": "Loading is owned by docs.page.screen.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Failures surface through the host.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "Long titles wrap in the 276 px column.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -544,6 +644,22 @@
         {
           "id": "tabs",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "comment-delete",
+          "testFile": "src/components/__tests__/doc-comment-threads.interaction.component.test.tsx"
+        },
+        {
+          "id": "comment-reopen",
+          "testFile": "src/components/__tests__/doc-comment-threads.interaction.component.test.tsx"
+        },
+        {
+          "id": "comment-resolve",
+          "testFile": "src/components/__tests__/doc-comment-threads.interaction.component.test.tsx"
+        },
+        {
+          "id": "comment-resolved-hidden",
+          "testFile": "src/components/__tests__/doc-comment-threads.interaction.component.test.tsx"
         }
       ]
     },
@@ -586,17 +702,17 @@
           {
             "state": "Loading",
             "reason": "Loading is owned by docs.page.screen.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Failures surface through the host.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "The list scrolls; rows wrap.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -639,17 +755,17 @@
           {
             "state": "Loading",
             "reason": "The dialog opens with resolved page access.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Invite and permission writes are not available until Governance exposes page access.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "Long names truncate in the people list.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },

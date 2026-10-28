@@ -23,6 +23,7 @@ import {
   erpItemId,
   erpOwnerAccess,
 } from "@notrelix/work-management-testing";
+import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
@@ -113,6 +114,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
+          itemCreateCatalog,
         ]}
         initialLocale="vi"
       >
@@ -212,6 +214,24 @@ describe("BoardTimelineView on the ERP board", () => {
     ).toBe("true");
   });
 
+  it("opens the full form with the shown day as start and due when Add item is pressed", async () => {
+    const { cards } = renderTimeline();
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    const start = (await screen.findByLabelText(
+      "Ngày bắt đầu",
+    )) as HTMLInputElement;
+    expect(start.value).toBe("12/10/2026");
+    expect(
+      (screen.getByLabelText("Hạn hoàn thành") as HTMLInputElement).value,
+    ).toBe("12/10/2026");
+    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
+      target: { value: "Dựng khung kế hoạch" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
+    await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
+  });
+
   it("opens the item sheet from the key and clears it on close", async () => {
     const onItem = vi.fn();
     const { container } = renderTimeline(erpOwnerAccess(), {}, { onItem });
@@ -246,10 +266,14 @@ describe("BoardTimelineView on the ERP board", () => {
     )[1]!;
     fireEvent.keyDown(title, { key: "ArrowRight", altKey: true });
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
-    expect(cards.updateCard).toHaveBeenLastCalledWith(erpItemId("ERP-146"), {
-      dueDate: "2026-10-17T10:00:00.000Z",
-      startDate: "2026-10-14T02:00:00.000Z",
-    });
+    expect(cards.updateCard).toHaveBeenLastCalledWith(
+      erpItemId("ERP-146"),
+      {
+        dueDate: "2026-10-17T10:00:00.000Z",
+        startDate: "2026-10-14T02:00:00.000Z",
+      },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
     // Alt and Shift change only the due day (the fake board does not keep the
     // first write, so it shifts from 16/10 again).
     fireEvent.keyDown(title, {

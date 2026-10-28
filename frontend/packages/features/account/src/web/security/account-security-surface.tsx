@@ -10,8 +10,10 @@ import {
 import { Skeleton, cn } from "@notrelix/ui-web";
 import {
   BTN_DANGER,
+  BTN_PRIMARY,
   BTN_SM,
   FOCUS,
+  INPUT,
   LINK_BUTTON_DANGER,
   LoadError,
   PageHead,
@@ -23,16 +25,69 @@ import {
   pluralCopy,
   type AccountSection,
 } from "../shared/account-surface-model";
+import {
+  AccountPasswordChangedPanel,
+  AccountPasswordPanel,
+  type AccountPasswordError,
+  type AccountPasswordSubmission,
+} from "./account-password-panel";
+import { AccountQrCode } from "./account-qr-code";
 import type { AccountSecurityCopy } from "./account-security.copy";
+
+export type {
+  AccountPasswordError,
+  AccountPasswordSubmission,
+} from "./account-password-panel";
 
 export interface AccountSessionView {
   readonly id: string;
   readonly device: string;
   readonly kind: "desktop" | "phone" | "tablet";
-  readonly place: string;
-  /** ISO timestamp; `null` = the device in your hands, in use right now. */
-  readonly lastActiveAt: string | null;
+  /** The device in your hands, in use right now. */
+  readonly isCurrent: boolean;
+  /** ISO timestamp of the sign-in; the producer has no place and no last-active time. */
+  readonly signedInAt: string;
 }
+
+/** One line of the person's own security history. */
+export interface AccountActivityView {
+  readonly id: string;
+  readonly type: string;
+  readonly occurredAt: string;
+  readonly device: string;
+  readonly ipAddress: string | null;
+}
+
+/**
+ * A step of turning two-factor on or of a sensitive change. `wait` is the
+ * seconds a throttled step must wait (429); never a count of tries left.
+ */
+export type AccountSecurityFlow =
+  | {
+      readonly kind: "enroll";
+      readonly secret: string;
+      readonly otpAuthUri: string;
+      readonly error: "wrong" | "wait" | "failed" | null;
+      readonly wait?: number;
+    }
+  | {
+      readonly kind: "stepUp";
+      /** What the proof is for: turning two-factor off, or fresh backup codes. */
+      readonly purpose: "disable" | "renew";
+      readonly factor: "code" | "password";
+      readonly error: "wrong" | "wait" | "failed" | null;
+      readonly wait?: number;
+    }
+  | { readonly kind: "codes"; readonly codes: readonly string[] }
+  | {
+      /** Changing the password; `needsCode` while two-factor is on. */
+      readonly kind: "password";
+      readonly needsCode: boolean;
+      readonly error: AccountPasswordError | null;
+      readonly wait?: number;
+    }
+  /** The password changed and every session, this one too, was ended. */
+  | { readonly kind: "passwordChanged" };
 
 export interface AccountSecurityData {
   /** The single sign-on provider that owns the password; `null` = none. */
@@ -44,6 +99,10 @@ export interface AccountSecurityData {
   readonly sessions: readonly AccountSessionView[];
   /** "Now" for the relative times; the producer's clock. */
   readonly now: string;
+  /** The person's own recent security history, newest first. */
+  readonly activity?: readonly AccountActivityView[];
+  /** More activity lines can be loaded. */
+  readonly activityHasMore?: boolean;
 }
 
 export interface AccountSecuritySurfaceProps {
@@ -54,9 +113,21 @@ export interface AccountSecuritySurfaceProps {
   readonly actionError: boolean;
   /** The text of the toast at the foot of the page; `null` = none. */
   readonly notice: string | null;
-  /** Where a password of this account is changed; `null` = nowhere yet. */
-  readonly passwordHref: string | null;
+  /** The step of two-factor or a sensitive change in progress; `null`/absent = none. */
+  readonly flow?: AccountSecurityFlow | null;
   readonly onSetTwoFactor: (enabled: boolean) => void;
+  /** Opens the change of password; absent = the account cannot change it here. */
+  readonly onChangePassword?: () => void;
+  readonly onSubmitNewPassword?: (
+    submission: AccountPasswordSubmission,
+  ) => void;
+  /** After a change of password: leaves for the sign-in page. */
+  readonly onPasswordChangedContinue?: () => void;
+  /** Answers the open step: the authenticator's digits or a backup code. */
+  readonly onSubmitCode?: (code: string) => void;
+  readonly onSubmitPassword?: (password: string) => void;
+  readonly onCloseFlow?: () => void;
+  readonly onLoadMoreActivity?: () => void;
   readonly onRenewBackupCodes: () => void;
   readonly onSignOut: (sessionId: string) => void;
   readonly onSignOutOthers: () => void;
@@ -168,14 +239,165 @@ function Row({
   );
 }
 
+/** The step in progress: add the authenticator, prove who is asking, or keep the new backup codes. */
+function FlowPanel({
+  copy,
+  flow,
+  busy,
+  onSubmitCode,
+  onSubmitPassword,
+  onClose,
+}: {
+  copy: AccountSecurityCopy;
+  flow: Exclude<
+    AccountSecurityFlow,
+    { kind: "password" } | { kind: "passwordChanged" }
+  >;
+  busy: boolean;
+  onSubmitCode?: (code: string) => void;
+  onSubmitPassword?: (password: string) => void;
+  onClose?: () => void;
+}) {
+  const [value, setValue] = React.useState("");
+  const inputId = React.useId();
+  const t = copy.flow;
+  if (flow.kind === "codes")
+    return (
+      <section
+        aria-label={t.codesTitle}
+        className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+      >
+        <b className="block text-body font-semibold text-foreground">
+          {t.codesTitle}
+        </b>
+        <p className="m-0 mt-1 text-crumb text-muted-foreground">
+          {t.codesText}
+        </p>
+        <ul className="m-0 mt-2.5 grid list-none grid-cols-2 gap-1.5 p-0 font-mono text-nav">
+          {flow.codes.map((code) => (
+            <li key={code}>{code}</li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={onClose}
+          className={cn(BTN_SM, FOCUS, "mt-3")}
+        >
+          {t.done}
+        </button>
+      </section>
+    );
+  const usesPassword = flow.kind === "stepUp" && flow.factor === "password";
+  const failure =
+    flow.error === "wrong"
+      ? usesPassword
+        ? t.wrongPassword
+        : t.wrongCode
+      : flow.error === "wait"
+        ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
+        : flow.error === "failed"
+          ? copy.actionError
+          : null;
+  const title =
+    flow.kind === "enroll"
+      ? t.enrollTitle
+      : flow.purpose === "disable"
+        ? t.disableTitle
+        : t.renewTitle;
+  return (
+    <section
+      aria-label={title}
+      className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+    >
+      <b className="block text-body font-semibold text-foreground">{title}</b>
+      {flow.kind === "enroll" ? (
+        <>
+          <p className="m-0 mt-1 text-crumb text-muted-foreground">
+            {t.enrollText}
+          </p>
+          {flow.otpAuthUri ? (
+            <AccountQrCode
+              value={flow.otpAuthUri}
+              label={t.qrLabel}
+              className="mt-3 size-[168px] rounded-[8px] border border-line"
+            />
+          ) : null}
+          <p className="m-0 mt-3 text-xs text-meta-foreground">
+            {t.secretLabel}
+          </p>
+          <p
+            data-f="secret"
+            className="m-0 mt-1 font-mono text-nav break-all select-all"
+          >
+            {flow.secret}
+          </p>
+        </>
+      ) : (
+        <p className="m-0 mt-1 text-crumb text-muted-foreground">
+          {usesPassword ? t.passwordText : t.codeText}
+        </p>
+      )}
+      <form
+        noValidate
+        className="mt-2.5 flex flex-wrap items-end gap-2.5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!value) return;
+          if (usesPassword) onSubmitPassword?.(value);
+          else onSubmitCode?.(value);
+          setValue("");
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <label htmlFor={inputId} className="text-xs font-semibold">
+            {usesPassword ? t.passwordLabel : t.codeLabel}
+          </label>
+          <input
+            id={inputId}
+            type={usesPassword ? "password" : "text"}
+            autoComplete={usesPassword ? "current-password" : "one-time-code"}
+            inputMode={usesPassword ? undefined : "numeric"}
+            value={value}
+            aria-invalid={failure ? true : undefined}
+            onChange={(event) => setValue(event.target.value)}
+            className={cn(INPUT, "min-w-[200px]")}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={busy || !value || flow.error === "wait"}
+          className={cn(BTN_PRIMARY, FOCUS)}
+        >
+          {t.confirm}
+        </button>
+        <button type="button" onClick={onClose} className={cn(BTN_SM, FOCUS)}>
+          {t.cancel}
+        </button>
+      </form>
+      {failure ? (
+        <p role="alert" className="m-0 mt-2 text-crumb text-danger-text">
+          {failure}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function SecurityBody({
   copy,
   data,
   busy,
   actionError,
   notice,
-  passwordHref,
+  flow,
+  onChangePassword,
+  onSubmitNewPassword,
+  onPasswordChangedContinue,
   onSetTwoFactor,
+  onSubmitCode,
+  onSubmitPassword,
+  onCloseFlow,
+  onLoadMoreActivity,
   onRenewBackupCodes,
   onSignOut,
   onSignOutOthers,
@@ -188,9 +410,10 @@ function SecurityBody({
     sessions: React.useId(),
     others: React.useId(),
     othersText: React.useId(),
+    activity: React.useId(),
   };
-  const others = data.sessions.filter((session) => session.lastActiveAt);
-  const current = data.sessions.find((session) => !session.lastActiveAt);
+  const others = data.sessions.filter((session) => !session.isCurrent);
+  const current = data.sessions.find((session) => session.isCurrent);
   return (
     <>
       <Block
@@ -237,10 +460,15 @@ function SecurityBody({
                 {copy.password.ssoLink}
                 <span className="sr-only">{copy.password.ssoLinkOpens}</span>
               </a>
-            ) : passwordHref ? (
-              <a href={passwordHref} className={cn(BTN_SM, FOCUS)}>
+            ) : onChangePassword ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onChangePassword}
+                className={cn(BTN_SM, FOCUS)}
+              >
                 {copy.password.change}
-              </a>
+              </button>
             ) : (
               <span className="text-xs text-meta-foreground">
                 {copy.password.unavailable}
@@ -316,6 +544,32 @@ function SecurityBody({
         ) : null}
       </Block>
 
+      {flow?.kind === "password" ? (
+        <AccountPasswordPanel
+          copy={copy}
+          needsCode={flow.needsCode}
+          error={flow.error}
+          wait={flow.wait}
+          busy={busy}
+          onSubmit={onSubmitNewPassword}
+          onClose={onCloseFlow}
+        />
+      ) : flow?.kind === "passwordChanged" ? (
+        <AccountPasswordChangedPanel
+          copy={copy}
+          onContinue={onPasswordChangedContinue}
+        />
+      ) : flow ? (
+        <FlowPanel
+          copy={copy}
+          flow={flow}
+          busy={busy}
+          onSubmitCode={onSubmitCode}
+          onSubmitPassword={onSubmitPassword}
+          onClose={onCloseFlow}
+        />
+      ) : null}
+
       <Block
         titleId={ids.sessions}
         title={copy.sessions.title}
@@ -332,10 +586,12 @@ function SecurityBody({
         }
       >
         {data.sessions.map((session) => {
-          const current = session.lastActiveAt === null;
+          const current = session.isCurrent;
           const where = current
-            ? `${session.place} · ${copy.sessions.active}`
-            : `${session.place} · ${relativeAge(copy, session.lastActiveAt ?? data.now, data.now)}`;
+            ? copy.sessions.active
+            : fillCopy(copy.sessions.signedIn, {
+                age: relativeAge(copy, session.signedInAt, data.now),
+              });
           return (
             <Row
               key={session.id}
@@ -371,6 +627,41 @@ function SecurityBody({
           );
         })}
       </Block>
+
+      {data.activity && data.activity.length > 0 ? (
+        <Block titleId={ids.activity} title={copy.activity.title} aside={null}>
+          {data.activity.map((line) => (
+            <Row
+              key={line.id}
+              icon={KeyRound}
+              title={
+                copy.activity.types[
+                  line.type as keyof typeof copy.activity.types
+                ] ?? line.type
+              }
+              text={[
+                relativeAge(copy, line.occurredAt, data.now),
+                line.device,
+                line.ipAddress,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              control={null}
+            />
+          ))}
+          {data.activityHasMore && onLoadMoreActivity ? (
+            <div className="border-t border-line px-4 py-2.5">
+              <button
+                type="button"
+                onClick={onLoadMoreActivity}
+                className={cn(BTN_SM, FOCUS)}
+              >
+                {copy.activity.more}
+              </button>
+            </div>
+          ) : null}
+        </Block>
+      ) : null}
 
       <div
         data-f="dz"

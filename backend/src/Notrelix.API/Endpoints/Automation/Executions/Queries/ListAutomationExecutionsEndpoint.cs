@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Automation.DTOs;
 using Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 
 namespace Notrelix.API.Endpoints.Automation.Executions.Queries;
@@ -10,7 +11,8 @@ public static class ListAutomationExecutionsEndpoint
         group.MapResourceGet("/{automationId:guid}/executions", HandleAsync)
             .WithName("Automation.Executions.List")
             .WithTags("Automation.Executions")
-            .WithSummary("Get automation execution history");
+            .WithSummary("Get automation execution history")
+            .Produces<IReadOnlyList<AutomationExecutionDto>>();
         return group;
     }
 
@@ -18,9 +20,10 @@ public static class ListAutomationExecutionsEndpoint
         Guid automationId,
         ISender sender,
         int page = 1,
-        int pageSize = 20)
+        int pageSize = 20,
+        Guid? boardId = null)
     {
-        var result = await sender.Send(new GetAutomationExecutionsQuery(automationId, page, pageSize));
+        var result = await sender.Send(new GetAutomationExecutionsQuery(automationId, page, pageSize, boardId));
         return result.ToApiResult();
     }
 }

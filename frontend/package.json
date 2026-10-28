@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:marketing": "pnpm --filter @notrelix/app-marketing dev",
+    "marketing:previews": "node ./scripts/capture-marketing-previews.mjs",
     "dev:web": "pnpm --filter @notrelix/app-web dev",
     "dev:web:mock": "pnpm --filter @notrelix/app-web dev:mock",
     "dev:mobile": "pnpm --filter @notrelix/app-mobile dev",
@@ -24,7 +25,7 @@
     "test:mobile": "vitest run --config tooling/testing/vitest.mobile.config.ts",
     "test:generators": "vitest run --config tooling/testing/vitest.generators.config.ts",
     "test:node:guarded": "pnpm test:node --reporter=json --outputFile=/tmp/vitest-node.json && node scripts/assert-vitest-count.mjs /tmp/vitest-node.json",
-    "test:web:guarded": "pnpm test:web --reporter=json --outputFile=/tmp/vitest-web.json && node scripts/assert-vitest-count.mjs /tmp/vitest-web.json && node scripts/assert-ui-interaction-coverage.mjs /tmp/vitest-web.json",
+    "test:web:guarded": "pnpm test:web --reporter=default --reporter=json --outputFile=/tmp/vitest-web.json && node scripts/assert-vitest-count.mjs /tmp/vitest-web.json && node scripts/assert-ui-interaction-coverage.mjs /tmp/vitest-web.json",
     "test:integration:guarded": "pnpm test:integration --reporter=json --outputFile=/tmp/vitest-integration.json && node scripts/assert-vitest-count.mjs /tmp/vitest-integration.json",
     "test:mobile:guarded": "pnpm test:mobile --reporter=json --outputFile=/tmp/vitest-mobile.json && node scripts/assert-vitest-count.mjs /tmp/vitest-mobile.json && node scripts/assert-mobile-vitest-coverage.mjs /tmp/vitest-mobile.json",
     "test:generators:guarded": "pnpm test:generators --reporter=json --outputFile=/tmp/vitest-generators.json && node scripts/assert-vitest-count.mjs /tmp/vitest-generators.json",
@@ -103,14 +104,17 @@
       "@modelcontextprotocol/sdk": "^1.31.0",
       "tinypool": "^2.1.2",
       "vite@7": "^7.3.7",
-      "vite@8": "~8.2.4"
+      "vite@8": "~8.2.4",
+      "zod@4": "^4.6.6",
+      "body-parser@2": "^2.4.0"
     },
     "auditConfig": {
       "ignoreGhsas": [
         "GHSA-w3rx-r6r6-pgpr",
         "GHSA-5p2g-fcmc-qvqq",
         "GHSA-86w9-cpqp-85rv",
-        "GHSA-vfj7-8cjw-p6xm"
+        "GHSA-vfj7-8cjw-p6xm",
+        "GHSA-mrhx-c7xc-m3w5"
       ]
     }
   },

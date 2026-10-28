@@ -13,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Tooltip,
   TooltipContent,
@@ -52,8 +53,6 @@ export interface BoardHeaderAccess {
       readonly userId: string;
       readonly name: string;
     } | null;
-    /** When the access ends (ISO); absent or `null` = never. */
-    readonly expiresAt?: string | null;
   };
   readonly peopleCount: number;
   /**
@@ -108,6 +107,8 @@ export interface BoardHeaderData {
   readonly onOpenShare?: () => void;
   /** Absent: the More options menu is not shown. */
   readonly onCopyLink?: () => void;
+  /** Opens the board's deleted items; absent: no "Deleted items" entry. */
+  readonly onOpenTrash?: () => void;
 }
 
 export interface BoardHeaderSurfaceProps extends BoardHeaderData {
@@ -264,16 +265,6 @@ function bannerText(
   if (!level) return null;
   const grantedBy = access.mySource.grantedBy;
   if (access.mySource.kind === "explicit" && grantedBy) {
-    const expires = access.mySource.expiresAt;
-    if (expires) {
-      const date = new Date(expires);
-      const pad = (value: number) => String(value).padStart(2, "0");
-      return fillBoardHeaderCopy(banner.grantedByUntil, {
-        level,
-        name: grantedBy.name,
-        date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-      });
-    }
     return fillBoardHeaderCopy(banner.grantedBy, {
       level,
       name: grantedBy.name,
@@ -366,11 +357,13 @@ export function BoardHeaderSurface({
   onOpenSettings,
   onOpenShare,
   onCopyLink,
+  onOpenTrash,
 }: BoardHeaderSurfaceProps) {
   const shareReasonId = React.useId();
   const settingsReasonId = React.useId();
   const h = copy.header;
   const canManage = access?.myLevel === "manager";
+  const canEditItems = canManage || access?.myLevel === "editor";
   const shareReason = onOpenShare ? null : h.shareUnavailable;
   const settingsReason = onOpenSettings ? null : h.settingsUnavailable;
   const faces = people.slice(0, VISIBLE_FACES);
@@ -462,6 +455,7 @@ export function BoardHeaderSurface({
                 aria-describedby={settingsReason ? settingsReasonId : undefined}
                 className={cn(
                   HEADER_BUTTON_CLASS,
+                  "hidden xl:inline-flex",
                   "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
                 )}
               >
@@ -487,7 +481,7 @@ export function BoardHeaderSurface({
           </>
         ) : null}
 
-        {onCopyLink ? (
+        {onCopyLink || canManage || (onOpenTrash && canEditItems) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -503,10 +497,44 @@ export function BoardHeaderSurface({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onSelect={onCopyLink}>
-                <Link2 aria-hidden="true" />
-                {h.copyLink}
-              </DropdownMenuItem>
+              {canManage ? (
+                <DropdownMenuItem
+                  className="xl:hidden"
+                  disabled={Boolean(settingsReason)}
+                  onSelect={onOpenSettings}
+                >
+                  <SettingsGlyph />
+                  {h.settings}
+                </DropdownMenuItem>
+              ) : null}
+              {onCopyLink ? (
+                <DropdownMenuItem onSelect={onCopyLink}>
+                  <Link2 aria-hidden="true" />
+                  {h.copyLink}
+                </DropdownMenuItem>
+              ) : null}
+              {onOpenTrash && canEditItems ? (
+                <DropdownMenuItem onSelect={onOpenTrash}>
+                  {h.deletedItems}
+                </DropdownMenuItem>
+              ) : null}
+              {canManage && onOpenSettings ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onOpenSettings}>
+                    {h.renameBoard}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onOpenSettings}>
+                    {h.archiveBoard}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={onOpenSettings}
+                  >
+                    {h.deleteBoard}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}

@@ -96,6 +96,11 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         _steps.Add(step);
         ApplyAuditUpdate(pending);
         IncrementVersion();
+        if (step.ApproverUserId is { } approver)
+        {
+            RaiseDomainEvent(new ApprovalStepAssignedDomainEvent(
+                AccountId, WorkspaceId, Id, step.Id, approver, RequestedByUserId, Target, Title, Description, addedAt));
+        }
     }
 
     public void Approve(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
@@ -124,7 +129,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (_steps.All(s => s.Status == ApprovalStatus.Approved))
         {
             Status = ApprovalStatus.Approved;
-            RaiseDomainEvent(new ApprovalRequestApprovedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt));
+            RaiseDomainEvent(new ApprovalRequestApprovedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt, RequestedByUserId, Target));
         }
         ApplyAuditUpdate(pending);
         IncrementVersion();
@@ -155,7 +160,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         Status = ApprovalStatus.Rejected;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ApprovalRequestRejectedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt));
+        RaiseDomainEvent(new ApprovalRequestRejectedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt, RequestedByUserId, Target));
     }
 
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
@@ -172,7 +177,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new ApprovalRequestCancelledDomainEvent(AccountId, WorkspaceId, Id, cancelledBy, cancelledAt));
     }
 
-    public static ApprovalRequest Create(Guid accountId, Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt)
+    public static ApprovalRequest Create(Guid accountId, Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt, string? description = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -189,12 +194,13 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
             WorkspaceId = workspaceId,
             Target = target,
             Title = title.Trim(),
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             Status = ApprovalStatus.Pending,
             RequestedByUserId = requestedBy
         };
 
         request.SetAuditOnCreate(requestedBy, createdAt);
-        request.RaiseDomainEvent(new ApprovalRequestCreatedDomainEvent(accountId, workspaceId, request.Id, target, createdAt));
+        request.RaiseDomainEvent(new ApprovalRequestCreatedDomainEvent(accountId, request.Id, workspaceId, target, createdAt));
 
         return request;
     }

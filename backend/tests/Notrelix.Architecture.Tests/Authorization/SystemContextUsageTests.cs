@@ -27,6 +27,7 @@ public class SystemContextUsageTests
         "RestoreTeam.cs",
         "RestoreBoard.cs",
         "RestoreBoardItem.cs",
+        "ListBoardItemTrash.cs",
         "RestoreBoardView.cs",
         "RestoreForm.cs",
         "RestoreApprovalRequest.cs",
@@ -40,7 +41,13 @@ public class SystemContextUsageTests
         "ActiveVerificationTokenLocker.cs",
         "WorkspaceOwnerUpdateLocker.cs",
         "PostgresAttachmentReaperStore.cs",
+        "PostgresAvatarReaperStore.cs",
+        "AvatarAudienceReadAdapter.cs",
+        "IdentityBootstrapReadAdapter.cs",
+        "GetUserWorkspaces.cs",
+        "GetMyWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
+        "InvitationTokenScope.cs",
     ];
 
     [Fact]

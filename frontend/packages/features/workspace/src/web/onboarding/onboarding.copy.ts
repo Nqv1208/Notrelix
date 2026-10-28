@@ -23,6 +23,9 @@ export const en = {
     saving: "Saving…",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    emailNotConfirmed:
+      "Confirm your email first. We sent you a link when you signed up; open it, then press Continue again.",
+    resendConfirmation: "Send the link again",
     steps: {
       workspace: "Create workspace",
       departments: "Departments",
@@ -47,10 +50,11 @@ export const en = {
       "Lowercase letters, digits and dashes. People open the workspace through this address.",
     sizeLabel: "Company size",
     sizes: {
-      s: "1–20 people",
-      m: "21–100 people",
-      l: "101–500 people",
-      xl: "Over 500 people",
+      s: "1–10 people",
+      m: "11–50 people",
+      l: "51–200 people",
+      xl: "201–1,000 people",
+      xxl: "Over 1,000 people",
     },
     sizeHint:
       "Used to suggest departments and board templates. It does not affect the plan.",
@@ -66,6 +70,8 @@ export const en = {
   },
   departments: {
     title: "Your departments",
+    leadNeutral:
+      "Rename, recolor, remove or add departments. Each has its own boards and members.",
     lead: "Suggested for {{size}}. Rename, recolor, remove or add departments. Each has its own boards and members.",
     listLabel: "Departments to create",
     nameLabel: "Department name",
@@ -265,6 +271,8 @@ export const en = {
   join: {
     title: "Hello {{name}}, you are in {{org}}",
     lead: "{{inviter}} invited you. Set up a few things below, change them any time.",
+    leadNoInviter:
+      "You are now a member. Set up a few things below, change them any time.",
     accessTitle: "What you can open",
     memberBadge: "Member",
     roles: { owner: "Owner", admin: "Admin", member: "Member", guest: "Guest" },
@@ -337,6 +345,9 @@ export const vi: OnboardingCopy = {
     srTodo: "chưa làm",
     saving: "Đang lưu…",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    emailNotConfirmed:
+      "Hãy xác nhận email trước. Chúng tôi đã gửi liên kết khi bạn đăng ký; mở liên kết đó rồi bấm Tiếp tục lại.",
+    resendConfirmation: "Gửi lại liên kết",
     steps: {
       workspace: "Tạo workspace",
       departments: "Phòng ban",
@@ -361,10 +372,11 @@ export const vi: OnboardingCopy = {
       "Chữ thường, số và dấu gạch ngang. Mọi người mở workspace qua địa chỉ này.",
     sizeLabel: "Quy mô công ty",
     sizes: {
-      s: "1–20 người",
-      m: "21–100 người",
-      l: "101–500 người",
-      xl: "Trên 500 người",
+      s: "1–10 người",
+      m: "11–50 người",
+      l: "51–200 người",
+      xl: "201–1.000 người",
+      xxl: "Trên 1.000 người",
     },
     sizeHint:
       "Dùng để gợi ý phòng ban và mẫu board. Không ảnh hưởng gói dịch vụ.",
@@ -380,6 +392,8 @@ export const vi: OnboardingCopy = {
   },
   departments: {
     title: "Các phòng ban của bạn",
+    leadNeutral:
+      "Sửa tên, đổi màu, bỏ hoặc thêm phòng. Mỗi phòng có board và thành viên riêng.",
     lead: "Gợi ý theo quy mô {{size}}. Sửa tên, đổi màu, bỏ hoặc thêm phòng. Mỗi phòng có board và thành viên riêng.",
     listLabel: "Phòng ban sẽ tạo",
     nameLabel: "Tên phòng ban",
@@ -579,6 +593,8 @@ export const vi: OnboardingCopy = {
   join: {
     title: "Chào {{name}}, bạn đã vào {{org}}",
     lead: "{{inviter}} đã mời bạn. Thiết lập nhanh vài thứ dưới đây, đổi lại lúc nào cũng được.",
+    leadNoInviter:
+      "Bạn đã là thành viên. Thiết lập nhanh vài thứ dưới đây, đổi lại lúc nào cũng được.",
     accessTitle: "Bạn vào được",
     memberBadge: "Thành viên",
     roles: {

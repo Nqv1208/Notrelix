@@ -17,10 +17,12 @@
  *   boards.columns.move — POST /boards/:boardId/fields/:fieldId/move
  *   boards.options.add     — POST /boards/:boardId/fields/:fieldId/options
  *   boards.options.update  — PATCH /boards/:boardId/fields/:fieldId/options/:optionId
+ *   boards.options.remove  — DELETE /boards/:boardId/fields/:fieldId/options/:optionId
+ *   boards.options.move    — POST /boards/:boardId/fields/:fieldId/options/:optionId/move
  *   boards.labels.list     — GET /boards/:boardId/labels
- *   boards.labels.create   — POST /boards/:boardId/labels
- *   boards.labels.update   — PATCH /boards/:boardId/labels/:labelId
- *   boards.labels.delete   — DELETE /boards/:boardId/labels/:labelId
+ *   boards.labels.create  — POST /boards/:boardId/labels
+ *   boards.labels.update   — PATCH /labels/:labelId
+ *   boards.labels.delete   — DELETE /labels/:labelId
  *
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
@@ -39,8 +41,8 @@ import {
   notFound,
   validationError,
 } from "../../transport/create-response";
-import { boardSharing } from "../../state/mock-board-sharing";
 import type { MockStore } from "../../state/mock-store";
+import { savedViewTypeName } from "../../state/mock-board-saved-views";
 import type { MockBoardRecord, MockCardRecord } from "../../state/records";
 import {
   preconditionFailed,
@@ -381,11 +383,18 @@ export function canWriteBoardItems(boardId: string, store: MockStore): boolean {
 }
 
 /** Whether the caller can read a board (any level of access). */
-const LEVELS = ["viewer", "commenter", "editor", "manager"] as const;
-
 export function canReadBoard(boardId: string, store: MockStore): boolean {
   const board = store.getBoard(boardId);
   return board ? projectBoardAccess(board, store) !== null : false;
+}
+
+/** Whether the caller edits a board (an Editor or a Manager). */
+export function canEditBoard(boardId: string, store: MockStore): boolean {
+  const board = store.getBoard(boardId);
+  if (!board) return false;
+  const level = projectBoardAccess(board, store)?.myLevel as
+    AccessLevel | undefined;
+  return level !== undefined && LEVEL_RANK[level] >= LEVEL_RANK.editor;
 }
 
 /** Whether the caller manages a board: only a manager opens its settings. */
@@ -409,7 +418,6 @@ function projectBoardAccess(
         level: grant.level as AccessLevel,
         kind: role === "guest" ? "guest" : "explicit",
         grantedBy: grantor ? { userId: grantor.id, name: grantor.name } : null,
-        expiresAt: grant.expiresAt ?? null,
       }
     : null;
 
@@ -486,9 +494,6 @@ function projectBoardAccess(
       ...("grantedBy" in chosen && chosen.grantedBy
         ? { grantedBy: chosen.grantedBy }
         : {}),
-      ...("expiresAt" in chosen && chosen.expiresAt
-        ? { expiresAt: chosen.expiresAt }
-        : {}),
     },
     peopleCount: sources.reduce((sum, source) => sum + source.count, 0),
     guestCount: audience?.guestCount ?? 0,
@@ -506,7 +511,7 @@ function projectBoardAccess(
 const VIEW_CONFIG_KEY = (boardId: string) =>
   `notrelix-mock-board-view-config:${boardId}`;
 
-function readKeptViewConfig(boardId: string): string | null {
+export function readKeptViewConfig(boardId: string): string | null {
   try {
     return globalThis.sessionStorage?.getItem(VIEW_CONFIG_KEY(boardId)) ?? null;
   } catch {
@@ -514,7 +519,7 @@ function readKeptViewConfig(boardId: string): string | null {
   }
 }
 
-function keepViewConfig(boardId: string, config: string): void {
+export function keepViewConfig(boardId: string, config: string): void {
   try {
     globalThis.sessionStorage?.setItem(VIEW_CONFIG_KEY(boardId), config);
   } catch {
@@ -617,162 +622,6 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── Board permissions of the share dialog (CTR-GAP-WM-BOARD-SHARING) ────
-
-  defineMockOperation<{ boardId: string }, never, unknown>({
-    id: "boards.sharing",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "GET",
-    route: "/boards/:boardId/sharing",
-    async handle({ params, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store))
-        return notFound("Board not found");
-      return ok(boardSharing(store, board.id, canManageBoard(board.id, store)));
-    },
-  }),
-
-  defineMockOperation<
-    { boardId: string; entryId: string },
-    { level?: string },
-    void
-  >({
-    id: "boards.sharing.changeLevel",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "PATCH",
-    route: "/boards/:boardId/sharing/:entryId",
-    async handle({ params, body, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store)) return notFound();
-      if (!canManageBoard(board.id, store)) return forbidden();
-      const entry = store.sharing
-        .entriesOf(board.id)
-        .find((item) => item.id === params.entryId);
-      if (!entry) return notFound();
-      const level = LEVELS.find((candidate) => candidate === body?.level);
-      if (!level) return validationError({ level: ["Unknown permission."] });
-      if (entry.owner || entry.userId === store.getCurrentUser().id)
-        return validationError({
-          level: ["The owner's and your own permission cannot be changed."],
-        });
-      const user = entry.userId ? store.getUser(entry.userId) : undefined;
-      const guest =
-        !!user &&
-        !(user.email ?? "").endsWith("@minhan.vn") &&
-        user.id !== store.getCurrentUser().id;
-      if (guest && level === "manager")
-        return validationError({
-          level: ["A guest cannot manage the Board or share it further."],
-        });
-      const from = entry.level;
-      entry.level = level;
-      if (entry.userId)
-        store.setBoardGrant(
-          board.id,
-          entry.userId,
-          level,
-          store.getCurrentUser().id,
-        );
-      store.sharing.pushLog(board.id, {
-        kind: "changed",
-        actorId: store.getCurrentUser().id,
-        target:
-          user?.name ?? store.spaces.getTeam(entry.teamId ?? "")?.name ?? null,
-        from,
-        to: level,
-        guest,
-        expiresAt: entry.expiresAt,
-        at: store.getClock().isoNow(),
-      });
-      return noContent();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string; entryId: string }, never, void>({
-    id: "boards.sharing.remove",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "DELETE",
-    route: "/boards/:boardId/sharing/:entryId",
-    async handle({ params, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store)) return notFound();
-      if (!canManageBoard(board.id, store)) return forbidden();
-      const list = store.sharing.entriesOf(board.id);
-      const entry = list.find((item) => item.id === params.entryId);
-      if (!entry) return notFound();
-      if (entry.owner || entry.userId === store.getCurrentUser().id)
-        return validationError({
-          entry: ["The owner and you keep access to the Board."],
-        });
-      list.splice(list.indexOf(entry), 1);
-      if (entry.userId) store.removeBoardGrant(board.id, entry.userId);
-      const user = entry.userId ? store.getUser(entry.userId) : undefined;
-      store.sharing.pushLog(board.id, {
-        kind: "removed",
-        actorId: store.getCurrentUser().id,
-        target:
-          user?.name ?? store.spaces.getTeam(entry.teamId ?? "")?.name ?? null,
-        from: entry.level,
-        to: null,
-        guest: false,
-        expiresAt: null,
-        at: store.getClock().isoNow(),
-      });
-      return noContent();
-    },
-  }),
-
-  defineMockOperation<{ boardId: string }, { addUserIds?: string[] }, void>({
-    id: "boards.sharing.makePrivate",
-    contract: { kind: "gap", gapId: "CTR-GAP-WM-BOARD-SHARING" },
-    method: "POST",
-    route: "/boards/:boardId/sharing/private",
-    async handle({ params, body, store }) {
-      const board = store.getBoard(params.boardId);
-      if (!board || !canReadBoard(board.id, store)) return notFound();
-      if (!canManageBoard(board.id, store)) return forbidden();
-      const actor = store.getCurrentUser().id;
-      const list = store.sharing.entriesOf(board.id);
-      for (const userId of body?.addUserIds ?? []) {
-        if (list.some((entry) => entry.userId === userId)) continue;
-        list.push({
-          id: store.sharing.nextId(),
-          kind: "person",
-          userId,
-          teamId: null,
-          level: "editor",
-          expiresAt: null,
-          owner: false,
-          addedAt: store.getClock().isoNow(),
-        });
-        store.setBoardGrant(board.id, userId, "editor", actor);
-        store.sharing.pushLog(board.id, {
-          kind: "added",
-          actorId: actor,
-          target: store.getUser(userId)?.name ?? null,
-          from: null,
-          to: "editor",
-          guest: false,
-          expiresAt: null,
-          at: store.getClock().isoNow(),
-        });
-      }
-      store.setBoardVisibility(board.id, "private");
-      store.sharing.pushLog(board.id, {
-        kind: "private",
-        actorId: actor,
-        target: null,
-        from: null,
-        to: null,
-        guest: false,
-        expiresAt: null,
-        at: store.getClock().isoNow(),
-      });
-      return noContent();
-    },
-  }),
-
-  // ─── GET /boards/:boardId/plan-items ──────────────────────────────────────
   // Gap CTR-GAP-WM-PLAN-ITEMS: the phases and milestones the Calendar and the
   // Timeline draw beside the items.
 
@@ -797,7 +646,7 @@ export const boardsOperations = [
     string
   >({
     id: "boards.create",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Create" },
     method: "POST",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, body, store }) {
@@ -875,11 +724,10 @@ export const boardsOperations = [
     async handle({ params, store }) {
       const b = store.getBoard(params.id);
       if (!b) return notFound("Board not found");
-      const v = store.getBoardView(params.id);
+      const v = store.savedViews.defaultShared(params.id);
       return ok<BoardViewDtoApi>({
-        viewMode: v?.viewMode ?? "table",
-        config: readKeptViewConfig(params.id) ?? v?.viewConfig ?? "{}",
-        filters: v?.filters ?? "{}",
+        type: v?.type ?? "Table",
+        config: readKeptViewConfig(params.id) ?? v?.config ?? "{}",
       });
     },
   }),
@@ -906,12 +754,22 @@ export const boardsOperations = [
         config?: string;
         filters?: string;
       };
-      store.saveBoardView(
-        params.id,
-        data.viewMode ?? "table",
-        data.config ?? "{}",
-        data.filters,
-      );
+      // Like the producer: the board's shared default view takes the config,
+      // or is made when the board has none; a view's type never changes.
+      const existing = store.savedViews.defaultShared(params.id);
+      if (existing) {
+        existing.config = data.config ?? "{}";
+        existing.version += 1;
+      } else {
+        store.savedViews.add({
+          boardId: params.id,
+          name: savedViewTypeName(data.viewMode) ?? "Table",
+          type: savedViewTypeName(data.viewMode) ?? "Table",
+          config: data.config ?? "{}",
+          visibility: "Board",
+          createdBy: store.getCurrentUser().id,
+        });
+      }
       keepViewConfig(params.id, data.config ?? "{}");
       return ok<void>(undefined);
     },
@@ -1008,6 +866,8 @@ export const boardsOperations = [
     method: "DELETE",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, store }) {
+      // Deleting a field is board management, as on the producer.
+      if (!canManageBoard(params.boardId, store)) return forbidden();
       const deleted = store.deleteColumn(params.columnId);
       if (!deleted) return notFound("Column not found");
       return ok<void>(undefined);
@@ -1143,12 +1003,118 @@ export const boardsOperations = [
     },
   }),
 
+  // ─── DELETE /boards/:boardId/fields/:fieldId/options/:optionId ──────────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string; optionId: string },
+    never,
+    void
+  >({
+    id: "boards.options.remove",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.RemoveFieldOption",
+    } as any,
+    method: "DELETE",
+    route: "/boards/:boardId/fields/:fieldId/options/:optionId",
+    async handle({ params, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return optionBadRequest({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const url = new URL(request.url);
+      const expectedVersion = Number(url.searchParams.get("expectedVersion"));
+      if (!(expectedVersion > 0)) {
+        return optionBadRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
+      }
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const column = store.getColumn(params.fieldId);
+      if (!column || column.boardId !== params.boardId) {
+        return notFound("Field not found");
+      }
+      const removed = store.removeFieldOption(params.fieldId, params.optionId, {
+        expectedVersion,
+        replacementOptionId: url.searchParams.get("replacementOptionId"),
+      });
+      switch (removed) {
+        case "not-found":
+          return notFound("Option not found");
+        case "stale":
+          return preconditionFailed();
+        case "replacement-required":
+        case "replacement-invalid":
+          return optionBadRequest({
+            replacementOptionId: [
+              removed === "replacement-required"
+                ? "Items use this status. Choose the status they move to."
+                : "The replacement must be another option of the same field.",
+            ],
+          });
+        case "keeps-todo-and-done":
+          return optionBadRequest({
+            optionId: ["A Status field must keep a Todo and a Done option."],
+          });
+        case "ok":
+          return noContent();
+      }
+    },
+  }),
+
+  // ─── POST /boards/:boardId/fields/:fieldId/options/:optionId/move ───────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string; optionId: string },
+    {
+      expectedVersion?: number;
+      previousSiblingId?: string | null;
+      nextSiblingId?: string | null;
+    },
+    void
+  >({
+    id: "boards.options.move",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.MoveFieldOption",
+    } as any,
+    method: "POST",
+    route: "/boards/:boardId/fields/:fieldId/options/:optionId/move",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return optionBadRequest({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const data = body ?? {};
+      if (!data.expectedVersion || data.expectedVersion <= 0) {
+        return optionBadRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
+      }
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const column = store.getColumn(params.fieldId);
+      if (!column || column.boardId !== params.boardId) {
+        return notFound("Field not found");
+      }
+      const moved = store.moveFieldOption(params.fieldId, params.optionId, {
+        expectedVersion: data.expectedVersion,
+        previousSiblingId: data.previousSiblingId,
+        nextSiblingId: data.nextSiblingId,
+      });
+      if (moved === "not-found") return notFound("Option not found");
+      if (moved === "stale") return preconditionFailed();
+      return noContent();
+    },
+  }),
+
   // ─── GET /boards/:boardId/labels ──────────────────────────────────────────
 
   defineMockOperation<
     { boardId: string },
     never,
-    { id: string; name: string; color: string }[]
+    { labelId: string; name: string; color: string }[]
   >({
     id: "boards.labels.list",
     contract: {
@@ -1161,7 +1127,7 @@ export const boardsOperations = [
       const labels = store.getBoardLabels(params.boardId);
       return ok(
         labels.map((l) => ({
-          id: l.id,
+          labelId: l.id,
           name: l.name,
           color: l.color,
         })),
@@ -1174,7 +1140,7 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     { name?: string; color: string },
-    { id: string; name: string; color: string }
+    string
   >({
     id: "boards.labels.create",
     contract: {
@@ -1189,18 +1155,14 @@ export const boardsOperations = [
         color: string;
       };
       const label = store.createLabel(params.boardId, data);
-      return created<{ id: string; name: string; color: string }>({
-        id: label.id,
-        name: label.name,
-        color: label.color,
-      });
+      return created<string>(label.id);
     },
   }),
 
-  // ─── PATCH /boards/:boardId/labels/:labelId ───────────────────────────────
+  // ─── PATCH /labels/:labelId ───────────────────────────────
 
   defineMockOperation<
-    { boardId: string; labelId: string },
+    { labelId: string },
     { name?: string; color?: string },
     void
   >({
@@ -1210,7 +1172,7 @@ export const boardsOperations = [
       operationId: "WorkManagement.Labels.Update",
     } as any,
     method: "PATCH",
-    route: "/boards/:boardId/labels/:labelId",
+    route: "/labels/:labelId",
     async handle({ params, body, store }) {
       const updated = store.updateLabel(params.labelId, body ?? {});
       if (!updated) return notFound("Label not found");
@@ -1218,16 +1180,16 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── DELETE /boards/:boardId/labels/:labelId ──────────────────────────────
+  // ─── DELETE /labels/:labelId ──────────────────────────────
 
-  defineMockOperation<{ boardId: string; labelId: string }, never, void>({
+  defineMockOperation<{ labelId: string }, never, void>({
     id: "boards.labels.delete",
     contract: {
       kind: "openapi",
       operationId: "WorkManagement.Labels.Delete",
     } as any,
     method: "DELETE",
-    route: "/boards/:boardId/labels/:labelId",
+    route: "/labels/:labelId",
     async handle({ params, store }) {
       const deleted = store.deleteLabel(params.labelId);
       if (!deleted) return notFound("Label not found");

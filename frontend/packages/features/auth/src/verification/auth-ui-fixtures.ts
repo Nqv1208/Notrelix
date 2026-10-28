@@ -5,6 +5,7 @@ import type {
   AuthInviteSurfaceProps,
 } from "../web/components/auth-invite-surface";
 import type { AuthSignInSurfaceProps } from "../web/components/auth-sign-in-surface";
+import type { AuthVerifyEmailSurfaceProps } from "../web/components/auth-verify-email-surface";
 import { authCopy } from "../web/copy/auth.copy";
 
 /**
@@ -59,6 +60,19 @@ export function authForgotScenario(
     onResend: noop,
     onBack: noop,
     onOtherEmail: noop,
+    ...overrides,
+  };
+}
+
+export function authVerifyEmailScenario(
+  overrides: Partial<AuthVerifyEmailSurfaceProps> = {},
+): AuthVerifyEmailSurfaceProps {
+  return {
+    copy: authCopy("vi"),
+    step: { kind: "waiting" },
+    onResend: noop,
+    onContinue: noop,
+    onBack: noop,
     ...overrides,
   };
 }

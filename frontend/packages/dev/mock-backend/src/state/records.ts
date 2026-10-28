@@ -116,6 +116,8 @@ export interface MockPageRecord {
   activeUserIds?: string[];
   /** Date the document takes effect; absent = none. */
   deadline?: string | null;
+  /** When the page moved to the trash; absent = not in the trash. */
+  trashedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -185,8 +187,6 @@ export interface MockBoardGrantRecord {
   userId: string;
   level: "viewer" | "commenter" | "editor" | "manager";
   grantedByUserId: string;
-  /** When the access ends (gap field `mySource.expiresAt`); absent = never. */
-  expiresAt?: string;
 }
 
 /**
@@ -256,6 +256,18 @@ export interface MockAttachmentRecord {
   createdAt: string;
 }
 
+/** A file attached to a Documents page (`GET /pages/{id}/attachments`); the bytes are kept. */
+export interface MockPageAttachmentRecord {
+  id: string;
+  pageId: string;
+  filename: string;
+  sizeBytes: number;
+  contentType: string;
+  uploadedBy: string;
+  createdAt: string;
+  bytes: Uint8Array;
+}
+
 /**
  * A link between two items of a board: a finish-to-start dependency (`to`
  * waits for `from`) or a plain relation (gap `CTR-GAP-WM-ITEM-LINKS`). Ends
@@ -304,6 +316,10 @@ export interface MockPageCommentRecord {
   contentMd: string;
   createdAt: string;
   updatedAt?: string | null;
+  /** When the thread was resolved; absent while it is open. */
+  resolvedAt?: string | null;
+  /** The quoted range of a block the comment points at (page comments only). */
+  anchor?: { blockId: string; quote: string; start: number; end: number };
 }
 
 export interface MockPageHistoryRecord {
@@ -315,4 +331,31 @@ export interface MockPageHistoryRecord {
   /** A version the member named (gap `CTR-GAP-DOCS-PAGE-EXT`). */
   versionName?: string | null;
   createdAt: string;
+}
+
+/** A history entry of a page: the blocks and title the page had when it was taken. */
+export interface MockPageVersionRecord {
+  id: string;
+  pageId: string;
+  versionNumber: number;
+  kind: "automatic" | "named" | "restore";
+  name: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  title: string;
+  /** The page's blocks as they were (a copy; never edited). */
+  blocks: MockBlockRecord[];
+}
+
+/** A workspace page template: a copy of a page's title, icon and blocks. */
+export interface MockPageTemplateRecord {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+  title: string;
+  icon: string;
+  createdBy: string | null;
+  createdAt: string;
+  blocks: MockBlockRecord[];
 }

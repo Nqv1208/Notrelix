@@ -53,6 +53,9 @@ Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|File|12
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Video|13
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Board|14
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Table|15
+Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Callout|16
+Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|PageReference|17
+Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|TableOfContents|18
 Notrelix.Domain.Documents.ResourceLinks.LinkType|System.Int32|Internal|0
 Notrelix.Domain.Documents.ResourceLinks.LinkType|System.Int32|External|1
 Notrelix.Domain.Documents.ResourceLinks.LinkType|System.Int32|Backlink|2
@@ -88,6 +91,7 @@ Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Slack|
 Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Github|3
 Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Notion|4
 Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Trello|5
+Notrelix.Domain.Integrations.Connections.IntegrationProvider|System.Int32|Webhook|6
 Notrelix.Domain.Integrations.Webhooks.WebhookDeliveryStatus|System.Int32|Pending|0
 Notrelix.Domain.Integrations.Webhooks.WebhookDeliveryStatus|System.Int32|Sent|1
 Notrelix.Domain.Integrations.Webhooks.WebhookDeliveryStatus|System.Int32|Failed|2

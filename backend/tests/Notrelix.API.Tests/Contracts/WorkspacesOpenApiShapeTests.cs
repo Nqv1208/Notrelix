@@ -27,6 +27,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Teams.GetWorkspaceTeamsExt", "200", "WorkspaceTeamsExtDto")]
     [InlineData("Workspaces.Spaces.GetSpaceMembersExtra", "200", "SpaceMembersExtraDto")]
     [InlineData("Workspaces.Spaces.GetSpaceOverview", "200", "SpaceOverviewDto")]
+    [InlineData("Workspaces.Search.CommandSearch", "200", "CommandSearchDto")]
     [InlineData("Workspaces.Workspaces.CheckWorkspaceSlug", "200", "WorkspaceSlugCheckDto")]
     [InlineData("Workspaces.Onboarding.GetOnboardingDraft", "200", "OnboardingDraftResponseDto")]
     [InlineData("Workspaces.Onboarding.GetGettingStarted", "200", "GettingStartedDto")]
@@ -36,7 +37,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Invitations.ListWorkspaceInvitations", "200", "WorkspaceInvitationDto[]")]
     [InlineData("Workspaces.Invitations.GetUserPendingInvitations", "200", "UserPendingInvitationDto[]")]
     [InlineData("Workspaces.Invitations.AcceptInvitation", "200", "AcceptInvitationResultDto")]
-    [InlineData("Workspaces.Invitations.GetInvitationByToken", "200", "WorkspaceInvitationDto")]
+    [InlineData("Workspaces.Invitations.GetInvitationByToken", "200", "InvitationPreviewDto")]
     [InlineData("Workspaces.Invitations.ResendInvitation", "200", "uuid")]
     [InlineData("Workspaces.Invitations.ResendResourceInvitation", "200", "uuid")]
     [InlineData("Workspaces.Settings.GetWorkspaceSettings", "200", "WorkspaceSettingsDto")]
@@ -129,6 +130,15 @@ public class WorkspacesOpenApiShapeTests
         var property = schema.GetProperty("properties").GetProperty("expectedVersion");
         property.GetProperty("type").GetString().Should().Be("integer", operationId);
         property.GetProperty("format").GetString().Should().Be("int64", operationId);
+    }
+
+    [Fact]
+    public void CommandSearch_TakesTheTypedTextAsAnOptionalQueryParameter()
+    {
+        var q = Operation("Workspaces.Search.CommandSearch").GetProperty("parameters").EnumerateArray()
+            .Single(p => p.GetProperty("name").GetString() == "q");
+        q.GetProperty("in").GetString().Should().Be("query");
+        (q.TryGetProperty("required", out var required) && required.GetBoolean()).Should().BeFalse("no text answers empty, not 400");
     }
 
     [Fact]

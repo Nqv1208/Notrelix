@@ -59,7 +59,9 @@ export interface OnboardingSurfaceProps {
   readonly summary: OnboardingSummary | null;
   /** A call is on its way: the buttons wait. */
   readonly pending?: boolean;
-  readonly error?: "unreachable" | null;
+  readonly error?: "unreachable" | "emailNotConfirmed" | null;
+  /** Asks for a new confirmation link (the "emailNotConfirmed" notice offers it). */
+  readonly onResendConfirmation?: () => void;
   /** The workspace and its departments exist already (a step revisited). */
   readonly created?: {
     readonly workspace: boolean;
@@ -371,6 +373,23 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
         >
           {copy.frame.unreachable}
         </p>
+      ) : null}
+      {error === "emailNotConfirmed" ? (
+        <div
+          role="alert"
+          className="m-0 flex flex-col items-start gap-1.5 text-item-ui font-medium text-danger-text"
+        >
+          <p className="m-0">{copy.frame.emailNotConfirmed}</p>
+          {props.onResendConfirmation ? (
+            <button
+              type="button"
+              onClick={props.onResendConfirmation}
+              className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground underline"
+            >
+              {copy.frame.resendConfirmation}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {step === "workspace" ? (
         <WorkspaceStep

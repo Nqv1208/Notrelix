@@ -41,7 +41,7 @@ export interface AuthForgotSurfaceProps {
   readonly onOtherEmail: () => void;
 }
 
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 export function AuthForgotSurface(props: AuthForgotSurfaceProps) {
   return props.step.kind === "ask" ? (

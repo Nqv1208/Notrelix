@@ -74,6 +74,8 @@ def ephemeral_environment() -> dict[str, str]:
     """Ephemeral credentials for rendering; never rendered by prod itself."""
     postgres_password = secrets.token_hex(16)
     redis_password = secrets.token_hex(16)
+    app_password = secrets.token_hex(16)
+    worker_password = secrets.token_hex(16)
     return {
         "POSTGRES_USER": "postgres",
         "POSTGRES_PASSWORD": postgres_password,
@@ -87,7 +89,17 @@ def ephemeral_environment() -> dict[str, str]:
         "JWT_AUDIENCE": "http://localhost",
         "CORS_ORIGIN": "http://localhost",
         "RESEND_API_KEY": secrets.token_hex(16),
+        "NOTRELIX_APP_DB_PASSWORD": app_password,
+        "NOTRELIX_WORKER_DB_PASSWORD": worker_password,
         "CONNECTIONSTRINGS_NOTRELIXDB": (
+            f"Host={POSTGRES_SERVICE};Port=5432;Database=notrelix;"
+            f"Username=notrelix_app;Password={app_password}"
+        ),
+        "CONNECTIONSTRINGS_NOTRELIXWORKERDB": (
+            f"Host={POSTGRES_SERVICE};Port=5432;Database=notrelix;"
+            f"Username=notrelix_worker;Password={worker_password}"
+        ),
+        "CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB": (
             f"Host={POSTGRES_SERVICE};Port=5432;Database=notrelix;"
             f"Username=postgres;Password={postgres_password}"
         ),
@@ -141,6 +153,31 @@ def network_names(service: dict[str, Any]) -> set[str]:
     if isinstance(value, dict):
         return set(value)
     return {str(item) for item in value}
+
+
+def connection_user(connection_string: str) -> str:
+    for part in connection_string.split(";"):
+        key, _, value = part.partition("=")
+        if key.strip().lower() in ("username", "user id", "user"):
+            return value.strip()
+    return ""
+
+
+def check_database_logins(label: str, backend_env: dict[str, str]) -> None:
+    """Requests, background work and migrations use three different logins; enforcement is never relaxed."""
+    expected = {
+        "ConnectionStrings__NotrelixDb": "notrelix_app",
+        "ConnectionStrings__NotrelixWorkerDb": "notrelix_worker",
+    }
+    for key, user in expected.items():
+        actual = connection_user(backend_env.get(key, ""))
+        if actual != user:
+            fail(f"{label} backend {key} must connect as {user!r}, got {actual!r}")
+    owner = connection_user(backend_env.get("ConnectionStrings__NotrelixMigrationDb", ""))
+    if not owner or owner in expected.values():
+        fail(f"{label} backend ConnectionStrings__NotrelixMigrationDb must connect as the database owner, got {owner!r}")
+    if backend_env.get("Rls__RoleEnforcement") != "Enforce":
+        fail(f"{label} backend Rls__RoleEnforcement must be 'Enforce', got {backend_env.get('Rls__RoleEnforcement')!r}")
 
 
 def main() -> int:
@@ -208,6 +245,7 @@ def main() -> int:
             fail(f"backend environment {key} is required")
     if RABBITMQ_SERVICE not in (backend.get("depends_on") or {}):
         fail("backend must depend on healthy RabbitMQ")
+    check_database_logins("production", benv)
 
     nginx = services[NGINX_SERVICE]
     if ports(nginx) != {8080}:
@@ -265,6 +303,7 @@ def main() -> int:
     staging_backend = staging_services[BACKEND_SERVICE]
     if RABBITMQ_SERVICE not in (staging_backend.get("depends_on") or {}):
         fail("staging backend must depend on RabbitMQ")
+    check_database_logins("staging", env_map(staging_backend))
     if env_map(staging_backend).get("Messaging__RabbitMQ__Host") != RABBITMQ_SERVICE:
         fail("staging backend must use resolved RabbitMQ compose service")
     for key, expected in (

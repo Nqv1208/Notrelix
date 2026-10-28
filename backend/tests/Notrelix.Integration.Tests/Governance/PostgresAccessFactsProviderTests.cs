@@ -29,7 +29,7 @@ public sealed class PostgresAccessFactsProviderTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_database.ConnectionString);
+        _reset = new DatabaseReset(_database.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -40,7 +40,7 @@ public sealed class PostgresAccessFactsProviderTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        await using var context = _database.CreateContext(tenant);
+        await using var context = _database.CreateOwnerContext(tenant);
         await context.Database.OpenConnectionAsync();
         await using var transaction = await context.Database.BeginTransactionAsync();
         var provider = new PostgresAccessFactsProvider(
@@ -133,7 +133,7 @@ public sealed class PostgresAccessFactsProviderTests : IAsyncLifetime
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
-        var context = _database.CreateContext(tenant);
+        var context = _database.CreateOwnerContext(tenant);
         context.Database.OpenConnection();
         var transaction = context.Database.BeginTransaction();
         var provider = new PostgresAccessFactsProvider(

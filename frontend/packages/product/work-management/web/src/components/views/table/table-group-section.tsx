@@ -7,6 +7,7 @@ import {
   type MainTableCopy,
 } from "./main-table.copy";
 import { tablePanelClass } from "./table-chrome";
+import { TableGroupMenu, type TableGroupMenuModel } from "./table-group-menu";
 import type { TableGroupModel } from "./table-model";
 import { StatusDot } from "./table-parts";
 
@@ -16,11 +17,14 @@ export function TableGroupHeader({
   group,
   collapsed,
   onToggle,
+  menu,
 }: {
   copy: MainTableCopy;
   group: TableGroupModel;
   collapsed: boolean;
   onToggle: () => void;
+  /** Move and delete of the group's option; absent = the viewer cannot, or the group is not an option. */
+  menu?: TableGroupMenuModel;
 }) {
   return (
     <div
@@ -62,6 +66,9 @@ export function TableGroupHeader({
               group.overdueCount,
             )}
           </span>
+        ) : null}
+        {menu ? (
+          <TableGroupMenu copy={copy} name={group.name} menu={menu} />
         ) : null}
       </span>
     </div>

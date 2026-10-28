@@ -9,6 +9,8 @@ const withNextIntl = createNextIntlPlugin();
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
+    // The product screenshots are served at 90.
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",

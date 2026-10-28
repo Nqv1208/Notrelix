@@ -16,8 +16,11 @@
 import type { User } from "@notrelix/features-auth";
 import { defineMockOperation } from "../../operations/types";
 import { ok, unauthorized } from "../../transport/create-response";
-import { MOCK_AUTH } from "../../state/mock-auth-directory";
-import { authFlowOperations, sessionOf } from "./auth-flow.handlers";
+import {
+  authFlowOperations,
+  identityProblem,
+  sessionOf,
+} from "./auth-flow.handlers";
 
 export const identityOperations = [
   ...authFlowOperations,
@@ -40,13 +43,54 @@ export const identityOperations = [
     },
   }),
 
+  defineMockOperation<Record<string, never>, never, unknown>({
+    id: "identity.bootstrap",
+    contract: { kind: "openapi", operationId: "Identity.Auth.GetBootstrap" },
+    method: "GET",
+    route: "/auth/bootstrap",
+    async handle({ store }) {
+      if (store.isCurrentUserLoggedOut()) {
+        return unauthorized();
+      }
+      const user = store.getCurrentUser();
+      // The mock world has one Account per member.
+      const accountId = `account-${user.id}`;
+      const workspaces = store
+        .getWorkspaces()
+        .filter((workspace) => !store.isWorkspaceArchived(workspace.id));
+      const personal = workspaces.find((workspace) => workspace.isPersonal);
+      return ok({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          emailConfirmed: true,
+        },
+        workspaces: workspaces
+          .filter((workspace) => !workspace.isPersonal)
+          .map((workspace) => ({
+            id: workspace.id,
+            name: workspace.name,
+            slug: workspace.slug,
+            role: "Member",
+            accountId,
+          })),
+        personalWorkspace: personal
+          ? { status: "ready", workspaceId: personal.id }
+          : { status: "pending", workspaceId: null },
+        accountId,
+      });
+    },
+  }),
+
   defineMockOperation<
     Record<string, never>,
     { email?: string; password?: string },
     unknown
   >({
     id: "identity.login",
-    contract: { kind: "gap", gapId: "CTR-GAP-AUTH-FLOW" },
+    contract: { kind: "openapi", operationId: "Identity.Auth.Login" },
     method: "POST",
     route: "/auth/login",
     async handle({ body, store }) {
@@ -65,28 +109,28 @@ export const identityOperations = [
         };
       const outcome = store.auth.login(body.email, body.password ?? "");
       if (outcome.kind === "locked")
-        return {
-          status: 429,
-          body: {
-            message: "Too many attempts",
-            code: "ACCOUNT_LOCKED",
-            retryAfterSeconds: outcome.retryAfterSeconds,
-          },
-        };
+        return identityProblem(
+          429,
+          "identity.auth.too-many-attempts",
+          "Too many attempts. Try again later.",
+          outcome.retryAfterSeconds,
+        );
       if (outcome.kind === "invalid")
-        return {
-          status: 401,
-          body: {
-            message: "Invalid credentials",
-            code: "INVALID_CREDENTIALS",
-            attemptsLeft: outcome.attemptsLeft,
-            ...(outcome.locked
-              ? { retryAfterSeconds: MOCK_AUTH.lockSeconds }
-              : {}),
-          },
-        };
+        return identityProblem(
+          401,
+          "identity.auth.invalid-credentials",
+          "Invalid credentials",
+        );
       if (outcome.kind === "otp")
-        return ok({ requiresOtp: true, challengeId: outcome.challengeId });
+        return ok({
+          ...sessionOf(store),
+          user: undefined,
+          expiresAt: null,
+          mfaRequired: true,
+          mfaChallengeToken: outcome.challengeToken,
+          mfaMethod: "totp",
+          mfaExpiresAt: store.getClock().offsetMinutes(5),
+        });
       store.loginCurrentUser();
       return ok(sessionOf(store));
     },
@@ -100,7 +144,7 @@ export const identityOperations = [
     async handle({ store }) {
       const user = store.getCurrentUser();
       return ok({
-        accessToken: "mock-access-token",
+        ...sessionOf(store),
         user: {
           id: user.id,
           email: user.email,
@@ -121,10 +165,7 @@ export const identityOperations = [
       if (store.isCurrentUserLoggedOut()) {
         return unauthorized();
       }
-      return ok({
-        accessToken: "mock-access-token-refreshed",
-        success: true,
-      });
+      return ok(sessionOf(store));
     },
   }),
 

@@ -22,7 +22,7 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
         var targetItem = CreateBoardItem(boardId: sourceItem.BoardId);
         SetupBoardItems(sourceItem, targetItem);
 
-        var command = new CreateBoardItemLinkCommand(sourceItem.Id, targetItem.Id, "Reference");
+        var command = new CreateBoardItemLinkCommand(sourceItem.Id, targetItem.Id, "related");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -36,7 +36,7 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
         var targetItem = CreateBoardItem();
         SetupBoardItems(targetItem);
 
-        var command = new CreateBoardItemLinkCommand(Guid.CreateVersion7(), targetItem.Id, "Reference");
+        var command = new CreateBoardItemLinkCommand(Guid.CreateVersion7(), targetItem.Id, "related");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -48,7 +48,7 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
         var sourceItem = CreateBoardItem();
         SetupBoardItems(sourceItem);
 
-        var command = new CreateBoardItemLinkCommand(sourceItem.Id, Guid.CreateVersion7(), "Reference");
+        var command = new CreateBoardItemLinkCommand(sourceItem.Id, Guid.CreateVersion7(), "related");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -70,14 +70,14 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
             TestNow);
         SetupBoardItems(sourceItem, targetItem);
 
-        var command = new CreateBoardItemLinkCommand(sourceItem.Id, targetItem.Id, "Reference");
+        var command = new CreateBoardItemLinkCommand(sourceItem.Id, targetItem.Id, "related");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<BusinessRuleException>();
     }
 
     [Fact]
-    public async Task Handle_InvalidLinkType_ThrowsBusinessRuleException()
+    public async Task Handle_InvalidRelation_ThrowsBusinessRuleException()
     {
         var sourceItem = CreateBoardItem();
         var targetItem = CreateBoardItem(boardId: sourceItem.BoardId);
@@ -87,5 +87,66 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<BusinessRuleException>();
+    }
+
+    [Fact]
+    public async Task Handle_BlockedBy_StoresADependencyFromTheViewedItemToTheOther()
+    {
+        var item = CreateBoardItem();
+        var other = CreateBoardItem(boardId: item.BoardId);
+        SetupBoardItems(item, other);
+        var added = new List<BoardItemLink>();
+        SetupBoardItemLinks();
+        DbContextMock.Setup(c => c.BoardItemLinks).Returns(CreateAsyncDbSet(added));
+
+        await _handler.Handle(new CreateBoardItemLinkCommand(item.Id, other.Id, "blocked-by"), CancellationToken.None);
+
+        var link = added.Should().ContainSingle().Subject;
+        link.SourceItemId.Should().Be(item.Id);
+        link.Target.ResourceId.Should().Be(other.Id);
+        link.LinkType.Should().Be(BoardItemLinkType.Dependency);
+    }
+
+    [Fact]
+    public async Task Handle_Blocks_StoresTheDependencyTheOtherWayRound()
+    {
+        var item = CreateBoardItem();
+        var other = CreateBoardItem(boardId: item.BoardId);
+        SetupBoardItems(item, other);
+        var added = new List<BoardItemLink>();
+        SetupBoardItemLinks();
+        DbContextMock.Setup(c => c.BoardItemLinks).Returns(CreateAsyncDbSet(added));
+
+        await _handler.Handle(new CreateBoardItemLinkCommand(item.Id, other.Id, "blocks"), CancellationToken.None);
+
+        var link = added.Should().ContainSingle().Subject;
+        link.SourceItemId.Should().Be(other.Id);
+        link.Target.ResourceId.Should().Be(item.Id);
+        link.LinkType.Should().Be(BoardItemLinkType.Dependency);
+    }
+
+    [Fact]
+    public async Task Handle_LinkToItself_ThrowsBusinessRuleException()
+    {
+        var item = CreateBoardItem();
+        SetupBoardItems(item);
+
+        await _handler.Invoking(h => h.Handle(new CreateBoardItemLinkCommand(item.Id, item.Id, "related"), CancellationToken.None))
+            .Should().ThrowAsync<BusinessRuleException>();
+    }
+
+    [Fact]
+    public async Task Handle_SameRelationAgain_ReturnsTheExistingLinkAndAddsNone()
+    {
+        var item = CreateBoardItem();
+        var other = CreateBoardItem(boardId: item.BoardId);
+        SetupBoardItems(item, other);
+        var existing = CreateBoardItemLink(sourceItemId: item.Id, targetItemId: other.Id);
+        SetupBoardItemLinks(existing);
+
+        var result = await _handler.Handle(new CreateBoardItemLinkCommand(item.Id, other.Id, "related"), CancellationToken.None);
+
+        result.Data.Should().Be(existing.Id);
+        DbContextMock.Object.BoardItemLinks.Should().ContainSingle();
     }
 }

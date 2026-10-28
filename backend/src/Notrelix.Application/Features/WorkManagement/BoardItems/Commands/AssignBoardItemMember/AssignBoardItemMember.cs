@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
@@ -18,6 +19,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly IResourceVisibility _visibility;
     private readonly IRealtimeChangeMapper<AssignBoardItemMemberCommand, Result>? _realtime;
     private readonly IIntegrationEventCollector? _events;
 
@@ -26,6 +28,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess,
+        IResourceVisibility visibility,
         IRealtimeChangeMapper<AssignBoardItemMemberCommand, Result>? realtime = null,
         IIntegrationEventCollector? events = null)
     {
@@ -33,6 +36,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccess = workspaceAccess;
+        _visibility = visibility;
         _realtime = realtime;
         _events = events;
     }
@@ -46,6 +50,13 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         var access = await _workspaceAccess.ResolveAsync(_requestContext.RequireWorkspaceId(), request.UserId, ct);
         if (!access.CanAccess)
             throw new ForbiddenException("Chỉ có thể assign thành viên thuộc cùng workspace.");
+
+        // WM-040: assignment requires access at the time it is made. The assignee
+        // must be able to ViewBoard on the Item's Board (the same decision a single
+        // read makes); the caller may share the Board with them first.
+        var visibleBoards = await _visibility.VisibleBoardIdsAsync(card.WorkspaceId, request.UserId, ct);
+        if (!visibleBoards.Contains(card.BoardId))
+            throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao việc. Hãy chia sẻ board với họ trước.");
 
         var alreadyAssigned = await _context.BoardItemMembers
             .AnyAsync(m => m.ItemId == card.Id && m.UserId == request.UserId, ct);

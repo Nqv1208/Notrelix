@@ -16,7 +16,16 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
+using Notrelix.Domain.Documents.Blocks;
+using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
+using Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBacklinks;
 using Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.RestorePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetTrashedPages;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
@@ -77,7 +86,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _reset = new DatabaseReset(_db.ConnectionString);
+        _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
     }
 
@@ -131,6 +140,23 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "a workspace member without explicit resource-level authority cannot grant permissions");
     }
 
+    [Fact]
+    public async Task Grant_OnBoard_ToUserOutsideTheWorkspace_IsRejected_AndWritesNothing()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var outsiderId = Guid.CreateVersion7();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("work-management.board", boardId, "User", outsiderId, "Viewer"));
+
+        await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>(
+            "a permission cannot be granted to a user who does not belong to the workspace");
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        (await verify.ResourcePermissions.AnyAsync(p => p.SubjectId == outsiderId)).Should().BeFalse();
+    }
+
     // WG-DEBT-CERT-006: board-specific cross-account gate. A workspace owner of
     // account A addressing a board that belongs to account B is told it does not
     // exist and nothing is written to account B.
@@ -149,7 +175,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "a board of another account must be hidden, not reported as forbidden");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.IgnoreQueryFilters()
             .AnyAsync(p => p.ResourceId == boardB && p.SubjectId == ownerB)).Should().BeFalse(
             "the cross-account request must not create an entry on the foreign board");
@@ -240,7 +266,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         async Task<Exception?> InsertWithinTransaction(
             Guid txUserId, TaskCompletionSource<bool> absenceReported)
         {
-            await using var context = _db.CreateContext(SystemTenant());
+            await using var context = _db.CreateOwnerContext(SystemTenant());
             await using var tx = await context.Database.BeginTransactionAsync();
             // Both transactions read the absence of an active row first.
             var absent = !await context.ResourcePermissions
@@ -292,7 +318,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         postgres!.SqlState.Should().Be("23505");
         postgres.ConstraintName.Should().Be("uq_resource_permissions_active_subject");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.CountAsync(p => p.WorkspaceId == workspaceId
             && p.ResourceId == pageId && p.SubjectId == memberId && p.DeletedAt == null))
             .Should().Be(1, "exactly one active permission row survives the race");
@@ -376,7 +402,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             new RevokeResourcePermissionCommand("documents.page", pageId, granted.Data.Id));
 
         result.Succeeded.Should().BeTrue();
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var row = await verify.ResourcePermissions.IgnoreQueryFilters()
             .SingleAsync(p => p.Id == granted.Data.Id);
         row.DeletedAt.Should().NotBeNull("revoke soft-deletes the active permission row");
@@ -423,7 +449,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppForbidden>(
             "revoke requires authority >= the target's existing rank");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.IgnoreQueryFilters()
             .SingleAsync(p => p.Id == granted.Data.Id)).DeletedAt
             .Should().BeNull("a denied revoke must leave the permission row untouched");
@@ -482,7 +508,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppNotFound>(
             "a foreign-account permission must be hidden from the revoke mutation");
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.ResourcePermissions.IgnoreQueryFilters()
             .SingleAsync(p => p.Id == granted.Data.Id)).DeletedAt
             .Should().BeNull("the foreign row must remain active after the hidden attempt");
@@ -519,7 +545,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         // the canonical decision denies and nothing else may bypass it.
         var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
 
-        await using (var restrict = _db.CreateContext(SystemTenant()))
+        await using (var restrict = _db.CreateOwnerContext(SystemTenant()))
         {
             var restricted = await restrict.Boards.SingleAsync(b => b.Id == boardId);
             restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
@@ -583,6 +609,73 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         result.Succeeded.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task CreatePage_GivesTheCreatorAManagerEntry_SoTheyCanDeleteItForGoodFromTheTrash()
+    {
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var created = await SendAsync<Result<Guid>>(provider,
+            new CreatePageCommand(workspaceId, "Member Page", null));
+        var pageId = created.Data;
+
+        await using (var probe = _db.CreateOwnerContext(SystemTenant()))
+        {
+            var entry = await probe.ResourcePermissions.IgnoreQueryFilters()
+                .SingleAsync(p => p.ResourceId == pageId);
+            entry.SubjectId.Should().Be(memberId);
+            entry.Level.Should().Be(PermissionLevel.Manager, "the creator manages what they made");
+        }
+
+        // Manager of the page: may trash it and then delete it for good.
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(provider, new DeletePageCommand(pageId))).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Backlinks_ListThePagesThatReferenceOrMentionAPage_AndNothingElse()
+    {
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+        using var provider = CreateProvider(accountId, memberId);
+        var target = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Target", null))).Data;
+        var referencing = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Referencing", null))).Data;
+        var mentioning = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Mentioning", null))).Data;
+        var unrelated = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Unrelated", null))).Data;
+
+        await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            referencing, null, "page_reference", null, Json($"{{\"pageId\":\"{target}\"}}"), null, null));
+        await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            mentioning, null, "paragraph",
+            Json($"{{\"v\":1,\"runs\":[{{\"text\":\"see\",\"marks\":[{{\"type\":\"pageRef\",\"pageId\":\"{target}\"}}]}}]}}"),
+            null, null, null));
+        await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            unrelated, null, "page_reference", null, Json($"{{\"pageId\":\"{Guid.NewGuid()}\"}}"), null, null));
+
+        var backlinks = await SendAsync<Result<PageBacklinksDto>>(provider, new GetPageBacklinksQuery(target));
+
+        backlinks.Data!.Docs.Select(d => d.Id).Should().BeEquivalentTo([referencing, mentioning]);
+    }
+
+    [Fact]
+    public async Task UpdateBlock_ChangesTheTypeInPlace_KeepingTheBlockAndItsText()
+    {
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+        using var provider = CreateProvider(accountId, memberId);
+        var pageId = (await SendAsync<Result<Guid>>(provider, new CreatePageCommand(workspaceId, "Doc", null))).Data;
+        var created = (await SendAsync<Result<BlockDto>>(provider, new CreateBlockCommand(
+            pageId, null, "paragraph", Json("{\"v\":1,\"runs\":[{\"text\":\"Hello\",\"marks\":[]}]}"), null, null, null))).Data!;
+        var blockId = created.Id;
+
+        (await SendAsync<Result<BlockDto>>(provider, new UpdateBlockCommand(pageId, blockId, "heading_2", null, null, created.Version))).Succeeded.Should().BeTrue();
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var block = await probe.Blocks.IgnoreQueryFilters().SingleAsync(b => b.Id == blockId);
+        block.Type.Should().Be(BlockType.Heading2);
+        block.Content.Data.Value.Should().Be("{\"v\":1,\"runs\":[{\"text\":\"Hello\",\"marks\":[]}]}");
+    }
+
+    private static System.Text.Json.JsonElement Json(string json) => System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
 
     [Fact]
     public async Task CreatePage_Guest_IsForbidden()
@@ -726,13 +819,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue();
-        await using var probe = _db.CreateContext(SystemTenant());
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
             .Should().Be(PageStatus.Archived);
     }
 
     [Fact]
-    public async Task ArchivePage_WorkspaceMember_OnWorkspaceVisiblePage_IsForbidden()
+    public async Task DeletePage_WorkspaceMember_OnWorkspaceVisiblePage_IsForbidden()
     {
         // M2G extension: page visibility is not lifecycle mutation authority.
         // A workspace-visible page only proves the member can see it —
@@ -742,17 +835,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var pageId = await ResolvePageIdAsync();
 
         using var provider = CreateProvider(accountId, memberId);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "visibility grants reading, not page lifecycle mutation authority");
     }
 
     [Fact]
-    public async Task ArchivePage_PageManagerLevelPermission_Allows()
+    public async Task DeletePage_PageManagerLevelPermission_Allows()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
+        await TrashPageAsync(pageId);
         var manager = Guid.NewGuid();
         await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
@@ -760,13 +854,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
 
         using var provider = CreateProvider(accountId, manager);
-        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var result = await SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ArchivePage_PageEditorLevelPermission_IsForbidden()
+    public async Task DeletePage_PageEditorLevelPermission_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -777,14 +871,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, editor, PermissionLevel.Editor);
 
         using var provider = CreateProvider(accountId, editor);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "Editor rank is below the Manager threshold for page lifecycle authority");
     }
 
     [Fact]
-    public async Task ArchivePage_PageViewerLevelPermission_IsForbidden()
+    public async Task DeletePage_PageViewerLevelPermission_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -795,13 +889,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, viewer, PermissionLevel.Viewer);
 
         using var provider = CreateProvider(accountId, viewer);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("Viewer rank cannot archive");
     }
 
     [Fact]
-    public async Task ArchivePage_PageCommenterLevelPermission_IsForbidden()
+    public async Task DeletePage_PageCommenterLevelPermission_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -812,13 +906,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "documents.page", pageId, commenter, PermissionLevel.Commenter);
 
         using var provider = CreateProvider(accountId, commenter);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("Commenter rank cannot archive");
     }
 
     [Fact]
-    public async Task ArchivePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
+    public async Task DeletePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -827,26 +921,27 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SyncAccessGrantsAsync(accountId, workspaceId, (admin, WorkspaceRole.Admin));
 
         using var provider = CreateProvider(accountId, admin);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "workspace Admin is not a default page lifecycle manager");
     }
 
     [Fact]
-    public async Task ArchivePage_ExplicitAllowRule_Allows()
+    public async Task DeletePage_ExplicitAllowRule_Allows()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
+        await TrashPageAsync(pageId);
         var member = Guid.NewGuid();
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow);
 
         using var provider = CreateProvider(accountId, member);
-        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var result = await SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue(
             "an applicable explicit Allow rule grants the lifecycle authority");
@@ -854,7 +949,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     // WG-DEBT-CERT-005: rule time windows and same-priority tie-break on real Postgres.
     [Fact]
-    public async Task ArchivePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden()
+    public async Task DeletePage_ExpiredAllowRule_IsIgnored_AndRequestIsForbidden()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -862,18 +957,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow,
             startsAt: DateTimeOffset.UtcNow.AddDays(-10), expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
 
         using var provider = CreateProvider(accountId, member);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("an expired Allow rule must not grant authority");
     }
 
     [Fact]
-    public async Task ArchivePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden()
+    public async Task DeletePage_NotYetActiveAllowRule_IsIgnored_AndRequestIsForbidden()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -881,39 +976,40 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow,
             startsAt: DateTimeOffset.UtcNow.AddDays(1));
 
         using var provider = CreateProvider(accountId, member);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("a future-window Allow rule must not grant authority yet");
     }
 
     [Fact]
-    public async Task ArchivePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed()
+    public async Task DeletePage_ExpiredDenyRule_IsIgnored_ManagerStillAllowed()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
+        await TrashPageAsync(pageId);
         var manager = Guid.NewGuid();
         await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
         await SeedResourcePermissionAsync(
             accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            accountId, workspaceId, manager, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Deny,
             startsAt: DateTimeOffset.UtcNow.AddDays(-10), expiresAt: DateTimeOffset.UtcNow.AddMinutes(-1));
 
         using var provider = CreateProvider(accountId, manager);
-        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var result = await SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue("an expired Deny rule must not block the Manager-rank authority");
     }
 
     [Fact]
-    public async Task ArchivePage_SamePriorityDenyAndAllowRules_DenyWins()
+    public async Task DeletePage_SamePriorityDenyAndAllowRules_DenyWins()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -921,20 +1017,20 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
         await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Allow, priority: 50);
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            accountId, workspaceId, member, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Deny, priority: 50);
 
         using var provider = CreateProvider(accountId, member);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>("at the same priority an active Deny beats an active Allow");
     }
 
     [Fact]
-    public async Task ArchivePage_ExplicitDenyRule_IsForbidden_EvenForManager()
+    public async Task DeletePage_ExplicitDenyRule_IsForbidden_EvenForManager()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -944,18 +1040,18 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SeedResourcePermissionAsync(
             accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
         await SeedPermissionRuleAsync(
-            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            accountId, workspaceId, manager, PermissionAction.DeletePage,
             "documents.page", pageId, PermissionEffect.Deny);
 
         using var provider = CreateProvider(accountId, manager);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "an applicable explicit Deny rule overrides the Manager-rank authority");
     }
 
     [Fact]
-    public async Task ArchivePage_WrongTenant_IsNotFound_AndTargetStaysActive()
+    public async Task DeletePage_WrongTenant_IsNotFound_AndTargetStaysActive()
     {
         // Cross-tenant resource existence must not leak through Forbidden:
         // a page from workspace B addressed from a workspace-A context is
@@ -965,12 +1061,12 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         workspaceA.Should().NotBe(workspaceB);
 
         using var provider = CreateProvider(accountA, memberA);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageB));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageB));
 
         await act.Should().ThrowAsync<AppNotFound>(
             "a cross-tenant page must be hidden from lifecycle mutations");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
             .Should().Be(PageStatus.Active,
             "the wrong-tenant mutation must leave the foreign page untouched");
@@ -981,7 +1077,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ArchivePage_Guest_IsDenied()
+    public async Task DeletePage_Guest_IsDenied()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -990,52 +1086,104 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
 
         using var provider = CreateProvider(accountId, guest);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppNotFound>(
             "guests without explicit page access are hidden from the lifecycle mutation");
     }
 
     [Fact]
-    public async Task ArchivePage_Outsider_IsForbidden()
+    public async Task DeletePage_Outsider_IsForbidden()
     {
         var (accountId, _, _, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
         var outsider = Guid.NewGuid();
 
         using var provider = CreateProvider(accountId, outsider);
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
         await act.Should().ThrowAsync<AppForbidden>(
             "the canonical pipeline denies non-members before any page mutation");
     }
 
     [Fact]
-    public async Task ArchivePage_AlreadyArchived_IsNotFound_ByResourceLifecycle()
+    public async Task ArchivePage_AlreadyArchived_IsANoOp_ButOtherPageMutationsStayClosed()
     {
-        // The canonical policy engine treats an archived page as a
-        // non-existing resource before any authority fast-path, so a second
-        // archive request fails closed instead of double-mutating. Outward
-        // event evidence lives in PageArchivedOutboxEvidenceTests.
+        // A page in the trash is reachable only for the trash lifecycle
+        // (restore, delete for good): archiving again changes nothing, while
+        // any other page action still fails closed as NotFound. Outward event
+        // evidence lives in PageArchivedOutboxEvidenceTests.
         var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
 
         using var provider = CreateProvider(accountId, ownerId);
         (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
+        long version;
+        await using (var before = _db.CreateOwnerContext(SystemTenant()))
+            version = (await before.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Version;
 
-        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
 
+        var act = () => SendAsync<Result>(provider, new UpdatePageCommand(pageId, "Renamed"));
         await act.Should().ThrowAsync<AppNotFound>(
-            "an archived page is a lifecycle-closed resource for further mutations");
+            "a trashed page accepts no edits");
 
-        await using var verify = _db.CreateContext(SystemTenant());
-        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
-            .Should().Be(PageStatus.Archived);
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        var page = await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+        page.Status.Should().Be(PageStatus.Archived);
+        page.Version.Should().Be(version, "the repeated archive is a semantic no-op");
+    }
+
+    [Fact]
+    public async Task TrashLifecycle_PageEditor_CanTrashAndRestore_ButNotDeleteForGood()
+    {
+        var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var editor = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, editor, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (editor, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, editor, PermissionLevel.Editor);
+
+        using var provider = CreateProvider(accountId, editor);
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue("an Editor moves a page to the trash");
+
+        var listed = await SendAsync<Result<List<PageDto>>>(provider, new GetTrashedPagesQuery(workspaceId));
+        listed.Data!.Select(p => p.Id).Should().Contain(pageId, "the trash lists the page for someone who can see it");
+
+        var delete = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
+        await delete.Should().ThrowAsync<AppForbidden>("deleting for good is Manager only");
+
+        (await SendAsync<Result>(provider, new RestorePageCommand(pageId))).Succeeded.Should().BeTrue("an Editor restores a trashed page");
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status.Should().Be(PageStatus.Active);
+    }
+
+    [Fact]
+    public async Task DeletePage_OfAPageNotInTheTrash_IsRefused_ForTheManager()
+    {
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
+
+        await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).DeletedAt.Should().BeNull();
+    }
+
+    private async Task TrashPageAsync(Guid pageId)
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+        page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        await context.SaveChangesAsync();
     }
 
     private async Task<Guid> ResolvePageIdAsync()
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var id = await context.Pages
             .IgnoreQueryFilters()
             .Select(p => p.Id)
@@ -1057,7 +1205,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "the page section requires its own missing-target proof");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
             "no comment may persist for a missing target");
@@ -1080,7 +1228,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "the board-item section requires its own missing-target proof");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
             "no comment may persist for a missing target");
@@ -1106,7 +1254,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppNotFound>();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
             "no comment may persist for a cross-scope target");
@@ -1130,7 +1278,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         long itemVersionBefore;
         string itemNameBefore;
-        await using (var snapshot = _db.CreateContext(SystemTenant()))
+        await using (var snapshot = _db.CreateOwnerContext(SystemTenant()))
         {
             var item = await snapshot.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemB);
             itemVersionBefore = item.Version;
@@ -1143,7 +1291,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<AppNotFound>();
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
             "no comment may persist for a cross-scope target");
@@ -1176,7 +1324,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppNotFound>(
             "a foreign-account board must be invisible to a granted account-A member");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var foreignBoard = await verify.Boards.IgnoreQueryFilters().SingleAsync(b => b.Id == boardB);
         foreignBoard.Title.Should().NotBeNull("the foreign board must remain intact");
     }
@@ -1204,7 +1352,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             account.Id, w2.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), ownerId, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Accounts.Add(account);
         seed.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, now));
         seed.Workspaces.Add(w1);
@@ -1239,7 +1387,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         result.Succeeded.Should().BeTrue(
             "a W2 member may comment on a W2 item even with W1 selected — the locator is the authority");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         var stored = await verify.Comments.IgnoreQueryFilters()
             .SingleAsync(c => c.Target.ResourceId == w2ItemId);
         stored.WorkspaceId.Should().Be(w2,
@@ -1262,7 +1410,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppForbidden>(
             "same-account membership does not imply W2 authority");
 
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.Target.ResourceId == w2ItemId)).Should().BeFalse(
             "no comment may persist for the denied cross-workspace reference");
@@ -1334,8 +1482,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
 
         services.AddScoped<ApplicationDbContext>(sp =>
-            _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>()));
+            _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -1415,6 +1564,35 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             IRequestHandler<ArchivePageCommand, Result>,
             ArchivePageCommandHandler>();
         services.AddScoped<
+            IRequestHandler<RestorePageCommand, Result>,
+            RestorePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<DeletePageCommand, Result>,
+            DeletePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<UpdatePageCommand, Result>,
+            UpdatePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<GetTrashedPagesQuery, Result<List<PageDto>>>,
+            GetTrashedPagesQueryHandler>();
+        services.AddScoped<
+            IRequestHandler<CreateBlockCommand, Result<BlockDto>>,
+            CreateBlockCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<UpdateBlockCommand, Result<BlockDto>>,
+            UpdateBlockCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<GetPageBacklinksQuery, Result<PageBacklinksDto>>,
+            GetPageBacklinksQueryHandler>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageBacklinkReader,
+            global::Notrelix.Infrastructure.Documents.Pages.PageBacklinkReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
+            global::Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemNotifications.IWorkItemNotificationFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
+                    global::Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
+        services.AddScoped<
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();
         services.AddScoped<MoveBoardItemUseCase>();
@@ -1430,6 +1608,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<GetBoardQuery, Result<BoardDto>>,
             GetBoardQueryHandler>();
+
+        services.AddProductionCrossContextAdapters();
 
         return services.BuildServiceProvider();
     }
@@ -1453,7 +1633,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             account.Id, workspace.Id, board.Id, group.Id, "Task",
             FractionalIndex.Create("a0"), owner.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -1484,7 +1664,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var workspace = Workspace.Create(account.Id, owner.Id, "Gov Page WS", $"gov-page-{Guid.NewGuid():N}", now);
         var page = Page.Create(account.Id, workspace.Id, "Gov Page", owner.Id, now);
 
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(owner);
         seed.Users.Add(member);
         seed.Accounts.Add(account);
@@ -1510,7 +1690,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     private async Task SyncAccessGrantsAsync(Guid accountId, Guid workspaceId, params (Guid UserId, WorkspaceRole Role)[] members)
     {
         var now = DateTimeOffset.UtcNow;
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         var projection = new AccessGrantProjectionService(seed);
         foreach (var (userId, role) in members)
         {
@@ -1532,7 +1712,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         DateTimeOffset? startsAt = null,
         DateTimeOffset? expiresAt = null)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.PermissionRules.Add(PermissionRule.Create(
             accountId,
             workspaceId,
@@ -1554,7 +1734,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task SeedWorkspaceMemberAsync(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(
             accountId, workspaceId, userId, role, userId, DateTimeOffset.UtcNow));
         await seed.SaveChangesAsync();
@@ -1563,7 +1743,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     private async Task SeedResourcePermissionAsync(
         Guid accountId, Guid workspaceId, string resourceKind, Guid resourceId, Guid subjectId, PermissionLevel level)
     {
-        await using var seed = _db.CreateContext(SystemTenant());
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.ResourcePermissions.Add(ResourcePermission.Grant(
             accountId, workspaceId,
             ResourceKind.Create(resourceKind),
@@ -1578,7 +1758,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task AssertAuditRecordedAsync(Guid workspaceId, Guid actorId, string action)
     {
-        await using var verify = _db.CreateContext(SystemTenant());
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.EnterpriseAuditLogs.AnyAsync(a =>
             a.WorkspaceId == workspaceId && a.ActorUserId == actorId && a.Action == action))
             .Should().BeTrue($"an audit row for '{action}' must be committed");
@@ -1586,7 +1766,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task<Guid> ResolveBoardItemIdAsync(Guid boardId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var id = await context.BoardItems
             .Where(i => i.BoardId == boardId)
             .Select(i => i.Id)
@@ -1597,7 +1777,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
     private async Task<Guid> ResolveOtherGroupIdAsync(Guid boardId)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        await using var context = _db.CreateOwnerContext(SystemTenant());
         var id = await context.BoardGroups
             .Where(g => g.BoardId == boardId)
             .Select(g => g.Id)

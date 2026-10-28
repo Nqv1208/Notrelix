@@ -163,6 +163,8 @@ export function TaskDetailPanelSurface({
             onOpenFullPage={callbacks.onOpenFullPage}
             onDuplicate={callbacks.onDuplicate}
             onArchive={callbacks.onArchive}
+            onDelete={callbacks.onDelete}
+            onMoveToBoard={callbacks.onMoveToBoard}
             onMoveToGroup={callbacks.onMoveToGroup}
             following={detailData.following}
             onToggleFollow={callbacks.onToggleWatch}
@@ -185,6 +187,9 @@ export function TaskDetailPanelSurface({
                 now={now}
                 timeZone={timeZone}
                 onUpdateFieldValue={callbacks.onUpdateFieldValue}
+                onUpdateItem={callbacks.onUpdateItem}
+                boardLabels={detailData.boardLabels}
+                onToggleLabel={callbacks.onToggleLabel}
               />
             </div>
             <TaskDetailTabs

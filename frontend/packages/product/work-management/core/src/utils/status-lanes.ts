@@ -21,6 +21,7 @@ const PRIORITY_BY_OPTION_NAME: Readonly<
 > = {
   khan: "urgent",
   urgent: "urgent",
+  critical: "urgent",
   cao: "high",
   high: "high",
   trung_binh: "medium",
