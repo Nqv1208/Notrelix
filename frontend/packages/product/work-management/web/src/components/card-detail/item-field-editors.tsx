@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -95,16 +95,23 @@ export function ItemOptionMenu({
   field,
   readOnly,
   onSelect,
+  autoOpen = false,
   children,
 }: {
   field: FieldDefinition | undefined;
   readOnly: boolean;
   onSelect: (optionId: string) => void;
+  /** Opens as it appears: a property just created asks for its value. */
+  autoOpen?: boolean;
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
   if (readOnly || !field) return <>{children}</>;
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         {field.options.map((option) => (
@@ -219,7 +226,16 @@ export function ItemDuePopover({
   );
 }
 
-/** The fields of the board beyond the item's own properties: selects and numbers. */
+/** Types of custom property the sheet and the page edit. */
+const CUSTOM_FIELD_TYPES: readonly FieldDefinition["fieldType"][] = [
+  "select",
+  "number",
+  "text",
+  "checkbox",
+  "multi_select",
+];
+
+/** The fields of the board beyond the item's own properties. */
 export function customItemFields(board: Board): FieldDefinition[] {
   const own = findItemFields(board);
   const ids = new Set(
@@ -232,7 +248,7 @@ export function customItemFields(board: Board): FieldDefinition[] {
       (field) =>
         !ids.has(field.id) &&
         !field.isHidden &&
-        (field.fieldType === "select" || field.fieldType === "number"),
+        CUSTOM_FIELD_TYPES.includes(field.fieldType),
     )
     .sort((a, b) => a.position - b.position);
 }
@@ -246,16 +262,21 @@ export function ItemNumberPopover({
   label,
   readOnly,
   onChange,
+  autoOpen = false,
   children,
 }: {
   value: number | null;
   label: string;
   readOnly: boolean;
   onChange: (value: number) => void;
+  autoOpen?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
   if (readOnly) return <>{children}</>;
   const commit = () => {
     const next = Number(draft.replace(",", "."));
