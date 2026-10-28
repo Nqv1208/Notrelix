@@ -14,6 +14,7 @@ public static class MapCommentEndpoints
 
         boardItemGroup.MapGetBoardItemComments();
         boardItemGroup.MapCreateBoardItemComment();
+        boardItemGroup.MapBoardItemCommentReactions();
 
         var pageGroup = app
             .MapGroup("/api/v1/pages/{pageId:guid}/comments")

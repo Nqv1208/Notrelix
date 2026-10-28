@@ -1025,6 +1025,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction.AddReactionCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction.AddReactionCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction.RemoveReactionCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction.RemoveReactionCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem.FollowBoardItemCommand",
     "kind": "Command",
     "principalMarkers": [

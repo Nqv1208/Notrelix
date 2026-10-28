@@ -28,6 +28,7 @@ internal static class TestDbSet
         mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => data.GetEnumerator());
 
         mock.Setup(m => m.Add(It.IsAny<T>())).Callback<T>(data.Add);
+        mock.Setup(m => m.Remove(It.IsAny<T>())).Callback<T>(e => data.Remove(e));
         return mock;
     }
 }
