@@ -88,7 +88,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         checklist.SetAuditOnCreate(createdBy, createdAt);
-        checklist.RaiseDomainEvent(new ChecklistCreatedDomainEvent(accountId, workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
+        checklist.RaiseDomainEvent(new ChecklistCreatedDomainEvent(accountId, workspaceId, itemId, checklist.Id, checklist.Title, createdBy, createdAt));
 
         return checklist;
     }
@@ -104,7 +104,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         _items.Add(item);
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, normalizedTitle, addedAt));
+        RaiseDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, normalizedTitle, ItemId, Title, addedBy, addedAt));
         return item;
     }
 
@@ -136,7 +136,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         item.SetCompletion(done, updatedAt);
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.IsDone, updatedAt));
+        RaiseDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.IsDone, ItemId, item.Title, Title, updatedBy, updatedAt));
     }
 
     public void RenameItem(Guid itemId, string title, Guid updatedBy, DateTimeOffset updatedAt)
@@ -184,7 +184,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         _items.Remove(item);
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, updatedAt));
+        RaiseDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, ItemId, item.Title, Title, updatedBy, updatedAt));
     }
 
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
@@ -220,7 +220,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ChecklistDeletedDomainEvent(AccountId, WorkspaceId, ItemId, Id, Title, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)

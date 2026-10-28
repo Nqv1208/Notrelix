@@ -156,6 +156,13 @@ test.describe("Document page (owner)", () => {
     await expect(
       nav.getByRole("link", { name: "Việc liên quan" }),
     ).toHaveAttribute("aria-current", "location");
+    // Reading again: scrolling back up hands the current entry back to the
+    // reading position.
+    await page.getByRole("article").hover();
+    await page.mouse.wheel(0, -2000);
+    await expect(
+      nav.getByRole("link", { name: "Các bước xử lý" }),
+    ).toHaveAttribute("aria-current", "location");
   });
 
   test("comments name Lý Thu Trang and Đỗ Khánh Linh and mark the anchored text", async ({
