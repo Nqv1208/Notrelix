@@ -16582,8 +16582,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "headers": {
               "Idempotency-Replayed": {
                 "description": "true when this response is a replay of a stored result",
@@ -16595,7 +16595,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -16640,7 +16641,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto"
+                  }
                 }
               }
             }
@@ -23693,6 +23697,13 @@
               "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.FilterRule"
             },
             "nullable": true
+          },
+          "criteria": {
+            "type": "string",
+            "nullable": true
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.SavedFilterVisibility"
           }
         },
         "additionalProperties": false
@@ -28225,6 +28236,48 @@
           "itemKeyPrefix": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "viewId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "visibility": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "criteria": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMine": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

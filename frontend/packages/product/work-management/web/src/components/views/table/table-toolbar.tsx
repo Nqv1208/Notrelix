@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ArrowUpDown, Columns3, Plus, Search, X } from "lucide-react";
 import {
   Button,
@@ -58,6 +59,8 @@ export interface MainTableToolbarProps {
   /** False for a viewer who cannot add items: the add button is not shown. */
   canAdd: boolean;
   onAddItem: () => void;
+  /** The saved-filter controls ("Lưu bộ lọc", "Bộ lọc đã lưu"), after "Lọc". */
+  savedFilters?: ReactNode;
 }
 
 type Facet = keyof KanbanFilterState;
@@ -171,6 +174,7 @@ export function MainTableToolbar({
   onDensityChange,
   canAdd,
   onAddItem,
+  savedFilters,
 }: MainTableToolbarProps) {
   const t = copy.toolbar;
   const chips = filterChips(t, filter, filterOptions);
@@ -222,6 +226,8 @@ export function MainTableToolbar({
         options={filterOptions}
         onFilterChange={onFilterChange}
       />
+
+      {savedFilters}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -43,6 +43,20 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }));
   return {
     ...actual,
+    // The filter bar's saved filters: none, and no write is made by these tests.
+    useSavedFilters: () => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    }),
+    useSavedFilterWrites: () => ({
+      create: vi.fn(),
+      rename: vi.fn(),
+      setVisibility: vi.fn(),
+      remove: vi.fn(),
+      restore: vi.fn(),
+    }),
     useBoardView: () => ({
       viewConfig: actual.defaultTableViewConfig,
     }),

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Plus, Search, X } from "lucide-react";
 import {
   Button,
@@ -52,6 +53,8 @@ export interface KanbanToolbarProps {
    * no-results bar with the number of items they hide.
    */
   noResults?: { hiddenCount: number } | null;
+  /** The saved-filter controls ("Lưu bộ lọc", "Bộ lọc đã lưu"), after the filter chip. */
+  savedFilters?: ReactNode;
 }
 
 function fill(
@@ -131,6 +134,7 @@ export function KanbanToolbar({
   canAdd,
   onAddItem,
   noResults,
+  savedFilters,
 }: KanbanToolbarProps) {
   const segments = filterSegments(copy.filter, filter, filterOptions);
   const groupBy = currentGroupByField(groupByFields, groupByFieldId);
@@ -174,6 +178,8 @@ export function KanbanToolbar({
             </button>
           </span>
         ) : null}
+
+        {savedFilters}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

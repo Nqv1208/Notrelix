@@ -35,6 +35,7 @@ public sealed class BoardChildAccessMatrixTests
         // (ManageBoard on a Board is Manager-only Board management).
         ("work-management.board-group", PermissionAction.UpdateItem, false),
         ("work-management.board-view", PermissionAction.UpdateBoardView, false),
+        ("work-management.saved-filter", PermissionAction.UpdateBoardView, false),
         ("work-management.label", PermissionAction.UpdateField, false),
         ("work-management.checklist", PermissionAction.UpdateItem, false),
         ("work-management.checklist-item", PermissionAction.UpdateItem, false),

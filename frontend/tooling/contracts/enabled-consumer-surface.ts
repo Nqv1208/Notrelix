@@ -2292,6 +2292,66 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.SavedFilters.List",
+    consumerSymbol: "createSavedFilterApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/saved-filter.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.SavedFilters.List",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.SavedFilters.Create",
+    consumerSymbol: "createSavedFilterApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/saved-filter.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.SavedFilters.Create",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.SavedFilters.Rename",
+    consumerSymbol: "createSavedFilterApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/saved-filter.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.SavedFilters.Rename",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.SavedFilters.UpdateVisibility",
+    consumerSymbol: "createSavedFilterApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/saved-filter.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.SavedFilters.UpdateVisibility",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.SavedFilters.SoftDelete",
+    consumerSymbol: "createSavedFilterApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/saved-filter.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.SavedFilters.SoftDelete",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.SavedFilters.Restore",
+    consumerSymbol: "createSavedFilterApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/saved-filter.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.SavedFilters.Restore",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.BoardViews.Create",
     consumerSymbol: "createBoardApi",
     consumerFile:

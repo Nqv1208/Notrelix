@@ -8,4 +8,5 @@ export * from "./field-types";
 export * from "./group-types";
 export * from "./item-types";
 export * from "./label-types";
+export * from "./saved-filter-types";
 export * from "./shared-types";
