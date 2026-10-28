@@ -20,6 +20,38 @@ describe("describeActivityEvent", () => {
     });
   });
 
+  it("words a first status without an empty 'from', in both languages", () => {
+    const event = {
+      code: "work.item-status-changed",
+      change: { fieldName: "Status", from: "", to: "Cần làm" },
+    };
+
+    expect(describeActivityEvent(event, ACTIVITY_WORDS_EN)?.verb).toBe(
+      "set the status to Cần làm",
+    );
+    expect(describeActivityEvent(event, ACTIVITY_WORDS_VI)?.verb).toBe(
+      "đặt trạng thái là Cần làm",
+    );
+  });
+
+  it("words label additions and removals from the label name", () => {
+    const added = { code: "work.item-label-added", change: { to: "Bug" } };
+    const removed = { code: "work.item-label-removed", change: { to: "Bug" } };
+
+    expect(describeActivityEvent(added, ACTIVITY_WORDS_EN)?.verb).toBe(
+      "added the label Bug",
+    );
+    expect(describeActivityEvent(removed, ACTIVITY_WORDS_EN)?.verb).toBe(
+      "removed the label Bug",
+    );
+    expect(describeActivityEvent(added, ACTIVITY_WORDS_VI)?.verb).toBe(
+      "thêm nhãn Bug",
+    );
+    expect(describeActivityEvent(removed, ACTIVITY_WORDS_VI)?.verb).toBe(
+      "gỡ nhãn Bug",
+    );
+  });
+
   it("falls back to shorter words when a status name is unknown", () => {
     expect(
       describeActivityEvent(

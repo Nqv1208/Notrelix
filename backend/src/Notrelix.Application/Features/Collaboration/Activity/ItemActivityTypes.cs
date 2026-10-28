@@ -15,6 +15,8 @@ public static class ItemActivityTypes
     public const string FieldChanged = "work.item-field-changed";
     public const string Assigned = "work.item-assigned";
     public const string Unassigned = "work.item-unassigned";
+    public const string LabelAdded = "work.item-label-added";
+    public const string LabelRemoved = "work.item-label-removed";
     public const string MovedToGroup = "work.item-moved";
     public const string MovedToBoard = "work.item-moved-to-board";
     public const string Archived = "work.item-archived";

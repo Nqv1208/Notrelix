@@ -13,7 +13,15 @@ public record RemoveLabelFromBoardItemCommand(Guid BoardItemId, Guid LabelId) : 
 public class RemoveLabelFromBoardItemCommandHandler : IRequestHandler<RemoveLabelFromBoardItemCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    public RemoveLabelFromBoardItemCommandHandler(IWorkManagementDbContext context) => _context = context;
+    private readonly ICurrentRequestContext _requestContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public RemoveLabelFromBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _requestContext = requestContext;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result> Handle(RemoveLabelFromBoardItemCommand request, CancellationToken ct)
     {
@@ -21,6 +29,8 @@ public class RemoveLabelFromBoardItemCommandHandler : IRequestHandler<RemoveLabe
             .FirstOrDefaultAsync(l => l.ItemId == request.BoardItemId && l.LabelId == request.LabelId, ct);
         if (cl is not null)
         {
+            var name = await _context.Labels.Where(l => l.Id == request.LabelId).Select(l => l.Name).FirstOrDefaultAsync(ct) ?? string.Empty;
+            cl.RecordRemoval(name, _requestContext.UserId, _dateTimeProvider.UtcNow);
             _context.BoardItemLabels.Remove(cl);
         }
         return Result.Success();
