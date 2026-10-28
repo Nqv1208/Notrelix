@@ -22,6 +22,9 @@ interface FormWire {
   boardId?: string;
   status?: string | null;
   createdAt?: string;
+  questionCount?: number;
+  newSubmissionCount?: number;
+  updatedAt?: string | null;
 }
 interface QuestionWire {
   id?: string;
@@ -87,6 +90,13 @@ function mapForm(row: FormWire, boardId: string): Form | null {
     title: row.name ?? "",
     status: parseFormStatus(row.status),
     createdAt: row.createdAt ?? "",
+    ...(row.questionCount === undefined
+      ? {}
+      : { questionCount: row.questionCount }),
+    ...(row.newSubmissionCount === undefined
+      ? {}
+      : { newSubmissionCount: row.newSubmissionCount }),
+    ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
   };
 }
 

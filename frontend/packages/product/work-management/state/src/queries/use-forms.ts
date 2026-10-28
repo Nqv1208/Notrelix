@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type {
   Form,
   FormDetail,
@@ -50,40 +50,5 @@ export function useFormSubmissions(
     queryFn: () => forms.submissions(formId),
     enabled: enabled && Boolean(formId && workspaceId),
     staleTime: 10_000,
-  });
-}
-
-/** What a list row shows besides the form: its question count and its responses (read apart, so each may still be loading). */
-export function useBoardFormFacts(
-  forms: readonly Form[],
-  workspaceId: string,
-  enabled = true,
-) {
-  const { forms: api } = useWorkManagementServices();
-  const details = useQueries({
-    queries: forms.map((form) => ({
-      queryKey: wmQueryKeys.form(workspaceId, form.id),
-      queryFn: () => api.get(form.id),
-      enabled: enabled && Boolean(workspaceId),
-      staleTime: 15_000,
-    })),
-  });
-  const responses = useQueries({
-    queries: forms.map((form) => ({
-      queryKey: wmQueryKeys.formSubmissions(workspaceId, form.id),
-      queryFn: () => api.submissions(form.id),
-      enabled: enabled && Boolean(workspaceId),
-      staleTime: 10_000,
-    })),
-  });
-  return forms.map((form, index) => {
-    const detail = details[index]?.data;
-    const list = responses[index]?.data;
-    return {
-      formId: form.id,
-      questionCount: detail?.questions.length,
-      newCount: list?.filter((s) => s.status === "new").length,
-      totalCount: list?.length,
-    };
   });
 }

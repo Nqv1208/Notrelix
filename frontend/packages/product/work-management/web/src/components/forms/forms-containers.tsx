@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
   useBoardAccess,
-  useBoardFormFacts,
   useBoardForms,
   useForm,
   useFormSubmissions,
@@ -26,8 +25,7 @@ import { fillFormsCopy } from "./forms.copy";
 import { boardFormFields, prefillFromResponse } from "./form-model";
 import { useFormsCopy } from "./use-forms-copy";
 
-/** Seconds a decision on a response waits for its undo. */
-const UNDO_MS = 6000;
+const UNDO_MS = 8000;
 
 /** The member link of a form: in the app, signed in, on the form's board. */
 export function formLink(
@@ -61,19 +59,15 @@ export function useBoardFormsPanel(
   },
 ): BoardFormsPanelProps {
   const copy = useFormsCopy();
+  const { locale } = useLocale();
   const list = useBoardForms(boardId, workspaceId);
-  const facts = useBoardFormFacts(list.data ?? [], workspaceId);
   const writes = useFormWrites(boardId, workspaceId);
 
   return {
     copy,
+    locale,
     status: list.isError ? "error" : list.isLoading ? "loading" : "ready",
-    forms: (list.data ?? []).map((form, index) => ({
-      ...form,
-      questionCount: facts[index]?.questionCount,
-      newCount: facts[index]?.newCount,
-      totalCount: facts[index]?.totalCount,
-    })),
+    forms: list.data ?? [],
     onReload: () => void list.refetch(),
     onCreate: async (title) => {
       const result = await writes.create(title);
@@ -267,11 +261,7 @@ export function FormFillPage({
   );
 }
 
-/**
- * The inbox of a form. Spam, reject and delete wait a few seconds for their
- * undo before the server hears of them (the producer has no way back); the
- * response leaves the list at once and returns if the write fails.
- */
+/** The inbox of a form: every decision on a response is written at once. */
 export function FormInboxPage({
   workspaceId,
   boardId,
@@ -307,70 +297,29 @@ export function FormInboxPage({
   );
   const [tab, setTab] = useState<FormSubmissionStatus>("new");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [conflict, setConflict] = useState(false);
   const [failed, setFailed] = useState<{ retry: () => void } | null>(null);
   const [creating, setCreating] = useState<FormSubmission | null>(null);
-  const pendingRef = useRef(
-    new Map<string, { timer: number; commit: () => void }>(),
-  );
-
-  // A decision waiting for its undo is sent when the page is left.
-  useEffect(() => {
-    const waiting = pendingRef.current;
-    return () => {
-      for (const { timer, commit } of waiting.values()) {
-        window.clearTimeout(timer);
-        commit();
-      }
-      waiting.clear();
-    };
-  }, []);
-
   const people = useMemo(
     () =>
       Object.fromEntries((board?.members ?? []).map((m) => [m.userId, m.name])),
     [board?.members],
   );
 
+  /** A decision on a response is written at once; a refusal leaves the response where it was. */
   const decide = useCallback(
-    (
-      response: FormSubmission,
-      message: string,
-      send: () => Promise<FormWriteResult>,
-    ) => {
-      const unhide = () =>
-        setHidden((prev) => {
-          const next = new Set(prev);
-          next.delete(response.id);
-          return next;
-        });
-      setHidden((prev) => new Set(prev).add(response.id));
-      setSelectedId(null);
-      const commit = () => {
-        pendingRef.current.delete(response.id);
-        void send().then((result) => {
-          if (result.ok) return unhide();
-          unhide();
-          if (result.reason === "conflict") setConflict(true);
-          else setFailed({ retry: () => decide(response, message, send) });
-        });
-      };
-      const timer = window.setTimeout(commit, UNDO_MS);
-      pendingRef.current.set(response.id, { timer, commit });
-      toast(message, {
-        duration: UNDO_MS,
-        action: {
-          label: copy.common.undo,
-          onClick: () => {
-            window.clearTimeout(timer);
-            pendingRef.current.delete(response.id);
-            unhide();
-          },
-        },
-      });
+    async (message: string, send: () => Promise<FormWriteResult>) => {
+      setConflict(false);
+      setFailed(null);
+      const result = await send();
+      if (result.ok) {
+        setSelectedId(null);
+        toast(message);
+      } else if (result.reason === "conflict") setConflict(true);
+      else setFailed({ retry: () => void decide(message, send) });
+      return result;
     },
-    [copy.common.undo],
+    [],
   );
 
   const status =
@@ -386,16 +335,12 @@ export function FormInboxPage({
             : submissions.isLoading
               ? "loading"
               : "ready";
-  const visible = (submissions.data ?? []).filter((s) => !hidden.has(s.id));
+  const visible = submissions.data ?? [];
   const form = formQuery.data ?? null;
   const nameOf = (s: FormSubmission) =>
     (s.submitterUserId ? people[s.submitterUserId] : undefined) ??
     s.submitterEmail ??
     copy.inbox.unknownPerson;
-  const titleOf = (s: FormSubmission) =>
-    typeof s.answers.title === "string" && s.answers.title !== ""
-      ? s.answers.title
-      : copy.inbox.untitled;
 
   const prefill =
     creating && form
@@ -435,34 +380,19 @@ export function FormInboxPage({
           setFailed(null);
           setCreating(response);
         }}
-        onReject={async (response, reason) => {
-          setConflict(false);
-          setFailed(null);
-          decide(
-            response,
-            fillFormsCopy(copy.inbox.rejected, { name: nameOf(response) }),
-            () => writes.reject(formId, response.id, reason),
-          );
-          return { ok: true };
-        }}
-        onSpam={async (response) => {
-          setConflict(false);
-          setFailed(null);
-          decide(
-            response,
-            fillFormsCopy(copy.inbox.spammed, { name: titleOf(response) }),
-            () => writes.markSpam(formId, response.id),
-          );
-          return { ok: true };
-        }}
-        onRemove={async (response) => {
-          decide(
-            response,
-            fillFormsCopy(copy.inbox.removed, { name: nameOf(response) }),
-            () => writes.removeSubmission(formId, response.id),
-          );
-          return { ok: true };
-        }}
+        onReject={(response, reason) =>
+          decide(copy.inbox.rejected, () =>
+            writes.reject(formId, response.id, reason),
+          )
+        }
+        onSpam={(response) =>
+          decide(copy.inbox.spammed, () => writes.markSpam(formId, response.id))
+        }
+        onRemove={(response) =>
+          decide(copy.inbox.removed, () =>
+            writes.removeSubmission(formId, response.id),
+          )
+        }
         onOpenItem={onOpenItem}
         onReload={() => {
           void formQuery.refetch();

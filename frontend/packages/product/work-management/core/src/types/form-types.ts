@@ -94,6 +94,10 @@ export interface Form {
   readonly title: string;
   readonly status: FormStatus;
   readonly createdAt: string;
+  /** From the list read only. */
+  readonly questionCount?: number;
+  readonly newSubmissionCount?: number;
+  readonly updatedAt?: string | null;
 }
 
 export interface FormDetail extends Form {

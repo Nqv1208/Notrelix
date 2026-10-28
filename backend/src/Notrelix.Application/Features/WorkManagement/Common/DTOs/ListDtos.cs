@@ -40,7 +40,10 @@ public record FormDto(
     Guid BoardId,
     string Status,
     string Visibility,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    int QuestionCount = 0,
+    int NewSubmissionCount = 0,
+    DateTimeOffset? UpdatedAt = null
 );
 
 public record FormSubmissionDto(

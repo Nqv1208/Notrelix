@@ -1,6 +1,14 @@
 import { useId, useState } from "react";
 import { Trash2 } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   Dialog,
   DialogContent,
@@ -560,35 +568,22 @@ function ResponseDetail(
         </div>
       )}
 
-      {confirmRemove ? (
-        <div
-          role="alertdialog"
-          aria-label={t.removeAria}
-          className="flex flex-wrap items-center gap-3 rounded-[10px] border border-line-strong bg-danger-subtle p-3"
-        >
-          <p className="m-0 min-w-0 flex-1 text-item-small">
-            {fillFormsCopy(t.removeAsk, { name: by })}
-          </p>
-          <button
-            type="button"
-            autoFocus
-            onClick={() => setConfirmRemove(false)}
-            className={cn(BUTTON_CLASS.outline, "h-7")}
-          >
-            {copy.common.keep}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setConfirmRemove(false);
-              void props.onRemove(response);
-            }}
-            className={cn(BUTTON_CLASS.danger, "h-7")}
-          >
-            {t.removeConfirm}
-          </button>
-        </div>
-      ) : null}
+      <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.removeAria}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {fillFormsCopy(t.removeAsk, { name: by })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{copy.common.keep}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void props.onRemove(response)}>
+              {t.removeConfirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={rejecting} onOpenChange={setRejecting}>
         <DialogContent className="gap-3 sm:max-w-[460px]">

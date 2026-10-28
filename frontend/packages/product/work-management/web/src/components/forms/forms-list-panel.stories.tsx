@@ -15,8 +15,7 @@ const rows: FormListRow[] = [
     status: "published",
     createdAt: "2026-10-05T02:00:00Z",
     questionCount: 5,
-    newCount: 3,
-    totalCount: 18,
+    newSubmissionCount: 3,
   },
   {
     id: "f-2",
@@ -26,8 +25,7 @@ const rows: FormListRow[] = [
     status: "draft",
     createdAt: "2026-10-09T02:00:00Z",
     questionCount: 4,
-    newCount: 0,
-    totalCount: 0,
+    newSubmissionCount: 0,
   },
   {
     id: "f-3",
@@ -36,8 +34,7 @@ const rows: FormListRow[] = [
     status: "closed",
     createdAt: "2026-09-20T02:00:00Z",
     questionCount: 6,
-    newCount: 0,
-    totalCount: 24,
+    newSubmissionCount: 0,
   },
 ];
 
@@ -45,6 +42,7 @@ const props = (
   overrides: Partial<BoardFormsPanelProps> = {},
 ): BoardFormsPanelProps => ({
   copy: formsCopyFixture("vi"),
+  locale: "vi",
   status: "ready",
   forms: rows,
   onReload: () => undefined,

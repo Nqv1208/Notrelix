@@ -162,7 +162,7 @@ test.describe("Board forms (owner)", () => {
     ).toBeVisible();
   });
 
-  test("rejects a response without a reason and can undo it", async ({
+  test("rejects a response without a reason, at once and without an undo", async ({
     page,
   }) => {
     await open(page, `${SUPPORT}/responses`);
@@ -172,10 +172,9 @@ test.describe("Board forms (owner)", () => {
       .getByRole("dialog", { name: "Từ chối phản hồi này?" })
       .getByRole("button", { name: "Từ chối", exact: true })
       .click();
-    await expect(page.getByText(/Đã từ chối/)).toBeVisible();
+    await expect(page.getByText("Đã từ chối", { exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: /Mới\s*2/ })).toBeVisible();
-    await page.getByRole("button", { name: "Hoàn tác" }).click();
-    await expect(page.getByRole("tab", { name: /Mới\s*3/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Hoàn tác" })).toHaveCount(0);
   });
 
   test("keeps the admin screens usable at 768 px", async ({ page }) => {

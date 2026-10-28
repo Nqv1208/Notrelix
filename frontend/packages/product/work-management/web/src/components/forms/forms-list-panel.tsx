@@ -12,18 +12,12 @@ import {
 } from "../board-settings/board-settings-parts";
 import { FormAlert, FormStatusChip } from "./forms-parts";
 import { fillFormsCopy, type FormsCopy } from "./forms.copy";
-import { dayText } from "./form-model";
 
-/** A form of the board with what the list shows besides it (counts read apart, so they may be unknown). */
-export interface FormListRow extends Form {
-  readonly questionCount?: number;
-  /** Responses still in the New tab, and all that are kept. */
-  readonly newCount?: number;
-  readonly totalCount?: number;
-}
+export type FormListRow = Form;
 
 export interface BoardFormsPanelProps {
   readonly copy: FormsCopy;
+  readonly locale: "vi" | "en";
   readonly status: "loading" | "error" | "ready";
   readonly forms: readonly FormListRow[];
   readonly onReload: () => void;
@@ -238,7 +232,9 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                       >
                         {form.title}
                       </button>
-                      <span className={HINT_CLASS}>{metaLine(form, copy)}</span>
+                      <span className={HINT_CLASS}>
+                        {metaLine(form, copy, props.locale)}
+                      </span>
                     </span>
                     <span className="justify-self-end @[640px]:justify-self-start">
                       <FormStatusChip status={form.status} copy={copy} />
@@ -399,39 +395,39 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
   );
 }
 
-function metaLine(form: FormListRow, copy: FormsCopy): string {
-  const questions = form.questionCount ?? 0;
+/** "3 giờ trước" / "3 hours ago": how long ago the form last changed. */
+function ago(iso: string, locale: "vi" | "en"): string {
+  const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["day", 86_400],
+    ["hour", 3_600],
+    ["minute", 60],
+  ];
+  const format = new Intl.RelativeTimeFormat(locale === "vi" ? "vi" : "en", {
+    numeric: "auto",
+  });
+  for (const [unit, size] of units)
+    if (Math.abs(seconds) >= size)
+      return format.format(Math.round(seconds / size), unit);
+  return format.format(0, "minute");
+}
+
+function metaLine(form: FormListRow, copy: FormsCopy, locale: "vi" | "en") {
   const t = copy.list;
-  if (form.questionCount === undefined)
-    return fillFormsCopy(t.meta, {
-      questions: "…",
-      date: dayText(form.createdAt),
-    });
-  return fillFormsCopy(
-    form.status === "draft"
-      ? t.metaDraft
-      : form.status === "closed"
-        ? t.metaClosed
-        : t.meta,
-    { questions, date: dayText(form.createdAt.slice(0, 10)) },
-  );
+  const questions = form.questionCount ?? 0;
+  if (form.status === "draft") return fillFormsCopy(t.metaDraft, { questions });
+  return fillFormsCopy(t.meta, {
+    questions,
+    when: ago(form.updatedAt ?? form.createdAt, locale),
+  });
 }
 
 function responsesText(form: FormListRow, copy: FormsCopy) {
-  const t = copy.list;
-  if (form.totalCount === undefined) return "";
-  if (form.totalCount === 0) return t.zero;
+  const count = form.newSubmissionCount ?? 0;
+  if (count === 0) return copy.list.zero;
   return (
-    <>
-      {(form.newCount ?? 0) > 0 ? (
-        <>
-          <b className="text-brand-subtle-foreground">
-            {fillFormsCopy(t.newCount, { count: form.newCount ?? 0 })}
-          </b>
-          {" · "}
-        </>
-      ) : null}
-      {fillFormsCopy(t.total, { count: form.totalCount })}
-    </>
+    <b className="text-brand-subtle-foreground">
+      {fillFormsCopy(copy.list.newCount, { count })}
+    </b>
   );
 }

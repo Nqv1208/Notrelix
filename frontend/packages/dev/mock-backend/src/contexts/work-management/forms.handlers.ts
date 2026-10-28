@@ -64,6 +64,17 @@ function formRow(form: MockForm) {
   };
 }
 
+function listRow(form: MockForm, store: MockStore) {
+  return {
+    ...formRow(form),
+    questionCount: form.questions.length,
+    newSubmissionCount: store.forms
+      .submissions(form.id)
+      .filter((s) => s.status === "Accepted" && !s.createdItemId).length,
+    updatedAt: form.createdAt,
+  };
+}
+
 function detail(form: MockForm) {
   return {
     ...formRow(form),
@@ -272,7 +283,9 @@ export const formsOperations = [
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store))
         return notFound("Board not found");
-      return ok(store.forms.list(params.boardId).map(formRow));
+      return ok(
+        store.forms.list(params.boardId).map((form) => listRow(form, store)),
+      );
     },
   }),
 
