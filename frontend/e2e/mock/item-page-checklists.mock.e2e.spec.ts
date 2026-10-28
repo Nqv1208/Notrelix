@@ -179,7 +179,10 @@ test.describe("Checklists (owner)", () => {
 });
 
 test.describe("Checklists (viewer)", () => {
-  test.skip(persona !== "viewer", "Needs VITE_MOCK_PERSONA=viewer");
+  test.skip(
+    persona !== "viewer" || scenario !== "default",
+    "Needs the default viewer scenario",
+  );
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test("read-only: no add row", async ({ page }) => {
