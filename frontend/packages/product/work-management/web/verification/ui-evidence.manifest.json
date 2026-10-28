@@ -2245,6 +2245,8 @@
       "surfaceKind": "composition",
       "pureEntry": "src/components/item-page/item-page-surface.tsx",
       "coveredSources": [
+        "src/components/comment-thread/reaction-bar.tsx",
+        "src/components/comment-thread/reply-box.tsx",
         "src/components/item-page/item-page-activity.tsx",
         "src/components/item-page/item-page-approval.tsx",
         "src/components/item-page/item-page-header.tsx",
