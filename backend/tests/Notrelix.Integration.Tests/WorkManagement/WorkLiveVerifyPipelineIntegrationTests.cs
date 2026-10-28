@@ -1,4 +1,3 @@
-using Notrelix.Domain.WorkManagement.Fields;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,6 @@ using Notrelix.Application.Features.Documents.Public.PageAuthorization;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
