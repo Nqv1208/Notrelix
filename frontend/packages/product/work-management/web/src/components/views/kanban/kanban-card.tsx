@@ -1,7 +1,14 @@
 import { useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Flag, MessageCircle } from "lucide-react";
+import {
+  Ban,
+  Calendar,
+  ListChecks,
+  MessageCircle,
+  Paperclip,
+  SquareCheck,
+} from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { Card, CardMember } from "@notrelix/work-management-core";
 import {
@@ -19,7 +26,12 @@ import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
 import type { KanbanMoveDirection } from "./kanban-dnd";
 import {
+  PRIORITY_TONE_CLASS,
+  PriorityGlyph,
+} from "../../shared/priority-glyph";
+import {
   ITEM_LABEL_TONE_CLASS,
+  formatItemDate,
   identityMarkClass,
   itemDueState,
   itemLabelTone,
@@ -38,6 +50,11 @@ const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
   date: "-ml-1.5 font-medium text-muted-foreground",
 };
+
+/** A count as shown on the face: 99+ above 99. */
+function countText(count: number, copy: KanbanCardCopy): string {
+  return count > 99 ? copy.overflowCount : String(count);
+}
 
 const ALT_ARROW: Readonly<Record<string, KanbanMoveDirection | undefined>> = {
   ArrowLeft: "left",
@@ -82,6 +99,12 @@ function cardParts(
   const rawKey = card.itemKey?.trim() || null;
   const itemKey = rawKey && /^\d+$/.test(rawKey) ? `#${rawKey}` : rawKey;
   const commentCount = Math.max(card._count?.comments ?? 0, 0);
+  const fileCount = Math.max(card._count?.attachments ?? 0, 0);
+  const blockerCount = Math.max(card.openBlockerCount ?? 0, 0);
+  const checklist =
+    card.checklistProgress && card.checklistProgress.total > 0
+      ? card.checklistProgress
+      : null;
 
   const progress =
     card.childProgress && card.childProgress.total > 0
@@ -94,13 +117,33 @@ function cardParts(
       )
     : 0;
 
-  const priority =
-    card.priority === "urgent" || card.priority === "high"
-      ? card.priority
+  const priority = card.priority ?? null;
+
+  // Row 2 never wraps. From four chips on it is crowded: only the due date,
+  // no calendar icon, "Bị chặn" as an icon, and the avatars collapse to one
+  // plus "+N". The start-to-due range needs three chips or fewer.
+  const chipCount = [
+    dueText,
+    checklist,
+    commentCount,
+    fileCount,
+    blockerCount,
+  ].filter(Boolean).length;
+  const crowded = chipCount >= 4;
+  const startText = card.startDate
+    ? formatItemDate(card.startDate, reference, timeZone)
+    : null;
+  const dueRange =
+    !crowded && dueText && startText && due?.kind === "date"
+      ? `${startText} → ${dueText}`
+      : null;
+  const dueLabel =
+    dueText && startText && due
+      ? fillCopy(copy.startAndDue, { start: startText, due: dueText })
       : null;
 
   const assignee = card.members?.[0];
-  const shownAssignees = (card.members ?? []).slice(0, 2);
+  const shownAssignees = (card.members ?? []).slice(0, crowded ? 1 : 2);
   const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
   const hiddenAssignees = Math.max(
     (card.members?.length ?? 0) - shownAssignees.length,
@@ -132,11 +175,19 @@ function cardParts(
     hiddenAssignees,
     assigneeLabel,
     commentCount,
-    hasTop: shownLabels.length > 0 || itemKey !== null,
+    fileCount,
+    blockerCount,
+    checklist,
+    crowded,
+    dueRange,
+    dueLabel,
+    hasTop: shownLabels.length > 0 || itemKey !== null || priority !== null,
     hasMeta:
       dueText !== null ||
-      priority !== null ||
+      checklist !== null ||
       commentCount > 0 ||
+      fileCount > 0 ||
+      blockerCount > 0 ||
       Boolean(assignee),
   };
 }
@@ -173,9 +224,16 @@ function KanbanCardContent({
     hiddenAssignees,
     assigneeLabel,
     commentCount,
+    fileCount,
+    blockerCount,
+    checklist,
+    crowded,
+    dueRange,
+    dueLabel,
     hasTop,
     hasMeta,
   } = parts;
+  const compactBlocked = crowded || due?.kind === "overdue";
   return (
     <>
       {hasTop ? (
@@ -212,8 +270,27 @@ function KanbanCardContent({
               +{moreLabels}
             </span>
           ) : null}
+          {priority ? (
+            <span
+              data-priority={priority}
+              title={`${copy.priorityPrefix} ${copy.priority[priority]}`}
+              className={cn(
+                "ml-auto inline-flex shrink-0",
+                PRIORITY_TONE_CLASS[priority],
+              )}
+            >
+              <PriorityGlyph level={priority} />
+              <span className="sr-only">{copy.priorityPrefix} </span>
+              <span className="sr-only">{copy.priority[priority]}</span>
+            </span>
+          ) : null}
           {itemKey ? (
-            <span className="ml-auto shrink-0 font-mono text-metadata leading-[1.45]">
+            <span
+              className={cn(
+                "shrink-0 font-mono text-metadata leading-[1.45]",
+                priority ? null : "ml-auto",
+              )}
+            >
               {itemKey}
             </span>
           ) : null}
@@ -234,6 +311,7 @@ function KanbanCardContent({
           data-child-progress=""
           className="flex items-center gap-2 text-micro tabular-nums text-meta-foreground"
         >
+          <ListChecks className="size-3.25 shrink-0" aria-hidden="true" />
           <span
             aria-hidden="true"
             className="block h-1.25 flex-1 overflow-hidden rounded-[3px] bg-state-hover-strong"
@@ -259,46 +337,87 @@ function KanbanCardContent({
       {hasMeta ? (
         <div
           id={`${idPrefix}-meta`}
-          className="flex min-h-6 min-w-0 flex-wrap items-center gap-2 text-metadata text-meta-foreground"
+          data-crowded={crowded ? "" : undefined}
+          className="flex min-h-6 min-w-0 flex-nowrap items-center gap-1 overflow-hidden text-micro text-meta-foreground"
         >
           {due && dueText ? (
             <span
               data-due={due.kind}
+              title={dueLabel ?? undefined}
               className={cn(
-                "inline-flex h-5.5 items-center gap-1 rounded-sm px-1.5",
+                "inline-flex h-5.5 shrink-0 items-center gap-1 rounded-sm px-1 whitespace-nowrap",
                 DUE_CLASS[due.kind],
               )}
             >
+              {crowded || due.kind === "overdue" ? null : (
+                <Calendar className="size-3.25" aria-hidden="true" />
+              )}
               {due.kind === "overdue" ? null : (
                 <span className="sr-only">{copy.due} </span>
               )}
-              {dueText}
+              {dueRange ?? dueText}
+              {dueLabel ? <span className="sr-only"> ({dueLabel})</span> : null}
             </span>
           ) : null}
-          {priority ? (
+          {checklist ? (
             <span
-              data-priority={priority}
+              data-checklist-progress=""
+              title={fillCopy(copy.checklistProgress, checklist)}
               className={cn(
-                "inline-flex items-center gap-1 leading-[1.45] font-semibold",
-                priority === "urgent"
-                  ? "text-danger-text"
-                  : "text-priority-high-text",
+                "inline-flex h-5 shrink-0 items-center gap-0.75 rounded-[5px] font-semibold tabular-nums",
+                crowded
+                  ? "px-0.5"
+                  : "bg-state-hover-strong px-1 text-muted-foreground",
               )}
             >
-              <Flag className="size-3.25" aria-hidden="true" />
-              <span className="sr-only">{copy.priorityPrefix} </span>
-              {copy.priority[priority]}
+              <SquareCheck className="size-3.25" aria-hidden="true" />
+              <span aria-hidden="true">
+                {checklist.done}/{checklist.total}
+              </span>
+              <span className="sr-only">
+                {fillCopy(copy.checklistProgress, checklist)}
+              </span>
             </span>
           ) : null}
           {commentCount > 0 ? (
             <span
               data-comment-count={commentCount}
-              className="inline-flex items-center gap-1 tabular-nums"
+              className="inline-flex shrink-0 items-center gap-0.75 tabular-nums"
             >
               <MessageCircle aria-hidden="true" className="size-3.25" />
-              <span aria-hidden="true">{commentCount}</span>
+              <span aria-hidden="true">{countText(commentCount, copy)}</span>
               <span className="sr-only">
                 {fillCopy(copy.commentCount, { count: commentCount })}
+              </span>
+            </span>
+          ) : null}
+          {fileCount > 0 ? (
+            <span
+              data-file-count={fileCount}
+              className="inline-flex shrink-0 items-center gap-0.75 tabular-nums"
+            >
+              <Paperclip aria-hidden="true" className="size-3.25" />
+              <span aria-hidden="true">{countText(fileCount, copy)}</span>
+              <span className="sr-only">
+                {fillCopy(copy.fileCount, { count: fileCount })}
+              </span>
+            </span>
+          ) : null}
+          {blockerCount > 0 ? (
+            <span
+              data-blocked={blockerCount}
+              title={fillCopy(copy.blockedBy, { count: blockerCount })}
+              className={cn(
+                "inline-flex h-5 min-w-5 shrink-0 items-center justify-center gap-1 rounded-[5px] bg-danger-subtle text-micro font-semibold text-danger-subtle-foreground",
+                compactBlocked ? "px-0" : "px-1",
+              )}
+            >
+              <Ban className="size-3.25" aria-hidden="true" />
+              {compactBlocked ? null : (
+                <span aria-hidden="true">{copy.blocked}</span>
+              )}
+              <span className="sr-only">
+                {fillCopy(copy.blockedBy, { count: blockerCount })}
               </span>
             </span>
           ) : null}
@@ -313,7 +432,7 @@ function KanbanCardContent({
                   key={member.id}
                   aria-hidden="true"
                   className={cn(
-                    "flex size-5.5 items-center justify-center rounded-full text-mark-xs ring-2 ring-popover select-none dark:ring-card",
+                    "flex size-5 items-center justify-center rounded-full text-mark-xs ring-2 ring-popover select-none dark:ring-card",
                     index > 0 && "-ml-1.5",
                     identityMarkClass(member.userId || member.id),
                   )}
@@ -324,7 +443,7 @@ function KanbanCardContent({
               {hiddenAssignees > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="-ml-1.5 flex size-5.5 items-center justify-center rounded-full bg-state-hover-strong text-mark-xs text-muted-foreground ring-2 ring-popover select-none dark:ring-card"
+                  className="-ml-1.5 flex size-5 items-center justify-center rounded-full bg-state-hover-strong text-mark-xs text-muted-foreground ring-2 ring-popover select-none dark:ring-card"
                 >
                   +{hiddenAssignees}
                 </span>

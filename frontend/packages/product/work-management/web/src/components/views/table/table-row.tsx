@@ -5,7 +5,13 @@ import {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import { ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  MessageCircle,
+  Paperclip,
+  SquareCheck,
+} from "lucide-react";
+import { PriorityGlyph } from "../../shared/priority-glyph";
 import {
   cn,
   ContextMenu,
@@ -89,6 +95,8 @@ const DUE_CLASS: Readonly<Record<TableRowModel["due"]["kind"], string>> = {
 const PRIORITY_CLASS = {
   urgent: "font-semibold text-danger-text",
   high: "font-semibold text-priority-high-text",
+  medium: "font-medium text-muted-foreground",
+  low: "font-normal text-meta-foreground",
 } as const;
 
 function Cell({
@@ -405,20 +413,18 @@ export function TableRow({
         );
       }
       case "priority": {
-        const priority =
-          row.priority === "urgent" || row.priority === "high"
-            ? row.priority
-            : null;
+        const priority = row.priority;
         const shown = (
           <span
             data-priority={priority ?? undefined}
             className={cn(
-              "text-crumb",
+              "inline-flex items-center gap-1 text-crumb",
               priority
                 ? PRIORITY_CLASS[priority]
                 : "font-normal text-meta-foreground",
             )}
           >
+            {priority ? <PriorityGlyph level={priority} /> : null}
             {priority ? copy.row.priority[priority] : copy.row.noPriority}
           </span>
         );
@@ -484,6 +490,61 @@ export function TableRow({
                 </span>
                 <span aria-hidden="true">
                   {row.progress.done}/{row.progress.total}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "checklist":
+        return (
+          <Cell key="checklist" selected={selected}>
+            {row.checklist ? (
+              <span
+                data-checklist-progress=""
+                className="inline-flex items-center gap-1 text-nav tabular-nums text-muted-foreground"
+              >
+                <SquareCheck className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">
+                  {row.checklist.done}/{row.checklist.total}
+                </span>
+                <span className="sr-only">
+                  {fillTableCopy(copy.row.checklistProgress, row.checklist)}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "comments":
+        return (
+          <Cell key="comments" selected={selected}>
+            {row.commentCount > 0 ? (
+              <span
+                data-comment-count={row.commentCount}
+                className="inline-flex items-center gap-1 text-nav tabular-nums text-muted-foreground"
+              >
+                <MessageCircle className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">{row.commentCount}</span>
+                <span className="sr-only">
+                  {fillTableCopy(copy.row.commentCount, {
+                    count: row.commentCount,
+                  })}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "files":
+        return (
+          <Cell key="files" selected={selected}>
+            {row.fileCount > 0 ? (
+              <span
+                data-file-count={row.fileCount}
+                className="inline-flex items-center gap-1 text-nav tabular-nums text-muted-foreground"
+              >
+                <Paperclip className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">{row.fileCount}</span>
+                <span className="sr-only">
+                  {fillTableCopy(copy.row.fileCount, { count: row.fileCount })}
                 </span>
               </span>
             ) : null}

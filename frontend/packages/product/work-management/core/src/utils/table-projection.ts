@@ -14,6 +14,9 @@ export const TABLE_SORT_KEYS = [
   "priority",
   "label",
   "progress",
+  "checklist",
+  "comments",
+  "files",
   "updated",
   "start",
   "created",
@@ -99,6 +102,16 @@ function sortValue(
         ? progress.done / progress.total
         : null;
     }
+    case "checklist": {
+      const checklist = card.checklistProgress;
+      return checklist && checklist.total > 0
+        ? checklist.done / checklist.total
+        : null;
+    }
+    case "comments":
+      return card._count?.comments ? card._count.comments : null;
+    case "files":
+      return card._count?.attachments ? card._count.attachments : null;
     case "updated":
       return timeOf(card.updatedAt);
     case "start":

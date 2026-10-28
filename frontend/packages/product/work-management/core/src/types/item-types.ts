@@ -52,6 +52,8 @@ export interface Card {
   dueAt?: string | null;
   /** Checklist items done over all items; null when the item has no checklist item. */
   checklistProgress?: { done: number; total: number } | null;
+  /** Live, not-completed items that block this one; the card shows "Bị chặn" when above 0. */
+  openBlockerCount?: number;
   /** Child item progress; a card shows it only when `total > 0`. */
   childProgress?: { done: number; total: number } | null;
 }
