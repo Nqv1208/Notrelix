@@ -32,7 +32,7 @@ public class ListPageVersionsQueryHandler : IRequestHandler<ListPageVersionsQuer
             .ToListAsync(ct);
 
         return Result<List<PageVersionDto>>.Success(rows
-            .Select(v => new PageVersionDto(v.Id, v.PageId, v.VersionNumber, DocumentDtoMapper.KindName(v.Kind), v.ChangeSummary, v.CreatedBy, v.CreatedAt.DateTime))
+            .Select(v => new PageVersionDto(v.Id, v.PageId, v.VersionNumber, DocumentDtoMapper.KindName(v.Kind), v.ChangeSummary, v.CreatedBy, v.CreatedAt.UtcDateTime))
             .ToList());
     }
 }

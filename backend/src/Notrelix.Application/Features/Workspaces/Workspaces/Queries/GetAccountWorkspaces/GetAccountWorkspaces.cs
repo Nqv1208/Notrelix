@@ -46,7 +46,7 @@ public class GetAccountWorkspacesQueryHandler : IRequestHandler<GetAccountWorksp
             "free", null, null,
             null, w.Status == WorkspaceStatus.Archived,
             memberCounts.GetValueOrDefault(w.Id),
-            w.CreatedAt.DateTime,
+            w.CreatedAt.UtcDateTime,
             null,
             w.Version,
             w.Settings.Size,

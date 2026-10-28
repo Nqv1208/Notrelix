@@ -61,8 +61,8 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
                 c.Id, actor?.UserId ?? Guid.Empty, actor?.Name ?? "Unknown", actor?.AvatarUrl,
                 c.Content, c.ParentId, c.UpdatedAt != null,
                 // The thread's status is the fact; resolving is a change to it, so the last change while resolved is when.
-                c.CommentStatus == CommentStatus.Resolved ? (c.UpdatedAt ?? c.CreatedAt).DateTime : null,
-                c.CreatedAt.DateTime,
+                c.CommentStatus == CommentStatus.Resolved ? (c.UpdatedAt ?? c.CreatedAt).UtcDateTime : null,
+                c.CreatedAt.UtcDateTime,
                 reactionsByComment[c.Id]
                     .GroupBy(r => r.Emoji.Code)
                     .Select(g => new ReactionSummaryDto(

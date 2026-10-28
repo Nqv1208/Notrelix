@@ -46,7 +46,7 @@ public class GetWorkspaceTeamsQueryHandler : IRequestHandler<GetWorkspaceTeamsQu
             t.Status.ToString(),
             memberCounts.GetValueOrDefault(t.Id),
             t.Version,
-            t.CreatedAt.DateTime)).ToList();
+            t.CreatedAt.UtcDateTime)).ToList();
 
         return Result<List<TeamDto>>.Success(result);
     }

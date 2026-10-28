@@ -6,5 +6,7 @@ public sealed record BoardItemLabelAddedDomainEvent(
     Guid WorkspaceId,
     Guid ItemId,
     Guid LabelId,
+    string LabelName,
+    Guid AddedBy,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

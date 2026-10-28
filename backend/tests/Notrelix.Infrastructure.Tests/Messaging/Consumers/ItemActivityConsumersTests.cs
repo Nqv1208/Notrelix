@@ -178,6 +178,25 @@ public sealed class ItemActivityConsumersTests
     }
 
     [Fact]
+    public async Task LabelAddedAndRemoved_RecordRowsWithTheLabelNameAndActor()
+    {
+        await using var db = CreateDb();
+        var label = Guid.CreateVersion7();
+        var added = new BoardItemLabelAddedIntegrationEvent(
+            Guid.CreateVersion7(), AccountId, WorkspaceId, ItemId, label, "Bug", Actor, Guid.CreateVersion7(), null, null, Now);
+        var removed = new BoardItemLabelRemovedIntegrationEvent(
+            Guid.CreateVersion7(), AccountId, WorkspaceId, ItemId, label, "Bug", Actor, Guid.CreateVersion7(), null, null, Now.AddMinutes(1));
+
+        await new ItemLabelAddedActivityConsumer(Recorder(db)).Consume(Context(added));
+        await new ItemLabelAddedActivityConsumer(Recorder(db)).Consume(Context(added));
+        await new ItemLabelRemovedActivityConsumer(Recorder(db)).Consume(Context(removed));
+
+        var rows = await db.WorkspaceActivityLogs.OrderBy(r => r.OccurredAt).ToListAsync();
+        rows.Select(r => r.ActivityType).Should().Equal(ItemActivityTypes.LabelAdded, ItemActivityTypes.LabelRemoved);
+        rows.Should().OnlyContain(r => r.ActorUserId == Actor && r.DataJson.RootElement.GetProperty("to").GetString() == "Bug");
+    }
+
+    [Fact]
     public async Task TheReader_PagesNewestFirst_ForOneItemInOneWorkspaceOnly()
     {
         await using var db = CreateDb();

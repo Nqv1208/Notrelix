@@ -32,7 +32,7 @@ public class GetChecklistsQueryHandler : IRequestHandler<GetChecklistsQuery, Res
                     .OrderBy(i => i.Position).ThenBy(i => i.Id)
                     .Select(i => new ChecklistItemDto(
                         i.Id, i.Title, i.Status.ToString(),
-                        i.DueAt.HasValue ? i.DueAt.Value.DateTime : (DateTime?)null,
+                        i.DueAt.HasValue ? i.DueAt.Value.UtcDateTime : (DateTime?)null,
                         i.AssigneeUserId, i.Position.Value))
                     .ToList()))
             .ToList();

@@ -65,7 +65,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
                 actor?.Name ?? "Unknown",
                 actor?.AvatarUrl,
                 m.Role.ToString(),
-                m.CreatedAt.DateTime,
+                m.CreatedAt.UtcDateTime,
                 m.Status.ToString(),
                 m.JobTitle,
                 m.Version,

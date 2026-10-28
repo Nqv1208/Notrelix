@@ -45,7 +45,7 @@ internal static class BoardListProjection
             b.Background, b.Visibility.ToString(), b.IsArchived,
             memberCounts.GetValueOrDefault(b.Id),
             groupCounts.GetValueOrDefault(b.Id),
-            b.CreatedAt.DateTime,
+            b.CreatedAt.UtcDateTime,
             b.Version,
             b.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
         )).ToList();

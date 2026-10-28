@@ -23,6 +23,8 @@ export type ActivityEventWords = {
   readonly fieldChangedPlain: string;
   readonly assigned: string;
   readonly unassigned: string;
+  readonly labelAdded: string;
+  readonly labelRemoved: string;
   readonly movedToGroup: string;
   readonly movedToGroupPlain: string;
   readonly movedToBoard: string;
@@ -48,6 +50,8 @@ export const ACTIVITY_WORDS_EN: ActivityEventWords = {
   fieldChangedPlain: "changed a field",
   assigned: "assigned {{person}}",
   unassigned: "removed {{person}} from the assignees",
+  labelAdded: "added the label {{to}}",
+  labelRemoved: "removed the label {{to}}",
   movedToGroup: "moved this item from {{from}} to {{to}}",
   movedToGroupPlain: "moved this item to another group",
   movedToBoard: "moved this item from {{from}} to {{to}}",
@@ -66,13 +70,15 @@ export const ACTIVITY_WORDS_VI: ActivityEventWords = {
   created: "tạo việc này",
   renamed: "đổi tên việc",
   statusChanged: "đổi trạng thái từ {{from}} sang {{to}}",
-  statusSet: "đặt trạng thái thành {{to}}",
+  statusSet: "đặt trạng thái là {{to}}",
   statusChangedPlain: "đổi trạng thái",
   fieldChanged: "đổi {{field}}",
   fieldSet: "đặt {{field}}",
   fieldChangedPlain: "đổi một trường",
   assigned: "giao việc cho {{person}}",
   unassigned: "bỏ {{person}} khỏi người phụ trách",
+  labelAdded: "thêm nhãn {{to}}",
+  labelRemoved: "gỡ nhãn {{to}}",
   movedToGroup: "chuyển việc từ {{from}} sang {{to}}",
   movedToGroupPlain: "chuyển việc sang nhóm khác",
   movedToBoard: "chuyển việc từ bảng {{from}} sang bảng {{to}}",
@@ -114,8 +120,11 @@ export function describeActivityEvent(
   words: ActivityEventWords,
 ): DescribedActivity | null {
   const change = event.change ?? {};
-  const from = change.from === undefined ? undefined : readable(change.from);
-  const to = change.to === undefined ? undefined : readable(change.to);
+  // A blank side is "no value" (a first status has no "from"), never an empty word in the sentence.
+  const side = (value?: string) =>
+    value === undefined || value.trim() === "" ? undefined : readable(value);
+  const from = side(change.from);
+  const to = side(change.to);
   const person = change.personName ?? words.someone;
   const diff = (label?: string): ActivityDetail | undefined =>
     from !== undefined || to !== undefined
@@ -165,6 +174,11 @@ export function describeActivityEvent(
       return sentence(words.assigned);
     case "work.item-unassigned":
       return sentence(words.unassigned);
+    // The label's name travels as the change's `to`.
+    case "work.item-label-added":
+      return sentence(words.labelAdded);
+    case "work.item-label-removed":
+      return sentence(words.labelRemoved);
     case "work.item-moved":
       return sentence(
         from !== undefined && to !== undefined

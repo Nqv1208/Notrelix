@@ -779,10 +779,14 @@ work-management.board-item-key-prefix-changed|1|Notrelix.Domain.WorkManagement.B
 work-management.board-item-key-prefix-changed|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardItemKeyPrefixChangedDomainEvent|Workspace|NewPrefix|System.String|False
 work-management.board-item-key-prefix-changed|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardItemKeyPrefixChangedDomainEvent|Workspace|OldPrefix|System.String|True
 work-management.board-item-key-prefix-changed|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardItemKeyPrefixChangedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+work-management.board-item-label-added|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelAddedDomainEvent|Workspace|AddedBy|System.Guid|False
 work-management.board-item-label-added|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelAddedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-label-added|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelAddedDomainEvent|Workspace|LabelId|System.Guid|False
+work-management.board-item-label-added|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelAddedDomainEvent|Workspace|LabelName|System.String|False
 work-management.board-item-label-removed|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelRemovedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-label-removed|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelRemovedDomainEvent|Workspace|LabelId|System.Guid|False
+work-management.board-item-label-removed|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelRemovedDomainEvent|Workspace|LabelName|System.String|False
+work-management.board-item-label-removed|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLabelRemovedDomainEvent|Workspace|RemovedBy|System.Guid|False
 work-management.board-item-linked|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLinkedDomainEvent|Workspace|LinkType|Notrelix.Domain.WorkManagement.Items.BoardItemLinkType|False
 work-management.board-item-linked|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLinkedDomainEvent|Workspace|SourceItemId|System.Guid|False
 work-management.board-item-linked|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemLinkedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False

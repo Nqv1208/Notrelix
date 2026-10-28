@@ -567,7 +567,7 @@ Decided 2026-10-13. Every resource that lives inside a Board — Items (and thei
 
 Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer. Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
 
-Not yet wired (their requests are unreachable today): Saved filters, Forms and form submissions, Board relations and approval requests.
+Not yet wired (their requests are unreachable today): Saved filters, Forms and form submissions, and Board relations.
 ---
 
 # 24. Field-level permissions

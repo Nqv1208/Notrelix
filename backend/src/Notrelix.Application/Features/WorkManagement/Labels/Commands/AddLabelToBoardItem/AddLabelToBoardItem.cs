@@ -41,6 +41,7 @@ public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoard
             _requestContext.RequireAccountId(),
             card.WorkspaceId, label.BoardId, request.BoardItemId, request.LabelId,
             _requestContext.UserId, _dateTimeProvider.UtcNow);
+        link.RecordAddition(label.Name, _requestContext.UserId, _dateTimeProvider.UtcNow);
         _context.BoardItemLabels.Add(link);
         return Result.Success();
     }

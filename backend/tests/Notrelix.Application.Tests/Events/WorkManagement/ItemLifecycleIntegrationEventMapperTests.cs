@@ -106,4 +106,33 @@ public class ItemLifecycleIntegrationEventMapperTests
         mapped.OldValue.Should().Be("null");
         mapped.NewValue.Should().Be($"\"{option}\"");
     }
+
+    [Fact]
+    public void LabelAddedAndRemoved_CarryNameActorEnvelopeAndSourceFact()
+    {
+        var label = Guid.CreateVersion7();
+        var mapper = new BoardItemLabelEventMapper();
+        var addedFact = new BoardItemLabelAddedDomainEvent(Account, Workspace, Item, label, "Bug", Actor, At);
+        var removedFact = new BoardItemLabelRemovedDomainEvent(Account, Workspace, Item, label, "Bug", Actor, At);
+
+        var added = mapper.Map(addedFact)!;
+        var removed = mapper.Map(removedFact)!;
+
+        added.LabelName.Should().Be("Bug");
+        added.AddedBy.Should().Be(Actor);
+        added.ActorUserId.Should().Be(Actor);
+        added.SourceEventId.Should().Be(addedFact.EventId);
+        removed.RemovedBy.Should().Be(Actor);
+        removed.LabelId.Should().Be(label);
+        foreach (var (envelopeAccount, envelopeWorkspace, item) in new[]
+                 {
+                     (added.AccountIdValue, added.WorkspaceIdValue, added.ItemId),
+                     (removed.AccountIdValue, removed.WorkspaceIdValue, removed.ItemId),
+                 })
+        {
+            envelopeAccount.Should().Be(Account);
+            envelopeWorkspace.Should().Be(Workspace);
+            item.Should().Be(Item);
+        }
+    }
 }

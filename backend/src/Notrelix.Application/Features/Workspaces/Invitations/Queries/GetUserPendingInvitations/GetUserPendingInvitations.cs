@@ -70,7 +70,7 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
                 i.Email,
                 i.Role.ToString(),
                 i.Token.Value,
-                i.ExpiresAt.DateTime
+                i.ExpiresAt.UtcDateTime
             ));
         }
 

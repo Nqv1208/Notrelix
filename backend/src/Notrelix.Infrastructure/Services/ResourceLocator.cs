@@ -23,6 +23,7 @@ public sealed class ResourceLocator : IResourceLocator
     private static readonly ResourceKind Label = ResourceKind.Create("work-management.label");
     private static readonly ResourceKind Checklist = ResourceKind.Create("work-management.checklist");
     private static readonly ResourceKind ChecklistItem = ResourceKind.Create("work-management.checklist-item");
+    private static readonly ResourceKind ApprovalRequest = ResourceKind.Create("work-management.approval-request");
     private static readonly ResourceKind Page = ResourceKind.Create("documents.page");
     private static readonly ResourceKind Block = ResourceKind.Create("documents.block");
     private static readonly ResourceKind Comment = ResourceKind.Create("collaboration.comment");
@@ -141,6 +142,12 @@ public sealed class ResourceLocator : IResourceLocator
                 where ci.Id == resource.ResourceId
                 select new LocatedRow(ci.Id, c.AccountId, c.WorkspaceId)
             ).FirstOrDefaultAsync(cancellationToken)),
+
+            "work-management.approval-request" => ToLocation(ApprovalRequest, await _workDb.ApprovalRequests
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
             "documents.page" => ToLocation(Page, await _docDb.Pages
                 .IgnoreQueryFilters()

@@ -62,6 +62,16 @@ public sealed class ItemUnassignedActivityConsumerDefinition : ItemActivityConsu
     public ItemUnassignedActivityConsumerDefinition() : base("notrelix-activity-item-unassigned-v1") { }
 }
 
+public sealed class ItemLabelAddedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemLabelAddedActivityConsumer>
+{
+    public ItemLabelAddedActivityConsumerDefinition() : base("notrelix-activity-item-label-added-v1") { }
+}
+
+public sealed class ItemLabelRemovedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemLabelRemovedActivityConsumer>
+{
+    public ItemLabelRemovedActivityConsumerDefinition() : base("notrelix-activity-item-label-removed-v1") { }
+}
+
 public sealed class ItemArchivedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemArchivedActivityConsumer>
 {
     public ItemArchivedActivityConsumerDefinition() : base("notrelix-activity-item-archived-v1") { }

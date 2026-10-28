@@ -38,4 +38,18 @@ public class BoardItemLabel : Entity, IWorkspaceScoped
             CreatedAt = createdAt
         };
     }
+
+    /// <summary>The label was put on the Item by a person; moving an Item with its labels is not this fact.</summary>
+    public void RecordAddition(string labelName, Guid addedBy, DateTimeOffset addedAt)
+    {
+        Guard.NotEmpty(addedBy);
+        RaiseDomainEvent(new Events.BoardItemLabelAddedDomainEvent(AccountId, WorkspaceId, ItemId, LabelId, labelName, addedBy, addedAt));
+    }
+
+    /// <summary>The label leaves the Item; the caller removes the link in the same unit of work.</summary>
+    public void RecordRemoval(string labelName, Guid removedBy, DateTimeOffset removedAt)
+    {
+        Guard.NotEmpty(removedBy);
+        RaiseDomainEvent(new Events.BoardItemLabelRemovedDomainEvent(AccountId, WorkspaceId, ItemId, LabelId, labelName, removedBy, removedAt));
+    }
 }
