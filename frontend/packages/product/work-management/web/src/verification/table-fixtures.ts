@@ -146,8 +146,15 @@ export interface TableScenarioOptions {
   boardTitle?: string;
 }
 
-/** The default hidden columns of a new view: start, created, completed. */
-export const TABLE_DEFAULT_HIDDEN_COLUMNS = ["start", "created", "completed"];
+/** The default hidden columns of a new view: start, created, completed, checklist, comments, files. */
+export const TABLE_DEFAULT_HIDDEN_COLUMNS = [
+  "start",
+  "created",
+  "completed",
+  "checklist",
+  "comments",
+  "files",
+];
 
 /**
  * Props of the table surface for an ERP scenario. The default is the

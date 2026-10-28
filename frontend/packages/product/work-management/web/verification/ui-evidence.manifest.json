@@ -837,7 +837,8 @@
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
       "coveredSources": [
         "src/components/views/kanban/kanban-card.copy.ts",
-        "src/components/views/kanban/kanban-card-quick-actions.tsx"
+        "src/components/views/kanban/kanban-card-quick-actions.tsx",
+        "src/components/shared/priority-glyph.tsx"
       ],
       "stories": [
         {

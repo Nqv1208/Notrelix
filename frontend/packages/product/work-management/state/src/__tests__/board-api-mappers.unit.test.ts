@@ -238,6 +238,8 @@ describe("mapFullBoardDto over the generated board read", () => {
       memberCount: 1,
       labels: [{ labelId: "l-data", name: "Dữ liệu", color: "#1E6FD0" }],
       commentCount: 4,
+      attachmentCount: 3,
+      openBlockerCount: 2,
       checklistProgress: 1,
       checklistTotal: 2,
     }),
@@ -283,9 +285,10 @@ describe("mapFullBoardDto over the generated board read", () => {
       startDate: "2026-10-01T02:00:00Z",
       childProgress: { done: 3, total: 5 },
       labels: [{ id: "l-data", name: "Dữ liệu", color: "#1E6FD0" }],
-      _count: { comments: 4, attachments: 0, checklistItems: 2 },
+      _count: { comments: 4, attachments: 3, checklistItems: 2 },
       // The face's x/y: done over all checklist items of the item.
       checklistProgress: { done: 1, total: 2 },
+      openBlockerCount: 2,
     });
     expect(card.members.map((member) => member.name)).toEqual([
       "Trần Minh Quân",
