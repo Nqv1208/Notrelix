@@ -4,6 +4,8 @@ import { cn } from "@notrelix/ui-web";
 import type { CardDetail, CardDetailTab } from "@notrelix/work-management-core";
 import { ItemDescriptionBody } from "../shared/item-description";
 import { ItemDescriptionEditor } from "../shared/item-description-editor";
+import { ItemChecklists } from "../checklists/item-checklists";
+import { checklistCopy } from "../checklists/item-checklists.copy";
 import { TaskActivityTab } from "./task-activity-tab";
 import { TaskUpdatesTab } from "./task-updates-tab";
 import { ItemPageLinks } from "../item-page/item-page-sections";
@@ -51,6 +53,13 @@ export function TaskDetailTabs({
           callbacks.onRenameTitle(card.id, { descriptionMd })
         }
       />
+
+      {data.checklists ? (
+        <ItemChecklists
+          model={data.checklists}
+          copy={checklistCopy(copy.locale === "vi" ? "vi" : "en")}
+        />
+      ) : null}
 
       <ChildItemsSection
         progress={card.childProgress ?? null}

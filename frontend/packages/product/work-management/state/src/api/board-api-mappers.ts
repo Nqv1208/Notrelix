@@ -33,7 +33,10 @@ import type {
   ListDtoApi,
   WorkStatusCategory,
 } from "@notrelix/work-management-core";
-import { personInitials } from "@notrelix/work-management-core";
+import {
+  checklistProgressOf,
+  personInitials,
+} from "@notrelix/work-management-core";
 import {
   findPriorityField,
   findStatusField,
@@ -219,6 +222,7 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     members,
     labels: (dto.labels ?? []).map(mapLabel),
     checklists,
+    checklistProgress: checklistProgressOf(checklists),
     fieldValues: legacy ? parseFieldValues(legacy.fieldValues) : {},
     _count: {
       comments: dto.commentCount ?? 0,
@@ -546,6 +550,13 @@ function mapCardSummaryDto(
       attachments: dto.attachmentCount ?? 0,
       checklistItems: checklistTotal,
     },
+    checklistProgress:
+      checklistTotal > 0
+        ? {
+            done: Math.min(checklistProgress, checklistTotal),
+            total: checklistTotal,
+          }
+        : null,
     createdAt:
       (legacy ? undefined : (dto as GeneratedItemSummary).createdAt) ??
       EPOCH_ISO,
@@ -631,6 +642,13 @@ function assignSemanticRoles(fields: FieldDefinition[]): FieldDefinition[] {
   });
 }
 
+/** The checklists of one item as the list endpoint or the item read carries them. */
+export function mapChecklists(
+  dtos: readonly (CardDtoApi["checklists"][number] | GeneratedChecklist)[],
+): Checklist[] {
+  return dtos.map(mapChecklist);
+}
+
 function mapChecklist(
   checklist: CardDtoApi["checklists"][number] | GeneratedChecklist,
   index: number,
@@ -640,6 +658,10 @@ function mapChecklist(
     title: checklist.title ?? "",
     position:
       typeof checklist.position === "number" ? checklist.position : index + 1,
+    // The checklist is the consistency boundary: every write names its version.
+    ...("version" in checklist && typeof checklist.version === "number"
+      ? { version: checklist.version }
+      : {}),
     items: (checklist.items ?? []).map((item, itemIndex) => ({
       id: item.id ?? "",
       title: item.title ?? "",
