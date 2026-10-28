@@ -179,7 +179,8 @@ describe.each([
     ).toBeTruthy();
     expect(inRail.getByText("ERP-142")).toBeTruthy();
     expect(inRail.getByText("Nguyễn Thu Hà")).toBeTruthy();
-    expect(inRail.getAllByRole("link")).toHaveLength(4);
+    // Four view links and "Quản lý trường" (Board settings › Fields).
+    expect(inRail.getAllByRole("link")).toHaveLength(5);
   });
 
   it(`${fui("wm.item-page.surface:back", locale)}goes back, collapses to the sheet and opens a view (${locale})`, () => {
@@ -363,7 +364,6 @@ describe.each([
       readonly [Parameters<typeof screen.getByRole>[1], string]
     > = [
       [{ name: copy.rail.following }, copy.rail.followUnavailable],
-      [{ name: copy.links.add }, copy.links.addUnavailable],
       [{ name: copy.composer.attach }, copy.composer.attachUnavailable],
     ];
     for (const [query, reason] of cases) {
@@ -701,7 +701,6 @@ describe.each([
     expect(
       rail.getByRole("button", { name: copy.rail.startDate }),
     ).toBeTruthy();
-    expect(screen.getByText(copy.states.empty.children)).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: copy.states.empty.addChild }),
     );

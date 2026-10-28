@@ -49,6 +49,7 @@ function callbacksMock(): SurfaceProps["callbacks"] {
     onNext: vi.fn(),
     onCopyLink: vi.fn(),
     onMoveToGroup: vi.fn(),
+    onCreateField: vi.fn().mockResolvedValue("field-new"),
   };
 }
 
@@ -191,12 +192,13 @@ describe.each([
       pills.getByRole("button", { name: copy.properties.addProperty }),
     ).toBeTruthy();
 
+    // No description yet: one "+ Thêm mô tả" row, no heading, no editor.
     expect(
-      screen.getByRole("heading", {
+      screen.queryByRole("heading", {
         level: 3,
         name: copy.sections.description,
       }),
-    ).toBeTruthy();
+    ).toBeNull();
     expect(screen.getByText(copy.sections.descriptionAdd)).toBeTruthy();
     expect(
       screen.queryByRole("textbox", { name: copy.sections.description }),
@@ -460,12 +462,12 @@ describe.each([
       expect(pill.getAttribute("aria-disabled")).toBe("true");
       expect(pill.getAttribute("aria-haspopup")).toBeNull();
     }
-    // "Thêm thuộc tính" stays visible but inert, as in the chi-xem mockup.
+    // "Thêm thuộc tính" is for people who may create fields only.
     expect(
-      within(properties)
-        .getByRole("button", { name: copy.properties.addProperty })
-        .getAttribute("aria-disabled"),
-    ).toBe("true");
+      within(properties).queryByRole("button", {
+        name: copy.properties.addProperty,
+      }),
+    ).toBeNull();
     expect(properties.querySelector("[data-pill-chevron]")).toBeNull();
 
     fireEvent.click(
@@ -526,7 +528,8 @@ describe.each([
     expect(screen.getByText(copy.properties.noDue)).toBeTruthy();
     expect(screen.getByText(copy.properties.noPriority)).toBeTruthy();
     expect(screen.getByText(copy.sections.descriptionAdd)).toBeTruthy();
-    expect(screen.getByText(copy.sections.noChildItems)).toBeTruthy();
+    // An empty section is not a block of its own.
+    expect(screen.queryByText(copy.sections.noChildItems)).toBeNull();
     expect(screen.getByText(copy.sections.noComments)).toBeTruthy();
   });
   it(`keeps the comment and allows a retry when posting fails (${locale})`, () => {

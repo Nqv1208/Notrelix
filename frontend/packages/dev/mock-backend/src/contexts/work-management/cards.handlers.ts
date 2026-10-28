@@ -996,6 +996,28 @@ export const cardsOperations = [
     },
   }),
 
+  // ─── DELETE /board-items/:id/attachments/:attachmentId ──────────────────────────
+  // Collaboration.Attachments.Delete: the item's editors remove a stored file.
+
+  defineMockOperation<{ id: string; attachmentId: string }, never, unknown>({
+    id: "cards.attachments.delete",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.Delete",
+    },
+    method: "DELETE",
+    route: "/board-items/:id/attachments/:attachmentId",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Attachment not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (!store.removeAttachment(params.id, params.attachmentId))
+        return notFound("Attachment not found");
+      return noContent();
+    },
+  }),
+
   // ─── GET /board-items/:id/attachments/:attachmentId/content ─────────────────────
   // Collaboration.Attachments.GetContent: a small stub body (no stored bytes).
 
