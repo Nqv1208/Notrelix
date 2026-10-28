@@ -230,6 +230,7 @@ function SavedFiltersList({
   onRemove,
 }: SavedFiltersMenuProps) {
   const t = copy.menu;
+  const [open, setOpen] = useState(false);
   const applied = filters.find((filter) => filter.id === appliedId);
   const mine = filters.filter((filter) => filter.visibility === "me");
   const shared = filters.filter((filter) => filter.visibility === "board");
@@ -247,7 +248,10 @@ function SavedFiltersList({
               filter={filter}
               applied={filter.id === appliedId}
               canEdit={canEdit}
-              onApply={onApply}
+              onApply={(filter) => {
+                setOpen(false);
+                onApply(filter);
+              }}
               onRename={onRename}
               onSetVisibility={onSetVisibility}
               onRemove={onRemove}
@@ -258,7 +262,7 @@ function SavedFiltersList({
     );
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -324,7 +328,10 @@ function SavedFiltersList({
                 variant="ghost"
                 size="sm"
                 className="mt-1 w-full justify-start"
-                onClick={onClearApplied}
+                onClick={() => {
+                  setOpen(false);
+                  onClearApplied();
+                }}
               >
                 <X className="size-4" aria-hidden="true" />
                 {t.clear}

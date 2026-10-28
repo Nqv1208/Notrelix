@@ -165,7 +165,11 @@ describe("SavedFiltersMenu", () => {
         }),
       );
       expect(props.onApply).toHaveBeenCalledWith(SAVED_FILTER_SPRINT);
-
+      // Choosing closes the list; open it again to clear the applied filter.
+      expect(screen.queryByRole("region", { name: copy.menu.mine })).toBeNull();
+      fireEvent.click(
+        screen.getByRole("button", { name: SAVED_FILTER_URGENT.name }),
+      );
       fireEvent.click(screen.getByRole("button", { name: copy.menu.clear }));
       expect(props.onClearApplied).toHaveBeenCalledOnce();
       view.unmount();

@@ -60,6 +60,7 @@ test.describe("Board saved filters (owner)", () => {
     await page.getByRole("button", { name: NAME }).click();
     await page.getByRole("button", { name: "Bỏ bộ lọc đang áp dụng" }).click();
     await expect(page).not.toHaveURL(/filter=/);
+    await expect(page.getByRole("rowgroup").first()).toBeVisible();
 
     await page.getByRole("button", { name: "Bộ lọc đã lưu" }).click();
     await page.getByRole("button", { name: `Áp dụng bộ lọc ${NAME}` }).click();
