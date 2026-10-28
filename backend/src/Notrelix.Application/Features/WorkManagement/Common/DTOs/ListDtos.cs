@@ -6,7 +6,10 @@ public record SavedFilterDto(
     Guid BoardId,
     Guid? ViewId,
     string Visibility,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    string? Criteria,
+    bool IsMine,
+    long Version
 );
 
 public record ApprovalRequestDto(

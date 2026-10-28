@@ -78,7 +78,7 @@ public class ResourceScopeResolutionChecks : ArchitectureTestBase
         // removing it here and from that doc line; a new unhandled kind is never added to this set silently.
         var unwired = new SortedSet<string>(StringComparer.Ordinal)
         {
-            "work-management.board-relation", "work-management.form", "work-management.form-submission", "work-management.saved-filter",
+            "work-management.board-relation", "work-management.form", "work-management.form-submission",
         };
 
         missing.Should().BeEquivalentTo(unwired,
@@ -86,8 +86,9 @@ public class ResourceScopeResolutionChecks : ArchitectureTestBase
 
         var doc = File.ReadAllText(Path.Combine(GetSrcPath(), "..", "..", "docs", "product", "governance.md"));
         var line = doc.Split('\n').Single(l => l.StartsWith("Not yet wired", StringComparison.Ordinal));
-        line.Should().Contain("Saved filters").And.Contain("Forms and form submissions").And.Contain("Board relations")
-            .And.NotContain("approval", "approval requests are wired into the locator");
+        line.Should().Contain("Forms and form submissions").And.Contain("Board relations")
+            .And.NotContain("approval", "approval requests are wired into the locator")
+            .And.NotContain("Saved filters", "saved filters are wired into the locator");
     }
 
     [Fact]

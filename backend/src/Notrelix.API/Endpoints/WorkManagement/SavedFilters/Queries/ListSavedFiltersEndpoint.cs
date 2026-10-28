@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Views.Queries.ListSavedFilters;
 
 namespace Notrelix.API.Endpoints.WorkManagement.SavedFilters.Queries;
@@ -9,6 +10,7 @@ public static class ListSavedFiltersEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.SavedFilters.List")
+            .Produces<List<SavedFilterDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("List saved filters for a board");
         return group;

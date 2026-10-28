@@ -932,6 +932,10 @@ Private views must not leak:
 
 to unauthorized users.
 
+## Saved filters
+
+A saved filter is a named filter, sort and group of one Board, offered in every view's filter bar. It is personal by default: only its creator sees and changes it, and another principal gets NotFound for it. "Share with the Board" makes it visible to everyone who can view the Board and editable by whoever holds the view-edit right (Editor); only the creator changes who sees it. Applying a saved filter never changes the Board's shared default View. Deleting is soft and a deleted filter can be restored. The filter bar state is stored as an opaque `criteria` object (filter facets, group, sort) set when the filter is saved; to change it, save a new filter.
+
 ---
 
 # 62. View deletion

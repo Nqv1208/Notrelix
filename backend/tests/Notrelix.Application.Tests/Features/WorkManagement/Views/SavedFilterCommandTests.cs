@@ -65,6 +65,61 @@ public class SavedFilterCommandTests : WorkManagementHandlerTestBase
         }
     }
 
+    // ── personal vs shared (a saved filter is a Board child, GOV-033) ──
+
+    public class PersonalFilterAccessTests : SavedFilterCommandTests
+    {
+        private SavedFilter FilterOf(Guid creator, SavedFilterVisibility visibility) =>
+            SavedFilter.Create(TestAccountId, TestWorkspaceId, Guid.CreateVersion7(), "Of someone", [], creator, TestNow, visibility: visibility);
+
+        [Fact]
+        public async Task Rename_PersonalFilterOfSomeoneElse_IsNotFound()
+        {
+            var filter = FilterOf(Guid.CreateVersion7(), SavedFilterVisibility.Private);
+            SetupSavedFilters(filter);
+            var handler = new RenameSavedFilterCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+
+            await handler.Invoking(h => h.Handle(new RenameSavedFilterCommand(filter.Id, "x", 0), CancellationToken.None))
+                .Should().ThrowAsync<NotFoundException>();
+            filter.Name.Should().Be("Of someone");
+        }
+
+        [Fact]
+        public async Task Rename_SharedFilterOfSomeoneElse_Succeeds()
+        {
+            var filter = FilterOf(Guid.CreateVersion7(), SavedFilterVisibility.Public);
+            SetupSavedFilters(filter);
+            var handler = new RenameSavedFilterCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+
+            var result = await handler.Handle(new RenameSavedFilterCommand(filter.Id, "Renamed", 0), CancellationToken.None);
+
+            result.Succeeded.Should().BeTrue();
+            filter.Name.Should().Be("Renamed");
+        }
+
+        [Fact]
+        public async Task Visibility_OfSharedFilterOfSomeoneElse_IsForbidden()
+        {
+            var filter = FilterOf(Guid.CreateVersion7(), SavedFilterVisibility.Public);
+            SetupSavedFilters(filter);
+            var handler = new UpdateSavedFilterVisibilityCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+
+            await handler.Invoking(h => h.Handle(new UpdateSavedFilterVisibilityCommand(filter.Id, SavedFilterVisibility.Private, 0), CancellationToken.None))
+                .Should().ThrowAsync<ForbiddenException>();
+            filter.Visibility.Should().Be(SavedFilterVisibility.Public);
+        }
+
+        [Fact]
+        public async Task Create_RejectsCriteriaThatIsNotAJsonObject()
+        {
+            var validator = new CreateSavedFilterCommandValidator();
+
+            (await validator.ValidateAsync(new CreateSavedFilterCommand(Guid.CreateVersion7(), "n", Criteria: "[1]"))).IsValid.Should().BeFalse();
+            (await validator.ValidateAsync(new CreateSavedFilterCommand(Guid.CreateVersion7(), "n", Criteria: "not json"))).IsValid.Should().BeFalse();
+            (await validator.ValidateAsync(new CreateSavedFilterCommand(Guid.CreateVersion7(), "n", Criteria: "{\"filter\":\"o\"}"))).IsValid.Should().BeTrue();
+        }
+    }
+
     // ── RenameSavedFilter ──────────────────────────────────────
 
     public class RenameSavedFilterTests : SavedFilterCommandTests

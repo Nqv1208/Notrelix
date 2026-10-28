@@ -13,17 +13,20 @@ public record ListSavedFiltersQuery(Guid BoardId) : IQuery<Result<List<SavedFilt
 public class ListSavedFiltersQueryHandler : IRequestHandler<ListSavedFiltersQuery, Result<List<SavedFilterDto>>>
 {
     private readonly IWorkManagementDbContext _context;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public ListSavedFiltersQueryHandler(IWorkManagementDbContext context)
+    public ListSavedFiltersQueryHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext)
     {
         _context = context;
+        _requestContext = requestContext;
     }
 
     public async Task<Result<List<SavedFilterDto>>> Handle(ListSavedFiltersQuery request, CancellationToken ct)
     {
         var filters = await _context.SavedFilters
             .AsNoTracking()
-            .Where(f => f.BoardId == request.BoardId && f.DeletedAt == null)
+            .Where(f => f.BoardId == request.BoardId && f.DeletedAt == null
+                && (f.Visibility == SavedFilterVisibility.Public || f.CreatedBy == _requestContext.UserId))
             .OrderBy(f => f.CreatedAt)
             .Select(f => new SavedFilterDto(
                 f.Id,
@@ -31,7 +34,10 @@ public class ListSavedFiltersQueryHandler : IRequestHandler<ListSavedFiltersQuer
                 f.BoardId,
                 f.ViewId,
                 f.Visibility.ToString(),
-                f.CreatedAt))
+                f.CreatedAt,
+                f.Criteria,
+                f.CreatedBy == _requestContext.UserId,
+                f.Version))
             .ToListAsync(ct);
 
         return Result<List<SavedFilterDto>>.Success(filters);

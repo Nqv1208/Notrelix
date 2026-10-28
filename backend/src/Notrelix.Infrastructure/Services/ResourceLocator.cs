@@ -19,6 +19,7 @@ public sealed class ResourceLocator : IResourceLocator
     private static readonly ResourceKind BoardField = ResourceKind.Create("work-management.board-field");
     private static readonly ResourceKind BoardView = ResourceKind.Create("work-management.board-view");
     private static readonly ResourceKind BoardItem = ResourceKind.Create("work-management.board-item");
+    private static readonly ResourceKind SavedFilter = ResourceKind.Create("work-management.saved-filter");
     private static readonly ResourceKind Label = ResourceKind.Create("work-management.label");
     private static readonly ResourceKind Checklist = ResourceKind.Create("work-management.checklist");
     private static readonly ResourceKind ChecklistItem = ResourceKind.Create("work-management.checklist-item");
@@ -112,6 +113,12 @@ public sealed class ResourceLocator : IResourceLocator
                 .FirstOrDefaultAsync(cancellationToken)),
 
             "work-management.board-item" => ToLocation(BoardItem, await _workDb.BoardItems
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
+
+            "work-management.saved-filter" => ToLocation(SavedFilter, await _workDb.SavedFilters
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
                 .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))

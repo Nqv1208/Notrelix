@@ -5986,6 +5986,7 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.SavedFilters.Requests.CreateSavedFilterRequest": {
             name?: string | null;
             rules?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
+            criteria?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.SavedFilters.Requests.RenameSavedFilterRequest": {
             name?: string | null;
@@ -7511,6 +7512,22 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
             itemKeyPrefix?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            viewId?: string | null;
+            visibility?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            criteria?: string | null;
+            isMine?: boolean;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.AccountWorkspaceDto": {
             /** Format: uuid */
@@ -17873,7 +17890,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto"][];
                 };
             };
         };
@@ -17896,15 +17913,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
             /** @description Idempotency key reused with a different payload */

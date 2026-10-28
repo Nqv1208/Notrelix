@@ -11,6 +11,7 @@ public static class CreateSavedFilterEndpoint
         group.MapResourcePost("/", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.Create")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Create a new saved filter");
         return group;
@@ -22,7 +23,7 @@ public static class CreateSavedFilterEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateSavedFilterCommand(boardId, body.Name, body.Rules), cancellationToken);
+        var result = await sender.Send(new CreateSavedFilterCommand(boardId, body.Name, body.Rules, Criteria: body.Criteria), cancellationToken);
         return result.ToCreatedResult();
     }
 }
