@@ -372,6 +372,28 @@ describe("KanbanBoard status lanes", () => {
     fireEvent.mouseMove(document, { clientX: 90, clientY: 90 });
     expect(document.querySelector("[data-kanban-drag-overlay]")).toBeNull();
   });
+
+  it("keeps one sensor set when the permission to drag arrives after the first render", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { rerender } = renderBoard({ canDrag: false });
+    rerender(
+      <KanbanBoard
+        lanes={erpLanes()}
+        copy={kanbanLaneCopy("vi")}
+        cardCopy={kanbanCardCopy("vi")}
+        now={NOW}
+        filterActive={false}
+        canAdd
+        canDrag
+        laneCardLimit={3}
+        onOpenDetails={vi.fn()}
+        onDropCard={vi.fn()}
+        onCreateItem={vi.fn()}
+      />,
+    );
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
 });
 
 describe("KanbanBoard lane limit", () => {

@@ -1717,6 +1717,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "updateGeneral",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Rename",
+    operationId: "WorkManagement.Boards.Rename",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "archiveBoard",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Archive",
+    operationId: "WorkManagement.Boards.Archive",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "deleteBoard",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Delete",
+    operationId: "WorkManagement.Boards.Delete",
+    mutation: true,
+  },
+  {
     context: "Documents",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "createAttachmentApi",
