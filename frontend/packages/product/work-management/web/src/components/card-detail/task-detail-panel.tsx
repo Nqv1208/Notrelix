@@ -1,4 +1,5 @@
 import { useItemRemoval } from "../item-lifecycle/use-item-removal";
+import { LinkedDocsSection } from "../item-actions/linked-docs-section";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
@@ -216,6 +217,13 @@ function TaskDetailReadyContainer({
         board={board}
         card={card}
         capabilities={capabilities}
+        linkedDocs={
+          <LinkedDocsSection
+            itemId={card.id}
+            workspaceId={card.workspaceId}
+            canEdit={capabilities.canEditFields}
+          />
+        }
         copy={copy}
         now={now}
         asDialog={asDialog}

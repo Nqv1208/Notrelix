@@ -25,7 +25,14 @@ describe("table column widths", () => {
   });
 
   it("builds one grid template for the header and the rows", () => {
-    const columns = visibleTableColumns(["start", "created", "completed"]);
+    const columns = visibleTableColumns([
+      "start",
+      "created",
+      "completed",
+      "checklist",
+      "comments",
+      "files",
+    ]);
     expect(tableGridTemplate(columns)).toBe(
       "40px 84px 340px 140px 184px 132px 96px 120px 136px 120px",
     );

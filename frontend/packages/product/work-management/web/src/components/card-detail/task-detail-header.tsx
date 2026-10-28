@@ -3,6 +3,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type ComponentPropsWithRef,
   type KeyboardEvent,
   type ReactNode,
@@ -11,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   CalendarPlus,
+  Check,
   Clock,
   Eye,
   EyeOff,
@@ -18,7 +20,6 @@ import {
   Link2,
   Maximize2,
   MoreHorizontal,
-  Plus,
   X,
 } from "lucide-react";
 import {
@@ -50,7 +51,16 @@ import {
   ITEM_LABEL_TONE_CLASS,
   identityMarkClass,
   itemLabelTone,
+  nextLabelColor,
 } from "../shared/item-display";
+import { boardSettingsHref } from "../shared/board-settings-href";
+import { AddPropertyPopover } from "./item-add-property";
+import {
+  ItemMultiPopover,
+  ItemTextPopover,
+  isFieldValueEmpty,
+  multiValueIds,
+} from "./item-field-more-editors";
 import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import { ItemActionsMenuItems } from "../item-actions/item-actions-menu";
@@ -73,6 +83,7 @@ import type {
   ItemSheetGroup,
   ItemSheetMark,
   ItemSheetMarkTone,
+  ItemSheetNewField,
   TaskDetailCapabilities,
 } from "./task-detail-types";
 
@@ -485,6 +496,7 @@ export function TaskDetailProperties({
   boardLabels,
   onToggleLabel,
   onCreateLabel,
+  onCreateField,
 }: {
   board: Board;
   card: CardDetail;
@@ -498,10 +510,14 @@ export function TaskDetailProperties({
   /** The labels the board offers; labels are read-only without them. */
   boardLabels?: readonly CardLabel[];
   onToggleLabel?: (labelId: string, on: boolean) => void;
-  onCreateLabel?: (name: string) => Promise<boolean>;
+  onCreateLabel?: (name: string, color?: string) => Promise<boolean>;
+  /** Creates a custom property; absent: no "Thêm thuộc tính". */
+  onCreateField?: (input: ItemSheetNewField) => Promise<string | null>;
 }) {
   const readOnly = !capabilities.canEditFields;
-  const addPropertyReasonId = useId();
+  // Empty custom properties the member asked to fill, and the one just created.
+  const [revealed, setRevealed] = useState<ReadonlySet<string>>(new Set());
+  const [justCreated, setJustCreated] = useState<string | null>(null);
   const fields = findItemFields(board);
   const t = copy.properties;
 
@@ -621,6 +637,13 @@ export function TaskDetailProperties({
   );
 
   const customFields = customItemFields(board);
+  // A custom property with no value stays out of sight until "+" brings it back.
+  const isShown = (field: FieldDefinition) =>
+    !isFieldValueEmpty(card.fieldValues[field.id]) ||
+    revealed.has(field.id) ||
+    justCreated === field.id;
+  const shownFields = customFields.filter(isShown);
+  const emptyFields = customFields.filter((field) => !isShown(field));
   const labelsEditable = !readOnly && !!boardLabels && !!onToggleLabel;
   const selectedLabelIds = new Set(card.labels.map((entry) => entry.id));
 
@@ -670,8 +693,10 @@ export function TaskDetailProperties({
         {startPill()}
       </ItemDuePopover>
 
-      {customFields.map((field) => {
+      {shownFields.map((field) => {
         const raw = card.fieldValues[field.id];
+        const autoOpen = justCreated === field.id;
+        const empty = isFieldValueEmpty(raw);
         if (field.fieldType === "number") {
           const value = typeof raw === "number" ? raw : null;
           return (
@@ -680,6 +705,7 @@ export function TaskDetailProperties({
               value={value}
               label={fillSheetCopy(t.editNumber, { name: field.name })}
               readOnly={readOnly}
+              autoOpen={autoOpen}
               onChange={(next) => update(field, next)}
             >
               <PropertyPill
@@ -694,12 +720,98 @@ export function TaskDetailProperties({
             </ItemNumberPopover>
           );
         }
+        if (field.fieldType === "text") {
+          const value = typeof raw === "string" ? raw : "";
+          return (
+            <ItemTextPopover
+              key={field.id}
+              value={value}
+              label={fillSheetCopy(t.editText, { name: field.name })}
+              readOnly={readOnly}
+              autoOpen={autoOpen}
+              onChange={(next) => update(field, next)}
+            >
+              <PropertyPill
+                readOnly={readOnly}
+                srLabel={field.name}
+                className={cn(
+                  "max-w-60",
+                  empty ? "text-muted-foreground" : undefined,
+                )}
+              >
+                <span className="truncate">
+                  {empty ? field.name : `${field.name}: ${value}`}
+                </span>
+              </PropertyPill>
+            </ItemTextPopover>
+          );
+        }
+        if (field.fieldType === "checkbox") {
+          const on = raw === true;
+          return (
+            <PropertyPill
+              key={field.id}
+              readOnly={readOnly}
+              srLabel={field.name}
+              role="checkbox"
+              aria-checked={on}
+              onClick={readOnly ? undefined : () => update(field, !on)}
+              className={on ? undefined : "text-muted-foreground"}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "grid size-3.5 shrink-0 place-items-center rounded-[3px] border",
+                  on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-line-strong",
+                )}
+              >
+                {on ? <Check className="size-2.5" strokeWidth={3} /> : null}
+              </span>
+              {field.name}
+            </PropertyPill>
+          );
+        }
+        if (field.fieldType === "multi_select") {
+          const ids = multiValueIds(raw);
+          const names = field.options
+            .filter((entry) => ids.includes(entry.id))
+            .map((entry) => entry.label);
+          return (
+            <ItemMultiPopover
+              key={field.id}
+              field={field}
+              value={ids}
+              readOnly={readOnly}
+              autoOpen={autoOpen}
+              onChange={(next) => update(field, next)}
+            >
+              <PropertyPill
+                readOnly={readOnly}
+                srLabel={field.name}
+                chevron
+                className={cn(
+                  "max-w-60",
+                  names.length === 0 ? "text-muted-foreground" : undefined,
+                )}
+              >
+                <span className="truncate">
+                  {names.length === 0
+                    ? field.name
+                    : `${field.name}: ${names.join(", ")}`}
+                </span>
+              </PropertyPill>
+            </ItemMultiPopover>
+          );
+        }
         const option = field.options.find((entry) => entry.id === raw);
         return (
           <ItemOptionMenu
             key={field.id}
             field={field}
             readOnly={readOnly}
+            autoOpen={autoOpen}
             onSelect={(optionId) => update(field, optionId)}
           >
             <PropertyPill
@@ -721,7 +833,10 @@ export function TaskDetailProperties({
         emptyText={t.boardHasNoLabels}
         readOnly={!labelsEditable}
         onToggle={(labelId, on) => onToggleLabel?.(labelId, on)}
-        create={labelCreate(t, onCreateLabel)}
+        create={labelCreate(t, onCreateLabel, {
+          href: boardSettingsHref(board.workspaceId, board.id, "labels"),
+          nextColor: nextLabelColor(boardLabels?.length ?? 0),
+        })}
       >
         <PropertyPill
           readOnly={!labelsEditable}
@@ -749,20 +864,23 @@ export function TaskDetailProperties({
         </PropertyPill>
       </ItemLabelsPopover>
 
-      {/* Visible for everyone, inert until custom properties exist. */}
-      <button
-        type="button"
-        aria-label={t.addProperty}
-        aria-disabled="true"
-        aria-describedby={addPropertyReasonId}
-        title={t.addPropertyUnavailable}
-        className={cn(PILL_CLASS, "border-transparent text-muted-foreground")}
-      >
-        <Plus aria-hidden="true" className="size-4" />
-      </button>
-      <span id={addPropertyReasonId} className="sr-only">
-        {t.addPropertyUnavailable}
-      </span>
+      {!readOnly && onCreateField ? (
+        <AddPropertyPopover
+          t={t}
+          emptyFields={emptyFields}
+          manageHref={boardSettingsHref(board.workspaceId, board.id, "fields")}
+          onReveal={(id) => {
+            setRevealed((set) => new Set(set).add(id));
+            setJustCreated(id);
+          }}
+          onCreate={onCreateField}
+          onCreated={setJustCreated}
+          triggerClassName={cn(
+            PILL_CLASS,
+            "border-transparent text-muted-foreground",
+          )}
+        />
+      ) : null}
     </div>
   );
 }

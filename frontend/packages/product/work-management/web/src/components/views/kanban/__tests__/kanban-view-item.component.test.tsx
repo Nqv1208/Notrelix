@@ -132,6 +132,25 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       answerError: null,
     }),
     usePeopleDirectory: () => ({ directory: null }),
+    useWorkManagementServices: () => ({ cards: {}, itemExtras: {} }),
+    useItemFileUploads: () => ({
+      uploads: [],
+      start: vi.fn(),
+      retry: vi.fn(),
+      dismiss: vi.fn(),
+    }),
+    useDeleteCardFile: mutation,
+    useItemFollowing: () => ({
+      following: null,
+      followers: [],
+      setFollowing: vi.fn(),
+    }),
+    useItemChildItems: () => ({
+      data: undefined,
+      toggle: vi.fn(),
+      addChild: vi.fn(),
+    }),
+    useCreateItemField: () => vi.fn(),
     useBoardLabels: list,
     useCardLabelWrites: mutation,
     useCreateItemWithDetails: () => ({ mutate: vi.fn(), isPending: false }),
@@ -144,7 +163,6 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       error: null,
     }),
     useRefreshItem: () => vi.fn(),
-    useWorkManagementServices: () => ({ itemExtras: {} }),
     useDeleteCard: mutation,
     useMoveItemToBoard: mutation,
     useWorkspaceBoards: () => ({ data: [] }),
@@ -350,7 +368,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     fireEvent.keyDown(screen.getByRole("button", { name: "More" }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Archive" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Archive…" }));
     expect(cardQuery.deleteMutate).toHaveBeenCalledWith("card-item");
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
 

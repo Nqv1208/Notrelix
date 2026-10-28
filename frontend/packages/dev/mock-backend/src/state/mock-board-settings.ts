@@ -981,7 +981,7 @@ export function erpSettingsRegistry(columns: {
         "sv-table",
         "Bảng",
         "table",
-        "Nhóm theo Trạng thái · 9/12 cột · Hạn ↑",
+        "Nhóm theo Trạng thái · 9/15 cột · Hạn ↑",
         "board",
         { isDefault: true, fieldId: "sf-status" },
       ),

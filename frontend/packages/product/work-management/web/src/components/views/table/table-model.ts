@@ -48,6 +48,10 @@ export interface TableRowModel {
     readonly total: number;
     readonly percent: number;
   } | null;
+  /** Checklist items done over all items; null when the item has none. */
+  readonly checklist: { readonly done: number; readonly total: number } | null;
+  readonly commentCount: number;
+  readonly fileCount: number;
   readonly updatedText: string;
   readonly startText: string | null;
   readonly createdText: string | null;
@@ -180,6 +184,12 @@ export function buildTableRow(
           ),
         }
       : null,
+    checklist:
+      card.checklistProgress && card.checklistProgress.total > 0
+        ? card.checklistProgress
+        : null,
+    commentCount: Math.max(card._count?.comments ?? 0, 0),
+    fileCount: Math.max(card._count?.attachments ?? 0, 0),
     updatedText: formatUpdatedAt(
       card.updatedAt,
       now,

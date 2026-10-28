@@ -390,9 +390,6 @@ export function ItemPageSurface({
                     timeZone={timeZone}
                     tab={tab}
                     onSelectTab={selectTab}
-                    members={
-                      card.members.length > 0 ? card.members : card.watchers
-                    }
                     viewer={viewer}
                     people={people}
                   />

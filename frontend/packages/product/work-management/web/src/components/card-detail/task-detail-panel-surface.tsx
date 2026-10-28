@@ -11,7 +11,6 @@ import {
   TaskDetailProperties,
   TaskDetailTitle,
 } from "./task-detail-header";
-import { ItemApprovalSection } from "../item-page/item-page-approval";
 import { TaskDetailTabs } from "./task-detail-tabs";
 import { UpdateComposer } from "./update-composer";
 import type { ItemSheetCopy } from "./item-sheet.copy";
@@ -34,6 +33,8 @@ export interface TaskDetailPanelSurfaceProps {
   readonly detailData?: TaskDetailData;
   readonly callbacks: TaskDetailCallbacks;
   readonly activeTab?: CardDetailTab;
+  /** The linked docs section, supplied by the container (it reads and writes the links). */
+  readonly linkedDocs?: React.ReactNode;
   readonly copy: ItemSheetCopy;
   /** Injected clock for due and comment wording. */
   readonly now: Date;
@@ -80,6 +81,7 @@ export function TaskDetailPanelSurface({
   detailData,
   callbacks,
   activeTab,
+  linkedDocs,
   copy,
   now,
   timeZone,
@@ -196,14 +198,8 @@ export function TaskDetailPanelSurface({
                 boardLabels={detailData.boardLabels}
                 onToggleLabel={callbacks.onToggleLabel}
                 onCreateLabel={callbacks.onCreateLabel}
+                onCreateField={callbacks.onCreateField}
               />
-              {detailData.linksCopy ? (
-                <ItemApprovalSection
-                  data={detailData}
-                  copy={detailData.linksCopy}
-                  callbacks={callbacks}
-                />
-              ) : null}
             </div>
             <TaskDetailTabs
               key={card.id}
@@ -215,12 +211,15 @@ export function TaskDetailPanelSurface({
               now={now}
               timeZone={timeZone}
               activeTab={activeTab}
+              linkedDocs={linkedDocs}
             />
           </div>
           <UpdateComposer
             key={card.id}
             cardId={card.id}
             members={card.members.length > 0 ? card.members : card.watchers}
+            people={detailData.people}
+            viewerUserId={detailData.viewerUserId}
             disabled={!canWriteComment(capabilities)}
             copy={copy}
             onCreateUpdate={callbacks.onCreateUpdate}

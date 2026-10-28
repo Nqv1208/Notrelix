@@ -90,6 +90,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       error: null,
     }),
     useRefreshItem: () => vi.fn(),
+    useBoardLabels: () => ({ data: [] }),
     useWorkManagementServices: () => ({ itemExtras: {} }),
     useDeleteCard: mutation,
     useMoveItemToBoard: mutation,

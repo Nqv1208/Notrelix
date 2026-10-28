@@ -8,7 +8,13 @@ import { ItemChecklists } from "../checklists/item-checklists";
 import { checklistCopy } from "../checklists/item-checklists.copy";
 import { TaskActivityTab } from "./task-activity-tab";
 import { TaskUpdatesTab } from "./task-updates-tab";
-import { ItemPageLinks } from "../item-page/item-page-sections";
+import {
+  ItemPageChildItems,
+  ItemPageFiles,
+  ItemPageLinks,
+} from "../item-page/item-page-sections";
+import { ItemApprovalSection } from "../item-page/item-page-approval";
+import { AddRow } from "../item-page/item-page-parts";
 import type { ItemPageCopy } from "../item-page/item-page.copy";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import type {
@@ -33,6 +39,7 @@ export function TaskDetailTabs({
   now,
   timeZone,
   activeTab,
+  linkedDocs,
 }: {
   card: CardDetail;
   data: TaskDetailData;
@@ -42,6 +49,7 @@ export function TaskDetailTabs({
   now: Date;
   timeZone?: string;
   activeTab?: CardDetailTab;
+  linkedDocs?: React.ReactNode;
 }) {
   return (
     <>
@@ -61,14 +69,48 @@ export function TaskDetailTabs({
         />
       ) : null}
 
-      <ChildItemsSection
-        progress={card.childProgress ?? null}
-        items={data.childItems}
-        copy={copy}
-        onToggle={
-          capabilities.canEditFields ? callbacks.onToggleChildItem : undefined
-        }
-      />
+      {data.linksCopy ? (
+        <ItemPageChildItems
+          card={card}
+          items={data.childItems}
+          capabilities={capabilities}
+          callbacks={callbacks}
+          copy={data.linksCopy}
+          now={now}
+          timeZone={timeZone}
+          collapseEmpty
+        />
+      ) : (
+        <ChildItemsSection
+          progress={card.childProgress ?? null}
+          items={data.childItems}
+          copy={copy}
+          onToggle={
+            capabilities.canEditFields ? callbacks.onToggleChildItem : undefined
+          }
+        />
+      )}
+
+      {data.linksCopy &&
+      (callbacks.onAddFile ||
+        callbacks.onDownloadFile ||
+        data.files.length > 0) ? (
+        <ItemPageFiles
+          files={data.files}
+          updates={data.updates}
+          capabilities={capabilities}
+          callbacks={callbacks}
+          copy={data.linksCopy}
+          locale={copy.locale}
+          now={now}
+          timeZone={timeZone}
+          uploads={data.uploads}
+          onRetryUpload={callbacks.onRetryUpload}
+          onDismissUpload={callbacks.onDismissUpload}
+          notice={data.fileNotice}
+          collapseEmpty
+        />
+      ) : null}
 
       {callbacks.onAddLink && data.linksCopy ? (
         <SheetLinks
@@ -79,6 +121,16 @@ export function TaskDetailTabs({
           callbacks={callbacks}
         />
       ) : null}
+
+      {data.linksCopy ? (
+        <ItemApprovalSection
+          data={data}
+          copy={data.linksCopy}
+          callbacks={callbacks}
+        />
+      ) : null}
+
+      {linkedDocs}
 
       <ActivitySection
         card={card}
@@ -122,6 +174,7 @@ function SheetLinks({
       candidates={data.linkCandidates}
       itemKey={card.itemKey ?? null}
       named
+      collapseEmpty
       capabilities={capabilities}
       callbacks={callbacks}
       copy={linksCopy}
@@ -151,6 +204,8 @@ function ChildItemsSection({
       : progress && progress.total > 0
         ? progress
         : null;
+
+  if (!counted && !(items && items.length > 0)) return null;
 
   return (
     <section>
@@ -215,9 +270,7 @@ function ChildItemsSection({
             </li>
           ))}
         </ul>
-      ) : counted ? null : (
-        <p className="m-0 text-sm text-muted-foreground">{t.noChildItems}</p>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -351,6 +404,14 @@ function TaskDetailDescription({
   const t = copy.sections;
   const [editing, setEditing] = useState(false);
   const text = card.descriptionMd?.trim();
+  // Nothing written yet folds into one "+ Thêm mô tả" row; a reader sees nothing.
+  if (!text && !editing) {
+    return canEdit ? (
+      <section aria-label={t.description}>
+        <AddRow onClick={() => setEditing(true)}>{t.descriptionAdd}</AddRow>
+      </section>
+    ) : null;
+  }
   return (
     <section>
       <SectionHeading>{t.description}</SectionHeading>
@@ -384,19 +445,7 @@ function TaskDetailDescription({
             </button>
           ) : null}
         </>
-      ) : canEdit ? (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="m-0 w-full cursor-text border-0 bg-transparent p-0 text-left text-sm text-muted-foreground hover:text-foreground"
-        >
-          {t.descriptionAdd}
-        </button>
-      ) : (
-        <p className="m-0 text-sm text-muted-foreground">
-          {t.descriptionEmpty}
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }

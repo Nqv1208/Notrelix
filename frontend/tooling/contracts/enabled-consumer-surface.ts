@@ -1214,6 +1214,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useDeleteCardFile",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    capability: "Collaboration.Attachments.Delete",
+    operationId: "Collaboration.Attachments.Delete",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
     classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "useItemLifecycle",
     consumerFile:

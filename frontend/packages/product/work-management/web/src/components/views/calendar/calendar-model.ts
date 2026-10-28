@@ -43,6 +43,9 @@ export interface CalendarEntry {
   /** The due's wall-clock minutes of the day (17:00 is 1020); `null` = no time. */
   readonly dueMinutes?: number | null;
   readonly assignee?: CalendarPerson | null;
+  readonly priority?: "urgent" | "high" | "medium" | "low" | null;
+  /** Live, not-completed items that block this one. */
+  readonly openBlockerCount?: number;
   /** Text after the title in the accessible name ("hạn 16/10"). */
   readonly note: string;
   /** Only an item with a due day moves to another day. */
