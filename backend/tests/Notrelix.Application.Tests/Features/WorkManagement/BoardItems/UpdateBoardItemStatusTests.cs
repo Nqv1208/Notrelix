@@ -99,7 +99,8 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
                 DbContextMock.Object,
                 Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(),
                 RequestContextMock.Object,
-                DateTimeProviderMock.Object)
+                DateTimeProviderMock.Object,
+                Mock.Of<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts>())
             .Handle(new Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommand(TestWorkspaceId, "App board", null, null, null), CancellationToken.None)).Data;
         var status = created.Single(f => f.Type == FieldType.Status);
         status.IsSystem.Should().BeTrue("the app creates the Status field as a system field");
