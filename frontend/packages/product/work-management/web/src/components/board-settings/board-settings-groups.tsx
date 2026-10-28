@@ -15,6 +15,7 @@ import {
 import type { BoardSettingsGroupDto } from "@notrelix/work-management-core";
 import { DisabledControl } from "../item-page/item-page-parts";
 import { useSettings } from "./board-settings-context";
+import { WriteError, useWriteErrorProps } from "./board-settings-write-error";
 import { fillCopy, plural } from "./board-settings-format";
 import {
   BUTTON_CLASS,
@@ -39,13 +40,14 @@ export function GroupsSection() {
   const [newName, setNewName] = useState("");
   const [renameId, setRenameId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const addFailedProps = useWriteErrorProps("group-add", "bs-group-add-error");
   const groups = settings.groups;
   const total = groups.reduce((sum, group) => sum + group.itemCount, 0);
 
   async function add() {
     const name = newName.trim();
     if (!name) return;
-    const result = await run(actions.createGroup(name));
+    const result = await run(() => actions.createGroup(name), "group-add");
     if (result.ok) {
       setAdding(false);
       setNewName("");
@@ -79,7 +81,7 @@ export function GroupsSection() {
 
         {adding ? (
           <form
-            className="mb-3 flex items-center gap-2"
+            className="mb-3 flex flex-wrap items-center gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               void add();
@@ -90,6 +92,7 @@ export function GroupsSection() {
               value={newName}
               aria-label={t.addPlaceholder}
               placeholder={t.addPlaceholder}
+              {...addFailedProps}
               onChange={(event) => setNewName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Escape") {
@@ -117,6 +120,9 @@ export function GroupsSection() {
             >
               {t.addConfirm}
             </button>
+            <div className="basis-full empty:hidden">
+              <WriteError scope="group-add" id="bs-group-add-error" />
+            </div>
           </form>
         ) : null}
 
@@ -144,7 +150,7 @@ export function GroupsSection() {
           </div>
           <SortableList
             ids={groups.map((group) => group.id)}
-            onReorder={(ids) => void run(actions.reorderGroups(ids))}
+            onReorder={(ids) => void run(() => actions.reorderGroups(ids))}
           >
             {(order) =>
               order.map((id) => {
@@ -215,13 +221,23 @@ function GroupRow({
   const [name, setName] = useState(group.name);
   const [moveTo, setMoveTo] = useState(defaultTargetId);
   const confirmId = useId();
+  const renameScope = `group:${group.id}`;
+  const renameErrorId = `${confirmId}-rename-error`;
+  const renameFailedProps = useWriteErrorProps(renameScope, renameErrorId);
   const needsTarget = group.itemCount > 0;
 
   async function commitRename() {
     const next = name.trim();
-    if (next && next !== group.name)
-      await run(actions.updateGroup(group.id, { name: next }));
-    else setName(group.name);
+    if (next && next !== group.name) {
+      // A failed rename stays open with the typed name; the error offers Retry.
+      const result = await run(
+        () => actions.updateGroup(group.id, { name: next }),
+        renameScope,
+      );
+      if (result.ok) onRenameDone();
+      return;
+    }
+    setName(group.name);
     onRenameDone();
   }
 
@@ -253,6 +269,7 @@ function GroupRow({
                 autoFocus
                 value={name}
                 aria-label={t.renameField}
+                {...renameFailedProps}
                 onChange={(event) => setName(event.target.value)}
                 onBlur={() => void commitRename()}
                 onKeyDown={(event) => {
@@ -317,6 +334,9 @@ function GroupRow({
           </>
         )}
       </SortableRow>
+      <div role="listitem" className="empty:hidden pl-[58px]">
+        <WriteError scope={renameScope} id={renameErrorId} />
+      </div>
       {deleting ? (
         <div
           id={confirmId}

@@ -116,12 +116,12 @@ export function ViewPanel({
   }
 
   async function remove() {
-    const result = await run(actions.deleteView(view.id));
+    const result = await run(() => actions.deleteView(view.id));
     if (result.ok) onClose();
   }
 
   async function duplicate() {
-    await run(actions.duplicateView(view.id));
+    await run(() => actions.duplicateView(view.id));
   }
 
   return (
@@ -195,7 +195,7 @@ export function ViewPanel({
                     <button
                       type="button"
                       onClick={() =>
-                        void run(actions.restoreField(archivedField.id))
+                        void run(() => actions.restoreField(archivedField.id))
                       }
                       className={cn(BUTTON_CLASS.outline, "h-7")}
                     >
@@ -406,7 +406,7 @@ export function ViewPanel({
         {broken || view.isDefault || view.visibility === "me" ? null : (
           <button
             type="button"
-            onClick={() => void run(actions.setDefaultView(view.id))}
+            onClick={() => void run(() => actions.setDefaultView(view.id))}
             className={BUTTON_CLASS.ghost}
           >
             {t.makeDefault}

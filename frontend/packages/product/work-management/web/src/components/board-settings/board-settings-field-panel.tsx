@@ -27,6 +27,7 @@ import type {
 } from "@notrelix/work-management-core";
 import { DisabledControl } from "../item-page/item-page-parts";
 import { useSettings } from "./board-settings-context";
+import { WriteError, useWriteErrorProps } from "./board-settings-write-error";
 import {
   OPTION_COLORS,
   fillCopy,
@@ -93,6 +94,9 @@ export function FieldPanel({
     setGuidance(field.guidance);
   }, [field.name, field.defaultOptionId, field.required, field.guidance]);
 
+  const saveScope = `field:${field.id}`;
+  const saveErrorId = `${nameId}-save-error`;
+  const saveFailedProps = useWriteErrorProps(saveScope, saveErrorId);
   const trimmed = name.trim();
   const dirty =
     trimmed !== field.name ||
@@ -113,14 +117,16 @@ export function FieldPanel({
     if (!dirty) return;
     setSaving(true);
     const result = await run(
-      actions.updateField(field.id, {
-        ...(trimmed !== field.name ? { name: trimmed } : {}),
-        ...(defaultId !== field.defaultOptionId
-          ? { defaultOptionId: defaultId }
-          : {}),
-        ...(required !== field.required ? { required } : {}),
-        ...(guidance !== field.guidance ? { guidance } : {}),
-      }),
+      () =>
+        actions.updateField(field.id, {
+          ...(trimmed !== field.name ? { name: trimmed } : {}),
+          ...(defaultId !== field.defaultOptionId
+            ? { defaultOptionId: defaultId }
+            : {}),
+          ...(required !== field.required ? { required } : {}),
+          ...(guidance !== field.guidance ? { guidance } : {}),
+        }),
+      saveScope,
     );
     setSaving(false);
     setNameTaken(!result.ok && result.field === "name");
@@ -176,7 +182,12 @@ export function FieldPanel({
               setName(event.target.value);
               setNameTaken(false);
             }}
-            aria-invalid={nameTaken || trimmed === "" ? true : undefined}
+            {...saveFailedProps}
+            aria-invalid={
+              nameTaken || trimmed === ""
+                ? true
+                : saveFailedProps["aria-invalid"]
+            }
             className={INPUT_CLASS}
           />
         </FormGroup>
@@ -278,57 +289,64 @@ export function FieldPanel({
         ) : null}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-line px-[18px] py-3">
-        {!onArchive ? null : canArchive ? (
-          <button
-            type="button"
-            onClick={onArchive}
-            className={BUTTON_CLASS.ghostDanger}
-          >
-            {t.archive}
-          </button>
-        ) : (
-          <DisabledControl reason={t.archiveUnavailable}>
+      <div className="border-t border-line px-[18px] py-3">
+        <WriteError scope={saveScope} id={saveErrorId} />
+        <div className="flex items-center gap-2">
+          {!onArchive ? null : canArchive ? (
             <button
               type="button"
-              aria-disabled="true"
+              onClick={onArchive}
               className={BUTTON_CLASS.ghostDanger}
             >
               {t.archive}
             </button>
-          </DisabledControl>
-        )}
-        {!onDelete ? null : canArchive ? (
-          <button
-            type="button"
-            onClick={onDelete}
-            className={BUTTON_CLASS.ghostDanger}
-          >
-            {t.delete}
-          </button>
-        ) : (
-          <DisabledControl reason={t.deleteUnavailable}>
+          ) : (
+            <DisabledControl reason={t.archiveUnavailable}>
+              <button
+                type="button"
+                aria-disabled="true"
+                className={BUTTON_CLASS.ghostDanger}
+              >
+                {t.archive}
+              </button>
+            </DisabledControl>
+          )}
+          {!onDelete ? null : canArchive ? (
             <button
               type="button"
-              aria-disabled="true"
+              onClick={onDelete}
               className={BUTTON_CLASS.ghostDanger}
             >
               {t.delete}
             </button>
-          </DisabledControl>
-        )}
-        <span className="flex-1" />
-        <button type="button" onClick={reset} className={BUTTON_CLASS.outline}>
-          {copy.common.cancel}
-        </button>
-        <button
-          type="button"
-          disabled={trimmed === "" || saving}
-          onClick={() => void save()}
-          className={BUTTON_CLASS.primary}
-        >
-          {saving ? copy.common.saving : copy.common.save}
-        </button>
+          ) : (
+            <DisabledControl reason={t.deleteUnavailable}>
+              <button
+                type="button"
+                aria-disabled="true"
+                className={BUTTON_CLASS.ghostDanger}
+              >
+                {t.delete}
+              </button>
+            </DisabledControl>
+          )}
+          <span className="flex-1" />
+          <button
+            type="button"
+            onClick={reset}
+            className={BUTTON_CLASS.outline}
+          >
+            {copy.common.cancel}
+          </button>
+          <button
+            type="button"
+            disabled={trimmed === "" || saving}
+            onClick={() => void save()}
+            className={BUTTON_CLASS.primary}
+          >
+            {saving ? copy.common.saving : copy.common.save}
+          </button>
+        </div>
       </div>
     </aside>
   );
@@ -404,6 +422,9 @@ function DefaultSelect({
   );
 }
 
+const optionsScope = (fieldId: string) => `options:${fieldId}`;
+const optionsErrorId = (fieldId: string) => `bs-options-error-${fieldId}`;
+
 /** The option list of a select or status field: drag, rename, recolour, delete, add. */
 function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
   const { copy, actions, run } = useSettings();
@@ -411,6 +432,9 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [taken, setTaken] = useState(false);
+  const scope = optionsScope(field.id);
+  const errorId = optionsErrorId(field.id);
+  const failedProps = useWriteErrorProps(scope, errorId);
 
   async function add() {
     const name = newName.trim();
@@ -419,7 +443,10 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
       return;
     }
     const color = OPTION_COLORS[field.options.length % OPTION_COLORS.length]!;
-    const result = await run(actions.addOption(field.id, { name, color }));
+    const result = await run(
+      () => actions.addOption(field.id, { name, color }),
+      scope,
+    );
     if (result.ok) {
       setAdding(false);
       setNewName("");
@@ -435,7 +462,9 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
       <div className="flex flex-col overflow-hidden rounded-lg border border-line">
         <SortableList
           ids={field.options.map((option) => option.id)}
-          onReorder={(ids) => void run(actions.reorderOptions(field.id, ids))}
+          onReorder={(ids) =>
+            void run(() => actions.reorderOptions(field.id, ids), scope)
+          }
         >
           {(order) =>
             order.map((id) => {
@@ -461,6 +490,7 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
               value={newName}
               aria-label={t.optionName}
               placeholder={t.optionsNew}
+              {...failedProps}
               onChange={(event) => {
                 setNewName(event.target.value);
                 setTaken(false);
@@ -489,6 +519,7 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
           </button>
         )}
       </div>
+      <WriteError scope={scope} id={errorId} />
     </FormGroup>
   );
 }
@@ -506,6 +537,8 @@ function OptionRow({
   const t = copy.panel;
   const [name, setName] = useState(option.name);
   useEffect(() => setName(option.name), [option.name]);
+  const scope = optionsScope(field.id);
+  const failedProps = useWriteErrorProps(scope, optionsErrorId(field.id));
 
   async function commit() {
     const next = name.trim();
@@ -514,10 +547,11 @@ function OptionRow({
       setName(option.name);
       return;
     }
-    const result = await run(
-      actions.updateOption(field.id, option.id, { name: next }),
+    // A failed rename keeps the typed name; the error under the list offers Retry.
+    await run(
+      () => actions.updateOption(field.id, option.id, { name: next }),
+      scope,
     );
-    if (!result.ok) setName(option.name);
   }
 
   return (
@@ -550,7 +584,9 @@ function OptionRow({
                   }
                   onClick={() =>
                     void run(
-                      actions.updateOption(field.id, option.id, { color }),
+                      () =>
+                        actions.updateOption(field.id, option.id, { color }),
+                      scope,
                     )
                   }
                   className="size-5.5 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
@@ -562,6 +598,7 @@ function OptionRow({
           <input
             value={name}
             aria-label={t.optionName}
+            {...(name !== option.name ? failedProps : {})}
             onChange={(event) => setName(event.target.value)}
             onBlur={() => void commit()}
             onKeyDown={(event) => {
@@ -581,7 +618,7 @@ function OptionRow({
               type="button"
               aria-label={fillCopy(t.removeOption, { name: option.name })}
               onClick={() =>
-                void run(actions.deleteOption(field.id, option.id))
+                void run(() => actions.deleteOption(field.id, option.id), scope)
               }
               className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-meta-foreground opacity-0 outline-none group-hover:opacity-100 hover:text-danger-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring"
             >

@@ -64,7 +64,10 @@ export const en = {
     conflictTitle: "The settings were changed by someone else.",
     conflictBody:
       "Your change was not applied. The latest settings are shown, review them and make the change again.",
-    conflictAction: "Reload the settings",
+    retry: "Retry",
+    failedKept: "Not saved. What you typed is kept.",
+    conflictReloaded:
+      "Someone else changed this first. The latest settings are loaded, check them and make your change again.",
   },
   fields: {
     title: "Data fields",
@@ -498,7 +501,10 @@ export const vi: BoardSettingsCopy = {
     conflictTitle: "Thiết lập vừa được người khác thay đổi.",
     conflictBody:
       "Thay đổi của bạn chưa được áp dụng. Thiết lập mới nhất đang hiện, hãy xem lại rồi làm lại thay đổi.",
-    conflictAction: "Tải lại thiết lập",
+    retry: "Thử lại",
+    failedKept: "Chưa lưu được. Nội dung bạn nhập vẫn được giữ.",
+    conflictReloaded:
+      "Người khác vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
   },
   fields: {
     title: "Trường dữ liệu",

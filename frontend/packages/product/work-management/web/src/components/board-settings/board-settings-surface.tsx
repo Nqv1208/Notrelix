@@ -121,6 +121,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
             actions={props.actions}
             timeZone={props.timeZone}
             defaultFeedback={props.defaultFeedback}
+            onReload={props.onReload}
           >
             <ReadyBody {...props} />
           </BoardSettingsProvider>
@@ -224,7 +225,7 @@ function ErrorBody({ copy, onReload }: BoardSettingsSurfaceProps) {
 
 function ReadyBody(props: BoardSettingsSurfaceProps) {
   const { copy, settings, onSelectSection } = props;
-  const { feedback, clearFeedback } = useSettings();
+  const { feedback, failure, clearFeedback } = useSettings();
   const data = settings!;
   const unavailable = data.unavailable ?? {};
   const hidden: Partial<Record<BoardSettingsSection, boolean>> = {
@@ -407,16 +408,13 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
                   <span>{copy.feedback.conflictBody}</span>
                 ) : null}
                 <span className="mt-1 flex gap-2">
-                  {feedback === "conflict" ? (
+                  {failure?.retry ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        clearFeedback();
-                        props.onReload();
-                      }}
+                      onClick={failure.retry}
                       className={cn(BUTTON_CLASS.outline, "h-7")}
                     >
-                      {copy.feedback.conflictAction}
+                      {copy.feedback.retry}
                     </button>
                   ) : null}
                   <button
