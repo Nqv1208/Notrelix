@@ -176,7 +176,7 @@ jobs:
           node scripts/ci/run-selected-tests.mjs --capabilities-json "$suites" --summary-out "$GITHUB_WORKSPACE/artifacts/frontend/ci/workspace-summary.json"
       - name: Upload workspace suite summary
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-workspace-summary
           path: artifacts/frontend/ci/workspace-summary.json
@@ -224,7 +224,7 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE/artifacts/frontend"
           node scripts/ci/package-host-artifact.mjs --component "$COMPONENT" --paths-json "$PATHS_JSON" --output "$GITHUB_WORKSPACE/artifacts/frontend/$ARCHIVE" --manifest "$GITHUB_WORKSPACE/artifacts/frontend/$MANIFEST"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.contract.outputs.is_host == 'true'
         with:
           name: ${{ steps.contract.outputs.artifact_name }}
@@ -267,7 +267,7 @@ jobs:
           [[ -n "$HOSTS_JSON" ]] || HOSTS_JSON="$FALLBACK_HOST_MATRIX"
           [[ -n "$MOBILES_JSON" ]] || MOBILES_JSON="$FALLBACK_MOBILE_MATRIX"
           node scripts/ci/resolve-frontend-ci-contract.mjs --component "$COMPONENT" --hosts-json "$HOSTS_JSON" --mobiles-json "$MOBILES_JSON" --require-host
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ steps.contract.outputs.artifact_name }}
           path: artifacts/frontend/${{ matrix.component_id }}
@@ -283,7 +283,7 @@ jobs:
           SNAPSHOT_FLAGS: ${{ (github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') && '--ignore-snapshots' || '' }}
         run: pnpm "$E2E_SCRIPT" ${SNAPSHOT_FLAGS:+"$SNAPSHOT_FLAGS"}
       - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.component_id }}-e2e-report
           path: |
@@ -330,7 +330,7 @@ jobs:
           plan_sha256: ${{ inputs.plan_sha256 }}
           source_sha: ${{ inputs.source_sha }}
       - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: {name: ui-playwright-report, path: frontend/playwright-report-ui, if-no-files-found: ignore, retention-days: 7}
 
   mock-shard:
@@ -359,14 +359,14 @@ jobs:
         run: node scripts/ci/run-mock-shard.mjs --shard-index ${{ matrix.shard_index }} --shard-count "$SHARD_COUNT" --out-dir "$GITHUB_WORKSPACE/artifacts/frontend/ci/mock-shards"
       - name: Upload shard summary
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mock-shard-summary-${{ matrix.shard_index }}
           path: artifacts/frontend/ci/mock-shards/mock-shard-summary-${{ matrix.shard_index }}.json
           if-no-files-found: error
           retention-days: 3
       - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mock-shard-results-${{ matrix.shard_index }}
           path: frontend/test-results
@@ -383,7 +383,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Node guarded prerequisite (from Workspace summary)
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: frontend-workspace-summary, path: artifacts/frontend/ci}
       - name: Require Node guarded suite success
         run: |
@@ -392,7 +392,7 @@ jobs:
       - name: Mock freeze contract
         run: pnpm mock:freeze:check
       - name: Download mock shard summaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: mock-shard-summary-*
           merge-multiple: true
@@ -403,7 +403,7 @@ jobs:
           SHARD_COUNT: "4"
         run: node scripts/ci/verify-mock-shards.mjs --dir "$SUMMARIES_DIR" --shard-count "$SHARD_COUNT"
       - name: Download exact Web production artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.select.outputs.mock_artifact_name }}
           path: artifacts/frontend/mock
