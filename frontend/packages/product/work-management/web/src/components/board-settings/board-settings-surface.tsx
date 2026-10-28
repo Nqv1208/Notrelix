@@ -4,6 +4,7 @@ import {
   Archive,
   ChevronLeft,
   Eye,
+  LayoutTemplate,
   Lock,
   Sun,
   Tag,
@@ -24,6 +25,7 @@ import { fillCopy } from "./board-settings-format";
 import { GeneralSection } from "./board-settings-general";
 import { GroupsSection } from "./board-settings-groups";
 import { LabelsSection } from "./board-settings-labels";
+import { TemplatesSection } from "./board-settings-templates";
 import { BUTTON_CLASS, Callout } from "./board-settings-parts";
 import {
   BOARD_SETTINGS_SECTIONS,
@@ -47,6 +49,7 @@ const SECTION_ICON: Readonly<Record<BoardSettingsSection, LucideIcon>> = {
   views: Eye,
   groups: AlignLeft,
   labels: Tag,
+  templates: LayoutTemplate,
   automations: Zap,
 };
 
@@ -234,11 +237,12 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
   const hidden: Partial<Record<BoardSettingsSection, boolean>> = {
     views: unavailable.views,
     labels: !props.labels,
+    templates: !props.templates,
     automations: unavailable.automations && !props.workspaceRules,
   };
   // A section the product has no contract for is not opened by its address.
   const section = hidden[props.section] ? "general" : props.section;
-  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 5).filter(
+  const menu = BOARD_SETTINGS_SECTIONS.slice(0, 6).filter(
     (key) => !hidden[key],
   );
   const t = copy.menu;
@@ -254,6 +258,10 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     groups: data.groups.length,
     labels:
       props.labels?.status === "ready" ? props.labels.labels.length : undefined,
+    templates:
+      props.templates?.status === "ready"
+        ? props.templates.templates.length
+        : undefined,
     automations: running,
   };
 
@@ -294,6 +302,8 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
   else if (section === "groups") content = <GroupsSection />;
   else if (section === "labels" && props.labels)
     content = <LabelsSection panel={props.labels} />;
+  else if (section === "templates" && props.templates)
+    content = <TemplatesSection panel={props.templates} />;
   else if (section === "automations" && props.workspaceRules)
     content = <WorkspaceRulesSection panel={props.workspaceRules} />;
   else if (section === "automations") {

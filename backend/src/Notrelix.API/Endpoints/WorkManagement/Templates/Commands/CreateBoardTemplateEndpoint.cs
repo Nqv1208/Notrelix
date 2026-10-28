@@ -11,6 +11,7 @@ public static class CreateBoardTemplateEndpoint
         group.MapResourcePost("/", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Templates.Create")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json")
             .WithTags("WorkManagement.Templates")
             .WithSummary("Create a board template");
         return group;
@@ -23,7 +24,7 @@ public static class CreateBoardTemplateEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateBoardTemplateCommand(boardId, body.Name, body.Description),
+            new CreateBoardTemplateCommand(boardId, body.Name, body.Description, body.IncludeItems),
             cancellationToken);
         return result.ToCreatedResult();
     }

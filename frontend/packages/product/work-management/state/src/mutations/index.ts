@@ -19,6 +19,7 @@ export * from "./use-move-row";
 export * from "./use-reorder-kanban-columns";
 export * from "./use-bulk-update-items";
 export * from "./use-board-label-writes";
+export * from "./use-board-template-writes";
 export * from "./use-card-label-writes";
 export * from "./use-update-card";
 export * from "./use-update-card-update";

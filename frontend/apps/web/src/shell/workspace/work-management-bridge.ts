@@ -13,6 +13,7 @@ import { useCallback, useMemo } from "react";
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
@@ -23,7 +24,10 @@ import type {
 import type { MyWorkItem } from "@notrelix/features-workspace/core";
 import { workspaceQueryKey } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { wmQueryKeys } from "@notrelix/work-management-state";
+import {
+  createTemplateApi,
+  wmQueryKeys,
+} from "@notrelix/work-management-state";
 import { boardPlacementsQueryKey } from "./board-placement-bridge";
 
 type MyWorkPageDto = OperationResponse<
@@ -176,6 +180,43 @@ export function useCreateBoard(workspaceId: string) {
       );
       return typeof id === "string" ? id : null;
     },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.workspaceList(workspaceId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: boardPlacementsQueryKey(workspaceId),
+      });
+    },
+  });
+}
+
+/**
+ * The starters and templates a new Board can start from (`GET /workspaces/{id}/templates`):
+ * read while the create-Board dialog is open; the built-in starters come first.
+ */
+export function useBoardTemplateChoices(workspaceId: string, enabled: boolean) {
+  const { api: client } = useAppRuntime();
+  const templates = useMemo(() => createTemplateApi(client), [client]);
+  return useQuery({
+    queryKey: wmQueryKeys.boardTemplates(workspaceId),
+    queryFn: () => templates.list(workspaceId),
+    enabled: enabled && Boolean(workspaceId),
+    staleTime: 30_000,
+  });
+}
+
+/** `WorkManagement.Templates.CreateBoard` (201 with the new Board id). */
+export function useCreateBoardFromTemplate(workspaceId: string) {
+  const { api: client } = useAppRuntime();
+  const queryClient = useQueryClient();
+  const templates = useMemo(() => createTemplateApi(client), [client]);
+  return useMutation({
+    mutationFn: (input: {
+      templateId: string;
+      name: string;
+      spaceId?: string | null;
+    }) => templates.createBoard({ ...input, workspaceId }),
     onSettled: async () => {
       await queryClient.invalidateQueries({
         queryKey: wmQueryKeys.workspaceList(workspaceId),

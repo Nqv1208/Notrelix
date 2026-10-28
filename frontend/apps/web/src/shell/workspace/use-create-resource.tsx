@@ -14,7 +14,12 @@ import {
   type WorkspaceHomeCopy,
 } from "@notrelix/features-workspace/web";
 import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
-import { useAttemptKey, useCreateBoard } from "./work-management-bridge";
+import {
+  useAttemptKey,
+  useBoardTemplateChoices,
+  useCreateBoard,
+  useCreateBoardFromTemplate,
+} from "./work-management-bridge";
 
 /**
  * Create a Board or a Doc from a workspace page (WX-HOME-002, WX-DIR-001):
@@ -39,6 +44,7 @@ export function useCreateResource(
     [api, endpoints],
   );
   const createBoard = useCreateBoard(workspaceId);
+  const createBoardFromTemplate = useCreateBoardFromTemplate(workspaceId);
   const nextAttemptKey = useAttemptKey();
   const createDoc = useMutation({
     // Called as a method: `create` reads its sibling `getDetail` via `this`.
@@ -51,6 +57,23 @@ export function useCreateResource(
   });
 
   const [kind, setKind] = useState<CreatableResource | null>(null);
+  // The starters and published templates a new Board offers, read only while that dialog is open.
+  const boardTemplatesQuery = useBoardTemplateChoices(
+    workspaceId,
+    kind === "board",
+  );
+  const boardTemplates = useMemo(
+    () =>
+      (boardTemplatesQuery.data ?? [])
+        .filter((entry) => entry.status === "published")
+        .map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          description: entry.description,
+          builtIn: entry.builtInKey !== null,
+        })),
+    [boardTemplatesQuery.data],
+  );
   // The workspace's page templates, read only while the Doc dialog is open.
   const templatesQuery = useQuery({
     queryKey: docsQueryKeys.templates(workspaceId),
@@ -96,7 +119,12 @@ export function useCreateResource(
         }
       };
       const failed = () => setError(copy.create.error);
-      if (resource === "board") {
+      if (resource === "board" && templateId) {
+        createBoardFromTemplate.mutate(
+          { templateId, name, spaceId: space?.id ?? null },
+          { onSuccess: done, onError: failed },
+        );
+      } else if (resource === "board") {
         createBoard.mutate(
           {
             title: name,
@@ -132,6 +160,7 @@ export function useCreateResource(
     [
       copy,
       createBoard,
+      createBoardFromTemplate,
       createDoc,
       createFromTemplate,
       navigate,
@@ -147,6 +176,7 @@ export function useCreateResource(
       kind={kind}
       pending={
         createBoard.isPending ||
+        createBoardFromTemplate.isPending ||
         createDoc.isPending ||
         createFromTemplate.isPending
       }
@@ -154,6 +184,7 @@ export function useCreateResource(
         id: entry.id,
         name: entry.name,
       }))}
+      boardTemplates={boardTemplates}
       error={error}
       spaceName={space?.name ?? null}
       onOpenChange={(next) => {

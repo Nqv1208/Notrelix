@@ -248,6 +248,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return GrantAwareAllow(request, facts, role, actorId);
         }
 
+        // A board template is workspace-scoped creation input with no Board level of its own: managing it
+        // (publish, archive, delete) is a workspace Owner/Admin right. Owner returned above; a Member or Guest
+        // never manages it, and a template outside the workspace is NotFound (ResourceExists, checked above).
+        if (permission.Resource?.Kind.Value == "work-management.board-template")
+        {
+            return permission.Action == PermissionAction.ManageBoard
+                && string.Equals(role, "Admin", StringComparison.Ordinal)
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
         // Workspace-role baseline (GOV-013/028, M2G, M8, WG-DEBT-002): every request not decided
         // by a Board/Page/Space level reads its default from the typed table. Explicit permission
         // rules were evaluated first. A level-based cell has no level to read on another resource

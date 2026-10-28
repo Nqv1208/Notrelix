@@ -154,6 +154,16 @@ export const endpoints = {
     createPage: (workspaceId: string, templateId: string) =>
       `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
   },
+  // WorkManagement.Templates.*: workspace board templates.
+  boardTemplates: {
+    list: (workspaceId: string) => `/workspaces/${workspaceId}/templates`,
+    saveBoard: (boardId: string) => `/boards/${boardId}/templates`,
+    detail: (templateId: string) => `/templates/${templateId}`,
+    publish: (templateId: string) => `/templates/${templateId}/publish`,
+    archive: (templateId: string) => `/templates/${templateId}/archive`,
+    createBoard: (templateId: string) =>
+      `/templates/${templateId}/create-board`,
+  },
   pageAttachments: {
     list: (pageId: string) => `/pages/${pageId}/attachments`,
     files: (pageId: string) => `/pages/${pageId}/attachments/files`,

@@ -17218,8 +17218,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "headers": {
               "Idempotency-Replayed": {
                 "description": "true when this response is a replay of a stored result",
@@ -17231,7 +17231,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -17492,8 +17493,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "headers": {
               "Idempotency-Replayed": {
                 "description": "true when this response is a replay of a stored result",
@@ -17505,7 +17506,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -17552,7 +17554,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto"
+                  }
                 }
               }
             }
@@ -23795,6 +23800,9 @@
           "description": {
             "type": "string",
             "nullable": true
+          },
+          "includeItems": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -28215,6 +28223,32 @@
             "nullable": true
           },
           "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "builtInKey": {
             "type": "string",
             "nullable": true
           }
