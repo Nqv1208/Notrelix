@@ -17,6 +17,13 @@ public static class ItemActivityTypes
     public const string Unassigned = "work.item-unassigned";
     public const string LabelAdded = "work.item-label-added";
     public const string LabelRemoved = "work.item-label-removed";
+    public const string ChecklistAdded = "work.item-checklist-added";
+    public const string ChecklistRenamed = "work.item-checklist-renamed";
+    public const string ChecklistDeleted = "work.item-checklist-deleted";
+    public const string ChecklistItemAdded = "work.item-checklist-item-added";
+    public const string ChecklistItemCompleted = "work.item-checklist-item-completed";
+    public const string ChecklistItemReopened = "work.item-checklist-item-reopened";
+    public const string ChecklistItemRemoved = "work.item-checklist-item-removed";
     public const string MovedToGroup = "work.item-moved";
     public const string MovedToBoard = "work.item-moved-to-board";
     public const string Archived = "work.item-archived";

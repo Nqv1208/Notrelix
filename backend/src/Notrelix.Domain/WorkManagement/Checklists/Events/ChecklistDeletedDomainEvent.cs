@@ -4,7 +4,9 @@ namespace Notrelix.Domain.WorkManagement.Checklists.Events;
 public sealed record ChecklistDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
+    Guid ItemId,
     Guid ChecklistId,
+    string Title,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);
