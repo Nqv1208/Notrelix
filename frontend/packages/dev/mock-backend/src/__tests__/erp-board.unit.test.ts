@@ -86,6 +86,8 @@ describe("ERP board in the mock world", () => {
       ["Chờ duyệt", "review"],
       ["Hoàn thành", "done"],
     ]);
+    // Live Items holding each option, sub-items included (the lanes show 6/3/2/5 root items).
+    expect(status.options!.map((o) => o.itemCount)).toEqual([8, 3, 2, 8]);
   });
 
   it("maps into lanes 6/3/2/5 with keys, priorities and assignees", async () => {

@@ -1,3 +1,4 @@
+import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
 import {
   ACTIVITY_WORDS_EN,
   ACTIVITY_WORDS_VI,
@@ -12,6 +13,8 @@ import {
  * (property labels, priorities, times) comes from the `item-sheet` catalog.
  */
 export const en = {
+  /** Replies and reactions of a comment. */
+  thread: threadEn,
   loading: "Loading the item",
   /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
   activityEvents: ACTIVITY_WORDS_EN,
@@ -296,10 +299,6 @@ export const en = {
       "History keeps every change, including from automations and integrations. Nobody can edit or delete a line of it.",
     today: "Today",
     yesterday: "Yesterday",
-    reply: "Reply",
-    react: "React",
-    replyUnavailable: "Replies are not available yet",
-    reactUnavailable: "Reactions are not available yet",
     actions: "Comment actions",
     edit: "Edit",
     delete: "Delete",
@@ -346,9 +345,18 @@ export const en = {
     list: "Approval requests",
     pending: "Waiting for {{name}}",
     approved: "Approved by {{name}}",
-    rejected: "{{name}} asked for changes",
+    rejected: "Rejected by {{name}}",
     cancelled: "Request to {{name}} cancelled",
     unknownPerson: "someone",
+    approve: "Approve",
+    reject: "Reject",
+    cancelRequest: "Cancel request",
+    reasonLabel: "Reason for rejecting (optional)",
+    reasonPlaceholder: "Tell them what to change",
+    confirmReject: "Reject request",
+    back: "Back",
+    answerFailed:
+      "That answer could not be saved. The request may already be decided.",
     alreadyAsked: "That person was already asked about this item.",
     failed: "The request could not be sent. Try again.",
   },
@@ -404,6 +412,7 @@ export const en = {
 export type ItemPageCopy = typeof en;
 
 export const vi: ItemPageCopy = {
+  thread: threadVi,
   loading: "Đang tải công việc",
   activityEvents: ACTIVITY_WORDS_VI,
   unavailable: {
@@ -685,10 +694,6 @@ export const vi: ItemPageCopy = {
       "Lịch sử giữ đủ mọi thay đổi, kể cả từ tự động hoá và tích hợp. Không ai sửa hay xoá được dòng lịch sử.",
     today: "Hôm nay",
     yesterday: "Hôm qua",
-    reply: "Trả lời",
-    react: "Thả cảm xúc",
-    replyUnavailable: "Trả lời bình luận chưa khả dụng",
-    reactUnavailable: "Thả cảm xúc chưa khả dụng",
     actions: "Thao tác với bình luận",
     edit: "Sửa",
     delete: "Xoá",
@@ -734,9 +739,17 @@ export const vi: ItemPageCopy = {
     list: "Yêu cầu phê duyệt",
     pending: "Đang chờ {{name}}",
     approved: "{{name}} đã duyệt",
-    rejected: "{{name}} yêu cầu chỉnh sửa",
+    rejected: "{{name}} đã từ chối",
     cancelled: "Đã hủy yêu cầu gửi {{name}}",
     unknownPerson: "một người",
+    approve: "Duyệt",
+    reject: "Từ chối",
+    cancelRequest: "Hủy yêu cầu",
+    reasonLabel: "Lý do từ chối (không bắt buộc)",
+    reasonPlaceholder: "Nói rõ cần sửa gì",
+    confirmReject: "Từ chối yêu cầu",
+    back: "Quay lại",
+    answerFailed: "Không lưu được câu trả lời. Yêu cầu có thể đã được xử lý.",
     alreadyAsked: "Người này đã được yêu cầu duyệt công việc này.",
     failed: "Không gửi được yêu cầu. Hãy thử lại.",
   },

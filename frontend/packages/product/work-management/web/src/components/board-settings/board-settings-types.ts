@@ -19,15 +19,40 @@ import type { BoardSettingsCopy } from "./board-settings.copy";
 export type { BoardSettingsWriteResult };
 
 export type BoardSettingsSection =
-  "general" | "fields" | "views" | "groups" | "automations";
+  "general" | "fields" | "views" | "groups" | "labels" | "automations";
 
 export const BOARD_SETTINGS_SECTIONS: readonly BoardSettingsSection[] = [
   "general",
   "fields",
   "views",
   "groups",
+  "labels",
   "automations",
 ];
+
+/** One label of the board; `itemCount` is how many items carry it, when the board is read. */
+export interface BoardLabelRow {
+  readonly id: string;
+  readonly name: string;
+  readonly color: string;
+  readonly itemCount?: number;
+}
+
+/** The labels of the board and the writes on them (create, rename, recolour, delete). */
+export interface BoardLabelsPanelProps {
+  readonly status: "loading" | "error" | "ready";
+  readonly labels: readonly BoardLabelRow[];
+  readonly onReload: () => void;
+  readonly onCreate: (
+    name: string,
+    color: string,
+  ) => Promise<BoardSettingsWriteResult>;
+  readonly onUpdate: (
+    labelId: string,
+    changes: { name?: string; color?: string },
+  ) => Promise<BoardSettingsWriteResult>;
+  readonly onDelete: (labelId: string) => Promise<BoardSettingsWriteResult>;
+}
 
 /** The writes the settings page makes, each answering whether it went through. */
 export interface BoardSettingsActions {
@@ -124,6 +149,8 @@ export interface BoardSettingsSurfaceProps {
   automation?: AutomationPanelProps;
   /** The workspace's automation rules: when given, the section shows them instead of the rule editor. */
   workspaceRules?: WorkspaceRulesPanelProps;
+  /** The labels of the board: when given, the page has a "Labels" section. */
+  labels?: BoardLabelsPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
   /** Reads the settings again (after a conflict or an error). */

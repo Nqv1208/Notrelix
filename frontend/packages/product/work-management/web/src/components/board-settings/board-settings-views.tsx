@@ -59,7 +59,7 @@ export function ViewsSection({
 
   async function create(kind: BoardSettingsViewDto["kind"]) {
     knownIds.current = settings.views.map((view) => view.id);
-    const result = await run(actions.createView(kind));
+    const result = await run(() => actions.createView(kind));
     if (!result.ok) knownIds.current = null;
   }
 

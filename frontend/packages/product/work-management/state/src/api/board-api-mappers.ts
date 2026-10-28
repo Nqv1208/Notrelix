@@ -323,6 +323,8 @@ export function mapCommentDtoToCardUpdate(
     attachmentIds: dto.attachmentIds ?? [],
     createdAt: dto.createdAt,
     updatedAt: dto.isEdited ? dto.createdAt : undefined,
+    parentId: dto.parentCommentId ?? undefined,
+    reactions: dto.reactions ?? [],
   };
 }
 

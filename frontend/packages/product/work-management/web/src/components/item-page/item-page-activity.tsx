@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState } from "react";
 import { ChevronDown, MoreHorizontal, Paperclip, Zap } from "lucide-react";
 import {
   Avatar,
@@ -41,7 +41,10 @@ import {
   type MentionCandidate,
   type MentionToken,
 } from "./item-page-mention";
-import { fillSheetCopy } from "../card-detail/item-sheet.copy";
+import { fillSheetCopy, pluralSheetCopy } from "../card-detail/item-sheet.copy";
+import { ReactionBar } from "../comment-thread/reaction-bar";
+import { ReplyBox } from "../comment-thread/reply-box";
+import { VISIBLE_REPLIES, splitThreads } from "../comment-thread/thread-model";
 import {
   buildActivityDays,
   countActivity,
@@ -112,6 +115,7 @@ export function ItemPageActivity({
   const [newestFirst, setNewestFirst] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const counts = countActivity(data.updates, data.activity);
+  const { top: topLevelUpdates, repliesOf } = splitThreads(data.updates);
   const loading =
     (tab !== "history" && data.updatesLoading) ||
     (tab !== "comments" && data.activityLoading);
@@ -119,7 +123,7 @@ export function ItemPageActivity({
   // follow the sort. Older entries fold behind "Hiện N … cũ hơn".
   const listNewestFirst = tab === "history" ? true : newestFirst;
   const { days, hidden } = buildActivityDays({
-    updates: data.updates,
+    updates: topLevelUpdates,
     activity: data.activity,
     tab,
     newestFirst: listNewestFirst,
@@ -281,6 +285,8 @@ export function ItemPageActivity({
                   <CommentEntry
                     key={`c-${entry.update.id}`}
                     update={entry.update}
+                    cardId={card.id}
+                    replies={repliesOf(entry.update.id)}
                     files={data.files}
                     now={now}
                     capabilities={capabilities}
@@ -524,8 +530,11 @@ function CommentBody({ body }: { body: string }) {
   );
 }
 
+/** A top-level comment with its replies (oldest first, three shown) and the box a reply is written in. */
 function CommentEntry({
   update,
+  cardId,
+  replies,
   files,
   now,
   capabilities,
@@ -534,6 +543,8 @@ function CommentEntry({
   timeZone,
 }: {
   update: CardUpdate;
+  cardId: string;
+  replies: readonly CardUpdate[];
   files: readonly CardFile[];
   now: Date;
   capabilities: TaskDetailCapabilities;
@@ -541,7 +552,89 @@ function CommentEntry({
   copy: ItemPageCopy;
   timeZone?: string;
 }) {
+  const t = copy.thread;
+  const [replying, setReplying] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const shown = showAll ? replies : replies.slice(0, VISIBLE_REPLIES);
+  const more = replies.length - shown.length;
+  const card = (entry: CardUpdate, isReply: boolean) => (
+    <CommentCard
+      key={entry.id}
+      update={entry}
+      isReply={isReply}
+      files={files}
+      now={now}
+      capabilities={capabilities}
+      callbacks={callbacks}
+      copy={copy}
+      timeZone={timeZone}
+      onReply={() => setReplying(true)}
+    />
+  );
+  return (
+    <div>
+      {card(update, false)}
+      {replies.length > 0 || replying ? (
+        <div
+          role="group"
+          aria-label={fillSheetCopy(t.replies, { name: update.author.name })}
+          className="ml-10.5"
+        >
+          {shown.map((reply) => card(reply, true))}
+          {more > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="-ml-1.5 mt-1 cursor-pointer rounded-[6px] border-0 bg-transparent px-1.5 py-[3px] text-item-small font-medium text-brand-subtle-foreground hover:bg-state-selected focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {pluralSheetCopy(t.showMore_one, t.showMore_other, more)}
+            </button>
+          ) : null}
+          {replying ? (
+            <div className="pb-2 pl-10.5">
+              <ReplyBox
+                cardId={cardId}
+                parentCommentId={update.id}
+                authorName={update.author.name}
+                copy={t}
+                onCreateUpdate={callbacks.onCreateUpdate}
+                onClose={() => {
+                  setReplying(false);
+                  setShowAll(true);
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CommentCard({
+  update,
+  isReply,
+  files,
+  now,
+  capabilities,
+  callbacks,
+  copy,
+  timeZone,
+  onReply,
+}: {
+  update: CardUpdate;
+  isReply: boolean;
+  files: readonly CardFile[];
+  now: Date;
+  capabilities: TaskDetailCapabilities;
+  callbacks: TaskDetailCallbacks;
+  copy: ItemPageCopy;
+  timeZone?: string;
+  onReply: () => void;
+}) {
   const t = copy.activity;
+  const canReply = canWriteComment(capabilities);
+  const onToggleReaction = callbacks.onToggleReaction;
   const edit = useCommentEdit(update.body, (body) =>
     callbacks.onUpdateUpdate(update.id, body),
   );
@@ -560,7 +653,10 @@ function CommentEntry({
 
   return (
     <div className="group/comment flex gap-3 py-2">
-      <PersonMark person={update.author} className="size-7.5 text-avatar-lg" />
+      <PersonMark
+        person={update.author}
+        className={cn(isReply ? "size-6" : "size-7.5", "text-avatar-lg")}
+      />
       <div className="relative min-w-0 flex-1 rounded-[10px] border border-line bg-popover px-3.5 py-2.5">
         <b className="font-semibold">{update.author.name}</b>
         {attached.length > 0 ? ` ${t.commentWithFile}` : null}
@@ -666,32 +762,30 @@ function CommentEntry({
             </a>
           );
         })}
-        <div className="mt-2 flex gap-2 text-crumb text-meta-foreground">
-          <ReplyAction reason={t.replyUnavailable}>{t.reply}</ReplyAction>
-          <ReplyAction reason={t.reactUnavailable}>{t.react}</ReplyAction>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-crumb text-meta-foreground">
+          {canReply ? (
+            <button
+              type="button"
+              onClick={onReply}
+              className="-ml-1.5 rounded-[5px] border-0 bg-transparent px-1.5 py-0.5 text-crumb text-meta-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {copy.thread.reply}
+            </button>
+          ) : null}
+          {canReply || (update.reactions?.length ?? 0) > 0 ? (
+            <ReactionBar
+              reactions={update.reactions ?? []}
+              copy={copy.thread}
+              onToggle={
+                canReply && onToggleReaction
+                  ? (emoji, on) => onToggleReaction(update.id, emoji, on)
+                  : undefined
+              }
+            />
+          ) : null}
         </div>
       </div>
     </div>
-  );
-}
-
-function ReplyAction({
-  reason,
-  children,
-}: {
-  reason: string;
-  children: ReactNode;
-}) {
-  return (
-    <DisabledControl reason={reason}>
-      <button
-        type="button"
-        aria-disabled="true"
-        className="-ml-1.5 rounded-[5px] border-0 bg-transparent px-1.5 py-0.5 text-crumb text-meta-foreground aria-disabled:cursor-default"
-      >
-        {children}
-      </button>
-    </DisabledControl>
   );
 }
 

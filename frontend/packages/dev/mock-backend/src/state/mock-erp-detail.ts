@@ -34,6 +34,8 @@ export interface ErpMockComment {
   readonly userId: string;
   readonly contentMd: string;
   readonly createdAt: string;
+  /** Emoji others already chose, so a viewer finds chips to read. */
+  readonly reactions?: readonly { emoji: string; userId: string }[];
 }
 
 /** Comments in time order; the Detail mockup shows the three of ERP-142. */
@@ -72,6 +74,10 @@ export const ERP_COMMENTS: readonly ErpMockComment[] = [
     contentMd:
       "Bên mình chốt xong số dư công nợ đầu kỳ rồi, sáng mai mình gửi file để đối chiếu nhé @Trần Minh Quân.",
     createdAt: "2026-10-11T09:40:00.000Z",
+    reactions: [
+      { emoji: "👍", userId: ERP_PEOPLE.MQ.id },
+      { emoji: "🎉", userId: ERP_PEOPLE.VT.id },
+    ],
   },
   {
     itemKey: "ERP-142",

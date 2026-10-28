@@ -23,6 +23,7 @@ import {
   listItemApprovals,
   requestItemApproval,
   buildMyWorkExtended,
+  cancelApproval,
   decideApproval,
   markAllInboxRead,
   markInbox,
@@ -219,7 +220,29 @@ export const workFeedOperations = [
           decision: ["The decision must be approve or reject."],
         });
       }
-      return outcome(decideApproval(store, params.requestId, decision));
+      return outcome(
+        decideApproval(
+          store,
+          params.requestId,
+          decision,
+          body?.comment ?? null,
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<{ requestId: string }, { expectedVersion?: number }>({
+    id: "wsFeed.approvals.cancel",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Approvals.Cancel",
+    },
+    method: "POST",
+    route: "/approvals/:requestId/cancel",
+    async handle({ params, body, store }) {
+      return outcome(
+        cancelApproval(store, params.requestId, body?.expectedVersion),
+      );
     },
   }),
 

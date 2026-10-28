@@ -69,7 +69,7 @@ export function FieldsSection({
   async function addField(type: BoardSettingsFieldType) {
     setPickerOpen(false);
     knownIds.current = settings.fields.map((field) => field.id);
-    const result = await run(actions.createField(type));
+    const result = await run(() => actions.createField(type));
     if (!result.ok) knownIds.current = null;
   }
 
@@ -157,7 +157,7 @@ export function FieldsSection({
           ) : (
             <SortableList
               ids={settings.fields.map((field) => field.id)}
-              onReorder={(ids) => void run(actions.reorderFields(ids))}
+              onReorder={(ids) => void run(() => actions.reorderFields(ids))}
             >
               {(order) =>
                 order.map((id) => {
@@ -262,7 +262,9 @@ export function FieldsSection({
                         aria-label={fillCopy(t.restoreLabel, {
                           name: field.name,
                         })}
-                        onClick={() => void run(actions.restoreField(field.id))}
+                        onClick={() =>
+                          void run(() => actions.restoreField(field.id))
+                        }
                         className={BUTTON_CLASS.ghostBrand}
                       >
                         {t.restore}

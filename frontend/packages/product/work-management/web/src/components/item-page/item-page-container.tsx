@@ -10,6 +10,7 @@ import {
   useCardLabelWrites,
   useCreateCardUpdate,
   useDeleteCardUpdate,
+  useToggleCommentReaction,
   useDuplicateCard,
   useFullBoard,
   useItemChildItems,
@@ -37,7 +38,7 @@ import {
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { boardCapabilities } from "../shared/board-capabilities";
-import { formatItemDate } from "../shared/item-display";
+import { formatItemDate, nextLabelColor } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
 import { fillSheetCopy } from "../card-detail/item-sheet.copy";
@@ -289,6 +290,7 @@ function ItemPageReady({
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+  const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);
   const follow = useItemFollowing(card.id, card.workspaceId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
@@ -512,9 +514,19 @@ function ItemPageReady({
     onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
     onUpdateItem: patchItem,
     onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
+    onCreateLabel: (name) =>
+      labelWrites
+        .createAndApply(name, nextLabelColor(boardLabels.data?.length ?? 0))
+        .then(
+          () => true,
+          () => false,
+        ),
     onToggleWatch: (watched) => follow.setFollowing(watched),
     onRequestApproval: (approverUserId) =>
       approvals.request({ approverUserId, note: null }),
+    onDecideApproval: (requestId, decision, comment) =>
+      approvals.decide({ requestId, decision, comment }),
+    onCancelApproval: (requestId) => approvals.cancel(requestId),
     onToggleChildItem: (childId, done) => children.toggle({ childId, done }),
     onAddChildItem: (title) => children.addChild(title),
     onAddLink: (itemId, relation) => links.addLink({ itemId, relation }),
@@ -547,6 +559,8 @@ function ItemPageReady({
         onSuccess: options?.onSuccess,
         onSettled: options?.onSettled,
       }),
+    onToggleReaction: (commentId, emoji, on) =>
+      toggleReaction.mutate({ commentId, emoji, on }),
     onUpdateUpdate: (updateId, body) => updateUpdate.mutate({ updateId, body }),
     onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
     onSelectTab: () => undefined,
@@ -646,7 +660,10 @@ function ItemPageReady({
               )?.name ??
               null,
             decisionNote: approval.decisionNote,
+            requestedByUserId: approval.requestedByUserId,
           })),
+          approvalAnswerError: approvals.answerError !== null,
+          viewerUserId: viewer?.userId ?? null,
           approvalError: approvals.error
             ? isConflictError(approvals.error)
               ? "alreadyAsked"

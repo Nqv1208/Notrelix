@@ -143,14 +143,17 @@ test.describe("board data fields", () => {
 });
 
 test.describe("comments", () => {
-  test("replying to and reacting to a comment are offered but disabled with a reason", async ({
+  test("replying to and reacting to a comment are offered", async ({
     page,
   }) => {
+    // Replies and reactions are live; their flows are in comment-replies-reactions.
     await page.goto(`${ERP}/items/mock-erp-item-142`);
-    const reply = page.getByRole("button", { name: "Reply" }).first();
-    const react = page.getByRole("button", { name: "React" }).first();
-    await expect(reply).toBeDisabled();
-    await expect(react).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Reply", exact: true }).first(),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Add a reaction" }).first(),
+    ).toBeEnabled();
   });
 
   test("a comment's menu in the side sheet is reachable above the Kanban scroll arrow", async ({

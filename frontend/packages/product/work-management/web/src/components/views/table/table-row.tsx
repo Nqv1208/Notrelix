@@ -1,4 +1,10 @@
-import type { CSSProperties, KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import { ChevronRight } from "lucide-react";
 import {
   cn,
@@ -58,6 +64,8 @@ export interface TableRowProps {
   editors?: TableEditors;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
+  /** Saves a new title typed in place; absent = the title cannot be edited here. */
+  onRename?: (title: string) => void;
   /** The sub-items of this row can be shown under it; absent = the row has none. */
   expand?: { expanded: boolean; count: number; onToggle: () => void };
   /** The status list is open on this row. */
@@ -128,6 +136,7 @@ export function TableRow({
   canEdit,
   editors,
   actions,
+  onRename,
   expand,
   editing,
   highlightStatusId,
@@ -138,6 +147,40 @@ export function TableRow({
   onKeyDown,
 }: TableRowProps) {
   const keyLabel = row.key ?? row.title;
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const settled = useRef(false);
+  const refocus = useRef(false);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleButton = useRef<HTMLButtonElement>(null);
+  useEffect(
+    () => () => {
+      if (openTimer.current) clearTimeout(openTimer.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!renaming && refocus.current) {
+      refocus.current = false;
+      titleButton.current?.focus();
+    }
+  }, [renaming]);
+  const startRename = () => {
+    if (!onRename) return;
+    if (openTimer.current) clearTimeout(openTimer.current);
+    settled.current = false;
+    setDraft(row.title);
+    setRenaming(true);
+  };
+  // Blank or unchanged input writes nothing and the old title stays, as in the sheet.
+  const endRename = (save: boolean, restoreFocus: boolean) => {
+    if (settled.current) return;
+    settled.current = true;
+    const next = draft.trim();
+    if (save && next && next !== row.title) onRename?.(next);
+    refocus.current = restoreFocus;
+    setRenaming(false);
+  };
 
   const render = (column: TableColumnSpec) => {
     switch (column.id) {
@@ -176,15 +219,56 @@ export function TableRow({
                 />
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={onOpen}
-              title={row.title}
-              data-row-open=""
-              className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              {row.title}
-            </button>
+            {renaming ? (
+              <input
+                autoFocus
+                value={draft}
+                aria-label={fillTableCopy(copy.row.editTitle, {
+                  key: keyLabel,
+                })}
+                onChange={(event) => setDraft(event.target.value)}
+                onFocus={(event) => event.currentTarget.select()}
+                onBlur={() => endRename(true, false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    endRename(true, true);
+                  } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    endRename(false, true);
+                  }
+                }}
+                className="h-6.5 min-w-0 flex-1 rounded-[7px] border border-line-strong bg-popover px-2 text-nav font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring dark:bg-card"
+              />
+            ) : (
+              <button
+                ref={titleButton}
+                type="button"
+                // A double click renames, so an editor's single click waits
+                // out the second click before it opens the item.
+                onClick={() => {
+                  if (!onRename) return onOpen();
+                  if (openTimer.current) clearTimeout(openTimer.current);
+                  openTimer.current = setTimeout(onOpen, 220);
+                }}
+                onDoubleClick={startRename}
+                onKeyDown={(event) => {
+                  if (!onRename) return;
+                  if (event.key === "F2" || event.key === "Enter") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    startRename();
+                  }
+                }}
+                aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
+                title={row.title}
+                data-row-open=""
+                className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {row.title}
+              </button>
+            )}
           </Cell>
         );
       case "status": {
@@ -440,7 +524,18 @@ export function TableRow({
       aria-selected={selected}
       aria-current={active ? "true" : undefined}
       data-row-id={row.id}
-      onKeyDown={onKeyDown}
+      onKeyDown={(event) => {
+        if (
+          event.key === "F2" &&
+          event.target === event.currentTarget &&
+          onRename
+        ) {
+          event.preventDefault();
+          startRename();
+          return;
+        }
+        onKeyDown(event);
+      }}
       onClick={(event) => {
         // Controls inside the row (status pill, checkbox, the title button)
         // do their own thing; a status list in a portal also bubbles here.

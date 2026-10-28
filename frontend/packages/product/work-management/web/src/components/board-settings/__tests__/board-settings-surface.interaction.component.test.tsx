@@ -602,10 +602,11 @@ describe.each([
     );
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain(copy.feedback.conflictTitle);
-    fireEvent.click(
-      within(alert).getByRole("button", { name: copy.feedback.conflictAction }),
-    );
+    // The latest settings were already read again when the write was refused.
     expect(pageProps.onReload).toHaveBeenCalledTimes(1);
+    fireEvent.click(
+      within(alert).getByRole("button", { name: copy.common.close }),
+    );
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   });
 

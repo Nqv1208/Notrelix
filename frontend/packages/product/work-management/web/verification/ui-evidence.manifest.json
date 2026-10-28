@@ -1946,6 +1946,7 @@
       "pureEntry": "src/components/card-detail/task-detail-panel-surface.tsx",
       "coveredSources": [
         "src/components/card-detail/item-field-editors.tsx",
+        "src/components/card-detail/item-labels-popover.tsx",
         "src/components/card-detail/task-activity-tab.tsx",
         "src/components/card-detail/task-detail-empty-state.tsx",
         "src/components/card-detail/task-detail-header.tsx",
@@ -2244,6 +2245,8 @@
       "surfaceKind": "composition",
       "pureEntry": "src/components/item-page/item-page-surface.tsx",
       "coveredSources": [
+        "src/components/comment-thread/reaction-bar.tsx",
+        "src/components/comment-thread/reply-box.tsx",
         "src/components/item-page/item-page-activity.tsx",
         "src/components/item-page/item-page-approval.tsx",
         "src/components/item-page/item-page-header.tsx",
@@ -2771,10 +2774,12 @@
         "src/components/board-settings/board-settings-fields.tsx",
         "src/components/board-settings/board-settings-general.tsx",
         "src/components/board-settings/board-settings-groups.tsx",
+        "src/components/board-settings/board-settings-labels.tsx",
         "src/components/board-settings/board-settings-parts.tsx",
         "src/components/board-settings/board-settings-sortable.tsx",
         "src/components/board-settings/board-settings-view-panel.tsx",
-        "src/components/board-settings/board-settings-views.tsx"
+        "src/components/board-settings/board-settings-views.tsx",
+        "src/components/board-settings/board-settings-write-error.tsx"
       ],
       "stories": [
         {

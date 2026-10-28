@@ -765,6 +765,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemApprovals",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Approvals.Decide",
+    operationId: "WorkManagement.Approvals.Decide",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemApprovals",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Approvals.Cancel",
+    operationId: "WorkManagement.Approvals.Cancel",
+    mutation: true,
+  },
+  {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useDecideApproval",
@@ -2776,6 +2796,28 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerFile: "frontend/packages/product/work-management/state/src/api/",
     classification: "CANONICAL_MOCKED",
     operationId: "Collaboration.Comments.Delete",
+    method: "DELETE", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "Collaboration.Comments.AddReaction",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "Collaboration.Comments.AddReaction",
+    method: "PUT", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "Collaboration.Comments.RemoveReaction",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "Collaboration.Comments.RemoveReaction",
     method: "DELETE", // dummy
     pathTemplate: "/api/v1/",
     mutation: true,

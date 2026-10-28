@@ -1433,6 +1433,9 @@ export class MockStore {
         userId: comment.userId,
         contentMd: comment.contentMd,
         createdAt: comment.createdAt,
+        ...(comment.reactions
+          ? { reactions: comment.reactions.map((r) => ({ ...r })) }
+          : {}),
       });
     }
     for (const comment of ERP_EXTRA_COMMENTS) {
@@ -3259,11 +3262,21 @@ export class MockStore {
     cardId: string,
     userId: string,
     contentMd: string,
+    parentCommentId?: string,
   ): MockCommentRecord {
     const card = this.cardsById.get(cardId);
     if (!card) {
       throw new MockRelationalInvariantError(
         `Cannot create comment: Card "${cardId}" does not exist.`,
+      );
+    }
+    // Replies are one level deep: a reply to a reply joins its top-level comment.
+    const parent = parentCommentId
+      ? this.commentsById.get(parentCommentId)
+      : undefined;
+    if (parentCommentId && (!parent || parent.cardId !== cardId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot reply: Comment "${parentCommentId}" does not exist on Card "${cardId}".`,
       );
     }
     const cmt: MockCommentRecord = {
@@ -3272,6 +3285,7 @@ export class MockStore {
       userId,
       contentMd,
       createdAt: this.clock.isoNow(),
+      ...(parent ? { parentId: parent.parentId ?? parent.id } : {}),
     };
     this.insertComment(cmt);
     this.feed.noteReplyOn({ itemId: cardId });
@@ -3290,9 +3304,31 @@ export class MockStore {
     return true;
   }
 
+  /** Adds or withdraws one person's emoji on a comment; repeating either is a no-op. */
+  setCardCommentReaction(
+    cardId: string,
+    commentId: string,
+    userId: string,
+    emoji: string,
+    on: boolean,
+  ): boolean {
+    const cmt = this.commentsById.get(commentId);
+    if (!cmt || cmt.cardId !== cardId) return false;
+    const rest = (cmt.reactions ?? []).filter(
+      (r) => !(r.userId === userId && r.emoji === emoji),
+    );
+    this.commentsById.set(commentId, {
+      ...cmt,
+      reactions: on ? [...rest, { emoji, userId }] : rest,
+    });
+    return true;
+  }
+
   deleteCardComment(commentId: string): boolean {
     const cmt = this.commentsById.get(commentId);
     if (!cmt) return false;
+    for (const reply of this.getCardComments(cmt.cardId))
+      if (reply.parentId === cmt.id) this.deleteCardComment(reply.id);
     this.removeIndex(this.commentIdsByCardId, cmt.cardId, cmt.id);
     this.commentsById.delete(commentId);
     return true;

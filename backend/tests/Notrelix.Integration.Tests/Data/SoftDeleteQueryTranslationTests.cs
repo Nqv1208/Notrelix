@@ -140,7 +140,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context));
+        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context), new FakeCurrentUser());
 
         var result = await handler.Handle(GetCommentsQuery.ForBoardItem(itemId), CancellationToken.None);
 

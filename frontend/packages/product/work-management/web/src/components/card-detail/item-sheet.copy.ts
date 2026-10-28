@@ -1,4 +1,5 @@
 import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
+import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
 
 /**
  * Item side sheet copy, vi and en, registered as the `item-sheet` catalog
@@ -8,6 +9,8 @@ import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
  * `fillSheetCopy`; counted messages carry `_one` / `_other` forms.
  */
 export const en = {
+  /** Replies and reactions of a comment. */
+  thread: threadEn,
   /** BCP 47 tag the sheet formats times with. */
   locale: "en",
   /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
@@ -60,6 +63,11 @@ export const en = {
     noLabels: "No labels",
     addLabel: "Add label",
     boardHasNoLabels: "This board has no labels yet.",
+    labelSearch: "Find or create a label",
+    labelSearchPlaceholder: "Find or create a label",
+    createLabel: "Create label “{{name}}”",
+    createLabelFailed: "The label could not be created. Try again.",
+    createLabelRetry: "Retry",
     priority: "Priority",
     noPriority: "No priority",
     priorities: {
@@ -134,6 +142,7 @@ export const en = {
 export type ItemSheetCopy = typeof en;
 
 export const vi: ItemSheetCopy = {
+  thread: threadVi,
   locale: "vi",
   activityEvents: ACTIVITY_WORDS_VI,
   dialogLabel: "Chi tiết công việc",
@@ -185,6 +194,11 @@ export const vi: ItemSheetCopy = {
     noLabels: "Chưa có nhãn",
     addLabel: "Thêm nhãn",
     boardHasNoLabels: "Board này chưa có nhãn nào.",
+    labelSearch: "Tìm hoặc tạo nhãn",
+    labelSearchPlaceholder: "Tìm hoặc tạo nhãn",
+    createLabel: "Tạo nhãn “{{name}}”",
+    createLabelFailed: "Chưa tạo được nhãn. Hãy thử lại.",
+    createLabelRetry: "Thử lại",
     priority: "Ưu tiên",
     noPriority: "Chưa có ưu tiên",
     priorities: {

@@ -233,9 +233,14 @@ interface ApprovalRecord {
 interface RequestedApprovalRecord {
   id: string;
   itemId: string;
+  requestedById: string;
   approverId: string;
   note: string | null;
   requestedAt: string;
+  status: "Pending" | "Approved" | "Rejected" | "Cancelled";
+  decidedAt: string | null;
+  /** The approver's comment with the decision. */
+  decisionNote: string | null;
 }
 
 interface MentionRecord {
@@ -1098,14 +1103,40 @@ export function decideApproval(
   store: MockStore,
   requestId: string,
   decision: "approve" | "reject",
+  comment: string | null = null,
 ): FeedWriteResult {
   const feed = store.feed;
+  const me = store.getCurrentUser().id;
+  const asked = feed.requestedApprovals.find(
+    (record) => record.id === requestId,
+  );
+  if (asked) {
+    if (!store.getCard(asked.itemId)) return "not-found";
+    if (asked.approverId !== me) return "forbidden";
+    // Only the first answer counts: a second one is a conflict.
+    if (asked.status !== "Pending") return "invalid";
+    asked.status = decision === "approve" ? "Approved" : "Rejected";
+    asked.decidedAt = store.getClock().isoNow();
+    asked.decisionNote = comment?.trim() ? comment.trim() : null;
+    return "ok";
+  }
   const approval = [...feed.approvals.values()].find(
     (candidate) => approvalRequestId(candidate.itemId) === requestId,
   );
   if (!approval) return "not-found";
   if (!store.getCard(approval.itemId)) return "not-found";
-  void decision;
+  // The seeded request waits for the member; once answered it is listed with the answer.
+  feed.requestedApprovals.push({
+    id: requestId,
+    itemId: approval.itemId,
+    requestedById: approval.requestedById,
+    approverId: me,
+    note: approval.note,
+    requestedAt: approval.requestedAt,
+    status: decision === "approve" ? "Approved" : "Rejected",
+    decidedAt: store.getClock().isoNow(),
+    decisionNote: comment?.trim() ? comment.trim() : null,
+  });
   feed.approvals.delete(approval.itemId);
   for (const record of feed.inbox) {
     if (
@@ -1124,47 +1155,49 @@ export interface ItemApprovalWire {
   id: string;
   title: string;
   description: string | null;
-  status: "Pending";
+  status: RequestedApprovalRecord["status"];
   requestedByUserId: string;
   createdAt: string;
+  version: number;
   steps: {
     id: string;
     approverUserId: string;
     approverTeamId: null;
-    status: "Pending";
+    status: RequestedApprovalRecord["status"];
     position: number;
-    decidedAt: null;
-    note: null;
+    decidedAt: string | null;
+    note: string | null;
   }[];
 }
 
 function approvalWire(
   store: MockStore,
-  record: {
-    id: string;
-    itemId: string;
-    requestedById: string;
-    approverId: string;
-    note: string | null;
-    requestedAt: string;
-  },
+  record: Omit<
+    RequestedApprovalRecord,
+    "status" | "decidedAt" | "decisionNote"
+  > &
+    Partial<
+      Pick<RequestedApprovalRecord, "status" | "decidedAt" | "decisionNote">
+    >,
 ): ItemApprovalWire {
+  const status = record.status ?? "Pending";
   return {
     id: record.id,
     title: store.getCard(record.itemId)?.title ?? "",
     description: record.note,
-    status: "Pending",
+    status,
     requestedByUserId: record.requestedById,
     createdAt: record.requestedAt,
+    version: 1,
     steps: [
       {
         id: `${record.id}:step`,
         approverUserId: record.approverId,
         approverTeamId: null,
-        status: "Pending",
+        status,
         position: 1,
-        decidedAt: null,
-        note: null,
+        decidedAt: record.decidedAt ?? null,
+        note: record.decisionNote ?? null,
       },
     ],
   };
@@ -1180,7 +1213,7 @@ export function listItemApprovals(
   const me = store.getCurrentUser().id;
   const asked = feed.requestedApprovals
     .filter((record) => record.itemId === itemId)
-    .map((record) => approvalWire(store, { ...record, requestedById: me }));
+    .map((record) => approvalWire(store, record));
   const seeded = feed.approvals.get(itemId);
   const waiting = seeded
     ? [
@@ -1231,11 +1264,33 @@ export function requestItemApproval(
   feed.requestedApprovals.push({
     id,
     itemId,
+    requestedById: me,
     approverId: approverUserId,
     note: note?.trim() ? note.trim() : null,
     requestedAt: store.getClock().isoNow(),
+    status: "Pending",
+    decidedAt: null,
+    decisionNote: null,
   });
   return { kind: "ok", id };
+}
+
+/** The requester withdraws a pending request; only they may, and only while nobody has answered. */
+export function cancelApproval(
+  store: MockStore,
+  requestId: string,
+  expectedVersion: number | undefined,
+): FeedWriteResult {
+  // The producer refuses a missing or non-positive expected version.
+  if (!expectedVersion || expectedVersion < 1) return "invalid";
+  const record = store.feed.requestedApprovals.find(
+    (candidate) => candidate.id === requestId,
+  );
+  if (!record) return "not-found";
+  if (record.requestedById !== store.getCurrentUser().id) return "forbidden";
+  if (record.status !== "Pending") return "invalid";
+  record.status = "Cancelled";
+  return "ok";
 }
 
 export function reopenItem(store: MockStore, cardId: string): FeedWriteResult {

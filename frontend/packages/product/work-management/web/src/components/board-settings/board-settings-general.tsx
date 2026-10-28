@@ -11,6 +11,7 @@ import {
 import { DisabledControl, MARK_TONE_CLASS } from "../item-page/item-page-parts";
 import type { BoardSettingsSpace } from "./board-settings-types";
 import { useSettings } from "./board-settings-context";
+import { WriteError } from "./board-settings-write-error";
 import { fillCopy } from "./board-settings-format";
 import {
   BUTTON_CLASS,
@@ -102,29 +103,31 @@ export function GeneralSection({
     if (!dirty || trimmed === "" || !prefixOk) return;
     setSaving(true);
     await run(
-      actions.updateGeneral({
-        ...(trimmed !== general.title ? { title: trimmed } : {}),
-        ...(description !== general.description ? { description } : {}),
-        ...(color.toLowerCase() !== general.color.toLowerCase()
-          ? { color }
-          : {}),
-        ...(prefix.trim().toUpperCase() !== general.itemKeyPrefix
-          ? { itemKeyPrefix: prefix.trim().toUpperCase() }
-          : {}),
-        ...(timeZone !== general.timeZone ? { timeZone } : {}),
-        ...(weekStart !== general.weekStart ? { weekStart } : {}),
-      }),
+      () =>
+        actions.updateGeneral({
+          ...(trimmed !== general.title ? { title: trimmed } : {}),
+          ...(description !== general.description ? { description } : {}),
+          ...(color.toLowerCase() !== general.color.toLowerCase()
+            ? { color }
+            : {}),
+          ...(prefix.trim().toUpperCase() !== general.itemKeyPrefix
+            ? { itemKeyPrefix: prefix.trim().toUpperCase() }
+            : {}),
+          ...(timeZone !== general.timeZone ? { timeZone } : {}),
+          ...(weekStart !== general.weekStart ? { weekStart } : {}),
+        }),
+      "general",
     );
     setSaving(false);
   }
 
   async function archive() {
-    const result = await run(actions.archiveBoard());
+    const result = await run(() => actions.archiveBoard());
     if (result.ok) onLeave?.("archived");
   }
 
   async function remove() {
-    const result = await run(actions.deleteBoard(confirmName));
+    const result = await run(() => actions.deleteBoard(confirmName));
     if (result.ok) onLeave?.("deleted");
   }
 
@@ -159,6 +162,7 @@ export function GeneralSection({
           }
         />
 
+        <WriteError scope="general" id="bs-general-error" />
         <div className="rounded-[10px] border border-line bg-popover">
           <div className={ROW_CLASS}>
             <label htmlFor={ids.name} className={LABEL_CLASS}>

@@ -59,17 +59,16 @@ test.describe("Item page data (owner)", () => {
     );
   });
 
-  test("sub-items: no list is offered, the progress still reads from the item", async ({
+  test("sub-items: the section lists the item's children and the rail keeps the progress", async ({
     page,
   }) => {
     await open(page);
-    await expect(page.getByText("ERP-142.1")).toHaveCount(0);
-    await expect(page.getByRole("textbox", { name: "Việc con" })).toHaveCount(
-      0,
-    );
     await expect(
       page.getByRole("complementary").getByText("3/5 việc con"),
     ).toBeVisible();
+    // Children load after the item; asserting their absence only raced that load.
+    const children = page.getByRole("region", { name: /^Việc con/ });
+    await expect(children.getByText("ERP-142.1")).toBeVisible();
   });
 
   test("links: three groups, add one, remove one", async ({ page }) => {

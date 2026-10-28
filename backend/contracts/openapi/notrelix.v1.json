@@ -1286,6 +1286,120 @@
         ]
       }
     },
+    "/api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji}": {
+      "put": {
+        "tags": [
+          "Collaboration.Comments",
+          "Collaboration.Comments"
+        ],
+        "summary": "React to a comment on a board item",
+        "operationId": "Collaboration.Comments.AddReaction",
+        "parameters": [
+          {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "emoji",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Collaboration.Comments",
+          "Collaboration.Comments"
+        ],
+        "summary": "Withdraw the caller's reaction to a comment on a board item",
+        "operationId": "Collaboration.Comments.RemoveReaction",
+        "parameters": [
+          {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "emoji",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/pages/{pageId}/comments": {
       "get": {
         "tags": [
@@ -8093,6 +8207,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -22555,6 +22679,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CreateApprovalRequestRequest": {
         "type": "object",
         "properties": {
@@ -25204,8 +25338,53 @@
             "type": "string",
             "format": "date-time"
           },
+          "reactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto"
+            },
+            "nullable": true
+          },
           "anchor": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "emoji": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reactedByMe": {
+            "type": "boolean"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionUserDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -27127,6 +27306,10 @@
           "category": {
             "type": "string",
             "nullable": true
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

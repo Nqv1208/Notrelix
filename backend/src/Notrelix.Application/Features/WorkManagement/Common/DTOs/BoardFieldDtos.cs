@@ -27,7 +27,9 @@ public record BoardFieldOptionDto(
     string Name,
     string Color,
     string Position,
-    string? Category);
+    string? Category,
+    // Live Items of the Board that currently hold this option; 0 when none do.
+    int ItemCount = 0);
 
 public record BoardFieldSchemaDto(
     Guid Id,

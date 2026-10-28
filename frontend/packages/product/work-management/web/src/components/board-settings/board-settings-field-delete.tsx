@@ -30,7 +30,7 @@ export function FieldDeleteDialog({
 
   async function confirm() {
     setWorking(true);
-    const result = await run(actions.deleteField(field.id));
+    const result = await run(() => actions.deleteField(field.id));
     setWorking(false);
     if (result.ok) onDeleted();
   }

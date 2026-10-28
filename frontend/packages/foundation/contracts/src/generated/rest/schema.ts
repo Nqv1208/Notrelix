@@ -332,6 +332,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** React to a comment on a board item */
+        put: operations["Collaboration.Comments.AddReaction"];
+        post?: never;
+        /** Withdraw the caller's reaction to a comment on a board item */
+        delete: operations["Collaboration.Comments.RemoveReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}/comments": {
         parameters: {
             query?: never;
@@ -5637,6 +5655,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CreateApprovalRequestRequest": {
             title?: string | null;
             description?: string | null;
@@ -6512,7 +6534,20 @@ export interface components {
             resolvedAt?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            reactions?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto"][] | null;
             anchor?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"];
+        };
+        "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto": {
+            emoji?: string | null;
+            /** Format: int32 */
+            count?: number;
+            reactedByMe?: boolean;
+            users?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionUserDto"][] | null;
+        };
+        "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionUserDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
         };
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
             /** Format: int32 */
@@ -7176,6 +7211,8 @@ export interface components {
             color?: string | null;
             position?: string | null;
             category?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldSchemaDto": {
             /** Format: uuid */
@@ -8720,6 +8757,54 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Collaboration.Comments.Requests.CreateCommentRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Comments.AddReaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardItemId: string;
+                commentId: string;
+                emoji: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Comments.RemoveReaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardItemId: string;
+                commentId: string;
+                emoji: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -12955,7 +13040,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

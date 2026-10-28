@@ -111,6 +111,13 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       addLink: vi.fn(),
       removeLink: vi.fn(),
     }),
+    useItemApprovals: () => ({
+      approvals: undefined,
+      decide: vi.fn(),
+      cancel: vi.fn(),
+      answerError: null,
+    }),
+    usePeopleDirectory: () => ({ directory: null }),
     useBoardLabels: list,
     useCardLabelWrites: mutation,
     useCreateItemWithDetails: () => ({ mutate: vi.fn(), isPending: false }),
@@ -127,6 +134,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,
+    useToggleCommentReaction: mutation,
   };
 });
 
