@@ -1,5 +1,3 @@
-using Notrelix.Domain.WorkManagement.Views;
-
 namespace Notrelix.Application.Features.WorkManagement.Views;
 
 /// <summary>
