@@ -103,6 +103,16 @@ function summariseReactions(
   }));
 }
 
+/** The pages linked to each item, per store. */
+const pageLinks = new WeakMap<MockStore, Map<string, Set<string>>>();
+function linksOf(store: MockStore, itemId: string): Set<string> {
+  const all = pageLinks.get(store) ?? new Map<string, Set<string>>();
+  pageLinks.set(store, all);
+  const links = all.get(itemId) ?? new Set<string>();
+  all.set(itemId, links);
+  return links;
+}
+
 /** 400 with field errors, as the real API answers a validation failure. */
 function badRequest(errors: Record<string, string[]>) {
   return {
@@ -366,6 +376,52 @@ export const cardsOperations = [
       if (!store.getCard(params.itemId)) return notFound("Item not found");
       const page = body?.pageId ? store.getPage(body.pageId) : undefined;
       if (!page || page.trashedAt) return notFound("Page not found");
+      linksOf(store, params.itemId).add(page.id);
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /board-items/:itemId/linked-pages ────────────────────────────────
+
+  defineMockOperation<{ itemId: string }>({
+    id: "wm.boardItems.linkedPages",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.ListLinkedPages",
+    },
+    method: "GET",
+    route: "/board-items/:itemId/linked-pages",
+    async handle({ params, store }) {
+      if (!store.getCard(params.itemId)) return notFound("Item not found");
+      const pages = [...linksOf(store, params.itemId)].flatMap((pageId) => {
+        const page = store.getPage(pageId);
+        return page && !page.trashedAt
+          ? [
+              {
+                pageId,
+                title: page.title ?? "",
+                linkedAt: store.getClock().isoNow(),
+              },
+            ]
+          : [];
+      });
+      return ok({ pages, hiddenCount: 0 });
+    },
+  }),
+
+  // ─── DELETE /board-items/:itemId/link-page/:pageId ────────────────────────
+
+  defineMockOperation<{ itemId: string; pageId: string }>({
+    id: "wm.boardItems.unlinkPage",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UnlinkPage",
+    },
+    method: "DELETE",
+    route: "/board-items/:itemId/link-page/:pageId",
+    async handle({ params, store }) {
+      if (!store.getCard(params.itemId)) return notFound("Item not found");
+      linksOf(store, params.itemId).delete(params.pageId);
       return ok<void>(undefined);
     },
   }),
@@ -463,7 +519,7 @@ export const cardsOperations = [
 
   // ─── POST /board-items/:id/duplicate ────────────────────────────────────────────
 
-  defineMockOperation<{ id: string }, never, void>({
+  defineMockOperation<{ id: string }, { name?: string } | undefined, void>({
     id: "wm.boardItems.duplicate",
     contract: {
       kind: "openapi",
@@ -471,9 +527,10 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/duplicate",
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       const duplicated = store.duplicateCard(params.id);
       if (!duplicated) return notFound("Card not found");
+      if (body?.name) store.updateCard(duplicated.id, { title: body.name });
       return ok<void>(undefined);
     },
   }),

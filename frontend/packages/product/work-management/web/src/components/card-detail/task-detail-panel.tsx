@@ -1,3 +1,4 @@
+import { useItemRemoval } from "../item-lifecycle/use-item-removal";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
@@ -12,7 +13,6 @@ import {
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useToggleCommentReaction,
-  useDuplicateCard,
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldValue,
@@ -191,7 +191,12 @@ function TaskDetailReadyContainer({
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
   const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
-  const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
+  const removal = useItemRemoval({
+    workspaceId: card.workspaceId,
+    boardId: card.boardId,
+    titleOf: () => card.title,
+    onGone: () => onClose(),
+  });
   const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
@@ -205,57 +210,67 @@ function TaskDetailReadyContainer({
   );
 
   return (
-    <TaskDetailPanelSurface
-      status="ready"
-      board={board}
-      card={card}
-      capabilities={capabilities}
-      copy={copy}
-      now={now}
-      asDialog={asDialog}
-      detailData={{
-        files: files.data ?? card.files,
-        filesLoading: files.isLoading,
-        activity: activity.data ?? card.activity,
-        activityLoading: activity.isLoading,
-        activityFetching: activity.isFetching,
-        activityError: activity.isError && activity.data === undefined,
-        updates: updates.data ?? card.updates,
-        updatesLoading: updates.isLoading,
-        checklists: {
-          ...checklistWrites,
-          checklists: card.checklists,
-          canEdit: capabilities.canEditFields,
-          canConvert: !card.parentItemId,
-        },
-      }}
-      callbacks={{
-        onClose,
-        onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
-        onToggleWatch: () => undefined,
-        onDuplicate: (cardId) => duplicateCard.mutate(cardId),
-        // "Lưu trữ" archives the item (it can be restored); it is not a delete.
-        onArchive: (cardId) => {
-          archiveCard.mutate(cardId);
-          onClose();
-        },
-        onUpdateFieldValue: (payload) => updateFieldValue.mutate(payload),
-        onRefreshActivity: () => {
-          void activity.refetch();
-        },
-        onCreateUpdate: (input, options) =>
-          createUpdate.mutate(input, {
-            onSuccess: options?.onSuccess,
-            onSettled: options?.onSettled,
-          }),
-        onToggleReaction: (commentId, emoji, on) =>
-          toggleReaction.mutate({ commentId, emoji, on }),
-        onUpdateUpdate: (updateId, body) =>
-          updateUpdate.mutate({ updateId, body }),
-        onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
-        onSelectTab: () => undefined,
-      }}
-    />
+    <>
+      <TaskDetailPanelSurface
+        status="ready"
+        board={board}
+        card={card}
+        capabilities={capabilities}
+        copy={copy}
+        now={now}
+        asDialog={asDialog}
+        detailData={{
+          files: files.data ?? card.files,
+          filesLoading: files.isLoading,
+          activity: activity.data ?? card.activity,
+          activityLoading: activity.isLoading,
+          activityFetching: activity.isFetching,
+          activityError: activity.isError && activity.data === undefined,
+          updates: updates.data ?? card.updates,
+          updatesLoading: updates.isLoading,
+          checklists: {
+            ...checklistWrites,
+            checklists: card.checklists,
+            canEdit: capabilities.canEditFields,
+            canConvert: !card.parentItemId,
+          },
+        }}
+        callbacks={{
+          onClose,
+          onRenameTitle: (cardId, patch) =>
+            updateCard.mutate({ cardId, patch }),
+          onToggleWatch: () => undefined,
+          onDuplicate: removal.requestDuplicate,
+          // "Lưu trữ" archives the item (it can be restored); it is not a delete.
+          onArchive: (cardId) => {
+            archiveCard.mutate(cardId);
+            onClose();
+          },
+          onUnarchive: removal.unarchiveItem,
+          onComplete: removal.completeItem,
+          onReopen: removal.reopenItem,
+          onRemind: removal.requestRemind,
+          onDelete: removal.requestDelete,
+          onMoveToBoard: removal.requestMove,
+          onUpdateFieldValue: (payload) => updateFieldValue.mutate(payload),
+          onRefreshActivity: () => {
+            void activity.refetch();
+          },
+          onCreateUpdate: (input, options) =>
+            createUpdate.mutate(input, {
+              onSuccess: options?.onSuccess,
+              onSettled: options?.onSettled,
+            }),
+          onToggleReaction: (commentId, emoji, on) =>
+            toggleReaction.mutate({ commentId, emoji, on }),
+          onUpdateUpdate: (updateId, body) =>
+            updateUpdate.mutate({ updateId, body }),
+          onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
+          onSelectTab: () => undefined,
+        }}
+      />
+      {removal.dialogs}
+    </>
   );
 }
 

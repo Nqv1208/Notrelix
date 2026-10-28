@@ -166,6 +166,10 @@ export function TaskDetailPanelSurface({
             onArchive={callbacks.onArchive}
             onDelete={callbacks.onDelete}
             onMoveToBoard={callbacks.onMoveToBoard}
+            onComplete={callbacks.onComplete}
+            onReopen={callbacks.onReopen}
+            onRemind={callbacks.onRemind}
+            onUnarchive={callbacks.onUnarchive}
             onMoveToGroup={callbacks.onMoveToGroup}
             following={detailData.following}
             onToggleFollow={callbacks.onToggleWatch}

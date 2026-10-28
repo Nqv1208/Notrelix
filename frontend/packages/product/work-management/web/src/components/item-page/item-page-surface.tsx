@@ -90,6 +90,7 @@ export function ItemPageSurface({
   slow,
   onOpenSearch,
   onGoHome,
+  linkedDocs,
 }: ItemPageSurfaceProps) {
   // An archived item is read-only for everyone, whatever the board grants.
   const archived = lifecycle?.archived ?? null;
@@ -376,6 +377,7 @@ export function ItemPageSurface({
                     timeZone={timeZone}
                   />
                 </div>
+                {linkedDocs}
                 <div id="item-page-activity">
                   <ItemPageActivity
                     key={card.id}

@@ -66,7 +66,12 @@
       {
         "path": "src/components/item-lifecycle/use-item-removal.tsx",
         "category": "container",
-        "reason": "Stateful hook owning the delete and move requests, their commands and toasts, and rendering the registered DeleteItemDialog and MoveItemDialog."
+        "reason": "Stateful hook owning the delete, move, duplicate, remind, complete and unarchive requests, their commands and toasts, and rendering the registered delete, move, duplicate and remind dialogs."
+      },
+      {
+        "path": "src/components/item-actions/linked-docs-section.tsx",
+        "category": "container",
+        "reason": "Container reading and writing the pages linked to an item (useItemLinkedPages, useLinkablePages) and owning the page picker and the unlink confirmation."
       },
       {
         "path": "src/components/saved-filters/saved-filters-control.tsx",
@@ -3510,7 +3515,13 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "feedback",
       "pureEntry": "src/components/item-lifecycle/item-lifecycle-dialogs.tsx",
-      "coveredSources": ["src/components/item-lifecycle/board-trash-sheet.tsx"],
+      "coveredSources": [
+        "src/components/item-lifecycle/board-trash-sheet.tsx",
+        "src/components/item-actions/move-board-dialog.tsx",
+        "src/components/item-actions/duplicate-item-dialog.tsx",
+        "src/components/item-actions/remind-dialog.tsx",
+        "src/components/item-actions/item-actions-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-item-lifecycle--delete-confirm",
@@ -3654,15 +3665,27 @@
         },
         {
           "id": "move",
-          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
         },
         {
-          "id": "move-filter",
-          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+          "id": "move-ack",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
         },
         {
           "id": "move-empty",
-          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
         },
         {
           "id": "trash",
