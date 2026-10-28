@@ -224,9 +224,15 @@ export const endpoints = {
   checklists: {
     detail: (checklistId: string) => `/checklists/${checklistId}`,
     items: (checklistId: string) => `/checklists/${checklistId}/items`,
+    // WorkManagement.Checklists.Move
+    move: (checklistId: string) => `/checklists/${checklistId}/move`,
   },
   checklistItems: {
     detail: (itemId: string) => `/checklist-items/${itemId}`,
+    // WorkManagement.Checklists.ToggleItem
+    toggle: (itemId: string) => `/checklist-items/${itemId}/toggle`,
+    // WorkManagement.Checklists.MoveItem
+    move: (itemId: string) => `/checklist-items/${itemId}/move`,
   },
   comments: {
     detail: (commentId: string) => `/comments/${commentId}`,

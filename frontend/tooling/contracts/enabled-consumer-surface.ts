@@ -2890,6 +2890,39 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.Checklists.ToggleItem",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Checklists.ToggleItem",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Checklists.Move",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Checklists.Move",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Checklists.MoveItem",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Checklists.MoveItem",
+    method: "POST", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "Collaboration.Comments.GetBoardItemComments",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",
