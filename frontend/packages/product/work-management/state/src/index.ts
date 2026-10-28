@@ -33,6 +33,9 @@ export * from "./mutations";
 // State hooks
 export * from "./hooks";
 
+// Realtime adapter
+export * from "./realtime";
+
 // Cache helpers
 export * from "./cache";
 

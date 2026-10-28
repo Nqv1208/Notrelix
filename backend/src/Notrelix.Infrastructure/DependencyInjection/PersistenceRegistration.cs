@@ -196,6 +196,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardAccessSubjectFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.Authorization.IBoardChildAuthorizationFacts,
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Ports.Realtime.IBoardRealtimeScopeFacts,
+            global::Notrelix.Infrastructure.CrossContext.WorkManagement.Realtime.BoardRealtimeScopeAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
         services.AddScoped<global::Notrelix.Application.Features.Workspaces.Abstractions.IWorkspaceSlugResolver, Notrelix.Infrastructure.Workspaces.Workspaces.WorkspaceSlugResolver>();

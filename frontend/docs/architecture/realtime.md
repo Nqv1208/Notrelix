@@ -138,9 +138,16 @@ is an open contract-owner decision.
 artifacts/contracts/realtime.v1.json   (stub, not the gateway contract)
 ```
 
-The gateway does not yet deliver item-level events (field value changed, member
-assigned, item moved). Board state therefore stays REST-driven; nothing here
-may assume those events exist.
+Work Management announces every material change of a Board on one Board
+stream (`subscribe` scope `board`, authorized by `ViewBoard`): an `event` frame
+with `eventType: "board.board"`, `resourceId` = the board, and `changeKind` =
+the command that ran. The frame names no item and carries no payload; the open
+board's adapter (`workManagementRealtimeAdapter`, registered by the web
+lifecycle, one board subscription per open board) marks the workspace's Work
+Management queries stale and the mounted ones refetch over REST. A frame of
+another workspace or board than the open one is ignored; duplicate frames are
+dropped by event id, and a missing, repeated or reset stream version is a
+recovery signal answered with a workspace-wide refetch.
 
 ---
 

@@ -16,18 +16,28 @@ public class RestoreBoardViewCommandHandler : IRequestHandler<RestoreBoardViewCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public RestoreBoardViewCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(RestoreBoardViewCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RestoreBoardViewCommand request, CancellationToken ct)
     {
         // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
         // drops its tenant predicate, so the resolved tenant scope is re-applied here.

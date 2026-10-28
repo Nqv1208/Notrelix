@@ -21,13 +21,16 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardVisibilityCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        BoardAccessChangeLog changeLog)
+        BoardAccessChangeLog changeLog,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
         _requestContext = requestContext;
@@ -35,6 +38,13 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     }
 
     public async Task<Result> Handle(UpdateBoardVisibilityCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateBoardVisibilityCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);

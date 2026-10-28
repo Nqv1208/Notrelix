@@ -70,12 +70,18 @@ export class MockRealtimeTransport implements RealtimeTransport {
 
   /**
    * Test/dev helper: deliver a gateway-shaped event frame (no payload) to the
-   * listeners subscribed for its Workspace, like the real client does after
+   * listeners subscribed for its Workspace or Board scope, like the real client does after
    * checkpoint validation.
    */
   deliverEvent(envelope: RealtimeEnvelope): void {
     for (const { filter, listener } of this.subscriptions.values()) {
       if (filter.workspaceId !== envelope.workspaceId) continue;
+      // A board frame reaches only the listener of that board, a workspace
+      // frame only workspace listeners, as the gateway streams are scoped.
+      const frameBoardId = envelope.subscriptionId.startsWith("board:")
+        ? envelope.subscriptionId.slice("board:".length)
+        : undefined;
+      if (frameBoardId !== filter.boardId) continue;
       if (
         filter.eventTypes &&
         filter.eventTypes.length > 0 &&

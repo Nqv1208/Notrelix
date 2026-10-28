@@ -12,9 +12,17 @@ public record DeleteBoardItemLinkCommand(Guid BoardItemId, Guid BoardItemLinkId)
 }
 
 public class DeleteBoardItemLinkCommandHandler(
-    IWorkManagementDbContext context) : IRequestHandler<DeleteBoardItemLinkCommand, Result>
+    IWorkManagementDbContext context,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<DeleteBoardItemLinkCommand, Result>
 {
     public async Task<Result> Handle(DeleteBoardItemLinkCommand request, CancellationToken cancellationToken)
+    {
+        var response = await HandleCore(request, cancellationToken);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, cancellationToken);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(DeleteBoardItemLinkCommand request, CancellationToken cancellationToken)
     {
         var link = await context.BoardItemLinks
             .FirstOrDefaultAsync(l => l.Id == request.BoardItemLinkId

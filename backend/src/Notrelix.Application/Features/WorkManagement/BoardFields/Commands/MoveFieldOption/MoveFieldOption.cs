@@ -30,13 +30,16 @@ public class MoveFieldOptionCommandHandler : IRequestHandler<MoveFieldOptionComm
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveFieldOptionCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -44,6 +47,13 @@ public class MoveFieldOptionCommandHandler : IRequestHandler<MoveFieldOptionComm
     }
 
     public async Task<Result> Handle(MoveFieldOptionCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(MoveFieldOptionCommand request, CancellationToken ct)
     {
         var field = await _context.BoardFields
             .Include(f => f.Options)

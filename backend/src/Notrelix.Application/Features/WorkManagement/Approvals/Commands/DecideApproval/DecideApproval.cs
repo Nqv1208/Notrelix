@@ -27,9 +27,17 @@ public class DecideApprovalCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IDateTimeProvider clock,
-    IResourceVisibility visibility) : IRequestHandler<DecideApprovalCommand, Result>
+    IResourceVisibility visibility,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<DecideApprovalCommand, Result>
 {
     public async Task<Result> Handle(DecideApprovalCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyResourceAsync("work-management.approval-request", request.RequestId, "DecideApproval", response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(DecideApprovalCommand request, CancellationToken ct)
     {
         var approval = await context.ApprovalRequests
             .Include(r => r.Steps)

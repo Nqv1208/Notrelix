@@ -25,15 +25,24 @@ public class RemoveReactionCommandHandler : IRequestHandler<RemoveReactionComman
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public RemoveReactionCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public RemoveReactionCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(RemoveReactionCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RemoveReactionCommand request, CancellationToken ct)
     {
         var comment = await ReactionCommentLookup.RequireOnItemAsync(_context, request.BoardItemId, request.CommentId, ct);
         var commentKind = ResourceKind.Create(ReactionCommentLookup.CommentKind);

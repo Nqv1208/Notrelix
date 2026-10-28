@@ -14,16 +14,26 @@ public class UnlinkPageFromBoardItemCommandHandler : IRequestHandler<UnlinkPageF
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UnlinkPageFromBoardItemCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
     }
 
     public async Task<Result> Handle(UnlinkPageFromBoardItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UnlinkPageFromBoardItemCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);

@@ -22,13 +22,16 @@ public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistComm
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateChecklistCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -36,6 +39,13 @@ public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistComm
     }
 
     public async Task<Result<Guid>> Handle(CreateChecklistCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateChecklistCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct)

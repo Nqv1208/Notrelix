@@ -52,6 +52,7 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
     private readonly IBoardItemKeyAllocator _keys;
     private readonly IBoardItemTargetAuthorizer _targetAuthorizer;
     private readonly IResourceVisibility _visibility;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveBoardItemToBoardCommandHandler(
         IWorkManagementDbContext context,
@@ -60,8 +61,10 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
         WorkPlacementResolver placement,
         IBoardItemKeyAllocator keys,
         IBoardItemTargetAuthorizer targetAuthorizer,
-        IResourceVisibility visibility)
+        IResourceVisibility visibility,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -72,6 +75,18 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
     }
 
     public async Task<MoveBoardItemToBoardResult> Handle(MoveBoardItemToBoardCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null)
+        {
+            // The item left its board and joined the target: both boards' viewers refetch.
+            await _realtime.NotifyAsync(request, response, ct);
+            await _realtime.NotifyBoardAsync(request.TargetBoardId, "MoveBoardItemToBoard", ct);
+        }
+        return response;
+    }
+
+    private async Task<MoveBoardItemToBoardResult> HandleCore(MoveBoardItemToBoardCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
             .Include(i => i.FieldValues)

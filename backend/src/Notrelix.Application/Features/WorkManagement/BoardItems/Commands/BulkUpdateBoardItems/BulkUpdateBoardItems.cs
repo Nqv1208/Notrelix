@@ -76,6 +76,7 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
     private readonly IRequestHandler<AssignBoardItemMemberCommand, Result> _assign;
     private readonly IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto> _fieldValue;
     private readonly IRequestHandler<DeleteBoardItemCommand, Result> _delete;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public BulkUpdateBoardItemsCommandHandler(
         IWorkManagementDbContext context,
@@ -85,8 +86,10 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         IRequestHandler<ArchiveBoardItemCommand, Result> archive,
         IRequestHandler<AssignBoardItemMemberCommand, Result> assign,
         IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto> fieldValue,
-        IRequestHandler<DeleteBoardItemCommand, Result> delete)
+        IRequestHandler<DeleteBoardItemCommand, Result> delete,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
@@ -98,6 +101,13 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
     }
 
     public async Task<BulkUpdateBoardItemsResult> Handle(BulkUpdateBoardItemsCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<BulkUpdateBoardItemsResult> HandleCore(BulkUpdateBoardItemsCommand request, CancellationToken ct)
     {
         var ids = request.ItemIds.Distinct().ToList();
 

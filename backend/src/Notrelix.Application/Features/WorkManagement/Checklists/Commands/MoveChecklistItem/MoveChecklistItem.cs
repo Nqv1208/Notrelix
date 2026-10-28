@@ -23,13 +23,16 @@ public class MoveChecklistItemCommandHandler : IRequestHandler<MoveChecklistItem
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveChecklistItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -37,6 +40,13 @@ public class MoveChecklistItemCommandHandler : IRequestHandler<MoveChecklistItem
     }
 
     public async Task<Result> Handle(MoveChecklistItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(MoveChecklistItemCommand request, CancellationToken ct)
     {
         var checklist = await ChecklistAggregateLoader.LoadOwningAsync(_context, request.ItemId, ct);
 
