@@ -62,6 +62,7 @@ import { useCalendarCopy } from "./use-calendar-copy";
 /** The hour a due date gets when the Calendar sets one from a day alone. */
 const DEFAULT_DUE_HOUR = 17;
 const DEFAULT_START_HOUR = 8;
+let writeToasts = 0;
 
 type ParamChange = (
   value: string | undefined,
@@ -254,7 +255,10 @@ export function BoardCalendarView({
     isUndo = false,
   ) => {
     const text = copy.scheduleToast;
-    const toastId = `calendar-write-${card.id}`;
+    // One toast per attempt: pressing Hoàn tác or Thử lại makes Sonner start
+    // removing the toast it sits on, and a result toast that reuses its id
+    // inherits that removal and never shows.
+    const toastId = `calendar-write-${card.id}-${++writeToasts}`;
     updateCard.mutate(
       { cardId: card.id, patch },
       {
