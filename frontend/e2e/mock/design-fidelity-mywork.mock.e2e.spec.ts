@@ -57,7 +57,8 @@ const MOCK = {
   ],
   field: { y: 133.56, width: 220, height: 32 },
   add: { y: 133.56, width: 114.55, height: 32 },
-  body: { y: 175.56, height: 683.44 },
+  // 683.44 + the 41 px hint strip, which is gone (owner rule: no shortcut hints).
+  body: { y: 175.56, height: 724.44 },
   lcol: { x: 28, y: 175.56, width: 728 },
   group: { x: 30, y: 181.56, width: 724, height: 24 },
   toggle: { x: 26, width: 24, height: 24 },
@@ -538,19 +539,10 @@ test.describe("My work geometry at 1440 px (owner)", () => {
     expect(await style(track, "border-radius")).toBe("2px");
   });
 
-  test("the keyboard hint under the list", async ({ page }) => {
+  test("the keyboard hint under the list is gone", async ({ page }) => {
     await openMyWork(page);
-    const foot = page.locator('[data-f="foot"]');
-    expectRect(await rel(page, foot), MOCK.foot, "foot");
-    expect(await style(foot, "font-size")).toBe(TYPE.foot.size);
-    expect(await colour(foot, "color")).toBe(COLOUR.meta);
-    expect(await colour(foot, "border-top-color")).toBe(COLOUR.line);
-    const key = foot.locator("span.font-mono").first();
-    const keyBox = await rel(page, key);
-    expect(Math.abs(keyBox.x - 28)).toBeLessThanOrEqual(1);
-    expect(Math.abs(keyBox.height - 20)).toBeLessThanOrEqual(1);
-    expect(await style(key, "font-size")).toBe("11px");
-    expect(await style(key, "border-radius")).toBe("4px");
+    // Owner rule: no visible shortcut hints; the body takes the strip's 41 px.
+    await expect(page.locator('[data-f="foot"]')).toHaveCount(0);
   });
 
   test("the group menu and the create popover hang under their buttons", async ({

@@ -309,7 +309,7 @@ function KanbanCardContent({
       {progress ? (
         <div
           data-child-progress=""
-          className="flex items-center gap-2 text-micro tabular-nums text-meta-foreground"
+          className="flex items-center gap-[7px] text-micro tabular-nums text-meta-foreground"
         >
           <ListChecks className="size-3.25 shrink-0" aria-hidden="true" />
           <span

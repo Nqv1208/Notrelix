@@ -77,10 +77,12 @@ const MOCK = {
     gap: 8,
     radius: 11,
     tag: { x: 44, y: 225, height: 20, radius: 5 },
-    track: { x: 44, y: 306, width: 187, height: 5, radius: 3 },
+    // WM-Card-Face puts a 13 px checklist icon and a 7 px gap before the track.
+    track: { x: 64, y: 306, width: 167, height: 5, radius: 3 },
     // The date text is pulled 6 px left so it lines up with the title.
     due: { x: 38, y: 326, height: 22, radius: 6 },
-    assignee: { x: 238, y: 326, size: 22 },
+    // WM-Card-Face draws the assignee mark 20 px (Final-Board: 22), same right edge.
+    assignee: { x: 240, y: 327, size: 20 },
   },
   add: { width: 240, height: 34, radius: 9 },
   banner: { x: 24, y: 73, height: 37, radius: 9 },
@@ -377,11 +379,13 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     const due = card.locator("[data-due]");
     expectRect(await rel(page, due), c.due, "date chip");
     expect(await style(due, "border-radius")).toBe(`${c.due.radius}px`);
-    expect(await style(due, "padding-left")).toBe("6px");
+    // WM-Card-Face draws the date chip with 0 4px padding (Final-Board: 6px).
+    expect(await style(due, "padding-left")).toBe("4px");
 
     const priority = card.locator("[data-priority]");
     expect(await style(priority, "font-size")).toBe("12px");
-    expect(await style(priority, "font-weight")).toBe("600");
+    // WM-Card-Face draws the priority as a glyph on every card, with no text,
+    // so there is no 600 weight to read here any more.
     expect((await rel(page, priority.locator("svg"))).width).toBeCloseTo(13, 0);
 
     const assignee = card.getByRole("group").first();
