@@ -18,6 +18,8 @@ public class IntegrationFleetRoleBoundaryTests
     private static readonly string[] OwnerContainerTests =
     [
         Path.Combine("Collaboration", "AttachmentObjectLifecycleIntegrationTests.cs"),
+        // Needs a fresh database pinned at an anchor migration, then applies the policy pack as owner (the shared fixture is already fully migrated).
+        Path.Combine("Data", "MigrationsOnRlsDatabaseTests.cs"),
         Path.Combine("Integration", "RlsRuntimeEnforcementTests.cs"),
         Path.Combine("Documents", "BlockRichTextBackfillIntegrationTests.cs"),
         Path.Combine("WorkManagement", "ItemKeyBackfillIntegrationTests.cs"),
