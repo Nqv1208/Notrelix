@@ -138,6 +138,12 @@ test.describe("Board saved filters (viewer)", () => {
       page.getByRole("button", { name: "Lưu bộ lọc", exact: true }),
     ).toBeDisabled();
     await page.getByRole("button", { name: "Bộ lọc đã lưu" }).click();
-    await expect(page.getByText(/Bạn chỉ xem board này/)).toBeVisible();
+    // The same reason is the disabled button's sr-only description; the
+    // visible note is the one inside the saved-filters popover.
+    await expect(
+      page
+        .getByRole("dialog", { name: "Bộ lọc đã lưu" })
+        .getByText(/Bạn chỉ xem board này/),
+    ).toBeVisible();
   });
 });

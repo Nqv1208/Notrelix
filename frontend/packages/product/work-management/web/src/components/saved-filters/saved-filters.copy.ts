@@ -4,6 +4,8 @@
  * `useSavedFiltersCopy` resolves it for the active locale in the container.
  * Vietnamese is the mockup wording. Placeholders use the catalog `{{name}}` form.
  */
+import { viewerSaveReason } from "../viewer-save-reason.copy";
+
 export const en = {
   save: {
     trigger: "Save filter",
@@ -41,8 +43,7 @@ export const en = {
     loadFailed:
       "Could not load saved filters. Your current filter still works.",
     retry: "Try again",
-    readOnly:
-      "You can only view this board, so you cannot save or share filters. Shared filters still work.",
+    readOnly: viewerSaveReason.en,
     gone: "That filter is gone or you can no longer see it. The list was refreshed.",
   },
   row: {
@@ -109,8 +110,7 @@ export const vi: SavedFiltersCopy = {
     loadFailed:
       "Chưa tải được bộ lọc đã lưu. Bộ lọc hiện tại của bạn vẫn dùng được.",
     retry: "Thử lại",
-    readOnly:
-      "Bạn chỉ xem board này nên chưa lưu hay chia sẻ được bộ lọc. Vẫn dùng được các bộ lọc đã chia sẻ.",
+    readOnly: viewerSaveReason.vi,
     gone: "Bộ lọc này không còn nữa hoặc bạn không còn thấy nó. Danh sách đã được làm mới.",
   },
   row: {

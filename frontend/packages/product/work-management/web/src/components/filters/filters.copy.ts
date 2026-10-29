@@ -3,6 +3,8 @@
  * `view-state` catalog (`filters.catalog.ts`). Vietnamese is the canvas
  * wording (WM-Filter-* artboards). Placeholders use the catalog `{{name}}` form.
  */
+import { viewerSaveReason } from "../viewer-save-reason.copy";
+
 export const en = {
   field: { title: "Title", label: "Labels", assignee: "Assignee" },
   filter: {
@@ -178,8 +180,7 @@ export const en = {
     laneEmpty: "Empty",
   },
   viewer: {
-    saveDisabled:
-      "You can only view this board, so you cannot save filters. Filtering, sorting and grouping still work for you alone.",
+    saveDisabled: viewerSaveReason.en,
     saveLabel: "Save filter",
   },
   a11y: {
@@ -365,8 +366,7 @@ export const vi: FiltersCopy = {
     laneEmpty: "Trống",
   },
   viewer: {
-    saveDisabled:
-      "Bạn chỉ xem board này nên chưa lưu được bộ lọc. Lọc, sắp xếp và nhóm vẫn dùng được cho riêng bạn.",
+    saveDisabled: viewerSaveReason.vi,
     saveLabel: "Lưu bộ lọc",
   },
   a11y: {

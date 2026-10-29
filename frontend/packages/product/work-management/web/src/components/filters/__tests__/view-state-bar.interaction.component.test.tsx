@@ -228,7 +228,7 @@ describe("view bar", () => {
     expect((save as HTMLButtonElement).disabled).toBe(true);
     expect(save.getAttribute("aria-describedby")).toBeTruthy();
     expect(
-      screen.getByText(/Bạn chỉ xem board này nên chưa lưu được bộ lọc/),
+      screen.getByText(/Bạn chỉ xem board này nên chưa lưu hay chia sẻ được bộ lọc/),
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Lọc · 1" }));
     expect(screen.getByRole("dialog", { name: "Lọc việc" })).toBeTruthy();
