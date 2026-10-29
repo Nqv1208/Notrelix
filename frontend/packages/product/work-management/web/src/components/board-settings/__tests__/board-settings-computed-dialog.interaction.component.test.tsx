@@ -70,6 +70,13 @@ describe("definition helpers", () => {
     expect(formulaNodeCount("[Effort]*2")).toBe(3);
     expect(formulaNodeCount('IF([A] > 1, "x", "y")')).toBe(6);
     expect(formulaNodeCount("")).toBe(0);
+    expect(formulaNodeCount("SUM([A], MAX([B], 2))")).toBe(5);
+  });
+
+  it("counts a very long run of letters in linear time", () => {
+    const started = performance.now();
+    expect(formulaNodeCount("a".repeat(50_000))).toBe(0);
+    expect(performance.now() - started).toBeLessThan(500);
   });
 
   it("writes the settings JSON the server reads", () => {

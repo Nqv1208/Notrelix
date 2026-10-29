@@ -28,8 +28,9 @@ const ROLLUP_FUNCTIONS: readonly RollupFunction[] = [
 /** The most elements a formula may have; the server enforces it, this only warns early. */
 export const FORMULA_NODE_CAP = 200;
 
+// A function name is matched only from a word start, so a long run of letters is scanned once, not once per letter.
 const NODE_PATTERN =
-  /\[[^\]]*\]|"(?:[^"]|"")*"|\d+(?:\.\d+)?|[A-Za-z]+\s*\(|\bTRUE\b|\bFALSE\b|<>|<=|>=|[-+*/&=<>]/gi;
+  /\[[^\]]*\]|"(?:[^"]|"")*"|\d+(?:\.\d+)?|\b[A-Za-z]+\s*\(|\bTRUE\b|\bFALSE\b|<>|<=|>=|[-+*/&=<>]/gi;
 
 /** An estimate of the elements of a formula: references, literals, calls and operators. */
 export function formulaNodeCount(expression: string): number {
