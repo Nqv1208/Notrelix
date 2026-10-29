@@ -42,6 +42,7 @@ import { criticalIds, fill } from "./timeline-model";
 import { useTimelineCopy } from "./use-timeline-copy";
 
 const NEVER_OVERDUE = () => false;
+let linkToasts = 0;
 
 export interface BoardTimelineViewProps {
   boardId: string;
@@ -272,8 +273,6 @@ export function BoardTimelineView({
     from: nameOfItem(link.from),
     to: nameOfItem(link.to),
   });
-  const toastId = (link: TimelineLink) =>
-    `timeline-link-${link.from}-${link.to}`;
   const isConflict = (error: unknown) =>
     (error as { kind?: unknown; status?: number } | null)?.kind ===
       "conflict" || (error as { status?: number } | null)?.status === 409;
@@ -282,6 +281,9 @@ export function BoardTimelineView({
   const writeLink = (link: TimelineLink, kind: "create" | "remove") => {
     const names = linkNames(link);
     const text = copy.linkToast;
+    // One toast per attempt: Thử lại makes Sonner remove the toast it sits on,
+    // and a result toast reusing that id inherits the removal and never shows.
+    const toastId = `timeline-link-${link.from}-${link.to}-${++linkToasts}`;
     const run =
       kind === "create"
         ? dependencies.createDependency
@@ -295,7 +297,7 @@ export function BoardTimelineView({
         toast.success(
           fill(kind === "create" ? text.created : text.removed, names),
           {
-            id: toastId(link),
+            id: toastId,
             duration: 8000,
             action: {
               label: text.undo,
@@ -310,7 +312,7 @@ export function BoardTimelineView({
       (error: unknown) =>
         isConflict(error)
           ? toast.error(text.conflict, {
-              id: toastId(link),
+              id: toastId,
               action: {
                 label: text.reload,
                 onClick: () => void planQuery.refetch(),
@@ -322,7 +324,7 @@ export function BoardTimelineView({
                 names,
               ),
               {
-                id: toastId(link),
+                id: toastId,
                 action: {
                   label: text.retry,
                   onClick: () => writeLink(link, kind),
