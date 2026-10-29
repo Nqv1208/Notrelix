@@ -284,7 +284,8 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
       [/^Lọc$/, t.filter],
       [/^Sắp xếp Hạn ↑$/, t.sort],
       [/^Nhóm theo Trạng thái$/, t.group],
-      [/^Cột 9\/12$/, t.columns],
+      // 15 columns now: the board carries the field columns (WM-Table-Columns).
+      [/^Cột 9\/15$/, t.columns],
     ] as const) {
       const button = page.getByRole("button", { name });
       expectRect(await rel(page, button), want, String(name));
@@ -665,7 +666,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     page,
   }) => {
     await openTable(page);
-    await page.getByRole("button", { name: /^Cột 9\/12$/ }).click();
+    await page.getByRole("button", { name: /^Cột 9\/15$/ }).click();
     await page.getByRole("menuitemradio", { name: "Gọn" }).click();
     await page.keyboard.press("Escape");
     await expect(

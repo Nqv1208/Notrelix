@@ -496,7 +496,9 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     expect((await icon.boundingBox())!.width).toBeCloseTo(32, 0);
     expect(await style(icon, "border-radius")).toBe("7px");
 
-    const title = sheet.getByRole("heading", { level: 2 });
+    // The sheet now also holds section headings (Việc con, Tệp, Liên kết; the
+    // WM-Sheet-Full artboard): the title is the first level-2 heading.
+    const title = sheet.getByRole("heading", { level: 2 }).first();
     const titleBox = (await title.boundingBox())!;
     expect(Math.abs(titleBox.y - s.titleY)).toBeLessThanOrEqual(1);
     expect(Math.abs(titleBox.width - s.titleWidth)).toBeLessThanOrEqual(1);
