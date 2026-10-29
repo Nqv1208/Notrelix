@@ -78,6 +78,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<InvitationInitialEntries>();
         services.AddSingleton(AlwaysAdmitSeatGate);
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts, Notrelix.Application.Features.Accounts.Members.AccountMembershipFactsProvider>();
     }
 
     private static readonly Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate AlwaysAdmitSeatGate =
@@ -121,6 +122,23 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, user, role));
 
         (await MemberRowAsync(stack, user)).Role.Should().Be(role);
+    }
+
+    [Fact]
+    public async Task Admin_CannotAddUserOfAnotherAccountOrUnknownUser_AndNothingIsPersisted()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        var otherAccountUser = (await _host.SeedWorkspaceAsync()).OwnerId;
+        using var asAdmin = As(stack, admin);
+
+        foreach (var target in new[] { otherAccountUser, Guid.CreateVersion7() })
+        {
+            var act = () => OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, target, WorkspaceRole.Member));
+
+            (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+                .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_NotInAccount);
+            (await HasMemberRowAsync(stack, target)).Should().BeFalse();
+        }
     }
 
     [Fact]

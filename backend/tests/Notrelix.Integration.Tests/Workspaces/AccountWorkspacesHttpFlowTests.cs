@@ -65,7 +65,7 @@ public sealed class AccountWorkspacesHttpFlowTests : IAsyncLifetime
             .Handle(new CreateWorkspaceCommand("Acme", null, false), default);
         await context.SaveChangesAsync();
         _workspace = created.Data;
-        await new AddMemberCommandHandler(context, request.Object, clock.Object, projection, Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)))
+        await new AddMemberCommandHandler(context, request.Object, clock.Object, projection, Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)), Mock.Of<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts>(f => f.IsActiveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)))
             .Handle(new AddMemberCommand(_workspace, _bob.Id, WorkspaceRole.Member), default);
         await context.SaveChangesAsync();
     }

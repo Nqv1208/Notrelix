@@ -406,7 +406,7 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
         var handler = new AddMemberCommandHandler(
             context, RequestOf(actor, accountId).Object, Clock().Object,
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
-            Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
+            Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)), Mock.Of<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts>(f => f.IsActiveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
         (await handler.Handle(new AddMemberCommand(workspaceId, userId, role), default)).Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
     }

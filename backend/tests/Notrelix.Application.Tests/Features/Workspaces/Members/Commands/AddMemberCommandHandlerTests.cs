@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Domain.Workspaces;
 using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
@@ -7,16 +8,44 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Members.Commands;
 public class AddMemberCommandHandlerTests : WorkspaceHandlerTestBase
 {
     private readonly Mock<IBillingSeatGate> _seatGate = new();
+    private readonly Mock<IAccountMembershipFacts> _accountFacts = new();
 
     public AddMemberCommandHandlerTests()
     {
         _seatGate.Setup(g => g.CanAdmitAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
+        _accountFacts.Setup(f => f.IsActiveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
     }
 
     private AddMemberCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, _seatGate.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, _seatGate.Object, _accountFacts.Object);
+
+    [Theory]
+    [InlineData("another account")]
+    [InlineData("inactive account member")]
+    [InlineData("unknown user")]
+    public async Task Handle_WhenTargetIsNotAnActiveAccountMember_IsRefusedIdenticallyAndNothingChanges(string _)
+    {
+        var workspace = CreateWorkspace(id: TestWorkspaceId);
+        SetupWorkspaces(workspace);
+        SetupMembers(CreateMember(WorkspaceRole.Owner));
+        var userId = Guid.CreateVersion7();
+        _accountFacts.Setup(f => f.IsActiveMemberAsync(workspace.AccountId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        Func<Task> act = () => CreateSut().Handle(new AddMemberCommand(workspace.Id, userId, WorkspaceRole.Member), CancellationToken.None);
+
+        var ex = (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which;
+        ex.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_NotInAccount);
+        _seatGate.Verify(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        DbContextMock.Verify(c => c.WorkspaceMembers.Add(It.IsAny<WorkspaceMember>()), Times.Never);
+        GrantProjectionMock.Verify(
+            p => p.SyncWorkspaceMemberGrantAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<WorkspaceRole>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 
     [Theory]
     [InlineData(WorkspaceRole.Member, false)]
