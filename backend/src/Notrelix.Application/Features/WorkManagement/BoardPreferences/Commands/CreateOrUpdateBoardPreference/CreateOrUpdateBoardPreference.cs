@@ -37,6 +37,10 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
 
+        // The view must belong to the authorized board; "other board" and "missing" look identical.
+        if (!await _context.BoardViews.AnyAsync(v => v.Id == request.ViewId && v.BoardId == request.BoardId, ct))
+            throw new NotFoundException(nameof(BoardView), request.ViewId);
+
         var existing = await _context.BoardViewUserPreferences
             .FirstOrDefaultAsync(p => p.BoardId == request.BoardId && p.ViewId == request.ViewId && p.UserId == userId, ct);
 

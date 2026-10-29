@@ -174,6 +174,71 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
         (await GetPreferenceAsync(_memberId, viewId)).Criteria.Should().BeNull();
     }
 
+    [Fact]
+    public async Task PersonalViewCriteria_ObserverWithViewBoardOnly_CanStoreAndReadTheirOwn()
+    {
+        var observer = await AddMemberAsync(WorkspaceRole.Guest);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.BoardMembers.Add(BoardMember.Create(_boardId, observer, BoardRole.Observer, Now));
+            await seed.SaveChangesAsync();
+        }
+        var viewId = await SeedViewAsync();
+        const string personal = "{\"v\":2,\"filter\":\"c2:and~p.is_empty\"}";
+
+        (await SendAsync<Result>(observer, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Criteria: personal))).Succeeded.Should().BeTrue();
+
+        (await GetPreferenceAsync(observer, viewId)).Criteria.Should().Be(personal);
+        (await GetPreferenceAsync(_ownerId, viewId)).Criteria.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task PersonalViewCriteria_UserWithoutBoardAccess_IsDenied_ForWriteAndRead()
+    {
+        var outsider = await AddMemberAsync(WorkspaceRole.Guest);
+        var viewId = await SeedViewAsync();
+
+        var write = () => SendAsync<Result>(outsider, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Criteria: "{}"));
+        // The pipeline hides a board the caller cannot see behind NotFound.
+        await write.Should().ThrowAsync<NotFound>();
+        var read = () => GetPreferenceAsync(outsider, viewId);
+        await read.Should().ThrowAsync<NotFound>();
+        (await PreferenceCountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task PersonalViewCriteria_ViewOfAnotherBoard_IsNotFound_AndWritesNothing()
+    {
+        var otherBoard = Board.Create(_accountId, _workspaceId, _ownerId, "Other Board", null, Now);
+        var otherView = BoardView.Create(_accountId, _workspaceId, otherBoard.Id, "Bảng", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), _ownerId, Now, isDefault: true);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.Boards.Add(otherBoard);
+            seed.BoardViews.Add(otherView);
+            await seed.SaveChangesAsync();
+        }
+
+        var write = () => SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, otherView.Id, Criteria: "{}"));
+        await write.Should().ThrowAsync<NotFound>();
+        var read = () => GetPreferenceAsync(_memberId, otherView.Id);
+        await read.Should().ThrowAsync<NotFound>();
+        (await PreferenceCountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task PersonalViewCriteria_NonExistentView_IsNotFound_NotAServerError()
+    {
+        var write = () => SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, Guid.NewGuid(), Criteria: "{}"));
+        await write.Should().ThrowAsync<NotFound>();
+        (await PreferenceCountAsync()).Should().Be(0);
+    }
+
+    private async Task<int> PreferenceCountAsync()
+    {
+        await using var ctx = _db.CreateOwnerContext(SystemTenant());
+        return await ctx.BoardViewUserPreferences.IgnoreQueryFilters().CountAsync();
+    }
+
     private async Task<Guid> SeedViewAsync()
     {
         var view = BoardView.Create(_accountId, _workspaceId, _boardId, "Bảng", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), _ownerId, Now, isDefault: true);
@@ -206,17 +271,17 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
         return await ctx.SavedFilters.IgnoreQueryFilters().Where(f => f.Id == id).Select(f => f.Version).SingleAsync();
     }
 
-    private async Task<Guid> AddMemberAsync()
+    private async Task<Guid> AddMemberAsync(WorkspaceRole role = WorkspaceRole.Member)
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create($"wm-{Guid.NewGuid():N}@example.com", "Other", "hashed", now, true);
         user.ConfirmEmail(user.Id, now);
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
-        seed.WorkspaceMembers.Add(WorkspaceMember.Create(_accountId, _workspaceId, user.Id, WorkspaceRole.Member, _ownerId, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(_accountId, _workspaceId, user.Id, role, _ownerId, now));
         await seed.SaveChangesAsync();
         await using var grant = _db.CreateOwnerContext(SystemTenant());
-        await new AccessGrantProjectionService(grant).SyncWorkspaceMemberGrantAsync(_accountId, _workspaceId, user.Id, WorkspaceRole.Member, now, CancellationToken.None);
+        await new AccessGrantProjectionService(grant).SyncWorkspaceMemberGrantAsync(_accountId, _workspaceId, user.Id, role, now, CancellationToken.None);
         await grant.SaveChangesAsync();
         return user.Id;
     }

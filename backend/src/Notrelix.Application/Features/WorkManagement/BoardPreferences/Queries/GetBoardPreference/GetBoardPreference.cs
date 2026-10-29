@@ -25,6 +25,9 @@ public class GetBoardPreferenceQueryHandler : IRequestHandler<GetBoardPreference
     {
         var userId = _requestContext.UserId;
 
+        if (!await _context.BoardViews.AnyAsync(v => v.Id == request.ViewId && v.BoardId == request.BoardId, ct))
+            throw new NotFoundException(nameof(BoardView), request.ViewId);
+
         var dto = await _context.BoardViewUserPreferences
             .AsNoTracking()
             .Where(p => p.BoardId == request.BoardId && p.ViewId == request.ViewId && p.UserId == userId)

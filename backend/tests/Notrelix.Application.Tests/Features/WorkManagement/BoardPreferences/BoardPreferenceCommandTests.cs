@@ -9,6 +9,14 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.BoardPreferences;
 
 public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
 {
+    private Guid SeedView(Guid boardId)
+    {
+        var view = BoardView.Create(TestAccountId, TestWorkspaceId, boardId, "View", ViewType.Table,
+            TableViewConfig.Create(JsonValue.EmptyObject()), TestUserId, TestNow);
+        SetupBoardViews(view);
+        return view.Id;
+    }
+
     // ── CreateOrUpdateBoardPreference ──────────────────────────
 
     public class CreateOrUpdateBoardPreferenceTests : BoardPreferenceCommandTests
@@ -28,7 +36,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var command = new CreateOrUpdateBoardPreferenceCommand(board.Id, viewId);
 
@@ -38,11 +46,33 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         }
 
         [Fact]
+        public async Task Handle_ViewOfAnotherBoard_ThrowsNotFound_AndWritesNothing()
+        {
+            var board = CreateBoard();
+            SetupBoards(board);
+            var otherBoardView = SeedView(Guid.CreateVersion7());
+
+            await _handler.Invoking(h => h.Handle(new CreateOrUpdateBoardPreferenceCommand(board.Id, otherBoardView, Criteria: "{}"), CancellationToken.None))
+                .Should().ThrowAsync<NotFoundException>();
+            DbContextMock.Verify(c => c.BoardViewUserPreferences.Add(It.IsAny<BoardViewUserPreference>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Handle_MissingView_ThrowsNotFound()
+        {
+            var board = CreateBoard();
+            SetupBoards(board);
+
+            await _handler.Invoking(h => h.Handle(new CreateOrUpdateBoardPreferenceCommand(board.Id, Guid.CreateVersion7()), CancellationToken.None))
+                .Should().ThrowAsync<NotFoundException>();
+        }
+
+        [Fact]
         public async Task Handle_NoExistingPreference_WithFilters_CreatesAndAppliesFilters()
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var fieldId = Guid.CreateVersion7();
             var filters = new List<FilterRule> { FilterRule.Create(fieldId, FilterOperator.Equals, "test") };
 
@@ -58,7 +88,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var fieldId = Guid.CreateVersion7();
             var sorts = new List<SortRule> { SortRule.Create(fieldId, SortDirection.Ascending) };
 
@@ -74,7 +104,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var fieldId = Guid.CreateVersion7();
             var group = GroupRule.Create(fieldId);
 
@@ -90,7 +120,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -111,7 +141,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -132,7 +162,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -153,7 +183,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
             SetupBoardViewUserPreferences(preference);
@@ -174,9 +204,10 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
+            var viewId = SeedView(board.Id);
 
             var result = await _handler.Handle(
-                new CreateOrUpdateBoardPreferenceCommand(board.Id, Guid.CreateVersion7(), Criteria: "{\"v\":2}"), CancellationToken.None);
+                new CreateOrUpdateBoardPreferenceCommand(board.Id, viewId, Criteria: "{\"v\":2}"), CancellationToken.None);
 
             result.Succeeded.Should().BeTrue();
         }
@@ -211,7 +242,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -245,7 +276,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -266,7 +297,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -297,7 +328,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -336,7 +367,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -357,7 +388,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -388,7 +419,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -427,7 +458,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -448,7 +479,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -491,7 +522,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
 
             var preference = BoardViewUserPreference.Create(
                 TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
@@ -511,7 +542,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         public async Task Handle_PreferenceNotFound_ReturnsEmptyDto()
         {
             var boardId = Guid.CreateVersion7();
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(boardId);
 
             var query = new GetBoardPreferenceQuery(boardId, viewId);
 
@@ -528,11 +559,22 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         }
 
         [Fact]
+        public async Task Handle_ViewOfAnotherBoard_ThrowsNotFound()
+        {
+            var board = CreateBoard();
+            SetupBoards(board);
+            var otherBoardView = SeedView(Guid.CreateVersion7());
+
+            await _handler.Invoking(h => h.Handle(new GetBoardPreferenceQuery(board.Id, otherBoardView), CancellationToken.None))
+                .Should().ThrowAsync<NotFoundException>();
+        }
+
+        [Fact]
         public async Task Handle_PreferenceWithFilters_ReturnsFilters()
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var fieldId = Guid.CreateVersion7();
 
             var preference = BoardViewUserPreference.Create(
@@ -555,7 +597,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var fieldId = Guid.CreateVersion7();
 
             var preference = BoardViewUserPreference.Create(
@@ -578,7 +620,7 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         {
             var board = CreateBoard();
             SetupBoards(board);
-            var viewId = Guid.CreateVersion7();
+            var viewId = SeedView(board.Id);
             var fieldId = Guid.CreateVersion7();
 
             var preference = BoardViewUserPreference.Create(
