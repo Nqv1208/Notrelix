@@ -61,7 +61,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("useViewState", () => {
-  it("FUI[wm.view-state:switch-pending] saves a pending edit to the view it was made on, then shows the new view clean", () => {
+  it("FUI[wm.filters.bar:state-switch-pending] saves a pending edit to the view it was made on, then shows the new view clean", () => {
     const { result, rerender } = setup({
       boardId: "b1",
       routeFilter: undefined,
@@ -81,7 +81,7 @@ describe("useViewState", () => {
     expect(mocks.save).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[wm.view-state:switch-board] a board switch drops the local edit and saves a pending one to the old board", () => {
+  it("FUI[wm.filters.bar:state-switch-board] a board switch drops the local edit and saves a pending one to the old board", () => {
     const { result, rerender } = setup({
       boardId: "b1",
       routeFilter: undefined,
@@ -95,7 +95,7 @@ describe("useViewState", () => {
     expect(result.current.state.filter.conditions).toHaveLength(0);
   });
 
-  it("FUI[wm.view-state:switch-saved] an edit already saved does not leak into another view either", () => {
+  it("FUI[wm.filters.bar:state-switch-saved] an edit already saved does not leak into another view either", () => {
     const { result, rerender } = setup({
       boardId: "b1",
       routeFilter: undefined,
@@ -109,7 +109,7 @@ describe("useViewState", () => {
     expect(result.current.personal).toBe(false);
   });
 
-  it("FUI[wm.view-state:back-forward] browser Back applies the route filter even after a local edit", () => {
+  it("FUI[wm.filters.bar:state-back-forward] browser Back applies the route filter even after a local edit", () => {
     const { result, rerender } = setup({
       boardId: "b1",
       routeFilter: routeOf("one"),
@@ -126,7 +126,7 @@ describe("useViewState", () => {
     expect(result.current.state.filter.conditions).toHaveLength(0);
   });
 
-  it("FUI[wm.view-state:route-lag] keeps the edit while the route has not caught up yet", () => {
+  it("FUI[wm.filters.bar:state-route-lag] keeps the edit while the route has not caught up yet", () => {
     const { result, rerender } = setup({
       boardId: "b1",
       routeFilter: routeOf("one"),

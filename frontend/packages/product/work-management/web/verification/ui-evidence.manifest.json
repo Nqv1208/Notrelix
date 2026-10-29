@@ -1175,6 +1175,34 @@
         {
           "id": "viewer",
           "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "save-issue",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "max-conditions",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "state-switch-pending",
+          "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
+        },
+        {
+          "id": "state-switch-board",
+          "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
+        },
+        {
+          "id": "state-switch-saved",
+          "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
+        },
+        {
+          "id": "state-back-forward",
+          "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
+        },
+        {
+          "id": "state-route-lag",
+          "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
         }
       ]
     },
@@ -4120,12 +4148,12 @@
           {
             "state": "ReadOnly",
             "reason": "Only a manager of the board opens board settings; a viewer gets the settings page's own no-access card and never reaches the Forms section.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "Only a manager of the board opens board settings; there is no partial view of the Forms section, a viewer gets the settings page's own no-access card.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -4525,12 +4553,12 @@
           {
             "state": "ReadOnly",
             "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder, so no partial view exists.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },

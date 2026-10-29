@@ -30,7 +30,7 @@ function setup() {
 }
 
 describe("createPreferenceSaver", () => {
-  it("FUI[wm.view-state:single-flight] sends the next save only after the previous one settled, last state last", async () => {
+  it("sends the next save only after the previous one settled, last state last", async () => {
     const { saver, send, jobs, flushMicrotasks } = setup();
     saver.save({ groupBy: "first" }, target);
     saver.save({ groupBy: "second" }, target);
@@ -43,7 +43,7 @@ describe("createPreferenceSaver", () => {
     expect(jobs[1]!.json).toContain("second");
   });
 
-  it("FUI[wm.view-state:single-flight-failure] a failed save does not block the next one", async () => {
+  it("a failed save does not block the next one", async () => {
     const { saver, send, jobs, flushMicrotasks } = setup();
     saver.save({ groupBy: "first" }, target);
     saver.save({ groupBy: "second" }, target);
@@ -53,7 +53,7 @@ describe("createPreferenceSaver", () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
-  it("FUI[wm.view-state:save-target] sends to the view each save was made on", async () => {
+  it("sends to the view each save was made on", async () => {
     const { saver, jobs, flushMicrotasks } = setup();
     saver.save({ groupBy: "x" }, target);
     await flushMicrotasks();
@@ -63,7 +63,7 @@ describe("createPreferenceSaver", () => {
     expect(jobs[1]!.viewId).toBe("v9");
   });
 
-  it("FUI[wm.view-state:too-large] never sends criteria over 8192 UTF-8 bytes and names the reason", async () => {
+  it("never sends criteria over 8192 UTF-8 bytes and names the reason", async () => {
     const { saver, send, reports } = setup();
     // 2800 three-byte characters: fewer than 8192 characters, more than 8192 bytes.
     saver.save({ filter: "€".repeat(2800) }, target);
@@ -71,7 +71,7 @@ describe("createPreferenceSaver", () => {
     expect(reports.at(-1)).toMatchObject({ issue: "too_large", failed: false });
   });
 
-  it("FUI[wm.view-state:rejected] a server validation error is a reason, not a retry", async () => {
+  it("a server validation error is a reason, not a retry", async () => {
     const { saver, jobs, reports, flushMicrotasks } = setup();
     saver.save({ groupBy: "x" }, target);
     await flushMicrotasks();
@@ -80,7 +80,7 @@ describe("createPreferenceSaver", () => {
     expect(reports.at(-1)).toMatchObject({ issue: "rejected", failed: false });
   });
 
-  it("FUI[wm.view-state:retry] a network failure offers retry and resends the last state", async () => {
+  it("a network failure offers retry and resends the last state", async () => {
     const { saver, send, jobs, reports, flushMicrotasks } = setup();
     saver.save({ groupBy: "x" }, target);
     await flushMicrotasks();
