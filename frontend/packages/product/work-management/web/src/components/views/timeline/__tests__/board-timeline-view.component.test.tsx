@@ -384,12 +384,15 @@ describe("BoardTimelineView dependencies and the tray", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     const [message, options] = toast.error.mock.calls[0] as [
       string,
-      { action: { label: string; onClick: () => void } },
+      { id: string; action: { label: string; onClick: () => void } },
     ];
     expect(message).toMatch(/^Không nối được/);
     expect(options.action.label).toBe("Thử lại");
     options.action.onClick();
     await waitFor(() => expect(extras.addDependency).toHaveBeenCalledTimes(2));
+    // Sonner removes the toast Thử lại sits on; the next result needs its own id.
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    expect(toast.error.mock.calls[1]?.[1]?.id).not.toBe(options.id);
   });
 
   it("schedules an undated item to one day from the tray, with Hoàn tác", async () => {

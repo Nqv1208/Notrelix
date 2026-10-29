@@ -25,6 +25,7 @@ public class FormQuestionConfiguration : IEntityTypeConfiguration<FormQuestion>
         builder.OwnsOne(x => x.Config, config =>
         {
             config.ToJson();
+            config.OwnsMany(c => c.Options);
         });
         builder.Property(x => x.Version).HasColumnName("version");
 

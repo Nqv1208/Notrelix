@@ -7,10 +7,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateForm
 public record UpdateFormDetailsCommand(
     Guid FormId,
     string Title,
-    BoardVisibility Visibility,
+    BoardVisibility? Visibility,
     string SettingsJson,
     string SubmitterPolicyJson,
-    long? ExpectedVersion = null)
+    long? ExpectedVersion = null,
+    string? Description = null)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
@@ -41,11 +42,17 @@ public class UpdateFormDetailsCommandHandler : IRequestHandler<UpdateFormDetails
             .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
 
+        // "{}" means "keep what is stored"; the description lives in the settings object.
+        var settings = System.Text.Json.Nodes.JsonNode.Parse(request.SettingsJson == "{}" ? form.SettingsJson : request.SettingsJson)?.AsObject()
+            ?? new System.Text.Json.Nodes.JsonObject();
+        if (request.Description is not null)
+            settings["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+
         form.UpdateDetails(
             request.Title,
-            request.Visibility,
-            request.SettingsJson,
-            request.SubmitterPolicyJson,
+            request.Visibility ?? form.Visibility,
+            settings.ToJsonString(),
+            request.SubmitterPolicyJson == "{}" ? form.SubmitterPolicyJson : request.SubmitterPolicyJson,
             _requestContext.UserId,
             _dateTimeProvider.UtcNow);
 
