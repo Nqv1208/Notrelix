@@ -100,7 +100,11 @@ export interface BoardSettingsActions {
   ): Promise<BoardSettingsWriteResult>;
   archiveBoard(): Promise<BoardSettingsWriteResult>;
   deleteBoard(confirmTitle: string): Promise<BoardSettingsWriteResult>;
-  createField(type: BoardSettingsFieldType): Promise<BoardSettingsWriteResult>;
+  /** `input` names the field and carries a Formula's or Rollup's settings JSON. */
+  createField(
+    type: BoardSettingsFieldType,
+    input?: { name?: string; settings?: string },
+  ): Promise<BoardSettingsWriteResult>;
   reorderFields(ids: readonly string[]): Promise<BoardSettingsWriteResult>;
   updateField(
     fieldId: string,

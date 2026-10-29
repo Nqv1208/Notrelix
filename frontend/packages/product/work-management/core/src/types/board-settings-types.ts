@@ -90,6 +90,15 @@ export interface BoardSettingsFieldDto {
   readonly required: boolean;
   readonly guidance: string;
   readonly usedIn: readonly BoardSettingsUsageDto[];
+  /** What a Formula or Rollup computes; the expression shows field names. */
+  readonly computed?: BoardSettingsComputedDto;
+}
+
+/** The definition of a calculated field (Formula: expression; Rollup: function and field). */
+export interface BoardSettingsComputedDto {
+  readonly expression?: string;
+  readonly rollupFunction?: "count" | "sum" | "avg" | "min" | "max";
+  readonly sourceFieldId?: string;
 }
 
 export interface BoardSettingsSystemFieldDto {
@@ -208,6 +217,8 @@ export interface BoardSettingsFieldPatch {
   readonly defaultOptionId?: string | null;
   readonly required?: boolean;
   readonly guidance?: string;
+  /** The field's settings JSON (a Formula's expression, a Rollup's function). */
+  readonly settings?: string;
 }
 
 export interface BoardSettingsViewPatch {
@@ -227,4 +238,6 @@ export type BoardSettingsWriteResult =
       reason: BoardSettingsWriteFailure;
       /** The request field a refused value belongs to ("name"). */
       field?: string;
+      /** The server's rule or error code, when it sent one. */
+      code?: string;
     };

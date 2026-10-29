@@ -24,5 +24,6 @@ export function useFullBoard(boardId?: string, workspaceId?: string) {
     fieldDefinitions: query.data?.fieldDefinitions ?? [],
     isLoading: query.isLoading,
     error: query.error,
+    refetch: query.refetch,
   };
 }

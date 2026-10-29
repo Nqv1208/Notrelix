@@ -236,6 +236,55 @@ export const en = {
     readOnlyColumn:
       "This field is calculated by Notrelix, only its name is shown here.",
   },
+  computedDialog: {
+    formulaTitle: "Formula field",
+    rollupTitle: "Rollup field",
+    editFormula: "Edit formula",
+    editRollup: "Edit rollup",
+    name: "Field name",
+    expression: "Formula",
+    expressionHint: "For example [Effort] * 2",
+    insertField: "Insert a field of this board",
+    functions:
+      "Functions: IF(condition; a; b), SUM, MIN, MAX, ROUND(number; digits), DAYS(end; start). Join text with &. Only fields of this board.",
+    nodes: "{{count}} / 200 elements",
+    rollupFunction: "Calculation",
+    functionNames: {
+      count: "Count",
+      sum: "Sum",
+      avg: "Average",
+      min: "Smallest",
+      max: "Largest",
+    },
+    sourceField: "Number field of the sub-items",
+    noSourceNeeded: "No field needed",
+    noNumberField:
+      "This board has no Number field yet. Create one first, or choose Count.",
+    subItemsOnly:
+      "Only the direct sub-items of each item are counted. Archived and trashed sub-items are not.",
+    save: "Save field",
+    saving: "Saving",
+    cancel: "Cancel",
+    retry: "Retry",
+    keptNote: "What you wrote is kept.",
+    errors: {
+      WorkManagement_FieldSettings_FormulaExpressionRequired:
+        "Write a formula first.",
+      WorkManagement_FieldSettings_FormulaSyntaxInvalid:
+        "The formula is not written correctly (a bracket, quote or function is wrong).",
+      WorkManagement_FieldSettings_FormulaTooComplex:
+        "The formula is longer than 200 elements. Split it into two calculated fields.",
+      WorkManagement_FieldSettings_RollupInvalid:
+        "Choose a calculation, and a Number field for anything but Count.",
+      WorkManagement_Field_FormulaUnknownField:
+        "The formula uses a field that is not on this board.",
+      WorkManagement_Field_ComputedFieldCycle:
+        "Calculated fields cannot depend on themselves, directly or through each other.",
+    } as Record<string, string>,
+    failed: "Could not save. Check the connection and try again.",
+    conflict: "Someone changed this field. The latest version was loaded.",
+    unknownError: "The field was not accepted.",
+  },
   deleteDialog: {
     title: "Delete the field “{{name}}”?",
     body: "Deleting removes the field and the values items hold in it. This cannot be undone.",
@@ -754,6 +803,55 @@ export const vi: BoardSettingsCopy = {
     delete: "Xoá trường",
     deleteUnavailable: "Trường Trạng thái chia cột Kanban nên không xoá được",
     readOnlyColumn: "Trường này do Notrelix tự tính, ở đây chỉ hiện tên.",
+  },
+  computedDialog: {
+    formulaTitle: "Trường công thức",
+    rollupTitle: "Trường tổng hợp",
+    editFormula: "Sửa công thức",
+    editRollup: "Sửa tổng hợp",
+    name: "Tên trường",
+    expression: "Công thức",
+    expressionHint: "Ví dụ [Điểm] * 2",
+    insertField: "Chèn trường của bảng này",
+    functions:
+      "Hàm: IF(điều kiện; a; b), SUM, MIN, MAX, ROUND(số; chữ số), DAYS(ngày cuối; ngày đầu). Nối chữ bằng &. Chỉ dùng trường của bảng này.",
+    nodes: "{{count}} / 200 phần tử",
+    rollupFunction: "Phép tính",
+    functionNames: {
+      count: "Đếm",
+      sum: "Tổng",
+      avg: "Trung bình",
+      min: "Nhỏ nhất",
+      max: "Lớn nhất",
+    },
+    sourceField: "Trường số của việc con",
+    noSourceNeeded: "Không cần chọn trường",
+    noNumberField:
+      "Bảng chưa có trường Số. Tạo một trường Số trước, hoặc chọn phép Đếm.",
+    subItemsOnly:
+      "Chỉ tính các việc con trực tiếp của mỗi việc. Việc con đã lưu trữ hoặc ở thùng rác không được tính.",
+    save: "Lưu trường",
+    saving: "Đang lưu",
+    cancel: "Huỷ",
+    retry: "Thử lại",
+    keptNote: "Nội dung bạn viết vẫn còn ở đây.",
+    errors: {
+      WorkManagement_FieldSettings_FormulaExpressionRequired:
+        "Hãy viết công thức trước.",
+      WorkManagement_FieldSettings_FormulaSyntaxInvalid:
+        "Công thức viết chưa đúng (thiếu hoặc thừa ngoặc, dấu nháy hoặc sai tên hàm).",
+      WorkManagement_FieldSettings_FormulaTooComplex:
+        "Công thức dài quá 200 phần tử. Hãy tách thành hai trường tính.",
+      WorkManagement_FieldSettings_RollupInvalid:
+        "Chọn một phép tính, và một trường Số nếu không phải phép Đếm.",
+      WorkManagement_Field_FormulaUnknownField:
+        "Công thức nhắc tới một trường không có trong bảng này.",
+      WorkManagement_Field_ComputedFieldCycle:
+        "Các trường tính không được phụ thuộc vào chính mình, dù trực tiếp hay qua trường khác.",
+    } as Record<string, string>,
+    failed: "Chưa lưu được. Kiểm tra kết nối rồi thử lại.",
+    conflict: "Có người vừa đổi trường này. Đã tải bản mới nhất.",
+    unknownError: "Trường chưa được chấp nhận.",
   },
   deleteDialog: {
     title: 'Xoá trường "{{name}}"?',

@@ -87,6 +87,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .Where(field => field.BoardId == listContext.BoardId)
             .ToListAsync(ct);
         var values = (await BoardItemReadValues.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
+        var projected = (await BoardItemFieldProjection.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
 
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
@@ -109,7 +110,9 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.ArchivedAt,
             card.ArchivedBy,
             NameOf(card.ArchivedBy),
-            card.DescriptionMd
+            card.DescriptionMd,
+            projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+            projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value)
         ));
     }
 }

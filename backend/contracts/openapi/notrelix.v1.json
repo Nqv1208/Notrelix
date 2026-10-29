@@ -27919,6 +27919,18 @@
           "descriptionMd": {
             "type": "string",
             "nullable": true
+          },
+          "fieldValues": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "computedValues": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -28103,6 +28115,18 @@
           },
           "childProgress": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"
+          },
+          "fieldValues": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "computedValues": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+            },
+            "nullable": true
           },
           "openBlockerCount": {
             "type": "integer",
@@ -28501,6 +28525,23 @@
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemDto"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
             "nullable": true
           }
         },
