@@ -887,6 +887,7 @@ export function KanbanView({
           }
           viewBar={
             <ViewStateBar
+              canSave={capabilities.canEditFields}
               copy={filtersCopy}
               view={view}
               fields={kanban.filterFields}
@@ -900,7 +901,7 @@ export function KanbanView({
               groupFields={columnFields}
               laneFields={groupableFields(kanban.filterFields)}
               blockedLaneFieldId={kanban.groupByField?.id}
-              savedFilters={
+              savedFilters={(save) => (
                 <SavedFiltersControl
                   workspaceId={workspaceId}
                   boardId={boardId}
@@ -908,8 +909,9 @@ export function KanbanView({
                   groupBy={view.state.group?.fieldId ?? null}
                   canEdit={capabilities.canEditFields}
                   onApply={view.applyCriteria}
+                  {...save}
                 />
-              }
+              )}
             />
           }
           canAdd={capabilities.canCreateCard}

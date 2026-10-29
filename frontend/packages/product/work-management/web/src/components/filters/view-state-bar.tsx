@@ -1,12 +1,15 @@
-import { useState, type ReactNode } from "react";
-import { AlertCircle, Filter, RefreshCw, User, X } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
+import { AlertCircle, Lock, RefreshCw, User, X } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import {
   conditionIssue,
   type FilterField,
   type MemberNames,
 } from "@notrelix/work-management-core";
-import { kanbanOutlineButtonClass } from "../views/kanban/kanban-chrome";
+import {
+  kanbanOutlineButtonClass,
+  kanbanPillClass,
+} from "../views/kanban/kanban-chrome";
 import { describeCondition, staleConditionCount } from "./condition-label";
 import { FilterBuilder } from "./filter-builder";
 import { FieldRefMenu } from "./field-ref-menu";
@@ -15,6 +18,12 @@ import { SortMenu } from "./sort-menu";
 import type { ViewStateControl } from "./use-view-state";
 
 const MAX_CHIPS = 3;
+
+/** The "Lưu bộ lọc" form the bar controls for its saved-filter slot. */
+export interface SaveFormState {
+  saveOpen: boolean;
+  onSaveOpenChange: (open: boolean) => void;
+}
 
 export interface ViewStateBarProps {
   copy: FiltersCopy;
@@ -31,9 +40,18 @@ export interface ViewStateBarProps {
   laneFields?: readonly FilterField[];
   /** The field that is the column of a Kanban; it cannot also be the lane. */
   blockedLaneFieldId?: string | undefined;
-  /** The saved-filter controls, shown after the personal-state chip. */
-  savedFilters?: ReactNode;
-  /** Opens the host's "Lưu bộ lọc" form for the bar's filter (offered next to the removed-field warning). */
+  /**
+   * The saved-filter controls, shown after the personal-state chip. A function
+   * receives the state of the "Lưu bộ lọc" form, so the removed-field warning
+   * can offer "Lưu thành bộ lọc mới".
+   */
+  savedFilters?: ReactNode | ((save: SaveFormState) => ReactNode);
+  /**
+   * False for a viewer: filtering, sorting and grouping still work for them
+   * alone, but saving a filter is shown disabled with the reason.
+   */
+  canSave?: boolean;
+  /** Opens the host's "Lưu bộ lọc" form when `savedFilters` is a plain node. */
   onSaveAsNew?: (() => void) | undefined;
   /** The filter dialog is controlled so "Sửa điều kiện" can open it. */
   filterOpen?: boolean;
@@ -58,6 +76,16 @@ export function ViewStateBar(props: ViewStateBarProps) {
   const [openInner, setOpenInner] = useState(false);
   const open = props.filterOpen ?? openInner;
   const setOpen = props.onFilterOpenChange ?? setOpenInner;
+  const [saveOpen, setSaveOpen] = useState(false);
+  const reasonId = useId();
+  const saved =
+    typeof props.savedFilters === "function"
+      ? props.savedFilters({ saveOpen, onSaveOpenChange: setSaveOpen })
+      : props.savedFilters;
+  const onSaveAsNew =
+    typeof props.savedFilters === "function"
+      ? () => setSaveOpen(true)
+      : props.onSaveAsNew;
   return (
     <>
       <FilterBuilder
@@ -80,12 +108,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           {shown.map((condition, index) => {
             const field = fields.find((f) => f.id === condition.fieldId);
             const stale = known && !field;
-            const label = describeCondition(
-              copy,
-              condition,
-              field,
-              memberName,
-            );
+            const label = describeCondition(copy, condition, field, memberName);
             const original = filter.conditions.indexOf(condition);
             return (
               <li key={`${condition.fieldId}-${index}`} className="contents">
@@ -186,13 +209,30 @@ export function ViewStateBar(props: ViewStateBarProps) {
           </button>
         </span>
       ) : null}
-      {props.savedFilters}
+      {props.canSave === false && applied.length > 0 ? (
+        <span title={copy.viewer.saveDisabled} className="inline-flex">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled
+            aria-describedby={reasonId}
+            className={kanbanPillClass}
+          >
+            <Lock className="size-4" aria-hidden="true" />
+            {copy.viewer.saveLabel}
+          </Button>
+          <span id={reasonId} className="sr-only">
+            {copy.viewer.saveDisabled}
+          </span>
+        </span>
+      ) : null}
+      {saved}
       <div className="basis-full empty:hidden">
         <ViewStateNotices
           copy={copy}
           view={view}
           fields={fields}
-          onSaveAsNew={props.onSaveAsNew}
+          onSaveAsNew={onSaveAsNew}
         />
       </div>
     </>
@@ -274,52 +314,6 @@ export function ViewStateNotices({
           </Button>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-export interface FilterNoResultsProps {
-  copy: FiltersCopy;
-  conditions: number;
-  total: number;
-  onEdit: () => void;
-  onClear: () => void;
-}
-
-/** The empty-by-filter state: not an error and not an empty board. */
-export function FilterNoResults({
-  copy,
-  conditions,
-  total,
-  onEdit,
-  onClear,
-}: FilterNoResultsProps) {
-  return (
-    <div
-      role="status"
-      className="mx-auto flex max-w-sm flex-col items-center gap-1.5 rounded-xl border border-line bg-popover px-5 py-8 text-center dark:bg-card"
-    >
-      <Filter className="size-5 text-muted-foreground" aria-hidden="true" />
-      <b className="text-sm font-semibold">{copy.states.noResults}</b>
-      <span className="text-compact text-muted-foreground">
-        {fillFiltersCopy(copy.states.noResultsHint, {
-          count: conditions,
-          total,
-        })}
-      </span>
-      <div className="mt-2 flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className={kanbanOutlineButtonClass}
-          onClick={onEdit}
-        >
-          {copy.states.editConditions}
-        </Button>
-        <Button size="sm" className="h-8 text-compact" onClick={onClear}>
-          {copy.states.clear}
-        </Button>
-      </div>
     </div>
   );
 }

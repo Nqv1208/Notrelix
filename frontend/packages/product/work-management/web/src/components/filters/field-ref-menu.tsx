@@ -32,7 +32,9 @@ export interface FieldRefMenuProps {
   blockedFieldId?: string | undefined;
 }
 
-const typeGroup = (field: FilterField): "select" | "person" | "date" | "checkbox" =>
+const typeGroup = (
+  field: FilterField,
+): "select" | "person" | "date" | "checkbox" =>
   field.field.fieldType === "person"
     ? "person"
     : field.field.fieldType === "date"
@@ -118,7 +120,9 @@ export function FieldRefMenu({
                         event.preventDefault();
                     }}
                   >
-                    <span className="min-w-0 flex-1 truncate">{field.name}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {field.name}
+                    </span>
                     {blocked && "sameAsColumn" in copy.lane ? (
                       <span className="text-xs text-muted-foreground">
                         {copy.lane.sameAsColumn}

@@ -49,7 +49,8 @@ export function describeCondition(
   if (!field) {
     return fillFiltersCopy(copy.stale.chip, { name: copy.stale.unknownField });
   }
-  const op = copy.operators[condition.operator as keyof FiltersCopy["operators"]];
+  const op =
+    copy.operators[condition.operator as keyof FiltersCopy["operators"]];
   const values = condition.values.map((value) =>
     valueLabel(copy, field, memberName, value),
   );

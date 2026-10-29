@@ -65,7 +65,6 @@ export * from "./components/views/kanban/kanban-add-card";
 export * from "./components/views/kanban/kanban-card-detail-panel";
 export * from "./components/views/kanban/kanban-empty-state";
 export * from "./components/views/kanban/kanban-filter";
-export * from "./components/views/kanban/kanban-filter-menu";
 export * from "./components/views/kanban/kanban-skeleton";
 export * from "./components/views/kanban/kanban-toolbar";
 export { kanbanToolbarCatalog } from "./components/views/kanban/kanban-toolbar.catalog";

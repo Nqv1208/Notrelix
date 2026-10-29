@@ -69,6 +69,16 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }));
   return {
     ...actual,
+    // The member's own view: nothing saved, and no write is made by these tests.
+    useBoardPreference: () => ({
+      criteria: undefined,
+      isLoading: false,
+      persistent: false,
+      save: vi.fn(),
+      saving: false,
+      saveFailed: false,
+      retry: vi.fn(),
+    }),
     // The filter bar's saved filters: none, and no write is made by these tests.
     useSavedFilters: () => ({
       data: [],
@@ -98,6 +108,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       totalCount: columns.current[0]!.cards.length,
       filterActive: false,
       filterChoices: { statuses: [], assignees: [], labels: [] },
+      filterFields: [],
+      memberName: (id: string) => id,
       isLoading: false,
       error: null,
       search: { query: "", setQuery: vi.fn(), debouncedQuery: "" },

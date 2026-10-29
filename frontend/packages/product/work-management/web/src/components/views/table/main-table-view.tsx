@@ -163,7 +163,11 @@ export function MainTableView({
     [onGroupByChange],
   );
   const noLegacyFilter = useMemo(() => emptyKanbanFilter(), []);
-  const { copy: filtersCopy, view, kanbanView } = useBoardViewState({
+  const {
+    copy: filtersCopy,
+    view,
+    kanbanView,
+  } = useBoardViewState({
     boardId,
     workspaceId,
     routeFilter: filterValue,
@@ -706,6 +710,7 @@ export function MainTableView({
             sort: table.sort,
             viewBar: (
               <ViewStateBar
+                canSave={capabilities.canEditFields}
                 copy={filtersCopy}
                 view={view}
                 fields={table.filterFields}
@@ -718,7 +723,7 @@ export function MainTableView({
                 now={now}
                 sort
                 groupFields={groupableFields(table.filterFields)}
-                savedFilters={
+                savedFilters={(save) => (
                   <SavedFiltersControl
                     workspaceId={workspaceId}
                     boardId={boardId}
@@ -726,8 +731,9 @@ export function MainTableView({
                     groupBy={view.state.group?.fieldId ?? null}
                     canEdit={capabilities.canEditFields}
                     onApply={view.applyCriteria}
+                    {...save}
                   />
-                }
+                )}
               />
             ),
             hiddenColumnIds: table.hiddenColumnIds,

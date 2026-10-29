@@ -11,8 +11,7 @@ import { KanbanToolbar } from "./kanban-toolbar";
 const noop = () => undefined;
 const callbacks = {
   onSearchChange: noop,
-  onFilterChange: noop,
-  onGroupByChange: noop,
+  onClearFilter: noop,
   onAddItem: noop,
 };
 

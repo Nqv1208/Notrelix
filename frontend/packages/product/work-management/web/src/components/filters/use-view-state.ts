@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  dropUnknownFilterIds,
   useBoardPreference,
   useBoardView,
+  type KanbanFilterChoices,
 } from "@notrelix/work-management-state";
 import {
   effectiveFilter,
@@ -38,6 +40,8 @@ export interface UseViewStateOptions {
   onRouteGroupByChange?: ((fieldId: string) => void) | undefined;
   /** The board's field definitions; the older facet filter is converted once they are known. */
   fieldDefinitions: readonly FieldDefinition[] | undefined;
+  /** What the board has (status options, people, labels): ids an older facet filter names beyond it are dropped. */
+  filterChoices?: KanbanFilterChoices | undefined;
 }
 
 const SAVE_DELAY_MS = 400;
@@ -62,6 +66,7 @@ export function useViewState(options: UseViewStateOptions) {
     routeGroupBy,
     onRouteGroupByChange,
     fieldDefinitions,
+    filterChoices,
   } = options;
   const { viewId } = useBoardView(boardId, workspaceId);
   const preference = useBoardPreference(boardId, workspaceId, viewId);
@@ -78,11 +83,12 @@ export function useViewState(options: UseViewStateOptions) {
     const compound = parseCompoundFilter(routeFilter);
     if (compound) return compound;
     if (!fieldDefinitions) return null;
+    const legacy = parseKanbanFilter(routeFilter);
     return legacyFacetsToCompound(
-      parseKanbanFilter(routeFilter),
+      filterChoices ? dropUnknownFilterIds(legacy, filterChoices) : legacy,
       fieldDefinitions,
     );
-  }, [routeFilter, fieldDefinitions]);
+  }, [routeFilter, fieldDefinitions, filterChoices]);
 
   const [local, setLocal] = useState<ViewState | null>(null);
 
@@ -98,7 +104,8 @@ export function useViewState(options: UseViewStateOptions) {
         }
       : base.group;
     return {
-      filter: routeCompound ?? (routeFilter ? emptyCompoundFilter() : base.filter),
+      filter:
+        routeCompound ?? (routeFilter ? emptyCompoundFilter() : base.filter),
       sorts: base.sorts,
       ...(group ? { group } : {}),
       ...(base.lane ? { lane: base.lane } : {}),

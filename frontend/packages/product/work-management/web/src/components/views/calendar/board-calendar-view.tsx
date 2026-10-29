@@ -446,6 +446,7 @@ export function BoardCalendarView({
         }
         viewBar={
           <ViewStateBar
+            canSave={capabilities.canEditFields}
             copy={filtersCopy}
             view={view}
             fields={kanban.filterFields}
@@ -453,15 +454,16 @@ export function BoardCalendarView({
             people={kanban.filterChoices.assignees}
             counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
             now={now}
-            savedFilters={
+            savedFilters={(save) => (
               <SavedFiltersControl
                 workspaceId={workspaceId}
                 boardId={boardId}
                 filter={serializeCompoundFilter(view.applied.filter)}
                 canEdit={capabilities.canEditFields}
                 onApply={view.applyCriteria}
+                {...save}
               />
-            }
+            )}
           />
         }
         hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}

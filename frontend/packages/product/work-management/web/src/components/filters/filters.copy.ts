@@ -143,8 +143,7 @@ export const en = {
       movedLane: "Set {{field}} of {{title}} to {{value}}",
       movedColumn: "Moved {{title}} to {{column}}",
       undo: "Undo",
-      failed:
-        "Could not move {{title}}. It stays where it was.",
+      failed: "Could not move {{title}}. It stays where it was.",
       retry: "Try again",
     },
     keyboardMove: "Move to…",
@@ -327,7 +326,8 @@ export const vi: FiltersCopy = {
       wip: "Cột {{column}} đã đủ giới hạn {{limit}} việc.",
     },
     toast: {
-      moved: "Đã chuyển {{title}} sang {{column}} và đặt {{field}} là {{value}}",
+      moved:
+        "Đã chuyển {{title}} sang {{column}} và đặt {{field}} là {{value}}",
       movedLane: "Đã đặt {{field}} của {{title}} là {{value}}",
       movedColumn: "Đã chuyển {{title}} sang {{column}}",
       undo: "Hoàn tác",
@@ -335,8 +335,7 @@ export const vi: FiltersCopy = {
       retry: "Thử lại",
     },
     keyboardMove: "Chuyển tới…",
-    kbdLive:
-      "Đang ở làn {{lane}}, cột {{column}}. Thả sẽ đổi {{changes}}.",
+    kbdLive: "Đang ở làn {{lane}}, cột {{column}}. Thả sẽ đổi {{changes}}.",
     viewerNote:
       "Bạn chỉ xem board này: thu gọn làn và đổi cách xem được, kéo thả thì không.",
   },

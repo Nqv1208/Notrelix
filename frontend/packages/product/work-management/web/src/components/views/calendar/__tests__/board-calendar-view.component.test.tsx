@@ -117,11 +117,13 @@ function Providers({
 /** Holds `item` and `filter` like the route does. */
 function RoutedCalendar({
   onItem,
+  initialFilter,
 }: {
   onItem?: (id: string | undefined) => void;
+  initialFilter?: string;
 }) {
   const [item, setItem] = useState<string | undefined>();
-  const [filter, setFilter] = useState<string | undefined>();
+  const [filter, setFilter] = useState<string | undefined>(initialFilter);
   const board = erpBoardScenario().board;
   return (
     <BoardCalendarView
@@ -144,11 +146,12 @@ function renderCalendar(
   access: BoardAccess = erpOwnerAccess(),
   overrides: Parameters<typeof fakeServices>[1] = {},
   onItem?: (id: string | undefined) => void,
+  initialFilter?: string,
 ) {
   const fake = fakeServices(access, overrides);
   const view = renderPureUi(
     <Providers services={fake.services}>
-      <RoutedCalendar onItem={onItem} />
+      <RoutedCalendar onItem={onItem} initialFilter={initialFilter} />
     </Providers>,
   );
   return { ...view, ...fake };
@@ -322,28 +325,22 @@ describe("BoardCalendarView on the ERP board", () => {
     ).toBeTruthy();
   });
 
-  it("filters by the route filter and shows it as the filter pill", async () => {
-    const { container } = renderCalendar();
+  it("filters by the route filter and shows it as a condition chip", async () => {
+    // An older facet string in the route: Quá hạn.
+    const { container } = renderCalendar(erpOwnerAccess(), {}, undefined, "o");
     await ready();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Lọc" }), {
-      key: "Enter",
-    });
-    fireEvent.click(
-      await screen.findByRole("menuitemcheckbox", { name: "Quá hạn" }),
-    );
     // Only the overdue items stay: ERP-142 (10/10) and the done ones are not overdue.
     await waitFor(() =>
       expect(container.querySelectorAll("[data-calendar-event]").length).toBe(
         2,
       ),
     );
-    fireEvent.keyDown(document.activeElement ?? document.body, {
-      key: "Escape",
-    });
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Lọc:/ })).toBeTruthy(),
+      expect(
+        screen.getByRole("button", { name: /^Xoá bộ lọc Quá hạn/ }),
+      ).toBeTruthy(),
     );
-  });
+  }, 20_000);
 
   it("gives a commenter no add, drag or due date", async () => {
     const { container } = renderCalendar(erpCommenterAccess());

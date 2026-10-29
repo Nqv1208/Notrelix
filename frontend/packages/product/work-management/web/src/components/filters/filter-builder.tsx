@@ -441,9 +441,7 @@ function ValueEditor({
               <button
                 key={preset}
                 type="button"
-                onClick={() =>
-                  onChange(presetCondition(field.id, preset, now))
-                }
+                onClick={() => onChange(presetCondition(field.id, preset, now))}
                 className="h-7 cursor-pointer rounded-full border border-line-strong bg-popover px-2.5 text-xs font-medium text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
               >
                 {copy.filter.presets[preset]}

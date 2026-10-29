@@ -3,7 +3,6 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 import {
   CALENDAR_UNDATED,
-  calendarAssigneeFilter,
   calendarDenseScenario,
   calendarEmptyScenario,
   calendarMockupEntries,
@@ -11,7 +10,6 @@ import {
   calendarScenario,
   type CalendarScenario,
 } from "../../../../verification/calendar-fixtures";
-import { emptyKanbanFilter } from "../../kanban/kanban-filter";
 import {
   BoardCalendarSurface,
   type BoardCalendarSurfaceProps,
@@ -65,7 +63,7 @@ function Host({
     onReschedule?: (id: string, toDay: DayKey) => void;
     onSetDue?: (id: string, day: DayKey) => void;
     onCreateItem?: (title: string, day: DayKey) => void;
-    onFilterChange?: (filter: unknown) => void;
+    onClearFilter?: () => void;
   };
 }) {
   const [range, setRange] = useState<CalendarRange>(scenario.range);
@@ -73,7 +71,6 @@ function Host({
   const [dateBasis, setDateBasis] = useState<CalendarDateBasis>(
     scenario.dateBasis,
   );
-  const [filter, setFilter] = useState(scenario.filter);
   return (
     <div style={{ height: 800 }}>
       <BoardCalendarSurface
@@ -84,11 +81,7 @@ function Host({
         onAnchorChange={setAnchorDay}
         dateBasis={dateBasis}
         onDateBasisChange={setDateBasis}
-        filter={filter}
-        onFilterChange={(next) => {
-          spies.onFilterChange?.(next);
-          setFilter(next);
-        }}
+        onClearFilter={() => spies.onClearFilter?.()}
         onOpenItem={(id) => spies.onOpenItem?.(id)}
         onReschedule={(entry, toDay) => spies.onReschedule?.(entry.id, toDay)}
         onSetDue={(id, day) => spies.onSetDue?.(id, day)}
@@ -524,20 +517,12 @@ describe("BoardCalendarSurface", () => {
   it("FUI[wm.calendar.board:filter] shows the filter as a pill and clears it from the no-results card", () => {
     for (const locale of LOCALES) {
       const copy = calendarCopy(locale);
-      const onFilterChange = vi.fn();
+      const onClearFilter = vi.fn();
       const scenario = calendarScenario({ state: "khong-ket-qua", locale });
       const { container, unmount } = renderCalendar(scenario, {
-        onFilterChange,
+        onClearFilter,
       });
-      const summary = copy.filter.chip.assignee.replace(
-        "{{name}}",
-        "Đỗ Khánh Linh",
-      );
-      expect(
-        screen.getByRole("button", {
-          name: `${copy.filter.activePrefix} ${summary}`,
-        }),
-      ).toBeTruthy();
+      expect(screen.getByText("Người phụ trách: Đỗ Khánh Linh")).toBeTruthy();
       // No item is shown; the card explains and clears the filter.
       expect(container.querySelector("[data-calendar-event]")).toBeNull();
       const status = screen.getByRole("status");
@@ -545,10 +530,9 @@ describe("BoardCalendarSurface", () => {
       fireEvent.click(
         within(status).getByRole("button", { name: copy.noResults.clear }),
       );
-      expect(onFilterChange).toHaveBeenCalledWith(emptyKanbanFilter());
+      expect(onClearFilter).toHaveBeenCalledOnce();
       unmount();
     }
-    expect(calendarAssigneeFilter().assigneeIds).toEqual(["user-khanh-linh"]);
   });
 
   it("FUI[wm.calendar.board:no-results] says the hidden undated item is hidden by the filter", () => {

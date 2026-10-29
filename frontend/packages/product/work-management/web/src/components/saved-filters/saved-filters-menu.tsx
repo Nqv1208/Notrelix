@@ -53,6 +53,9 @@ export interface SavedFiltersMenuProps {
   ) => Promise<SavedFilterWriteResult>;
   onSetVisibility: (filter: SavedFilter, visibility: "board" | "me") => void;
   onRemove: (filter: SavedFilter) => void;
+  /** The "Lưu bộ lọc" form is controlled by the host so the removed-field warning can open it. */
+  saveOpen?: boolean;
+  onSaveOpenChange?: (open: boolean) => void;
 }
 
 const iconButtonClass =
@@ -68,7 +71,12 @@ export function SavedFiltersMenu(props: SavedFiltersMenuProps) {
   return (
     <>
       {canEdit && canSaveCurrent ? (
-        <SaveFilterPopover copy={copy} onSave={props.onSave} />
+        <SaveFilterPopover
+          copy={copy}
+          onSave={props.onSave}
+          open={props.saveOpen}
+          onOpenChange={props.onSaveOpenChange}
+        />
       ) : null}
       <SavedFiltersList {...props} copy={copy} />
     </>
@@ -78,9 +86,16 @@ export function SavedFiltersMenu(props: SavedFiltersMenuProps) {
 function SaveFilterPopover({
   copy,
   onSave,
-}: Pick<SavedFiltersMenuProps, "copy" | "onSave">) {
+  open: controlledOpen,
+  onOpenChange,
+}: Pick<SavedFiltersMenuProps, "copy" | "onSave"> & {
+  open?: boolean | undefined;
+  onOpenChange?: ((open: boolean) => void) | undefined;
+}) {
   const t = copy.save;
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = controlledOpen ?? innerOpen;
+  const setOpen = onOpenChange ?? setInnerOpen;
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<"board" | "me">("me");
   const [busy, setBusy] = useState(false);

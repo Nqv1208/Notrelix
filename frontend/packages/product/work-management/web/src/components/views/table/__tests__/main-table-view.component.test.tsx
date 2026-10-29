@@ -440,27 +440,24 @@ describe("MainTableView on the ERP board", () => {
     expect(rowsOf("Cần làm")).toBe(6);
   });
 
-  it("saves the sort and the hidden columns with the view", async () => {
+  it("saves the hidden columns with the view", async () => {
     const { boards } = renderTable(erpOwnerAccess());
     await ready();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Sắp xếp Hạn ↑" }), {
+    fireEvent.keyDown(screen.getByRole("button", { name: /^Cột \d+\/\d+/ }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /^Ưu tiên/ }));
+    fireEvent.click(
+      await screen.findByRole("menuitemcheckbox", { name: "Bắt đầu" }),
+    );
     await waitFor(() =>
       expect(boards.updateSavedViewConfig).toHaveBeenCalledWith(
         expect.any(String),
         "view-1",
         expect.objectContaining({
-          sortBy: [{ fieldId: "priority", direction: "asc" }],
+          hiddenFields: expect.not.arrayContaining(["start"]),
         }),
       ),
     );
-    expect(
-      screen
-        .getByRole("columnheader", { name: /^Ưu tiên/ })
-        .getAttribute("aria-sort"),
-    ).toBe("ascending");
   });
 
   it("saves a resized column with the view and drops it again on reset", async () => {

@@ -422,7 +422,7 @@ describe("KanbanView on the ERP board", () => {
     await waitFor(() => expect(laneCount("Cần làm")).toBe("6"));
   });
 
-  it("drops ids the board does not have from the URL filter with history replace", async () => {
+  it("rewrites an older facet filter to its compound form and ignores ids the board does not have", async () => {
     const onFilter = vi.fn();
     renderKanban(erpOwnerAccess(), {
       initialFilter: "s.gone-status~p.high~l.gone-label",
@@ -430,7 +430,9 @@ describe("KanbanView on the ERP board", () => {
     });
     await ready();
     await waitFor(() =>
-      expect(onFilter).toHaveBeenCalledWith("p.high", { replace: true }),
+      expect(onFilter).toHaveBeenCalledWith(expect.stringMatching(/^c2:/), {
+        replace: true,
+      }),
     );
     // Only the high-priority items remain (5 on the board).
     expect(

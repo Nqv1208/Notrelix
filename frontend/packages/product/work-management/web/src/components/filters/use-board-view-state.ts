@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+  kanbanFilterChoices,
   useFullBoard,
   type UseBoardKanbanView,
 } from "@notrelix/work-management-state";
@@ -16,10 +17,15 @@ export function useBoardViewState(
   options: Omit<UseViewStateOptions, "fieldDefinitions">,
 ) {
   const copy = useFiltersCopy();
-  const { board } = useFullBoard(options.boardId, options.workspaceId);
+  const { board, groups } = useFullBoard(options.boardId, options.workspaceId);
+  const filterChoices = useMemo(
+    () => (board ? kanbanFilterChoices(board, groups) : undefined),
+    [board, groups],
+  );
   const view = useViewState({
     ...options,
     fieldDefinitions: board?.fieldDefinitions,
+    filterChoices,
   });
   const kanbanView = useMemo<UseBoardKanbanView>(
     () => ({

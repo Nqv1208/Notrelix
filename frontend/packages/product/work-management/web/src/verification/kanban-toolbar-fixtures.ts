@@ -1,21 +1,15 @@
 /**
- * Deterministic fixtures for the Kanban toolbar surface: the ERP board's
- * statuses, people, labels and grouping fields as the mockup shows them.
- * Option names are board data, so they stay Vietnamese in both locales.
+ * Deterministic fixtures for the Kanban toolbar surface: the ERP board's view
+ * controls (filter, group, swimlane) as the mockup shows them, in the toolbar's
+ * `viewBar` slot. Option names are board data, so they stay Vietnamese in both
+ * locales.
  */
 import {
   kanbanToolbarCopy,
   type KanbanToolbarCopy,
 } from "../components/views/kanban/kanban-toolbar.copy";
-import {
-  emptyKanbanFilter,
-  type KanbanFilterState,
-} from "../components/views/kanban/kanban-filter";
-import type { KanbanToolbarFilterOptions } from "../components/views/kanban/kanban-filter-menu";
-import type {
-  KanbanGroupByField,
-  KanbanToolbarProps,
-} from "../components/views/kanban/kanban-toolbar";
+import type { KanbanToolbarProps } from "../components/views/kanban/kanban-toolbar";
+import { erpViewBar } from "./view-state-fixtures";
 
 export function kanbanToolbarCopyFixture(
   locale: "vi" | "en" = "vi",
@@ -23,42 +17,9 @@ export function kanbanToolbarCopyFixture(
   return kanbanToolbarCopy(locale);
 }
 
-export const KANBAN_TOOLBAR_FILTER_OPTIONS: KanbanToolbarFilterOptions = {
-  statuses: [
-    { id: "status-todo", name: "Cần làm" },
-    { id: "status-doing", name: "Đang làm" },
-    { id: "status-review", name: "Chờ duyệt" },
-    { id: "status-done", name: "Hoàn thành" },
-  ],
-  assignees: [
-    { id: "user-nguyen-an", name: "Nguyễn An" },
-    { id: "user-khanh-linh", name: "Khánh Linh" },
-    { id: "user-tran-thao", name: "Trần Thảo" },
-  ],
-  labels: [
-    { id: "label-security", name: "Bảo mật" },
-    { id: "label-doc", name: "Tài liệu" },
-    { id: "label-training", name: "Đào tạo" },
-    { id: "label-report", name: "Báo cáo" },
-    { id: "label-data", name: "Dữ liệu" },
-    { id: "label-test", name: "Kiểm thử" },
-  ],
-};
-
-export const KANBAN_TOOLBAR_GROUP_BY_FIELDS: readonly KanbanGroupByField[] = [
-  { id: "field-status", name: "Trạng thái", kind: "status" },
-  { id: "field-priority", name: "Ưu tiên", kind: "select" },
-  { id: "field-label", name: "Nhãn", kind: "select" },
-];
-
-/** The khong-ket-qua filter: "Quá hạn · Ưu tiên Thấp". */
-export function kanbanToolbarOverdueLowFilter(): KanbanFilterState {
-  return { ...emptyKanbanFilter(), priorities: ["low"], overdue: true };
-}
-
 export type KanbanToolbarScenario = Omit<
   KanbanToolbarProps,
-  "onSearchChange" | "onFilterChange" | "onGroupByChange" | "onAddItem"
+  "onSearchChange" | "onClearFilter" | "onAddItem"
 >;
 
 export function kanbanToolbarDefaultScenario(
@@ -67,10 +28,7 @@ export function kanbanToolbarDefaultScenario(
   return {
     copy: kanbanToolbarCopyFixture(locale),
     searchQuery: "",
-    filter: emptyKanbanFilter(),
-    filterOptions: KANBAN_TOOLBAR_FILTER_OPTIONS,
-    groupByFields: KANBAN_TOOLBAR_GROUP_BY_FIELDS,
-    groupByFieldId: "field-status",
+    viewBar: erpViewBar({ locale, view: "kanban" }),
     canAdd: true,
     noResults: null,
   };
@@ -81,11 +39,28 @@ export function kanbanToolbarFilteredScenario(
 ): KanbanToolbarScenario {
   return {
     ...kanbanToolbarDefaultScenario(locale),
-    filter: {
-      ...emptyKanbanFilter(),
-      statusOptionIds: ["status-doing"],
-      labelIds: ["label-security"],
-    },
+    viewBar: erpViewBar({
+      locale,
+      view: "kanban",
+      state: {
+        filter: {
+          join: "and",
+          conditions: [
+            {
+              fieldId: "field-erp-status",
+              operator: "has_any",
+              values: ["status-doing"],
+            },
+            {
+              fieldId: "$label",
+              operator: "has_any",
+              values: ["label-security"],
+            },
+          ],
+        },
+      },
+      counts: { shown: 3, total: 16 },
+    }),
   };
 }
 
@@ -95,7 +70,24 @@ export function kanbanToolbarNoResultsScenario(
 ): KanbanToolbarScenario {
   return {
     ...kanbanToolbarDefaultScenario(locale),
-    filter: kanbanToolbarOverdueLowFilter(),
+    viewBar: erpViewBar({
+      locale,
+      view: "kanban",
+      state: {
+        filter: {
+          join: "and",
+          conditions: [
+            { fieldId: "$overdue", operator: "is_true", values: [] },
+            {
+              fieldId: "field-erp-priority",
+              operator: "has_any",
+              values: ["p-low"],
+            },
+          ],
+        },
+      },
+      counts: { shown: 0, total: 16 },
+    }),
     noResults: { hiddenCount: 16 },
   };
 }
@@ -107,37 +99,41 @@ export function kanbanToolbarReadOnlyScenario(
   return { ...kanbanToolbarDefaultScenario(locale), canAdd: false };
 }
 
-/** Long names, every facet selected, a long search and a long field name. */
+/** A long search and a full filter with a swimlane field. */
 export function kanbanToolbarEdgeDataScenario(
   locale: "vi" | "en" = "vi",
 ): KanbanToolbarScenario {
-  const longAssignee = {
-    id: "user-long",
-    name: "Nguyễn Hoàng Phương Thảo Nguyên (Phòng Kế toán – Chi nhánh Hà Nội)",
-  };
   return {
     ...kanbanToolbarDefaultScenario(locale),
     searchQuery:
       "đối soát hoá đơn đầu vào quý 3 cho toàn bộ chi nhánh phía Bắc",
-    filterOptions: {
-      ...KANBAN_TOOLBAR_FILTER_OPTIONS,
-      assignees: [...KANBAN_TOOLBAR_FILTER_OPTIONS.assignees, longAssignee],
-    },
-    groupByFields: [
-      ...KANBAN_TOOLBAR_GROUP_BY_FIELDS,
-      {
-        id: "field-long",
-        name: "Giai đoạn triển khai theo kế hoạch tổng thể năm tài chính",
-        kind: "select",
+    viewBar: erpViewBar({
+      locale,
+      view: "kanban",
+      state: {
+        filter: {
+          join: "or",
+          conditions: [
+            {
+              fieldId: "field-erp-priority",
+              operator: "has_any",
+              values: ["p-urgent", "p-high", "p-medium", "p-low"],
+            },
+            {
+              fieldId: "field-erp-owner",
+              operator: "has_any",
+              values: ["user-dang-minh-tuan", "user-phan-ngoc-anh"],
+            },
+            {
+              fieldId: "$title",
+              operator: "contains",
+              values: ["đối soát hoá đơn đầu vào quý 3 chi nhánh phía Bắc"],
+            },
+            { fieldId: "$overdue", operator: "is_true", values: [] },
+          ],
+        },
+        lane: { fieldId: "field-erp-owner" },
       },
-    ],
-    groupByFieldId: "field-long",
-    filter: {
-      statusOptionIds: ["status-todo", "status-doing", "status-review"],
-      priorities: ["urgent", "high", "medium", "low"],
-      assigneeIds: [longAssignee.id, "user-nguyen-an"],
-      labelIds: ["label-security", "label-doc", "label-report"],
-      overdue: true,
-    },
+    }),
   };
 }
