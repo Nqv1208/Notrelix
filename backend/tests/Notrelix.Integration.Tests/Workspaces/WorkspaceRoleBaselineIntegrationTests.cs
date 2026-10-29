@@ -16,6 +16,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateCommen
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaceMembership;
+using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
@@ -315,6 +316,29 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         {
             using var provider = As(stack, reader);
             (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Should().HaveCount(4);
+        }
+    }
+
+    [Fact]
+    public async Task ListInvitations_GuestIsForbidden_AdminAndMemberList()
+    {
+        var (stack, admin, member, guest) = await SeedAsync();
+        using (var asAdmin = As(stack, admin))
+        {
+            await OrgTreeTestHost.SendAsync(asAdmin, new InviteMemberCommand(stack.WorkspaceId, "invited@example.com", WorkspaceRole.Member));
+        }
+
+        using (var asGuest = As(stack, guest))
+        {
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(asGuest, new GetWorkspaceInvitationsQuery(stack.WorkspaceId)))
+                .Should().ThrowAsync<AppForbidden>("invited emails are sensitive and a Guest does not enumerate the workspace");
+        }
+
+        foreach (var reader in new[] { admin, member })
+        {
+            using var provider = As(stack, reader);
+            var rows = await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceInvitationsQuery(stack.WorkspaceId));
+            rows.Should().ContainSingle().Which.Email.Should().Be("invited@example.com");
         }
     }
 
