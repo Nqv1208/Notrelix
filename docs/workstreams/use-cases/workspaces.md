@@ -73,7 +73,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 3. **Competing writes without an expected version.** Member role, suspend, activate and remove; invitation role, resend and revoke; Space rename, description, type, visibility, archive, delete and restore; Team restore. Two admins can silently overwrite each other (NRX-011).
 4. **No retry safety on creation.** `CreateWorkspace` and `InviteMember` are not idempotent requests; a double submit creates `acme` and `acme-3f9a1c`, or a second invitation attempt fails with unstable text.
 5. **Unbounded reads.** Members, invitations, Spaces, Space tree, Teams and Team members have no paging or cap, and are read in full by the shell.
-6. **Entitlement and account checks are missing or fail open.** `AddMember` checks neither Account membership nor a seat; the seat gate on acceptance is an optional dependency (`IBillingSeatGate? = null`); creation has no plan limit (WSP-004, WSP-011).
+6. **Entitlement and account checks are missing or fail open.** `AddMember` requires a seat (`Workspaces_Member_SeatUnavailable`) but still checks no Account membership (Accounts exposes no per-user membership fact yet); the seat gate on acceptance is an optional dependency (`IBillingSeatGate? = null`); creation has no plan limit (WSP-004, WSP-011).
 7. **Invitations are readable by Guests.** `GetWorkspaceInvitations` needs only `ViewWorkspace`, so a Guest lists invited emails (section 82).
 8. **Account-wide policy sits in workspace settings.** `EnforceMfa` is stored and returned but enforced nowhere (WSP-012). J04 is BLOCKED.
 9. **Offboarding is incomplete.** Removing or leaving does not clean Space and Team entries (F09); SCIM provisioning has no principal (F10 BLOCKED); Account suspension has no effect on workspaces (D06 BLOCKED).
@@ -89,7 +89,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 | Missing expected version (invitations) | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Commands/{ChangeInvitationRole,ResendInvitation,CancelInvitation}/` |
 | Missing expected version (Spaces) | `backend/src/Notrelix.Application/Features/Workspaces/Spaces/Commands/{RenameSpace,UpdateSpaceDescription,ChangeSpaceType,ChangeSpaceVisibility,ArchiveSpace,UnarchiveSpace,DeleteSpace,RestoreSpace}/` |
 | Missing expected version (Team restore) | `backend/src/Notrelix.Application/Features/Workspaces/Teams/Commands/RestoreTeam/` |
-| `AddMember` accepts any user id, no Account-membership or seat check, and has no frontend caller | `backend/src/Notrelix.Application/Features/Workspaces/Members/Commands/AddMember/AddMember.cs` |
+| `AddMember` accepts any user id with no Account-membership check (seat check fixed), and has no frontend caller | `backend/src/Notrelix.Application/Features/Workspaces/Members/Commands/AddMember/AddMember.cs` |
 | Seat gate is optional and fails open | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Services/InvitationAcceptanceService.cs`, `.../Commands/AcceptInvitation/AcceptInvitation.cs` |
 | Invitation list readable by Guests | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Queries/GetWorkspaceInvitations/GetWorkspaceInvitations.cs` |
 | Unbounded reads | `Members/Queries/GetWorkspaceMembers`, `Invitations/Queries/GetWorkspaceInvitations`, `Spaces/Queries/GetWorkspaceSpaces`, `Spaces/Queries/GetSpaceTree`, `Teams/Queries/GetWorkspaceTeams` (all under `backend/src/Notrelix.Application/Features/Workspaces/`) |
@@ -501,12 +501,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`, `role` (member, guest; Owner may add admin).
 - Output: Active membership, grant synced, `WorkspaceMemberAdded`. A returning Removed or Suspended member is re-activated with the new role.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/members/add`. 2. Actor role cap checked. 3. Row created or re-activated. 4. Grant synced.
-- No-op / rejection / concurrency / retry: Already active: rejected. Actor cannot assign the role or act on the existing row: `Workspaces_Member_ActorCannotAssignRole` / `ActorCannotActOnMember`. Defect: the handler does not check that the target is an active member of the same Account, nor a Billing seat (LD-09, LD-08).
+- No-op / rejection / concurrency / retry: Already active: rejected. Actor cannot assign the role or act on the existing row: `Workspaces_Member_ActorCannotAssignRole` / `ActorCannotActOnMember`. No seat for the role (Guest takes a guest seat, every other role a member seat; a person already holding that seat needs no new one): `Workspaces_Member_SeatUnavailable`, nothing changes. Defect: the handler does not yet check that the target is an active member of the same Account (LD-09); `IAccountMembershipFacts` exposes only account admission, not a per-user fact.
 - UI states: Add dialog with picker, validation error, pending, conflict, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 10, 22.1, WSP-004, WSP-026, WSP-011; WGREQ016.
 - Acceptance: Given an Admin, When they add a user as member, Then the user is active. Given the user is in another Account, Then it is refused and nothing changes. Given an Admin adds an Admin, Then rejected.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members/add`, `AddMemberCommandHandler` · FE none (UI uses invitations and Space/Team pickers) · Design none · Tests `NewMemberEndpointTests`, `WorkspaceRoleBaselineIntegrationTests`, `WorkspaceMemberRulesTests` · Real e2e none
-- State: IMPLEMENTING — Account-membership and seat checks; caller or removal of the endpoint; tests.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members/add`, `AddMemberCommandHandler` · FE none (UI uses invitations and Space/Team pickers) · Design none · Tests `NewMemberEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (no-seat refusal), `AddMemberCommandHandlerTests` (seat kind per role), `WorkspaceMemberRulesTests` · Real e2e none
+- State: IMPLEMENTING — Account-membership check (needs a public Accounts per-user membership fact); caller or removal of the endpoint; Account-membership tests.
 
 ### UC-WSP-F02 Change a member's workspace role
 - Capability: F Membership add / remove / change

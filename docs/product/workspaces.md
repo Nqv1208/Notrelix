@@ -409,6 +409,8 @@ A Workspace Member may be valid while a capability is not commercially entitled.
 
 A paid plan does not automatically grant a principal membership.
 
+A direct add of an existing user takes the same Billing seat as accepting an invitation: a Guest takes a guest seat, every other role a member seat, and the add is refused with `Workspaces_Member_SeatUnavailable` when none is free. A direct add also requires the person to be an active member of the Workspace's Account (WSP-004); anyone else is invited.
+
 # 33. Work Management relation
 
 Boards/Items are often Workspace-scoped.

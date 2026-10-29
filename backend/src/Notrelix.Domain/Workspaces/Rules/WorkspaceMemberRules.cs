@@ -8,6 +8,9 @@ public static class WorkspaceMemberRules
     public static readonly System.Linq.Expressions.Expression<Func<WorkspaceMember, bool>> ActiveGuest =
         m => m.Status == WorkspaceMemberStatus.Active && m.Role == WorkspaceRole.Guest;
 
+    /// <summary>A Guest takes a guest seat; every other role takes a member seat (WSP-026).</summary>
+    public static bool TakesGuestSeat(WorkspaceRole role) => role == WorkspaceRole.Guest;
+
     /// <summary>Active members who are not Guests: the colleagues a Team or Space may take.</summary>
     public static readonly System.Linq.Expressions.Expression<Func<WorkspaceMember, bool>> ActiveColleague =
         m => m.Status == WorkspaceMemberStatus.Active && m.Role != WorkspaceRole.Guest;

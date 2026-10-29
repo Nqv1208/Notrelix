@@ -562,7 +562,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var workspaceId = created.Data;
 
         var addHandler = new AddMemberCommandHandler(
-            context, requestContext.Object, clock.Object, projection);
+            context, requestContext.Object, clock.Object, projection, Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
         var added = await addHandler.Handle(new AddMemberCommand(workspaceId, memberId, WorkspaceRole.Member), default);
         added.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
