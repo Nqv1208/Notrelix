@@ -6,14 +6,14 @@ using Notrelix.Application.Features.Collaboration.Comments.Services;
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment;
 
 /// <summary>
-/// Removes an attachment of a Documents page. Its uploader or an editor of the page may delete it, and the
+/// Removes an attachment of a Documents page. An editor of the page may delete it, and the
 /// attachment must belong to exactly this page. The stored object is retained and purged by the
 /// attachment retention job, not here.
 /// </summary>
 public record DeletePageAttachmentCommand(Guid PageId, Guid AttachmentId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    // A coarse gate; the uploader-or-editor rule is decided in the handler from the attachment's target.
+    // A coarse gate; the editor-only rule is decided in the handler from the attachment's target.
     public PermissionAction Action => PermissionAction.ViewPage;
     public ResourceRef Resource => ResourceRef.Create(AttachmentTargets.Page, PageId);
 }
@@ -48,7 +48,7 @@ public class DeletePageAttachmentCommandHandler : IRequestHandler<DeletePageAtta
         if (attachment is null)
             throw new NotFoundException(nameof(Attachment), request.AttachmentId);
 
-        await AttachmentAccessRules.RequireDeleterAsync(attachment, _currentUser.UserId, _access, ct);
+        await AttachmentAccessRules.RequireDeleterAsync(attachment, _access, ct);
         attachment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

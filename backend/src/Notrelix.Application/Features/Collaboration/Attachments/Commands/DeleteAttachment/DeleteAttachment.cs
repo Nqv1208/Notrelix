@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.Delet
 
 public record DeleteAttachmentCommand(Guid AttachmentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    // A coarse gate; the uploader-or-editor rule is decided in the handler from the attachment's target.
+    // A coarse gate; the editor-only rule is decided in the handler from the attachment's target.
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.attachment"), AttachmentId);
 }
@@ -43,7 +43,7 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
             throw new NotFoundException(nameof(Attachment), request.AttachmentId);
 
         var now = _dateTimeProvider.UtcNow;
-        await AttachmentAccessRules.RequireDeleterAsync(attachment, _currentUser.UserId, _access, ct);
+        await AttachmentAccessRules.RequireDeleterAsync(attachment, _access, ct);
         attachment.Delete(_currentUser.UserId, now);
         return Result.Success();
     }

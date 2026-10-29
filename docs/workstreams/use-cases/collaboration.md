@@ -66,7 +66,7 @@ Collaboration has no dedicated capability for inbox, preferences, attachments, w
 
 ### 1.2 The ten most important gaps
 
-1. Fixed: edit, delete, resolve and reopen of a comment, and delete of an attachment, were authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve, so only the workspace Owner passed. They now pass a membership gate and the handler decides from the target: author for edit and delete, thread starter or editor for resolve and reopen, uploader or editor for attachment delete. Still open: expected version, moderator delete (UC-COL-C02), a real e2e.
+1. Fixed: edit, delete, resolve and reopen of a comment, and delete of an attachment, were authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve, so only the workspace Owner passed. They now pass a membership gate and the handler decides from the target: author for edit and delete, thread starter or editor for resolve and reopen, editor of the target for attachment delete. Still open: expected version, moderator delete (UC-COL-C02), a real e2e.
 2. No Collaboration fact is published to realtime: comments, reactions, Inbox counts and presence all need a manual refetch (UC-COL-E01 to E03).
 3. Competing writes: comment create has no idempotency key, and edit, delete, resolve have no expected version (UC-COL-H01, H02). Reactions and watchers have no unique index (UC-COL-H03).
 4. Pages are second-class: no page reactions, no page followers, no page notifications, no page activity (UC-COL-A11, B17, D09, D12).
@@ -154,8 +154,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | INTEGRATING | No real e2e (documents.real e2e has no upload). |
 | UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | INTEGRATING | As UC-COL-B07. |
 | UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | INTEGRATING | No real e2e. |
-| UC-COL-B11 | Delete an attachment from an item | B | The uploader, or a person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | INTEGRATING | Uploader-or-editor rule in place; no real e2e. |
-| UC-COL-B12 | Delete an attachment from a page | B | The uploader, or a person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | INTEGRATING | Uploader-or-editor rule in place; no real e2e. |
+| UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
+| UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
 | UC-COL-B13 | Follow a board item | B | Anyone who can view the item's board (ViewBoard) | yes | yes | yes | yes | HARDENING | No unique index on (user, target): concurrent calls can store two watchers. |
 | UC-COL-B14 | Unfollow a board item | B | The follower | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B15 | See whether I follow an item | B | Anyone who can view the item | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
@@ -451,7 +451,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 
 ### UC-COL-B06 Attach a file to a board item
 - Capability: B, COL-002 Comment target contract
-- Actors and permission: The uploader, or a person with UpdateItem on the item. Others who can view the item get 403 `collaboration.attachment_uploader_or_editor_only`; no view access is NotFound.
+- Actors and permission: A person with UpdateItem on the item, whoever uploaded the file. Others who can view the item get 403 `collaboration.attachment_editor_only`; no view access is NotFound.
 - Preconditions: The item exists; fewer than 50 live attachments.
 - Input: multipart/form-data file, streamed; Idempotency-Key header. Size cap 100 MB, blocked extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm), content type sniffed from the first 512 bytes.
 - Output: An Attachment (stored file) with sniffed type; object in storage; 201 with the content route. Image types inline only for png, jpeg, gif, webp; all others download.
@@ -479,7 +479,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 
 ### UC-COL-B08 Attach a file to a page
 - Capability: B, COL-002 Comment target contract
-- Actors and permission: The uploader, or a person with UpdatePage on the page. Others who can view the page get 403 `collaboration.attachment_uploader_or_editor_only`; no view access is NotFound.
+- Actors and permission: A person with UpdatePage on the page, whoever uploaded the file. Others who can view the page get 403 `collaboration.attachment_editor_only`; no view access is NotFound.
 - Preconditions: Fewer than 500 live attachments on the page.
 - Input: As UC-COL-B06.
 - Output: An Attachment on the page that an image or file block references by id.
@@ -530,8 +530,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: destructive confirmation, success, permission denied.
 - Rules: Product Attachment deletion; decision 10; spec DCREQ166.
 - Acceptance: Given an editor, when they delete, then it leaves the list; given a viewer, then 403.
-- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (uploader, editor including the Owner, other member 403, no view access NotFound) · Real e2e none
-- State: INTEGRATING — Uploader-or-editor rule implemented, decided from the attachment's own target; no real e2e. The route's boardItemId is still ignored.
+- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (editor including the Owner, read-only uploader 403, other member 403, no view access NotFound) · Real e2e none
+- State: INTEGRATING — Editor-only rule implemented, decided from the attachment's own target; no real e2e. The route's boardItemId is still ignored.
 
 ### UC-COL-B12 Delete an attachment from a page
 - Capability: B, COL-002 Comment target contract

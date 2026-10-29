@@ -8,7 +8,7 @@ using Notrelix.Domain.Collaboration.Attachments;
 
 namespace Notrelix.Application.Tests.Features.Collaboration;
 
-/// <summary>Deleting an attachment is for its uploader or an editor of the target; no view access is NotFound.</summary>
+/// <summary>Deleting an attachment needs edit rights on the target, as uploading does; no view access is NotFound.</summary>
 public class AttachmentDeleteAuthorizationTests
 {
     private static readonly DateTimeOffset Now = new(2025, 1, 15, 10, 0, 0, TimeSpan.Zero);
@@ -58,19 +58,20 @@ public class AttachmentDeleteAuthorizationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Uploader_WithoutEditRights_MayDelete(bool page)
+    public async Task Uploader_WhoOnlyViews_IsForbidden(bool page)
     {
         var row = Row(page);
 
-        (await Delete(page, row, _uploader)).Succeeded.Should().BeTrue();
+        var act = () => Delete(page, row, _uploader);
 
-        row.IsDeleted.Should().BeTrue();
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AttachmentAccessRules.EditorOnlyCode);
+        row.IsDeleted.Should().BeFalse();
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task EditorOfTheTarget_MayDeleteAnotherPersonsAttachment_IncludingTheWorkspaceOwner(bool page)
+    public async Task EditorOfTheTarget_MayDelete_IncludingTheWorkspaceOwner(bool page)
     {
         // The Owner holds edit rights on every target, so the target access reports Edit for them.
         _canEdit = true;
@@ -84,13 +85,13 @@ public class AttachmentDeleteAuthorizationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task OtherMemberWhoCanOnlyView_IsForbiddenWithAStableCode(bool page)
+    public async Task OtherMemberWhoOnlyViews_IsForbiddenWithAStableCode(bool page)
     {
         var row = Row(page);
 
         var act = () => Delete(page, row, _other);
 
-        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AttachmentAccessRules.UploaderOrEditorCode);
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AttachmentAccessRules.EditorOnlyCode);
         row.IsDeleted.Should().BeFalse();
     }
 
