@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type PointerEvent,
   type ReactNode,
 } from "react";
 import { Button } from "@notrelix/ui-web";
@@ -14,6 +15,7 @@ import {
 } from "../kanban/kanban-filter";
 import type { KanbanToolbarFilterOptions } from "../kanban/kanban-filter-menu";
 import { CalendarAgenda } from "./calendar-agenda";
+import { CalendarDatesDialog } from "./calendar-dates-dialog";
 import { CalendarAside } from "./calendar-aside";
 import { calendarGridLabel, calendarHeading } from "./calendar-format";
 import {
@@ -23,6 +25,8 @@ import {
 } from "./calendar-grid";
 import {
   addDays,
+  diffDays,
+  formatDayMonth,
   monthWeeks,
   stepAnchor,
   weekDays,
@@ -81,6 +85,13 @@ export interface BoardCalendarSurfaceProps {
   /** An undated item got `day` as its due day. */
   onSetDue: (id: string, day: DayKey) => void;
   onCreateItem: (title: string, day: DayKey) => void;
+  /** A handle or "Đổi ngày…" gave the item new start and due days. */
+  onChangeDates?: (
+    entry: CalendarEntry,
+    days: { startDay: DayKey; dueDay: DayKey },
+  ) => void;
+  /** "Chuyển về Chưa lên lịch": the item loses both dates. */
+  onUnschedule?: (entry: CalendarEntry) => void;
   /**
    * The toolbar's "Add item" opens the full form with this day prefilled;
    * without it the toolbar adds inline on that day.
@@ -124,6 +135,8 @@ export function BoardCalendarSurface({
   onReschedule,
   onSetDue,
   onCreateItem,
+  onChangeDates,
+  onUnschedule,
   onAddItem,
   defaultDrag = null,
   defaultQuickCreateDay = null,
@@ -133,15 +146,37 @@ export function BoardCalendarSurface({
     defaultQuickCreateDay,
   );
   const [focusDay, setFocusDay] = useState<DayKey | null>(null);
+  const [resize, setResize] = useState<{
+    id: string;
+    edge: "start" | "due";
+    day: DayKey;
+  } | null>(null);
+  const [datesFor, setDatesFor] = useState<CalendarEntry | null>(null);
+  const resizePress = useRef<{ id: string; edge: "start" | "due" } | null>(
+    null,
+  );
   const root = useRef<HTMLDivElement>(null);
 
-  const shownEntries = useMemo(
-    () =>
+  const shownEntries = useMemo(() => {
+    const base =
       dateBasis === "due"
         ? entries.map((entry) => ({ ...entry, startDay: entry.endDay }))
-        : entries,
-    [entries, dateBasis],
-  );
+        : entries;
+    if (!resize) return base;
+    // The bar follows the handle: the dragged edge stops at the other one.
+    return base.map((entry) => {
+      if (entry.id !== resize.id) return entry;
+      return resize.edge === "due"
+        ? {
+            ...entry,
+            endDay: resize.day < entry.startDay ? entry.startDay : resize.day,
+          }
+        : {
+            ...entry,
+            startDay: resize.day > entry.endDay ? entry.endDay : resize.day,
+          };
+    });
+  }, [entries, dateBasis, resize]);
   const byId = useMemo(
     () => new Map(shownEntries.map((entry) => [entry.id, entry])),
     [shownEntries],
@@ -160,6 +195,110 @@ export function BoardCalendarSurface({
   const noResults = filterActive && entries.length === 0 && hiddenCount > 0;
 
   const endDrag = () => setDrag(null);
+
+  // ─── Resizing by a handle ───
+  /** The day under a point: the week row it is in, then its column. */
+  const dayAtPoint = (x: number, y: number): DayKey | null => {
+    const rows = root.current?.querySelectorAll<HTMLElement>(
+      "[data-calendar-week]",
+    );
+    for (const row of rows ?? []) {
+      const rect = row.getBoundingClientRect();
+      if (y < rect.top || y > rect.bottom || rect.width === 0) continue;
+      const column = Math.min(
+        6,
+        Math.max(0, Math.floor(((x - rect.left) / rect.width) * 7)),
+      );
+      return addDays(row.dataset.calendarWeek as DayKey, column);
+    }
+    return null;
+  };
+  const onHandleDown = (
+    entry: CalendarEntry,
+    edge: "start" | "due",
+    event: PointerEvent<HTMLElement>,
+  ) => {
+    if (!canEdit || event.button !== 0) return;
+    event.stopPropagation();
+    resizePress.current = { id: entry.id, edge };
+    setQuickCreateDay(null);
+    setResize({
+      id: entry.id,
+      edge,
+      day: edge === "due" ? entry.endDay : entry.startDay,
+    });
+  };
+  // The pointer is followed on the document: the handle itself is replaced
+  // when the bar crosses a week break, and its pointer capture goes with it.
+  const resizeActive = resize !== null;
+  useEffect(() => {
+    if (!resizeActive) return undefined;
+    const onMove = (event: globalThis.PointerEvent) => {
+      const day = dayAtPoint(event.clientX, event.clientY);
+      if (!day) return;
+      setResize((current) =>
+        current && current.day !== day ? { ...current, day } : current,
+      );
+    };
+    const onUp = () => finishResize.current();
+    const onCancel = () => {
+      resizePress.current = null;
+      setResize(null);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onCancel);
+    return () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onCancel);
+    };
+  }, [resizeActive]);
+  const finishResize = useRef(() => {});
+  finishResize.current = () => {
+    const press = resizePress.current;
+    resizePress.current = null;
+    const preview = shownEntries.find((entry) => entry.id === press?.id);
+    const original = entries.find((entry) => entry.id === press?.id);
+    setResize(null);
+    if (!preview || !original) return;
+    if (
+      preview.startDay !== original.startDay ||
+      preview.endDay !== original.endDay
+    ) {
+      onChangeDates?.(original, {
+        startDay: preview.startDay,
+        dueDay: preview.endDay,
+      });
+    }
+  };
+  const resizing = resize
+    ? shownEntries.find((entry) => entry.id === resize.id)
+    : undefined;
+  const resizeTip =
+    resize && resizing
+      ? {
+          day: resize.day,
+          tip: fill(copy.resizeTip[resize.edge], {
+            to: formatDayMonth(
+              resize.edge === "due" ? resizing.endDay : resizing.startDay,
+            ),
+            days: diffDays(resizing.startDay, resizing.endDay) + 1,
+          }),
+        }
+      : null;
+
+  // Escape puts the bar back while a handle is dragged.
+  useEffect(() => {
+    if (!resize) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      resizePress.current = null;
+      setResize(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [resize]);
   const dropOn = (day: DayKey) => {
     const current = drag;
     setDrag(null);
@@ -315,6 +454,16 @@ export function BoardCalendarSurface({
                 onAnchorChange(day);
                 setFocusDay(day);
               }}
+              resize={resizeTip}
+              onResizeHandle={
+                onChangeDates
+                  ? {
+                      onPointerDown: onHandleDown,
+                    }
+                  : undefined
+              }
+              onChangeDates={onChangeDates ? setDatesFor : undefined}
+              onUnschedule={onUnschedule}
             />
           )}
           {noResults ? (
@@ -344,6 +493,16 @@ export function BoardCalendarSurface({
           ) : null}
         </div>
 
+        {datesFor && onChangeDates ? (
+          <CalendarDatesDialog
+            copy={copy}
+            entry={datesFor}
+            onSave={(startDay, dueDay) =>
+              onChangeDates(datesFor, { startDay, dueDay })
+            }
+            onClose={() => setDatesFor(null)}
+          />
+        ) : null}
         <CalendarAside
           copy={copy}
           undatedTotal={undatedTotal}

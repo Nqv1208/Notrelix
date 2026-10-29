@@ -1,5 +1,9 @@
 import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
 import {
+  en as actionsEn,
+  vi as actionsVi,
+} from "../item-actions/item-actions.copy";
+import {
   ACTIVITY_WORDS_EN,
   ACTIVITY_WORDS_VI,
 } from "../card-detail/activity-words";
@@ -13,6 +17,8 @@ import {
  * (property labels, priorities, times) comes from the `item-sheet` catalog.
  */
 export const en = {
+  /** The item actions menu, shared by the sheet, the page and the board views. */
+  actions: actionsEn,
   /** Replies and reactions of a comment. */
   thread: threadEn,
   loading: "Loading the item",
@@ -431,6 +437,7 @@ export const en = {
 export type ItemPageCopy = typeof en;
 
 export const vi: ItemPageCopy = {
+  actions: actionsVi,
   thread: threadVi,
   loading: "Đang tải công việc",
   activityEvents: ACTIVITY_WORDS_VI,

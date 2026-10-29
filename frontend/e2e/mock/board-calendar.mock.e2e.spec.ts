@@ -49,7 +49,7 @@ test.describe("Board Calendar data (owner)", () => {
     await expect(milestone).toContainText("Go-live ERP");
   });
 
-  test("ERP-142 is the only bar; the other items are one-day chips", async ({
+  test("an item with a start and a due is one bar; ERP-142 crosses a week break", async ({
     page,
   }) => {
     await openCalendar(page);
@@ -57,14 +57,13 @@ test.describe("Board Calendar data (owner)", () => {
       .locator("[data-calendar-event]")
       .filter({ hasText: "Chuyển dữ liệu khách hàng" });
     await expect(bars).toHaveCount(2);
-    for (const key of ["ERP-144", "ERP-147", "ERP-150", "ERP-151"]) {
-      const chips = page.locator("[data-calendar-event]").filter({
-        has: page.locator(`xpath=self::*[contains(@aria-label, "${key}")]`),
-      });
-      await expect(chips).toHaveCount(1);
-      const box = (await chips.first().boundingBox())!;
-      expect(box.width).toBeLessThan(130);
-    }
+    // Cut square at the break: the first piece ends at the week's edge.
+    const first = (await bars.first().boundingBox())!;
+    const week = (await page
+      .locator("[data-calendar-week]")
+      .first()
+      .boundingBox())!;
+    expect(first.x + first.width).toBeCloseTo(week.x + week.width, 0);
   });
 
   test("the finished items are struck through on the day they were finished", async ({

@@ -331,7 +331,7 @@ export function agendaHours(): number[] {
 
 /**
  * The agenda of `day`: overdue entries first (only on today), entries that
- * span the day or have no time as all-day, the rest in the slot of their due
+ * span the day (and do not end on it) or have no time as all-day, the rest in the slot of their due
  * hour (hours outside the slots go to the first or last slot).
  */
 export function buildAgenda(
@@ -352,7 +352,7 @@ export function buildAgenda(
   for (const entry of covering) {
     if (overdueIds.has(entry.id)) continue;
     const timed =
-      entry.startDay === entry.endDay &&
+      (entry.startDay === entry.endDay || entry.endDay === day) &&
       entry.kind === "item" &&
       entry.dueMinutes != null;
     if (!timed) {

@@ -10,6 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -23,6 +24,7 @@ import type {
   TaskDetailCapabilities,
 } from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
+import { ItemActionsMenuItems } from "../item-actions/item-actions-menu";
 import {
   DisabledControl,
   ICON_BUTTON_CLASS,
@@ -64,12 +66,6 @@ export function ItemPageTopbar({
     capabilities.canEditFields &&
     callbacks.onRequestApproval !== undefined &&
     approvers.length > 0;
-  const hasMenu =
-    capabilities.canCreateCard ||
-    capabilities.canDelete ||
-    canAsk ||
-    Boolean(callbacks.onMoveToBoard);
-
   return (
     <header className="flex h-13.25 shrink-0 items-center gap-1.5 border-b border-line bg-background pr-4 pl-3 sm:pl-5">
       <PageLink
@@ -189,25 +185,46 @@ export function ItemPageTopbar({
           </button>
         </DisabledControl>
       )}
-      {hasMenu ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-haspopup="menu"
-              aria-label={t.more}
-              className={ICON_BUTTON_CLASS}
-            >
-              <MoreHorizontal aria-hidden="true" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {capabilities.canCreateCard ? (
-              <DropdownMenuItem onSelect={() => callbacks.onDuplicate(card.id)}>
-                {t.duplicate}
-              </DropdownMenuItem>
-            ) : null}
-            {canAsk ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-label={t.more}
+            className={ICON_BUTTON_CLASS}
+          >
+            <MoreHorizontal aria-hidden="true" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72">
+          <ItemActionsMenuItems
+            copy={copy.actions}
+            item={{
+              itemId: card.id,
+              itemKey: card.itemKey,
+              archived: card.isArchived,
+              completed: Boolean(card.completedAt),
+            }}
+            can={{
+              edit: capabilities.canEditFields,
+              create: capabilities.canCreateCard,
+              move: capabilities.canMoveCard,
+              remove: capabilities.canDelete,
+            }}
+            on={{
+              remind: callbacks.onRemind,
+              complete: callbacks.onComplete,
+              reopen: callbacks.onReopen,
+              duplicate: callbacks.onDuplicate,
+              moveBoard: callbacks.onMoveToBoard,
+              archive: callbacks.onArchive,
+              unarchive: callbacks.onUnarchive,
+              remove: callbacks.onDelete,
+            }}
+          />
+          {canAsk ? (
+            <>
+              <DropdownMenuSeparator />
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   {copy.approval.request}
@@ -226,30 +243,10 @@ export function ItemPageTopbar({
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-            ) : null}
-            {capabilities.canMoveCard && callbacks.onMoveToBoard ? (
-              <DropdownMenuItem
-                onSelect={() => callbacks.onMoveToBoard?.(card.id)}
-              >
-                {t.moveToBoard}
-              </DropdownMenuItem>
-            ) : null}
-            {capabilities.canDelete ? (
-              <DropdownMenuItem onSelect={() => callbacks.onArchive(card.id)}>
-                {t.archive}
-              </DropdownMenuItem>
-            ) : null}
-            {capabilities.canDelete && callbacks.onDelete ? (
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={() => callbacks.onDelete?.(card.id)}
-              >
-                {t.delete}
-              </DropdownMenuItem>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
+            </>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 }

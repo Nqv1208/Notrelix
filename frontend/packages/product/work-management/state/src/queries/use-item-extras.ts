@@ -223,6 +223,41 @@ export function useItemLinks(
   };
 }
 
+/**
+ * Timeline dependencies `from -> to` (`to` waits for `from`). Each write is a
+ * request of its own, so an undo is the inverse call, never a cache rewind;
+ * the plan is refetched after every settle and stays the single truth.
+ */
+export function useTimelineDependencies(boardId: string, workspaceId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  const refresh = () => {
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "work-management", "plan-items"),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "work-management", "item-links"),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+    });
+  };
+  const add = useMutation({
+    mutationFn: (v: { from: string; to: string }) =>
+      itemExtras.addDependency(v.from, v.to),
+    onSettled: refresh,
+  });
+  const remove = useMutation({
+    mutationFn: (v: { from: string; to: string }) =>
+      itemExtras.removeDependency(v.from, v.to),
+    onSettled: refresh,
+  });
+  return {
+    createDependency: add.mutateAsync,
+    removeDependency: remove.mutateAsync,
+  };
+}
+
 const lifecycleKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-lifecycle", itemId);
 

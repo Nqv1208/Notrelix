@@ -76,6 +76,9 @@ describe("definition helpers", () => {
   it("counts a very long run of letters in linear time", () => {
     const started = performance.now();
     expect(formulaNodeCount("a".repeat(50_000))).toBe(0);
+    expect(formulaNodeCount("[".repeat(50_000))).toBe(0);
+    expect(formulaNodeCount('"'.repeat(50_001))).toBe(0);
+    expect(formulaNodeCount('[A] & "say ""hi""" & TRUE')).toBe(5);
     expect(performance.now() - started).toBeLessThan(500);
   });
 

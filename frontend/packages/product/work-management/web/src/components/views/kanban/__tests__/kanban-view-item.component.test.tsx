@@ -132,7 +132,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       answerError: null,
     }),
     usePeopleDirectory: () => ({ directory: null }),
-    useWorkManagementServices: () => ({ cards: {} }),
+    useWorkManagementServices: () => ({ cards: {}, itemExtras: {} }),
     useItemFileUploads: () => ({
       uploads: [],
       start: vi.fn(),
@@ -155,6 +155,14 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardLabelWrites: mutation,
     useCreateItemWithDetails: () => ({ mutate: vi.fn(), isPending: false }),
     useDuplicateCard: mutation,
+    useFullBoard: () => ({
+      board: undefined,
+      groups: [],
+      fieldDefinitions: [],
+      isLoading: false,
+      error: null,
+    }),
+    useRefreshItem: () => vi.fn(),
     useDeleteCard: mutation,
     useMoveItemToBoard: mutation,
     useWorkspaceBoards: () => ({ data: [] }),
@@ -360,7 +368,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     fireEvent.keyDown(screen.getByRole("button", { name: "More" }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Archive" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Archive…" }));
     expect(cardQuery.deleteMutate).toHaveBeenCalledWith("card-item");
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
 

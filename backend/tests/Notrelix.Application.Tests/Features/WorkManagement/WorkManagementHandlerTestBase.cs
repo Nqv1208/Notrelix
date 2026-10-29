@@ -340,6 +340,7 @@ public abstract class WorkManagementHandlerTestBase
         mock.Setup(m => m.Add(It.IsAny<T>())).Callback<T>(data.Add);
         mock.Setup(m => m.AddRange(It.IsAny<IEnumerable<T>>())).Callback<IEnumerable<T>>(items => data.AddRange(items));
         mock.Setup(m => m.Remove(It.IsAny<T>())).Callback<T>(item => data.Remove(item));
+        mock.Setup(m => m.RemoveRange(It.IsAny<IEnumerable<T>>())).Callback<IEnumerable<T>>(items => { foreach (var item in items.ToList()) data.Remove(item); });
 
         return mock.Object;
     }
