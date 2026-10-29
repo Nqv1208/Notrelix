@@ -105,7 +105,7 @@ public sealed class PageAttachmentEndpointTests : IClassFixture<PageAttachmentEn
     }
 
     [Fact]
-    public async Task Viewer_CanListAndRead_ButCannotUploadOrDelete()
+    public async Task Viewer_CanListAndRead_ButCannotUpload_AndMayOnlyDeleteTheirOwnUpload()
     {
         var page = _fixture.NewPage(PageAccess.Editor);
         using var created = await Upload(page, "photo.png", Png);
@@ -124,7 +124,8 @@ public sealed class PageAttachmentEndpointTests : IClassFixture<PageAttachmentEn
         content.StatusCode.Should().Be(HttpStatusCode.OK);
         upload.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         link.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        delete.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        // The viewer is the uploader of this file: uploader-or-editor lets them delete it (the object stays until retention).
+        delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
         _fixture.Storage.Objects.Count.Should().Be(before);
     }
 
