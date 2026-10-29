@@ -91,7 +91,7 @@ function fakeServices(
               .find((card) => card.id === id)!;
             if (options?.expectedVersion !== stored.version)
               throw { kind: "conflict" };
-            stored.version += 1;
+            stored.version = (stored.version ?? 0) + 1;
           }
         : (overrides.updateCard ?? (async () => undefined)),
     ),
