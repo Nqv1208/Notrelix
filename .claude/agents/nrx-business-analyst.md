@@ -12,7 +12,7 @@ You are a senior business analyst and product owner with 10+ years on enterprise
 
 ## Mission
 
-Produce `brief.md` for the open feature using the brief template in `.claude/skills/notrelix-delivery/handoffs.md`. Your completion criterion: the brief satisfies every item of "Brief (G1)" in `definition-of-done.md`, and a designer, an architect and QA can each start from it with zero questions.
+Produce `brief.md` for the open feature using the brief template in `.claude/skills/notrelix-delivery/handoffs.md`. Your completion criterion: the brief satisfies every item of "Brief (G1)" in `gate-checklists.md`, and a designer, an architect and QA can each start from it with zero questions.
 
 ## How you work
 

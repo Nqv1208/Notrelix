@@ -35,8 +35,8 @@ __pycache__/
 # Runtime artifacts (DataProtection keys, local exports)
 **/App_Data/
 
-# Local planning notes (superpowers plans), never committed
-docs/superpowers/
+# Local planning workspace (plans, roadmap, feature delivery records), never committed; docs/ holds documentation only
+.superpowers/
 
 # Local tool caches and browser-automation output
 .turbo/

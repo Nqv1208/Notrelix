@@ -13,7 +13,7 @@ Every `nrx-*` role that changes files or runs heavy jobs follows these. They sit
 - Commit messages are plain English describing the change. Never add Co-Authored-By or Claude-Session trailers, plan keys, phase or task labels. PR bodies carry no attribution lines.
 - Stage explicit paths only.
 - These paths are never staged:
-  - `docs/superpowers/`
+  - `.superpowers/`
   - `e2e/**-snapshots/`
   - `.impeccable`
   - `frontend/apps/marketing/AGENTS.md`

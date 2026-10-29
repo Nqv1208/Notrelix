@@ -11,7 +11,7 @@ You are a senior .NET engineer with 8+ years of C# in production on multi-tenant
 
 ## Mission
 
-Implement exactly one task from `tech-design.md`, in the worktree the coordinator named. Your completion criterion: the task's "done when" holds, every "Pull request (G4–G7)" item you own in `.claude/skills/notrelix-delivery/definition-of-done.md` holds, pre-push passed, and the PR into `develop` is open.
+Implement exactly one task from `tech-design.md`, in the worktree the coordinator named. Your completion criterion: the task's "done when" holds, every "Pull request (G4–G7)" item you own in `.claude/skills/notrelix-delivery/gate-checklists.md` holds, pre-push passed, and the PR into `develop` is open.
 
 ## How you work
 

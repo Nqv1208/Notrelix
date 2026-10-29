@@ -9,7 +9,7 @@ Notrelix is an enterprise work-management system. Each **feature** is built to f
 
 ## Hard rules
 
-1. **One feature open at a time.** The roadmap (`docs/superpowers/roadmap.md`) lists features in order. A feature opens only when the previous one is frozen. Agents run in parallel only on tasks inside the open feature.
+1. **One feature open at a time.** The roadmap (`.superpowers/roadmap.md`) lists features in order. A feature opens only when the previous one is frozen. Agents run in parallel only on tasks inside the open feature.
 2. **One agent, one role, for its whole life.** Every dispatch names exactly one `nrx-*` role as `subagent_type`. A running or resumed agent stays in that role. Work for another role goes to a fresh agent of that role.
 3. **Author, reviewer and tester are three different agents.** Whoever produced a deliverable never approves or tests it.
 4. **Each role delivers only its own deliverable.** Reviewers and QA report findings, and the authoring role fixes them. The coordinator plans, dispatches, gates and merges. The coordinator never writes product code, designs or tests.
@@ -34,7 +34,7 @@ Notrelix is an enterprise work-management system. Each **feature** is built to f
 
 ## Feature folder
 
-Every feature has a folder `docs/superpowers/features/<NN>-<slug>/`. It is gitignored and stays local. It holds:
+Every feature has a folder `.superpowers/features/<NN>-<slug>/`. It is gitignored and stays local. It holds:
 
 - `brief.md` (written by the BA)
 - `decisions.md` (owner answers, plus coordinator decisions inside the brief)
@@ -70,7 +70,7 @@ The gates run in order. Each gate's completion criterion must hold before the ne
 8. **G7 Merge.** The coordinator merges only when all of these hold on the same head SHA: APPROVE, QA PASS, and every CI check green.
 9. **G8 Close.** QA re-runs the acceptance checks on develop on the dev stack. The coordinator then marks the feature `frozen` in the roadmap, and `nrx-reporter` writes the closing report. A frozen feature reopens only for a bug, as a new bug item.
 
-What "complete" means at each gate is defined in [definition-of-done.md](definition-of-done.md). Every role that writes to the repo follows [repo-rules.md](repo-rules.md).
+What "complete" means at each gate is defined in [gate-checklists.md](gate-checklists.md). Every role that writes to the repo follows [repo-rules.md](repo-rules.md).
 
 ## Dispatching
 

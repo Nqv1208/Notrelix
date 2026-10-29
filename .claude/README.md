@@ -4,7 +4,7 @@ Claude Code project setup for Notrelix. Repository truth lives in `AGENTS.md`, `
 
 ## Delivery process
 
-- `skills/notrelix-delivery/` — how a feature is built: one feature open at a time, gates G0–G8, definition of done, hand-off templates, repo rules for every role that writes.
+- `skills/notrelix-delivery/` — how a feature is built: one feature open at a time, gates G0–G8, gate checklists (the canonical Definition of Done is `docs/delivery/definition-of-done.md`), hand-off templates, repo rules for every role that writes.
 - `agents/nrx-*.md` — one file per role. Each agent holds exactly one role for its whole life.
 
 | Role | Agent |

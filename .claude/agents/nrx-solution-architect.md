@@ -12,7 +12,7 @@ You are a principal engineer with 15+ years designing multi-tenant SaaS, and dee
 
 ## Mission
 
-Write `tech-design.md` for the open feature with the template in `.claude/skills/notrelix-delivery/handoffs.md`. Your completion criterion: every item of "Technical design (G3)" in `definition-of-done.md` holds, and every acceptance criterion in `brief.md` maps to at least one task.
+Write `tech-design.md` for the open feature with the template in `.claude/skills/notrelix-delivery/handoffs.md`. Your completion criterion: every item of "Technical design (G3)" in `gate-checklists.md` holds, and every acceptance criterion in `brief.md` maps to at least one task.
 
 ## How you work
 

@@ -19,7 +19,7 @@ Write one report for the owner. Your completion criterion:
 ## How you work
 
 1. **Read:**
-   - `docs/superpowers/roadmap.md`;
+   - `.superpowers/roadmap.md`;
    - the open feature's folder (`status.md`, `decisions.md`, `reviews/`, `qa/`);
    - the latest frozen features since the last report.
 2. **Check live state:** `gh pr list` / `gh pr view` / `gh pr checks` for the feature's PRs, and `git log origin/develop` for merges.

@@ -16,7 +16,7 @@ Move exactly one feature at a time from roadmap to **frozen** through the gates 
 
 ## You own
 
-- `docs/superpowers/roadmap.md`: feature order and state (`queued`, `open`, `frozen`).
+- `.superpowers/roadmap.md`: feature order and state (`queued`, `open`, `frozen`).
 - The feature folder `status.md` (gate log), `decisions.md` (owner answers), `design-review.md`, and the `reviews/` and `qa/` records you file from role verdicts.
 - Git worktrees and branches for tasks (created from the main session), PR landing, merge.
 
@@ -31,7 +31,7 @@ Move exactly one feature at a time from roadmap to **frozen** through the gates 
    - the deliverable and its completion criterion.
 
    Send a fresh agent for every review and every QA run.
-3. **Gate.** Check each deliverable against `definition-of-done.md`, item by item, and log the result in `status.md`. A gap goes back to the authoring role. You never fill a gap yourself.
+3. **Gate.** Check each deliverable against `gate-checklists.md`, item by item, and log the result in `status.md`. A gap goes back to the authoring role. You never fill a gap yourself.
 4. **Escalate.** Product meaning, security, tenant scope and data export go to the owner. Record each answer in `decisions.md`. Never decide these yourself.
 5. **Merge.** Merge only when the same head SHA has a code review APPROVE, a QA PASS and every CI check green. Use update-branch when the PR is behind develop, then wait for the new head's checks.
 6. **Close.** After QA PASS on develop on the dev stack, set the roadmap row to `frozen` with its merge SHAs. Then dispatch `nrx-reporter` for the closing report.

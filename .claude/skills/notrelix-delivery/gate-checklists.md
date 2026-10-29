@@ -1,6 +1,6 @@
-# Definition of done
+# Gate checklists
 
-The gate checklists of the [delivery process](SKILL.md). A box counts as ticked only when there is evidence for it: a file, a test name, a SHA, or a measured number. They extend AGENTS.md §31 and never replace it.
+These are the per-gate evidence checklists of the [delivery process](SKILL.md). The canonical Definition of Done is `docs/delivery/definition-of-done.md` (DEL-DONE-*), together with `docs/delivery/change-classification.md` and `docs/delivery/contract-first-delivery.md`, and AGENTS.md §31. Each checklist below only says at which gate, and with what evidence, those rules are proven. A box counts as ticked only when there is evidence for it: a file, a test name, a SHA, or a measured number.
 
 ## Brief (G1)
 

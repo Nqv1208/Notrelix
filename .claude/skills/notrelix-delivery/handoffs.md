@@ -1,6 +1,6 @@
 # Hand-off templates
 
-These are the files the roles pass to each other in `docs/superpowers/features/<NN>-<slug>/`. Every section heading is required. If a section does not apply, write "None" and a one-line reason.
+These are the files the roles pass to each other in `.superpowers/features/<NN>-<slug>/`. Every section heading is required. If a section does not apply, write "None" and a one-line reason.
 
 ## brief.md (business analyst)
 
