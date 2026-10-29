@@ -8,7 +8,8 @@ public record CreateOrUpdateBoardPreferenceCommand(
     Guid ViewId,
     List<FilterRule>? Filters = null,
     List<SortRule>? Sorts = null,
-    GroupRule? Group = null)
+    GroupRule? Group = null,
+    string? Criteria = null)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -49,6 +50,9 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
 
             existing.ApplyGroup(request.Group, now);
 
+            if (request.Criteria is not null)
+                existing.ApplyCriteria(request.Criteria, now);
+
             return Result.Success();
         }
 
@@ -68,8 +72,39 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
 
         preference.ApplyGroup(request.Group, now);
 
+        if (request.Criteria is not null)
+            preference.ApplyCriteria(request.Criteria, now);
+
         _context.BoardViewUserPreferences.Add(preference);
 
         return Result.Success();
+    }
+}
+
+public class CreateOrUpdateBoardPreferenceCommandValidator : AbstractValidator<CreateOrUpdateBoardPreferenceCommand>
+{
+    public CreateOrUpdateBoardPreferenceCommandValidator()
+    {
+        RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.ViewId).NotEmpty();
+        RuleFor(x => x.Criteria)
+            .Must(c => System.Text.Encoding.UTF8.GetByteCount(c!) <= BoardViewUserPreference.MaxCriteriaLength)
+            .WithMessage("Criteria must be at most 8 KB.")
+            .Must(BeAJsonObjectOrBlank).WithMessage("Criteria must be a JSON object.")
+            .When(x => x.Criteria is not null);
+    }
+
+    private static bool BeAJsonObjectOrBlank(string? criteria)
+    {
+        if (string.IsNullOrWhiteSpace(criteria)) return true;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(criteria);
+            return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
     }
 }

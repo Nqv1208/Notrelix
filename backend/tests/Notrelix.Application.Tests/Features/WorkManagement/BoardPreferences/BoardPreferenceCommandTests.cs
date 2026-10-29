@@ -149,6 +149,64 @@ public class BoardPreferenceCommandTests : WorkManagementHandlerTestBase
         }
 
         [Fact]
+        public async Task Handle_ExistingPreference_StoresCriteria_KeepsItWhenOmitted_ClearsItWhenBlank()
+        {
+            var board = CreateBoard();
+            SetupBoards(board);
+            var viewId = Guid.CreateVersion7();
+            var preference = BoardViewUserPreference.Create(
+                TestAccountId, TestWorkspaceId, board.Id, viewId, TestUserId, TestNow);
+            SetupBoardViewUserPreferences(preference);
+            const string criteria = "{\"v\":2,\"filter\":\"c2:and~p.is_empty\"}";
+
+            await _handler.Handle(new CreateOrUpdateBoardPreferenceCommand(board.Id, viewId, Criteria: criteria), CancellationToken.None);
+            preference.Criteria.Should().Be(criteria);
+
+            await _handler.Handle(new CreateOrUpdateBoardPreferenceCommand(board.Id, viewId), CancellationToken.None);
+            preference.Criteria.Should().Be(criteria);
+
+            await _handler.Handle(new CreateOrUpdateBoardPreferenceCommand(board.Id, viewId, Criteria: " "), CancellationToken.None);
+            preference.Criteria.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task Handle_NoExistingPreference_WithCriteria_Succeeds()
+        {
+            var board = CreateBoard();
+            SetupBoards(board);
+
+            var result = await _handler.Handle(
+                new CreateOrUpdateBoardPreferenceCommand(board.Id, Guid.CreateVersion7(), Criteria: "{\"v\":2}"), CancellationToken.None);
+
+            result.Succeeded.Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData("{\"v\":2}", true)]
+        [InlineData("", true)]
+        [InlineData("[1]", false)]
+        [InlineData("not json", false)]
+        public void Validator_RequiresAJsonObjectOrBlank(string criteria, bool valid)
+        {
+            var validator = new CreateOrUpdateBoardPreferenceCommandValidator();
+
+            validator.Validate(new CreateOrUpdateBoardPreferenceCommand(Guid.NewGuid(), Guid.NewGuid(), Criteria: criteria)).IsValid.Should().Be(valid);
+        }
+
+        [Fact]
+        public void Validator_CapsCriteriaAt8KbOfUtf8()
+        {
+            var validator = new CreateOrUpdateBoardPreferenceCommandValidator();
+            string Make(int bytes) => "{\"x\":\"" + new string('a', bytes - 8) + "\"}";
+
+            validator.Validate(new CreateOrUpdateBoardPreferenceCommand(Guid.NewGuid(), Guid.NewGuid(), Criteria: Make(8192))).IsValid.Should().BeTrue();
+            validator.Validate(new CreateOrUpdateBoardPreferenceCommand(Guid.NewGuid(), Guid.NewGuid(), Criteria: Make(8193))).IsValid.Should().BeFalse();
+            // Vietnamese letters are 3 bytes: 3000 of them overflow the byte cap though under 8192 characters.
+            validator.Validate(new CreateOrUpdateBoardPreferenceCommand(Guid.NewGuid(), Guid.NewGuid(), Criteria: "{\"x\":\"" + new string('ệ', 3000) + "\"}")).IsValid.Should().BeFalse();
+            validator.Validate(new CreateOrUpdateBoardPreferenceCommand(Guid.NewGuid(), Guid.NewGuid(), Criteria: "{\"x\":\"" + new string('ệ', 2700) + "\"}")).IsValid.Should().BeTrue();
+        }
+
+        [Fact]
         public async Task Handle_ExistingPreference_ClearsGroup()
         {
             var board = CreateBoard();

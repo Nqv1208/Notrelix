@@ -23208,6 +23208,10 @@
           },
           "group": {
             "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.GroupRule"
+          },
+          "criteria": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -40,6 +40,10 @@ using Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSavedFi
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility;
 using Notrelix.Application.Features.WorkManagement.Views.Queries.ListSavedFilters;
 using Notrelix.Domain.WorkManagement.Views;
+using Notrelix.Domain.SharedKernel;
+using Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.CreateOrUpdateBoardPreference;
+using Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference;
+using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 using NotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 namespace Notrelix.Integration.Tests.WorkManagement;
 
@@ -145,6 +149,42 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
         (await SendAsync<Result>(_ownerId, new RestoreSavedFilterCommand(id))).Succeeded.Should().BeTrue();
         (await ListAsync(_ownerId)).Should().ContainSingle(f => f.Id == id);
     }
+
+    [Fact]
+    public async Task PersonalViewCriteria_IsKeptPerUser_ClearsWithBlank_AndRejectsBadOrOversizeJson()
+    {
+        var viewId = await SeedViewAsync();
+        const string personal = "{\"v\":2,\"filter\":\"c2:and~p.is_empty\",\"swimlaneBy\":\"s\"}";
+
+        (await SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Criteria: personal))).Succeeded.Should().BeTrue();
+
+        (await GetPreferenceAsync(_memberId, viewId)).Criteria.Should().Be(personal);
+        (await GetPreferenceAsync(_ownerId, viewId)).Criteria.Should().BeNull("personal state belongs to one member");
+
+        (await SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Group: GroupRule.Create(Guid.NewGuid())))).Succeeded.Should().BeTrue();
+        (await GetPreferenceAsync(_memberId, viewId)).Criteria.Should().Be(personal, "omitting criteria leaves it unchanged");
+
+        var notAnObject = () => SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Criteria: "[1]"));
+        await notAnObject.Should().ThrowAsync<ValidationException>();
+        var tooBig = () => SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Criteria: "{\"x\":\"" + new string('a', 8200) + "\"}"));
+        await tooBig.Should().ThrowAsync<ValidationException>();
+        (await GetPreferenceAsync(_memberId, viewId)).Criteria.Should().Be(personal, "a refused write changes nothing");
+
+        (await SendAsync<Result>(_memberId, new CreateOrUpdateBoardPreferenceCommand(_boardId, viewId, Criteria: ""))).Succeeded.Should().BeTrue();
+        (await GetPreferenceAsync(_memberId, viewId)).Criteria.Should().BeNull();
+    }
+
+    private async Task<Guid> SeedViewAsync()
+    {
+        var view = BoardView.Create(_accountId, _workspaceId, _boardId, "Bảng", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), _ownerId, Now, isDefault: true);
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.BoardViews.Add(view);
+        await seed.SaveChangesAsync();
+        return view.Id;
+    }
+
+    private async Task<BoardPreferenceDto> GetPreferenceAsync(Guid userId, Guid viewId) =>
+        (await SendAsync<Result<BoardPreferenceDto>>(userId, new GetBoardPreferenceQuery(_boardId, viewId))).Data!;
 
     private async Task<Guid> CreateAsync(Guid userId, string name) =>
         (await SendAsync<Result<Guid>>(userId, new CreateSavedFilterCommand(_boardId, name, Criteria: Criteria))).Data;
@@ -304,6 +344,9 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
         services.AddScoped<IRequestHandler<UpdateSavedFilterVisibilityCommand, Result>, UpdateSavedFilterVisibilityCommandHandler>();
         services.AddScoped<IRequestHandler<DeleteSavedFilterCommand, Result>, DeleteSavedFilterCommandHandler>();
         services.AddScoped<IRequestHandler<RestoreSavedFilterCommand, Result>, RestoreSavedFilterCommandHandler>();
+        services.AddScoped<IRequestHandler<CreateOrUpdateBoardPreferenceCommand, Result>, CreateOrUpdateBoardPreferenceCommandHandler>();
+        services.AddScoped<IRequestHandler<GetBoardPreferenceQuery, Result<BoardPreferenceDto>>, GetBoardPreferenceQueryHandler>();
+        services.AddScoped<FluentValidation.IValidator<CreateOrUpdateBoardPreferenceCommand>, CreateOrUpdateBoardPreferenceCommandValidator>();
         services.AddProductionCrossContextAdapters();
 
         return services.BuildServiceProvider();

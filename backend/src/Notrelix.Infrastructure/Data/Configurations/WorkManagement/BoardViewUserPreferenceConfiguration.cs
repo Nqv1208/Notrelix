@@ -18,6 +18,8 @@ public class BoardViewUserPreferenceConfiguration : IEntityTypeConfiguration<Boa
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.GroupRule).HasColumnName("group_rule_id");
 
+        builder.Property(x => x.Criteria).HasColumnName("criteria").HasMaxLength(8192);
+
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");

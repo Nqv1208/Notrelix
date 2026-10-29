@@ -5833,6 +5833,7 @@ export interface components {
             filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
             sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
             group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
+            criteria?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest": {
             filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
