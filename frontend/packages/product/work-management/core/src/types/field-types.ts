@@ -1,5 +1,7 @@
 export type FieldType =
   | "text"
+  | "long_text"
+  | "link"
   | "number"
   | "checkbox"
   | "select"
@@ -10,7 +12,8 @@ export type FieldType =
   | "linked_page"
   | "progress"
   | "relation"
-  | "formula";
+  | "formula"
+  | "rollup";
 
 /** Work status category of a Status option (board read contract). */
 export type WorkStatusCategory = "todo" | "in_progress" | "review" | "done";
@@ -52,6 +55,18 @@ export interface FieldDefinition {
    */
   version?: number;
 }
+
+/**
+ * A Formula or Rollup result as the board read carries it: evaluated by the
+ * backend on that read, never stored. `error` carries the stable code
+ * (`divide-by-zero`, `unknown-field`, `cycle`, ...). `stale` is client-side
+ * only: a source value was written and the read has not been refetched yet.
+ */
+export type ComputedValue =
+  | { readonly state: "ok"; readonly value: unknown }
+  | { readonly state: "empty" }
+  | { readonly state: "error"; readonly errorCode: string }
+  | { readonly state: "stale"; readonly value: unknown };
 
 export interface FieldValue {
   cardId: string;

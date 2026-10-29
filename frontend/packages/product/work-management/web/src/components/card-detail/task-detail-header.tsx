@@ -104,6 +104,12 @@ const DUE_TONE_CLASS: Readonly<Record<SheetDueTone, string>> = {
   done: "text-muted-foreground",
 };
 
+import {
+  describeComputed,
+  ItemLinkPopover,
+  ItemLongTextPopover,
+} from "./item-field-extra-editors";
+
 const PILL_CLASS =
   "inline-flex h-7.5 max-w-full items-center gap-[7px] rounded-md border border-line-strong bg-popover px-2.5 text-compact font-medium text-foreground transition-colors hover:bg-state-hover-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-popover";
 
@@ -803,6 +809,83 @@ export function TaskDetailProperties({
                 </span>
               </PropertyPill>
             </ItemMultiPopover>
+          );
+        }
+        if (field.fieldType === "long_text" || field.fieldType === "link") {
+          const value = typeof raw === "string" ? raw : "";
+          const Popover =
+            field.fieldType === "link" ? ItemLinkPopover : ItemLongTextPopover;
+          return (
+            <Popover
+              key={field.id}
+              value={value}
+              label={fillSheetCopy(t.editLongText, { name: field.name })}
+              readOnly={readOnly}
+              autoOpen={autoOpen}
+              copy={t}
+              onChange={(next) => update(field, next)}
+            >
+              <PropertyPill
+                readOnly={readOnly}
+                srLabel={field.name}
+                className={cn(
+                  "max-w-60",
+                  empty ? "text-muted-foreground" : undefined,
+                )}
+              >
+                <span className="truncate">
+                  {empty ? field.name : `${field.name}: ${value}`}
+                </span>
+              </PropertyPill>
+            </Popover>
+          );
+        }
+        if (field.fieldType === "date") {
+          const value = typeof raw === "string" ? raw : null;
+          return (
+            <ItemDuePopover
+              key={field.id}
+              dueAt={value}
+              clearLabel={t.clearDue}
+              readOnly={readOnly}
+              onChange={(next) => update(field, next)}
+            >
+              <PropertyPill
+                readOnly={readOnly}
+                srLabel={field.name}
+                className={value ? undefined : "text-muted-foreground"}
+              >
+                {value ? `${field.name}: ${value.slice(0, 10)}` : field.name}
+              </PropertyPill>
+            </ItemDuePopover>
+          );
+        }
+        if (field.fieldType === "formula" || field.fieldType === "rollup") {
+          const shown = describeComputed(
+            field,
+            card.computedValues?.[field.id],
+            t.computed,
+          );
+          return (
+            <PropertyPill
+              key={field.id}
+              readOnly
+              srLabel={field.name}
+              title={shown.title}
+              className={cn(
+                shown.tone === "stale" && "text-muted-foreground",
+                shown.tone === "empty" && "text-muted-foreground",
+                shown.tone === "error" && "border-danger text-danger-text",
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className="rounded-[5px] bg-state-hover-strong px-1 font-mono text-[11px] font-medium text-muted-foreground"
+              >
+                ƒx
+              </span>
+              {field.name}: {shown.text}
+            </PropertyPill>
           );
         }
         const option = field.options.find((entry) => entry.id === raw);

@@ -86,7 +86,7 @@ public class BoardItemArchivedTests
         var item = BoardItem.CreateRoot(AccountId, WsA, BoardA, GroupA, "Item",
             FractionalIndex.Create("a0"), Actor, Now);
         var field = BoardField.Create(AccountId, WsA, BoardA, "Formula", FieldType.Formula,
-            FieldSettings.Empty(), FractionalIndex.Create("a0"), Actor, Now);
+            FieldSettings.Create(JsonValue.Create("{\"expression\":\"1\"}")), FractionalIndex.Create("a0"), Actor, Now);
 
         var act = () => item.UpdateFieldValue(field, FieldValue.Create(JsonValue.Create("\"result\"")), Actor, Now);
         act.Should().Throw<BusinessRuleException>()
@@ -99,7 +99,7 @@ public class BoardItemArchivedTests
         var item = BoardItem.CreateRoot(AccountId, WsA, BoardA, GroupA, "Item",
             FractionalIndex.Create("a0"), Actor, Now);
         var field = BoardField.Create(AccountId, WsA, BoardA, "Rollup", FieldType.Rollup,
-            FieldSettings.Empty(), FractionalIndex.Create("a0"), Actor, Now);
+            FieldSettings.Create(JsonValue.Create("{\"function\":\"count\"}")), FractionalIndex.Create("a0"), Actor, Now);
 
         var act = () => item.UpdateFieldValue(field, FieldValue.Create(JsonValue.Create("\"result\"")), Actor, Now);
         act.Should().Throw<BusinessRuleException>()
