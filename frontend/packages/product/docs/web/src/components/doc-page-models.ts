@@ -493,6 +493,8 @@ export interface DocPageCallbacks {
   readonly onShowPageInfo?: () => void;
   readonly onPageSetupOpen?: () => void;
   readonly onOpenComments?: () => void;
+  /** Leaves the page for the document list (the phone bar's Back). */
+  readonly onBack?: () => void;
   readonly onAddBlock?: (type: BlockType) => void;
   /** Gives a workspace member access to the page at the edit level. */
   readonly onShareInvite?: (userId: string) => Promise<void>;

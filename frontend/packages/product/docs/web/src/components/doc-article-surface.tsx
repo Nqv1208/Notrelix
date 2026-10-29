@@ -47,7 +47,7 @@ export function DocTaskChip({
   copy: DocPageCopy;
 }) {
   const base =
-    "inline-flex h-6.5 items-center gap-1.5 rounded-[6px] border border-line-strong bg-state-hover py-0 pr-2 pl-[7px] align-[1px] text-compact leading-none font-medium text-foreground no-underline";
+    "box-border inline-flex h-6.5 max-w-full items-center gap-1.5 rounded-[6px] border border-line-strong bg-state-hover py-0 pr-2 pl-[7px] align-[1px] text-compact leading-none font-medium text-foreground no-underline";
   if (isRestrictedTask(task)) {
     return (
       <span
@@ -63,10 +63,10 @@ export function DocTaskChip({
   const body = (
     <>
       <DocStatusDot status={task.status} />
-      <span className="font-mono text-micro leading-none font-medium text-meta-foreground">
+      <span className="shrink-0 font-mono text-micro leading-none font-medium whitespace-nowrap text-meta-foreground">
         {task.key}
       </span>
-      <span className="max-w-[300px] truncate">{task.title}</span>
+      <span className="min-w-0 max-w-[300px] truncate">{task.title}</span>
     </>
   );
   return task.href ? (
@@ -464,7 +464,7 @@ export function DocLiveTable({
   const headerLink = block.boardHref ? (
     <a
       href={block.boardHref}
-      className="ml-auto font-semibold text-brand-subtle-foreground no-underline"
+      className="ml-auto font-semibold text-brand-subtle-foreground no-underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
     >
       {copy.blocks.openInTable}
     </a>
@@ -508,21 +508,24 @@ export function DocLiveTable({
             <div
               key={task.id}
               role="row"
-              className="box-content grid min-h-[42px] grid-cols-[76px_minmax(0,1fr)_104px_32px_108px] items-center gap-2.5 border-b border-border px-3.5 text-nav leading-[1.45] font-normal"
+              className="box-content grid min-h-[42px] grid-cols-[76px_minmax(0,1fr)_104px_32px_108px] items-center gap-2.5 border-b border-border px-3.5 text-nav leading-[1.45] font-normal max-md:min-h-0 max-md:grid-cols-[auto_auto_auto_minmax(0,1fr)] max-md:gap-y-0 max-md:pb-2.5"
             >
               <span role="cell">
                 <a
                   href={task.href}
                   tabIndex={-1}
-                  className="font-mono text-metadata text-meta-foreground no-underline leading-[1.45] tracking-normal"
+                  className="font-mono text-metadata text-meta-foreground no-underline leading-[1.45] tracking-normal max-md:inline-flex max-md:min-h-11 max-md:items-center"
                 >
                   {task.key}
                 </a>
               </span>
-              <span role="cell" className="truncate font-medium">
+              <span
+                role="cell"
+                className="truncate font-medium max-md:col-span-3 max-md:overflow-visible max-md:whitespace-normal"
+              >
                 <a
                   href={task.href}
-                  className="text-inherit no-underline hover:underline"
+                  className="text-inherit no-underline hover:underline max-md:flex max-md:min-h-11 max-md:items-center max-md:py-1 max-md:leading-[1.4]"
                 >
                   {task.title}
                 </a>
@@ -583,7 +586,7 @@ export function DocLiveTable({
       </div>
       <p
         id={noteId}
-        className="-mt-3 mb-5 flex items-start gap-[7px] text-crumb leading-[1.5] text-meta-foreground"
+        className="-mt-2 mb-5 flex items-start gap-[7px] text-crumb leading-[1.5] text-meta-foreground"
       >
         <Lock
           aria-hidden="true"
@@ -756,7 +759,7 @@ export function DocArticleSurface({
               label={block.text || copy.blockPlaceholder}
               placeholder={copy.blockPlaceholder}
               className={cn(
-                "mt-7 mb-2.5 text-foreground",
+                "mt-8 mb-3 text-foreground max-md:mt-7 max-md:mb-2.5",
                 block.level === 1
                   ? "text-page-title"
                   : block.level === 3
@@ -998,7 +1001,7 @@ export function DocArticleSurface({
           if (next && next !== title) callbacks?.onTitleCommit?.(next);
           else event.currentTarget.textContent = title;
         }}
-        className="text-doc-title text-balance text-foreground outline-none empty:before:text-meta-foreground empty:before:content-[attr(data-placeholder)]"
+        className="text-doc-title text-balance text-foreground outline-none max-md:text-[26px] max-md:leading-8 empty:before:text-meta-foreground empty:before:content-[attr(data-placeholder)]"
       >
         {title}
       </h1>

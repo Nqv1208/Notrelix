@@ -123,7 +123,10 @@ export function DocFileMenuSurface({
         aria-label={f.label}
         data-menu-panel=""
         onKeyDown={keys}
-        className={cn(PANEL, "top-[30px] left-4 w-[280px]")}
+        className={cn(
+          PANEL,
+          "top-[30px] left-4 w-[280px] max-md:top-11 max-md:right-2 max-md:left-2 max-md:w-auto",
+        )}
       >
         <Item
           label={f.newDoc}

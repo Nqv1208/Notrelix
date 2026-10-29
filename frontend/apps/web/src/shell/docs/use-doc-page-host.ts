@@ -557,6 +557,11 @@ export const useDocPageHost: UseDocPageHost = (
       ? (userId) => sharePage.mutateAsync({ userId, level: "edit" })
       : undefined,
     now,
+    openSpace: (spaceId) =>
+      void navigate({
+        to: "/workspaces/$workspaceId/spaces/$spaceId",
+        params: { workspaceId, spaceId },
+      }),
     openPage: (targetId) =>
       void navigate({
         to: "/workspaces/$workspaceId/docs/$docId",

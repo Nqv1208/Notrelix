@@ -61,6 +61,8 @@ export interface DocPageHost {
   readonly spaceNameFor?: (spaceId: string) => string | null;
   /** Tells the viewer something that happened outside their action (a toast). */
   readonly notify?: (message: string) => void;
+  /** Opens a department (Space) page; omitted, Back on a phone goes to leaveDoc. */
+  readonly openSpace?: (spaceId: string) => void;
   /** Leaves the open page (after it moved to the trash). */
   readonly leaveDoc?: () => void;
   /** The realtime transport; omitted, the page does not follow others' changes. */

@@ -38,7 +38,7 @@ import { DocFileMenuSurface } from "./doc-file-menu-surface";
 import { DocMenuBarMenus, MENU_KEYS } from "./doc-menu-bar-surface";
 import type { InsertHosts } from "../editor/block-insert";
 import type { MenuKey, MenuViewState } from "../editor/menu-model";
-import { ICON_CLASS } from "./doc-page-ui";
+import { ICON_CLASS, SCROLL_FADE, SCROLL_ROW } from "./doc-page-ui";
 
 /** What the toolbar reflects: the block holding the caret. */
 export interface DocToolbarCurrent {
@@ -82,21 +82,21 @@ export interface DocToolbarSurfaceProps {
 }
 
 const MENU_BUTTON =
-  "h-7 rounded-[6px] border-0 bg-transparent px-[9px] text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
+  "h-7 shrink-0 rounded-[6px] max-md:h-11 max-md:rounded-none max-md:px-3 border-0 bg-transparent px-[9px] text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
 
 const TOOL =
-  "box-border inline-flex h-7.5 min-w-7.5 items-center justify-center gap-1 rounded-[6px] border-0 bg-transparent px-1.5 text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-transparent aria-disabled:hover:text-muted-foreground";
+  "box-border inline-flex h-7.5 min-w-7.5 shrink-0 items-center max-md:h-11 max-md:min-w-11 justify-center gap-1 rounded-[6px] border-0 bg-transparent px-1.5 text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-transparent aria-disabled:hover:text-muted-foreground";
 
 const TOOL_ON = "bg-state-selected text-state-selected-foreground";
 
 const SELECT =
-  "box-border inline-flex h-7.5 items-center justify-center gap-1.5 rounded-[6px] border border-line-strong bg-doc-panel px-2 text-compact leading-[1.45] text-foreground outline-none hover:bg-doc-panel focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
+  "box-border inline-flex h-7.5 shrink-0 items-center max-md:h-11 justify-center gap-1.5 rounded-[6px] border border-line-strong bg-doc-panel px-2 text-compact leading-[1.45] text-foreground outline-none hover:bg-doc-panel focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
 
 function Separator() {
   return (
     <span
       aria-hidden="true"
-      className="mx-[5px] h-5 w-px shrink-0 bg-line-strong"
+      className="mx-[5px] h-5 w-px shrink-0 bg-line-strong max-md:mx-1.5 max-md:h-6"
     />
   );
 }
@@ -192,7 +192,11 @@ function DocMenuBar({
         const key = (event.target as HTMLElement).dataset.menubarItem;
         if (key) setStop(key);
       }}
-      className="flex px-4 pt-0.5"
+      className={cn(
+        "flex px-4 pt-0.5",
+        SCROLL_ROW,
+        "max-md:h-11 max-md:px-2 max-md:pt-0",
+      )}
     >
       <button
         ref={fileButton}
@@ -337,14 +341,16 @@ export function DocToolbarSurface({
 
   return (
     <div className="relative z-20 shrink-0 border-b border-border bg-doc-page">
-      <DocMenuBar
-        copy={copy}
-        editor={editor}
-        fileMenuOpen={fileMenuOpen}
-        canEdit={canFormat}
-        menu={menu}
-        callbacks={callbacks}
-      />
+      <div className={SCROLL_FADE}>
+        <DocMenuBar
+          copy={copy}
+          editor={editor}
+          fileMenuOpen={fileMenuOpen}
+          canEdit={canFormat}
+          menu={menu}
+          callbacks={callbacks}
+        />
+      </div>
       {editor && menu && !menu.view.toolbarShown ? null : editor ? (
         <EditorToolbar
           editor={editor}
@@ -356,7 +362,9 @@ export function DocToolbarSurface({
         <div
           role="toolbar"
           aria-label={t.label}
-          className="flex flex-wrap items-center gap-0.5 px-3 pt-1 pb-1.5"
+          className={cn(
+            "flex flex-nowrap items-center gap-0.5 overflow-x-auto px-3 pt-1 pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-md:h-13 max-md:px-2 max-md:py-1",
+          )}
         >
           {tool("undo", t.undo, icon(Undo2))}
           {tool("redo", t.redo, icon(Redo2))}

@@ -1,3 +1,4 @@
+import { useIsMobile } from "@notrelix/ui-web";
 import { useDocLive } from "./use-doc-live";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -256,7 +257,14 @@ export function createDocPageScreen({
       pageId,
       refresh: refreshBlocks,
     });
-    const [panelOpen, setPanelOpen] = useDocPanelOpen(host.viewerId ?? null);
+    const [savedPanelOpen, setSavedPanelOpen] = useDocPanelOpen(
+      host.viewerId ?? null,
+    );
+    // On a phone the panel is a sheet: closed on arrival, not remembered.
+    const compact = useIsMobile();
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const panelOpen = compact ? sheetOpen : savedPanelOpen;
+    const setPanelOpen = compact ? setSheetOpen : setSavedPanelOpen;
     const viewPrefs = useDocViewPrefs(host.viewerId ?? null);
     const trashQuery = useTrashedPages(workspaceId, overlay.kind === "trash");
     const now = host.now;
@@ -742,11 +750,36 @@ export function createDocPageScreen({
     const dropRecovery = (id: string) =>
       setRecoveries((current) => current.filter((entry) => entry.id !== id));
 
+    // Back goes to the page's department when the host can open it, else home.
+    const space = host.space;
+    const openSpace = space ? host.openSpace : undefined;
+    const backLabel =
+      space && openSpace
+        ? fillDocCopy(copy.header.backTo, { name: space.name })
+        : undefined;
+    const goBack =
+      space && openSpace ? () => openSpace(space.id) : host.leaveDoc;
     if (pageQuery.isLoading || blocksQuery.isLoading) {
-      return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
+      return (
+        <DocPageScreenSurface
+          status="loading"
+          copy={copy}
+          {...EMPTY}
+          backLabel={backLabel}
+          callbacks={{ onBack: goBack }}
+        />
+      );
     }
     if (!page) {
-      return <DocPageScreenSurface status="notFound" copy={copy} {...EMPTY} />;
+      return (
+        <DocPageScreenSurface
+          status="notFound"
+          copy={copy}
+          {...EMPTY}
+          backLabel={backLabel}
+          callbacks={{ onBack: goBack }}
+        />
+      );
     }
 
     const title = page.title;
@@ -1255,6 +1288,7 @@ export function createDocPageScreen({
         dropRecovery(id);
       },
       onRecoveryDismiss: dropRecovery,
+      onBack: goBack,
       onOpenComments: () => {
         setPanelTab("comments");
         setPanelOpen(true);
@@ -1434,6 +1468,7 @@ export function createDocPageScreen({
         comments={commentViews}
         pendingQuote={pendingAnchor?.quote ?? null}
         panelTab={panelTab}
+        backLabel={backLabel}
         panelOpen={panelOpen}
         overlay={overlay}
         mentionTasks={mentionTasks}

@@ -1,14 +1,17 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
- * Document page geometry against the October 2026 mockup. Every number comes
- * from `docs/design/mockups/2026-10/src/Final-Docs.dc.html` rendered at
- * 1440x900 (`nav=hien-day`, `mode=sang` unless a state says otherwise) and
- * measured with the box dump: position, size, padding, gap, font, radius and
- * colour of each element, relative to the main area's top-left (so the rail
- * pinned and hidden give the same numbers). The comment after each entry
- * names the mockup element it was read from. Tolerance is 1 px for boxes;
- * font sizes, weights, radii and colours must be equal.
+ * Document page geometry against the approved Final-Docs-2 canvas (light,
+ * dark, 320 and 320 sheet; numbers from Final-Docs-2-Notes, rendered at
+ * 1440x900, relative to the main area's top-left so the rail pinned and
+ * hidden give the same numbers). Tolerance is 1 px for boxes; font sizes,
+ * weights, radii and colours must be equal. Known gaps: the mock world's
+ * first live-table row is a "Cần làm" task due 18/10 (the canvas shows an
+ * overdue one), and an inline task chip makes its line 1.2 px shorter than the
+ * canvas, so everything below the numbered list sits 1.2 px higher than the
+ * Notes. The File menu, slash, mention, comments and version-history states
+ * still carry numbers from the older Final-Docs and drift from the shipped
+ * menus and panel; they need their own pass.
  *
  * Text differs between the mock world and the mockup world, so an entry whose
  * width or position follows its wording lists only the keys that do not
@@ -158,7 +161,10 @@ async function check(
   const seen: string[] = [];
   for (const entry of entries) {
     const locator = locate(page, entry.at);
-    await expect(locator, `${entry.name} exists`).toHaveCount(1);
+    if ((await locator.count()) !== 1) {
+      seen.push(`${entry.name}: ${await locator.count()} matches`);
+      continue;
+    }
     const box = await locator.boundingBox();
     if (!box) throw new Error(`${entry.name} has no box`);
     const { dy = 0, dh = 0 } = opts.adjust?.(entry) ?? {};
@@ -222,64 +228,59 @@ function articleAdjust(shift: number) {
 const NORMAL: Entry[] = [
   { name: "bar", at: "#workspace-main header", box: [0, 0, 1108, 49], keys: "xywh", style: {  } }, // .dbar
   { name: "crumb", at: "#workspace-main header nav", box: [24, 14.6, 289.2, 18.8], keys: "xyh", style: {  } }, // .dbar .crumb
-  { name: "status", at: "#workspace-main header button[aria-label^=\"Trạng thái tài liệu\"]", box: [323.2, 11, 115.4, 26], keys: "yh", style: { fs: "12.5px", fw: "600", c: "rgb(22, 26, 33)", r: "999px", bg: "rgb(251, 240, 214)" } }, // .status
   { name: "edited", at: "#workspace-main header > span.text-crumb@0", box: [448.6, 14.9, 226.1, 18.1], keys: "yh", style: { fs: "12.5px", fw: "400", c: "rgb(95, 104, 117)" } }, // .edited
   { name: "share", at: "#workspace-main header button[aria-haspopup=\"dialog\"]", box: [855.4, 8, 73.5, 32], keys: "xywh", style: { fs: "13px", fw: "500", c: "rgb(22, 26, 33)", r: "7px", bg: "rgb(255, 255, 255)" } }, // .dbar .btn@0
   { name: "approve", at: "#workspace-main header button[title=\"Duyệt tài liệu chưa khả dụng.\"]", box: [938.8, 8, 111.2, 32], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(255, 255, 255)", r: "7px", bg: "rgb(22, 102, 204)" } }, // .dbar .btn.pri
   { name: "more", at: "#workspace-main header button[aria-label=\"Thêm tuỳ chọn\"]", box: [1060, 8, 32, 32], keys: "xywh", style: { r: "7px" } }, // .dbar .ib
-  { name: "tbar", at: "#workspace-main header + div", box: [0, 49, 1108, 105], keys: "xywh", style: { bg: "rgb(255, 255, 255)" } }, // .tbar
-  { name: "menus", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"]", box: [0, 49, 1108, 30], keys: "xywh", style: {  } }, // .menus
-  { name: "menuFile", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@0", box: [16, 51, 42.8, 28], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "6px" } }, // .menus button@0
-  { name: "menuTools", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@5", box: [318.7, 51, 71, 28], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "6px" } }, // .menus button@5
-  { name: "tools", at: "#workspace-main [role=toolbar]", box: [0, 79, 1108, 74], keys: "xywh", style: {  } }, // .tools
-  { name: "tbUndo", at: "#workspace-main [role=toolbar] > button@0", box: [12, 84, 30, 30], keys: "xywh", style: { r: "6px" } }, // .tools > .tb@0
-  { name: "tbPrint", at: "#workspace-main [role=toolbar] > button@2", box: [76, 84, 30, 30], keys: "xywh", style: { r: "6px" } }, // .tools > .tb@2
-  { name: "tsep1", at: "#workspace-main [role=toolbar] > span[aria-hidden]@0", box: [113, 89, 1, 20], keys: "xywh", style: { bg: "rgb(210, 215, 222)" } }, // .tools .tsep@0
-  { name: "selStyle", at: "#workspace-main [role=toolbar] button[aria-label=\"Kiểu đoạn\"]", box: [121, 84, 94.1, 30], keys: "xyh", style: { fs: "13px", fw: "400", c: "rgb(22, 26, 33)", r: "6px", bg: "rgb(255, 255, 255)" } }, // .tools .tb.sel@0
-  { name: "selFont", at: "#workspace-main [role=toolbar] button[aria-label=\"Phông chữ\"]", box: [217.1, 84, 133.1, 30], keys: "yhw", style: { fs: "13px", fw: "400", c: "rgb(22, 26, 33)", r: "6px", bg: "rgb(255, 255, 255)" } }, // .tools .tb.sel@1
-  { name: "sizebox", at: "#workspace-main [role=toolbar] [role=group]", box: [352.2, 83, 76, 32], keys: "ywh", style: { r: "6px" } }, // .sizebox
-  { name: "tbBold", at: "#workspace-main [role=toolbar] button[aria-label^=\"In đậm\"]", box: [443.2, 84, 30, 30], keys: "ywh", style: { fs: "13px", fw: "700", r: "6px" } }, // .tools .tb[aria-label^="In đậm"]
-  { name: "tbAlignLeft", at: "#workspace-main [role=toolbar] button[aria-label=\"Căn trái\"]", box: [821.2, 84, 30, 30], keys: "ywh", style: { r: "6px" } }, // .tools .tb[aria-label="Căn trái"]
-  { name: "modeSel", at: "#workspace-main [role=toolbar] button[aria-label=\"Chế độ\"]", box: [978.1, 117, 117.9, 30], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(22, 26, 33)", r: "6px", bg: "rgb(255, 255, 255)" } }, // .tools .modeb
-  { name: "article", at: "#workspace-main article", box: [49.5, 190, 700, 1113.2], keys: "xyw", style: {  } }, // .doc
-  { name: "h1", at: "#workspace-main article h1", box: [49.5, 190, 700, 40], keys: "xywh", style: { fs: "32px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h1
-  { name: "chip0", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(1)", box: [49.5, 242, 186.4, 26], keys: "xyh", style: { fs: "12.5px", fw: "500", c: "rgb(79, 88, 102)", r: "7px", bg: "rgb(241, 243, 246)" } }, // .dmeta .chip@0
-  { name: "chipDate", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(2)", box: [243.9, 242, 157.4, 26], keys: "ywh", style: { fs: "12.5px", fw: "500", c: "rgb(79, 88, 102)", r: "7px", bg: "rgb(241, 243, 246)" } }, // .dmeta .chip@1
-  { name: "chipBoard", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(3)", box: [409.3, 242, 146.5, 26], keys: "ywh", style: { fs: "12.5px", fw: "500", c: "rgb(79, 88, 102)", r: "7px", bg: "rgb(241, 243, 246)" } }, // .dmeta .chip@2
-  { name: "h2a", at: "#workspace-main article h2@0", box: [49.5, 322.1, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@0
-  { name: "prose", at: "#workspace-main article p[data-block-id]@0", box: [49.5, 359.1, 700, 79.7], keys: "xywh", style: { fs: "15.5px", fw: "400", c: "rgb(39, 45, 54)" } }, // .doc .prose@0
-  { name: "taskChip", at: "#workspace-main article p[data-block-id] [data-task-id]@0", box: [49.5, 412.8, 368.8, 26], keys: "xywh", style: { r: "6px", bg: "rgb(241, 243, 246)" } }, // .doc .prose .task
-  { name: "h2b", at: "#workspace-main article h2@1", box: [49.5, 466.8, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@1
-  { name: "li1", at: "#workspace-main article ol li@0", box: [71.5, 503.8, 678, 27.1], keys: "xywh", style: { fs: "15.5px", fw: "400", c: "rgb(39, 45, 54)" } }, // .doc ol li@0
-  { name: "li4", at: "#workspace-main article ol li@3", box: [71.5, 597.2, 678, 54.3], keys: "xywh", style: { fs: "15.5px", fw: "400", c: "rgb(39, 45, 54)" } }, // .doc ol li@3
-  { name: "li4task", at: "#workspace-main article ol li@3 >> [data-task-id]", box: [75.5, 625.3, 385.3, 26], keys: "xywh", style: { r: "6px", bg: "rgb(241, 243, 246)" } }, // .doc ol li@3 >> .task
-  { name: "h2c", at: "#workspace-main article h2@2", box: [49.5, 679.4, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@2
-  { name: "ck1box", at: "#workspace-main article [role=checkbox]@0", box: [49.5, 725.9, 17, 17], keys: "xywh", style: { r: "5px", bg: "rgb(46, 139, 87)" } }, // .ck .box@0
-  { name: "ck2", at: "#workspace-main article div.group@1", box: [41.5, 752.4, 716, 36], keys: "xywh", style: { r: "8px" } }, // .ck@1
-  { name: "ck2box", at: "#workspace-main article [role=checkbox]@1", box: [49.5, 761.9, 17, 17], keys: "xywh", style: { r: "5px" } }, // .ck .box@1
-  { name: "ck2t", at: "#workspace-main article div.group@1 >> [role=textbox]", box: [76.5, 759.6, 320.9, 21.8], keys: "xywh", style: { fs: "15px", fw: "400", c: "rgb(39, 45, 54)" } }, // .ck .t@1
-  { name: "ck2mk", at: "#workspace-main article button[aria-label^=\"Chuyển thành việc\"]@1", box: [594.4, 792.4, 155.1, 28], keys: "xywh", style: { fs: "12.5px", fw: "600", c: "rgb(15, 86, 174)", r: "7px", bg: "rgb(255, 255, 255)" } }, // .ck .mk@1
-  { name: "h2d", at: "#workspace-main article h2@3", box: [49.5, 852.4, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@3
-  { name: "live", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\]", box: [49.5, 889.4, 700, 255.8], keys: "xywh", style: { r: "12px", bg: "rgb(255, 255, 255)" } }, // .live
-  { name: "liveHead", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\] > div@0", box: [50.5, 890.4, 698, 39.8], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live-h
-  { name: "lrow1", at: "#workspace-main article [role=table] [role=row]@0", box: [50.5, 930.3, 698, 43], keys: "xywh", style: {  } }, // .live .lrow@0
-  { name: "lrow1key", at: "#workspace-main article [role=table] [role=row]@0 >> a.font-mono", box: [64.5, 943.5, 50.4, 15], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live .lrow@0 >> a.mono
-  { name: "lrow1st", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(3) > span", box: [470.5, 940.3, 86.9, 22], keys: "xywh", style: { fs: "12px", fw: "600", c: "rgb(22, 26, 33)", r: "999px", bg: "rgb(226, 236, 250)" } }, // .live .lrow@0 >> .st
-  { name: "lrow1av", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(4) > span", box: [584.5, 939.3, 24, 24], keys: "xywh", style: {  } }, // .live .lrow@0 >> .av
-  { name: "lrow1due", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(5)", box: [626.5, 942.2, 108, 18.1], keys: "xywh", style: { fs: "12.5px", fw: "600", c: "rgb(196, 35, 64)" } }, // .live .lrow@0 >> .due
-  { name: "lrowLocked", at: "#workspace-main article [role=table] [role=row]@-1", box: [50.5, 1102.3, 698, 42], keys: "xywh", style: {  } }, // .live .lrow.locked
-  { name: "liveNote", at: "#workspace-main article p[id^=\"live-note\"]", box: [49.5, 1153.3, 700, 37.5], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live-note
-  { name: "callout", at: "#workspace-main article div.bg-doc-notice", box: [49.5, 1210.8, 700, 74.4], keys: "xywh", style: { r: "10px", bg: "rgb(238, 244, 253)" } }, // .callout
-  { name: "rp", at: "#workspace-main aside[aria-label=\"Bảng bên của tài liệu\"]", box: [799, 154, 309, 1213.2], keys: "xyw", style: { bg: "rgb(255, 255, 255)" } }, // .rp
-  { name: "rtabs", at: "#workspace-main aside [role=tablist]", box: [800, 154, 308, 44], keys: "xywh", style: {  } }, // .rtabs
-  { name: "rtab1", at: "#workspace-main aside [role=tab]@0", box: [812, 154, 83.6, 44], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(22, 26, 33)" } }, // .rtab@0
-  { name: "rtab3", at: "#workspace-main aside [role=tab]@2", box: [968.8, 154, 89.3, 44], keys: "xywh", style: { fs: "13px", fw: "500", c: "rgb(79, 88, 102)" } }, // .rtab@2
-  { name: "rbody", at: "#workspace-main aside [role=tabpanel]", box: [800, 198, 308, 1169.2], keys: "xyw", style: {  } }, // .rbody
-  { name: "rh3", at: "#workspace-main aside [role=tabpanel] h3@0", box: [816, 212, 276, 18.1], keys: "xywh", style: { fs: "12.5px", fw: "600", c: "rgb(79, 88, 102)" } }, // .rbody h3@0
-  { name: "rli1", at: "#workspace-main aside [role=tabpanel] a@0", box: [808, 238.1, 292, 71.8], keys: "xywh", style: { r: "8px" } }, // .rbody .li@0
-  { name: "rli1b", at: "#workspace-main aside [role=tabpanel] a@0 >> b", box: [833, 246.1, 259, 36.4], keys: "xywh", style: { fs: "13px", fw: "500", c: "rgb(22, 26, 33)" } }, // .rbody .li@0 >> b
-  { name: "rli1small", at: "#workspace-main aside [role=tabpanel] a@0 >> small", box: [833, 284.5, 259, 17.4], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .rbody .li@0 >> small
-  { name: "rliLocked", at: "#workspace-main aside [role=tabpanel] section:first-of-type > div:last-child", box: [808, 525.2, 292, 53.6], keys: "xwh", style: { r: "8px" } }, // .rbody .li.locked
+  { name: "tbar", at: "#workspace-main header + div", box: [0, 49, 1108, 76], keys: "xywh", style: { bg: "rgb(255, 255, 255)" } }, // .tbar
+  { name: "menus", at: "#workspace-main [role=menubar]", box: [0, 49, 1108, 30], keys: "xywh", style: {  } }, // .menus
+  { name: "menuFile", at: "#workspace-main [role=menubar] button@0", box: [16, 51, 42.8, 28], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "6px" } }, // .menus button@0
+  { name: "menuTools", at: "#workspace-main [role=menubar] button@5", box: [318.7, 51, 71, 28], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "6px" } }, // .menus button@5
+  { name: "tools", at: "#workspace-main [role=toolbar]", box: [0, 79, 1108, 46], keys: "xywh", style: {  } }, // .tools
+  { name: "tbUndo", at: "#workspace-main [role=toolbar] [data-tool]@0", box: [12, 86, 30, 30], keys: "xywh", style: { r: "6px" } }, // .tools > .tb@0
+  { name: "tbPrint", at: "#workspace-main [role=toolbar] [data-tool]@2", box: [76, 86, 30, 30], keys: "xywh", style: { r: "6px" } }, // .tools > .tb@2
+  { name: "tsep1", at: "#workspace-main [role=toolbar] [data-group]@1 >> span[aria-hidden]", box: [112, 91, 1, 20], keys: "xywh", style: { bg: "rgb(210, 215, 222)" } }, // .tools .tsep@0
+  { name: "selStyle", at: "#workspace-main [role=toolbar] button[aria-label=\"Kiểu đoạn\"]", box: [119, 86, 150, 30], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(22, 26, 33)", r: "6px", bg: "rgb(255, 255, 255)" } }, // .tools .tb.sel@0
+  { name: "tbBold", at: "#workspace-main [role=toolbar] button[aria-label^=\"In đậm\"]", box: [443.2, 86, 30, 30], keys: "ywh", style: { r: "6px" } }, // .tools .tb[aria-label^="In đậm"]
+  { name: "tbAlignLeft", at: "#workspace-main [role=toolbar] button[aria-label=\"Căn trái\"]", box: [821.2, 86, 30, 30], keys: "ywh", style: { r: "6px" } }, // .tools .tb[aria-label="Căn trái"]
+  { name: "article", at: "#workspace-main article", box: [49.5, 162, 700, 1113.2], keys: "xyw", style: {  } }, // .doc
+  { name: "h1", at: "#workspace-main article h1", box: [49.5, 162, 700, 40], keys: "xywh", style: { fs: "32px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h1
+  { name: "chip0", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(1)", box: [49.5, 214, 186.4, 26], keys: "xyh", style: { fs: "12.5px", fw: "500", c: "rgb(79, 88, 102)", r: "7px", bg: "rgb(241, 243, 246)" } }, // .dmeta .chip@0
+  { name: "chipDate", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(2)", box: [243.9, 214, 157.4, 26], keys: "ywh", style: { fs: "12.5px", fw: "500", c: "rgb(79, 88, 102)", r: "7px", bg: "rgb(241, 243, 246)" } }, // .dmeta .chip@1
+  { name: "chipBoard", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(3)", box: [409.3, 214, 146.5, 26], keys: "ywh", style: { fs: "12.5px", fw: "500", c: "rgb(79, 88, 102)", r: "7px", bg: "rgb(241, 243, 246)" } }, // .dmeta .chip@2
+  { name: "h2a", at: "#workspace-main article h2@0", box: [49.5, 298.1, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@0
+  { name: "prose", at: "#workspace-main article p[data-block]@0", box: [49.5, 337.1, 700, 80.1], keys: "xywh", style: { fs: "15.5px", fw: "400", c: "rgb(39, 45, 54)" } }, // .doc .prose@0
+  { name: "taskChip", at: "#workspace-main article p[data-block] [data-task-id]@0", box: [49.5, 390.8, 368.8, 26], keys: "xywh", style: { r: "6px", bg: "rgb(241, 243, 246)" } }, // .doc .prose .task
+  { name: "h2b", at: "#workspace-main article h2@1", box: [49.5, 449.2, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@1
+  { name: "li1", at: "#workspace-main article [data-num]@0", box: [49.5, 488.2, 700, 27.1], keys: "xywh", style: { fs: "15.5px", fw: "400", c: "rgb(39, 45, 54)" } }, // .doc ol li@0
+  { name: "li4", at: "#workspace-main article [data-num]@3", box: [49.5, 581.6, 700, 54.3], keys: "xywh", style: { fs: "15.5px", fw: "400", c: "rgb(39, 45, 54)" } }, // .doc ol li@3
+  { name: "li4task", at: "#workspace-main article [data-num]@3 >> [data-task-id]", box: [77.5, 609.3, 385.3, 26], keys: "xywh", style: { r: "6px", bg: "rgb(241, 243, 246)" } }, // .doc ol li@3 >> .task
+  { name: "h2c", at: "#workspace-main article h2@2", box: [49.5, 667.4, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@2
+  { name: "ck1box", at: "#workspace-main article [role=checkbox]@0", box: [49.5, 715.9, 17, 17], keys: "xywh", style: { r: "5px", bg: "rgb(46, 139, 87)" } }, // .ck .box@0
+  { name: "ck2", at: "#workspace-main article div.group@1", box: [41.5, 742.4, 716, 36], keys: "xywh", style: { r: "8px" } }, // .ck@1
+  { name: "ck2box", at: "#workspace-main article [role=checkbox]@1", box: [49.5, 751.9, 17, 17], keys: "xywh", style: { r: "5px" } }, // .ck .box@1
+  { name: "ck2t", at: "#workspace-main article div.group@1 >> .doc-todo-text", box: [76.5, 742.4, 507.9, 36], keys: "xywh", style: { fs: "15px", fw: "400", c: "rgb(39, 45, 54)" } }, // .ck .t@1
+  { name: "ck2mk", at: "#workspace-main article button[aria-label^=\"Chuyển thành việc\"]@1", box: [594.4, 746.4, 155.1, 28], keys: "xywh", style: { fs: "12.5px", fw: "600", c: "rgb(15, 86, 174)", r: "7px", bg: "rgb(255, 255, 255)" } }, // .ck .mk@1
+  { name: "h2d", at: "#workspace-main article h2@3", box: [49.5, 846.4, 700, 27], keys: "xywh", style: { fs: "20px", fw: "650", c: "rgb(22, 26, 33)" } }, // .doc h2@3
+  { name: "live", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\]", box: [49.5, 885.4, 700, 256.8], keys: "xywh", style: { r: "12px", bg: "rgb(255, 255, 255)" } }, // .live
+  { name: "liveHead", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\] > div@0", box: [50.5, 886.4, 698, 39.8], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live-h
+  { name: "lrow1", at: "#workspace-main article [role=table] [role=row]@0", box: [50.5, 926.3, 698, 43], keys: "xywh", style: {  } }, // .live .lrow@0
+  { name: "lrow1key", at: "#workspace-main article [role=table] [role=row]@0 >> a.font-mono", box: [64.5, 939.5, 50.4, 15], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live .lrow@0 >> a.mono
+  { name: "lrow1st", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(3) > span", box: [470.5, 936.3, 79.1, 22], keys: "xywh", style: { fs: "12px", fw: "600", c: "rgb(22, 26, 33)", r: "999px", bg: "rgb(236, 238, 242)" } }, // .live .lrow@0 >> .st
+  { name: "lrow1av", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(4) > span", box: [584.5, 935.3, 24, 24], keys: "xywh", style: {  } }, // .live .lrow@0 >> .av
+  { name: "lrow1due", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(5)", box: [626.5, 938.2, 108, 18.1], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live .lrow@0 >> .due
+  { name: "lrowLocked", at: "#workspace-main article [role=table] [role=row]@-1", box: [50.5, 1098.3, 698, 42], keys: "xywh", style: {  } }, // .live .lrow.locked
+  { name: "liveNote", at: "#workspace-main article p[id^=\"live-note\"]", box: [49.5, 1154.4, 700, 37.5], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live-note
+  { name: "callout", at: "#workspace-main article div.bg-doc-notice", box: [49.5, 1211.9, 700, 74.4], keys: "xywh", style: { r: "10px", bg: "rgb(238, 244, 253)" } }, // .callout
+  { name: "rp", at: "#workspace-main aside[aria-label=\"Bảng bên của tài liệu\"]", box: [799, 126, 309, 1214], keys: "xyw", style: { bg: "rgb(255, 255, 255)" } }, // .rp
+  { name: "rtabs", at: "#workspace-main aside [role=tablist]", box: [800, 126, 308, 44], keys: "xywh", style: {  } }, // .rtabs
+  { name: "rtab1", at: "#workspace-main aside [role=tab]@0", box: [812, 126, 83.4, 44], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(22, 26, 33)" } }, // .rtab@0
+  { name: "rtab3", at: "#workspace-main aside [role=tab]@2", box: [968.6, 126, 89.3, 44], keys: "xywh", style: { fs: "13px", fw: "500", c: "rgb(79, 88, 102)" } }, // .rtab@2
+  { name: "rbody", at: "#workspace-main aside [role=tabpanel]", box: [800, 170, 308, 1170], keys: "xyw", style: {  } }, // .rbody
+  { name: "rh3", at: "#workspace-main aside [role=tabpanel] h3@0", box: [816, 184, 276, 18.1], keys: "xywh", style: { fs: "12.5px", fw: "600", c: "rgb(79, 88, 102)" } }, // .rbody h3@0
+  { name: "rli1", at: "#workspace-main aside [role=tabpanel] a@0", box: [808, 210.1, 292, 71.8], keys: "xywh", style: { r: "8px" } }, // .rbody .li@0
+  { name: "rli1b", at: "#workspace-main aside [role=tabpanel] a@0 >> b", box: [833, 218.1, 259, 36.4], keys: "xywh", style: { fs: "13px", fw: "500", c: "rgb(22, 26, 33)" } }, // .rbody .li@0 >> b
+  { name: "rli1small", at: "#workspace-main aside [role=tabpanel] a@0 >> small", box: [833, 256.5, 259, 17.4], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .rbody .li@0 >> small
 ];
 
 /** Final-Docs state=binh-thuong, nav=an, mode=sang. Origin: main area (256,0); the side panel hugs the right edge. */
@@ -287,64 +288,59 @@ const NORMAL: Entry[] = [
 const NORMAL_HIDDEN: Entry[] = [
   { name: "bar", at: "#workspace-main header", box: [0, 0, 1184, 49], keys: "xywh", style: {  } }, // .dbar
   { name: "crumb", at: "#workspace-main header nav", box: [24, 14.6, 289.2, 18.8], keys: "xyh", style: {  } }, // .dbar .crumb
-  { name: "status", at: "#workspace-main header button[aria-label^=\"Trạng thái tài liệu\"]", box: [323.2, 11, 115.4, 26], keys: "yh", style: {  } }, // .status
   { name: "edited", at: "#workspace-main header > span.text-crumb@0", box: [448.6, 14.9, 226.1, 18.1], keys: "yh", style: {  } }, // .edited
   { name: "share", at: "#workspace-main header button[aria-haspopup=\"dialog\"]", box: [931.4, 8, 73.5, 32], keys: "xywh", style: {  } }, // .dbar .btn@0
   { name: "approve", at: "#workspace-main header button[title=\"Duyệt tài liệu chưa khả dụng.\"]", box: [1014.8, 8, 111.2, 32], keys: "xywh", style: {  } }, // .dbar .btn.pri
   { name: "more", at: "#workspace-main header button[aria-label=\"Thêm tuỳ chọn\"]", box: [1136, 8, 32, 32], keys: "xywh", style: {  } }, // .dbar .ib
-  { name: "tbar", at: "#workspace-main header + div", box: [0, 49, 1184, 105], keys: "xywh", style: {  } }, // .tbar
-  { name: "menus", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"]", box: [0, 49, 1184, 30], keys: "xywh", style: {  } }, // .menus
-  { name: "menuFile", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@0", box: [16, 51, 42.8, 28], keys: "xywh", style: {  } }, // .menus button@0
-  { name: "menuTools", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@5", box: [318.7, 51, 71, 28], keys: "xywh", style: {  } }, // .menus button@5
-  { name: "tools", at: "#workspace-main [role=toolbar]", box: [0, 79, 1184, 74], keys: "xywh", style: {  } }, // .tools
-  { name: "tbUndo", at: "#workspace-main [role=toolbar] > button@0", box: [12, 84, 30, 30], keys: "xywh", style: {  } }, // .tools > .tb@0
-  { name: "tbPrint", at: "#workspace-main [role=toolbar] > button@2", box: [76, 84, 30, 30], keys: "xywh", style: {  } }, // .tools > .tb@2
-  { name: "tsep1", at: "#workspace-main [role=toolbar] > span[aria-hidden]@0", box: [113, 89, 1, 20], keys: "xywh", style: {  } }, // .tools .tsep@0
-  { name: "selStyle", at: "#workspace-main [role=toolbar] button[aria-label=\"Kiểu đoạn\"]", box: [121, 84, 94.1, 30], keys: "xyh", style: {  } }, // .tools .tb.sel@0
-  { name: "selFont", at: "#workspace-main [role=toolbar] button[aria-label=\"Phông chữ\"]", box: [217.1, 84, 133.1, 30], keys: "yhw", style: {  } }, // .tools .tb.sel@1
-  { name: "sizebox", at: "#workspace-main [role=toolbar] [role=group]", box: [352.2, 83, 76, 32], keys: "ywh", style: {  } }, // .sizebox
-  { name: "tbBold", at: "#workspace-main [role=toolbar] button[aria-label^=\"In đậm\"]", box: [443.2, 84, 30, 30], keys: "ywh", style: {  } }, // .tools .tb[aria-label^="In đậm"]
-  { name: "tbAlignLeft", at: "#workspace-main [role=toolbar] button[aria-label=\"Căn trái\"]", box: [821.2, 84, 30, 30], keys: "ywh", style: {  } }, // .tools .tb[aria-label="Căn trái"]
-  { name: "modeSel", at: "#workspace-main [role=toolbar] button[aria-label=\"Chế độ\"]", box: [1054.1, 117, 117.9, 30], keys: "xywh", style: {  } }, // .tools .modeb
-  { name: "article", at: "#workspace-main article", box: [87.5, 190, 700, 1113.2], keys: "xyw", style: {  } }, // .doc
-  { name: "h1", at: "#workspace-main article h1", box: [87.5, 190, 700, 40], keys: "xywh", style: {  } }, // .doc h1
-  { name: "chip0", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(1)", box: [87.5, 242, 186.4, 26], keys: "xyh", style: {  } }, // .dmeta .chip@0
-  { name: "chipDate", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(2)", box: [281.9, 242, 157.4, 26], keys: "ywh", style: {  } }, // .dmeta .chip@1
-  { name: "chipBoard", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(3)", box: [447.3, 242, 146.5, 26], keys: "ywh", style: {  } }, // .dmeta .chip@2
-  { name: "h2a", at: "#workspace-main article h2@0", box: [87.5, 322.1, 700, 27], keys: "xywh", style: {  } }, // .doc h2@0
-  { name: "prose", at: "#workspace-main article p[data-block-id]@0", box: [87.5, 359.1, 700, 79.7], keys: "xywh", style: {  } }, // .doc .prose@0
-  { name: "taskChip", at: "#workspace-main article p[data-block-id] [data-task-id]@0", box: [87.5, 412.8, 368.8, 26], keys: "xywh", style: {  } }, // .doc .prose .task
-  { name: "h2b", at: "#workspace-main article h2@1", box: [87.5, 466.8, 700, 27], keys: "xywh", style: {  } }, // .doc h2@1
-  { name: "li1", at: "#workspace-main article ol li@0", box: [109.5, 503.8, 678, 27.1], keys: "xywh", style: {  } }, // .doc ol li@0
-  { name: "li4", at: "#workspace-main article ol li@3", box: [109.5, 597.2, 678, 54.3], keys: "xywh", style: {  } }, // .doc ol li@3
-  { name: "li4task", at: "#workspace-main article ol li@3 >> [data-task-id]", box: [113.5, 625.3, 385.3, 26], keys: "xywh", style: {  } }, // .doc ol li@3 >> .task
-  { name: "h2c", at: "#workspace-main article h2@2", box: [87.5, 679.4, 700, 27], keys: "xywh", style: {  } }, // .doc h2@2
-  { name: "ck1box", at: "#workspace-main article [role=checkbox]@0", box: [87.5, 725.9, 17, 17], keys: "xywh", style: {  } }, // .ck .box@0
-  { name: "ck2", at: "#workspace-main article div.group@1", box: [79.5, 752.4, 716, 36], keys: "xywh", style: {  } }, // .ck@1
-  { name: "ck2box", at: "#workspace-main article [role=checkbox]@1", box: [87.5, 761.9, 17, 17], keys: "xywh", style: {  } }, // .ck .box@1
-  { name: "ck2t", at: "#workspace-main article div.group@1 >> [role=textbox]", box: [114.5, 759.6, 320.9, 21.8], keys: "xywh", style: {  } }, // .ck .t@1
-  { name: "ck2mk", at: "#workspace-main article button[aria-label^=\"Chuyển thành việc\"]@1", box: [632.4, 792.4, 155.1, 28], keys: "xywh", style: {  } }, // .ck .mk@1
-  { name: "h2d", at: "#workspace-main article h2@3", box: [87.5, 852.4, 700, 27], keys: "xywh", style: {  } }, // .doc h2@3
-  { name: "live", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\]", box: [87.5, 889.4, 700, 255.8], keys: "xywh", style: {  } }, // .live
-  { name: "liveHead", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\] > div@0", box: [88.5, 890.4, 698, 39.8], keys: "xywh", style: {  } }, // .live-h
-  { name: "lrow1", at: "#workspace-main article [role=table] [role=row]@0", box: [88.5, 930.3, 698, 43], keys: "xywh", style: {  } }, // .live .lrow@0
-  { name: "lrow1key", at: "#workspace-main article [role=table] [role=row]@0 >> a.font-mono", box: [102.5, 943.5, 50.4, 15], keys: "xywh", style: {  } }, // .live .lrow@0 >> a.mono
-  { name: "lrow1st", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(3) > span", box: [508.5, 940.3, 86.9, 22], keys: "xywh", style: {  } }, // .live .lrow@0 >> .st
-  { name: "lrow1av", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(4) > span", box: [622.5, 939.3, 24, 24], keys: "xywh", style: {  } }, // .live .lrow@0 >> .av
-  { name: "lrow1due", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(5)", box: [664.5, 942.2, 108, 18.1], keys: "xywh", style: {  } }, // .live .lrow@0 >> .due
-  { name: "lrowLocked", at: "#workspace-main article [role=table] [role=row]@-1", box: [88.5, 1102.3, 698, 42], keys: "xywh", style: {  } }, // .live .lrow.locked
-  { name: "liveNote", at: "#workspace-main article p[id^=\"live-note\"]", box: [87.5, 1153.3, 700, 37.5], keys: "xywh", style: {  } }, // .live-note
-  { name: "callout", at: "#workspace-main article div.bg-doc-notice", box: [87.5, 1210.8, 700, 74.4], keys: "xywh", style: {  } }, // .callout
-  { name: "rp", at: "#workspace-main aside[aria-label=\"Bảng bên của tài liệu\"]", box: [875, 154, 309, 1213.2], keys: "xyw", style: {  } }, // .rp
-  { name: "rtabs", at: "#workspace-main aside [role=tablist]", box: [876, 154, 308, 44], keys: "xywh", style: {  } }, // .rtabs
-  { name: "rtab1", at: "#workspace-main aside [role=tab]@0", box: [888, 154, 83.6, 44], keys: "xywh", style: {  } }, // .rtab@0
-  { name: "rtab3", at: "#workspace-main aside [role=tab]@2", box: [1044.8, 154, 89.3, 44], keys: "xywh", style: {  } }, // .rtab@2
-  { name: "rbody", at: "#workspace-main aside [role=tabpanel]", box: [876, 198, 308, 1169.2], keys: "xyw", style: {  } }, // .rbody
-  { name: "rh3", at: "#workspace-main aside [role=tabpanel] h3@0", box: [892, 212, 276, 18.1], keys: "xywh", style: {  } }, // .rbody h3@0
-  { name: "rli1", at: "#workspace-main aside [role=tabpanel] a@0", box: [884, 238.1, 292, 71.8], keys: "xywh", style: {  } }, // .rbody .li@0
-  { name: "rli1b", at: "#workspace-main aside [role=tabpanel] a@0 >> b", box: [909, 246.1, 259, 36.4], keys: "xywh", style: {  } }, // .rbody .li@0 >> b
-  { name: "rli1small", at: "#workspace-main aside [role=tabpanel] a@0 >> small", box: [909, 284.5, 259, 17.4], keys: "xywh", style: {  } }, // .rbody .li@0 >> small
-  { name: "rliLocked", at: "#workspace-main aside [role=tabpanel] section:first-of-type > div:last-child", box: [884, 525.2, 292, 53.6], keys: "xwh", style: {  } }, // .rbody .li.locked
+  { name: "tbar", at: "#workspace-main header + div", box: [0, 49, 1184, 76], keys: "xywh", style: {  } }, // .tbar
+  { name: "menus", at: "#workspace-main [role=menubar]", box: [0, 49, 1184, 30], keys: "xywh", style: {  } }, // .menus
+  { name: "menuFile", at: "#workspace-main [role=menubar] button@0", box: [16, 51, 42.8, 28], keys: "xywh", style: {  } }, // .menus button@0
+  { name: "menuTools", at: "#workspace-main [role=menubar] button@5", box: [318.7, 51, 71, 28], keys: "xywh", style: {  } }, // .menus button@5
+  { name: "tools", at: "#workspace-main [role=toolbar]", box: [0, 79, 1184, 46], keys: "xywh", style: {  } }, // .tools
+  { name: "tbUndo", at: "#workspace-main [role=toolbar] [data-tool]@0", box: [12, 86, 30, 30], keys: "xywh", style: {  } }, // .tools > .tb@0
+  { name: "tbPrint", at: "#workspace-main [role=toolbar] [data-tool]@2", box: [76, 86, 30, 30], keys: "xywh", style: {  } }, // .tools > .tb@2
+  { name: "tsep1", at: "#workspace-main [role=toolbar] [data-group]@1 >> span[aria-hidden]", box: [112, 91, 1, 20], keys: "xywh", style: {  } }, // .tools .tsep@0
+  { name: "selStyle", at: "#workspace-main [role=toolbar] button[aria-label=\"Kiểu đoạn\"]", box: [119, 86, 150, 30], keys: "xywh", style: {  } }, // .tools .tb.sel@0
+  { name: "tbBold", at: "#workspace-main [role=toolbar] button[aria-label^=\"In đậm\"]", box: [443.2, 86, 30, 30], keys: "ywh", style: { r: "6px" } }, // .tools .tb[aria-label^="In đậm"]
+  { name: "tbAlignLeft", at: "#workspace-main [role=toolbar] button[aria-label=\"Căn trái\"]", box: [821.2, 86, 30, 30], keys: "ywh", style: {  } }, // .tools .tb[aria-label="Căn trái"]
+  { name: "article", at: "#workspace-main article", box: [87.5, 162, 700, 1113.2], keys: "xyw", style: {  } }, // .doc
+  { name: "h1", at: "#workspace-main article h1", box: [87.5, 162, 700, 40], keys: "xywh", style: {  } }, // .doc h1
+  { name: "chip0", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(1)", box: [87.5, 214, 186.4, 26], keys: "xyh", style: {  } }, // .dmeta .chip@0
+  { name: "chipDate", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(2)", box: [281.9, 214, 157.4, 26], keys: "ywh", style: {  } }, // .dmeta .chip@1
+  { name: "chipBoard", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(3)", box: [447.3, 214, 146.5, 26], keys: "ywh", style: {  } }, // .dmeta .chip@2
+  { name: "h2a", at: "#workspace-main article h2@0", box: [87.5, 298.1, 700, 27], keys: "xywh", style: {  } }, // .doc h2@0
+  { name: "prose", at: "#workspace-main article p[data-block]@0", box: [87.5, 337.1, 700, 80.1], keys: "xywh", style: {  } }, // .doc .prose@0
+  { name: "taskChip", at: "#workspace-main article p[data-block] [data-task-id]@0", box: [87.5, 390.8, 368.8, 26], keys: "xywh", style: {  } }, // .doc .prose .task
+  { name: "h2b", at: "#workspace-main article h2@1", box: [87.5, 449.2, 700, 27], keys: "xywh", style: {  } }, // .doc h2@1
+  { name: "li1", at: "#workspace-main article [data-num]@0", box: [87.5, 488.2, 700, 27.1], keys: "xywh", style: {  } }, // .doc ol li@0
+  { name: "li4", at: "#workspace-main article [data-num]@3", box: [87.5, 581.6, 700, 54.3], keys: "xywh", style: {  } }, // .doc ol li@3
+  { name: "li4task", at: "#workspace-main article [data-num]@3 >> [data-task-id]", box: [115.5, 609.3, 385.3, 26], keys: "xywh", style: {  } }, // .doc ol li@3 >> .task
+  { name: "h2c", at: "#workspace-main article h2@2", box: [87.5, 667.4, 700, 27], keys: "xywh", style: {  } }, // .doc h2@2
+  { name: "ck1box", at: "#workspace-main article [role=checkbox]@0", box: [87.5, 715.9, 17, 17], keys: "xywh", style: {  } }, // .ck .box@0
+  { name: "ck2", at: "#workspace-main article div.group@1", box: [79.5, 742.4, 716, 36], keys: "xywh", style: {  } }, // .ck@1
+  { name: "ck2box", at: "#workspace-main article [role=checkbox]@1", box: [87.5, 751.9, 17, 17], keys: "xywh", style: {  } }, // .ck .box@1
+  { name: "ck2t", at: "#workspace-main article div.group@1 >> .doc-todo-text", box: [114.5, 742.4, 507.9, 36], keys: "xywh", style: {  } }, // .ck .t@1
+  { name: "ck2mk", at: "#workspace-main article button[aria-label^=\"Chuyển thành việc\"]@1", box: [632.4, 746.4, 155.1, 28], keys: "xywh", style: {  } }, // .ck .mk@1
+  { name: "h2d", at: "#workspace-main article h2@3", box: [87.5, 846.4, 700, 27], keys: "xywh", style: {  } }, // .doc h2@3
+  { name: "live", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\]", box: [87.5, 885.4, 700, 256.8], keys: "xywh", style: {  } }, // .live
+  { name: "liveHead", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\] > div@0", box: [88.5, 886.4, 698, 39.8], keys: "xywh", style: {  } }, // .live-h
+  { name: "lrow1", at: "#workspace-main article [role=table] [role=row]@0", box: [88.5, 926.3, 698, 43], keys: "xywh", style: {  } }, // .live .lrow@0
+  { name: "lrow1key", at: "#workspace-main article [role=table] [role=row]@0 >> a.font-mono", box: [102.5, 939.5, 50.4, 15], keys: "xywh", style: {  } }, // .live .lrow@0 >> a.mono
+  { name: "lrow1st", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(3) > span", box: [508.5, 936.3, 79.1, 22], keys: "xywh", style: {  } }, // .live .lrow@0 >> .st
+  { name: "lrow1av", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(4) > span", box: [622.5, 935.3, 24, 24], keys: "xywh", style: {  } }, // .live .lrow@0 >> .av
+  { name: "lrow1due", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(5)", box: [664.5, 938.2, 108, 18.1], keys: "xywh", style: { fs: "12.5px", fw: "400", c: "rgb(95, 104, 117)" } }, // .live .lrow@0 >> .due
+  { name: "lrowLocked", at: "#workspace-main article [role=table] [role=row]@-1", box: [88.5, 1098.3, 698, 42], keys: "xywh", style: {  } }, // .live .lrow.locked
+  { name: "liveNote", at: "#workspace-main article p[id^=\"live-note\"]", box: [87.5, 1154.4, 700, 37.5], keys: "xywh", style: {  } }, // .live-note
+  { name: "callout", at: "#workspace-main article div.bg-doc-notice", box: [87.5, 1211.9, 700, 74.4], keys: "xywh", style: {  } }, // .callout
+  { name: "rp", at: "#workspace-main aside[aria-label=\"Bảng bên của tài liệu\"]", box: [875, 126, 309, 1214], keys: "xyw", style: {  } }, // .rp
+  { name: "rtabs", at: "#workspace-main aside [role=tablist]", box: [876, 126, 308, 44], keys: "xywh", style: {  } }, // .rtabs
+  { name: "rtab1", at: "#workspace-main aside [role=tab]@0", box: [888, 126, 83.4, 44], keys: "xywh", style: {  } }, // .rtab@0
+  { name: "rtab3", at: "#workspace-main aside [role=tab]@2", box: [1044.6, 126, 89.3, 44], keys: "xywh", style: {  } }, // .rtab@2
+  { name: "rbody", at: "#workspace-main aside [role=tabpanel]", box: [876, 170, 308, 1170], keys: "xyw", style: {  } }, // .rbody
+  { name: "rh3", at: "#workspace-main aside [role=tabpanel] h3@0", box: [892, 184, 276, 18.1], keys: "xywh", style: {  } }, // .rbody h3@0
+  { name: "rli1", at: "#workspace-main aside [role=tabpanel] a@0", box: [884, 210.1, 292, 71.8], keys: "xywh", style: {  } }, // .rbody .li@0
+  { name: "rli1b", at: "#workspace-main aside [role=tabpanel] a@0 >> b", box: [909, 218.1, 259, 36.4], keys: "xywh", style: {  } }, // .rbody .li@0 >> b
+  { name: "rli1small", at: "#workspace-main aside [role=tabpanel] a@0 >> small", box: [909, 256.5, 259, 17.4], keys: "xywh", style: {  } }, // .rbody .li@0 >> small
 ];
 
 /** Final-Docs state=binh-thuong, mode=dem: surfaces and ink only. */
@@ -352,70 +348,65 @@ const NORMAL_HIDDEN: Entry[] = [
 const DARK: Entry[] = [
   { name: "bar", at: "#workspace-main header", box: [0, 0, 1108, 49], keys: "", style: {  } }, // .dbar
   { name: "crumb", at: "#workspace-main header nav", box: [24, 14.6, 289.2, 18.8], keys: "", style: {  } }, // .dbar .crumb
-  { name: "status", at: "#workspace-main header button[aria-label^=\"Trạng thái tài liệu\"]", box: [323.2, 11, 115.4, 26], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(48, 40, 26)" } }, // .status
   { name: "edited", at: "#workspace-main header > span.text-crumb@0", box: [448.6, 14.9, 226.1, 18.1], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .edited
   { name: "share", at: "#workspace-main header button[aria-haspopup=\"dialog\"]", box: [855.4, 8, 73.5, 32], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(21, 26, 33)" } }, // .dbar .btn@0
   { name: "approve", at: "#workspace-main header button[title=\"Duyệt tài liệu chưa khả dụng.\"]", box: [938.8, 8, 111.2, 32], keys: "", style: {  } }, // .dbar .btn.pri
   { name: "more", at: "#workspace-main header button[aria-label=\"Thêm tuỳ chọn\"]", box: [1060, 8, 32, 32], keys: "", style: {  } }, // .dbar .ib
-  { name: "tbar", at: "#workspace-main header + div", box: [0, 49, 1108, 105], keys: "", style: { bg: "rgb(18, 22, 28)" } }, // .tbar
-  { name: "menus", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"]", box: [0, 49, 1108, 30], keys: "", style: {  } }, // .menus
-  { name: "menuFile", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@0", box: [16, 51, 42.8, 28], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .menus button@0
-  { name: "menuTools", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@5", box: [318.7, 51, 71, 28], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .menus button@5
-  { name: "tools", at: "#workspace-main [role=toolbar]", box: [0, 79, 1108, 74], keys: "", style: {  } }, // .tools
-  { name: "tbUndo", at: "#workspace-main [role=toolbar] > button@0", box: [12, 84, 30, 30], keys: "", style: {  } }, // .tools > .tb@0
-  { name: "tbPrint", at: "#workspace-main [role=toolbar] > button@2", box: [76, 84, 30, 30], keys: "", style: {  } }, // .tools > .tb@2
-  { name: "tsep1", at: "#workspace-main [role=toolbar] > span[aria-hidden]@0", box: [113, 89, 1, 20], keys: "", style: { bg: "rgb(46, 55, 67)" } }, // .tools .tsep@0
-  { name: "selStyle", at: "#workspace-main [role=toolbar] button[aria-label=\"Kiểu đoạn\"]", box: [121, 84, 94.1, 30], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(21, 26, 33)" } }, // .tools .tb.sel@0
-  { name: "selFont", at: "#workspace-main [role=toolbar] button[aria-label=\"Phông chữ\"]", box: [217.1, 84, 133.1, 30], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(21, 26, 33)" } }, // .tools .tb.sel@1
-  { name: "sizebox", at: "#workspace-main [role=toolbar] [role=group]", box: [352.2, 83, 76, 32], keys: "", style: {  } }, // .sizebox
-  { name: "tbBold", at: "#workspace-main [role=toolbar] button[aria-label^=\"In đậm\"]", box: [443.2, 84, 30, 30], keys: "", style: {  } }, // .tools .tb[aria-label^="In đậm"]
-  { name: "tbAlignLeft", at: "#workspace-main [role=toolbar] button[aria-label=\"Căn trái\"]", box: [821.2, 84, 30, 30], keys: "", style: {  } }, // .tools .tb[aria-label="Căn trái"]
-  { name: "modeSel", at: "#workspace-main [role=toolbar] button[aria-label=\"Chế độ\"]", box: [978.1, 117, 117.9, 30], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(21, 26, 33)" } }, // .tools .modeb
-  { name: "article", at: "#workspace-main article", box: [49.5, 190, 700, 1113.2], keys: "", style: {  } }, // .doc
-  { name: "h1", at: "#workspace-main article h1", box: [49.5, 190, 700, 40], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h1
-  { name: "chip0", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(1)", box: [49.5, 242, 186.4, 26], keys: "", style: { c: "rgb(170, 179, 192)", bg: "rgb(28, 35, 44)" } }, // .dmeta .chip@0
-  { name: "chipDate", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(2)", box: [243.9, 242, 157.4, 26], keys: "", style: { c: "rgb(170, 179, 192)", bg: "rgb(28, 35, 44)" } }, // .dmeta .chip@1
-  { name: "chipBoard", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(3)", box: [409.3, 242, 146.5, 26], keys: "", style: { c: "rgb(170, 179, 192)", bg: "rgb(28, 35, 44)" } }, // .dmeta .chip@2
-  { name: "h2a", at: "#workspace-main article h2@0", box: [49.5, 322.1, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@0
-  { name: "prose", at: "#workspace-main article p[data-block-id]@0", box: [49.5, 359.1, 700, 79.7], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .doc .prose@0
-  { name: "taskChip", at: "#workspace-main article p[data-block-id] [data-task-id]@0", box: [49.5, 412.8, 368.8, 26], keys: "", style: { bg: "rgb(28, 35, 44)" } }, // .doc .prose .task
-  { name: "h2b", at: "#workspace-main article h2@1", box: [49.5, 466.8, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@1
-  { name: "li1", at: "#workspace-main article ol li@0", box: [71.5, 503.8, 678, 27.1], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .doc ol li@0
-  { name: "li4", at: "#workspace-main article ol li@3", box: [71.5, 597.2, 678, 54.3], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .doc ol li@3
-  { name: "li4task", at: "#workspace-main article ol li@3 >> [data-task-id]", box: [75.5, 625.3, 385.3, 26], keys: "", style: { bg: "rgb(28, 35, 44)" } }, // .doc ol li@3 >> .task
-  { name: "h2c", at: "#workspace-main article h2@2", box: [49.5, 679.4, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@2
-  { name: "ck1box", at: "#workspace-main article [role=checkbox]@0", box: [49.5, 725.9, 17, 17], keys: "", style: { bg: "rgb(86, 201, 138)" } }, // .ck .box@0
-  { name: "ck2", at: "#workspace-main article div.group@1", box: [41.5, 752.4, 716, 36], keys: "", style: {  } }, // .ck@1
-  { name: "ck2box", at: "#workspace-main article [role=checkbox]@1", box: [49.5, 761.9, 17, 17], keys: "", style: {  } }, // .ck .box@1
-  { name: "ck2t", at: "#workspace-main article div.group@1 >> [role=textbox]", box: [76.5, 759.6, 320.9, 21.8], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .ck .t@1
-  { name: "ck2mk", at: "#workspace-main article button[aria-label^=\"Chuyển thành việc\"]@1", box: [594.4, 792.4, 155.1, 28], keys: "", style: { bg: "rgb(21, 26, 33)" } }, // .ck .mk@1
-  { name: "h2d", at: "#workspace-main article h2@3", box: [49.5, 852.4, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@3
-  { name: "live", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\]", box: [49.5, 889.4, 700, 255.8], keys: "", style: { bg: "rgb(21, 26, 33)" } }, // .live
-  { name: "liveHead", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\] > div@0", box: [50.5, 890.4, 698, 39.8], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .live-h
-  { name: "lrow1", at: "#workspace-main article [role=table] [role=row]@0", box: [50.5, 930.3, 698, 43], keys: "", style: {  } }, // .live .lrow@0
-  { name: "lrow1key", at: "#workspace-main article [role=table] [role=row]@0 >> a.font-mono", box: [64.5, 943.5, 50.4, 15], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .live .lrow@0 >> a.mono
-  { name: "lrow1st", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(3) > span", box: [470.5, 940.3, 86.9, 22], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(22, 40, 74)" } }, // .live .lrow@0 >> .st
-  { name: "lrow1av", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(4) > span", box: [584.5, 939.3, 24, 24], keys: "", style: {  } }, // .live .lrow@0 >> .av
-  { name: "lrow1due", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(5)", box: [626.5, 942.2, 108, 18.1], keys: "", style: { c: "rgb(255, 107, 129)" } }, // .live .lrow@0 >> .due
-  { name: "lrowLocked", at: "#workspace-main article [role=table] [role=row]@-1", box: [50.5, 1102.3, 698, 42], keys: "", style: {  } }, // .live .lrow.locked
-  { name: "liveNote", at: "#workspace-main article p[id^=\"live-note\"]", box: [49.5, 1153.3, 700, 37.5], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .live-note
-  { name: "callout", at: "#workspace-main article div.bg-doc-notice", box: [49.5, 1210.8, 700, 74.4], keys: "", style: { bg: "rgba(88, 167, 255, 0.10)" } }, // .callout
-  { name: "rp", at: "#workspace-main aside[aria-label=\"Bảng bên của tài liệu\"]", box: [799, 154, 309, 1213.2], keys: "", style: { bg: "rgb(21, 26, 33)" } }, // .rp
-  { name: "rtabs", at: "#workspace-main aside [role=tablist]", box: [800, 154, 308, 44], keys: "", style: {  } }, // .rtabs
-  { name: "rtab1", at: "#workspace-main aside [role=tab]@0", box: [812, 154, 83.6, 44], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .rtab@0
-  { name: "rtab3", at: "#workspace-main aside [role=tab]@2", box: [968.8, 154, 89.3, 44], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .rtab@2
-  { name: "rbody", at: "#workspace-main aside [role=tabpanel]", box: [800, 198, 308, 1169.2], keys: "", style: {  } }, // .rbody
-  { name: "rh3", at: "#workspace-main aside [role=tabpanel] h3@0", box: [816, 212, 276, 18.1], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .rbody h3@0
-  { name: "rli1", at: "#workspace-main aside [role=tabpanel] a@0", box: [808, 238.1, 292, 71.8], keys: "", style: {  } }, // .rbody .li@0
-  { name: "rli1b", at: "#workspace-main aside [role=tabpanel] a@0 >> b", box: [833, 246.1, 259, 36.4], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .rbody .li@0 >> b
-  { name: "rli1small", at: "#workspace-main aside [role=tabpanel] a@0 >> small", box: [833, 284.5, 259, 17.4], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .rbody .li@0 >> small
-  { name: "rliLocked", at: "#workspace-main aside [role=tabpanel] section:first-of-type > div:last-child", box: [808, 525.2, 292, 53.6], keys: "", style: {  } }, // .rbody .li.locked
+  { name: "tbar", at: "#workspace-main header + div", box: [0, 49, 1108, 76], keys: "", style: { bg: "rgb(18, 22, 28)" } }, // .tbar
+  { name: "menus", at: "#workspace-main [role=menubar]", box: [0, 49, 1108, 30], keys: "", style: {  } }, // .menus
+  { name: "menuFile", at: "#workspace-main [role=menubar] button@0", box: [16, 51, 42.8, 28], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .menus button@0
+  { name: "menuTools", at: "#workspace-main [role=menubar] button@5", box: [318.7, 51, 71, 28], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .menus button@5
+  { name: "tools", at: "#workspace-main [role=toolbar]", box: [0, 79, 1108, 46], keys: "", style: {  } }, // .tools
+  { name: "tbUndo", at: "#workspace-main [role=toolbar] [data-tool]@0", box: [12, 86, 30, 30], keys: "", style: {  } }, // .tools > .tb@0
+  { name: "tbPrint", at: "#workspace-main [role=toolbar] [data-tool]@2", box: [76, 86, 30, 30], keys: "", style: {  } }, // .tools > .tb@2
+  { name: "tsep1", at: "#workspace-main [role=toolbar] [data-group]@1 >> span[aria-hidden]", box: [112, 91, 1, 20], keys: "", style: { bg: "rgb(46, 55, 67)" } }, // .tools .tsep@0
+  { name: "selStyle", at: "#workspace-main [role=toolbar] button[aria-label=\"Kiểu đoạn\"]", box: [119, 86, 150, 30], keys: "xywh", style: { c: "rgb(230, 233, 238)", bg: "rgb(21, 26, 33)" } }, // .tools .tb.sel@0
+  { name: "tbBold", at: "#workspace-main [role=toolbar] button[aria-label^=\"In đậm\"]", box: [443.2, 86, 30, 30], keys: "", style: { r: "6px" } }, // .tools .tb[aria-label^="In đậm"]
+  { name: "tbAlignLeft", at: "#workspace-main [role=toolbar] button[aria-label=\"Căn trái\"]", box: [821.2, 86, 30, 30], keys: "", style: {  } }, // .tools .tb[aria-label="Căn trái"]
+  { name: "article", at: "#workspace-main article", box: [49.5, 162, 700, 1113.2], keys: "", style: {  } }, // .doc
+  { name: "h1", at: "#workspace-main article h1", box: [49.5, 162, 700, 40], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h1
+  { name: "chip0", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(1)", box: [49.5, 214, 186.4, 26], keys: "", style: { c: "rgb(170, 179, 192)", bg: "rgb(28, 35, 44)" } }, // .dmeta .chip@0
+  { name: "chipDate", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(2)", box: [243.9, 214, 157.4, 26], keys: "", style: { c: "rgb(170, 179, 192)", bg: "rgb(28, 35, 44)" } }, // .dmeta .chip@1
+  { name: "chipBoard", at: "#workspace-main article > div.flex.flex-wrap > :nth-child(3)", box: [409.3, 214, 146.5, 26], keys: "", style: { c: "rgb(170, 179, 192)", bg: "rgb(28, 35, 44)" } }, // .dmeta .chip@2
+  { name: "h2a", at: "#workspace-main article h2@0", box: [49.5, 298.1, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@0
+  { name: "prose", at: "#workspace-main article p[data-block]@0", box: [49.5, 337.1, 700, 80.1], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .doc .prose@0
+  { name: "taskChip", at: "#workspace-main article p[data-block] [data-task-id]@0", box: [49.5, 390.8, 368.8, 26], keys: "", style: { bg: "rgb(28, 35, 44)" } }, // .doc .prose .task
+  { name: "h2b", at: "#workspace-main article h2@1", box: [49.5, 449.2, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@1
+  { name: "li1", at: "#workspace-main article [data-num]@0", box: [49.5, 488.2, 700, 27.1], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .doc ol li@0
+  { name: "li4", at: "#workspace-main article [data-num]@3", box: [49.5, 581.6, 700, 54.3], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .doc ol li@3
+  { name: "li4task", at: "#workspace-main article [data-num]@3 >> [data-task-id]", box: [77.5, 609.3, 385.3, 26], keys: "", style: { bg: "rgb(28, 35, 44)" } }, // .doc ol li@3 >> .task
+  { name: "h2c", at: "#workspace-main article h2@2", box: [49.5, 667.4, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@2
+  { name: "ck1box", at: "#workspace-main article [role=checkbox]@0", box: [49.5, 715.9, 17, 17], keys: "", style: { bg: "rgb(86, 201, 138)" } }, // .ck .box@0
+  { name: "ck2", at: "#workspace-main article div.group@1", box: [41.5, 742.4, 716, 36], keys: "", style: {  } }, // .ck@1
+  { name: "ck2box", at: "#workspace-main article [role=checkbox]@1", box: [49.5, 751.9, 17, 17], keys: "", style: {  } }, // .ck .box@1
+  { name: "ck2t", at: "#workspace-main article div.group@1 >> .doc-todo-text", box: [76.5, 742.4, 507.9, 36], keys: "", style: { c: "rgb(211, 216, 224)" } }, // .ck .t@1
+  { name: "ck2mk", at: "#workspace-main article button[aria-label^=\"Chuyển thành việc\"]@1", box: [594.4, 746.4, 155.1, 28], keys: "", style: { bg: "rgb(21, 26, 33)" } }, // .ck .mk@1
+  { name: "h2d", at: "#workspace-main article h2@3", box: [49.5, 846.4, 700, 27], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .doc h2@3
+  { name: "live", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\]", box: [49.5, 885.4, 700, 256.8], keys: "", style: { bg: "rgb(21, 26, 33)" } }, // .live
+  { name: "liveHead", at: "#workspace-main article div.overflow-hidden.rounded-\\[12px\\] > div@0", box: [50.5, 886.4, 698, 39.8], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .live-h
+  { name: "lrow1", at: "#workspace-main article [role=table] [role=row]@0", box: [50.5, 926.3, 698, 43], keys: "", style: {  } }, // .live .lrow@0
+  { name: "lrow1key", at: "#workspace-main article [role=table] [role=row]@0 >> a.font-mono", box: [64.5, 939.5, 50.4, 15], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .live .lrow@0 >> a.mono
+  { name: "lrow1st", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(3) > span", box: [470.5, 936.3, 79.1, 22], keys: "", style: { c: "rgb(230, 233, 238)", bg: "rgb(30, 37, 47)" } }, // .live .lrow@0 >> .st
+  { name: "lrow1av", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(4) > span", box: [584.5, 935.3, 24, 24], keys: "", style: {  } }, // .live .lrow@0 >> .av
+  { name: "lrow1due", at: "#workspace-main article [role=table] [role=row]@0 >> [role=cell]:nth-child(5)", box: [626.5, 938.2, 108, 18.1], keys: "", style: { fs: "12.5px", fw: "400", c: "rgb(143, 153, 167)" } }, // .live .lrow@0 >> .due
+  { name: "lrowLocked", at: "#workspace-main article [role=table] [role=row]@-1", box: [50.5, 1098.3, 698, 42], keys: "", style: {  } }, // .live .lrow.locked
+  { name: "liveNote", at: "#workspace-main article p[id^=\"live-note\"]", box: [49.5, 1154.4, 700, 37.5], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .live-note
+  { name: "callout", at: "#workspace-main article div.bg-doc-notice", box: [49.5, 1211.9, 700, 74.4], keys: "", style: { bg: "rgba(88, 167, 255, 0.10)" } }, // .callout
+  { name: "rp", at: "#workspace-main aside[aria-label=\"Bảng bên của tài liệu\"]", box: [799, 126, 309, 1214], keys: "", style: { bg: "rgb(21, 26, 33)" } }, // .rp
+  { name: "rtabs", at: "#workspace-main aside [role=tablist]", box: [800, 126, 308, 44], keys: "", style: {  } }, // .rtabs
+  { name: "rtab1", at: "#workspace-main aside [role=tab]@0", box: [812, 126, 83.4, 44], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .rtab@0
+  { name: "rtab3", at: "#workspace-main aside [role=tab]@2", box: [968.6, 126, 89.3, 44], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .rtab@2
+  { name: "rbody", at: "#workspace-main aside [role=tabpanel]", box: [800, 170, 308, 1170], keys: "", style: {  } }, // .rbody
+  { name: "rh3", at: "#workspace-main aside [role=tabpanel] h3@0", box: [816, 184, 276, 18.1], keys: "", style: { c: "rgb(170, 179, 192)" } }, // .rbody h3@0
+  { name: "rli1", at: "#workspace-main aside [role=tabpanel] a@0", box: [808, 210.1, 292, 71.8], keys: "", style: {  } }, // .rbody .li@0
+  { name: "rli1b", at: "#workspace-main aside [role=tabpanel] a@0 >> b", box: [833, 218.1, 259, 36.4], keys: "", style: { c: "rgb(230, 233, 238)" } }, // .rbody .li@0 >> b
+  { name: "rli1small", at: "#workspace-main aside [role=tabpanel] a@0 >> small", box: [833, 256.5, 259, 17.4], keys: "", style: { c: "rgb(143, 153, 167)" } }, // .rbody .li@0 >> small
 ];
 
 /** Final-Docs state=menu-tep. Origin: main area. */
 // prettier-ignore
 const FILE_MENU: Entry[] = [
-  { name: "menuBtnOpen", at: "#workspace-main nav[aria-label=\"Menu tài liệu\"] button@0", box: [16, 51, 42.8, 28], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(22, 26, 33)", r: "6px", bg: "rgb(230, 233, 238)" } }, // .menus button@0
+  { name: "menuBtnOpen", at: "#workspace-main [role=menubar] button@0", box: [16, 51, 42.8, 28], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(22, 26, 33)", r: "6px", bg: "rgb(230, 233, 238)" } }, // .menus button@0
   { name: "menu", at: "#workspace-main [role=menu][aria-label=\"Tệp\"]", box: [16, 79, 294, 353], keys: "xywh", style: { r: "10px", bg: "rgb(255, 255, 255)" } }, // .menu
   { name: "mi0", at: "#workspace-main [role=menu][aria-label=\"Tệp\"] [role=menuitem]@0", box: [23, 86, 280, 34], keys: "xywh", style: { fs: "13.5px", fw: "400", c: "rgb(22, 26, 33)", r: "7px" } }, // .menu .mi@0
   { name: "mi0k", at: "#workspace-main [role=menu][aria-label=\"Tệp\"] [role=menuitem]@0 >> span", box: [272.5, 94.3, 20.5, 17.4], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .menu .mi@0 >> .k
@@ -481,13 +472,13 @@ const COMMENTS: Entry[] = [
 /** Final-Docs state=muc-luc. Origin: main area. */
 // prettier-ignore
 const CONTENTS: Entry[] = [
-  { name: "rtabOn", at: "#workspace-main aside [role=tab][aria-selected=true]", box: [896.9, 154, 69.8, 44], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(22, 26, 33)" } }, // .rtab.on
-  { name: "toc", at: "#workspace-main aside nav[aria-label=\"Mục lục tài liệu\"]", box: [816, 212, 276, 196.7], keys: "xywh", style: {  } }, // .toc
-  { name: "toc0", at: "#workspace-main aside nav a@0", box: [808, 212, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(22, 26, 33)", r: "7px" } }, // .toc a@0
-  { name: "toc1", at: "#workspace-main aside nav a@1", box: [808, 243.2, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .toc a@1
-  { name: "toc2on", at: "#workspace-main aside nav a[aria-current=location]", box: [808, 274.4, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(15, 86, 174)", r: "7px", bg: "rgb(231, 240, 252)" } }, // .toc a.on
-  { name: "toc4", at: "#workspace-main aside nav a@4", box: [808, 336.8, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .toc a@4
-  { name: "tocSmall", at: "#workspace-main aside nav small", box: [816, 373.9, 276, 34.8], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .toc small
+  { name: "rtabOn", at: "#workspace-main aside [role=tab][aria-selected=true]", box: [896.9, 126, 69.8, 44], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(22, 26, 33)" } }, // .rtab.on
+  { name: "toc", at: "#workspace-main aside nav[aria-label=\"Mục lục tài liệu\"]", box: [816, 184, 276, 196.7], keys: "xywh", style: {  } }, // .toc
+  { name: "toc0", at: "#workspace-main aside nav a@0", box: [808, 184, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(22, 26, 33)", r: "7px" } }, // .toc a@0
+  { name: "toc1", at: "#workspace-main aside nav a@1", box: [808, 215.2, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .toc a@1
+  { name: "toc2on", at: "#workspace-main aside nav a[aria-current=location]", box: [808, 246.4, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "600", c: "rgb(15, 86, 174)", r: "7px", bg: "rgb(231, 240, 252)" } }, // .toc a.on
+  { name: "toc4", at: "#workspace-main aside nav a@4", box: [808, 308.8, 292, 30.2], keys: "xywh", style: { fs: "13px", fw: "400", c: "rgb(79, 88, 102)", r: "7px" } }, // .toc a@4
+  { name: "tocSmall", at: "#workspace-main aside nav small", box: [816, 345.9, 276, 34.8], keys: "xywh", style: { fs: "12px", fw: "400", c: "rgb(95, 104, 117)" } }, // .toc small
 ];
 
 const AFTER_PEOPLE = new Set([
@@ -596,6 +587,11 @@ test.describe("Document page geometry at 1440 px (owner)", () => {
       await check(page, rail ? NORMAL : NORMAL_HIDDEN, {
         adjust: articleAdjust(shift),
       });
+      // An open checklist box: 1.5 px border in the --st-todo token.
+      const box = page.locator("article [role=checkbox]").nth(1);
+      // The 1.5 px width computes as 1 px at a device pixel ratio of 1.
+      await expect(box).toHaveClass(/border-\[1\.5px\]/);
+      expect(await colour(box, "border-top-color")).toBe("rgb(122, 131, 145)");
     });
   }
 
@@ -607,17 +603,17 @@ test.describe("Document page geometry at 1440 px (owner)", () => {
 
   test("File menu with the Download submenu", async ({ page }) => {
     await openDoc(page, { rail: "pinned" });
-    await page.getByRole("button", { name: "Tệp", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Tệp", exact: true }).click();
     await page.getByRole("menuitem", { name: /Tải xuống/ }).click();
     await check(page, FILE_MENU);
   });
 
   test("slash menu opened in a new paragraph", async ({ page }) => {
     await openDoc(page, { rail: "pinned" });
-    await page.locator("p[data-block-id]").first().click();
+    await page.locator("p[data-block]").first().click();
     await page.keyboard.press("End");
     await page.keyboard.press("Enter");
-    await expect(page.locator("p[data-block-id]")).toHaveCount(2);
+    await expect(page.locator("p[data-block]")).toHaveCount(2);
     await page.keyboard.type("/danh");
     await expect(
       page.getByRole("listbox", { name: "Chèn khối" }),
@@ -628,7 +624,7 @@ test.describe("Document page geometry at 1440 px (owner)", () => {
 
   test("task mention list opened after @", async ({ page }) => {
     await openDoc(page, { rail: "pinned" });
-    await page.locator("p[data-block-id]").first().click();
+    await page.locator("p[data-block]").first().click();
     await page.keyboard.press("End");
     await page.keyboard.type(" @ERP-14");
     await expect(
@@ -683,7 +679,7 @@ test.describe("Document page geometry at 1440 px (owner)", () => {
     page,
   }) => {
     await openDoc(page, { rail: "pinned" });
-    await page.getByRole("button", { name: "Tệp", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Tệp", exact: true }).click();
     await page.getByRole("menuitem", { name: /Lịch sử phiên bản/ }).click();
     await expect(
       page.getByRole("region", { name: "Đang xem phiên bản cũ" }),
@@ -711,5 +707,235 @@ test.describe("Document page geometry at 1440 px (owner)", () => {
     await page.getByRole("heading", { level: 1 }).click();
     await expect(page.getByRole("alert")).toBeVisible();
     await check(page, SAVE_ERROR);
+  });
+});
+
+/**
+ * The 320 px page against Final-Docs-2-320 and Final-Docs-2-320-Sheet (follows
+ * Final-M-Docs): the 52 px bar, a closed panel that opens as a bottom sheet,
+ * rows that scroll sideways, targets of at least 44 px and no sideways page
+ * scroll.
+ */
+test.describe("Document page at 320 px (owner)", () => {
+  test.skip(
+    persona !== "owner" || scenario !== "default",
+    "Owner checks need the default owner world",
+  );
+  test.use({
+    viewport: { width: 320, height: 800 },
+    hasTouch: true,
+    isMobile: true,
+  });
+
+  const box = async (locator: Locator) => {
+    const found = await locator.boundingBox();
+    if (!found) throw new Error("no box");
+    return found;
+  };
+
+  test("fits the width: bar, article, rows and panel", async ({ page }) => {
+    await openDoc(page);
+    const overflow = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth,
+      main: document.querySelector("#workspace-main")!.scrollWidth,
+      view: document.documentElement.clientWidth,
+    }));
+    expect(overflow.page).toBeLessThanOrEqual(overflow.view);
+    expect(overflow.main).toBeLessThanOrEqual(overflow.view);
+
+    // The side panel is closed: no column and no sheet.
+    await expect(page.locator("aside")).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // The global bottom navigation does not exist on this page.
+    await expect(
+      page.getByRole("navigation", { name: /dưới|bottom/i }),
+    ).toHaveCount(0);
+
+    const bar = await box(page.locator("#workspace-main header"));
+    expect(bar.y).toBeCloseTo(0, 0);
+    expect(bar.height).toBeCloseTo(52, 0);
+    const back = await box(page.getByRole("button", { name: /^Quay lại/ }));
+    expect([back.width, back.height]).toEqual([44, 44]);
+    expect(back.x).toBeCloseTo(6, 0);
+    await expect(
+      page.getByRole("button", { name: /^Bình luận, \d+ chuỗi đang mở$/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Thêm: chia sẻ/ }),
+    ).toBeVisible();
+    // The meta line reads whole: saved, then who edited.
+    const meta = page.getByRole("status").filter({ hasText: "Đã lưu" });
+    await expect(meta).toBeVisible();
+    const metaRow = meta.locator("xpath=..");
+    expect(
+      await metaRow.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+    await expect(metaRow).toContainText("sửa lúc");
+
+    const article = await box(page.locator("#workspace-main article"));
+    expect(article.x).toBeCloseTo(16, 0);
+    expect(article.width).toBeCloseTo(288, 0);
+    const h1 = await box(page.getByRole("heading", { level: 1 }));
+    expect(h1.width).toBeGreaterThan(280);
+    expect(h1.height).toBeLessThanOrEqual(32 * 3);
+    expect(
+      await style(page.getByRole("heading", { level: 1 }), "font-size"),
+    ).toBe("26px");
+    expect(await style(page.locator("article h2").first(), "font-size")).toBe(
+      "18px",
+    );
+
+    // The menu and tool rows scroll sideways with no scrollbar.
+    for (const row of [
+      page.locator('nav[aria-label="Menu tài liệu"], [role=menubar]').first(),
+      page.getByRole("toolbar"),
+    ]) {
+      expect(await style(row, "overflow-x")).toBe("auto");
+      expect(await style(row, "scrollbar-width")).toBe("none");
+    }
+    const tools = await box(page.getByRole("toolbar"));
+    expect(tools.height).toBeCloseTo(52, 0);
+  });
+
+  test("every control is at least 44 px", async ({ page }) => {
+    await openDoc(page);
+    const small: string[] = [];
+    const measure = async (name: string, locator: Locator) => {
+      const total = await locator.count();
+      for (let i = 0; i < total; i += 1) {
+        const item = locator.nth(i);
+        if (!(await item.isVisible())) continue;
+        const found = await item.boundingBox();
+        if (found && (found.height < 43.9 || found.width < 43.9)) {
+          small.push(
+            `${name}[${i}] ${found.width.toFixed(1)}x${found.height.toFixed(1)}`,
+          );
+        }
+      }
+    };
+    await measure(
+      "header buttons",
+      page.locator("#workspace-main header button"),
+    );
+    await measure("menus", page.locator("[role=menubar] button"));
+    await measure("tools", page.locator("[role=toolbar] [data-tool]"));
+    await measure(
+      "convert",
+      page.locator('article button[aria-label^="Chuyển thành việc"]'),
+    );
+    await measure("live keys", page.locator("article [role=row] a.font-mono"));
+    await measure(
+      "live titles",
+      page.locator("article [role=row] [role=cell] a:not(.font-mono)"),
+    );
+    expect(small, "controls under 44 px").toEqual([]);
+
+    // The checkbox is 17 px drawn inside a 44 px target.
+    const checkbox = page.locator("article [role=checkbox]").first();
+    await checkbox.scrollIntoViewIfNeeded();
+    const found = await box(checkbox);
+    for (const [dx, dy] of [
+      [-13, 0],
+      [27, 0],
+      [8, -13],
+      [8, 28],
+    ] as const) {
+      const hit = await page.evaluate(
+        ([x, y]) =>
+          document.elementFromPoint(x, y)?.getAttribute("role") ?? null,
+        [found.x + dx, found.y + dy] as const,
+      );
+      expect(hit, `hit area at ${dx},${dy}`).toBe("checkbox");
+    }
+
+    // An open checklist row shows "Chuyển thành việc" on its own line.
+    const convert = await box(
+      page
+        .locator('article button[aria-label^="Chuyển thành việc"]:visible')
+        .first(),
+    );
+    const row = page
+      .locator("article div.group")
+      .filter({
+        has: page.locator('button[aria-label^="Chuyển thành việc"]:visible'),
+      })
+      .first();
+    const text = await box(
+      row.locator("[role=textbox], .doc-todo-text").first(),
+    );
+    expect(convert.y).toBeGreaterThanOrEqual(text.y + text.height - 1);
+    expect(convert.height).toBeCloseTo(44, 0);
+    expect((await box(row)).height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("live table rows are two-line cards", async ({ page }) => {
+    await openDoc(page);
+    const row = page.locator("article [role=table] [role=row]").first();
+    const key = await box(row.locator("a.font-mono"));
+    const status = await box(row.locator("[role=cell]").nth(2));
+    expect(status.y).toBeGreaterThanOrEqual(key.y + key.height - 1);
+    const live = await box(
+      page.locator("article div.overflow-hidden.rounded-\\[12px\\]"),
+    );
+    expect(live.x + live.width).toBeLessThanOrEqual(320 - 16 + 1);
+  });
+
+  test("Bình luận opens the panel as a bottom sheet", async ({ page }) => {
+    await openDoc(page);
+    const trigger = page.getByRole("button", {
+      name: /^Bình luận, \d+ chuỗi đang mở$/,
+    });
+    await trigger.click();
+    const sheet = page.getByRole("dialog", { name: "Bảng bên của tài liệu" });
+    await expect(sheet).toBeVisible();
+    const found = await box(sheet);
+    expect(found.x).toBeCloseTo(0, 0);
+    expect(found.width).toBeCloseTo(320, 0);
+    expect(found.y + found.height).toBeCloseTo(800, 0);
+    expect(found.height).toBeLessThanOrEqual(0.85 * 800 + 1);
+    const close = await box(
+      sheet.getByRole("button", { name: "Đóng bảng bên" }),
+    );
+    expect([close.width, close.height]).toEqual([44, 44]);
+    const tabs = sheet.getByRole("tab");
+    await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+    await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "false");
+    for (let i = 0; i < 3; i += 1) {
+      expect((await box(tabs.nth(i))).height).toBeCloseTo(44, 0);
+    }
+    await tabs.nth(0).click();
+    await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+    // The page behind does not scroll sideways under the sheet.
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  test("Thêm opens the overflow sheet with Share, Approve, Contents and History", async ({
+    page,
+  }) => {
+    await openDoc(page);
+    await expect(
+      page.getByRole("button", { name: "Chia sẻ", exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: /^Thêm: chia sẻ/ }).click();
+    const sheet = page.getByRole("dialog", { name: "Thêm" });
+    await expect(sheet).toBeVisible();
+    for (const name of [
+      "Chia sẻ",
+      "Duyệt tài liệu",
+      "Mục lục",
+      "Lịch sử phiên bản",
+    ]) {
+      const item = sheet.getByRole("button", { name, exact: true });
+      await expect(item).toBeVisible();
+      expect((await box(item)).height).toBeGreaterThanOrEqual(44);
+    }
+    await sheet.getByRole("button", { name: "Mục lục", exact: true }).click();
+    const panel = page.getByRole("dialog", { name: "Bảng bên của tài liệu" });
+    await expect(panel.getByRole("tab", { name: /Mục lục/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 });

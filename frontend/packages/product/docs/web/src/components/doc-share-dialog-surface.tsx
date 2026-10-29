@@ -64,18 +64,21 @@ function levelLabel(copy: DocPageCopy, level: DocShareMember["level"]): string {
 export function useModalFocus(
   dialog: React.RefObject<HTMLDivElement | null>,
   onClose: (() => void) | undefined,
+  /** A sheet on a phone keeps focus on the dialog so no keyboard opens. */
+  focusField = true,
 ) {
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const target =
-      dialog.current?.querySelector<HTMLElement>("input:not([disabled])") ??
-      dialog.current;
+      (focusField
+        ? dialog.current?.querySelector<HTMLElement>("input:not([disabled])")
+        : null) ?? dialog.current;
     target?.focus();
     // The page behind is inert until this unmounts; refocus after it clears.
     return () => {
       window.requestAnimationFrame(() => previous?.focus?.());
     };
-  }, [dialog]);
+  }, [dialog, focusField]);
 
   return (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {

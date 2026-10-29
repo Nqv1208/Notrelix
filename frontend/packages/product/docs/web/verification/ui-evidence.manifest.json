@@ -43,6 +43,7 @@
       "pureEntry": "src/components/doc-page-screen-surface.tsx",
       "coveredSources": [
         "src/components/doc-page-ui.tsx",
+        "src/components/doc-bottom-sheet-surface.tsx",
         "src/components/doc-dialogs-surface.tsx",
         "src/components/doc-history-dialogs-surface.tsx",
         "src/components/doc-tools-dialogs-surface.tsx"
@@ -301,6 +302,22 @@
         },
         {
           "id": "panel",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "sheet",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "sheet-open",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "more-sheet",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "back",
           "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
         }
       ]

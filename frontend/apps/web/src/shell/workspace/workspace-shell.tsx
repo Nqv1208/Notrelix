@@ -713,8 +713,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             top edge, the sidebar collapses with the arrow on its edge, and
             search, notifications and appearance live in the sidebar, the rail
             and the account pages. Phones keep the bar, which owns the
-            navigation drawer trigger. */}
-        {isMobile ? (
+            navigation drawer trigger, except on a document, which draws its own
+            52 px bar (Back, Comments, More). */}
+        {isMobile && !activeDocId ? (
           <WorkspaceTopbarSurface
             copy={copy}
             navigation={navigation}

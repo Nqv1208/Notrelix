@@ -1,5 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 
 import {
   BLOCKS,
@@ -564,5 +571,138 @@ describe("docs web pure surfaces", () => {
       "Kế toán hằng tháng",
     );
     expect(onConvertBoard).toHaveBeenCalledWith("board-2");
+  });
+
+  describe("on a phone", () => {
+    const desktopWidth = window.innerWidth;
+    beforeEach(() => {
+      window.innerWidth = 320;
+    });
+    afterEach(() => {
+      window.innerWidth = desktopWidth;
+    });
+
+    it("FUI[docs.page.screen:sheet] opens from Comments, closes on Escape and returns focus to the button", async () => {
+      function Host() {
+        const [open, setOpen] = useState(false);
+        return (
+          <DocPageScreenSurface
+            {...docsPageScreenDefaultScenario()}
+            panelOpen={open}
+            panelTab="comments"
+            callbacks={{
+              onPanelOpenChange: setOpen,
+              onOpenComments: () => setOpen(true),
+            }}
+          />
+        );
+      }
+      renderPureUi(<Host />);
+      // Closed by default: neither the column nor the sheet shows.
+      expect(screen.queryByRole("complementary")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      const comments = screen.getByRole("button", {
+        name: /Bình luận, \d+ chuỗi đang mở/,
+      });
+      expect(comments.getAttribute("aria-haspopup")).toBe("dialog");
+      comments.focus();
+      fireEvent.click(comments);
+      const dialog = screen.getByRole("dialog", { name: docsCopy.panel.label });
+      expect(document.activeElement).toBe(dialog);
+      fireEvent.keyDown(dialog, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await waitFor(() => expect(document.activeElement).toBe(comments));
+    });
+
+    it("FUI[docs.page.screen:sheet-open] shows aria-selected tabs and a 44 px Close that ask the host to close", () => {
+      const onPanelOpenChange = vi.fn();
+      const onPanelTab = vi.fn();
+      renderPureUi(
+        <DocPageScreenSurface
+          {...docsPageScreenDefaultScenario()}
+          panelOpen
+          panelTab="comments"
+          callbacks={{ onPanelOpenChange, onPanelTab }}
+        />,
+      );
+      const dialog = screen.getByRole("dialog", { name: docsCopy.panel.label });
+      expect(dialog.getAttribute("aria-modal")).toBe("true");
+      const tabs = within(dialog).getAllByRole("tab");
+      expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
+        "false",
+        "false",
+        "true",
+      ]);
+      fireEvent.click(tabs[1] as HTMLElement);
+      expect(onPanelTab).toHaveBeenCalledWith("toc");
+      const close = within(dialog).getByRole("button", {
+        name: docsCopy.panel.close,
+      });
+      expect(close.className).toContain("size-11");
+      fireEvent.click(close);
+      fireEvent.keyDown(dialog, { key: "Escape" });
+      expect(onPanelOpenChange).toHaveBeenCalledTimes(2);
+      expect(onPanelOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("FUI[docs.page.screen:back] keeps a named Back on loading, not-found and the ready bar", () => {
+      const onBack = vi.fn();
+      const backLabel = "Quay lại Phòng Kế toán";
+      for (const scenario of [
+        docsPageScreenLoadingScenario(),
+        docsPageScreenNotFoundScenario(),
+        docsPageScreenDefaultScenario(),
+      ]) {
+        const view = renderPureUi(
+          <DocPageScreenSurface
+            {...scenario}
+            panelOpen={false}
+            backLabel={backLabel}
+            callbacks={{ onBack }}
+          />,
+        );
+        fireEvent.click(screen.getByRole("button", { name: backLabel }));
+        view.unmount();
+      }
+      expect(onBack).toHaveBeenCalledTimes(3);
+    });
+
+    it("FUI[docs.page.screen:more-sheet] moves Share, Approve, Contents and History behind More", () => {
+      const onOpenShare = vi.fn();
+      const onPanelTab = vi.fn();
+      const onPanelOpenChange = vi.fn();
+      renderPureUi(
+        <DocPageScreenSurface
+          {...docsPageScreenDefaultScenario()}
+          panelOpen={false}
+          callbacks={{ onOpenShare, onPanelTab, onPanelOpenChange }}
+        />,
+      );
+      expect(
+        screen.queryByRole("button", { name: docsCopy.header.share }),
+      ).toBeNull();
+      fireEvent.click(
+        screen.getByRole("button", { name: docsCopy.header.moreSheet }),
+      );
+      const dialog = screen.getByRole("dialog", {
+        name: docsCopy.header.moreTitle,
+      });
+      for (const label of [
+        docsCopy.header.share,
+        docsCopy.header.approve,
+        docsCopy.panel.toc,
+        docsCopy.fileMenu.versionHistory,
+      ]) {
+        expect(
+          within(dialog).getByRole("button", { name: label }),
+        ).toBeTruthy();
+      }
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: docsCopy.panel.toc }),
+      );
+      expect(onPanelTab).toHaveBeenCalledWith("toc");
+      expect(onPanelOpenChange).toHaveBeenCalledWith(true);
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 });

@@ -87,3 +87,11 @@ export function DocStatusDot({
 
 /** 16 px line icon at the design's 1.8 stroke. */
 export const ICON_CLASS = "size-4 shrink-0 stroke-[1.8]";
+
+/** A phone row scrolls sideways with its scrollbar hidden (the fade is on its wrapper). */
+export const SCROLL_ROW =
+  "max-md:overflow-x-auto max-md:overflow-y-hidden max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden";
+
+/** The 24 px fade at the right edge of a row that scrolls. */
+export const SCROLL_FADE =
+  "max-md:relative max-md:after:pointer-events-none max-md:after:absolute max-md:after:inset-y-0 max-md:after:right-0 max-md:after:w-6 max-md:after:bg-linear-to-r max-md:after:from-transparent max-md:after:to-doc-page";

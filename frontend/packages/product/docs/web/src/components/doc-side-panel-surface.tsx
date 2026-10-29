@@ -21,6 +21,7 @@ import {
   type DocTocEntry,
 } from "./doc-page-models";
 import { DocAvatar, DocStatusDot } from "./doc-page-ui";
+import { DocBottomSheet } from "./doc-bottom-sheet-surface";
 
 export interface DocSidePanelSurfaceProps {
   readonly copy: DocPageCopy;
@@ -33,6 +34,8 @@ export interface DocSidePanelSurfaceProps {
   /** The selected text a comment is being written on, when there is one. */
   readonly pendingQuote?: string | null;
   readonly canComment?: boolean;
+  /** A phone: the panel is a bottom sheet instead of a column. */
+  readonly sheet?: boolean;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -40,7 +43,7 @@ const TAB =
   "-mb-px box-border h-11 border-0 border-b-2 border-transparent bg-transparent px-2.5 text-compact leading-[1.45] font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring";
 
 const ITEM =
-  "-mx-2 flex items-start gap-[9px] rounded-[8px] p-2 no-underline hover:bg-state-hover";
+  "-mx-2 flex items-start gap-[9px] rounded-[8px] p-2 no-underline hover:bg-state-hover max-md:min-h-11";
 
 const SECTION_TITLE =
   "mb-2 flex items-center gap-1.5 text-crumb leading-[1.45] font-semibold text-muted-foreground";
@@ -193,7 +196,7 @@ function TocPanel({
               callbacks?.onTocSelect?.(entry.id);
             }}
             className={cn(
-              "-mx-2 block rounded-[7px] px-2 py-1.5 text-compact leading-[1.4] text-muted-foreground no-underline",
+              "-mx-2 block rounded-[7px] px-2 py-1.5 text-compact leading-[1.4] text-muted-foreground no-underline max-md:flex max-md:min-h-11 max-md:items-center",
               !entry.active && "hover:bg-state-hover hover:text-foreground",
               entry.level === 1 && "font-semibold text-foreground",
               entry.level === 2 && "pl-5",
@@ -455,6 +458,7 @@ export function DocSidePanelSurface({
   comments,
   pendingQuote,
   canComment = false,
+  sheet = false,
   callbacks,
 }: DocSidePanelSurfaceProps) {
   const p = copy.panel;
@@ -470,11 +474,19 @@ export function DocSidePanelSurface({
     },
   ];
 
-  return (
-    <aside
-      aria-label={p.label}
-      className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel"
-    >
+  // On a phone a picked heading closes the sheet so the page shows.
+  const bodyCallbacks: DocPageCallbacks | undefined = sheet
+    ? {
+        ...callbacks,
+        onTocSelect: (id) => {
+          callbacks?.onTocSelect?.(id);
+          callbacks?.onPanelOpenChange?.(false);
+        },
+      }
+    : callbacks;
+
+  const content = (
+    <>
       <div
         role="tablist"
         aria-label={p.tabs}
@@ -489,6 +501,7 @@ export function DocSidePanelSurface({
             onClick={() => callbacks?.onPanelTab?.(entry.id)}
             className={cn(
               TAB,
+              sheet && "flex-1 px-1",
               tab === entry.id &&
                 "border-b-primary font-semibold text-foreground",
             )}
@@ -496,7 +509,7 @@ export function DocSidePanelSurface({
             {entry.label}
           </button>
         ))}
-        {callbacks?.onPanelOpenChange ? (
+        {!sheet && callbacks?.onPanelOpenChange ? (
           <button
             type="button"
             aria-label={p.close}
@@ -511,13 +524,16 @@ export function DocSidePanelSurface({
       <div
         role="tabpanel"
         aria-label={tabs.find((entry) => entry.id === tab)?.label}
-        className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-auto px-4 py-3.5"
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-[18px] overflow-auto py-3.5",
+          sheet ? "px-5" : "px-4",
+        )}
       >
         {tab === "links" ? (
           <LinksPanel copy={copy} tasks={tasks} relatedDocs={relatedDocs} />
         ) : null}
         {tab === "toc" ? (
-          <TocPanel copy={copy} toc={toc} callbacks={callbacks} />
+          <TocPanel copy={copy} toc={toc} callbacks={bodyCallbacks} />
         ) : null}
         {tab === "comments" ? (
           <CommentsPanel
@@ -529,6 +545,23 @@ export function DocSidePanelSurface({
           />
         ) : null}
       </div>
+    </>
+  );
+
+  return sheet ? (
+    <DocBottomSheet
+      title={p.label}
+      closeLabel={p.close}
+      onClose={() => callbacks?.onPanelOpenChange?.(false)}
+    >
+      {content}
+    </DocBottomSheet>
+  ) : (
+    <aside
+      aria-label={p.label}
+      className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel"
+    >
+      {content}
     </aside>
   );
 }

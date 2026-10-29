@@ -29,7 +29,7 @@ import {
 import { selectTableState } from "../editor/table-commands";
 
 const MENU_BUTTON =
-  "h-7 rounded-[6px] border-0 bg-transparent px-[9px] text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
+  "h-7 shrink-0 rounded-[6px] max-md:h-11 max-md:rounded-none max-md:px-3 border-0 bg-transparent px-[9px] text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
 
 const PANEL =
   "absolute z-dropdown box-content min-w-[240px] rounded-[10px] border border-line-strong bg-doc-panel p-1.5 shadow-popover";
@@ -432,7 +432,7 @@ export function DocMenuBarMenus({
                 }}
                 onSide={(direction) => switchTo(key, direction)}
                 onBack={undefined}
-                className="top-[30px] left-0"
+                className="top-[30px] left-0 max-md:fixed max-md:inset-x-2 max-md:top-auto max-md:mt-11 max-md:w-auto"
               />
             ) : null}
           </span>

@@ -52,7 +52,9 @@ import {
   SelectTrigger,
   SelectValue,
   cn,
+  useIsMobile,
 } from "@notrelix/ui-web";
+import { SCROLL_FADE, SCROLL_ROW } from "../components/doc-page-ui";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import type { DocPageCallbacks } from "../components/doc-page-models";
 import {
@@ -73,7 +75,7 @@ import { mediaOf, pickMedia } from "./media-commands";
 import { insertTableBlock } from "./table-commands";
 
 const TOOL =
-  "box-border inline-flex h-7.5 min-w-7.5 items-center justify-center gap-1 rounded-[6px] border-0 bg-transparent px-1.5 text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-transparent aria-pressed:bg-state-hover-strong aria-pressed:text-foreground";
+  "box-border inline-flex h-7.5 min-w-7.5 shrink-0 items-center max-md:h-11 max-md:min-w-11 justify-center gap-1 rounded-[6px] border-0 bg-transparent px-1.5 text-compact leading-[1.45] text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-transparent aria-pressed:bg-state-hover-strong aria-pressed:text-foreground";
 
 const ICON = "size-4 stroke-[1.8]";
 
@@ -131,7 +133,12 @@ export function ToolButton({
 }
 
 function Separator() {
-  return <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />;
+  return (
+    <span
+      aria-hidden="true"
+      className="mx-1 h-5 w-px shrink-0 bg-line-strong max-md:mx-1.5 max-md:h-6"
+    />
+  );
 }
 
 /** One tab stop for the whole toolbar; arrows, Home and End move inside it. */
@@ -331,6 +338,8 @@ export function EditorToolbar({
     selector: ({ editor: current }) => selectToolbarState(current),
   });
   const { ref, onKeyDown } = useRovingToolbar();
+  // A phone scrolls the whole row sideways instead of folding groups away.
+  const compact = useIsMobile();
   const [linkOpen, setLinkOpen] = useState(false);
   const marks = disabled || state.inCodeBlock;
 
@@ -379,7 +388,7 @@ export function EditorToolbar({
           <SelectTrigger
             data-tool=""
             aria-label={t.paragraphStyle}
-            className="h-7.5 w-[150px] rounded-[6px] border-0 bg-transparent px-2 text-compact text-foreground shadow-none"
+            className="h-7.5! w-[150px] rounded-[6px] border border-line-strong bg-doc-panel px-2 text-compact text-foreground shadow-none max-md:h-11! max-md:w-[132px]"
           >
             <SelectValue />
           </SelectTrigger>
@@ -763,59 +772,64 @@ export function EditorToolbar({
     return () => observer.disconnect();
   }, [ref]);
 
-  const shown = groups.slice(0, count);
-  const hidden = groups.slice(count);
+  const shown = compact ? groups : groups.slice(0, count);
+  const hidden = compact ? [] : groups.slice(count);
 
   return (
-    <div
-      ref={ref}
-      role="toolbar"
-      aria-label={t.label}
-      aria-orientation="horizontal"
-      onKeyDown={onKeyDown}
-      className="flex flex-nowrap items-center gap-0.5 overflow-hidden px-3 pt-1 pb-1.5"
-    >
-      {shown.map((group, index) => (
-        <div
-          key={group.id}
-          data-group={group.id}
-          className="flex shrink-0 items-center gap-0.5"
-        >
-          {index > 0 ? <Separator /> : null}
-          {group.node}
-        </div>
-      ))}
-      {hidden.length > 0 ? (
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              data-tool=""
-              aria-label={t.more}
-              title={t.more}
-              onMouseDown={(event) => event.preventDefault()}
-              className={cn(TOOL, "ml-auto shrink-0")}
-            >
-              <MoreHorizontal aria-hidden="true" className={ICON} />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            className="flex w-auto max-w-[min(92vw,420px)] flex-row flex-wrap items-center gap-1 p-2"
-            onOpenAutoFocus={(e) => e.preventDefault()}
+    <div className={SCROLL_FADE}>
+      <div
+        ref={ref}
+        role="toolbar"
+        aria-label={t.label}
+        aria-orientation="horizontal"
+        onKeyDown={onKeyDown}
+        className={cn(
+          "flex flex-nowrap items-center gap-0.5 overflow-hidden px-3 pt-[7px] pb-[9px] max-md:h-13 max-md:px-2 max-md:pt-1 max-md:pb-1",
+          SCROLL_ROW,
+        )}
+      >
+        {shown.map((group, index) => (
+          <div
+            key={group.id}
+            data-group={group.id}
+            className="flex shrink-0 items-center gap-0.5"
           >
-            {hidden.map((group) => (
-              <div
-                key={group.id}
-                role="group"
-                className="flex items-center gap-0.5"
+            {index > 0 ? <Separator /> : null}
+            {group.node}
+          </div>
+        ))}
+        {hidden.length > 0 ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                data-tool=""
+                aria-label={t.more}
+                title={t.more}
+                onMouseDown={(event) => event.preventDefault()}
+                className={cn(TOOL, "ml-auto shrink-0")}
               >
-                {group.node}
-              </div>
-            ))}
-          </PopoverContent>
-        </Popover>
-      ) : null}
+                <MoreHorizontal aria-hidden="true" className={ICON} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="flex w-auto max-w-[min(92vw,420px)] flex-row flex-wrap items-center gap-1 p-2"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              {hidden.map((group) => (
+                <div
+                  key={group.id}
+                  role="group"
+                  className="flex items-center gap-0.5"
+                >
+                  {group.node}
+                </div>
+              ))}
+            </PopoverContent>
+          </Popover>
+        ) : null}
+      </div>
     </div>
   );
 }

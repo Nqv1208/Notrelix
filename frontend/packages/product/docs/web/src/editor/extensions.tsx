@@ -477,6 +477,8 @@ export const Callout = Node.create({
   },
 });
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 /** A checklist line: a checkbox beside the text. */
 export const TodoItem = Node.create<{ context: ContextHolder }>({
   name: "todoItem",
@@ -518,10 +520,12 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
       dom.dataset.docNode = "todoItem";
       dom.dataset.block = String(node.attrs.blockId ?? "");
       const apply = (checked: boolean) => {
-        dom.className = `group relative -mx-2 flex min-h-9 items-start gap-2.5 rounded-[8px] px-2 py-1 text-doc-check text-doc-body ${checked ? "[&_.doc-todo-text]:text-meta-foreground [&_.doc-todo-text]:line-through" : ""}`;
+        // The box and the text share the first line's centre; on a phone the
+        // row is a 44 px target and the convert button drops under the text.
+        dom.className = `group relative -mx-2 flex min-h-9 items-start gap-2.5 rounded-[8px] px-2 py-0 text-doc-check text-doc-body max-md:-mx-4 max-md:min-h-11 max-md:flex-wrap max-md:gap-0 max-md:rounded-none max-md:pr-4 max-md:pl-0 ${checked ? "[&_.doc-todo-text]:text-meta-foreground [&_.doc-todo-text]:line-through max-md:[&_.doc-todo-text]:pb-[11px]" : ""}`;
         box.setAttribute("aria-checked", String(checked));
         box.dataset.checked = String(checked);
-        box.className = `mt-[3px] box-border grid size-[17px] shrink-0 cursor-pointer place-items-center rounded-[5px] border-[1.5px] p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${checked ? "border-work-status-done bg-work-status-done text-white" : "border-line-strong bg-transparent"}`;
+        box.className = `relative mt-[9.5px] box-border grid size-[17px] shrink-0 cursor-pointer place-items-center rounded-[5px] border-[1.5px] p-0 outline-none before:absolute before:-inset-3.5 before:content-[''] focus-visible:ring-2 focus-visible:ring-focus-ring max-md:mx-[13.5px] max-md:mt-[13.5px] ${checked ? "border-work-status-done bg-work-status-done text-white" : "border-work-status-todo bg-transparent"}`;
         box.textContent = checked ? "✓" : "";
       };
       const box = document.createElement("button");
@@ -529,13 +533,14 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
       box.setAttribute("role", "checkbox");
       box.contentEditable = "false";
       const content = document.createElement("div");
-      content.className = "doc-todo-text min-w-0 flex-1";
+      content.className =
+        "doc-todo-text min-w-0 flex-1 py-[7.125px] max-md:w-[calc(100%-44px)] max-md:flex-none max-md:py-0 max-md:pt-[11px]";
       // "Chuyển thành việc": offered on an open line that is not a task yet.
       const convert = document.createElement("button");
       convert.type = "button";
       convert.contentEditable = "false";
       convert.className =
-        "ml-auto inline-flex h-7 shrink-0 items-center rounded-[7px] border border-line-strong bg-doc-panel px-2.5 text-crumb leading-[1.45] font-semibold text-brand-subtle-foreground opacity-0 outline-none group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
+        "mt-1 ml-auto inline-flex h-7 shrink-0 items-center gap-[5px] rounded-[7px] border border-line-strong bg-doc-panel px-2.5 text-crumb leading-[1.45] font-semibold text-brand-subtle-foreground opacity-0 outline-none group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default pointer-coarse:opacity-100 max-md:mt-0 max-md:mr-auto max-md:ml-[42px] max-md:h-11 max-md:px-3 max-md:opacity-100";
       convert.addEventListener("mousedown", (event) => event.preventDefault());
       convert.addEventListener("click", () => {
         const id = String(dom.dataset.block ?? "");
@@ -569,7 +574,24 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
           "aria-label",
           fillDocCopy(copy.blocks.convertToTaskNamed, { name }),
         );
-        convert.textContent = copy.blocks.convertToTask;
+        const icon = document.createElementNS(SVG_NS, "svg");
+        icon.setAttribute("viewBox", "0 0 24 24");
+        icon.setAttribute("aria-hidden", "true");
+        icon.setAttribute(
+          "class",
+          "size-[13px] shrink-0 fill-none stroke-current stroke-[1.8]",
+        );
+        icon.setAttribute("stroke-linecap", "round");
+        icon.setAttribute("stroke-linejoin", "round");
+        for (const d of [
+          "M9 11l3 3 8-8",
+          "M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+        ]) {
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("d", d);
+          icon.append(path);
+        }
+        convert.replaceChildren(icon, copy.blocks.convertToTask);
         if (callbacks?.onTodoConvert) {
           convert.removeAttribute("aria-disabled");
           convert.removeAttribute("title");

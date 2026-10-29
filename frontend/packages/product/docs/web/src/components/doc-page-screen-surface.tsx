@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
-import { Skeleton } from "@notrelix/ui-web";
+import { ChevronLeft } from "lucide-react";
+import { Skeleton, useIsMobile } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
 import {
   DocArticleSurface,
@@ -55,6 +56,7 @@ import {
   DocSaveVersionDialogSurface,
 } from "./doc-history-dialogs-surface";
 import { DocShareDialogSurface } from "./doc-share-dialog-surface";
+import { DocMoreSheet } from "./doc-bottom-sheet-surface";
 import { DocSidePanelSurface } from "./doc-side-panel-surface";
 import {
   DEFAULT_TOOLBAR_CURRENT,
@@ -124,6 +126,8 @@ export interface DocPageScreenSurfaceProps {
   readonly canComment?: boolean;
   readonly canFormat?: boolean;
   readonly callbacks?: DocPageCallbacks;
+  /** Names where Back leads on a phone ("Quay lại <department>"). */
+  readonly backLabel?: string;
   readonly onCopyLink?: () => void;
   /** The menu bar's view state and the data of its tool dialogs (needs an editor). */
   readonly tools?: DocPageTools;
@@ -155,26 +159,47 @@ export interface DocPageTools {
  */
 export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
   const { copy, status = "ready" } = props;
+  const phone = useIsMobile();
+  // A phone has no sidebar on this page: loading and not-found keep a Back.
+  const back =
+    phone && props.callbacks?.onBack ? (
+      <header className="box-border flex h-13 shrink-0 items-center border-b border-border px-1.5">
+        <button
+          type="button"
+          aria-label={props.backLabel ?? copy.header.back}
+          onClick={props.callbacks.onBack}
+          className="grid size-11 shrink-0 place-items-center rounded-[10px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          <ChevronLeft aria-hidden="true" className="size-5 stroke-[1.8]" />
+        </button>
+      </header>
+    ) : null;
 
   if (status === "loading") {
     return (
-      <div
-        role="status"
-        aria-label={copy.loading}
-        className="flex h-full min-h-0 flex-1 flex-col gap-6 bg-doc-page p-8"
-      >
-        <Skeleton className="h-8 w-1/3" />
-        <Skeleton className="h-6 w-2/3" />
-        <Skeleton className="h-6 w-1/2" />
-        <Skeleton className="h-40 w-full" />
+      <div className="flex h-full min-h-0 flex-1 flex-col bg-doc-page">
+        {back}
+        <div
+          role="status"
+          aria-label={copy.loading}
+          className="flex min-h-0 flex-1 flex-col gap-6 p-8 max-md:p-4"
+        >
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-6 w-2/3" />
+          <Skeleton className="h-6 w-1/2" />
+          <Skeleton className="h-40 w-full" />
+        </div>
       </div>
     );
   }
 
   if (status === "notFound") {
     return (
-      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8 text-center text-compact leading-[1.45] text-meta-foreground">
-        {copy.notFound}
+      <div className="flex h-full min-h-0 flex-1 flex-col bg-doc-page">
+        {back}
+        <div className="grid min-h-0 flex-1 place-items-center p-8 text-center text-compact leading-[1.45] text-meta-foreground">
+          {copy.notFound}
+        </div>
       </div>
     );
   }
@@ -225,6 +250,10 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     tools,
   } = props;
   const focusMode = tools?.view.focusMode === true;
+  const compact = useIsMobile();
+  const [moreOpen, setMoreOpen] = useState(false);
+  // The page goes inert under a sheet, which drops focus; remember where it was.
+  const lastFocus = useRef<HTMLElement | null>(null);
 
   const scroller = useRef<HTMLDivElement | null>(null);
   const [spyId, setSpyId] = useState<string | null>(null);
@@ -255,7 +284,20 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     ? (versions.list.find((entry) => entry.id === versions.selectedId) ?? null)
     : null;
   const shareOpen = overlay.kind === "share" && share !== undefined;
+  const sheetOpen = compact && !versions && !focusMode && panelOpen;
+
+  const sheetShown = (sheetOpen || (compact && moreOpen)) === true;
+  const wasShown = useRef(false);
+  useEffect(() => {
+    if (wasShown.current && !sheetShown) {
+      window.requestAnimationFrame(() => lastFocus.current?.focus());
+    }
+    wasShown.current = sheetShown;
+  }, [sheetShown]);
+
   const dialogOpen =
+    sheetOpen ||
+    (compact && moreOpen) ||
     shareOpen ||
     (overlay.kind === "trash" && trash !== undefined) ||
     (overlay.kind === "saveVersion" && history !== undefined) ||
@@ -296,6 +338,9 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-doc-page text-body leading-[1.45] text-foreground"
         aria-hidden={dialogOpen || undefined}
         inert={dialogOpen || undefined}
+        onFocusCapture={(event) => {
+          lastFocus.current = event.target as HTMLElement;
+        }}
       >
         {focusMode ? (
           <button
@@ -314,6 +359,12 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             shareOpen={shareOpen}
             canShare={share !== undefined}
             panelOpen={versions ? undefined : panelOpen}
+            compact={compact}
+            backLabel={props.backLabel}
+            commentCount={
+              comments.filter((comment) => !comment.resolved).length
+            }
+            onOpenMore={() => setMoreOpen(true)}
             callbacks={callbacks}
           />
         )}
@@ -354,7 +405,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         <div className="flex min-h-0 flex-1">
           <div
             ref={scroller}
-            className="flex min-w-0 flex-1 justify-center overflow-auto px-8 pt-9 pb-16"
+            className="flex min-w-0 flex-1 justify-center overflow-auto px-8 pt-9 pb-16 max-md:justify-start max-md:px-4 max-md:pt-5 max-md:pb-[calc(48px+env(safe-area-inset-bottom,0px))]"
           >
             <DocArticleSurface {...articleProps} />
           </div>
@@ -367,7 +418,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               onNamedOnlyChange={versions.onNamedOnlyChange}
               callbacks={callbacks}
             />
-          ) : panelOpen && !focusMode ? (
+          ) : panelOpen && !focusMode && !compact ? (
             <DocSidePanelSurface
               copy={copy}
               tab={panelTab}
@@ -385,6 +436,69 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
           ) : null}
         </div>
       </div>
+      {sheetOpen ? (
+        <DocSidePanelSurface
+          sheet
+          copy={copy}
+          tab={panelTab}
+          tasks={tasks}
+          relatedDocs={relatedDocs}
+          toc={toc.map((entry) => ({
+            ...entry,
+            active: entry.active ?? (entry.id === spyId || undefined),
+          }))}
+          comments={comments}
+          pendingQuote={pendingQuote}
+          canComment={canComment && !readOnly}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {compact && moreOpen ? (
+        <DocMoreSheet
+          title={copy.header.moreTitle}
+          closeLabel={copy.header.closeSheet}
+          onClose={() => setMoreOpen(false)}
+          items={[
+            {
+              id: "share",
+              label: copy.header.share,
+              unavailable: copy.header.shareUnavailable,
+              onSelect:
+                share !== undefined && callbacks?.onOpenShare
+                  ? () => {
+                      setMoreOpen(false);
+                      callbacks.onOpenShare?.();
+                    }
+                  : undefined,
+            },
+            {
+              id: "approve",
+              label: copy.header.approve,
+              unavailable: copy.header.approveUnavailable,
+            },
+            {
+              id: "toc",
+              label: copy.panel.toc,
+              onSelect: () => {
+                setMoreOpen(false);
+                callbacks?.onPanelTab?.("toc");
+                callbacks?.onPanelOpenChange?.(true);
+              },
+            },
+            {
+              id: "history",
+              label: copy.fileMenu.versionHistory,
+              unavailable: copy.header.moreUnavailable,
+              onSelect: callbacks?.onOpenVersions
+                ? () => {
+                    setMoreOpen(false);
+                    callbacks.onOpenVersions?.();
+                  }
+                : undefined,
+            },
+          ]}
+        />
+      ) : null}
       {overlay.kind === "trash" && trash ? (
         <DocTrashDialogSurface
           copy={copy}
