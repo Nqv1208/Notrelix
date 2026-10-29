@@ -29,6 +29,22 @@ export interface TaskDetailCapabilities {
   readonly canComment?: boolean;
 }
 
+/**
+ * Edit and delete on a comment belong to its author alone (the server answers
+ * 403 to anyone else); a viewer who cannot comment has neither.
+ */
+export function canChangeOwnComment(
+  capabilities: TaskDetailCapabilities,
+  authorUserId: string,
+  viewerUserId?: string | null,
+): boolean {
+  return (
+    canWriteComment(capabilities) &&
+    Boolean(viewerUserId) &&
+    authorUserId === viewerUserId
+  );
+}
+
 /** Whether the composer is available for these capabilities. */
 export function canWriteComment(capabilities: TaskDetailCapabilities): boolean {
   return capabilities.canComment ?? capabilities.canEditFields;

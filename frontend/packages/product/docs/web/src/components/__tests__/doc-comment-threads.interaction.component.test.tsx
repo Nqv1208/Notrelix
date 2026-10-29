@@ -15,6 +15,7 @@ const THREADS: readonly DocCommentView[] = [
     body: "Still open",
     when: "today",
     mine: true,
+    canResolve: true,
   },
   {
     id: "done",
@@ -24,10 +25,11 @@ const THREADS: readonly DocCommentView[] = [
     body: "Already handled",
     when: "today",
     resolved: true,
+    canResolve: true,
   },
 ];
 
-function panel(callbacks = {}) {
+function panel(callbacks = {}, comments = THREADS) {
   return renderPureUi(
     <DocSidePanelSurface
       copy={docsCopy}
@@ -35,7 +37,7 @@ function panel(callbacks = {}) {
       tasks={[]}
       relatedDocs={[]}
       toc={TOC}
-      comments={THREADS}
+      comments={comments}
       canComment
       callbacks={callbacks}
     />,
@@ -110,5 +112,25 @@ describe("docs comment threads", () => {
       screen.getByRole("button", { name: docsCopy.comments.delete }),
     );
     expect(onCommentDelete).toHaveBeenCalledWith("open");
+  });
+
+  it("FUI[docs.page.side-panel:comment-resolve-permitted] offers resolve and reopen only to the thread starter or an editor", () => {
+    // Someone else's threads, viewer cannot edit the page: nothing to resolve.
+    panel({}, [
+      { ...THREADS[0]!, mine: false, canResolve: false },
+      { ...THREADS[1]!, canResolve: false },
+    ]);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Hiện bình luận đã xử lý/ }),
+    );
+    expect(
+      screen.queryByRole("button", { name: docsCopy.comments.resolveThread }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: docsCopy.comments.reopenThread }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: docsCopy.comments.delete }),
+    ).toBeNull();
   });
 });

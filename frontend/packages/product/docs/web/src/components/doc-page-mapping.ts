@@ -286,6 +286,7 @@ export function toCommentViews(
   now: Date,
   personFor: (userId: string) => DocPerson,
   viewerId?: string,
+  canEdit = false,
 ): DocCommentView[] {
   return [...comments]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -304,6 +305,10 @@ export function toCommentViews(
         ...(comment.anchor ? { anchored: true } : {}),
         ...(comment.resolved ? { resolved: true } : {}),
         ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
+        // Comments here are top-level, so the author is the thread starter.
+        ...(canEdit || (viewerId && comment.authorId === viewerId)
+          ? { canResolve: true }
+          : {}),
         body: text,
         when:
           day === "today"

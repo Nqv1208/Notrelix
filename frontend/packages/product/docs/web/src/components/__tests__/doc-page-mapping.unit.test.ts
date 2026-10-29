@@ -147,6 +147,14 @@ describe("document page mapping", () => {
     expect(views[0]?.anchored).toBeUndefined();
     expect(views[0]?.when).toBe("Hôm qua");
 
+    // Resolve and reopen: the thread starter or an editor, nobody else.
+    const canResolve = (viewer?: string, editor?: boolean) =>
+      toCommentViews(comments, copy, NOW, () => KL, viewer, editor)[0]
+        ?.canResolve;
+    expect(canResolve("user-kl", false)).toBe(true);
+    expect(canResolve("user-other", true)).toBe(true);
+    expect(canResolve("user-other", false)).toBeUndefined();
+
     // A stored anchor names the quote; the body is the comment as written.
     const [anchored] = toCommentViews(
       [

@@ -312,8 +312,16 @@ export function createDocPageScreen({
           now,
           host.personFor,
           host.viewerId,
+          host.canEdit,
         ),
-      [commentsQuery.data, copy, host.personFor, host.viewerId, now],
+      [
+        commentsQuery.data,
+        copy,
+        host.personFor,
+        host.viewerId,
+        host.canEdit,
+        now,
+      ],
     );
 
     const versionsQuery = usePageVersions(

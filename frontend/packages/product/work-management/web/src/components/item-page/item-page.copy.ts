@@ -158,6 +158,12 @@ export const en = {
     saveFailedNoValue: "The server did not answer. The old value stays.",
     retry: "Retry",
     dismiss: "Dismiss",
+    commentAuthorOnly: "Only the author can edit or delete this comment.",
+    threadStarterOrEditorOnly:
+      "Only the person who started the thread or an editor can resolve or reopen it.",
+    attachmentEditorOnly: "Only an editor can delete this file.",
+    targetGone: "You can no longer see this item.",
+    commentFailed: "Could not change the comment. Try again.",
   },
   topbar: {
     back: "Back to the board",
@@ -574,6 +580,12 @@ export const vi: ItemPageCopy = {
     saveFailedNoValue: "Máy chủ không phản hồi. Giá trị cũ vẫn giữ nguyên.",
     retry: "Thử lại",
     dismiss: "Đóng thông báo",
+    commentAuthorOnly: "Chỉ người viết mới sửa hoặc xóa được bình luận này.",
+    threadStarterOrEditorOnly:
+      "Chỉ người mở luồng hoặc người có quyền chỉnh sửa mới đóng hoặc mở lại được.",
+    attachmentEditorOnly: "Chỉ người có quyền chỉnh sửa mới xóa được tệp này.",
+    targetGone: "Bạn không còn xem được việc này.",
+    commentFailed: "Chưa đổi được bình luận. Hãy thử lại.",
   },
   topbar: {
     back: "Về board",
