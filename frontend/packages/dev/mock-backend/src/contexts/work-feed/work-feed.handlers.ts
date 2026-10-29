@@ -32,6 +32,7 @@ import {
   setFollowing,
   type FeedWriteResult,
 } from "../../state/mock-work-feed";
+import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
 import { commandSearch } from "../../state/mock-command-search";
 import { spaceOverview } from "../../state/mock-space-overview";
@@ -69,6 +70,9 @@ function withPriorityOption(dto: ReturnType<typeof buildMyWorkExtended>) {
     done: dto.done.map(convert),
   };
 }
+
+/** When the caller last reminded each item, per store (the 24 hour limit). */
+const remindSentAt = new WeakMap<MockStore, Map<string, string>>();
 
 function outcome(result: FeedWriteResult) {
   switch (result) {
@@ -346,7 +350,36 @@ export const workFeedOperations = [
     method: "POST",
     route: "/board-items/:id/remind",
     async handle({ params, store }) {
-      return outcome(remindOwner(store, params.id));
+      const card = store.getCard(params.id);
+      if (!card) return notFound();
+      remindOwner(store, params.id);
+      // Like the real command: everyone in charge but the caller, once per 24 hours.
+      const me = store.getCurrentUser().id;
+      const recipients = (card.assigneeUserIds ?? []).filter((id) => id !== me);
+      if (recipients.length === 0)
+        return {
+          status: 400,
+          body: {
+            message: "Nobody else is in charge of this item.",
+            code: "work.item.remind-no-recipients",
+          },
+        };
+      const now = store.getClock().isoNow();
+      const sent = remindSentAt.get(store) ?? new Map<string, string>();
+      remindSentAt.set(store, sent);
+      const last = sent.get(params.id);
+      const next = (iso: string) => isoOfMs(Date.parse(iso) + 24 * 3_600_000);
+      if (last && Date.parse(next(last)) > Date.parse(now))
+        return {
+          status: 409,
+          body: {
+            message: "A reminder was sent in the last 24 hours.",
+            code: "work.item.remind-too-soon",
+            nextRemindAt: next(last),
+          },
+        };
+      sent.set(params.id, now);
+      return ok({ recipients: recipients.length, nextRemindAt: next(now) });
     },
   }),
 

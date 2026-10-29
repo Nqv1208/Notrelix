@@ -26,6 +26,16 @@ import {
   mapCardDto,
 } from "./board-api-mappers";
 
+/** What a duplicate takes along besides name, dates and description. */
+export interface DuplicateItemOptions {
+  readonly name?: string;
+  readonly includeFields?: boolean;
+  readonly includeChecklists?: boolean;
+  readonly includeSubItems?: boolean;
+  readonly includeLabels?: boolean;
+  readonly includeAssignees?: boolean;
+}
+
 /** How one user action sends a file (see `uploadCardFile`). */
 export interface UploadCardFileOptions {
   readonly idempotencyKey: string;
@@ -147,8 +157,21 @@ export function createCardApi(client: NotrelixClient) {
       );
     },
 
-    async duplicateCard(cardId: string): Promise<void> {
-      await api.post<void>(endpoints.boardItems.duplicate(cardId));
+    /**
+     * `POST /board-items/{id}/duplicate`. Without options the copy takes name,
+     * dates and description only; the options add what it takes along. Comments,
+     * history, files and links are never copied. Returns the copy's id.
+     */
+    async duplicateCard(
+      cardId: string,
+      options?: DuplicateItemOptions,
+    ): Promise<string | undefined> {
+      const created = await api.post<{ id?: string } | string | null>(
+        endpoints.boardItems.duplicate(cardId),
+        options,
+        { idempotencyKey: crypto.randomUUID() },
+      );
+      return typeof created === "string" ? created : (created?.id ?? undefined);
     },
 
     /**

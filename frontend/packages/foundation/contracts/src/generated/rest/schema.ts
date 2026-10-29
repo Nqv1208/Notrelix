@@ -2640,7 +2640,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Duplicate a board item in its current group */
+        /**
+         * Duplicate a board item in its current group
+         * @description Optional body names the copy and chooses what it takes along (fields, checklists, sub-items, labels, assignees). Comments, history, files and links are never copied.
+         */
         post: operations["WorkManagement.BoardItems.Duplicate"];
         delete?: never;
         options?: never;
@@ -2730,8 +2733,44 @@ export interface paths {
         put?: never;
         /** Link a page to this board item */
         post: operations["WorkManagement.BoardItems.LinkPage"];
-        /** Unlink page from board item */
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/link-page/{pageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink one page from a board item */
         delete: operations["WorkManagement.BoardItems.UnlinkPage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/linked-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the Documents pages linked to a board item that the caller may open
+         * @description Pages the caller cannot see are not named; they are counted in hiddenCount.
+         */
+        get: operations["WorkManagement.BoardItems.ListLinkedPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5766,6 +5805,14 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateChildItemRequest": {
             title?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest": {
+            name?: string | null;
+            includeFields?: boolean;
+            includeChecklists?: boolean;
+            includeSubItems?: boolean;
+            includeLabels?: boolean;
+            includeAssignees?: boolean;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.LinkPageToBoardItemRequest": {
             /** Format: uuid */
@@ -14255,7 +14302,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14514,6 +14565,7 @@ export interface operations {
             };
             path: {
                 itemId: string;
+                pageId: string;
             };
             cookie?: never;
         };
@@ -14543,6 +14595,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListLinkedPages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
             };
         };
     };

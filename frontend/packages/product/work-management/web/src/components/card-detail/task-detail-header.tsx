@@ -29,6 +29,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -62,6 +63,7 @@ import {
 } from "./item-field-more-editors";
 import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
+import { ItemActionsMenuItems } from "../item-actions/item-actions-menu";
 import {
   ItemAssigneePopover,
   ItemDuePopover,
@@ -130,6 +132,10 @@ export function TaskDetailHeader({
   onDelete,
   onMoveToBoard,
   onMoveToGroup,
+  onComplete,
+  onReopen,
+  onRemind,
+  onUnarchive,
   following,
   onToggleFollow,
 }: {
@@ -149,6 +155,10 @@ export function TaskDetailHeader({
   onDelete?: (cardId: string) => void;
   onMoveToBoard?: (cardId: string) => void;
   onMoveToGroup?: (cardId: string, groupId: string) => void;
+  onComplete?: (cardId: string) => void;
+  onReopen?: (cardId: string) => void;
+  onRemind?: (cardId: string) => void;
+  onUnarchive?: (cardId: string) => void;
   /** Whether the member follows the item; `null`/absent draws no follow chip. */
   following?: boolean | null;
   onToggleFollow?: (following: boolean) => void;
@@ -157,11 +167,7 @@ export function TaskDetailHeader({
   const otherGroups = groups.filter((group) => group.id !== card.listId);
   const canMove =
     capabilities.canMoveCard && !!onMoveToGroup && otherGroups.length > 0;
-  const hasMenu =
-    capabilities.canCreateCard ||
-    capabilities.canDelete ||
-    canMove ||
-    (capabilities.canMoveCard && Boolean(onMoveToBoard));
+  const hasMenu = true;
 
   return (
     <header className="flex h-12.25 shrink-0 items-center gap-1.5 border-b border-line pr-2.5 pl-4.5">
@@ -280,46 +286,51 @@ export function TaskDetailHeader({
               <MoreHorizontal aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {capabilities.canCreateCard ? (
-              <DropdownMenuItem onSelect={() => onDuplicate(card.id)}>
-                {copy.head.duplicate}
-              </DropdownMenuItem>
-            ) : null}
+          <DropdownMenuContent align="end" className="w-72">
+            <ItemActionsMenuItems
+              copy={copy.actions}
+              item={{
+                itemId: card.id,
+                itemKey: card.itemKey,
+                archived: card.isArchived,
+                completed: Boolean(card.completedAt),
+              }}
+              can={{
+                edit: capabilities.canEditFields,
+                create: capabilities.canCreateCard,
+                move: capabilities.canMoveCard,
+                remove: capabilities.canDelete,
+              }}
+              on={{
+                remind: onRemind,
+                complete: onComplete,
+                reopen: onReopen,
+                duplicate: onDuplicate,
+                moveBoard: onMoveToBoard,
+                archive: onArchive,
+                unarchive: onUnarchive,
+                remove: onDelete,
+              }}
+            />
             {canMove ? (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  {copy.head.moveToGroup}
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {otherGroups.map((group) => (
-                    <DropdownMenuItem
-                      key={group.id}
-                      onSelect={() => onMoveToGroup?.(card.id, group.id)}
-                    >
-                      {group.title}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            ) : null}
-            {capabilities.canMoveCard && onMoveToBoard ? (
-              <DropdownMenuItem onSelect={() => onMoveToBoard(card.id)}>
-                {copy.head.moveToBoard}
-              </DropdownMenuItem>
-            ) : null}
-            {capabilities.canDelete ? (
-              <DropdownMenuItem onSelect={() => onArchive(card.id)}>
-                {copy.head.archive}
-              </DropdownMenuItem>
-            ) : null}
-            {capabilities.canDelete && onDelete ? (
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={() => onDelete(card.id)}
-              >
-                {copy.head.delete}
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    {copy.head.moveToGroup}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {otherGroups.map((group) => (
+                      <DropdownMenuItem
+                        key={group.id}
+                        onSelect={() => onMoveToGroup?.(card.id, group.id)}
+                      >
+                        {group.title}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </>
             ) : null}
           </DropdownMenuContent>
         </DropdownMenu>

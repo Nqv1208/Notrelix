@@ -13,6 +13,7 @@ export * from "./use-full-board";
 export * from "./use-resolved-workspace-board";
 export * from "./use-workspace-boards";
 export * from "./use-item-extras";
+export * from "./use-item-actions";
 export * from "./use-board-settings";
 export * from "./use-workspace-automations";
 export * from "./use-offline-writes";

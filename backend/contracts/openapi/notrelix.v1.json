@@ -10241,6 +10241,7 @@
           "WorkManagement.BoardItems"
         ],
         "summary": "Duplicate a board item in its current group",
+        "description": "Optional body names the copy and chooses what it takes along (fields, checklists, sub-items, labels, assignees). Comments, history, files and links are never copied.",
         "operationId": "WorkManagement.BoardItems.Duplicate",
         "parameters": [
           {
@@ -10264,6 +10265,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -10669,17 +10679,28 @@
             "Cookie": [ ]
           }
         ]
-      },
+      }
+    },
+    "/api/v1/board-items/{itemId}/link-page/{pageId}": {
       "delete": {
         "tags": [
           "WorkManagement.BoardItems",
           "WorkManagement.BoardItems"
         ],
-        "summary": "Unlink page from board item",
+        "summary": "Unlink one page from a board item",
         "operationId": "WorkManagement.BoardItems.UnlinkPage",
         "parameters": [
           {
             "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
             "in": "path",
             "required": true,
             "schema": {
@@ -10723,6 +10744,48 @@
           },
           "503": {
             "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/board-items/{itemId}/linked-pages": {
+      "get": {
+        "tags": [
+          "WorkManagement.BoardItems",
+          "WorkManagement.BoardItems"
+        ],
+        "summary": "List the Documents pages linked to a board item that the caller may open",
+        "description": "Pages the caller cannot see are not named; they are counted in hiddenCount.",
+        "operationId": "WorkManagement.BoardItems.ListLinkedPages",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -23023,6 +23086,31 @@
           "title": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "includeFields": {
+            "type": "boolean"
+          },
+          "includeChecklists": {
+            "type": "boolean"
+          },
+          "includeSubItems": {
+            "type": "boolean"
+          },
+          "includeLabels": {
+            "type": "boolean"
+          },
+          "includeAssignees": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
