@@ -6,5 +6,8 @@ public class UnlinkPageFromBoardItemCommandValidator : AbstractValidator<UnlinkP
     {
         RuleFor(x => x.BoardItemId)
             .NotEmpty();
+
+        RuleFor(x => x.PageId)
+            .NotEmpty();
     }
 }

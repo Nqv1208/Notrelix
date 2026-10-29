@@ -39,6 +39,7 @@ export function TaskDetailTabs({
   now,
   timeZone,
   activeTab,
+  linkedDocs,
 }: {
   card: CardDetail;
   data: TaskDetailData;
@@ -48,6 +49,7 @@ export function TaskDetailTabs({
   now: Date;
   timeZone?: string;
   activeTab?: CardDetailTab;
+  linkedDocs?: React.ReactNode;
 }) {
   return (
     <>
@@ -127,6 +129,8 @@ export function TaskDetailTabs({
           callbacks={callbacks}
         />
       ) : null}
+
+      {linkedDocs}
 
       <ActivitySection
         card={card}

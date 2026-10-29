@@ -1,6 +1,12 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
-import { renderPureUi, screen, waitFor, within } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import type {
   BoardAccess,
   CardDetail,
@@ -78,7 +84,7 @@ function renderPanel(access: BoardAccess | Promise<BoardAccess>) {
 const viewer = (): BoardAccess => ({ ...erpOwnerAccess(), myLevel: "viewer" });
 
 describe("Table view item sheet capabilities", () => {
-  it("is read-only for a viewer: no title edit, no item actions, a disabled composer", async () => {
+  it("is read-only for a viewer: no title edit, an actions menu that locks the edits, a disabled composer", async () => {
     renderPanel(viewer());
     const dialog = await screen.findByRole("dialog", {
       name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
@@ -93,7 +99,18 @@ describe("Table view item sheet capabilities", () => {
     expect(
       within(dialog).queryByRole("textbox", { name: "Sửa tên công việc" }),
     ).toBeNull();
-    expect(within(dialog).queryByRole("button", { name: "Thêm" })).toBeNull();
+    // The menu stays (copy link, remind); what the viewer cannot do is locked, with the reason.
+    fireEvent.keyDown(within(dialog).getByRole("button", { name: "Thêm" }), {
+      key: "Enter",
+    });
+    expect(
+      screen
+        .getByRole("menuitem", { name: /Nhân bản/ })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
     const composer = within(dialog).getByRole("textbox", {
       name: /bình luận/i,
     }) as HTMLTextAreaElement;
@@ -123,7 +140,8 @@ describe("Table view item sheet capabilities", () => {
     expect(
       within(dialog).queryByRole("textbox", { name: "Sửa tên công việc" }),
     ).toBeNull();
-    expect(within(dialog).queryByRole("button", { name: "Thêm" })).toBeNull();
+    // The actions menu is always there; its edits stay locked until the access is known.
+    expect(within(dialog).getByRole("button", { name: "Thêm" })).toBeTruthy();
   });
 
   it("lets an editor edit", async () => {

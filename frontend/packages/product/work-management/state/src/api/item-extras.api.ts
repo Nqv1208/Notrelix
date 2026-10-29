@@ -2,6 +2,28 @@ import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import { personInitials } from "@notrelix/work-management-core";
 
+/** A Documents page linked to an item that the caller may open. */
+export interface LinkedPageDto {
+  readonly pageId: string;
+  readonly title: string;
+  readonly linkedAt: string;
+}
+
+/** The linked pages the caller sees, and how many more are linked that they may not see. */
+export interface LinkedPagesDto {
+  readonly pages: readonly LinkedPageDto[];
+  readonly hiddenCount: number;
+}
+
+/** What a reminder reached: who, how many, and when the next one is possible. */
+export interface RemindResultDto {
+  readonly recipients: number;
+  readonly nextRemindAt: string;
+}
+
+/** The error code the server answers when the 24 hour reminder limit is hit. */
+export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
+
 /** A member of the workspace (`Workspaces.Members.ListMembers`). */
 interface WorkspaceMember {
   readonly userId?: string;
@@ -494,6 +516,69 @@ export function createItemExtrasApi(
         { idempotencyKey: key(), ...quiet },
       );
     },
+    /**
+     * `WorkManagement.BoardItems.RemindOwners`: everyone in charge except the
+     * caller is told in their Inbox. At most one per item per caller per 24 hours;
+     * the server answers 409 `work.item.remind-too-soon` after that.
+     */
+    async remindOwners(itemId: string): Promise<RemindResultDto> {
+      const result = await api.post<Partial<RemindResultDto> | null>(
+        `/board-items/${itemId}/remind`,
+        {},
+        { idempotencyKey: key(), ...quiet },
+      );
+      return {
+        recipients: result?.recipients ?? 0,
+        nextRemindAt: result?.nextRemindAt ?? "",
+      };
+    },
+    /** `WorkManagement.BoardItems.Complete`: marks the item done. */
+    async completeItem(itemId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/complete`,
+        {},
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
+    /** `WorkManagement.BoardItems.ListLinkedPages`: pages the caller may open, plus how many are hidden. */
+    async getLinkedPages(itemId: string): Promise<LinkedPagesDto> {
+      const dto = await api.get<Partial<LinkedPagesDto> | null>(
+        `/board-items/${itemId}/linked-pages`,
+        quiet,
+      );
+      return { pages: dto?.pages ?? [], hiddenCount: dto?.hiddenCount ?? 0 };
+    },
+    /**
+     * `Documents.Pages.ListWorkspacePages`: the pages of the workspace the
+     * caller may see, for the picker that links one to an item.
+     */
+    async listWorkspacePages(
+      workspaceId: string,
+    ): Promise<{ id: string; title: string }[]> {
+      const rows = await api.get<
+        { id?: string; title?: string | null }[] | null
+      >(endpoints.pages.list(workspaceId), quiet);
+      return (rows ?? [])
+        .filter((row): row is { id: string; title?: string | null } =>
+          Boolean(row.id),
+        )
+        .map((row) => ({ id: row.id, title: row.title?.trim() || "" }));
+    },
+    /** `WorkManagement.BoardItems.LinkPage`: linking a page twice changes nothing. */
+    async linkPage(itemId: string, pageId: string): Promise<void> {
+      await api.post<void>(
+        `/board-items/${itemId}/link-page`,
+        { pageId },
+        { idempotencyKey: key(), ...quiet },
+      );
+    },
+    /** `WorkManagement.BoardItems.UnlinkPage`: removes this page's link only. */
+    async unlinkPage(itemId: string, pageId: string): Promise<void> {
+      await api.delete<void>(`/board-items/${itemId}/link-page/${pageId}`, {
+        idempotencyKey: key(),
+        ...quiet,
+      });
+    },
     /** Ticks (`done`) or unticks a child item. */
     async setChildDone(childId: string, done: boolean): Promise<void> {
       if (done)
@@ -510,4 +595,39 @@ export function createItemExtrasApi(
         );
     },
   };
+}
+
+const failureOf = (error: unknown) =>
+  (typeof error === "object" && error !== null ? error : {}) as {
+    status?: unknown;
+    code?: unknown;
+    message?: unknown;
+  };
+
+/** Why the server refused a move to another board, from what it answered. */
+export function classifyMoveError(
+  error: unknown,
+): "deps" | "conflict" | "archived" | "error" {
+  const { status, code, message } = failureOf(error);
+  if (code === "work-management.item.has-dependencies") return "deps";
+  if (/archiv/i.test(`${String(code ?? "")} ${String(message ?? "")}`))
+    return "archived";
+  if (status === 409) return "conflict";
+  return "error";
+}
+
+/** Why the server refused a reminder, and when it can be sent again when it says so. */
+export function classifyRemindError(
+  error: unknown,
+):
+  | { kind: "tooSoon"; nextRemindAt: string | null }
+  | { kind: "nobody" }
+  | { kind: "error" } {
+  const { status, code, message } = failureOf(error);
+  if (code === REMIND_TOO_SOON_CODE) {
+    const when = /at (\S+?)\.?$/.exec(String(message ?? ""))?.[1] ?? null;
+    return { kind: "tooSoon", nextRemindAt: when };
+  }
+  if (status === 400) return { kind: "nobody" };
+  return { kind: "error" };
 }
