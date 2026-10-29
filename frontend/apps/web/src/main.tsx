@@ -57,17 +57,21 @@ async function init(): Promise<void> {
     const store = new mockBackend.MockStore(resolvedConfig);
     const fetchImpl = mockBackend.createMockFetch(store);
 
-    const realtime = mockBackend.createMockRealtimeTransport();
     // The mock e2e plays "someone else" through these two handles: a write on
-    // the mock API and a gateway-shaped frame on the mock transport.
-    (window as unknown as { __notrelixMock?: unknown }).__notrelixMock = {
+    // the mock API and a gateway-shaped frame on the mock transport. Each
+    // runtime still gets its own transport; the handle points at the latest.
+    const handle: { fetch: typeof fetchImpl; realtime?: unknown } = {
       fetch: fetchImpl,
-      realtime,
     };
+    (window as unknown as { __notrelixMock?: unknown }).__notrelixMock = handle;
 
     runtimeFactories = {
       fetchImpl,
-      createRealtimeClient: () => realtime,
+      createRealtimeClient: () => {
+        const transport = mockBackend.createMockRealtimeTransport();
+        handle.realtime = transport;
+        return transport;
+      },
     };
   }
 

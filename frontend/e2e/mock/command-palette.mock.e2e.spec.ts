@@ -77,7 +77,8 @@ test.describe("Command palette (owner)", () => {
     await open(page);
     await page.keyboard.press("Meta+k");
     await input(page).fill("erp");
-    // With results, Tab is the filter key and stays in the query.
+    // Tab is the filter key only while results are listed: wait for them.
+    await expect(options(page).first()).toBeVisible();
     await page.keyboard.press("Tab");
     await expect(input(page)).toBeFocused();
     // Without filters (nothing typed), Tab moves inside the dialog only.
