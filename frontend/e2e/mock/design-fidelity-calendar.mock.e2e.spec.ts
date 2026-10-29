@@ -402,7 +402,9 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     expectRect(await rel(page, first), MOCK.number.first, "number 28");
     expect(await style(first, "font-size")).toBe(TYPE.number.size);
     expect(await style(first, "font-weight")).toBe(TYPE.number.weight);
-    expect(await colour(first, "color")).toBe("rgb(138, 146, 158)");
+    // Final-Calendar draws these at #8A929E; the light faint token was darkened
+    // to #686F7B (6d0179d4d) so out-of-month numbers pass 4.5:1 contrast.
+    expect(await colour(first, "color")).toBe("rgb(104, 111, 123)");
     const regular = page.locator("[data-day='2026-10-13'] b");
     expect(await colour(regular, "color")).toBe("rgb(79, 88, 102)");
 
@@ -538,7 +540,7 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     expect(await style(title, "font-size")).toBe(TYPE.asideTitle.size);
     expect(await style(title, "font-weight")).toBe(TYPE.asideTitle.weight);
     expectRect(
-      await rel(page, aside.getByText("Kéo vào lịch hoặc bấm Đặt hạn.")),
+      await rel(page, aside.getByText("Kéo vào lịch hoặc bấm Đặt ngày.")),
       a.hint,
       "hint",
     );
@@ -554,7 +556,9 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
       "undated item title",
     );
     // The mockup lets the button shrink to 41 px, so its label wraps.
-    const setDue = item.getByRole("button", { name: /^Đặt hạn cho/ });
+    // The undated tray says "Đặt ngày" where Final-Calendar says "Đặt hạn"
+    // (WM-TLCal-Dem, the Chưa lên lịch tray).
+    const setDue = item.getByRole("button", { name: /^Đặt ngày cho/ });
     expectRect(await rel(page, setDue), a.setDue, "Đặt hạn");
     expect(await style(setDue, "font-size")).toBe(TYPE.event.size);
     expect(await style(setDue, "border-radius")).toBe("7px");
