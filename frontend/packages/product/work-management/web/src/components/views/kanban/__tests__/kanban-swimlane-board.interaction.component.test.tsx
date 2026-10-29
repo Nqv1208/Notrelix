@@ -124,7 +124,7 @@ describe("KanbanSwimlaneBoard", () => {
     });
   });
 
-  it("FUI[wm.kanban.swimlanes:wip] refuses a drop into a column that is at its limit", () => {
+  it("FUI[wm.kanban.swimlanes:wip] allows a drop into a column at its limit and flags it for a warning (D37)", () => {
     const scenario = erpSwimlaneScenario();
     const target = scenario.columns[1]!;
     const { container, spies } = renderBoard({
@@ -138,8 +138,12 @@ describe("KanbanSwimlaneBoard", () => {
       return scenario.columns[0]!.cards.some((c) => c.id === id);
     })!;
     fireEvent.keyDown(card, { key: "ArrowRight", altKey: true });
-    expect(spies.onRefused.mock.calls[0]![0]).toMatchObject({ reason: "wip" });
-    expect(spies.onDrop).not.toHaveBeenCalled();
+    expect(spies.onRefused).not.toHaveBeenCalled();
+    expect(spies.onDrop).toHaveBeenCalledOnce();
+    expect(spies.onDrop.mock.calls[0]![0].plan).toMatchObject({
+      ok: true,
+      wipExceeded: true,
+    });
   });
 
   it("FUI[wm.kanban.swimlanes:read-only] gives a viewer no move keys but keeps the lanes collapsible", () => {

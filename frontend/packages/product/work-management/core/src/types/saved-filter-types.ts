@@ -69,3 +69,11 @@ export function serializeSavedFilterCriteria(
     ...(criteria.sort ? { sort: criteria.sort } : {}),
   });
 }
+
+/** The server's cap on the criteria JSON, in UTF-8 bytes. */
+export const MAX_CRITERIA_BYTES = 8192;
+
+/** Whether the criteria JSON is over the server's cap (the request would be refused). */
+export const criteriaTooLarge = (criteria: SavedFilterCriteria): boolean =>
+  new TextEncoder().encode(serializeSavedFilterCriteria(criteria)).length >
+  MAX_CRITERIA_BYTES;

@@ -4,6 +4,7 @@ import {
   useFullBoard,
   type UseBoardKanbanView,
 } from "@notrelix/work-management-state";
+import { runtimeZone } from "../shared/board-clock";
 import { bucketLabel } from "./condition-label";
 import { useFiltersCopy } from "./use-filters-copy";
 import { useViewState, type UseViewStateOptions } from "./use-view-state";
@@ -14,7 +15,10 @@ import { useViewState, type UseViewStateOptions } from "./use-view-state";
  * date-bucket labels. Pass `kanbanView` to `useBoardTable` / `useBoardKanban`.
  */
 export function useBoardViewState(
-  options: Omit<UseViewStateOptions, "fieldDefinitions">,
+  options: Omit<UseViewStateOptions, "fieldDefinitions"> & {
+    /** The workspace's IANA time zone, for the day of a date instant; absent: the browser's. */
+    timeZone?: string;
+  },
 ) {
   const copy = useFiltersCopy();
   const { board, groups } = useFullBoard(options.boardId, options.workspaceId);
@@ -22,6 +26,7 @@ export function useBoardViewState(
     () => (board ? kanbanFilterChoices(board, groups) : undefined),
     [board, groups],
   );
+  const timeZone = options.timeZone ?? runtimeZone();
   const view = useViewState({
     ...options,
     fieldDefinitions: board?.fieldDefinitions,
@@ -37,8 +42,9 @@ export function useBoardViewState(
         overdue: copy.filter.presets.overdue,
       },
       bucketLabel: (key, bucket) => bucketLabel(copy, key, bucket),
+      ...(timeZone ? { timeZone } : {}),
     }),
-    [view.applied, copy],
+    [view.applied, copy, timeZone],
   );
   return { copy, view, kanbanView };
 }

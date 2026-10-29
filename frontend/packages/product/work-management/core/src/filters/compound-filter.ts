@@ -42,12 +42,77 @@ const asList = (value: unknown): string[] =>
     .filter((item) => item !== null && item !== undefined && item !== "")
     .map(String);
 
-const day = (value: unknown): number => Date.parse(String(value).slice(0, 10));
+/** The day (YYYY-MM-DD) of a date value, in `timeZone` when the value is an instant. */
+export function dayOf(value: unknown, timeZone?: string): string | null {
+  if (typeof value !== "string" || value === "") return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const time = Date.parse(value);
+  if (Number.isNaN(time)) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timeZone ?? "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(time);
+}
+
+/** What a relative date operand and an instant's day are read against: the clock and the workspace time zone. */
+export interface FilterEnv {
+  readonly now?: Date;
+  readonly timeZone?: string;
+}
+
+const isoDay = (date: Date): string => date.toISOString().slice(0, 10);
+const shiftDay = (day: string, days: number): Date => {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date;
+};
+
+/**
+ * A date operand: a `YYYY-MM-DD` day as stored, or a relative token resolved
+ * when the filter runs, so a saved "Tuần này" stays this week:
+ * `@today`, `@today+N`, `@today-N`, `@week-start`, `@week-end`,
+ * `@month-start`, `@month-end`. Anything else is returned unchanged.
+ */
+export function resolveOperand(operand: string, env: FilterEnv = {}): string {
+  if (!operand.startsWith("@")) return operand;
+  const today = dayOf((env.now ?? new Date()).toISOString(), env.timeZone);
+  const offset = /^@today([+-]\d+)?$/.exec(operand);
+  if (!today) return operand;
+  if (offset) return isoDay(shiftDay(today, Number(offset[1] ?? 0)));
+  const monday = shiftDay(
+    today,
+    -((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7),
+  );
+  const [y, m] = today.split("-").map(Number) as [number, number];
+  switch (operand) {
+    case "@week-start":
+      return isoDay(monday);
+    case "@week-end":
+      return isoDay(shiftDay(isoDay(monday), 6));
+    case "@month-start":
+      return isoDay(new Date(Date.UTC(y, m - 1, 1)));
+    case "@month-end":
+      return isoDay(new Date(Date.UTC(y, m, 0)));
+    default:
+      return operand;
+  }
+}
+
+const day = (value: unknown, env: FilterEnv = {}): number =>
+  Date.parse(
+    dayOf(
+      typeof value === "string" ? resolveOperand(value, env) : value,
+      env.timeZone,
+    ) ?? "",
+  );
 
 function equalsValue(
   context: FieldContext,
   value: unknown,
   operand: string,
+  env: FilterEnv,
 ): boolean {
   switch (context.field.fieldType) {
     case "number":
@@ -57,7 +122,7 @@ function equalsValue(
         ? value === Number(operand)
         : normalise(String(value)) === normalise(operand);
     case "date":
-      return day(value) === day(operand);
+      return day(value, env) === day(operand, env);
     case "select":
       return String(value) === operand;
     default:
@@ -77,6 +142,7 @@ export function matchesCondition(
   context: FieldContext,
   { operator, values }: Pick<FilterCondition, "operator" | "values">,
   value: unknown,
+  env: FilterEnv = {},
 ): boolean {
   const spec = specOf(context.field);
   const empty = spec.isEmpty(value);
@@ -101,9 +167,9 @@ export function matchesCondition(
         !normalise(spec.text(value, context)).includes(normalise(first))
       );
     case "equals":
-      return !empty && equalsValue(context, value, first);
+      return !empty && equalsValue(context, value, first, env);
     case "not_equals":
-      return empty || !equalsValue(context, value, first);
+      return empty || !equalsValue(context, value, first, env);
     case "gt":
     case "gte":
     case "lt":
@@ -116,18 +182,18 @@ export function matchesCondition(
     }
     case "before":
     case "after": {
-      if (empty || Number.isNaN(day(first))) return false;
+      if (empty || Number.isNaN(day(first, env))) return false;
       return operator === "before"
-        ? day(value) < day(first)
-        : day(value) > day(first);
+        ? day(value, env) < day(first, env)
+        : day(value, env) > day(first, env);
     }
     case "between":
       return (
         !empty &&
-        !Number.isNaN(day(first)) &&
-        !Number.isNaN(day(second)) &&
-        day(value) >= day(first) &&
-        day(value) <= day(second)
+        !Number.isNaN(day(first, env)) &&
+        !Number.isNaN(day(second, env)) &&
+        day(value, env) >= day(first, env) &&
+        day(value, env) <= day(second, env)
       );
     case "has_any":
       return (
@@ -158,6 +224,7 @@ export interface FilterOutcome {
 export function evaluateFilter(
   filter: CompoundFilter,
   subject: FilterSubject,
+  env: FilterEnv = {},
 ): FilterOutcome {
   const stale = new Set<string>();
   const results: boolean[] = [];
@@ -167,7 +234,7 @@ export function evaluateFilter(
       stale.add(condition.fieldId);
       continue;
     }
-    results.push(matchesCondition(hit.context, condition, hit.value));
+    results.push(matchesCondition(hit.context, condition, hit.value, env));
   }
   const matches =
     results.length === 0 ||

@@ -14,6 +14,7 @@ import {
   priorityFromOptionName,
 } from "../utils/status-lanes";
 import {
+  dayOf,
   decodePart,
   emptyCompoundFilter,
   escapePart,
@@ -22,6 +23,7 @@ import {
   serializeCompoundFilter,
   type CompoundFilter,
   type FilterCondition,
+  type FilterEnv,
 } from "./compound-filter";
 
 /* ---------- the model ---------- */
@@ -244,20 +246,25 @@ export function cardMatchesFilter(
   fields: readonly FilterField[],
   memberName: MemberNames,
   card: Card,
+  env?: FilterEnv,
 ): boolean {
   if (filter.conditions.length === 0) return true;
   const byId = new Map(fields.map((f) => [f.id, f]));
-  return evaluateFilter(filter, {
-    resolve: (fieldId) => {
-      const found = byId.get(fieldId);
-      return found
-        ? {
-            context: fieldContext(found, memberName),
-            value: found.read(card),
-          }
-        : undefined;
+  return evaluateFilter(
+    filter,
+    {
+      resolve: (fieldId) => {
+        const found = byId.get(fieldId);
+        return found
+          ? {
+              context: fieldContext(found, memberName),
+              value: found.read(card),
+            }
+          : undefined;
+      },
     },
-  }).matches;
+    env,
+  ).matches;
 }
 
 /** Applies the filter to lanes, keeping lane `total` (the lane before the filter). */
@@ -266,12 +273,13 @@ export function filterLanesByCompound(
   filter: CompoundFilter,
   fields: readonly FilterField[],
   memberName: MemberNames,
+  env?: FilterEnv,
 ): KanbanStatusLane[] {
   if (filter.conditions.length === 0) return [...lanes];
   return lanes.map((lane) => ({
     ...lane,
     cards: lane.cards.filter((card) =>
-      cardMatchesFilter(filter, fields, memberName, card),
+      cardMatchesFilter(filter, fields, memberName, card, env),
     ),
   }));
 }
@@ -327,21 +335,6 @@ export function groupableFields(fields: readonly FilterField[]): FilterField[] {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** The day (YYYY-MM-DD) of a date value, in `timeZone` when the value is an instant. */
-export function dayOf(value: unknown, timeZone?: string): string | null {
-  if (typeof value !== "string" || value === "") return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  const time = Date.parse(value);
-  if (Number.isNaN(time)) return null;
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timeZone ?? "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(time);
-  return parts;
-}
-
 /** The bucket a day falls in: its day, the Monday of its week, `YYYY-MM`, `YYYY-Qn` or `YYYY`. */
 export function bucketKeyOf(day: string, bucket: DateBucket): string {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
@@ -389,7 +382,11 @@ export function groupCardsByField(
       const day = dayOf(value, naming.timeZone);
       return day ? bucketKeyOf(day, bucket ?? "day") : "";
     }
-    return groupKeyOf(field.field, value) ?? "";
+    const key = groupKeyOf(field.field, value) ?? "";
+    // A deleted option's cards stay visible in the "none" lane.
+    return type === "select" && !field.field.options.some((o) => o.id === key)
+      ? ""
+      : key;
   };
   const byKey = new Map<string, Card[]>();
   for (const card of cards) {
@@ -444,7 +441,7 @@ export function groupCardsByField(
 
 /* ---------- swimlane drop ---------- */
 
-export type LaneDropRefusal = "lane_readonly" | "lane_derived" | "wip";
+export type LaneDropRefusal = "lane_readonly" | "lane_derived";
 
 export interface LaneDropInput {
   readonly laneField: FilterField;
@@ -466,13 +463,16 @@ export type LaneDropPlan =
       readonly lane: unknown;
       readonly laneChanged: boolean;
       readonly columnChanged: boolean;
+      /** The target column is at its WIP limit: the drop goes ahead and the caller warns (D37). */
+      readonly wipExceeded: boolean;
     }
   | { readonly ok: false; readonly reason: LaneDropRefusal };
 
 /**
  * What a drop on a swimlane cell writes: the column field when the column
  * changed and the lane field when the lane changed (both or one), or why it
- * is refused (a read-only or derived lane field, a full WIP column).
+ * is refused (a read-only or derived lane field). A full WIP column only
+ * warns (D37): the caller shows it, the drop is allowed.
  */
 export function planLaneDrop(input: LaneDropInput): LaneDropPlan {
   const columnChanged = input.fromColumn !== input.toColumn;
@@ -484,13 +484,6 @@ export function planLaneDrop(input: LaneDropInput): LaneDropPlan {
     if (input.laneField.field.fieldType === "date")
       return { ok: false, reason: "lane_derived" };
   }
-  if (
-    columnChanged &&
-    input.wip &&
-    input.wip.count >= input.wip.limit &&
-    input.toColumn !== null
-  )
-    return { ok: false, reason: "wip" };
   let lane: unknown;
   if (laneChanged) {
     const type = input.laneField.field.fieldType;
@@ -511,6 +504,11 @@ export function planLaneDrop(input: LaneDropInput): LaneDropPlan {
     lane,
     laneChanged,
     columnChanged,
+    wipExceeded:
+      columnChanged &&
+      input.toColumn !== null &&
+      !!input.wip &&
+      input.wip.count >= input.wip.limit,
   };
 }
 

@@ -138,13 +138,13 @@ export const en = {
         "The lane field “{{field}}” is read-only, so dragging cannot change it.",
       lane_derived:
         "The lane field “{{field}}” is a date bucket; change the date on the item itself.",
-      wip: "The column {{column}} is at its limit of {{limit}} items.",
     },
     toast: {
       moved: "Moved {{title}} to {{column}} and set {{field}} to {{value}}",
       movedLane: "Set {{field}} of {{title}} to {{value}}",
       movedColumn: "Moved {{title}} to {{column}}",
       undo: "Undo",
+      wipWarning: "{{column}} is over its limit of {{limit}} items.",
       failed: "Could not move {{title}}. It stays where it was.",
       retry: "Try again",
     },
@@ -159,6 +159,12 @@ export const en = {
     reset: "Back to shared view",
     saveFailed:
       "Could not save your view. You still see it on this screen, but opening it again will lose it.",
+    saveIssue: {
+      too_large:
+        "Your view is too large to save. Remove some conditions or shorten their values.",
+      rejected:
+        "The server did not accept this view, so it is not saved. Change the conditions and try again.",
+    },
     retry: "Try again",
     restored: "Your own view was restored",
   },
@@ -324,7 +330,6 @@ export const vi: FiltersCopy = {
         "Làn đang theo trường “{{field}}”, chỉ đọc nên kéo thả không đổi được.",
       lane_derived:
         "Làn đang theo nhóm ngày của “{{field}}”; hãy đổi ngày ngay trên việc.",
-      wip: "Cột {{column}} đã đủ giới hạn {{limit}} việc.",
     },
     toast: {
       moved:
@@ -332,6 +337,7 @@ export const vi: FiltersCopy = {
       movedLane: "Đã đặt {{field}} của {{title}} là {{value}}",
       movedColumn: "Đã chuyển {{title}} sang {{column}}",
       undo: "Hoàn tác",
+      wipWarning: "{{column}} vượt giới hạn {{limit}} việc.",
       failed: "Chưa chuyển được {{title}}. Việc vẫn ở chỗ cũ.",
       retry: "Thử lại",
     },
@@ -345,6 +351,12 @@ export const vi: FiltersCopy = {
     reset: "Về view chung",
     saveFailed:
       "Chưa lưu được cách xem của bạn. Bạn vẫn thấy nó trên màn hình này, nhưng mở lại sẽ mất.",
+    saveIssue: {
+      too_large:
+        "Cách xem quá lớn để lưu. Hãy bớt điều kiện hoặc rút gọn giá trị.",
+      rejected:
+        "Máy chủ không nhận cách xem này nên chưa lưu. Hãy đổi điều kiện rồi thử lại.",
+    },
     retry: "Thử lại",
     restored: "Đã khôi phục cách xem riêng của bạn",
   },

@@ -8,12 +8,15 @@ import {
   PopoverTrigger,
 } from "@notrelix/ui-web";
 import {
+  MAX_CONDITIONS,
+  MAX_VALUE_LENGTH,
   NONE_VALUE,
   conditionIssue,
   newCondition,
   operatorTakesValue,
   operatorsFor,
   presetCondition,
+  resolveOperand,
   withOperator,
   type CompoundFilter,
   type ConditionOperator,
@@ -179,7 +182,7 @@ function BuilderBody({
         variant="ghost"
         size="sm"
         className="h-7 self-start text-compact text-muted-foreground"
-        disabled={!first}
+        disabled={!first || filter.conditions.length >= MAX_CONDITIONS}
         onClick={() =>
           first &&
           onChange({
@@ -413,9 +416,9 @@ function ValueEditor({
           type="date"
           aria-label={`${text} (${label})`}
           aria-invalid={invalid || undefined}
-          value={values[at] ?? ""}
+          value={resolveOperand(values[at] ?? "", { now })}
           onChange={(event) => {
-            const next = [...values];
+            const next = values.map((value) => resolveOperand(value, { now }));
             next[at] = event.target.value;
             onChange({
               ...condition,
@@ -442,7 +445,7 @@ function ValueEditor({
               <button
                 key={preset}
                 type="button"
-                onClick={() => onChange(presetCondition(field.id, preset, now))}
+                onClick={() => onChange(presetCondition(field.id, preset))}
                 className="h-7 cursor-pointer rounded-full border border-line-strong bg-popover px-2.5 text-xs font-medium text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
               >
                 {copy.filter.presets[preset]}
@@ -572,6 +575,7 @@ function ValueEditor({
       type={numeric ? "number" : "text"}
       inputMode={numeric ? "decimal" : undefined}
       aria-label={valueLabelText}
+      maxLength={MAX_VALUE_LENGTH}
       placeholder={
         numeric ? copy.filter.numberPlaceholder : copy.filter.valuePlaceholder
       }

@@ -263,7 +263,7 @@ export function ViewStateNotices({
 }: ViewStateNoticesProps) {
   const stale =
     fields.length > 0 ? staleConditionCount(view.state.filter, fields) : 0;
-  if (stale === 0 && !view.saveFailed) return null;
+  if (stale === 0 && !view.saveFailed && !view.saveIssue) return null;
   const known = new Set(fields.map((f) => f.id));
   return (
     <div className="flex flex-col gap-2 pb-2">
@@ -301,6 +301,17 @@ export function ViewStateNotices({
               {copy.stale.saveNew}
             </Button>
           ) : null}
+        </div>
+      ) : null}
+      {view.saveIssue ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 rounded-[9px] bg-destructive/10 px-3 py-2 text-compact text-destructive"
+        >
+          <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            {copy.personal.saveIssue[view.saveIssue]}
+          </span>
         </div>
       ) : null}
       {view.saveFailed ? (

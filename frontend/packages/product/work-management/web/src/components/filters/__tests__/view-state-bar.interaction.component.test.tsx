@@ -213,6 +213,45 @@ describe("view bar", () => {
     expect(retrySave).toHaveBeenCalledOnce();
   });
 
+  it("FUI[wm.filters.bar:save-issue] names why the view cannot be saved and offers no retry", () => {
+    renderPureUi(
+      <div>
+        {erpViewBar({
+          control: { saveIssue: "too_large" },
+          state: { filter: { join: "and", conditions: [owner()] } },
+        })}
+      </div>,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("quá lớn để lưu");
+    expect(within(alert).queryByRole("button")).toBeNull();
+  });
+
+  it("FUI[wm.filters.bar:max-conditions] stops adding conditions at the cap", () => {
+    const copy = filtersCopy("vi");
+    const conditions = Array.from({ length: 20 }, () => owner());
+    renderPureUi(
+      <div>
+        {erpViewBar({
+          state: { filter: { join: "and", conditions } },
+        })}
+      </div>,
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: new RegExp(`^${copy.filter.trigger}`),
+      }),
+    );
+    const dialog = screen.getByRole("dialog", { name: copy.filter.title });
+    expect(
+      (
+        within(dialog).getByRole("button", {
+          name: copy.filter.add,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
   it("FUI[wm.filters.bar:viewer] lets a viewer filter but shows saving disabled with the reason", () => {
     const setFilter = vi.fn();
     renderPureUi(

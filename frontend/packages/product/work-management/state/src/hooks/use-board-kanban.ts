@@ -283,6 +283,10 @@ export function useBoardKanban(
       compound,
       filterFields,
       memberName,
+      {
+        now: new Date(),
+        ...(view?.timeZone ? { timeZone: view.timeZone } : {}),
+      },
     );
     return {
       ...legacyFiltered,
@@ -290,7 +294,7 @@ export function useBoardKanban(
       visibleCount: lanes.reduce((sum, lane) => sum + lane.cards.length, 0),
       active: true,
     };
-  }, [compound, filterFields, legacyFiltered, memberName]);
+  }, [compound, filterFields, legacyFiltered, memberName, view?.timeZone]);
 
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>

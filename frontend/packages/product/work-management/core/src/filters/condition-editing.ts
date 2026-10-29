@@ -2,10 +2,15 @@ import { specOf } from "../field-types/field-type-registry";
 import type { FieldDefinition } from "../types/field-types";
 import {
   NONE_VALUE,
+  resolveOperand,
   type CompoundFilter,
   type ConditionOperator,
   type FilterCondition,
 } from "./compound-filter";
+
+/** Bounds the builder keeps, so a view stays under the server's criteria cap. */
+export const MAX_CONDITIONS = 20;
+export const MAX_VALUE_LENGTH = 200;
 
 /** Operators offered for a field, in the order the builder lists them (the registry's, plus `between` for dates). */
 export function operatorsFor(field: FieldDefinition): ConditionOperator[] {
@@ -57,7 +62,7 @@ export function conditionIssue(condition: FilterCondition): ConditionIssue {
   if (condition.operator === "between") {
     const [from, to] = condition.values;
     if (!from || !to) return "incomplete";
-    return from > to ? "range" : null;
+    return resolveOperand(from) > resolveOperand(to) ? "range" : null;
   }
   const first = condition.values[0];
   if (first === undefined || first === "") return "incomplete";
@@ -76,56 +81,30 @@ export function effectiveFilter(filter: CompoundFilter): CompoundFilter {
 
 export type DatePreset = "today" | "week" | "month" | "next7" | "overdue";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const iso = (date: Date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-
-/** A preset as a condition: `between` for the week, month and next seven days, `before` today for overdue. */
+/** A preset as a condition on relative operands (`@today`, `@week-start`, ...): they resolve when the filter runs, so a saved "Tuần này" keeps meaning this week. */
 export function presetCondition(
   fieldId: string,
   preset: DatePreset,
-  now: Date,
 ): FilterCondition {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const shift = (days: number) =>
-    new Date(today.getFullYear(), today.getMonth(), today.getDate() + days);
   switch (preset) {
     case "today":
-      return { fieldId, operator: "equals", values: [iso(today)] };
-    case "week": {
-      const monday = shift(-((today.getDay() + 6) % 7));
+      return { fieldId, operator: "equals", values: ["@today"] };
+    case "week":
       return {
         fieldId,
         operator: "between",
-        values: [
-          iso(monday),
-          iso(
-            new Date(
-              monday.getFullYear(),
-              monday.getMonth(),
-              monday.getDate() + 6,
-            ),
-          ),
-        ],
+        values: ["@week-start", "@week-end"],
       };
-    }
     case "month":
       return {
         fieldId,
         operator: "between",
-        values: [
-          iso(new Date(today.getFullYear(), today.getMonth(), 1)),
-          iso(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
-        ],
+        values: ["@month-start", "@month-end"],
       };
     case "next7":
-      return {
-        fieldId,
-        operator: "between",
-        values: [iso(today), iso(shift(6))],
-      };
+      return { fieldId, operator: "between", values: ["@today", "@today+6"] };
     case "overdue":
-      return { fieldId, operator: "before", values: [iso(today)] };
+      return { fieldId, operator: "before", values: ["@today"] };
   }
 }
 

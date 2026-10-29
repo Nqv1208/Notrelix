@@ -562,7 +562,11 @@ export function KanbanView({
         kanban.lanes.flatMap((lane) => lane.cards),
         laneField,
         laneRef?.bucket,
-        { person: kanban.memberName, bucket: kanbanView.bucketLabel },
+        {
+          person: kanban.memberName,
+          bucket: kanbanView.bucketLabel,
+          ...(kanbanView.timeZone ? { timeZone: kanbanView.timeZone } : {}),
+        },
       )
     : [];
   const swimlaneLabel = (lane: KanbanStatusLane | undefined) =>
@@ -622,6 +626,13 @@ export function KanbanView({
       field: laneField.name,
       value: swimlaneLabel(swimlanes.find((lane) => lane.optionId === toLane)),
     };
+    if (plan.wipExceeded && toColumn)
+      toast.warning(
+        fillFiltersCopy(t.wipWarning, {
+          column: values.column,
+          limit: kanbanSettings.wipLimits[toColumn] ?? "",
+        }),
+      );
     toast(
       fillFiltersCopy(
         plan.columnChanged && plan.laneChanged

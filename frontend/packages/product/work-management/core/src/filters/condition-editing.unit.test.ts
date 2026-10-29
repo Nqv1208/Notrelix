@@ -8,6 +8,7 @@ import {
   presetCondition,
   withOperator,
 } from "./condition-editing";
+import { resolveOperand } from "./compound-filter";
 
 const field = (fieldType: FieldDefinition["fieldType"]): FieldDefinition => ({
   id: "f",
@@ -62,30 +63,35 @@ describe("condition editing", () => {
         .conditions,
     ).toEqual([ok]);
   });
-  it("builds date presets for Monday 12/10/2026", () => {
-    const now = new Date(2026, 9, 12, 10, 40);
-    expect(presetCondition("d", "week", now).values).toEqual([
-      "2026-10-12",
-      "2026-10-18",
+  it("stores date presets as relative operands, not today's dates", () => {
+    expect(presetCondition("d", "week").values).toEqual([
+      "@week-start",
+      "@week-end",
     ]);
-    expect(presetCondition("d", "month", now).values).toEqual([
-      "2026-10-01",
-      "2026-10-31",
+    expect(presetCondition("d", "month").values).toEqual([
+      "@month-start",
+      "@month-end",
     ]);
-    expect(presetCondition("d", "next7", now).values).toEqual([
-      "2026-10-12",
-      "2026-10-18",
+    expect(presetCondition("d", "next7").values).toEqual([
+      "@today",
+      "@today+6",
     ]);
-    expect(presetCondition("d", "today", now)).toMatchObject({
+    expect(presetCondition("d", "today")).toMatchObject({
       operator: "equals",
-      values: ["2026-10-12"],
+      values: ["@today"],
     });
-    expect(presetCondition("d", "overdue", now)).toMatchObject({
+    expect(presetCondition("d", "overdue")).toMatchObject({
       operator: "before",
-      values: ["2026-10-12"],
+      values: ["@today"],
     });
-    expect(presetCondition("d", "week", new Date(2026, 9, 18)).values[0]).toBe(
-      "2026-10-12",
-    );
+    expect(conditionIssue(presetCondition("d", "week"))).toBeNull();
+  });
+  it("resolves the presets on any now", () => {
+    const env = { now: new Date("2026-10-18T05:00:00Z") };
+    expect(resolveOperand("@week-start", env)).toBe("2026-10-12");
+    expect(resolveOperand("@week-end", env)).toBe("2026-10-18");
+    expect(resolveOperand("@month-end", env)).toBe("2026-10-31");
+    expect(resolveOperand("@today+6", env)).toBe("2026-10-24");
+    expect(resolveOperand("2026-01-01", env)).toBe("2026-01-01");
   });
 });

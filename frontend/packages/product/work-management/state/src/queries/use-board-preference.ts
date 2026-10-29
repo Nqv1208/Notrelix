@@ -1,17 +1,24 @@
-import { useCallback, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  serializeSavedFilterCriteria,
-  type SavedFilterCriteria,
-} from "@notrelix/work-management-core";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { SavedFilterCriteria } from "@notrelix/work-management-core";
 import { useWorkManagementServices } from "../services";
 import { wmQueryKeys } from "./keys";
+import {
+  createPreferenceSaver,
+  type PreferenceStatus,
+  type PreferenceTarget,
+} from "./preference-saver";
+
+export type { PreferenceSaveIssue, PreferenceTarget } from "./preference-saver";
 
 /**
  * The signed-in member's personal state of one view (filter, sort, grouping,
  * swimlane) as saved criteria. Any board viewer may read and write it: it is
  * theirs alone and never changes the shared view. `viewId` is absent while the
  * board has no saved view of the open layout: the state then lives on screen only.
+ *
+ * `save` takes the view it saves to, so a save made on one view and sent after
+ * a switch still lands on that view. Saves are single-flight (see the saver).
  */
 export function useBoardPreference(
   boardId: string,
@@ -33,45 +40,55 @@ export function useBoardPreference(
     staleTime: 60_000,
   });
 
-  const lastSent = useRef<SavedFilterCriteria | null>(null);
-  const [failed, setFailed] = useState(false);
-  const mutation = useMutation({
-    mutationFn: (criteria: SavedFilterCriteria) =>
-      boardPreferences.saveCriteria(
-        boardId,
-        viewId!,
-        Object.keys(criteria).length === 0
-          ? ""
-          : serializeSavedFilterCriteria(criteria),
-      ),
-    onMutate: (criteria) => {
-      lastSent.current = criteria;
-      setFailed(false);
-      queryClient.setQueryData(queryKey, criteria);
-    },
-    // No silent revert: the member keeps what they see and gets "Thử lại".
-    onError: () => setFailed(true),
-  });
-  const { mutate } = mutation;
+  const [status, setStatus] = useState<PreferenceStatus | null>(null);
+  const workspaceRef = useRef(workspaceId);
+  workspaceRef.current = workspaceId;
+  const saver = useMemo(
+    () =>
+      createPreferenceSaver({
+        send: (target, json) =>
+          boardPreferences.saveCriteria(target.boardId, target.viewId, json),
+        cache: (target, criteria) =>
+          queryClient.setQueryData(
+            wmQueryKeys.boardPreference(
+              workspaceRef.current,
+              target.boardId,
+              target.viewId,
+            ),
+            criteria,
+          ),
+        report: setStatus,
+      }),
+    [boardPreferences, queryClient],
+  );
 
   const save = useCallback(
-    (criteria: SavedFilterCriteria) => {
-      if (enabled) mutate(criteria);
+    (
+      criteria: SavedFilterCriteria,
+      target: PreferenceTarget | undefined = viewId
+        ? { boardId, viewId }
+        : undefined,
+    ) => {
+      if (target && workspaceId) saver.save(criteria, target);
     },
-    [enabled, mutate],
+    [boardId, saver, viewId, workspaceId],
   );
-  const retry = useCallback(() => {
-    if (lastSent.current) save(lastSent.current);
-  }, [save]);
 
+  const mine =
+    status &&
+    status.target.boardId === boardId &&
+    status.target.viewId === viewId
+      ? status
+      : null;
   return {
     /** What was saved; `undefined` until read (or when there is no saved view to hold it). */
     criteria: query.data,
     isLoading: enabled && query.isLoading,
     persistent: enabled,
     save,
-    saving: mutation.isPending,
-    saveFailed: failed,
-    retry,
+    saving: mine?.pending ?? false,
+    saveFailed: mine?.failed ?? false,
+    saveIssue: mine?.issue ?? null,
+    retry: saver.retry,
   };
 }

@@ -91,10 +91,46 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
     );
   }, [routeFilter, fieldDefinitions, filterChoices]);
 
-  const [local, setLocal] = useState<ViewState | null>(null);
+  // The member's edits on screen. They belong to one workspace + board + view:
+  // another view never sees them. `wrote` is the route filter the edit wrote,
+  // `before` the one it replaced; `synced` once the route showed `wrote`. A
+  // route value that is neither (browser Back or Forward) wins over the edit.
+  const scope = `${workspaceId}:${boardId}:${viewId ?? ""}`;
+  const [localState, setLocal] = useState<{
+    scope: string;
+    state: ViewState;
+    wrote: string;
+    before: string;
+    synced: boolean;
+  } | null>(null);
+  const local = localState?.scope === scope ? localState : null;
+
+  useEffect(() => {
+    if (!localState) return;
+    if (localState.scope !== scope) {
+      setLocal(null);
+      return;
+    }
+    const route = routeFilter ?? "";
+    if (route === localState.wrote) {
+      if (!localState.synced) setLocal({ ...localState, synced: true });
+      return;
+    }
+    if (!localState.synced && route === localState.before) return;
+    setLocal({
+      ...localState,
+      state: {
+        ...localState.state,
+        filter: routeCompound ?? emptyCompoundFilter(),
+      },
+      wrote: route,
+      before: route,
+      synced: true,
+    });
+  }, [localState, scope, routeFilter, routeCompound]);
 
   const state = useMemo<ViewState>(() => {
-    if (local) return local;
+    if (local) return local.state;
     const base = personal ?? emptyViewState();
     const group = routeGroupBy
       ? {
@@ -123,28 +159,56 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
   }, [routeFilter, routeCompound, onRouteFilterChange]);
 
   const timer = useRef<number | null>(null);
-  const pending = useRef<ViewState | null>(null);
+  // The pending save keeps the view it was made on, so a switch cannot redirect it.
+  const pending = useRef<{
+    state: ViewState;
+    target: { boardId: string; viewId: string };
+  } | null>(null);
   const { save } = preference;
+  const saveRef = useRef(save);
+  saveRef.current = save;
   const flush = useCallback(() => {
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = null;
     const next = pending.current;
     pending.current = null;
-    if (next) save(viewStateToCriteria(next, { withSort: true }));
-  }, [save]);
-  useEffect(() => flush, [flush]);
+    if (next)
+      saveRef.current(
+        viewStateToCriteria(next.state, { withSort: true }),
+        next.target,
+      );
+  }, []);
+  // Leaving a view (or the page) saves what is pending to that view first.
+  useEffect(() => flush, [flush, scope]);
 
   const commit = useCallback(
     (next: ViewState) => {
-      setLocal(next);
-      onRouteFilterChange(serializeCompoundFilter(next.filter) || undefined);
+      const wrote = serializeCompoundFilter(next.filter);
+      setLocal({
+        scope,
+        state: next,
+        wrote,
+        before: routeFilter ?? "",
+        synced: false,
+      });
+      onRouteFilterChange(wrote || undefined);
       if (onRouteGroupByChange && next.group?.fieldId !== state.group?.fieldId)
         onRouteGroupByChange(next.group?.fieldId ?? "");
-      pending.current = next;
+      if (viewId)
+        pending.current = { state: next, target: { boardId, viewId } };
       if (timer.current !== null) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(flush, SAVE_DELAY_MS);
     },
-    [flush, onRouteFilterChange, onRouteGroupByChange, state.group?.fieldId],
+    [
+      boardId,
+      flush,
+      onRouteFilterChange,
+      onRouteGroupByChange,
+      routeFilter,
+      scope,
+      state.group?.fieldId,
+      viewId,
+    ],
   );
 
   const setFilter = useCallback(
@@ -218,6 +282,7 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
     reset,
     persistent: preference.persistent,
     saveFailed: preference.saveFailed,
+    saveIssue: preference.saveIssue,
     retrySave: preference.retry,
   };
 }

@@ -9,6 +9,7 @@ import {
   evaluateFilter,
   matchesCondition,
   parseCompoundFilter,
+  resolveOperand,
   serializeCompoundFilter,
   type CompoundFilter,
   type ConditionOperator,
@@ -205,5 +206,54 @@ describe("saved filter criteria version", () => {
       filter: "c2:and~p.is_empty",
       swimlaneBy: "s",
     });
+  });
+});
+
+describe("date operands in the workspace time zone", () => {
+  const day = (operator: ConditionOperator, values: string[], value: string) =>
+    matchesCondition(context("date"), { operator, values }, value, {
+      timeZone: "Asia/Ho_Chi_Minh",
+      now: new Date("2026-10-12T20:00:00Z"),
+    });
+  it("reads an instant near midnight as its day in UTC+7, not its UTC slice", () => {
+    // 2026-10-12T20:00Z is 13/10 03:00 in Ho Chi Minh.
+    expect(day("equals", ["2026-10-13"], "2026-10-12T20:00:00Z")).toBe(true);
+    expect(day("equals", ["2026-10-12"], "2026-10-12T20:00:00Z")).toBe(false);
+    expect(day("before", ["2026-10-13"], "2026-10-12T20:00:00Z")).toBe(false);
+    expect(
+      day("between", ["2026-10-13", "2026-10-13"], "2026-10-12T20:00:00Z"),
+    ).toBe(true);
+  });
+  it("resolves relative operands on the clock of that zone", () => {
+    expect(
+      resolveOperand("@today", {
+        now: new Date("2026-10-12T20:00:00Z"),
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
+    ).toBe("2026-10-13");
+    expect(day("equals", ["@today"], "2026-10-13T01:00:00Z")).toBe(true);
+  });
+  it("keeps a saved preset relative: it follows a later now", () => {
+    const saved = parseCompoundFilter(
+      serializeCompoundFilter({
+        join: "and",
+        conditions: [
+          {
+            fieldId: "f",
+            operator: "between",
+            values: ["@week-start", "@week-end"],
+          },
+        ],
+      }),
+    )!;
+    const run = (now: string, value: string) =>
+      evaluateFilter(
+        saved,
+        { resolve: () => ({ context: context("date"), value }) },
+        { now: new Date(now) },
+      ).matches;
+    expect(run("2026-10-12T05:00:00Z", "2026-10-14")).toBe(true);
+    expect(run("2026-10-21T05:00:00Z", "2026-10-14")).toBe(false);
+    expect(run("2026-10-21T05:00:00Z", "2026-10-20")).toBe(true);
   });
 });

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { dayOf } from "./compound-filter";
 import type { Card } from "../types/item-types";
 import type { FieldDefinition } from "../types/field-types";
 import {
   bucketKeyOf,
   buildFilterFields,
   cardMatchesFilter,
-  dayOf,
   filterLanesByCompound,
   groupCardsByField,
   legacyFacetsToCompound,
@@ -241,6 +241,23 @@ describe("grouping", () => {
       [null, 1],
     ]);
   });
+  it("keeps a card whose select option was deleted in the none lane", () => {
+    const withGone = [
+      ...cards,
+      card("gone", { fieldValues: { pri: "p-deleted" } }),
+    ];
+    const out = groupCardsByField(
+      withGone,
+      fields.find((f) => f.id === "pri")!,
+      undefined,
+      naming,
+    );
+    expect(out.reduce((sum, l) => sum + l.cards.length, 0)).toBe(
+      withGone.length,
+    );
+    expect(out.at(-1)!.optionId).toBeNull();
+    expect(out.at(-1)!.cards.map((c) => c.id)).toEqual(["c", "gone"]);
+  });
   it("buckets days", () => {
     expect(bucketKeyOf("2026-10-12", "week")).toBe("2026-10-12");
     expect(bucketKeyOf("2026-10-18", "week")).toBe("2026-10-12");
@@ -281,17 +298,21 @@ describe("planLaneDrop", () => {
       planLaneDrop({ ...base, toColumn: "s-doing", toLane: null }),
     ).toMatchObject({ ok: true, lane: [] });
   });
-  it("refuses a read-only lane field, a date lane and a full column", () => {
+  it("refuses a read-only lane field and a date lane", () => {
     expect(
       planLaneDrop({ ...base, laneField: fields.find((f) => f.id === "fx")! }),
     ).toEqual({ ok: false, reason: "lane_readonly" });
     expect(
       planLaneDrop({ ...base, laneField: fields.find((f) => f.id === "due")! }),
     ).toEqual({ ok: false, reason: "lane_derived" });
-    expect(planLaneDrop({ ...base, wip: { limit: 2, count: 2 } })).toEqual({
-      ok: false,
-      reason: "wip",
-    });
+  });
+  it("warns on a full column but still allows the drop (D37)", () => {
+    expect(
+      planLaneDrop({ ...base, wip: { limit: 2, count: 2 } }),
+    ).toMatchObject({ ok: true, wipExceeded: true });
+    expect(
+      planLaneDrop({ ...base, wip: { limit: 3, count: 2 } }),
+    ).toMatchObject({ ok: true, wipExceeded: false });
   });
   it("does not check WIP when the column stays", () => {
     expect(
@@ -299,8 +320,8 @@ describe("planLaneDrop", () => {
         ...base,
         toColumn: "s-doing",
         wip: { limit: 1, count: 5 },
-      }).ok,
-    ).toBe(true);
+      }),
+    ).toMatchObject({ ok: true, wipExceeded: false });
   });
 });
 
