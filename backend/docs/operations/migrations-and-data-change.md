@@ -232,9 +232,9 @@ migrationBuilder.Sql("ALTER TABLE ... ALTER COLUMN ... SET NOT NULL");
 ```
 
 Recovery for a development database stuck before
-`20261028180000_ScopeBoardTemplatesToWorkspace`: recreate the database, or
-apply the `SET NOT NULL` statement manually and insert the migration's row
-into `__EFMigrationsHistory`.
+`20261028180000_ScopeBoardTemplatesToWorkspace`: recreate the development
+database. PostgreSQL rolls back the failed migration transaction, so nothing
+from it is applied.
 
 ---
 
