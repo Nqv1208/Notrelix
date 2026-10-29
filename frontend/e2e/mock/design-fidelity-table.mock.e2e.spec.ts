@@ -284,7 +284,8 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
       [/^Lọc$/, t.filter],
       [/^Sắp xếp Hạn ↑$/, t.sort],
       [/^Nhóm theo Trạng thái$/, t.group],
-      [/^Cột 9\/12$/, t.columns],
+      // 15 columns now: the board carries the field columns (WM-Table-Columns).
+      [/^Cột 9\/15$/, t.columns],
     ] as const) {
       const button = page.getByRole("button", { name });
       expectRect(await rel(page, button), want, String(name));
@@ -412,8 +413,11 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await style(key, "font-family")).toContain("IBM Plex Mono");
     expect(await colour(key, "color")).toBe(COLOUR.meta);
 
-    const title = columns.nth(2).getByRole("button").first();
-    expect((await rel(page, title)).x).toBeCloseTo(r.title.x, 0);
+    // ERP-151 has sub-items, so its first button is now the expand chevron
+    // (card-face table); the title is the row's open button.
+    const chevron = columns.nth(2).getByRole("button").first();
+    expect((await rel(page, chevron)).x).toBeCloseTo(r.title.x, 0);
+    const title = columns.nth(2).locator("[data-row-open]");
     expect(await style(title, "font-size")).toBe(TYPE.title.size);
     expect(await style(title, "font-weight")).toBe(TYPE.title.weight);
     expect(await colour(title, "color")).toBe(COLOUR.ink);
@@ -477,9 +481,14 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
       .nth(6)
       .getByText("Khẩn");
     expect(await colour(urgent, "color")).toBe(COLOUR.danger);
-    const none = row(page, "ERP-147").getByRole("cell").nth(6).getByText("—");
-    expect(await style(none, "font-weight")).toBe("400");
-    expect(await colour(none, "color")).toBe(COLOUR.meta);
+    // WM-Card-Face: every priority level is drawn, so a medium item reads
+    // "Trung bình" (500, muted) where Final-Table drew a dash.
+    const none = row(page, "ERP-147")
+      .getByRole("cell")
+      .nth(6)
+      .getByText("Trung bình");
+    expect(await style(none, "font-weight")).toBe("500");
+    expect(await colour(none, "color")).toBe(COLOUR.muted);
 
     const tag = columns.nth(7).locator("[data-label-tone]");
     const tagBox = await rel(page, tag);
@@ -650,10 +659,8 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
       Math.abs((await rel(page, options.nth(1))).y - (l.option.y + 32)),
     ).toBeLessThanOrEqual(1);
     expect(await style(options.nth(0), "border-radius")).toBe("7px");
-    const key = options.nth(0).locator("span.border");
-    const keyBox = await rel(page, key);
-    expect(Math.abs(keyBox.width - l.key.width)).toBeLessThanOrEqual(1);
-    expect(Math.abs(keyBox.height - l.key.height)).toBeLessThanOrEqual(1);
+    // The number key chips are gone (owner rule: no visible shortcut hints).
+    await expect(options.nth(0).locator("span.border")).toHaveCount(0);
     // The pill carries the focus ring while its list is open.
     const pill = row(page, "ERP-144").getByRole("button", {
       name: "Đổi trạng thái của ERP-144",
@@ -665,7 +672,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     page,
   }) => {
     await openTable(page);
-    await page.getByRole("button", { name: /^Cột 9\/12$/ }).click();
+    await page.getByRole("button", { name: /^Cột 9\/15$/ }).click();
     await page.getByRole("menuitemradio", { name: "Gọn" }).click();
     await page.keyboard.press("Escape");
     await expect(
@@ -745,21 +752,13 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(Math.abs(linkBox.x - (box.x + box.width + 16))).toBeLessThanOrEqual(
       1,
     );
-    const key = page.locator("span.border").filter({ hasText: /^Enter$/ });
-    const keyBox = await rel(page, key);
-    expect(Math.abs(keyBox.height - f.key.height)).toBeLessThanOrEqual(1);
-    expect(await style(key, "border-radius")).toBe(f.key.radius);
-    expect(await style(key, "font-size")).toBe("11px");
-    // The key hints end at the content gutter (24 px from the right edge).
-    const hints = page
-      .locator("[data-slot=main-table-surface]")
-      .getByText("di chuyển")
-      .locator("xpath=..");
-    const hintBox = await rel(page, hints);
-    const origin = await main(page);
-    expect(
-      Math.abs(origin.width - 24 - (hintBox.x + hintBox.width)),
-    ).toBeLessThanOrEqual(1);
+    // The Enter key chip and the key-hint strip are gone (owner rule).
+    await expect(
+      page.locator("span.border").filter({ hasText: /^Enter$/ }),
+    ).toHaveCount(0);
+    await expect(
+      page.locator("[data-slot=main-table-surface]").getByText("di chuyển"),
+    ).toHaveCount(0);
   });
 
   test("archive notice: Đã lưu trữ 2 việc with Hoàn tác", async ({ page }) => {
