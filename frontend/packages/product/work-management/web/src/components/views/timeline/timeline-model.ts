@@ -1230,3 +1230,51 @@ export function criticalIds(
   }
   return critical;
 }
+
+/**
+ * The chain a new link would close into a cycle (WM-039), or null when it is
+ * safe. A link `from -> to` means `to` waits for `from`; it closes a cycle
+ * when `from` already waits, directly or through others, for `to`. The chain
+ * reads `[from, to, ..., from]`.
+ */
+export function findLinkCycle(
+  links: readonly TimelineLink[],
+  from: string,
+  to: string,
+): string[] | null {
+  if (from === to) return [from, from];
+  const next = new Map<string, string[]>();
+  for (const link of links) {
+    next.set(link.from, [...(next.get(link.from) ?? []), link.to]);
+  }
+  const parent = new Map<string, string>();
+  const seen = new Set<string>([to]);
+  const queue = [to];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    if (current === from) {
+      const path = [from];
+      for (let at = from; at !== to;) {
+        at = parent.get(at) as string;
+        path.unshift(at);
+      }
+      return [from, ...path];
+    }
+    for (const child of next.get(current) ?? []) {
+      if (seen.has(child)) continue;
+      seen.add(child);
+      parent.set(child, current);
+      queue.push(child);
+    }
+  }
+  return null;
+}
+
+/** Whether `from -> to` is already one of the links. */
+export function hasLink(
+  links: readonly TimelineLink[],
+  from: string,
+  to: string,
+): boolean {
+  return links.some((link) => link.from === from && link.to === to);
+}
