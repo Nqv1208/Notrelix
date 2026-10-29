@@ -357,3 +357,52 @@ describe("legacy facets and criteria", () => {
     );
   });
 });
+
+describe("assignee field of a board without a Person field", () => {
+  const input = {
+    fieldDefinitions: [status],
+    members: [],
+    labels: [],
+    names: {
+      title: "T",
+      label: "L",
+      overdue: "O",
+      assignee: "Người phụ trách",
+    },
+    isOverdue: () => false,
+  };
+
+  it("filters by the people on the item and converts an older assignee facet onto it", () => {
+    const fields = buildFilterFields(input);
+    const assignee = fields.find((f) => f.id === "$assignee");
+    expect(assignee?.name).toBe("Người phụ trách");
+    expect(
+      assignee?.read(card("x", { members: [{ userId: "u1" }] } as never)),
+    ).toEqual(["u1"]);
+    const converted = legacyFacetsToCompound(
+      {
+        statusOptionIds: [],
+        priorities: [],
+        assigneeIds: ["u1"],
+        labelIds: [],
+        overdue: false,
+      },
+      [status],
+    );
+    expect(converted.conditions[0]?.fieldId).toBe("$assignee");
+  });
+
+  it("adds none when the board has its own Person field or no name is given", () => {
+    expect(
+      buildFilterFields({ ...input, fieldDefinitions: [status, owner] }).some(
+        (f) => f.id === "$assignee",
+      ),
+    ).toBe(false);
+    expect(
+      buildFilterFields({
+        ...input,
+        names: { title: "T", label: "L", overdue: "O" },
+      }).some((f) => f.id === "$assignee"),
+    ).toBe(false);
+  });
+});

@@ -140,7 +140,7 @@ test.describe("Board table, in-place edits (owner)", () => {
     await dialog
       .getByLabel(/^Trường/)
       .first()
-      .selectOption({ label: "Người phụ trách" });
+      .selectOption({ label: "Người thực hiện" });
     await dialog.getByRole("option", { name: "Đặng Minh Tuấn" }).click();
     await dialog.getByRole("button", { name: "Xong" }).click();
     await expect(

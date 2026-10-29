@@ -75,7 +75,8 @@ export function FilterBuilder(props: FilterBuilderProps) {
       <PopoverContent
         align="start"
         aria-label={copy.filter.title}
-        className="w-[min(46rem,calc(100vw-1.5rem))] gap-3 rounded-[12px] border border-line p-4"
+        collisionPadding={12}
+        className="max-h-[var(--radix-popover-content-available-height)] w-[min(46rem,calc(100vw-1.5rem))] gap-3 overflow-y-auto rounded-[12px] border border-line p-4"
       >
         <BuilderBody {...props} filter={filter} onChange={onChange} />
         <div className="flex items-center gap-2 border-t border-line pt-3">
