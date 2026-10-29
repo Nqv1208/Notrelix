@@ -221,6 +221,21 @@ Removal condition: once a production database exists, this exception is
 retired and history is strictly append-only again — corrections then require
 new forward migrations.
 
+## Changing nullability on a column an RLS policy references
+
+Never use EF `AlterColumn` on a column that an RLS policy references. Npgsql
+emits `ALTER COLUMN ... TYPE`, and PostgreSQL refuses it with `0A000` on a
+database that already has policies. Write the change explicitly:
+
+```csharp
+migrationBuilder.Sql("ALTER TABLE ... ALTER COLUMN ... SET NOT NULL");
+```
+
+Recovery for a development database stuck before
+`20261028180000_ScopeBoardTemplatesToWorkspace`: recreate the database, or
+apply the `SET NOT NULL` statement manually and insert the migration's row
+into `__EFMigrationsHistory`.
+
 ---
 
 # 9. Clean database versus upgrade
