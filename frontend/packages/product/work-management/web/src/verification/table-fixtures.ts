@@ -19,7 +19,6 @@ import {
   type TableSort,
 } from "@notrelix/work-management-core";
 import {
-  ERP_LABELS,
   ERP_PEOPLE,
   erpBoardScenario,
   erpClock,

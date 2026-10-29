@@ -248,7 +248,15 @@ export function useBoardKanban(
       });
     }
     return groupCardsBySelectField(groupByField, sortedGroups);
-  }, [board, groups, groupByField, statusField, flatGroupField, view, memberName]);
+  }, [
+    board,
+    groups,
+    groupByField,
+    statusField,
+    flatGroupField,
+    view,
+    memberName,
+  ]);
 
   const filterChoices = useMemo(
     () =>
