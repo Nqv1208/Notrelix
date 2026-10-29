@@ -13,6 +13,7 @@ import {
   ItemCreateDialog,
   type ItemCreateContext,
   type ItemCreateCreated,
+  type ItemCreateDialogProps,
   type ItemCreateDraft,
   type ItemCreateLabel,
 } from "./item-create-dialog";
@@ -42,6 +43,15 @@ export function ItemCreateHost({
   defaultStartDay,
   defaultDueDay,
   defaultTitle,
+  defaultDescription,
+  defaultPriorityId,
+  heading,
+  intro,
+  sources,
+  footnote,
+  submitLabel,
+  successMessage,
+  hideAnother,
   focusDescription,
   defaultAssigneeIds,
   currentUserId,
@@ -65,6 +75,17 @@ export function ItemCreateHost({
   readonly defaultStartDay?: string;
   readonly defaultDueDay?: string;
   readonly defaultTitle?: string;
+  /** A form response prefills these (see `ItemCreateDialog`). */
+  readonly defaultDescription?: string;
+  readonly defaultPriorityId?: string | null;
+  readonly heading?: string;
+  readonly intro?: ReactNode;
+  readonly sources?: ItemCreateDialogProps["sources"];
+  readonly footnote?: ReactNode;
+  readonly submitLabel?: string;
+  /** The success toast's words, when the item is not just "added". */
+  readonly successMessage?: string;
+  readonly hideAnother?: boolean;
   /** The name came from a quick add: the cursor starts in the description. */
   readonly focusDescription?: boolean;
   readonly defaultAssigneeIds?: readonly string[];
@@ -149,7 +170,7 @@ export function ItemCreateHost({
               ),
             );
           } else if (!draft.another) {
-            toast.success(copy.created);
+            toast.success(successMessage ?? copy.created);
           }
           if (draft.another) {
             nonce.current += 1;
@@ -192,6 +213,14 @@ export function ItemCreateHost({
       defaultStartDay={defaultStartDay}
       defaultDueDay={defaultDueDay}
       defaultTitle={defaultTitle}
+      defaultDescription={defaultDescription}
+      defaultPriorityId={defaultPriorityId}
+      heading={heading}
+      intro={intro}
+      sources={sources}
+      footnote={footnote}
+      submitLabel={submitLabel}
+      hideAnother={hideAnother}
       focusDescription={focusDescription}
       defaultAssigneeIds={defaultAssigneeIds}
       currentUserId={currentUserId}

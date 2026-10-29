@@ -2640,7 +2640,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Duplicate a board item in its current group */
+        /**
+         * Duplicate a board item in its current group
+         * @description Optional body names the copy and chooses what it takes along (fields, checklists, sub-items, labels, assignees). Comments, history, files and links are never copied.
+         */
         post: operations["WorkManagement.BoardItems.Duplicate"];
         delete?: never;
         options?: never;
@@ -2730,8 +2733,44 @@ export interface paths {
         put?: never;
         /** Link a page to this board item */
         post: operations["WorkManagement.BoardItems.LinkPage"];
-        /** Unlink page from board item */
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/link-page/{pageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink one page from a board item */
         delete: operations["WorkManagement.BoardItems.UnlinkPage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/linked-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the Documents pages linked to a board item that the caller may open
+         * @description Pages the caller cannot see are not named; they are counted in hiddenCount.
+         */
+        get: operations["WorkManagement.BoardItems.ListLinkedPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3651,8 +3690,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List submissions for a form */
-        get: operations["WorkManagement.Forms.ListSubmissions"];
+        /** Get a form with its questions */
+        get: operations["WorkManagement.Forms.Get"];
         put?: never;
         post?: never;
         /** Soft-delete a form */
@@ -3731,7 +3770,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/forms/{formId}/{questionId}": {
+    "/api/v1/forms/{formId}/questions/{questionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3741,11 +3780,30 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Remove a question from a form */
+        delete: operations["WorkManagement.Forms.RemoveQuestion"];
         options?: never;
         head?: never;
         /** Update a form question */
         patch: operations["WorkManagement.Forms.UpdateQuestion"];
+        trace?: never;
+    };
+    "/api/v1/forms/{formId}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List submissions for a form */
+        get: operations["WorkManagement.Forms.ListSubmissions"];
+        put?: never;
+        /** Submit answers to a published form as the signed-in member */
+        post: operations["WorkManagement.Forms.Submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/form-submissions/{submissionId}/process": {
@@ -5767,6 +5825,14 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateChildItemRequest": {
             title?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest": {
+            name?: string | null;
+            includeFields?: boolean;
+            includeChecklists?: boolean;
+            includeSubItems?: boolean;
+            includeLabels?: boolean;
+            includeAssignees?: boolean;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.LinkPageToBoardItemRequest": {
             /** Format: uuid */
             pageId?: string;
@@ -5952,6 +6018,8 @@ export interface components {
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
+            /** Format: uuid */
+            boardFieldId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.CreateFormRequest": {
             title?: string | null;
@@ -5960,6 +6028,14 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.ProcessFormSubmissionRequest": {
             /** Format: uuid */
             createdItemId?: string;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest": {
+            reason?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest": {
+            answers?: {
+                [key: string]: unknown;
+            } | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
             title?: string | null;
@@ -5970,6 +6046,8 @@ export interface components {
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
+            /** Format: uuid */
+            boardFieldId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Labels.Requests.CreateLabelRequest": {
             color?: string | null;
@@ -7304,6 +7382,12 @@ export interface components {
             archivedBy?: string | null;
             archivedByName?: string | null;
             descriptionMd?: string | null;
+            fieldValues?: {
+                [key: string]: unknown;
+            } | null;
+            computedValues?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+            } | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */
@@ -7368,6 +7452,12 @@ export interface components {
             /** Format: date-time */
             completedAt?: string | null;
             childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
+            fieldValues?: {
+                [key: string]: unknown;
+            } | null;
+            computedValues?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+            } | null;
             /** Format: int32 */
             openBlockerCount?: number;
         };
@@ -7498,6 +7588,11 @@ export interface components {
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemListDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto": {
+            state?: string | null;
+            value?: unknown;
+            errorCode?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto": {
             /** Format: uuid */
@@ -14238,7 +14333,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14497,6 +14596,7 @@ export interface operations {
             };
             path: {
                 itemId: string;
+                pageId: string;
             };
             cookie?: never;
         };
@@ -14526,6 +14626,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListLinkedPages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
             };
         };
     };
@@ -17053,7 +17175,7 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.Forms.ListSubmissions": {
+    "WorkManagement.Forms.Get": {
         parameters: {
             query?: never;
             header?: never;
@@ -17329,6 +17451,48 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Forms.RemoveQuestion": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                formId: string;
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Forms.UpdateQuestion": {
         parameters: {
             query?: never;
@@ -17337,6 +17501,7 @@ export interface operations {
                 "Idempotency-Key": string;
             };
             path: {
+                formId: string;
                 questionId: string;
             };
             cookie?: never;
@@ -17344,6 +17509,73 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormQuestionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Forms.ListSubmissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Forms.Submit": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest"];
             };
         };
         responses: {
@@ -17431,7 +17663,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

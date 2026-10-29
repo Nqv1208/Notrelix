@@ -5,6 +5,7 @@ import {
   useBoardAccess,
   useBoardKanban,
   useBoardPlanItems,
+  useTimelineDependencies,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import type { Card, WorkStatusCategory } from "@notrelix/work-management-core";
@@ -18,14 +19,21 @@ import { boardCapabilities } from "../../shared/board-capabilities";
 import { HANOI_ZONES, runtimeZone, useNow } from "../../shared/board-clock";
 import { calendarParts, identityMarkClass } from "../../shared/item-display";
 import { useItemSheetActions } from "../../shared/use-item-sheet-actions";
-import { cardDue, dayOf, shiftInstant } from "../calendar/calendar-entries";
+import {
+  cardDue,
+  dayOf,
+  shiftInstant,
+  zonedInstant,
+} from "../calendar/calendar-entries";
 import { toDayKey, type DayKey } from "../calendar/calendar-model";
 import { emptyKanbanFilter } from "../kanban/kanban-filter";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { BoardTimelineSurface } from "./board-timeline-surface";
+import type { TimelineUndated } from "./timeline-tray";
 import type {
   TimelineGroup,
+  TimelineLink,
   TimelineItem,
   TimelineScale,
   TimelineTone,
@@ -117,6 +125,7 @@ export function BoardTimelineView({
   const capabilities = boardCapabilities(access?.myLevel);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
   const updateCard = useUpdateCard(boardId, workspaceId);
+  const dependencies = useTimelineDependencies(boardId, workspaceId);
   const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
 
   const planQuery = useBoardPlanItems(boardId, workspaceId);
@@ -130,7 +139,7 @@ export function BoardTimelineView({
     );
     const byId = new Map<string, Card>();
     const byGroup = new Map<string, TimelineItem[]>();
-    let undatedCount = 0;
+    const undatedItems: TimelineUndated[] = [];
     for (const lane of kanban.allLanes) {
       const tone = toneOf(lane.category);
       for (const card of lane.cards) {
@@ -138,7 +147,11 @@ export function BoardTimelineView({
         const due = dayOf(cardDue(card), timeZone);
         const start = dayOf(card.startDate, timeZone);
         if (!due && !start) {
-          undatedCount += 1;
+          undatedItems.push({
+            id: card.id,
+            itemKey: card.itemKey,
+            title: card.title,
+          });
           continue;
         }
         if (!start && !linked.has(card.id)) continue;
@@ -217,7 +230,7 @@ export function BoardTimelineView({
     }));
     return {
       groups: flagged,
-      undated: undatedCount,
+      undated: undatedItems,
       cardsById: byId,
       links: shownLinks,
     };
@@ -246,6 +259,114 @@ export function BoardTimelineView({
         onError: () =>
           toast.error(fill(copy.reschedule.failed, { title: card.title }), {
             id: `timeline-write-${card.id}`,
+          }),
+      },
+    );
+  };
+
+  const nameOfItem = (id: string) => {
+    const card = cardsById.get(id);
+    return card?.itemKey ?? card?.title ?? id;
+  };
+  const linkNames = (link: TimelineLink) => ({
+    from: nameOfItem(link.from),
+    to: nameOfItem(link.to),
+  });
+  const toastId = (link: TimelineLink) =>
+    `timeline-link-${link.from}-${link.to}`;
+  const isConflict = (error: unknown) =>
+    (error as { kind?: unknown; status?: number } | null)?.kind ===
+      "conflict" || (error as { status?: number } | null)?.status === 409;
+
+  /** Creates or removes a link; the success toast undoes it with the inverse request. */
+  const writeLink = (link: TimelineLink, kind: "create" | "remove") => {
+    const names = linkNames(link);
+    const text = copy.linkToast;
+    const run =
+      kind === "create"
+        ? dependencies.createDependency
+        : dependencies.removeDependency;
+    const inverse =
+      kind === "create"
+        ? dependencies.removeDependency
+        : dependencies.createDependency;
+    void run(link).then(
+      () =>
+        toast.success(
+          fill(kind === "create" ? text.created : text.removed, names),
+          {
+            id: toastId(link),
+            duration: 8000,
+            action: {
+              label: text.undo,
+              onClick: () =>
+                void inverse(link).then(
+                  () => toast.success(text.undone),
+                  () => toast.error(text.undoFailed),
+                ),
+            },
+          },
+        ),
+      (error: unknown) =>
+        isConflict(error)
+          ? toast.error(text.conflict, {
+              id: toastId(link),
+              action: {
+                label: text.reload,
+                onClick: () => void planQuery.refetch(),
+              },
+            })
+          : toast.error(
+              fill(
+                kind === "create" ? text.createFailed : text.removeFailed,
+                names,
+              ),
+              {
+                id: toastId(link),
+                action: {
+                  label: text.retry,
+                  onClick: () => writeLink(link, kind),
+                },
+              },
+            ),
+    );
+  };
+
+  /** One day for an undated item: start and due are both that day. */
+  const handleSchedule = (id: string, day: DayKey) => {
+    const card = cardsById.get(id);
+    if (!card || !canEdit) return;
+    updateCard.mutate(
+      {
+        cardId: id,
+        patch: {
+          startDate: zonedInstant(day, 8, 0, timeZone),
+          dueDate: zonedInstant(day, 17, 0, timeZone),
+        },
+      },
+      {
+        onSuccess: () =>
+          toast.success(
+            fill(copy.tray.scheduled, {
+              key: card.itemKey ?? card.title,
+              day: `${day.slice(8)}/${day.slice(5, 7)}`,
+            }),
+            {
+              id: `timeline-write-${id}`,
+              duration: 8000,
+              action: {
+                label: copy.tray.undo,
+                onClick: () =>
+                  updateCard.mutate({
+                    cardId: id,
+                    patch: { startDate: null, dueDate: null },
+                  }),
+              },
+            },
+          ),
+        onError: () =>
+          toast.error(fill(copy.tray.failed, { title: card.title }), {
+            id: `timeline-write-${id}`,
           }),
       },
     );
@@ -290,7 +411,11 @@ export function BoardTimelineView({
         zoneName={zoneName}
         groups={groups}
         links={links}
-        undatedCount={undated}
+        undatedCount={undated.length}
+        undatedItems={undated}
+        onSchedule={handleSchedule}
+        onCreateLink={(link) => writeLink(link, "create")}
+        onRemoveLink={(link) => writeLink(link, "remove")}
         onOpenUndated={onOpenCalendar}
         canEdit={canEdit}
         onOpenItem={(id) => onSelectedItemChange?.(id)}

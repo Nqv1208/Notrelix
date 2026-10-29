@@ -61,7 +61,11 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
 
 function fakeServices(
   access: BoardAccess,
-  overrides: { updateCard?: () => Promise<void> } = {},
+  overrides: {
+    updateCard?: () => Promise<void>;
+    /** Reads answer a copy and a write needs the current item version, as a server does. */
+    versioned?: boolean;
+  } = {},
 ) {
   const board = erpBoardScenario();
   const cards = {
@@ -75,13 +79,32 @@ function fakeServices(
     ),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
-    updateCard: vi.fn(overrides.updateCard ?? (async () => undefined)),
+    updateCard: vi.fn(
+      overrides.versioned
+        ? async (
+            id: string,
+            _patch: unknown,
+            options?: { expectedVersion?: number },
+          ) => {
+            const stored = board.groups
+              .flatMap((group) => group.cards)
+              .find((card) => card.id === id)!;
+            if (options?.expectedVersion !== stored.version)
+              throw { kind: "conflict" };
+            stored.version = (stored.version ?? 0) + 1;
+          }
+        : (overrides.updateCard ?? (async () => undefined)),
+    ),
     deleteCard: vi.fn(async () => undefined),
     archiveCard: vi.fn(async () => undefined),
     duplicateCard: vi.fn(async () => undefined),
   };
   const services = {
-    boards: { getFullBoard: vi.fn(async () => board) },
+    boards: {
+      getFullBoard: vi.fn(async () =>
+        overrides.versioned ? structuredClone(board) : board,
+      ),
+    },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
@@ -220,7 +243,28 @@ describe("BoardCalendarView on the ERP board", () => {
     );
   });
 
-  it("puts the item back and says so when the write fails", async () => {
+  it("undoes a quick move with the version the move itself produced", async () => {
+    const { container } = renderCalendar(erpOwnerAccess(), { versioned: true });
+    await ready();
+    fireEvent.dragStart(eventOf(container, "ERP-146"), {
+      dataTransfer: dataTransfer(),
+    });
+    const day = dayCell(container, "2026-10-20");
+    fireEvent.dragOver(day, { dataTransfer: dataTransfer() });
+    fireEvent.drop(day, { dataTransfer: dataTransfer() });
+    await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1));
+    toast.success.mock.calls[0]?.[1]?.action.onClick();
+    await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(2));
+    expect(toast.success.mock.calls[1]?.[0]).toBe("Đã hoàn tác");
+    expect(toast.error).not.toHaveBeenCalled();
+    // Sonner removes the toast Hoàn tác sits on; a result toast with the same
+    // id would be removed with it and never show.
+    expect(toast.success.mock.calls[1]?.[1]?.id).not.toBe(
+      toast.success.mock.calls[0]?.[1]?.id,
+    );
+  });
+
+  it("keeps the new position and offers Thử lại when the write fails", async () => {
     const { container } = renderCalendar(erpOwnerAccess(), {
       updateCard: async () => {
         throw new Error("rejected");
@@ -233,14 +277,19 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls[0]?.[0]).toContain("Không đổi được hạn");
-    // The card is on its own day again.
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Chưa lưu được ngày của ERP-151",
+    );
+    expect(toast.error.mock.calls[0]?.[1]).toMatchObject({
+      action: { label: "Thử lại" },
+    });
+    // The item stays where it was dropped, never silently reverted.
     await waitFor(() =>
       expect(
         eventOf(container, "ERP-151")
           .closest("[data-calendar-week]")
           ?.getAttribute("data-calendar-week"),
-      ).toBe("2026-10-12"),
+      ).toBe("2026-10-19"),
     );
   });
 
@@ -257,7 +306,10 @@ describe("BoardCalendarView on the ERP board", () => {
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
     expect(cards.updateCard).toHaveBeenLastCalledWith(
       erpItemId("ERP-153"),
-      { dueDate: "2026-10-22T10:00:00.000Z" },
+      {
+        startDate: "2026-10-22T01:00:00.000Z",
+        dueDate: "2026-10-22T10:00:00.000Z",
+      },
       expect.objectContaining({ expectedVersion: expect.any(Number) }),
     );
   });

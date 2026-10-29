@@ -233,6 +233,11 @@ const CUSTOM_FIELD_TYPES: readonly FieldDefinition["fieldType"][] = [
   "text",
   "checkbox",
   "multi_select",
+  "long_text",
+  "link",
+  "date",
+  "formula",
+  "rollup",
 ];
 
 /** The fields of the board beyond the item's own properties. */

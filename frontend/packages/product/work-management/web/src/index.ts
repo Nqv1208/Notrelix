@@ -12,6 +12,7 @@ export * from "./components/board-workspace-view-content";
 export * from "./components/board-layout/board-layout-shell";
 export { BoardTrashHost } from "./components/item-lifecycle/board-trash-host";
 export { itemLifecycleCatalog } from "./components/item-lifecycle/item-lifecycle.catalog";
+export { itemActionsCatalog } from "./components/item-actions/item-actions.catalog";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
 export * from "./components/board-layout/board-header-surface";
@@ -156,3 +157,10 @@ export {
   type BoardSettingsCopy,
 } from "./components/board-settings/board-settings.copy";
 export { useBoardSettingsCopy } from "./components/board-settings/use-board-settings-copy";
+export { formsCatalog } from "./components/forms/forms.catalog";
+export {
+  FormBuilderPage,
+  FormFillPage,
+  FormInboxPage,
+  formLink,
+} from "./components/forms/forms-containers";

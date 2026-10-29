@@ -36,6 +36,7 @@ public static class MapBoardItemEndpoints
         itemGroup.MapUpdateBoardItemFieldValues();
         itemGroup.MapLinkPageToBoardItem();
         itemGroup.MapUnlinkPageFromBoardItem();
+        itemGroup.MapListBoardItemPageLinks();
         itemGroup.MapAssignBoardItemMember();
         itemGroup.MapUnassignBoardItemMember();
         itemGroup.MapAddLabelToBoardItem();

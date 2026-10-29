@@ -13,7 +13,9 @@ import type { CalendarCopy } from "./calendar.copy";
 import {
   CalendarEvent,
   CalendarGhost,
+  CalendarHandles,
   type CalendarEventProps,
+  type CalendarHandlesProps,
 } from "./calendar-event";
 import {
   addDays,
@@ -120,6 +122,11 @@ export interface CalendarGridProps {
   onCancelQuickCreate: () => void;
   onOpenDay: (day: DayKey) => void;
   onMoveFocus: (day: DayKey) => void;
+  /** Resizing a bar by a handle: the day under the pointer, and its tip. */
+  resize?: { readonly day: DayKey; readonly tip: string } | null;
+  onResizeHandle?: Pick<CalendarHandlesProps, "onPointerDown">;
+  onChangeDates?: CalendarEventProps["onChangeDates"];
+  onUnschedule?: CalendarEventProps["onUnschedule"];
 }
 
 /**
@@ -198,6 +205,10 @@ function CalendarWeek({
   onOpenDay,
   onMoveFocus,
   range,
+  resize = null,
+  onResizeHandle,
+  onChangeDates,
+  onUnschedule,
 }: CalendarGridProps & {
   days: readonly DayKey[];
   wrap: boolean;
@@ -301,7 +312,7 @@ function CalendarWeek({
                 isWeekend(day) && "bg-calendar-weekend",
                 outside && "bg-calendar-outside",
                 day === today && "bg-calendar-today",
-                overDay === day &&
+                (overDay === day || resize?.day === day) &&
                   "bg-state-selected shadow-[inset_0_0_0_2px_var(--primary)]",
               )}
             />
@@ -344,30 +355,52 @@ function CalendarWeek({
           );
         })}
 
-        {layout.placements.map((placement) => (
-          <div
-            key={`${placement.entry.id}:${placement.col}`}
-            role="gridcell"
-            className="contents"
-          >
-            <CalendarEvent
-              entry={placement.entry}
-              copy={copy}
-              col={placement.col}
-              span={placement.span}
-              row={placement.row}
-              wrap={wrap}
-              lifting={
-                drag?.source === "entry" && drag.id === placement.entry.id
-              }
-              canDrag={canEdit}
-              onOpen={onOpenItem}
-              onDragStart={onDragStartEntry}
-              onDragEnd={onDragEnd}
-              onShift={onShift}
-            />
-          </div>
-        ))}
+        {layout.placements.map((placement) => {
+          const clipStart = placement.entry.startDay < first;
+          const clipEnd = placement.entry.endDay > (days[6] as DayKey);
+          return (
+            <div
+              key={`${placement.entry.id}:${placement.col}`}
+              role="gridcell"
+              className="contents"
+            >
+              <CalendarEvent
+                clipStart={clipStart}
+                clipEnd={clipEnd}
+                onChangeDates={onChangeDates}
+                onUnschedule={onUnschedule}
+                entry={placement.entry}
+                copy={copy}
+                col={placement.col}
+                span={placement.span}
+                row={placement.row}
+                wrap={wrap}
+                lifting={
+                  drag?.source === "entry" && drag.id === placement.entry.id
+                }
+                canDrag={canEdit}
+                onOpen={onOpenItem}
+                onDragStart={onDragStartEntry}
+                onDragEnd={onDragEnd}
+                onShift={onShift}
+              />
+              {onResizeHandle &&
+              placement.entry.startDay < placement.entry.endDay ? (
+                <CalendarHandles
+                  entry={placement.entry}
+                  copy={copy}
+                  col={placement.col}
+                  span={placement.span}
+                  row={placement.row}
+                  clipStart={clipStart}
+                  clipEnd={clipEnd}
+                  canEdit={canEdit}
+                  {...onResizeHandle}
+                />
+              ) : null}
+            </div>
+          );
+        })}
 
         {layout.more.map((more) => (
           <div key={`more-${more.col}`} role="gridcell" className="contents">
@@ -419,6 +452,19 @@ function CalendarWeek({
           />
         ) : null}
       </div>
+      {resize && days.includes(resize.day) ? (
+        <div
+          role="status"
+          data-calendar-tip=""
+          className="absolute z-10 rounded-[7px] bg-calendar-tip px-[9px] py-[5px] text-xs leading-[1.45] font-semibold whitespace-nowrap text-calendar-tip-foreground shadow-popover"
+          style={{
+            left: `calc(100% / 7 * ${columnOf(resize.day) - 1} + 8px)`,
+            bottom: 4,
+          }}
+        >
+          {resize.tip}
+        </div>
+      ) : null}
       {showGhost && overDay && drag ? (
         <div
           role="status"

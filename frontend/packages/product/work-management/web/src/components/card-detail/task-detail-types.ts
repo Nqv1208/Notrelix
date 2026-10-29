@@ -197,6 +197,14 @@ export interface TaskDetailCallbacks {
   readonly onDownloadFile?: (file: CardFile) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
+  /** Marks the item complete; absent: no menu entry. */
+  readonly onComplete?: (cardId: string) => void;
+  /** Reopens a completed item; absent: no menu entry. */
+  readonly onReopen?: (cardId: string) => void;
+  /** Opens the reminder confirmation; absent: no menu entry. */
+  readonly onRemind?: (cardId: string) => void;
+  /** Brings an archived item back; absent: no menu entry. */
+  readonly onUnarchive?: (cardId: string) => void;
   /** Asks before deleting the item (it stays restorable for 30 days); absent: no menu entry. */
   readonly onDelete?: (cardId: string) => void;
   /** Opens the board picker for moving the item to another board; absent: no menu entry. */

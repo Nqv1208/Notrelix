@@ -78,6 +78,18 @@ export function BoardSettingsRoutePage() {
           : undefined
       }
       boardHref={boardPath}
+      onOpenForm={(formId) =>
+        void navigate({
+          to: "/workspaces/$workspaceId/boards/$boardId/forms/$formId/edit",
+          params: { workspaceId, boardId, formId },
+        })
+      }
+      onOpenFormResponses={(formId) =>
+        void navigate({
+          to: "/workspaces/$workspaceId/boards/$boardId/forms/$formId/responses",
+          params: { workspaceId, boardId, formId },
+        })
+      }
       onBack={() => goToBoard()}
       onOpenAccess={() => goToBoard({ share: true })}
       onLeave={() =>

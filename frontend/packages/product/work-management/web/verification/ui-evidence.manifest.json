@@ -66,12 +66,22 @@
       {
         "path": "src/components/item-lifecycle/use-item-removal.tsx",
         "category": "container",
-        "reason": "Stateful hook owning the delete and move requests, their commands and toasts, and rendering the registered DeleteItemDialog and MoveItemDialog."
+        "reason": "Stateful hook owning the delete, move, duplicate, remind, complete and unarchive requests, their commands and toasts, and rendering the registered delete, move, duplicate and remind dialogs."
+      },
+      {
+        "path": "src/components/item-actions/linked-docs-section.tsx",
+        "category": "container",
+        "reason": "Container reading and writing the pages linked to an item (useItemLinkedPages, useLinkablePages) and owning the page picker and the unlink confirmation."
       },
       {
         "path": "src/components/saved-filters/saved-filters-control.tsx",
         "category": "container",
         "reason": "Container composing SavedFiltersMenu with the saved-filter read and writes (useSavedFilters, useSavedFilterWrites) and the delete-with-undo toast; the filter bars of the table, Kanban and calendar views host it."
+      },
+      {
+        "path": "src/components/forms/forms-containers.tsx",
+        "category": "container",
+        "reason": "Containers composing the forms surfaces with the form, board, access and response reads and every form write (useBoardForms, useForm, useFormSubmissions, useFormWrites, useSubmitForm), the undo wait of a decision on a response and the shared add-item dialog for \"create item from response\"."
       }
     ]
   },
@@ -113,17 +123,17 @@
           {
             "state": "Loading",
             "reason": "The shell renders whatever child view content it receives; per-view loading presentation is owned by the dedicated loading surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "The shell renders whatever child view content it receives; per-view error presentation is owned by the dedicated unavailable surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
             "reason": "The shell composes static chrome around child content and carries no data-driven values of its own.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -379,12 +389,12 @@
           {
             "state": "EdgeData",
             "reason": "The tab set is a fixed constant list of view types, not data-driven text; there are no data-shape edges to stress.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for board view tabs at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -775,12 +785,12 @@
           {
             "state": "Loading",
             "reason": "Column content arrives already resolved from the board query; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Column content arrives already resolved from the board query; board-level fetch failure is owned by wm.kanban.unavailable.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -955,32 +965,32 @@
           {
             "state": "Loading",
             "reason": "A card renders synchronously from resolved board data; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Empty",
             "reason": "An empty board is evidenced by wm.kanban.board Empty; a card always carries at least a title.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Board-level fetch failure is evidenced by wm.kanban.unavailable Error.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "HighDensity",
             "reason": "High-density board input is evidenced by wm.kanban.board HighDensity with the documented 8x40 cardinality.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1209,7 +1219,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1243,7 +1253,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1461,7 +1471,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the main table at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1645,7 +1655,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1679,7 +1689,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1696,6 +1706,7 @@
       "coveredSources": [
         "src/components/views/calendar/calendar-agenda.tsx",
         "src/components/views/calendar/calendar-aside.tsx",
+        "src/components/views/calendar/calendar-dates-dialog.tsx",
         "src/components/views/calendar/calendar-event.tsx",
         "src/components/views/calendar/calendar-grid.tsx",
         "src/components/views/calendar/calendar-toolbar.tsx"
@@ -1782,7 +1793,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1865,6 +1876,30 @@
         {
           "id": "edge-data",
           "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize-cancel",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "change-dates",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated-date",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only-handles",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -1875,8 +1910,10 @@
       "pureEntry": "src/components/views/timeline/board-timeline-surface.tsx",
       "coveredSources": [
         "src/components/views/timeline/timeline-chart.tsx",
+        "src/components/views/timeline/timeline-link-dialog.tsx",
         "src/components/views/timeline/timeline-list.tsx",
-        "src/components/views/timeline/timeline-toolbar.tsx"
+        "src/components/views/timeline/timeline-toolbar.tsx",
+        "src/components/views/timeline/timeline-tray.tsx"
       ],
       "stories": [
         {
@@ -1960,7 +1997,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -2047,6 +2084,30 @@
         {
           "id": "legend",
           "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "zoom-fit",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-drag",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-dialog",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-cycle",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "tray",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-read-only",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -2059,6 +2120,7 @@
         "src/components/card-detail/item-add-property.tsx",
         "src/components/card-detail/item-field-editors.tsx",
         "src/components/card-detail/item-field-more-editors.tsx",
+        "src/components/card-detail/item-field-extra-editors.tsx",
         "src/components/card-detail/item-labels-popover.tsx",
         "src/components/card-detail/task-activity-tab.tsx",
         "src/components/card-detail/task-detail-empty-state.tsx",
@@ -2145,7 +2207,7 @@
           {
             "state": "Error",
             "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -2289,7 +2351,7 @@
           {
             "state": "Success",
             "reason": "The form hands the draft to its container and is closed by it; success is the new or renamed lane, evidenced by wm.kanban.board and wm.kanban.column.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
@@ -2560,7 +2622,7 @@
           {
             "state": "Error",
             "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -2881,6 +2943,7 @@
         "src/components/board-settings/automation-run-sheet.tsx",
         "src/components/board-settings/board-settings-automations.tsx",
         "src/components/board-settings/board-settings-context.tsx",
+        "src/components/board-settings/board-settings-computed-dialog.tsx",
         "src/components/board-settings/board-settings-field-archive.tsx",
         "src/components/board-settings/board-settings-field-delete.tsx",
         "src/components/board-settings/board-settings-field-panel.tsx",
@@ -3328,7 +3391,7 @@
           {
             "state": "EdgeData",
             "reason": "A rule's sentence and name wrap; the list holds the workspace's few rules and the run history is capped at 20.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -3437,7 +3500,7 @@
           {
             "state": "Success",
             "reason": "The dialog hands the draft to its container, which closes it or keeps it open for the next item; success is the new item on the board, evidenced by the board surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
@@ -3464,6 +3527,14 @@
         },
         {
           "id": "date-text",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "from-response",
+          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
+        },
+        {
+          "id": "from-response-empty-title",
           "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
         },
         {
@@ -3513,7 +3584,13 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "feedback",
       "pureEntry": "src/components/item-lifecycle/item-lifecycle-dialogs.tsx",
-      "coveredSources": ["src/components/item-lifecycle/board-trash-sheet.tsx"],
+      "coveredSources": [
+        "src/components/item-lifecycle/board-trash-sheet.tsx",
+        "src/components/item-actions/move-board-dialog.tsx",
+        "src/components/item-actions/duplicate-item-dialog.tsx",
+        "src/components/item-actions/remind-dialog.tsx",
+        "src/components/item-actions/item-actions-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-item-lifecycle--delete-confirm",
@@ -3656,24 +3733,630 @@
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
-          "id": "move",
-          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
-        },
-        {
-          "id": "move-filter",
-          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
-        },
-        {
-          "id": "move-empty",
-          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
-        },
-        {
           "id": "trash",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
           "id": "trash-empty",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-viewer",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-states",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-vi",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-ack",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-clean",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-refused",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-dependencies",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-busy",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-empty",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-locked",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-long",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-failed",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind-limit",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind-nobody",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind-error",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.list",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/forms/forms-list-panel.tsx",
+      "coveredSources": ["src/components/forms/forms-parts.tsx"],
+      "stories": [
+        {
+          "id": "work-management-forms-list--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Empty",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "Only a manager of the board opens board settings; a viewer gets the settings page's own no-access card and never reaches the Forms section.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "Only a manager of the board opens board settings; there is no partial view of the Forms section, a viewer gets the settings page's own no-access card.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "row-actions",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "failed",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.builder",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/components/forms/form-builder-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-forms-builder--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--success",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "ReadOnly",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Success"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "rows",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "reorder",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "mapped-options",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "own-options",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "publish",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "autosave",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "closed",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "preview",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.fill",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/components/forms/form-fill-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-forms-fill--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--success",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "ReadOnly",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Success"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "validation",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "network",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "server-errors",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "closed-midway",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "a11y",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.inbox",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/forms/form-inbox-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-forms-inbox--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Empty",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder, so no partial view exists.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "tabs",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "detail",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "create-item",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "reject",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "spam-remove",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "history",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
         }
       ]
     }

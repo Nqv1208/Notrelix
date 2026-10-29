@@ -40,7 +40,10 @@ public record FormDto(
     Guid BoardId,
     string Status,
     string Visibility,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    int QuestionCount = 0,
+    int NewSubmissionCount = 0,
+    DateTimeOffset? UpdatedAt = null
 );
 
 public record FormSubmissionDto(
@@ -52,5 +55,38 @@ public record FormSubmissionDto(
     string? SubmitterEmail,
     string Status,
     DateTimeOffset SubmittedAt,
-    DateTimeOffset? ProcessedAt
+    DateTimeOffset? ProcessedAt,
+    string PayloadJson = "{}",
+    string? Reason = null
+);
+
+public record FormQuestionDto(
+    Guid Id,
+    string QuestionKey,
+    string Label,
+    string QuestionType,
+    bool IsRequired,
+    Guid? BoardFieldId,
+    string Position,
+    string? Placeholder,
+    string? HelpText,
+    int? MaxLength,
+    int? MinValue,
+    int? MaxValue,
+    List<FormQuestionOptionDto>? Options = null
+);
+
+public record FormQuestionOptionDto(string Key, string Label);
+
+public record FormDetailDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    Guid BoardId,
+    string Status,
+    string Visibility,
+    long Version,
+    DateTimeOffset CreatedAt,
+    List<FormQuestionDto> Questions,
+    string? Description = null
 );

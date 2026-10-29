@@ -174,11 +174,12 @@ test.describe("Board Timeline (owner)", () => {
     await expect(critical).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("the undated link goes to the Calendar", async ({ page }) => {
+  test("the undated count opens the Chưa lên lịch tray", async ({ page }) => {
     await openTimeline(page);
     await page.getByRole("link", { name: "1 việc chưa có ngày" }).click();
-    await expect(page).toHaveURL(/view=calendar/);
-    await expect(page.locator("[data-calendar-view]")).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Chưa lên lịch" }),
+    ).toBeVisible();
   });
 
   test("Alt and the arrow keys move a bar and its due day", async ({

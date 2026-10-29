@@ -10241,6 +10241,7 @@
           "WorkManagement.BoardItems"
         ],
         "summary": "Duplicate a board item in its current group",
+        "description": "Optional body names the copy and chooses what it takes along (fields, checklists, sub-items, labels, assignees). Comments, history, files and links are never copied.",
         "operationId": "WorkManagement.BoardItems.Duplicate",
         "parameters": [
           {
@@ -10264,6 +10265,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -10669,17 +10679,28 @@
             "Cookie": [ ]
           }
         ]
-      },
+      }
+    },
+    "/api/v1/board-items/{itemId}/link-page/{pageId}": {
       "delete": {
         "tags": [
           "WorkManagement.BoardItems",
           "WorkManagement.BoardItems"
         ],
-        "summary": "Unlink page from board item",
+        "summary": "Unlink one page from a board item",
         "operationId": "WorkManagement.BoardItems.UnlinkPage",
         "parameters": [
           {
             "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
             "in": "path",
             "required": true,
             "schema": {
@@ -10723,6 +10744,48 @@
           },
           "503": {
             "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/board-items/{itemId}/linked-pages": {
+      "get": {
+        "tags": [
+          "WorkManagement.BoardItems",
+          "WorkManagement.BoardItems"
+        ],
+        "summary": "List the Documents pages linked to a board item that the caller may open",
+        "description": "Pages the caller cannot see are not named; they are counted in hiddenCount.",
+        "operationId": "WorkManagement.BoardItems.ListLinkedPages",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -15310,8 +15373,8 @@
           "WorkManagement.Forms",
           "WorkManagement.Forms"
         ],
-        "summary": "List submissions for a form",
-        "operationId": "WorkManagement.Forms.ListSubmissions",
+        "summary": "Get a form with its questions",
+        "operationId": "WorkManagement.Forms.Get",
         "parameters": [
           {
             "name": "formId",
@@ -15619,7 +15682,7 @@
         ]
       }
     },
-    "/api/v1/forms/{formId}/{questionId}": {
+    "/api/v1/forms/{formId}/questions/{questionId}": {
       "patch": {
         "tags": [
           "WorkManagement.Forms",
@@ -15628,6 +15691,15 @@
         "summary": "Update a form question",
         "operationId": "WorkManagement.Forms.UpdateQuestion",
         "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           {
             "name": "questionId",
             "in": "path",
@@ -15654,6 +15726,194 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormQuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key reused with a different payload"
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "Remove a question from a form",
+        "operationId": "WorkManagement.Forms.RemoveQuestion",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key reused with a different payload"
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/forms/{formId}/submissions": {
+      "get": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "List submissions for a form",
+        "operationId": "WorkManagement.Forms.ListSubmissions",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "Submit answers to a published form as the signed-in member",
+        "operationId": "WorkManagement.Forms.Submit",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest"
               }
             }
           },
@@ -15801,6 +16061,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -23027,6 +23297,31 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "includeFields": {
+            "type": "boolean"
+          },
+          "includeChecklists": {
+            "type": "boolean"
+          },
+          "includeSubItems": {
+            "type": "boolean"
+          },
+          "includeLabels": {
+            "type": "boolean"
+          },
+          "includeAssignees": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.LinkPageToBoardItemRequest": {
         "type": "object",
         "properties": {
@@ -23579,6 +23874,11 @@
           "position": {
             "type": "string",
             "nullable": true
+          },
+          "boardFieldId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -23603,6 +23903,27 @@
           "createdItemId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -23637,6 +23958,11 @@
           },
           "position": {
             "type": "string",
+            "nullable": true
+          },
+          "boardFieldId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
@@ -27593,6 +27919,18 @@
           "descriptionMd": {
             "type": "string",
             "nullable": true
+          },
+          "fieldValues": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "computedValues": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -27777,6 +28115,18 @@
           },
           "childProgress": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"
+          },
+          "fieldValues": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "computedValues": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+            },
+            "nullable": true
           },
           "openBlockerCount": {
             "type": "integer",
@@ -28175,6 +28525,23 @@
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemDto"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
             "nullable": true
           }
         },

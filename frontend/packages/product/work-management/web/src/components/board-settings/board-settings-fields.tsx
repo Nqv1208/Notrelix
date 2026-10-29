@@ -9,6 +9,7 @@ import { useSettings } from "./board-settings-context";
 import { FieldArchiveDialog } from "./board-settings-field-archive";
 import { FieldDeleteDialog } from "./board-settings-field-delete";
 import { FieldPanel } from "./board-settings-field-panel";
+import { ComputedFieldDialog } from "./board-settings-computed-dialog";
 import { FieldTypePicker } from "./board-settings-field-picker";
 import {
   fieldLabel,
@@ -55,6 +56,10 @@ export function FieldsSection({
     settings.fields.find((field) => field.id === fieldId) ?? null;
   const archiving =
     settings.fields.find((field) => field.id === archiveId) ?? null;
+  const [computedDialog, setComputedDialog] = useState<{
+    kind: "formula" | "rollup";
+    fieldId?: string;
+  } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const deleting =
     settings.fields.find((field) => field.id === deleteId) ?? null;
@@ -68,6 +73,11 @@ export function FieldsSection({
 
   async function addField(type: BoardSettingsFieldType) {
     setPickerOpen(false);
+    // A calculated field needs its definition: the dialog collects it and creates the field.
+    if (type === "formula" || type === "rollup") {
+      setComputedDialog({ kind: type });
+      return;
+    }
     knownIds.current = settings.fields.map((field) => field.id);
     const result = await run(() => actions.createField(type));
     if (!result.ok) knownIds.current = null;
@@ -283,6 +293,15 @@ export function FieldsSection({
           key={selected.id}
           field={selected}
           onClose={() => onSelectField(null)}
+          onEditComputed={
+            selected.type === "formula" || selected.type === "rollup"
+              ? () =>
+                  setComputedDialog({
+                    kind: selected.type as "formula" | "rollup",
+                    fieldId: selected.id,
+                  })
+              : undefined
+          }
           onArchive={
             settings.unavailable?.fieldArchive
               ? undefined
@@ -293,6 +312,14 @@ export function FieldsSection({
               ? () => setDeleteId(selected.id)
               : undefined
           }
+        />
+      ) : null}
+
+      {computedDialog ? (
+        <ComputedFieldDialog
+          kind={computedDialog.kind}
+          field={settings.fields.find((f) => f.id === computedDialog.fieldId)}
+          onClose={() => setComputedDialog(null)}
         />
       ) : null}
 

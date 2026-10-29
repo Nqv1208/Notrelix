@@ -113,8 +113,13 @@ test.describe("Board table, in-place edits (owner)", () => {
     await openTable(page);
     await row(page, "ERP-144").click({ button: "right" });
     await page.getByRole("menuitem", { name: "Nhân bản" }).click();
+    // Duplicating asks which parts to take along; the defaults copy all but comments and history.
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Nhân bản" })
+      .click();
     await expect(
-      page.locator("[data-row-id]").filter({ hasText: "(Copy)" }),
+      page.locator("[data-row-id]").filter({ hasText: "(bản sao)" }),
     ).toHaveCount(1);
 
     await row(page, "ERP-147").click({ button: "right" });

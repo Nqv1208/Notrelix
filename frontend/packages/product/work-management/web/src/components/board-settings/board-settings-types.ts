@@ -14,6 +14,7 @@ import type {
   WorkspaceAutomationWriteResult,
 } from "@notrelix/work-management-core";
 import type { AutomationPanelProps } from "./automation-types";
+import type { BoardFormsPanelProps } from "../forms/forms-list-panel";
 import type { BoardSettingsCopy } from "./board-settings.copy";
 
 export type { BoardSettingsWriteResult };
@@ -24,6 +25,7 @@ export type BoardSettingsSection =
   | "views"
   | "groups"
   | "labels"
+  | "forms"
   | "templates"
   | "automations";
 
@@ -33,6 +35,7 @@ export const BOARD_SETTINGS_SECTIONS: readonly BoardSettingsSection[] = [
   "views",
   "groups",
   "labels",
+  "forms",
   "templates",
   "automations",
 ];
@@ -97,7 +100,11 @@ export interface BoardSettingsActions {
   ): Promise<BoardSettingsWriteResult>;
   archiveBoard(): Promise<BoardSettingsWriteResult>;
   deleteBoard(confirmTitle: string): Promise<BoardSettingsWriteResult>;
-  createField(type: BoardSettingsFieldType): Promise<BoardSettingsWriteResult>;
+  /** `input` names the field and carries a Formula's or Rollup's settings JSON. */
+  createField(
+    type: BoardSettingsFieldType,
+    input?: { name?: string; settings?: string },
+  ): Promise<BoardSettingsWriteResult>;
   reorderFields(ids: readonly string[]): Promise<BoardSettingsWriteResult>;
   updateField(
     fieldId: string,
@@ -187,6 +194,8 @@ export interface BoardSettingsSurfaceProps {
   workspaceRules?: WorkspaceRulesPanelProps;
   /** The labels of the board: when given, the page has a "Labels" section. */
   labels?: BoardLabelsPanelProps;
+  /** The forms of the board: when given, the page has a "Forms" section. */
+  forms?: BoardFormsPanelProps;
   /** The workspace's board templates: when given, the page has a "Board templates" section. */
   templates?: BoardTemplatesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */

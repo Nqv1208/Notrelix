@@ -47,6 +47,7 @@ public sealed class WorkP3ManifestArchitectureTests
     private static readonly HashSet<string> OutOfScopeRequests = new(StringComparer.Ordinal)
     {
         "BoardItems.ListBoardItemLinksQuery",
+        "BoardItems.ListBoardItemPageLinksQuery",
         "BoardItems.LinkPageToBoardItemCommand",
         "BoardItems.UnlinkPageFromBoardItemCommand",
         // Platform realtime gateway (PF-09): authorizes a Board stream subscription with the

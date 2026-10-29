@@ -48,6 +48,12 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FieldSettings_TextMaxLengthMustBeNumber = "WorkManagement_FieldSettings_TextMaxLengthMustBeNumber";
     public const string WorkManagement_FieldSettings_DateIncludeTimeMustBeBoolean = "WorkManagement_FieldSettings_DateIncludeTimeMustBeBoolean";
     public const string WorkManagement_FieldSettings_StatusMustIncludeTransitions = "WorkManagement_FieldSettings_StatusMustIncludeTransitions";
+    public const string WorkManagement_FieldSettings_FormulaExpressionRequired = "WorkManagement_FieldSettings_FormulaExpressionRequired";
+    public const string WorkManagement_FieldSettings_FormulaSyntaxInvalid = "WorkManagement_FieldSettings_FormulaSyntaxInvalid";
+    public const string WorkManagement_FieldSettings_FormulaTooComplex = "WorkManagement_FieldSettings_FormulaTooComplex";
+    public const string WorkManagement_FieldSettings_RollupInvalid = "WorkManagement_FieldSettings_RollupInvalid";
+    public const string WorkManagement_Field_FormulaUnknownField = "WorkManagement_Field_FormulaUnknownField";
+    public const string WorkManagement_Field_ComputedFieldCycle = "WorkManagement_Field_ComputedFieldCycle";
 
     // ── FieldValue ────────────────────────────────────────────────────────
     public const string WorkManagement_FieldValue_CannotBeNull = "WorkManagement_FieldValue_CannotBeNull";
@@ -120,6 +126,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormQuestion_MinMaxInvalidForType = "WorkManagement_FormQuestion_MinMaxInvalidForType";
     public const string WorkManagement_FormQuestion_MaxFileSizeInvalidForType = "WorkManagement_FormQuestion_MaxFileSizeInvalidForType";
     public const string WorkManagement_FormQuestion_MaxLengthMustBePositive = "WorkManagement_FormQuestion_MaxLengthMustBePositive";
+    public const string WorkManagement_FormQuestion_OptionsInvalid = "WorkManagement_FormQuestion_OptionsInvalid";
+    public const string WorkManagement_FormQuestion_OptionsInvalidForType = "WorkManagement_FormQuestion_OptionsInvalidForType";
     public const string WorkManagement_FormQuestion_MaxFileSizeMustBePositive = "WorkManagement_FormQuestion_MaxFileSizeMustBePositive";
     public const string WorkManagement_FormQuestion_MinCannotExceedMax = "WorkManagement_FormQuestion_MinCannotExceedMax";
 
