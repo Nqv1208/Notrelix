@@ -709,7 +709,7 @@ describe("BoardCalendarSurface interactions (W5)", () => {
     }
   });
 
-  it("FUI[wm.calendar.board:resize] keeps the due on the start day and puts the bar back on Escape", () => {
+  it("FUI[wm.calendar.board:resize-cancel] keeps the due on the start day and puts the bar back on Escape", () => {
     const changed: unknown[] = [];
     const { container } = renderCalendar(
       withSpan(),

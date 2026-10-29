@@ -1872,6 +1872,10 @@
           "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         },
         {
+          "id": "resize-cancel",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
           "id": "change-dates",
           "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         },
