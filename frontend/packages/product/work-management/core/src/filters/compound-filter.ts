@@ -21,6 +21,9 @@ export interface CompoundFilter {
   readonly conditions: readonly FilterCondition[];
 }
 
+/** A value of `has_any` that also matches an empty field: "Chưa giao" on a person field. */
+export const NONE_VALUE = "__none__";
+
 export const emptyCompoundFilter = (): CompoundFilter => ({
   join: "and",
   conditions: [],
@@ -127,7 +130,10 @@ export function matchesCondition(
         day(value) <= day(second)
       );
     case "has_any":
-      return asList(value).some((id) => values.includes(id));
+      return (
+        asList(value).some((id) => values.includes(id)) ||
+        (empty && values.includes(NONE_VALUE))
+      );
     case "has_all":
       return (
         values.length > 0 && values.every((id) => asList(value).includes(id))

@@ -182,6 +182,8 @@ export interface TableProjectionInput {
   readonly isOverdue: (card: Card) => boolean;
   /** Search or a route filter narrows the board. */
   readonly narrowed: boolean;
+  /** The member's own multi-level sort; when given it replaces `sort` for the order inside a group. */
+  readonly orderCards?: (cards: Card[]) => Card[];
 }
 
 export interface TableProjection {
@@ -209,6 +211,7 @@ export function projectTableLanes({
   statusRank,
   isOverdue,
   narrowed,
+  orderCards,
 }: TableProjectionInput): TableProjection {
   let visibleCount = 0;
   let totalCount = 0;
@@ -223,7 +226,9 @@ export function projectTableLanes({
     doneHiddenCount += lane.cards.length - kept.length;
     visibleCount += kept.length;
     if (kept.length === 0 && (lane.total > 0 || narrowed)) continue;
-    const cards = sortTableCards(kept, sort, statusRank);
+    const cards = orderCards
+      ? orderCards([...kept])
+      : sortTableCards(kept, sort, statusRank);
     groups.push({
       optionId: lane.optionId,
       name: lane.name,

@@ -104,6 +104,8 @@ describe("matchesCondition, one test per operator", () => {
     expect(hit("person", "has_any", ["u3"], ["u1"])).toBe(false);
     expect(hit("select", "has_any", ["o1", "o2"], "o2")).toBe(true);
     expect(hit("person", "has_any", ["u1"], null)).toBe(false);
+    expect(hit("person", "has_any", ["__none__", "u1"], [])).toBe(true);
+    expect(hit("person", "has_any", ["__none__"], ["u2"])).toBe(false);
   });
   it("has_all", () => {
     expect(hit("multi_select", "has_all", ["o1", "o2"], ["o1", "o2"])).toBe(

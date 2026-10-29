@@ -10,7 +10,6 @@ import {
 import { toast } from "sonner";
 import { useIsMobile } from "@notrelix/ui-web";
 import {
-  dropUnknownFilterIds,
   useArchiveCard,
   useBulkUpdateItems,
   useBoardAccess,
@@ -28,7 +27,11 @@ import {
   generatePosition,
   isOptimisticOptionId,
   orderByKey,
+  groupableFields,
+  NONE_VALUE,
   projectTableLanes,
+  serializeCompoundFilter,
+  sortCardsByLevels,
   type Card,
   type KanbanStatusLane,
   type UpdateFieldValueInput,
@@ -41,11 +44,11 @@ import type {
 import { findItemFields } from "../../card-detail/item-field-editors";
 import { boardCapabilities } from "../../shared/board-capabilities";
 import {
+  emptyKanbanFilter,
   isKanbanCardOverdue,
-  parseKanbanFilter,
-  serializeKanbanFilter,
-  type KanbanFilterState,
 } from "../kanban/kanban-filter";
+import { useBoardViewState } from "../../filters/use-board-view-state";
+import { ViewStateBar } from "../../filters/view-state-bar";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
@@ -148,14 +151,26 @@ export function MainTableView({
     },
     [onFilterChange],
   );
-  const parsedFilter = useMemo(
-    () => parseKanbanFilter(filterValue),
-    [filterValue],
-  );
   const isOverdue = useCallback(
     (card: Card) => isKanbanCardOverdue(card, now),
     [now],
   );
+  const setGroupByValue = useCallback(
+    (fieldId: string) => {
+      if (onGroupByChange) onGroupByChange(fieldId);
+      else setLocalGroupBy(fieldId);
+    },
+    [onGroupByChange],
+  );
+  const noLegacyFilter = useMemo(() => emptyKanbanFilter(), []);
+  const { copy: filtersCopy, view, kanbanView } = useBoardViewState({
+    boardId,
+    workspaceId,
+    routeFilter: filterValue,
+    onRouteFilterChange: setFilterValue,
+    routeGroupBy: groupByValue,
+    onRouteGroupByChange: setGroupByValue,
+  });
 
   const [showDone, setShowDone] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -185,8 +200,9 @@ export function MainTableView({
   );
 
   const table = useBoardTable(boardId, workspaceId, {
-    groupBy: groupByValue,
-    filter: parsedFilter,
+    groupBy: view.applied.group?.fieldId,
+    filter: noLegacyFilter,
+    view: kanbanView,
     isOverdue,
     onWriteError,
   });
@@ -254,20 +270,7 @@ export function MainTableView({
   const isNarrow = useIsMobile();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
 
-  const { board, filterChoices } = table;
-  // The filter as it applies: ids the board no longer has are dropped, and
-  // the route parameter is rewritten (history replace) to match.
-  const filter = useMemo(
-    () =>
-      board ? dropUnknownFilterIds(parsedFilter, filterChoices) : parsedFilter,
-    [board, parsedFilter, filterChoices],
-  );
-  useEffect(() => {
-    if (!board || filterValue === undefined) return;
-    const canonical = serializeKanbanFilter(filter);
-    if (canonical !== filterValue)
-      setFilterValue(canonical || undefined, { replace: true });
-  }, [board, filter, filterValue, setFilterValue]);
+  const { board } = table;
 
   // Archive waits for the undo window: the rows leave the table at once, the
   // write goes out when the window ends, on the next archive, on close, or
@@ -340,7 +343,8 @@ export function MainTableView({
   );
 
   const isStatusGrouping =
-    !table.groupByField || table.groupByField.id === table.statusField?.id;
+    !table.flatGroupField &&
+    (!table.groupByField || table.groupByField.id === table.statusField?.id);
   const groupField = table.groupByField ?? table.statusField;
   // The groups that are options of the grouped field, in the field's order
   // (search, filter and "hide finished" do not change which options exist).
@@ -351,7 +355,8 @@ export function MainTableView({
   const groupMenu = (
     group: TableGroupModel,
   ): TableGroupMenuModel | undefined => {
-    if (!capabilities.canEditFields || !groupField) return undefined;
+    if (!capabilities.canEditFields || !groupField || table.flatGroupField)
+      return undefined;
     if (group.id === "none" || isOptimisticOptionId(group.id)) return undefined;
     const index = optionLanes.findIndex((lane) => lane.optionId === group.id);
     if (index < 0) return undefined;
@@ -425,8 +430,29 @@ export function MainTableView({
         statusRank,
         isOverdue,
         narrowed: table.filterActive,
+        ...(view.applied.sorts.length > 0
+          ? {
+              orderCards: (cards: Card[]) =>
+                sortCardsByLevels(
+                  cards,
+                  view.applied.sorts,
+                  table.filterFields,
+                  table.memberName,
+                ),
+            }
+          : {}),
       }),
-    [lanes, table.sort, showDone, statusRank, isOverdue, table.filterActive],
+    [
+      lanes,
+      table.sort,
+      showDone,
+      statusRank,
+      isOverdue,
+      table.filterActive,
+      view.applied.sorts,
+      table.filterFields,
+      table.memberName,
+    ],
   );
   const groups = useMemo(
     () =>
@@ -478,9 +504,6 @@ export function MainTableView({
 
   if (table.isLoading) return <MainTableSkeleton copy={copy} />;
   if (table.error || !board) return <MainTableError copy={copy} />;
-
-  const handleFilterChange = (next: KanbanFilterState) =>
-    setFilterValue(serializeKanbanFilter(next) || undefined);
 
   const writeStatus = (cardId: string, statusOptionId: string) => {
     noteTitle(cardId);
@@ -553,6 +576,22 @@ export function MainTableView({
     )
     .map((candidate) => ({ id: candidate.id, title: candidate.title }));
 
+  const personFieldId = table.filterFields.find(
+    (candidate) => candidate.field.fieldType === "person",
+  )?.id;
+  const assigneeCondition = view.applied.filter.conditions.find(
+    (condition) =>
+      condition.fieldId === personFieldId &&
+      condition.operator === "has_any" &&
+      condition.values.length === 1 &&
+      condition.values[0] !== NONE_VALUE,
+  );
+  const singleAssigneeName = assigneeCondition
+    ? table.filterChoices.assignees.find(
+        (choice) => choice.id === assigneeCondition.values[0],
+      )?.name
+    : undefined;
+
   const handleCreate = (groupId: string, title: string) => {
     if (!capabilities.canCreateCard) {
       noGroupNotice.noPermission();
@@ -567,7 +606,10 @@ export function MainTableView({
       return;
     }
     const fieldValue =
-      !isStatusGrouping && table.groupByField && lane.optionId
+      !isStatusGrouping &&
+      !table.flatGroupField &&
+      table.groupByField &&
+      lane.optionId
         ? { fieldDefinitionId: table.groupByField.id, value: lane.optionId }
         : null;
     table.createItemInLane.mutate({
@@ -661,46 +703,43 @@ export function MainTableView({
             onSearchChange: table.search.setQuery,
             hideDone: !showDone,
             onShowDone: () => setShowDone(true),
-            filter,
-            filterOptions: {
-              statuses: [...filterChoices.statuses],
-              assignees: [...filterChoices.assignees],
-              labels: [...filterChoices.labels],
-            },
-            onFilterChange: handleFilterChange,
-            groupByFields: table.groupByFields,
-            groupByFieldId: table.groupByField?.id ?? null,
-            onGroupByChange: (fieldId) => {
-              if (onGroupByChange) onGroupByChange(fieldId);
-              else setLocalGroupBy(fieldId);
-            },
             sort: table.sort,
-            onSortChange: table.setSort,
+            viewBar: (
+              <ViewStateBar
+                copy={filtersCopy}
+                view={view}
+                fields={table.filterFields}
+                memberName={table.memberName}
+                people={table.filterChoices.assignees}
+                counts={{
+                  shown: table.visibleCount,
+                  total: table.totalCount,
+                }}
+                now={now}
+                sort
+                groupFields={groupableFields(table.filterFields)}
+                savedFilters={
+                  <SavedFiltersControl
+                    workspaceId={workspaceId}
+                    boardId={boardId}
+                    filter={serializeCompoundFilter(view.applied.filter)}
+                    groupBy={view.state.group?.fieldId ?? null}
+                    canEdit={capabilities.canEditFields}
+                    onApply={view.applyCriteria}
+                  />
+                }
+              />
+            ),
             hiddenColumnIds: table.hiddenColumnIds,
             onColumnVisibleChange: table.setColumnVisible,
             density: table.density,
             onDensityChange: table.setDensity,
             canAdd: capabilities.canCreateCard,
-            savedFilters: (
-              <SavedFiltersControl
-                workspaceId={workspaceId}
-                boardId={boardId}
-                filter={filterValue}
-                groupBy={table.groupByField?.id ?? null}
-                canEdit={capabilities.canEditFields}
-                onApply={(criteria) => {
-                  setFilterValue(criteria.filter || undefined);
-                  if (!criteria.groupBy) return;
-                  if (onGroupByChange) onGroupByChange(criteria.groupBy);
-                  else setLocalGroupBy(criteria.groupBy);
-                }}
-              />
-            ),
           }}
           groups={groups}
           statusOptions={statusOptions}
           addGroup={
-            capabilities.canEditFields && groupField
+            capabilities.canEditFields && groupField && !table.flatGroupField
               ? {
                   formCopy: optionFormCopy,
                   kind: isStatusGrouping ? "status" : "value",
@@ -761,13 +800,7 @@ export function MainTableView({
           hidden={projection.hiddenCount}
           canShowDone={!showDone && projection.doneHiddenCount > 0}
           noResults={groups.length === 0 && projection.totalCount > 0}
-          noResultsAssignee={
-            filter.assigneeIds.length === 1
-              ? filterChoices.assignees.find(
-                  (choice) => choice.id === filter.assigneeIds[0],
-                )?.name
-              : undefined
-          }
+          noResultsAssignee={singleAssigneeName}
           archivedNotice={
             pendingArchive.length > 0
               ? {
@@ -801,13 +834,7 @@ export function MainTableView({
           onStatusChange={writeStatus}
           onCreateItem={handleCreate}
           onClearFilter={() => {
-            handleFilterChange({
-              statusOptionIds: [],
-              priorities: [],
-              assigneeIds: [],
-              labelIds: [],
-              overdue: false,
-            });
+            view.setFilter({ ...view.state.filter, conditions: [] });
             table.search.setQuery("");
             setShowDone(true);
           }}
