@@ -100,6 +100,27 @@ export interface ItemCreateDialogProps {
   readonly defaultDueDay?: string;
   /** A name already typed elsewhere (a lane's quick add hands it over). */
   readonly defaultTitle?: string;
+  /** A description already known (a form response fills it). */
+  readonly defaultDescription?: string;
+  /** The priority option ticked when the form opens. */
+  readonly defaultPriorityId?: string | null;
+  /** Replaces the title ("Create item from response"). */
+  readonly heading?: string;
+  /** Shown under the title: where the values come from. */
+  readonly intro?: ReactNode;
+  /** Names the source of a prefilled value beside its label ("Từ: Mô tả chi tiết"). */
+  readonly sources?: {
+    readonly name?: string;
+    readonly description?: string;
+    readonly priority?: string;
+    readonly due?: string;
+  };
+  /** Shown above the footer (what was not carried into the item). */
+  readonly footnote?: ReactNode;
+  /** Replaces the submit button's words. */
+  readonly submitLabel?: string;
+  /** No "create another": the form serves one source. */
+  readonly hideAnother?: boolean;
   /** The title came from a quick add: the cursor goes to the description. */
   readonly focusDescription?: boolean;
   /** Members ticked when the form opens (My work and Home assign the member). */
@@ -131,6 +152,18 @@ const NONE = "__none__";
 const FIELD =
   "box-border w-full rounded-[9px] border border-line-strong bg-popover text-foreground outline-none placeholder:text-meta-foreground focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-brand-subtle";
 
+/** "Từ: ..." beside a label: the question of a form response the value came from. */
+function SourceNote({ text }: { text?: string }) {
+  return text ? (
+    <span
+      data-item-create-source=""
+      className="-mt-1 w-fit rounded-[6px] bg-brand-subtle px-1.5 py-0.5 text-metadata font-semibold text-brand-subtle-foreground"
+    >
+      {text}
+    </span>
+  ) : null;
+}
+
 function fill(template: string, values: Record<string, string>) {
   return template.replace(
     /\{\{(\w+)\}\}/g,
@@ -156,6 +189,14 @@ export function ItemCreateDialog({
   defaultStartDay = "",
   defaultDueDay = "",
   defaultTitle = "",
+  defaultDescription = "",
+  defaultPriorityId = null,
+  heading,
+  intro,
+  sources,
+  footnote,
+  submitLabel,
+  hideAnother = false,
   focusDescription = false,
   defaultAssigneeIds,
   currentUserId,
@@ -212,23 +253,29 @@ export function ItemCreateDialog({
   useEffect(() => {
     if (!open) return;
     setTitle(defaultTitle);
-    setDescriptionMd("");
+    setDescriptionMd(defaultDescription);
     setStartDay(defaultStartDay);
     setDueDay(defaultDueDay);
     setTouched(false);
     setStripGone(false);
     // `another` is kept: a person adding several items wants it to stay on.
-  }, [open, defaultTitle, defaultStartDay, defaultDueDay]);
+  }, [open, defaultTitle, defaultDescription, defaultStartDay, defaultDueDay]);
 
   // What belongs to one board follows the board, without losing what was typed.
   useEffect(() => {
     if (!open) return;
     setListId(defaultGroupId);
     setStatusId(defaultStatusId);
-    setPriorityId(null);
+    setPriorityId(defaultPriorityId);
     setAssigneeIds(defaultAssigneeKey ? defaultAssigneeKey.split(",") : []);
     setLabelIds([]);
-  }, [open, defaultGroupId, defaultStatusId, defaultAssigneeKey]);
+  }, [
+    open,
+    defaultGroupId,
+    defaultStatusId,
+    defaultPriorityId,
+    defaultAssigneeKey,
+  ]);
 
   // The cursor: the name, or the description when the name came from a quick add.
   useEffect(() => {
@@ -289,7 +336,7 @@ export function ItemCreateDialog({
       labelIds,
       startDay,
       dueDay,
-      another,
+      another: hideAnother ? false : another,
     });
   };
   const onFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
@@ -325,7 +372,7 @@ export function ItemCreateDialog({
         >
           <DialogHeader className="flex-row flex-wrap items-center gap-2.5 py-3.5 pr-12 pl-5.5 text-left">
             <DialogTitle className="text-lg font-semibold tracking-tight">
-              {copy.title}
+              {heading ?? copy.title}
             </DialogTitle>
             {context ? (
               <span
@@ -352,6 +399,15 @@ export function ItemCreateDialog({
               {copy.note}
             </DialogDescription>
           </DialogHeader>
+
+          {intro ? (
+            <div
+              data-item-create-intro=""
+              className="px-5.5 pb-1 text-crumb text-muted-foreground"
+            >
+              {intro}
+            </div>
+          ) : null}
 
           {showStrip && created ? (
             <div
@@ -402,6 +458,7 @@ export function ItemCreateDialog({
                   *
                 </span>
               </FieldLabel>
+              <SourceNote text={sources?.name} />
               <Input
                 ref={nameRef}
                 id={ids.name}
@@ -425,6 +482,7 @@ export function ItemCreateDialog({
                   {copy.optional}
                 </span>
               </FieldLabel>
+              <SourceNote text={sources?.description} />
               <textarea
                 ref={descriptionRef}
                 id={ids.description}
@@ -492,6 +550,7 @@ export function ItemCreateDialog({
                       {copy.optional}
                     </span>
                   </FieldLabel>
+                  <SourceNote text={sources?.priority} />
                   <Select
                     value={priorityId ?? NONE}
                     onValueChange={(value) =>
@@ -531,6 +590,7 @@ export function ItemCreateDialog({
               </Field>
               <Field data-invalid={dueBad || datesBackwards ? true : undefined}>
                 <FieldLabel htmlFor={ids.due}>{copy.dueDate}</FieldLabel>
+                <SourceNote text={sources?.due} />
                 <div ref={dueWrapRef}>
                   <DayField
                     id={ids.due}
@@ -591,6 +651,15 @@ export function ItemCreateDialog({
               onChange={setLabelIds}
             />
 
+            {footnote ? (
+              <p
+                data-item-create-footnote=""
+                className="m-0 rounded-[9px] bg-background px-3 py-2.5 text-crumb text-muted-foreground"
+              >
+                {footnote}
+              </p>
+            ) : null}
+
             {error ? (
               <p role="alert" className="m-0 text-crumb text-danger-text">
                 {error}
@@ -620,20 +689,22 @@ export function ItemCreateDialog({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-line px-5.5 py-3.5">
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-label text-foreground">
-              <input
-                type="checkbox"
-                checked={another}
-                onChange={(event) => setAnother(event.target.checked)}
-                className="size-4.5 accent-primary"
-              />
-              {copy.another}
-              {another ? (
-                <small className="text-crumb text-meta-foreground">
-                  · {copy.anotherKept}
-                </small>
-              ) : null}
-            </label>
+            {hideAnother ? null : (
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-label text-foreground">
+                <input
+                  type="checkbox"
+                  checked={another}
+                  onChange={(event) => setAnother(event.target.checked)}
+                  className="size-4.5 accent-primary"
+                />
+                {copy.another}
+                {another ? (
+                  <small className="text-crumb text-meta-foreground">
+                    · {copy.anotherKept}
+                  </small>
+                ) : null}
+              </label>
+            )}
             <span className="flex-1" />
             <Button
               type="button"
@@ -649,7 +720,7 @@ export function ItemCreateDialog({
               disabled={pending || unavailable || blockedByGroup}
               title={blocker ?? undefined}
             >
-              {pending ? copy.submitting : copy.submit}
+              {pending ? copy.submitting : (submitLabel ?? copy.submit)}
             </Button>
           </div>
         </form>

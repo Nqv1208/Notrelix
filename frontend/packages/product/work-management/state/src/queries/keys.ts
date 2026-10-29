@@ -38,6 +38,30 @@ export const wmQueryKeys = {
       boardId,
       viewId,
     ),
+  boardForms: (workspaceId: string, boardId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "boards",
+      "forms",
+      boardId,
+    ),
+  form: (workspaceId: string, formId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "forms",
+      "detail",
+      formId,
+    ),
+  formSubmissions: (workspaceId: string, formId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "forms",
+      "submissions",
+      formId,
+    ),
   boardTemplates: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "work-management", "templates"),
   boardTrash: (workspaceId: string, boardId: string) =>

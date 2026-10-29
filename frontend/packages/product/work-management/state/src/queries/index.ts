@@ -2,6 +2,7 @@ export * from "./keys";
 export * from "./use-board-access";
 export * from "./use-board-labels";
 export * from "./use-saved-filters";
+export * from "./use-forms";
 export * from "./use-board-templates";
 export * from "./use-board-trash";
 export * from "./use-card";

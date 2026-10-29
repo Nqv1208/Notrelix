@@ -6,5 +6,8 @@ public class RejectFormSubmissionCommandValidator : AbstractValidator<RejectForm
     {
         RuleFor(x => x.SubmissionId)
             .NotEmpty();
+
+        RuleFor(x => x.Reason)
+            .MaximumLength(500);
     }
 }

@@ -157,3 +157,10 @@ export {
   type BoardSettingsCopy,
 } from "./components/board-settings/board-settings.copy";
 export { useBoardSettingsCopy } from "./components/board-settings/use-board-settings-copy";
+export { formsCatalog } from "./components/forms/forms.catalog";
+export {
+  FormBuilderPage,
+  FormFillPage,
+  FormInboxPage,
+  formLink,
+} from "./components/forms/forms-containers";
