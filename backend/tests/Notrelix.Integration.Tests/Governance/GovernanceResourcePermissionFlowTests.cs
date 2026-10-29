@@ -14,6 +14,7 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 using Notrelix.Domain.Documents.Blocks;
@@ -741,6 +742,40 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateComment_OnBoardItem_IsAuthorOnly_NotOwnerOnly()
+    {
+        var (accountId, ownerId, _, boardId, memberId) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var commentId = (await SendAsync<Result<Guid>>(memberProvider,
+            CreateCommentCommand.ForBoardItem(itemId, "Mine", null))).Data;
+
+        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue(
+            "an author who can still view the item edits their own comment");
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Rewritten"));
+        await act.Should().ThrowAsync<AppForbidden>("the workspace Owner may not rewrite another person's comment");
+    }
+
+    [Fact]
+    public async Task UpdateComment_OnPage_IsAuthorOnly_NotOwnerOnly()
+    {
+        var (accountId, ownerId, _, pageId, memberId) = await SeedPageStackAsync();
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var commentId = (await SendAsync<Result<Guid>>(ownerProvider,
+            CreateCommentCommand.ForPage(pageId, "Owner's", null))).Data;
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var act = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Rewritten"));
+        await act.Should().ThrowAsync<AppForbidden>("a member who can view the page may not rewrite the Owner's comment");
+
+        (await SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue();
     }
 
     [Fact]
@@ -1595,6 +1630,11 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<UpdateCommentCommand, Result>,
+            UpdateCommentCommandHandler>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
+            Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
