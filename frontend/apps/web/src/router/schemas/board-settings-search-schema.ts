@@ -18,6 +18,7 @@ export const boardSettingsSearchSchema = z.object({
         "views",
         "groups",
         "labels",
+        "forms",
         "templates",
         "automations",
       ]),

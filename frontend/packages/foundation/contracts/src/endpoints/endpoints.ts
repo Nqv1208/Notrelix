@@ -304,6 +304,24 @@ export const endpoints = {
     visibility: (filterId: string) => `/saved-filters/${filterId}/visibility`,
     restore: (filterId: string) => `/saved-filters/${filterId}/restore`,
   },
+  // WorkManagement.Forms.*: listed and created per board, changed by form id; a response is changed by its own id.
+  forms: {
+    forBoard: (boardId: string) => `/boards/${boardId}/forms`,
+    detail: (formId: string) => `/forms/${formId}`,
+    publish: (formId: string) => `/forms/${formId}/publish`,
+    close: (formId: string) => `/forms/${formId}/close`,
+    restore: (formId: string) => `/forms/${formId}/restore`,
+    questions: (formId: string) => `/forms/${formId}/questions`,
+    question: (formId: string, questionId: string) =>
+      `/forms/${formId}/questions/${questionId}`,
+    submissions: (formId: string) => `/forms/${formId}/submissions`,
+    submission: (submissionId: string) => `/form-submissions/${submissionId}`,
+    process: (submissionId: string) =>
+      `/form-submissions/${submissionId}/process`,
+    reject: (submissionId: string) =>
+      `/form-submissions/${submissionId}/reject`,
+    spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
+  },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
     saved: (boardId: string) => `/boards/${boardId}/views/saved`,

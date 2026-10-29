@@ -20,6 +20,7 @@ import {
 } from "@notrelix/work-management-core";
 import { KanbanSettingsPanel } from "../views/kanban/kanban-settings-panel";
 import { useKanbanLaneCopy } from "../views/kanban/use-kanban-lane-copy";
+import { useBoardFormsPanel } from "../forms/forms-containers";
 import { useBoardSettingsCopy } from "./use-board-settings-copy";
 import { BoardSettingsSurface } from "./board-settings-surface";
 import { fillCopy } from "./board-settings-format";
@@ -40,6 +41,10 @@ export interface BoardSettingsHost {
   readonly onOpenAccess?: () => void;
   /** The board was archived or deleted: leave the page. */
   readonly onLeave?: (reason: "archived" | "deleted") => void;
+  /** Opens a form of the board in its builder. */
+  readonly onOpenForm: (formId: string) => void;
+  /** Opens the response inbox of a form. */
+  readonly onOpenFormResponses: (formId: string) => void;
 }
 
 export interface BoardSettingsPageProps extends BoardSettingsHost {
@@ -190,6 +195,15 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     };
   }, [board, boardLabels, groups, labelWrites]);
 
+  const formNav = useMemo(
+    () => ({
+      onOpenBuilder: props.onOpenForm,
+      onOpenResponses: props.onOpenFormResponses,
+    }),
+    [props.onOpenForm, props.onOpenFormResponses],
+  );
+  const forms = useBoardFormsPanel(boardId, workspaceId, formNav);
+
   const boardTemplates = useBoardTemplates(workspaceId);
   const templateWrites = useBoardTemplateWrites(workspaceId);
   const templates = useMemo<BoardTemplatesPanelProps>(() => {
@@ -294,6 +308,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       actions={actions}
       workspaceRules={workspaceRules}
       labels={labels}
+      forms={forms}
       templates={templates}
       kanbanSettings={
         <KanbanSettingsPanel

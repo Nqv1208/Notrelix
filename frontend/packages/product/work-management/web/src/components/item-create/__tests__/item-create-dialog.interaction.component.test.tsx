@@ -371,3 +371,71 @@ describe.each([
     expect(screen.getByText(copy.chooseBoard)).toBeTruthy();
   });
 });
+
+describe.each([
+  ["vi", viCopy],
+  ["en", en],
+] as const)(
+  "item create dialog prefilled from a form response (%s)",
+  (locale, copy) => {
+    const prefilled = (overrides: Partial<ItemCreateDialogProps> = {}) =>
+      props(copy, {
+        heading: "Tạo việc từ phản hồi",
+        submitLabel: "Tạo công việc",
+        hideAnother: true,
+        defaultTitle: "Làm mới tên máy kế toán Đà Nẵng",
+        defaultDescription: "Máy mới cấp nhưng tên cũ còn nằm trong domain.",
+        defaultPriorityId: "p-high",
+        defaultDueDay: "2026-10-16",
+        sources: { name: "Từ: Bạn cần gì?", priority: "Từ: Mức độ ưu tiên" },
+        footnote: "Email liên hệ: trang.tt@minhan.vn · không ánh xạ trường nào",
+        ...overrides,
+      });
+
+    it(`${fui("wm.item-create.dialog:from-response", locale)}is the ordinary dialog, prefilled, with the source of each value and no create-another (${locale})`, () => {
+      const onSubmit = vi.fn();
+      renderPureUi(<ItemCreateDialog {...prefilled({ onSubmit })} />);
+      expect(
+        screen.getByRole("heading", { name: "Tạo việc từ phản hồi" }),
+      ).toBeTruthy();
+      expect(screen.getByText("Từ: Bạn cần gì?")).toBeTruthy();
+      expect(screen.getByText("Từ: Mức độ ưu tiên")).toBeTruthy();
+      expect(screen.queryByText(copy.another)).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Tạo công việc" }));
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Làm mới tên máy kế toán Đà Nẵng",
+          descriptionMd: "Máy mới cấp nhưng tên cũ còn nằm trong domain.",
+          priorityOptionId: "p-high",
+          dueDay: "2026-10-16",
+          another: false,
+        }),
+      );
+    });
+
+    it(`${fui("wm.item-create.dialog:from-response-empty-title", locale)}asks for a name when the prefilled one is cleared and keeps every other value (${locale})`, () => {
+      const onSubmit = vi.fn();
+      renderPureUi(
+        <ItemCreateDialog {...prefilled({ onSubmit, error: copy.failed })} />,
+      );
+      fireEvent.change(
+        screen.getByRole("textbox", { name: /^Tên công việc|^Item name/ }),
+        {
+          target: { value: "   " },
+        },
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Tạo công việc" }));
+      expect(screen.getByText(copy.nameRequired)).toBeTruthy();
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(
+        (
+          screen.getByRole("textbox", {
+            name: new RegExp(`^${copy.description}`),
+          }) as HTMLTextAreaElement
+        ).value,
+      ).toBe("Máy mới cấp nhưng tên cũ còn nằm trong domain.");
+      // A failed create keeps the dialog and its values.
+      expect(screen.getByText(copy.failed)).toBeTruthy();
+    });
+  },
+);

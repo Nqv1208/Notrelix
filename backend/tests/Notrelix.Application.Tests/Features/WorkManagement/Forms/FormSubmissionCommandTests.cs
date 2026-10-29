@@ -21,13 +21,31 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
                 DateTimeProviderMock.Object);
         }
 
+        private BoardItem SetupItemOn(FormSubmission submission, Guid? boardId = null)
+        {
+            var item = CreateBoardItem(boardId: boardId ?? submission.BoardId);
+            SetupBoardItems(item);
+            return item;
+        }
+
+        [Fact]
+        public async Task Handle_ItemOnAnotherBoard_ThrowsNotFound()
+        {
+            var submission = CreateFormSubmission();
+            SetupFormSubmissions(submission);
+            var command = new ProcessFormSubmissionCommand(submission.Id, SetupItemOn(submission, Guid.CreateVersion7()).Id);
+
+            await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+                .Should().ThrowAsync<NotFoundException>();
+        }
+
         [Fact]
         public async Task Handle_AcceptedSubmission_Processed()
         {
             var submission = CreateFormSubmission();
             SetupFormSubmissions(submission);
 
-            var command = new ProcessFormSubmissionCommand(submission.Id, Guid.CreateVersion7());
+            var command = new ProcessFormSubmissionCommand(submission.Id, SetupItemOn(submission).Id);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -49,7 +67,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission(status: FormSubmissionStatus.Rejected);
             SetupFormSubmissions(submission);
 
-            var command = new ProcessFormSubmissionCommand(submission.Id, Guid.CreateVersion7());
+            var command = new ProcessFormSubmissionCommand(submission.Id, SetupItemOn(submission).Id);
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
@@ -61,7 +79,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission(status: FormSubmissionStatus.Spam);
             SetupFormSubmissions(submission);
 
-            var command = new ProcessFormSubmissionCommand(submission.Id, Guid.CreateVersion7());
+            var command = new ProcessFormSubmissionCommand(submission.Id, SetupItemOn(submission).Id);
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
@@ -73,7 +91,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission(status: FormSubmissionStatus.Deleted);
             SetupFormSubmissions(submission);
 
-            var command = new ProcessFormSubmissionCommand(submission.Id, Guid.CreateVersion7());
+            var command = new ProcessFormSubmissionCommand(submission.Id, SetupItemOn(submission).Id);
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
@@ -99,7 +117,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission();
             SetupFormSubmissions(submission);
 
-            var command = new RejectFormSubmissionCommand(submission.Id);
+            var command = new RejectFormSubmissionCommand(submission.Id, "Trùng ERP-168");
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -109,7 +127,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
         [Fact]
         public async Task Handle_SubmissionNotFound_ThrowsNotFoundException()
         {
-            var command = new RejectFormSubmissionCommand(Guid.CreateVersion7());
+            var command = new RejectFormSubmissionCommand(Guid.CreateVersion7(), "x");
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<NotFoundException>();
@@ -121,7 +139,7 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
             var submission = CreateFormSubmission(status: FormSubmissionStatus.Rejected);
             SetupFormSubmissions(submission);
 
-            var command = new RejectFormSubmissionCommand(submission.Id);
+            var command = new RejectFormSubmissionCommand(submission.Id, "Trùng ERP-168");
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();

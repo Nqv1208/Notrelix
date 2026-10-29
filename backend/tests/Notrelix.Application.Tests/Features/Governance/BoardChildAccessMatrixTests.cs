@@ -36,6 +36,8 @@ public sealed class BoardChildAccessMatrixTests
         ("work-management.board-group", PermissionAction.UpdateItem, false),
         ("work-management.board-view", PermissionAction.UpdateBoardView, false),
         ("work-management.saved-filter", PermissionAction.UpdateBoardView, false),
+        ("work-management.form", PermissionAction.CreateItem, false),
+        ("work-management.form-submission", PermissionAction.CreateItem, false),
         ("work-management.label", PermissionAction.UpdateField, false),
         ("work-management.checklist", PermissionAction.UpdateItem, false),
         ("work-management.checklist-item", PermissionAction.UpdateItem, false),

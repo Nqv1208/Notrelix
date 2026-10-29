@@ -7,7 +7,7 @@ public static class ListFormSubmissionsEndpoint
 {
     public static IEndpointRouteBuilder MapListFormSubmissions(this IEndpointRouteBuilder group)
     {
-        group.MapResourceGet("/", HandleAsync)
+        group.MapResourceGet("/submissions", HandleAsync)
             .WithName("WorkManagement.Forms.ListSubmissions")
             .WithTags("WorkManagement.Forms")
             .WithSummary("List submissions for a form");

@@ -50,7 +50,7 @@ public class FormQuestion : Entity, IWorkspaceScoped
         };
     }
 
-    public void UpdateQuestion(string label, bool isRequired, FractionalIndex position, FormQuestionConfig? config)
+    public void UpdateQuestion(string label, bool isRequired, FractionalIndex position, FormQuestionConfig? config, Guid? boardFieldId = null)
     {
         Guard.NotNullOrWhiteSpace(label);
         Guard.NotNull(position);
@@ -59,6 +59,7 @@ public class FormQuestion : Entity, IWorkspaceScoped
         IsRequired = isRequired;
         Position = position;
         Config = config;
+        BoardFieldId = boardFieldId;
         Version++;
     }
 }

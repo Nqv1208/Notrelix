@@ -30,6 +30,9 @@ import {
   boardRoute,
   boardItemRoute,
   boardSettingsRoute,
+  boardFormRoute,
+  boardFormBuilderRoute,
+  boardFormInboxRoute,
 } from "./routes/work-management.routes";
 import { docRoute, docsIndexRoute } from "./routes/documents.routes";
 import { billingRoute } from "./routes/billing.routes";
@@ -61,6 +64,9 @@ export const routeTree = rootRoute.addChildren([
     boardRoute,
     boardItemRoute,
     boardSettingsRoute,
+    boardFormRoute,
+    boardFormBuilderRoute,
+    boardFormInboxRoute,
     docRoute,
     docsIndexRoute,
     dashboardRoute,
