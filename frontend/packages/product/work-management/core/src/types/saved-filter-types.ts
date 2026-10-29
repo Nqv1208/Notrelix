@@ -8,6 +8,8 @@ export interface SavedFilterCriteria {
   readonly groupBy?: string;
   /** Kanban swimlane field (second dimension). Absent in version 1. */
   readonly swimlaneBy?: string;
+  /** Sort levels; only a member's personal view state keeps it (a saved filter has none). */
+  readonly sort?: string;
 }
 
 /**
@@ -39,13 +41,17 @@ export function parseSavedFilterCriteria(
   try {
     const value: unknown = JSON.parse(raw);
     if (typeof value !== "object" || value === null) return {};
-    const { filter, groupBy, swimlaneBy } = value as Record<string, unknown>;
+    const { filter, groupBy, swimlaneBy, sort } = value as Record<
+      string,
+      unknown
+    >;
     return {
       ...(typeof filter === "string" && filter !== "" ? { filter } : {}),
       ...(typeof groupBy === "string" && groupBy !== "" ? { groupBy } : {}),
       ...(typeof swimlaneBy === "string" && swimlaneBy !== ""
         ? { swimlaneBy }
         : {}),
+      ...(typeof sort === "string" && sort !== "" ? { sort } : {}),
     };
   } catch {
     return {};
@@ -60,5 +66,6 @@ export function serializeSavedFilterCriteria(
     ...(criteria.filter ? { filter: criteria.filter } : {}),
     ...(criteria.groupBy ? { groupBy: criteria.groupBy } : {}),
     ...(criteria.swimlaneBy ? { swimlaneBy: criteria.swimlaneBy } : {}),
+    ...(criteria.sort ? { sort: criteria.sort } : {}),
   });
 }

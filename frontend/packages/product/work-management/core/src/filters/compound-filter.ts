@@ -172,7 +172,7 @@ export function evaluateFilter(
 /* URL form: `c2:and~<field>.<op>.<value>.<value>~...`; parts are percent-encoded so `.` and `~` stay separators. */
 const PREFIX = "c2:";
 
-const escapePart = (part: string): string =>
+export const escapePart = (part: string): string =>
   encodeURIComponent(part).replace(
     /[.~!'()*]/g,
     (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
@@ -208,7 +208,7 @@ const OPERATORS: readonly string[] = [
   "between",
 ] satisfies ConditionOperator[];
 
-const decode = (part: string): string | null => {
+export const decodePart = (part: string): string | null => {
   try {
     return decodeURIComponent(part);
   } catch {
@@ -227,7 +227,7 @@ export function parseCompoundFilter(
   const [join, ...rest] = value.slice(PREFIX.length).split("~");
   const conditions: FilterCondition[] = [];
   for (const raw of rest) {
-    const [fieldId, operator, ...values] = raw.split(".").map(decode);
+    const [fieldId, operator, ...values] = raw.split(".").map(decodePart);
     if (!fieldId || !operator || values.includes(null)) continue;
     if (!OPERATORS.includes(operator)) continue;
     conditions.push({
