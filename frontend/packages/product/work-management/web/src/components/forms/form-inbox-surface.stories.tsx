@@ -50,6 +50,7 @@ type Story = StoryObj;
 
 /** The New tab with a response open. */
 export const Default: Story = {
+  tags: ["fui-surface--wm.forms.inbox", "fui-state--Default"],
   render: () => (
     <div className="flex h-[720px]">
       <FormInboxSurface {...props()} />
@@ -57,8 +58,56 @@ export const Default: Story = {
   ),
 };
 
+/** The responses are on their way. */
+export const Loading: Story = {
+  tags: ["fui-surface--wm.forms.inbox", "fui-state--Loading"],
+  render: () => (
+    <div className="flex h-[720px]">
+      <FormInboxSurface {...props({ status: "loading", submissions: [] })} />
+    </div>
+  ),
+};
+
+/** The responses could not load: the list offers Retry. */
+export const Error: Story = {
+  tags: ["fui-surface--wm.forms.inbox", "fui-state--Error"],
+  render: () => (
+    <div className="flex h-[720px]">
+      <FormInboxSurface {...props({ status: "error", submissions: [] })} />
+    </div>
+  ),
+};
+
+/** No response in the tab. */
+export const Empty: Story = {
+  tags: ["fui-surface--wm.forms.inbox", "fui-state--Empty"],
+  render: () => (
+    <div className="flex h-[720px]">
+      <FormInboxSurface {...props({ submissions: [], selectedId: null })} />
+    </div>
+  ),
+};
+
+/** Sixty new responses: the list scrolls inside its column. */
+export const HighDensity: Story = {
+  tags: ["fui-surface--wm.forms.inbox", "fui-state--HighDensity"],
+  render: () => (
+    <div className="flex h-[720px]">
+      <FormInboxSurface
+        {...props({
+          submissions: Array.from({ length: 60 }, (_, n) =>
+            response(`s-${n}`, {}),
+          ),
+          selectedId: "s-0",
+        })}
+      />
+    </div>
+  ),
+};
+
 /** A long answer wraps in the detail and is cut with an ellipsis in the list. */
 export const EdgeData: Story = {
+  tags: ["fui-surface--wm.forms.inbox", "fui-state--EdgeData"],
   render: () => (
     <div className="flex h-[720px]">
       <FormInboxSurface

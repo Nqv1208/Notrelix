@@ -3693,7 +3693,7 @@
     {
       "surfaceId": "wm.forms.list",
       "owner": "@notrelix/work-management-web",
-      "surfaceKind": "workflow",
+      "surfaceKind": "data",
       "pureEntry": "src/components/forms/forms-list-panel.tsx",
       "coveredSources": ["src/components/forms/forms-parts.tsx"],
       "stories": [
@@ -3724,20 +3724,72 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-forms-list--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": [
+          "Default",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Empty",
+          "HighDensity"
+        ],
         "delegated": [],
         "notApplicable": [
           {
             "state": "ReadOnly",
             "reason": "Only a manager of the board opens board settings; a viewer gets the settings page's own no-access card and never reaches the Forms section.",
             "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "Only a manager of the board opens board settings; there is no partial view of the Forms section, a viewer gets the settings page's own no-access card.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
@@ -3766,7 +3818,7 @@
     {
       "surfaceId": "wm.forms.builder",
       "owner": "@notrelix/work-management-web",
-      "surfaceKind": "workflow",
+      "surfaceKind": "form",
       "pureEntry": "src/components/forms/form-builder-surface.tsx",
       "coveredSources": [],
       "stories": [
@@ -3807,14 +3859,51 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-forms-builder--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--success",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "ReadOnly", "EdgeData"],
+        "required": [
+          "Default",
+          "ReadOnly",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Success"
+        ],
         "delegated": [],
         "notApplicable": []
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
@@ -3875,7 +3964,7 @@
     {
       "surfaceId": "wm.forms.fill",
       "owner": "@notrelix/work-management-web",
-      "surfaceKind": "workflow",
+      "surfaceKind": "form",
       "pureEntry": "src/components/forms/form-fill-surface.tsx",
       "coveredSources": [],
       "stories": [
@@ -3924,10 +4013,51 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-forms-fill--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--success",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "ReadOnly", "EdgeData"],
+        "required": [
+          "Default",
+          "ReadOnly",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Success"
+        ],
         "delegated": [],
         "notApplicable": []
       },
@@ -3968,7 +4098,7 @@
     {
       "surfaceId": "wm.forms.inbox",
       "owner": "@notrelix/work-management-web",
-      "surfaceKind": "workflow",
+      "surfaceKind": "data",
       "pureEntry": "src/components/forms/form-inbox-surface.tsx",
       "coveredSources": [],
       "stories": [
@@ -3999,20 +4129,72 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-forms-inbox--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": [
+          "Default",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Empty",
+          "HighDensity"
+        ],
         "delegated": [],
         "notApplicable": [
           {
             "state": "ReadOnly",
             "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder.",
             "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder, so no partial view exists.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
-      "responsive": true,
+      "responsive": false,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [

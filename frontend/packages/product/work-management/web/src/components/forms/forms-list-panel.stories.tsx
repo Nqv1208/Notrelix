@@ -65,6 +65,7 @@ type Story = StoryObj;
 
 /** The board's forms: a published one with new responses, a draft, a closed one. */
 export const Default: Story = {
+  tags: ["fui-surface--wm.forms.list", "fui-state--Default"],
   render: () => (
     <div className="flex h-[640px]">
       <FormsListPanel {...props()} />
@@ -72,11 +73,56 @@ export const Default: Story = {
   ),
 };
 
+const framed = (overrides: Partial<BoardFormsPanelProps>, h = 480) => (
+  <div className={`flex`} style={{ height: h }}>
+    <FormsListPanel {...props(overrides)} />
+  </div>
+);
+
+/** The forms are on their way. */
+export const Loading: Story = {
+  tags: ["fui-surface--wm.forms.list", "fui-state--Loading"],
+  render: () => framed({ status: "loading", forms: [] }),
+};
+
+/** The list could not load: the message offers Retry. */
+export const Error: Story = {
+  tags: ["fui-surface--wm.forms.list", "fui-state--Error"],
+  render: () => framed({ status: "error", forms: [] }),
+};
+
 /** Nothing yet: the empty state offers the first form. */
+export const Empty: Story = {
+  tags: ["fui-surface--wm.forms.list", "fui-state--Empty"],
+  render: () => framed({ forms: [] }),
+};
+
+/** Forty forms: the list scrolls inside its panel. */
+export const HighDensity: Story = {
+  tags: ["fui-surface--wm.forms.list", "fui-state--HighDensity"],
+  render: () =>
+    framed(
+      {
+        forms: Array.from({ length: 40 }, (_, n) => ({
+          ...rows[n % rows.length]!,
+          id: `f-${n}`,
+          title: `${rows[n % rows.length]!.title} (${n + 1})`,
+        })),
+      },
+      640,
+    ),
+};
+
+/** One very long title wraps and does not push the row actions out. */
 export const EdgeData: Story = {
-  render: () => (
-    <div className="flex h-[480px]">
-      <FormsListPanel {...props({ forms: [] })} />
-    </div>
-  ),
+  tags: ["fui-surface--wm.forms.list", "fui-state--EdgeData"],
+  render: () =>
+    framed({
+      forms: [
+        {
+          ...rows[1]!,
+          title: `${rows[1]!.title}, kèm đầy đủ biên bản nghiệm thu, báo giá của ba nhà cung cấp và ý kiến của kế toán trưởng`,
+        },
+      ],
+    }),
 };

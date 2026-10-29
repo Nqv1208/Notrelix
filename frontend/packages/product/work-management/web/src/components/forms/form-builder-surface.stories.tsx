@@ -50,11 +50,39 @@ type Story = StoryObj;
 
 /** A draft with a mapped select open: its options are the board field's, read-only. */
 export const Default: Story = {
+  tags: ["fui-surface--wm.forms.builder", "fui-state--Default"],
   render: () => <FormBuilderSurface {...props()} />,
+};
+
+/** The form is on its way. */
+export const Loading: Story = {
+  tags: ["fui-surface--wm.forms.builder", "fui-state--Loading"],
+  render: () => (
+    <FormBuilderSurface {...props({ status: "loading", form: null })} />
+  ),
+};
+
+/** The form could not load: the message offers Retry. */
+export const Error: Story = {
+  tags: ["fui-surface--wm.forms.builder", "fui-state--Error"],
+  render: () => (
+    <FormBuilderSurface {...props({ status: "error", form: null })} />
+  ),
+};
+
+/** The form is published: its link is shown with Copy and the page says it is live. */
+export const Success: Story = {
+  tags: ["fui-surface--wm.forms.builder", "fui-state--Success"],
+  render: () => (
+    <FormBuilderSurface
+      {...props({ form: formFixture({ status: "published" }) })}
+    />
+  ),
 };
 
 /** A closed form: questions and settings cannot be changed. */
 export const ReadOnly: Story = {
+  tags: ["fui-surface--wm.forms.builder", "fui-state--ReadOnly"],
   render: () => (
     <FormBuilderSurface
       {...props({
@@ -67,6 +95,7 @@ export const ReadOnly: Story = {
 
 /** Own choices, two questions on one field and a very long label. */
 export const EdgeData: Story = {
+  tags: ["fui-surface--wm.forms.builder", "fui-state--EdgeData"],
   render: () => (
     <FormBuilderSurface
       {...props({
