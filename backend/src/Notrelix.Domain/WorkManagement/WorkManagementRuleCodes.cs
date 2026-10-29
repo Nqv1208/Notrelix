@@ -126,6 +126,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormQuestion_MinMaxInvalidForType = "WorkManagement_FormQuestion_MinMaxInvalidForType";
     public const string WorkManagement_FormQuestion_MaxFileSizeInvalidForType = "WorkManagement_FormQuestion_MaxFileSizeInvalidForType";
     public const string WorkManagement_FormQuestion_MaxLengthMustBePositive = "WorkManagement_FormQuestion_MaxLengthMustBePositive";
+    public const string WorkManagement_FormQuestion_OptionsInvalid = "WorkManagement_FormQuestion_OptionsInvalid";
+    public const string WorkManagement_FormQuestion_OptionsInvalidForType = "WorkManagement_FormQuestion_OptionsInvalidForType";
     public const string WorkManagement_FormQuestion_MaxFileSizeMustBePositive = "WorkManagement_FormQuestion_MaxFileSizeMustBePositive";
     public const string WorkManagement_FormQuestion_MinCannotExceedMax = "WorkManagement_FormQuestion_MinCannotExceedMax";
 

@@ -32,7 +32,10 @@ public class ListFormsQueryHandler : IRequestHandler<ListFormsQuery, Result<List
                 f.BoardId,
                 f.Status.ToString(),
                 f.Visibility.ToString(),
-                f.CreatedAt))
+                f.CreatedAt,
+                f.Questions.Count,
+                _context.FormSubmissions.Count(s => s.FormId == f.Id && s.Status == FormSubmissionStatus.Accepted && s.CreatedItemId == null),
+                f.UpdatedAt))
             .ToListAsync(ct);
 
         return Result<List<FormDto>>.Success(forms);

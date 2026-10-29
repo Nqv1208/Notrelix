@@ -12,7 +12,8 @@ public record AddFormQuestionCommand(
     string Label,
     bool IsRequired,
     string? ConfigJson,
-    string? Position)
+    string? Position,
+    Guid? BoardFieldId = null)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
@@ -37,9 +38,13 @@ public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionComm
 
     public async Task<Result> Handle(AddFormQuestionCommand request, CancellationToken ct)
     {
-        var form = await _context.Forms
+        var form = await _context.Forms.Include(f => f.Questions)
             .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
+
+        if (request.BoardFieldId is { } fieldId
+            && !await _context.BoardFields.AsNoTracking().AnyAsync(f => f.Id == fieldId && f.BoardId == form.BoardId && f.DeletedAt == null, ct))
+            throw new NotFoundException("BoardField", fieldId);
 
         var accountId = _requestContext.RequireAccountId();
         var position = FractionalIndex.Create(request.Position ?? FractionalIndex.Initial().Value);
@@ -49,7 +54,7 @@ public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionComm
             accountId,
             form.WorkspaceId,
             form.Id,
-            null,
+            request.BoardFieldId,
             request.QuestionKey,
             request.Label,
             request.QuestionType,
