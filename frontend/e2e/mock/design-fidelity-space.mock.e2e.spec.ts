@@ -320,6 +320,8 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     expect(await colour(name, "color")).toBe(COLOUR.ink);
 
     const card = f(page, "sub").first();
+    // The page above the cards settles late and moves them 29 px; wait for it.
+    await page.waitForTimeout(800);
     const cardBox = await rel(page, card);
     expectRect(cardBox, { x: 28, width: 350 }, "sub-department card");
     expect(await style(card, "border-radius")).toBe("12px");
@@ -419,7 +421,8 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     const icon = f(page, "mic").first();
     expectRect(
       await rel(page, icon),
-      { x: 753, y: 86.23, width: 28, height: 28 },
+      // y: the mockup's first item grew to 54 px because its hint wrapped beside the B key chip; without the chip it is 44 px and the icon sits 8 px in.
+      { x: 753, y: 81.06, width: 28, height: 28 },
       "item icon",
     );
     expect(await colour(icon, "background-color")).toBe(COLOUR.accentSoft);
@@ -434,10 +437,8 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
       { x: 739, width: 300, height: 1 },
       "separator",
     );
-    const key = f(page, "kbd").first();
-    expect((await rel(page, key)).height).toBeCloseTo(20, 0);
-    expect(await style(key, "font-size")).toBe("11px");
-    expect(await colour(key, "border-top-color")).toBe(COLOUR.lineStrong);
+    // The B/D key chips are gone (owner rule: no visible shortcut hints).
+    await expect(f(page, "kbd")).toHaveCount(0);
     const foot = f(page, "mfoot");
     expectRect(await rel(page, foot), { x: 739, width: 300 }, "footer");
     expect(await colour(foot, "border-top-color")).toBe(COLOUR.line);

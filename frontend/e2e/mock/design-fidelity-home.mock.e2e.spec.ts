@@ -99,6 +99,9 @@ async function openHome(page: Page) {
     page.getByRole("heading", { level: 1, name: /^Chào buổi sáng, / }),
   ).toBeVisible();
   await expect(page.locator('[data-f="row"]').first()).toBeVisible();
+  // The attention chips arrive with their own reads and the last two are 38 px
+  // high, so the content below moves 2 px until all four are drawn.
+  await expect(page.locator('[data-f="chip"]')).toHaveCount(4);
 }
 
 async function box(locator: Locator): Promise<Rect> {

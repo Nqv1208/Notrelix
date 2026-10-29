@@ -322,7 +322,7 @@ test.describe("rail pinned (nav=hien-day)", () => {
     await expectRgb(chip.locator("span").nth(3), "color", [95, 104, 117]);
   });
 
-  test("search is 235 x 34 at y=72 with a 1 px line border, 13/400 text and a 25 x 20 r4 key", async ({
+  test("search is 235 x 34 at y=72 with a 1 px line border and 13/400 text", async ({
     page,
   }) => {
     const search = sidebarNav(page)
@@ -336,10 +336,7 @@ test.describe("rail pinned (nav=hien-day)", () => {
     await expectRgb(search, "background-color", [255, 255, 255]);
     await expectFont(search, 13, 400);
     await expectRgb(search, "color", [95, 104, 117]);
-    const key = search.locator("kbd");
-    await expectBox(key, { x: 285, y: 79, width: 25, height: 20 });
-    expect(await css(key, "border-radius")).toBe("4px");
-    await expectFont(key, 11, 400);
+    // The key chip is gone (owner rule: no visible shortcut hints on buttons).
   });
 
   test("the five navigation rows are 235 x 34 on a 36 px pitch from y=116 with 13.5/500 muted text", async ({
@@ -553,7 +550,6 @@ test.describe("dark appearance (mode=dem) keeps token-driven colours", () => {
       .locator("xpath=..")
       .getByRole("button", { name: /Tìm hoặc chạy lệnh/ });
     await expectRgb(search, "color", [143, 153, 167]);
-    await expectRgb(search.locator("kbd"), "background-color", [35, 43, 53]);
     const rows = page.getByRole("list", { name: "Chính" }).locator("a");
     await expectRgb(rows.nth(0), "color", [170, 179, 192]);
     // Geometry is theme independent.
