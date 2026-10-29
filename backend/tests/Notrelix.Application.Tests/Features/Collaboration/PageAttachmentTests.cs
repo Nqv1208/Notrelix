@@ -245,7 +245,7 @@ public sealed class PageAttachmentTests
         var row = await UploadAsync(PageId);
         var handler = new DeleteAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll());
 
-        var act = () => handler.Handle(new DeleteAttachmentCommand(row.Id), default);
+        var act = () => handler.Handle(new DeleteAttachmentCommand(ItemId, row.Id), default);
 
         await act.Should().ThrowAsync<NotFoundException>();
         row.IsDeleted.Should().BeFalse();

@@ -29,7 +29,7 @@ public class ReopenCommentCommandHandler : IRequestHandler<ReopenCommentCommand,
     public async Task<Result> Handle(ReopenCommentCommand request, CancellationToken ct)
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
-        if (comment is null) throw new NotFoundException(nameof(Comment), request.CommentId);
+        if (comment is null) throw CommentAccessRules.NotFound(request.CommentId);
         await CommentAccessRules.RequireThreadResolverAsync(comment, _currentUser.UserId, _context, _access, ct);
         comment.Reopen(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

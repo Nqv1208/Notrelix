@@ -5,7 +5,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 
-public record DeleteAttachmentCommand(Guid AttachmentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record DeleteAttachmentCommand(Guid BoardItemId, Guid AttachmentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     // A coarse gate; the editor-only rule is decided in the handler from the attachment's target.
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -37,13 +37,13 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
         // target (a Documents page) is removed only through that target's own use case.
         var boardItem = AttachmentTargets.BoardItem;
         var attachment = await _context.Attachments
-            .FirstOrDefaultAsync(a => a.Id == request.AttachmentId && a.Target.Kind == boardItem, ct);
+            .FirstOrDefaultAsync(a => a.Id == request.AttachmentId && a.Target.Kind == boardItem && a.Target.ResourceId == request.BoardItemId, ct);
 
         if (attachment is null)
-            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
+            throw AttachmentAccessRules.NotFound(request.Resource);
 
         var now = _dateTimeProvider.UtcNow;
-        await AttachmentAccessRules.RequireDeleterAsync(attachment, _access, ct);
+        await AttachmentAccessRules.RequireDeleterAsync(attachment, request.Resource, _access, ct);
         attachment.Delete(_currentUser.UserId, now);
         return Result.Success();
     }

@@ -10,11 +10,15 @@ public static class AttachmentAccessRules
 {
     public const string EditorOnlyCode = "collaboration.attachment_editor_only";
 
-    public static async Task RequireDeleterAsync(Attachment attachment, ICommentTargetAccess access, CancellationToken ct)
+    /// <summary>The same NotFound the pipeline gives a missing resource of the request, so a hidden one cannot be told apart.</summary>
+    public static NotFoundException NotFound(ResourceRef requested) =>
+        new(requested.Kind.ToString(), requested.ResourceId);
+
+    public static async Task RequireDeleterAsync(Attachment attachment, ResourceRef requested, ICommentTargetAccess access, CancellationToken ct)
     {
         if (!await access.HasAsync(attachment.Target, CommentTargetRight.View, ct))
         {
-            throw new NotFoundException(nameof(Attachment), attachment.Id);
+            throw NotFound(requested);
         }
 
         if (!await access.HasAsync(attachment.Target, CommentTargetRight.Edit, ct))

@@ -48,7 +48,7 @@ public class AttachmentDeleteAuthorizationTests
             ? new DeletePageAttachmentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object)
                 .Handle(new DeletePageAttachmentCommand(row.Target.ResourceId, row.Id), default)
             : new DeleteAttachmentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object)
-                .Handle(new DeleteAttachmentCommand(row.Id), default);
+                .Handle(new DeleteAttachmentCommand(row.Target.ResourceId, row.Id), default);
     }
 
     private Attachment Row(bool page) => page
@@ -105,7 +105,12 @@ public class AttachmentDeleteAuthorizationTests
 
         var act = () => Delete(page, row, _uploader);
 
-        await act.Should().ThrowAsync<NotFoundException>();
+        // Identical to the pipeline's NotFound for the same request, so a hidden attachment looks like a missing one.
+        ResourceRef pipeline = page
+            ? new DeletePageAttachmentCommand(row.Target.ResourceId, row.Id).Resource
+            : new DeleteAttachmentCommand(row.Target.ResourceId, row.Id).Resource;
+        (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
+            .Should().Be(new NotFoundException(pipeline.Kind.ToString(), pipeline.ResourceId).Message);
         row.IsDeleted.Should().BeFalse();
     }
 }

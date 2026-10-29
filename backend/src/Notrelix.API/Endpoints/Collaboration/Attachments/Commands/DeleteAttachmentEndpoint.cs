@@ -15,11 +15,12 @@ public static class DeleteAttachmentEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
+        Guid boardItemId,
         Guid attachmentId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteAttachmentCommand(attachmentId), cancellationToken);
+        var result = await sender.Send(new DeleteAttachmentCommand(boardItemId, attachmentId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

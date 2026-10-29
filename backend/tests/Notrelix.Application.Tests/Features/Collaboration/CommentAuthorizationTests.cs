@@ -105,7 +105,21 @@ public class CommentAuthorizationTests
 
         var act = () => Run(action, _author, comment.Id);
 
-        await act.Should().ThrowAsync<NotFoundException>();
+        // Identical to what the pipeline says for a missing comment, so a hidden one cannot be told apart.
+        var pipeline = new UpdateCommentCommand(comment.Id, "x").Resource;
+        (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
+            .Should().Be(new NotFoundException(pipeline.Kind.ToString(), pipeline.ResourceId).Message);
+    }
+
+    [Fact]
+    public async Task AMissingComment_GivesTheSameNotFoundShapeAsAHiddenOne()
+    {
+        var missing = Guid.CreateVersion7();
+
+        var act = () => Run("edit", _author, missing);
+
+        (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
+            .Should().Be(new NotFoundException(new UpdateCommentCommand(missing, "x").Resource.Kind.ToString(), missing).Message);
     }
 
     [Theory]
