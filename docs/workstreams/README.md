@@ -62,6 +62,9 @@ docs/workstreams/
 ├── README.md
 ├── capability-map.md
 ├── cross-team-dependencies.md
+├── use-cases/
+│   ├── README.md
+│   └── <context>.md
 └── teams/
     ├── identity-accounts.md
     ├── workspace-governance.md
@@ -484,6 +487,12 @@ For team execution:
 
 ```text
 ./teams/
+```
+
+For every use case of a context, its acceptance standard and its current state:
+
+```text
+./use-cases/
 ```
 
 ## 20. Phase 2 objective
