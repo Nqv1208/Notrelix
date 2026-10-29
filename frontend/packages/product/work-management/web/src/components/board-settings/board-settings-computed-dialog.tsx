@@ -28,13 +28,59 @@ const ROLLUP_FUNCTIONS: readonly RollupFunction[] = [
 /** The most elements a formula may have; the server enforces it, this only warns early. */
 export const FORMULA_NODE_CAP = 200;
 
-// A function name is matched only from a word start, so a long run of letters is scanned once, not once per letter.
-const NODE_PATTERN =
-  /\[[^\]]*\]|"(?:[^"]|"")*"|\d+(?:\.\d+)?|\b[A-Za-z]+\s*\(|\bTRUE\b|\bFALSE\b|<>|<=|>=|[-+*/&=<>]/gi;
+const isDigit = (ch: string) => ch >= "0" && ch <= "9";
+const isLetter = (ch: string) => /[A-Za-z]/.test(ch);
 
-/** An estimate of the elements of a formula: references, literals, calls and operators. */
+/**
+ * An estimate of the elements of a formula: references, literals, calls and operators.
+ * One pass over the text (no backtracking regex), so a long or unclosed input stays linear.
+ */
 export function formulaNodeCount(expression: string): number {
-  return expression.match(NODE_PATTERN)?.length ?? 0;
+  const text = expression;
+  let count = 0;
+  let i = 0;
+  while (i < text.length) {
+    const ch = text.charAt(i);
+    if (ch === "[") {
+      const end = text.indexOf("]", i + 1);
+      if (end === -1) break;
+      count++;
+      i = end + 1;
+    } else if (ch === '"') {
+      let j = i + 1;
+      while (
+        j < text.length &&
+        !(text.charAt(j) === '"' && text.charAt(j + 1) !== '"')
+      ) {
+        j += text.charAt(j) === '"' ? 2 : 1;
+      }
+      if (j >= text.length) break;
+      count++;
+      i = j + 1;
+    } else if (isDigit(ch)) {
+      while (i < text.length && isDigit(text.charAt(i))) i++;
+      if (text.charAt(i) === "." && isDigit(text.charAt(i + 1))) {
+        i++;
+        while (i < text.length && isDigit(text.charAt(i))) i++;
+      }
+      count++;
+    } else if (isLetter(ch)) {
+      const start = i;
+      while (i < text.length && isLetter(text.charAt(i))) i++;
+      const word = text.slice(start, i).toUpperCase();
+      let k = i;
+      while (k < text.length && /\s/.test(text.charAt(k))) k++;
+      if (text.charAt(k) === "(" || word === "TRUE" || word === "FALSE")
+        count++;
+    } else if (["<>", "<=", ">="].includes(text.slice(i, i + 2))) {
+      count++;
+      i += 2;
+    } else {
+      if ("-+*/&=<>".includes(ch)) count++;
+      i++;
+    }
+  }
+  return count;
 }
 
 /** The settings JSON a Formula saves; the server turns the names into field ids. */
