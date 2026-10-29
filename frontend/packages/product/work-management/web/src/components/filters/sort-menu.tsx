@@ -20,6 +20,8 @@ export interface SortMenuProps {
   fields: readonly FilterField[];
   levels: readonly SortLevel[];
   onChange: (levels: SortLevel[]) => void;
+  /** The shared view's sort as text, shown while the member has none of their own. */
+  fallbackSummary?: string | undefined;
 }
 
 /** "Sắp xếp: Hạn ↑, Ưu tiên ↓" for the pill. */
@@ -50,7 +52,13 @@ export function sortSummary(
  * direction, the first level winning. The null rule is the field type's own
  * (empty last ascending, first descending). Changes the member's own view only.
  */
-export function SortMenu({ copy, fields, levels, onChange }: SortMenuProps) {
+export function SortMenu({
+  copy,
+  fields,
+  levels,
+  onChange,
+  fallbackSummary,
+}: SortMenuProps) {
   const summary = sortSummary(copy, fields, levels);
   const used = new Set(levels.map((level) => level.fieldId));
   const next = fields.find((field) => !used.has(field.id));
@@ -67,10 +75,12 @@ export function SortMenu({ copy, fields, levels, onChange }: SortMenuProps) {
         >
           <ArrowUpDown className="size-4" aria-hidden="true" />
           {copy.sort.trigger}
-          {summary ? (
+          {summary || fallbackSummary ? (
             <>
               {": "}
-              <b className="max-w-56 truncate font-semibold">{summary}</b>
+              <b className="max-w-56 truncate font-semibold">
+                {summary || fallbackSummary}
+              </b>
             </>
           ) : null}
         </Button>

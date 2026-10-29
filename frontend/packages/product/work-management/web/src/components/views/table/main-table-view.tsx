@@ -48,6 +48,8 @@ import {
   isKanbanCardOverdue,
 } from "../kanban/kanban-filter";
 import { useBoardViewState } from "../../filters/use-board-view-state";
+import { headerSortOf } from "./header-sort";
+import { fillFiltersCopy } from "../../filters/filters.copy";
 import { ViewStateBar } from "../../filters/view-state-bar";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
@@ -425,6 +427,19 @@ export function MainTableView({
       }),
     [table.lanes, hiddenByArchive],
   );
+  // The header marks what orders the rows: the member's first sort level when
+  // they have one (none when it is a field without a column), else the shared sort.
+  const personalSorts = view.applied.sorts;
+  const effectiveSort =
+    personalSorts.length > 0
+      ? headerSortOf(personalSorts[0]!, table.filterFields)
+      : table.sort;
+  const sharedSortSummary = fillFiltersCopy(
+    table.sort.direction === "asc"
+      ? filtersCopy.sort.summaryAsc
+      : filtersCopy.sort.summaryDesc,
+    { field: copy.columns[table.sort.key] },
+  );
   const projection = useMemo(
     () =>
       projectTableLanes({
@@ -707,7 +722,7 @@ export function MainTableView({
             onSearchChange: table.search.setQuery,
             hideDone: !showDone,
             onShowDone: () => setShowDone(true),
-            sort: table.sort,
+            sort: effectiveSort,
             viewBar: (
               <ViewStateBar
                 canSave={capabilities.canEditFields}
@@ -722,7 +737,13 @@ export function MainTableView({
                 }}
                 now={now}
                 sort
+                sortFallback={sharedSortSummary}
                 groupFields={groupableFields(table.filterFields)}
+                groupFallback={
+                  table.groupByField
+                    ? { fieldId: table.groupByField.id }
+                    : undefined
+                }
                 savedFilters={(save) => (
                   <SavedFiltersControl
                     workspaceId={workspaceId}

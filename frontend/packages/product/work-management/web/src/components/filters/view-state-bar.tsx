@@ -3,6 +3,7 @@ import { AlertCircle, Lock, RefreshCw, User, X } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import {
   conditionIssue,
+  type FieldRef,
   type FilterField,
   type MemberNames,
 } from "@notrelix/work-management-core";
@@ -36,7 +37,11 @@ export interface ViewStateBarProps {
   now: Date;
   /** Which of the sort, group and swimlane controls this view has. */
   sort?: boolean;
+  /** The shared view's sort as text, shown by the sort pill while the member has none. */
+  sortFallback?: string;
   groupFields?: readonly FilterField[];
+  /** The grouping the view has by default (Status), shown until the member picks one. */
+  groupFallback?: FieldRef | undefined;
   laneFields?: readonly FilterField[];
   /** The field that is the column of a Kanban; it cannot also be the lane. */
   blockedLaneFieldId?: string | undefined;
@@ -170,6 +175,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           fields={fields}
           levels={view.state.sorts}
           onChange={view.setSorts}
+          fallbackSummary={props.sortFallback}
         />
       ) : null}
       {props.groupFields ? (
@@ -178,6 +184,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           kind="group"
           fields={props.groupFields}
           value={view.state.group}
+          fallback={props.groupFallback}
           onChange={view.setGroup}
         />
       ) : null}

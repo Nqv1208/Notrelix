@@ -334,7 +334,13 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     expect(await style(filter, "font-weight")).toBe("400");
 
     const zone = c.zone;
-    expectRect(await rel(page, zone), b.zone, "time zone");
+    // The zone line gives way (clipped) so the bar stays on one row: same line as
+    // the mockup, ending 8 px before the primary action.
+    const zoneBox = await rel(page, zone);
+    expect(Math.abs(zoneBox.y - b.zone.y)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(zoneBox.x + zoneBox.width + 8 - b.primary.x),
+    ).toBeLessThanOrEqual(1);
     expect(await style(zone, "font-size")).toBe(TYPE.zone.size);
 
     const primary = c.primary;

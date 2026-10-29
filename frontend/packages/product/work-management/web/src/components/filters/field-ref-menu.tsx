@@ -28,6 +28,8 @@ export interface FieldRefMenuProps {
   fields: readonly FilterField[];
   value: FieldRef | undefined;
   onChange: (value: FieldRef | undefined) => void;
+  /** What shows while the member has not chosen (the view's own default, like Status for a Kanban); not styled as their choice. */
+  fallback?: FieldRef | undefined;
   /** A field that cannot be picked here and why ("đang là cột" for the Kanban column field). */
   blockedFieldId?: string | undefined;
 }
@@ -53,11 +55,13 @@ export function FieldRefMenu({
   kind,
   fields,
   value,
+  fallback,
   onChange,
   blockedFieldId,
 }: FieldRefMenuProps) {
   const t = kind === "group" ? copy.group : copy.lane;
-  const current = fields.find((field) => field.id === value?.fieldId);
+  const shown = value ?? fallback;
+  const current = fields.find((field) => field.id === shown?.fieldId);
   const Icon = kind === "group" ? Layers : Rows3;
   const sections = (["select", "person", "date", "checkbox"] as const).flatMap(
     (group) => {
@@ -65,14 +69,14 @@ export function FieldRefMenu({
       return inGroup.length > 0 ? [[group, inGroup] as const] : [];
     },
   );
-  const bucket = value?.bucket ?? "week";
+  const bucket = shown?.bucket ?? "week";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
-          className={cn(kanbanPillClass, current && activePillClass)}
+          className={cn(kanbanPillClass, value && current && activePillClass)}
         >
           <Icon className="size-4" aria-hidden="true" />
           {t.trigger}
@@ -90,7 +94,7 @@ export function FieldRefMenu({
           {t.label}
         </DropdownMenuLabel>
         <DropdownMenuRadioGroup
-          value={value?.fieldId ?? ""}
+          value={shown?.fieldId ?? ""}
           onValueChange={(fieldId) => {
             if (fieldId === "") return onChange(undefined);
             const picked = fields.find((field) => field.id === fieldId);

@@ -269,7 +269,7 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     expectRect(await rel(page, filter), b.filter, "Lọc");
     expect(await style(filter, "font-size")).toBe(TYPE.control.size);
 
-    const group = page.getByRole("button", { name: /^Nhóm theo/ });
+    const group = page.getByRole("button", { name: /^Nhóm/ });
     expectRect(await rel(page, group), b.group, "Nhóm theo");
     expect(await style(group, "font-size")).toBe(TYPE.control.size);
     expect(

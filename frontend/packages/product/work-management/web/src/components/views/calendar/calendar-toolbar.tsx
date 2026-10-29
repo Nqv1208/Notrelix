@@ -188,9 +188,11 @@ export function CalendarToolbar({
 
       {viewBar}
 
-      <span className="flex-1" />
-
-      <span className="text-xs leading-[1.45] text-meta-foreground">
+      {/* The zone line gives way (clipped, full text in the title) so the bar stays on one row. */}
+      <span
+        title={zoneLabel}
+        className="min-w-0 flex-1 basis-0 truncate text-right text-xs leading-[1.45] text-meta-foreground"
+      >
         {zoneLabel}
       </span>
 

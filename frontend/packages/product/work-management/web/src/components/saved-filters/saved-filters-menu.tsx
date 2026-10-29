@@ -54,6 +54,8 @@ export interface SavedFiltersMenuProps {
   onSetVisibility: (filter: SavedFilter, visibility: "board" | "me") => void;
   onRemove: (filter: SavedFilter) => void;
   /** The "Lưu bộ lọc" form is controlled by the host so the removed-field warning can open it. */
+  /** Only the icon until a filter is applied (a crowded bar, like the Calendar's); the name stays for assistive technology. */
+  compact?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
 }
@@ -243,6 +245,7 @@ function SavedFiltersList({
   onRename,
   onSetVisibility,
   onRemove,
+  compact,
 }: SavedFiltersMenuProps) {
   const t = copy.menu;
   const [open, setOpen] = useState(false);
@@ -291,7 +294,7 @@ function SavedFiltersList({
               {applied.name}
             </b>
           ) : (
-            t.trigger
+            <span className={compact ? "sr-only" : undefined}>{t.trigger}</span>
           )}
           <ChevronDown className="size-3.5" aria-hidden="true" />
         </Button>

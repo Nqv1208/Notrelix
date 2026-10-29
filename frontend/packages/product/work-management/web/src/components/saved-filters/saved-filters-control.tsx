@@ -27,6 +27,7 @@ export interface SavedFiltersControlProps {
    */
   onApply: (criteria: SavedFilterCriteria) => void;
   /** The "Lưu bộ lọc" form, controlled by the filter bar (its removed-field warning opens it). */
+  compact?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
 }
@@ -55,6 +56,7 @@ export function SavedFiltersControl({
   onApply,
   saveOpen,
   onSaveOpenChange,
+  compact,
 }: SavedFiltersControlProps) {
   const copy = useSavedFiltersCopy();
   const query = useSavedFilters(boardId, workspaceId);
@@ -99,6 +101,7 @@ export function SavedFiltersControl({
       filters={filters}
       appliedId={applied?.id ?? null}
       canEdit={canEdit}
+      {...(compact ? { compact } : {})}
       {...(saveOpen !== undefined ? { saveOpen } : {})}
       {...(onSaveOpenChange ? { onSaveOpenChange } : {})}
       canSaveCurrent={Boolean(filter) && applied === undefined}

@@ -899,6 +899,11 @@ export function KanbanView({
               }}
               now={now}
               groupFields={columnFields}
+              groupFallback={
+                kanban.groupByField
+                  ? { fieldId: kanban.groupByField.id }
+                  : undefined
+              }
               laneFields={groupableFields(kanban.filterFields)}
               blockedLaneFieldId={kanban.groupByField?.id}
               savedFilters={(save) => (

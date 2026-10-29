@@ -34,7 +34,8 @@ export function TableHeaderRow({
   columns: readonly TableColumnSpec[];
   /** Effective widths (saved widths with the live drag applied). */
   widths: TableColumnWidths;
-  sort: TableSort;
+  /** The effective sort the header marks; none when the member sorts by a field without a column. */
+  sort: TableSort | null;
   allChecked: boolean | "mixed";
   canSelect: boolean;
   onToggleAll: (selectAll: boolean) => void;
@@ -57,9 +58,9 @@ export function TableHeaderRow({
         />
       </div>
       {columns.map((column) => {
-        const sorted = sort.key === column.id;
+        const sorted = sort?.key === column.id;
         const Icon = column.Icon;
-        const Arrow = sort.direction === "asc" ? ArrowUp : ArrowDown;
+        const Arrow = sort?.direction === "asc" ? ArrowUp : ArrowDown;
         const name = copy.columns[column.id];
         return (
           <div
@@ -67,7 +68,7 @@ export function TableHeaderRow({
             role="columnheader"
             aria-sort={
               sorted
-                ? sort.direction === "asc"
+                ? sort?.direction === "asc"
                   ? "ascending"
                   : "descending"
                 : undefined

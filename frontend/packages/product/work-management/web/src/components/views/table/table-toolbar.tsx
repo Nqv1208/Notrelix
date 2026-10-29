@@ -28,8 +28,8 @@ export interface MainTableToolbarProps {
   onShowDone: () => void;
   /** The member's filter, sort, group and saved-filter controls (`ViewStateBar`), after the search. */
   viewBar: ReactNode;
-  /** The sort the table header marks: the shared view's single column sort. */
-  sort: TableSort;
+  /** The effective sort the table header marks: the member's first level, else the shared view's. */
+  sort: TableSort | null;
   hiddenColumnIds: readonly string[];
   onColumnVisibleChange: (columnId: string, visible: boolean) => void;
   density: TableDensity;

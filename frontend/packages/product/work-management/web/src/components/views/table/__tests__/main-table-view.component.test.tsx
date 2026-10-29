@@ -460,6 +460,41 @@ describe("MainTableView on the ERP board", () => {
     );
   });
 
+  it("marks the shared sort in the header and the sort pill while the member has none of their own", async () => {
+    renderTable(erpOwnerAccess());
+    await ready();
+    expect(
+      screen
+        .getByRole("columnheader", { name: /^Hạn/ })
+        .getAttribute("aria-sort"),
+    ).toBe("ascending");
+    expect(
+      screen.getByRole("button", { name: /^Sắp xếp: Hạn ↑/ }),
+    ).toBeTruthy();
+  });
+
+  it("marks the member's first sort level in the header once they sort", async () => {
+    renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: /^Sắp xếp/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Thêm cách sắp xếp" }),
+    );
+    // The first field is the title: it is the column the header marks now, and the shared Hạn is not.
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("columnheader", { name: /^Tên công việc/ })
+          .getAttribute("aria-sort"),
+      ).toBe("ascending"),
+    );
+    expect(
+      screen
+        .getByRole("columnheader", { name: /^Hạn/ })
+        .getAttribute("aria-sort"),
+    ).toBeNull();
+  });
+
   it("saves a resized column with the view and drops it again on reset", async () => {
     const { boards } = renderTable(erpOwnerAccess());
     await ready();

@@ -449,6 +449,7 @@ export function BoardCalendarView({
             now={now}
             savedFilters={(save) => (
               <SavedFiltersControl
+                compact
                 workspaceId={workspaceId}
                 boardId={boardId}
                 filter={serializeCompoundFilter(view.applied.filter)}
