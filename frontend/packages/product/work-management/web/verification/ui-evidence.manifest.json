@@ -1004,7 +1004,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-filter-menu.tsx"],
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
@@ -1063,24 +1063,248 @@
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         },
         {
-          "id": "filter",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "filter-chip",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "group-by",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
           "id": "read-only",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         },
         {
           "id": "no-results",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.filters.bar",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/filters/view-state-bar.tsx",
+      "coveredSources": [
+        "src/components/filters/field-ref-menu.tsx",
+        "src/components/filters/filter-builder.tsx",
+        "src/components/filters/sort-menu.tsx"
+      ],
+      "stories": [
+        {
+          "id": "work-management-filters-view-bar--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-filters-view-bar--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-filters-view-bar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "builder",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "chips",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "sort",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "group",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "personal",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "stale",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "save-failed",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        },
+        {
+          "id": "viewer",
+          "testFile": "src/components/filters/__tests__/view-state-bar.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.kanban.swimlanes",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/views/kanban/kanban-swimlane-board.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-kanban-swimlanes--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--by-priority",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData", "ReadOnly"],
+        "delegated": [
+          {
+            "state": "Loading",
+            "surfaceId": "wm.kanban.loading",
+            "targetState": "Loading"
+          },
+          {
+            "state": "Error",
+            "surfaceId": "wm.kanban.unavailable",
+            "targetState": "Error"
+          },
+          {
+            "state": "HighDensity",
+            "surfaceId": "wm.kanban.board",
+            "targetState": "HighDensity"
+          }
+        ],
+        "notApplicable": [
+          {
+            "state": "PermissionLimited",
+            "reason": "Board access gives one read-only presentation for commenters and viewers (no drag), evidenced by ReadOnly; there is no partially permitted swimlane state.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "board",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "collapse",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "both",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "refused",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "wip",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/views/kanban/__tests__/kanban-swimlane-board.interaction.component.test.tsx"
         }
       ]
     },
@@ -1601,18 +1825,6 @@
         },
         {
           "id": "chips",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "filter",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "sort",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "group-by",
           "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
         },
         {

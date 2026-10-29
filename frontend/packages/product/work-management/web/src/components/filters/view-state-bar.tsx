@@ -15,7 +15,7 @@ import { FilterBuilder } from "./filter-builder";
 import { FieldRefMenu } from "./field-ref-menu";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
 import { SortMenu } from "./sort-menu";
-import type { ViewStateControl } from "./use-view-state";
+import type { ViewStateControl } from "./view-state-control";
 
 const MAX_CHIPS = 3;
 

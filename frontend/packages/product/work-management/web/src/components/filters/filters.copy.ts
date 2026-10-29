@@ -4,7 +4,7 @@
  * wording (WM-Filter-* artboards). Placeholders use the catalog `{{name}}` form.
  */
 export const en = {
-  field: { title: "Title", label: "Labels" },
+  field: { title: "Title", label: "Labels", assignee: "Assignee" },
   filter: {
     trigger: "Filter",
     title: "Filter items",
@@ -191,7 +191,7 @@ export const en = {
 export type FiltersCopy = typeof en;
 
 export const vi: FiltersCopy = {
-  field: { title: "Tiêu đề", label: "Nhãn" },
+  field: { title: "Tiêu đề", label: "Nhãn", assignee: "Người phụ trách" },
   filter: {
     trigger: "Lọc",
     title: "Lọc việc",

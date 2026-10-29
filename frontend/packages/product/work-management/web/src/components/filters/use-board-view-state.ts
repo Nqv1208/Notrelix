@@ -33,6 +33,7 @@ export function useBoardViewState(
       names: {
         title: copy.field.title,
         label: copy.field.label,
+        assignee: copy.field.assignee,
         overdue: copy.filter.presets.overdue,
       },
       bucketLabel: (key, bucket) => bucketLabel(copy, key, bucket),

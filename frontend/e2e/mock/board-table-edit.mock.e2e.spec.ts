@@ -135,8 +135,14 @@ test.describe("Board table, in-place edits (owner)", () => {
   }) => {
     await openTable(page);
     await page.getByRole("button", { name: /^Lọc/ }).click();
-    await page.getByText("Đặng Minh Tuấn").first().click();
-    await page.keyboard.press("Escape");
+    const dialog = page.getByRole("dialog", { name: "Lọc việc" });
+    await dialog.getByRole("button", { name: "Thêm điều kiện" }).click();
+    await dialog
+      .getByLabel(/^Trường/)
+      .first()
+      .selectOption({ label: "Người phụ trách" });
+    await dialog.getByRole("option", { name: "Đặng Minh Tuấn" }).click();
+    await dialog.getByRole("button", { name: "Xong" }).click();
     await expect(
       page.getByText(
         "Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.",

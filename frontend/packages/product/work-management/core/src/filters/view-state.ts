@@ -72,6 +72,8 @@ export const isViewStateEmpty = (state: ViewState): boolean =>
 export const TITLE_FIELD_ID = "$title";
 export const LABEL_FIELD_ID = "$label";
 export const OVERDUE_FIELD_ID = "$overdue";
+/** The people on an item, for a board whose fields have no Person field of its own. */
+export const ASSIGNEE_FIELD_ID = "$assignee";
 
 export interface FilterField {
   readonly id: string;
@@ -86,7 +88,13 @@ export interface FilterFieldInput {
   readonly fieldDefinitions: readonly FieldDefinition[];
   readonly members: readonly { userId: string; name: string }[];
   readonly labels: readonly { id: string; name: string }[];
-  readonly names: { title: string; label: string; overdue: string };
+  readonly names: {
+    title: string;
+    label: string;
+    overdue: string;
+    /** Names the assignee filter of a board that has no Person field; absent: that board has none. */
+    assignee?: string;
+  };
   /** Whether the card counts as overdue (the same rule as its due wording). */
   readonly isOverdue: (card: Card) => boolean;
 }
@@ -174,7 +182,19 @@ export function buildFilterFields(input: FilterFieldInput): FilterField[] {
     builtin: true,
     read: (card) => input.isOverdue(card),
   };
-  return [title, ...own, label, overdue];
+  const assignee: FilterField[] =
+    !person && input.names.assignee
+      ? [
+          {
+            id: ASSIGNEE_FIELD_ID,
+            name: input.names.assignee,
+            field: pseudo(ASSIGNEE_FIELD_ID, input.names.assignee, "person"),
+            builtin: true,
+            read: (card) => card.members.map((member) => member.userId),
+          },
+        ]
+      : [];
+  return [title, ...own, ...assignee, label, overdue];
 }
 
 function cellValueFor(field: FieldDefinition, card: Card) {
@@ -537,9 +557,9 @@ export function legacyFacetsToCompound(
         values: ids,
       });
   }
-  if (person && facets.assigneeIds.length > 0)
+  if (facets.assigneeIds.length > 0)
     conditions.push({
-      fieldId: person.id,
+      fieldId: person?.id ?? ASSIGNEE_FIELD_ID,
       operator: "has_any",
       values: facets.assigneeIds,
     });

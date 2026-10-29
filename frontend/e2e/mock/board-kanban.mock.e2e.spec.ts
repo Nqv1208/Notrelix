@@ -146,16 +146,26 @@ for (const viewport of VIEWPORTS) {
       page,
     }) => {
       await openBoard(page);
-      await page.getByRole("button", { name: "Lọc", exact: true }).click();
-      await page.getByRole("menuitemcheckbox", { name: "Quá hạn" }).click();
-      await page.getByRole("menuitemcheckbox", { name: "Thấp" }).click();
-      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: /^Lọc/ }).click();
+      const dialog = page.getByRole("dialog", { name: "Lọc việc" });
+      await dialog.getByRole("button", { name: "Thêm điều kiện" }).click();
+      await dialog
+        .getByLabel(/^Trường/)
+        .first()
+        .selectOption({ label: "Quá hạn" });
+      await dialog.getByRole("button", { name: "Thêm điều kiện" }).click();
+      await dialog
+        .getByLabel(/^Trường/)
+        .nth(1)
+        .selectOption({ label: "Ưu tiên" });
+      await dialog.getByRole("option", { name: "Thấp" }).click();
+      await dialog.getByRole("button", { name: "Xong" }).click();
 
       const bar = page
         .getByRole("status")
         .filter({ hasText: "Không có việc khớp bộ lọc" });
       await expect(bar).toContainText("16 việc của board đang bị ẩn");
-      expect(new URL(page.url()).searchParams.get("filter")).toBe("p.low~o");
+      expect(new URL(page.url()).searchParams.get("filter")).toMatch(/^c2:/);
       await expect.poll(() => laneCounts(page)).toEqual(["0", "0", "0", "0"]);
 
       await bar.getByRole("button", { name: "Bỏ lọc" }).click();

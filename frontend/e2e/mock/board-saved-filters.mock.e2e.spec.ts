@@ -64,7 +64,7 @@ test.describe("Board saved filters (owner)", () => {
 
     await page.getByRole("button", { name: "Bộ lọc đã lưu" }).click();
     await page.getByRole("button", { name: `Áp dụng bộ lọc ${NAME}` }).click();
-    await expect(page).toHaveURL(/filter=p\.urgent/);
+    await expect(page).toHaveURL(/filter=c2/);
     // The layout is still the board's own: no other view was opened or made.
     await expect(page).toHaveURL(/view=table/);
   });
@@ -133,9 +133,10 @@ test.describe("Board saved filters (viewer)", () => {
 
   test("a viewer cannot save a filter", async ({ page }) => {
     await openFilteredTable(page);
+    // Saving is shown off with its reason; filtering itself still works.
     await expect(
       page.getByRole("button", { name: "Lưu bộ lọc", exact: true }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
     await page.getByRole("button", { name: "Bộ lọc đã lưu" }).click();
     await expect(page.getByText(/Bạn chỉ xem board này/)).toBeVisible();
   });

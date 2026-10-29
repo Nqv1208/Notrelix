@@ -23,6 +23,7 @@ import {
   type ViewState,
 } from "@notrelix/work-management-core";
 import { parseKanbanFilter } from "../views/kanban/kanban-filter";
+import type { ViewStateControl } from "./view-state-control";
 
 type ParamChange = (
   value: string | undefined,
@@ -57,7 +58,7 @@ const SAVE_DELAY_MS = 400;
  * leaves the screen as it is and offers "Thử lại". "Về view chung" clears all
  * of it, including the saved criteria. The shared view is never written.
  */
-export function useViewState(options: UseViewStateOptions) {
+export function useViewState(options: UseViewStateOptions): ViewStateControl {
   const {
     boardId,
     workspaceId,
@@ -221,4 +222,4 @@ export function useViewState(options: UseViewStateOptions) {
   };
 }
 
-export type ViewStateControl = ReturnType<typeof useViewState>;
+export type { ViewStateControl };

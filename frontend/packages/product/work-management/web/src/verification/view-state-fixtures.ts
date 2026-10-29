@@ -17,7 +17,7 @@ import {
   filtersCopy,
   type FiltersCopy,
 } from "../components/filters/filters.copy";
-import type { ViewStateControl } from "../components/filters/use-view-state";
+import type { ViewStateControl } from "../components/filters/view-state-control";
 import { ViewStateBar } from "../components/filters/view-state-bar";
 
 /** Mon 12/10/2026, the day the mockups are drawn for. */
@@ -133,6 +133,7 @@ export interface ViewBarOptions {
   counts?: { shown: number; total: number };
   fields?: readonly FilterField[];
   saved?: ReactNode;
+  canSave?: boolean;
   onSaveAsNew?: () => void;
 }
 
@@ -164,6 +165,7 @@ export function erpViewBar(options: ViewBarOptions = {}): ReactNode {
       ? { laneFields: groupable, blockedLaneFieldId: "field-erp-status" }
       : {}),
     savedFilters: options.saved,
+    ...(options.canSave === undefined ? {} : { canSave: options.canSave }),
     onSaveAsNew: options.onSaveAsNew,
   });
 }
