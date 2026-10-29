@@ -1351,6 +1351,8 @@ Do not silently discard required messages because a transport adapter was miscon
 
 Safe degradation depends on the declared durability contract.
 
+Health probes report the health-check result through the HTTP status code: `/health/ready` (checks tagged `ready`) and `/health` answer 503 when the report is Unhealthy and 200 for Healthy or Degraded, with the status named in the body. `/health/live` never depends on a dependency. A startup probe is a separate, not yet implemented, contract.
+
 ---
 
 # 83. Infrastructure broker adapter boundary
