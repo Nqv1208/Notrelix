@@ -59,7 +59,8 @@ public sealed class CommentTargetAccess : ICommentTargetAccess
 
         // Same permission-only probe the pipeline uses for additional actions; the request is never dispatched.
         var descriptor = _descriptors.GetRequired(typeof(UpdateCommentCommand))
-            with { Access = new AccessRequirements(true, false, false, false) };
+            with
+        { Access = new AccessRequirements(true, false, false, false) };
         var snapshot = current with { Resource = target, Scope = ApplicationScopeKind.Resource };
         var probe = new TargetProbe(action.Value, target);
 

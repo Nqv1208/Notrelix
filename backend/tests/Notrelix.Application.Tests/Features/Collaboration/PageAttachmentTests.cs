@@ -12,6 +12,7 @@ using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardIt
 using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachmentContent;
 using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachments;
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Comments.Services;
 using Notrelix.Domain.Collaboration.Attachments;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Testing.Application.Fakes;
@@ -77,6 +78,13 @@ public sealed class PageAttachmentTests
         public Task<ActorSnapshot?> FindAsync(Guid userId, CancellationToken ct) => Task.FromResult<ActorSnapshot?>(null);
     }
 
+    private static ICommentTargetAccess AllowAll()
+    {
+        var access = new Mock<ICommentTargetAccess>();
+        access.Setup(a => a.HasAsync(It.IsAny<ResourceRef>(), It.IsAny<CommentTargetRight>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        return access.Object;
+    }
+
     private ICurrentUser CurrentUser()
     {
         var user = new Mock<ICurrentUser>();
@@ -112,7 +120,7 @@ public sealed class PageAttachmentTests
         new GetPageAttachmentContentQuery(PageId, attachment).Action.Should().Be(PermissionAction.ViewPage);
         new UploadPageAttachmentCommand(PageId, "a.png", Stream.Null).Action.Should().Be(PermissionAction.UpdatePage);
         new CreatePageAttachmentCommand(PageId, "a", "https://example.com", null, null).Action.Should().Be(PermissionAction.UpdatePage);
-        new DeletePageAttachmentCommand(PageId, attachment).Action.Should().Be(PermissionAction.UpdatePage);
+        new DeletePageAttachmentCommand(PageId, attachment).Action.Should().Be(PermissionAction.ViewPage);
 
         foreach (var resource in new[]
         {
@@ -219,7 +227,7 @@ public sealed class PageAttachmentTests
     public async Task DeletePage_RemovesOnlyAnAttachmentOfThatPage()
     {
         var row = await UploadAsync(PageId);
-        var handler = new DeletePageAttachmentCommandHandler(Db(), CurrentUser(), new Clock());
+        var handler = new DeletePageAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll());
 
         var wrongPage = () => handler.Handle(new DeletePageAttachmentCommand(OtherPageId, row.Id), default);
         await wrongPage.Should().ThrowAsync<NotFoundException>();
@@ -235,7 +243,7 @@ public sealed class PageAttachmentTests
     public async Task BoardItemDelete_DoesNotRemoveAPageAttachment()
     {
         var row = await UploadAsync(PageId);
-        var handler = new DeleteAttachmentCommandHandler(Db(), CurrentUser(), new Clock());
+        var handler = new DeleteAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll());
 
         var act = () => handler.Handle(new DeleteAttachmentCommand(row.Id), default);
 

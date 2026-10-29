@@ -607,6 +607,8 @@ Governance/source owner defines required permission semantics.
 
 Author ownership and moderation/admin capabilities are distinct.
 
+Editing and deleting a comment belong to its author alone, and only while the author can still view the target; another person who can view the target is refused, and a person who cannot is told the comment does not exist. Resolving and reopening a thread belong to the thread starter or a person who may edit the target. Deleting an attachment belongs to its uploader or a person who may edit the target. The workspace Owner holds edit rights on every target, so the Owner resolves, reopens and deletes attachments but does not edit or delete another person's comment. Moderator delete of others' comments is not defined yet.
+
 Do not use one generic role shortcut.
 
 # 73. Mention privacy

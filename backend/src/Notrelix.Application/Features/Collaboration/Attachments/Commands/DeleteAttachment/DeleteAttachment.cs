@@ -1,12 +1,14 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Comments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 
 public record DeleteAttachmentCommand(Guid AttachmentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.UpdateItem;
+    // A coarse gate; the uploader-or-editor rule is decided in the handler from the attachment's target.
+    public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.attachment"), AttachmentId);
 }
 
@@ -15,15 +17,18 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICommentTargetAccess _access;
 
     public DeleteAttachmentCommandHandler(
         ICollaborationDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ICommentTargetAccess access)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _access = access;
     }
 
     public async Task<Result> Handle(DeleteAttachmentCommand request, CancellationToken ct)
@@ -38,6 +43,7 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
             throw new NotFoundException(nameof(Attachment), request.AttachmentId);
 
         var now = _dateTimeProvider.UtcNow;
+        await AttachmentAccessRules.RequireDeleterAsync(attachment, _currentUser.UserId, _access, ct);
         attachment.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
