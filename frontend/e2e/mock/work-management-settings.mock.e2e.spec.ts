@@ -174,7 +174,7 @@ test.describe("views and the item sheet", () => {
     await expect(
       page.getByRole("region", { name: "Cần làm", exact: true }),
     ).toBeVisible();
-    await page.getByRole("button", { name: /^Group by/ }).click();
+    await page.getByRole("button", { name: /^Group/ }).click();
     await page.getByRole("menuitemradio", { name: "Phân hệ ERP" }).click();
     await expect(page).toHaveURL(/groupBy=mock-erp-col-module/);
     await expect(

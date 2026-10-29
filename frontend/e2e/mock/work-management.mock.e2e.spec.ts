@@ -52,11 +52,16 @@ test.describe("Kanban item detail through the item search parameter", () => {
     page.on("pageerror", (error) => errors.push(error.message));
 
     // A real Kanban filter (every status of the board), so the view keeps it.
-    const filter =
+    const legacyFilter =
       "s.mock-status-todo.mock-status-doing.mock-status-review.mock-status-done";
     await page.goto(
-      `${board}?view=kanban&filter=${filter}&sort=due&groupBy=status`,
+      `${board}?view=kanban&filter=${legacyFilter}&sort=due&groupBy=status`,
     );
+    // The older facet string is rewritten once to its compound form; the view keeps that.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("filter"))
+      .toMatch(/^c2:/);
+    const filter = new URL(page.url()).searchParams.get("filter");
     await page
       .getByRole("button", { name: "Ship mock runtime", exact: true })
       .click();
