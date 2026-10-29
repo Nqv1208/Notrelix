@@ -1230,3 +1230,92 @@ export function criticalIds(
   }
   return critical;
 }
+
+/**
+ * The chain a new link would close into a cycle (WM-039), or null when it is
+ * safe. A link `from -> to` means `to` waits for `from`; it closes a cycle
+ * when `from` already waits, directly or through others, for `to`. The chain
+ * reads `[from, to, ..., from]`.
+ */
+export function findLinkCycle(
+  links: readonly TimelineLink[],
+  from: string,
+  to: string,
+): string[] | null {
+  if (from === to) return [from, from];
+  const next = new Map<string, string[]>();
+  for (const link of links) {
+    next.set(link.from, [...(next.get(link.from) ?? []), link.to]);
+  }
+  const parent = new Map<string, string>();
+  const seen = new Set<string>([to]);
+  const queue = [to];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    if (current === from) {
+      const path = [from];
+      for (let at = from; at !== to;) {
+        at = parent.get(at) as string;
+        path.unshift(at);
+      }
+      return [from, ...path];
+    }
+    for (const child of next.get(current) ?? []) {
+      if (seen.has(child)) continue;
+      seen.add(child);
+      parent.set(child, current);
+      queue.push(child);
+    }
+  }
+  return null;
+}
+
+/** Whether `from -> to` is already one of the links. */
+export function hasLink(
+  links: readonly TimelineLink[],
+  from: string,
+  to: string,
+): boolean {
+  return links.some((link) => link.from === from && link.to === to);
+}
+
+/** The first and last day of the dated items (phases and milestones included), and how many items have them. */
+export function datedRange(groups: readonly TimelineGroup[]): {
+  from: number;
+  to: number;
+  count: number;
+} | null {
+  let from = Infinity;
+  let to = -Infinity;
+  let count = 0;
+  for (const group of groups) {
+    for (const item of group.items) {
+      const first = item.startDay ?? item.dueDay;
+      const last = item.dueDay ?? item.startDay;
+      if (!first || !last) continue;
+      from = Math.min(from, dayNumber(first));
+      to = Math.max(to, dayNumber(last));
+      count += 1;
+    }
+  }
+  return count === 0 ? null : { from, to, count };
+}
+
+/**
+ * The finest scale whose whole window holds the dated range inside `width`
+ * chart pixels, centred on the range; Month when none does.
+ */
+export function fitTimeline(
+  groups: readonly TimelineGroup[],
+  width: number,
+): { scale: TimelineScale; anchor: DayKey } | null {
+  const range = datedRange(groups);
+  if (!range) return null;
+  const anchor = fromDayNumber(Math.round((range.from + range.to) / 2));
+  const days = range.to - range.from + 1;
+  const scale =
+    (["day", "week"] as const).find(
+      (candidate) => days * scaleSpec(candidate, anchor).ppd + 48 <= width,
+    ) ?? "month";
+  return { scale, anchor };
+}

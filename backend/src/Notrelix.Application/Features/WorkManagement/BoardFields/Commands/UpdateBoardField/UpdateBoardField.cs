@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Domain.WorkManagement.Formulas;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 
@@ -53,8 +54,11 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
 
         if (request.Settings is not null)
         {
-            var settings = FieldSettings.Create(JsonValue.Create(request.Settings)!);
+            var self = new ComputedFieldInput(column.Id, column.Name, column.Type, request.Settings);
+            var normalized = await ComputedFieldGuard.NormalizeAsync(_context, column.BoardId, self, column.Type, request.Settings, ct);
+            var settings = FieldSettings.Create(JsonValue.Create(normalized)!);
             column.UpdateSettings(settings, _currentUser.UserId, now);
+            await ComputedFieldGuard.EnsureAsync(_context, column, ct);
         }
 
         return Result.Success();

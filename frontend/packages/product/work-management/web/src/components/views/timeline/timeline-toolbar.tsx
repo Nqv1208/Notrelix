@@ -24,6 +24,10 @@ export interface TimelineToolbarProps {
   scale: TimelineScale;
   onScaleChange: (scale: TimelineScale) => void;
   onToday: () => void;
+  /** The window is on today: "Hôm nay" is dimmed and says so. */
+  atToday?: boolean;
+  /** "Vừa khít": absent when no item has a date. */
+  fit?: { tip: string; note: string; onFit: () => void };
   onStep: (direction: -1 | 1) => void;
   /**
    * The dependency lines: `available` is whether any item has a dependency.
@@ -34,6 +38,8 @@ export interface TimelineToolbarProps {
   undatedCount: number;
   /** Where the items without a date can be given one (the Calendar view). */
   onOpenUndated?: () => void;
+  /** Set when the count opens the tray: whether it is open. */
+  trayOpen?: boolean;
   undatedHref?: string;
   /** False for a viewer: the add button is not shown. */
   canAdd: boolean;
@@ -53,11 +59,14 @@ export function TimelineToolbar({
   scale,
   onScaleChange,
   onToday,
+  atToday = false,
+  fit,
   onStep,
   links,
   criticalPath,
   undatedCount,
   onOpenUndated,
+  trayOpen,
   undatedHref,
   canAdd,
   onAddItem,
@@ -92,10 +101,14 @@ export function TimelineToolbar({
       className="flex flex-wrap items-center gap-2 px-4 py-2.5 sm:px-6"
     >
       <Button
-        variant="outline"
+        variant={atToday ? "outline" : "default"}
         size="sm"
-        className={timelineOutlineButtonClass}
+        className={cn(
+          timelineOutlineButtonClass,
+          atToday && "text-meta-foreground",
+        )}
         aria-label={copy.todayLabel}
+        aria-current={atToday ? "date" : undefined}
         onClick={onToday}
       >
         {copy.today}
@@ -149,6 +162,18 @@ export function TimelineToolbar({
           );
         })}
       </div>
+
+      {fit ? (
+        <Button
+          variant="outline"
+          size="sm"
+          className={timelineOutlineButtonClass}
+          title={`${fit.tip}. ${fit.note}`}
+          onClick={fit.onFit}
+        >
+          {copy.fit.label}
+        </Button>
+      ) : null}
 
       <Button
         variant="ghost"
@@ -222,6 +247,7 @@ export function TimelineToolbar({
         {undatedCount > 0 ? (
           <a
             href={undatedHref ?? "#"}
+            aria-expanded={trayOpen}
             className="text-crumb leading-[1.45] font-semibold text-state-selected-foreground no-underline"
             onClick={openUndated}
           >

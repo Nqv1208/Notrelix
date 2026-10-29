@@ -64,8 +64,11 @@ export function FieldPanel({
   onClose,
   onArchive,
   onDelete,
+  onEditComputed,
 }: {
   field: BoardSettingsFieldDto;
+  /** Present for a Formula or Rollup: opens its definition dialog. */
+  onEditComputed?: () => void;
   onClose: () => void;
   /** Absent when the product has no archive of a field yet. */
   onArchive?: () => void;
@@ -191,6 +194,31 @@ export function FieldPanel({
             className={INPUT_CLASS}
           />
         </FormGroup>
+
+        {onEditComputed ? (
+          <FormGroup
+            label={
+              field.type === "formula"
+                ? copy.computedDialog.expression
+                : copy.computedDialog.rollupFunction
+            }
+          >
+            <div className={cn(INPUT_CLASS, "font-mono text-[12.5px]")}>
+              {field.type === "formula"
+                ? (field.computed?.expression ?? "—")
+                : `${copy.computedDialog.functionNames[field.computed?.rollupFunction ?? "count"]}`}
+            </div>
+            <button
+              type="button"
+              onClick={onEditComputed}
+              className={cn(BUTTON_CLASS.outline, "mt-1.5")}
+            >
+              {field.type === "formula"
+                ? copy.computedDialog.editFormula
+                : copy.computedDialog.editRollup}
+            </button>
+          </FormGroup>
+        ) : null}
 
         <FormGroup label={t.key} hint={t.keyHint}>
           <div

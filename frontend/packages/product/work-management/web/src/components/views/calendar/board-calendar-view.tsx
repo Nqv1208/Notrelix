@@ -48,7 +48,9 @@ import {
   zonedInstant,
 } from "./calendar-entries";
 import {
+  addDays,
   diffDays,
+  formatDayMonth,
   toDayKey,
   type CalendarDateBasis,
   type CalendarEntry,
@@ -59,6 +61,7 @@ import { useCalendarCopy } from "./use-calendar-copy";
 
 /** The hour a due date gets when the Calendar sets one from a day alone. */
 const DEFAULT_DUE_HOUR = 17;
+const DEFAULT_START_HOUR = 8;
 
 type ParamChange = (
   value: string | undefined,
@@ -183,6 +186,33 @@ export function BoardCalendarView({
       }),
     [kanban.lanes, today, copy, timeZone, shownPlanItems],
   );
+  // A refused write keeps the new dates on screen until it is retried or the
+  // item is reloaded: never a silent revert.
+  const [unsaved, setUnsaved] = useState<
+    ReadonlyMap<string, { startDay: DayKey; endDay: DayKey }>
+  >(new Map());
+  const setUnsavedDays = (
+    id: string,
+    days: { startDay: DayKey; endDay: DayKey } | null,
+  ) =>
+    setUnsaved((current) => {
+      const next = new Map(current);
+      if (days) next.set(id, days);
+      else next.delete(id);
+      return next;
+    });
+
+  // Dates a refused write left on screen replace the stored ones.
+  const shownEntries = useMemo(
+    () =>
+      unsaved.size === 0
+        ? built.entries
+        : built.entries.map((entry) => {
+            const days = unsaved.get(entry.id);
+            return days ? { ...entry, ...days } : entry;
+          }),
+    [built.entries, unsaved],
+  );
   const undatedTotal = useMemo(
     () =>
       buildCalendarEntries({ lanes: kanban.allLanes, today, copy, timeZone })
@@ -205,43 +235,152 @@ export function BoardCalendarView({
       toast.error(fillCopy(copy.quickCreate.failed, { title: input.title })),
   });
 
-  const reportMoveFailure = (title: string) =>
-    toast.error(fillCopy(copy.reschedule.failed, { title }), {
-      id: `calendar-write-${title}`,
-    });
-
-  const handleReschedule = (entry: CalendarEntry, toDay: DayKey) => {
-    const card = cardsById.get(entry.id);
-    const due = card ? cardDue(card) : undefined;
-    if (!card || !due || !canEdit) return;
-    // The span keeps its length: the start moves by as many days as the due.
-    const shift = diffDays(entry.endDay, toDay);
-    if (shift === 0) return;
+  type DatePatch = { startDate: string | null; dueDate: string | null };
+  const nameOf = (card: Card) => card.itemKey ?? card.title;
+  const isConflict = (error: unknown) =>
+    (error as { kind?: unknown } | null)?.kind === "conflict" ||
+    (error as { status?: number } | null)?.status === 409;
+  /**
+   * Writes an item's dates. Success says what moved and offers Hoàn tác (the
+   * previous dates); failure keeps the new position with Thử lại, a version
+   * conflict offers Tải lại instead.
+   */
+  const writeDates = (
+    card: Card,
+    patch: DatePatch,
+    previous: DatePatch,
+    shown: { startDay: DayKey; endDay: DayKey },
+    message: string,
+    isUndo = false,
+  ) => {
+    const text = copy.scheduleToast;
+    const toastId = `calendar-write-${card.id}`;
     updateCard.mutate(
+      { cardId: card.id, patch },
       {
-        cardId: card.id,
-        patch: {
-          dueDate: shiftInstant(due, shift),
-          ...(card.startDate
-            ? { startDate: shiftInstant(card.startDate, shift) }
-            : {}),
+        onSuccess: () => {
+          setUnsavedDays(card.id, null);
+          if (isUndo) {
+            toast.success(text.undone, { id: toastId });
+            return;
+          }
+          toast.success(message, {
+            id: toastId,
+            duration: 8000,
+            action: {
+              label: text.undo,
+              onClick: () =>
+                writeDates(card, previous, patch, shown, message, true),
+            },
+          });
+        },
+        onError: (error: unknown) => {
+          if (isConflict(error)) {
+            setUnsavedDays(card.id, null);
+            toast.error(fillCopy(text.conflict, { key: nameOf(card) }), {
+              id: toastId,
+              description: text.conflictNote,
+              action: {
+                label: text.reload,
+                onClick: () => void kanban.refetch(),
+              },
+            });
+            return;
+          }
+          setUnsavedDays(card.id, shown);
+          toast.error(fillCopy(text.failed, { key: nameOf(card) }), {
+            id: toastId,
+            description: text.failedNote,
+            action: {
+              label: text.retry,
+              onClick: () =>
+                writeDates(card, patch, previous, shown, message, isUndo),
+            },
+          });
         },
       },
-      { onError: () => reportMoveFailure(card.title) },
     );
   };
 
+  const datesOf = (card: Card): DatePatch => ({
+    startDate: card.startDate ?? null,
+    dueDate: cardDue(card) ?? null,
+  });
+
+  /** New start and due days of an item that has a due (a move or a resize). */
+  const handleChangeDates = (
+    entry: CalendarEntry,
+    days: { startDay: DayKey; dueDay: DayKey },
+  ) => {
+    const card = cardsById.get(entry.id);
+    const due = card ? cardDue(card) : undefined;
+    if (!card || !due || !canEdit) return;
+    if (days.startDay === entry.startDay && days.dueDay === entry.endDay)
+      return;
+    const startShift = diffDays(entry.startDay, days.startDay);
+    const dueShift = diffDays(entry.endDay, days.dueDay);
+    const patch: DatePatch = {
+      dueDate: dueShift === 0 ? due : shiftInstant(due, dueShift),
+      startDate: card.startDate
+        ? startShift === 0
+          ? card.startDate
+          : shiftInstant(card.startDate, startShift)
+        : days.startDay === days.dueDay
+          ? null
+          : zonedInstant(days.startDay, DEFAULT_START_HOUR, 0, timeZone),
+    };
+    writeDates(
+      card,
+      patch,
+      datesOf(card),
+      { startDay: days.startDay, endDay: days.dueDay },
+      fillCopy(copy.scheduleToast.changed, {
+        key: nameOf(card),
+        from: formatDayMonth(days.startDay),
+        to: formatDayMonth(days.dueDay),
+      }),
+    );
+  };
+
+  /** A drag of the body or an Alt-arrow step: the span keeps its length. */
+  const handleReschedule = (entry: CalendarEntry, toDay: DayKey) => {
+    if (diffDays(entry.endDay, toDay) === 0) return;
+    const shift = diffDays(entry.endDay, toDay);
+    handleChangeDates(entry, {
+      startDay: addDays(entry.startDay, shift),
+      dueDay: toDay,
+    });
+  };
+
+  /** "Chuyển về Chưa lên lịch": both dates are cleared. */
+  const handleUnschedule = (entry: CalendarEntry) => {
+    const card = cardsById.get(entry.id);
+    if (!card || !canEdit) return;
+    writeDates(
+      card,
+      { startDate: null, dueDate: null },
+      datesOf(card),
+      { startDay: entry.startDay, endDay: entry.endDay },
+      fillCopy(copy.scheduleToast.unscheduled, { key: nameOf(card) }),
+    );
+  };
+
+  /** An undated item gets one day: start and due are both that day. */
   const handleSetDue = (id: string, day: DayKey) => {
     const card = cardsById.get(id);
     if (!card || !canEdit) return;
-    updateCard.mutate(
+    writeDates(
+      card,
       {
-        cardId: id,
-        patch: {
-          dueDate: zonedInstant(day, DEFAULT_DUE_HOUR, 0, timeZone),
-        },
+        startDate: zonedInstant(day, DEFAULT_START_HOUR, 0, timeZone),
+        dueDate: zonedInstant(day, DEFAULT_DUE_HOUR, 0, timeZone),
       },
-      { onError: () => reportMoveFailure(card.title) },
+      datesOf(card),
+      { startDay: day, endDay: day },
+      fillCopy(copy.scheduleToast.scheduled, {
+        key: nameOf(card),
+        day: formatDayMonth(day),
+      }),
     );
   };
 
@@ -301,7 +440,7 @@ export function BoardCalendarView({
         zoneName={zoneName}
         dateBasis={dateBasis}
         onDateBasisChange={setDateBasis}
-        entries={built.entries}
+        entries={shownEntries}
         undatedTotal={undatedTotal}
         undated={built.undated}
         filter={filter}
@@ -328,6 +467,8 @@ export function BoardCalendarView({
         onOpenItem={(id) => onSelectedItemChange?.(id)}
         onReschedule={handleReschedule}
         onSetDue={handleSetDue}
+        onChangeDates={handleChangeDates}
+        onUnschedule={handleUnschedule}
         onCreateItem={handleCreate}
         onAddItem={setCreateDay}
       />

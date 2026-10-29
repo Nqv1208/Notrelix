@@ -57,6 +57,15 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         if (card.WorkspaceId != page.WorkspaceId)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
+        // Linking a page twice is a no-op, so the list shows it once.
+        var pageKind = ResourceKind.Create("documents.page");
+        var alreadyLinked = (await _context.BoardItemLinks
+                .Where(l => l.SourceItemId == card.Id)
+                .ToListAsync(cancellationToken))
+            .Any(l => l.Target.Kind == pageKind && l.Target.ResourceId == request.PageId);
+        if (alreadyLinked)
+            return Result.Success();
+
         var now = _timeProvider.UtcNow;
 
         var link = BoardItemLink.Create(

@@ -13,6 +13,22 @@ public static class FieldSettingsValidator
         if (type == FieldType.Status && (string.IsNullOrWhiteSpace(data) || data == "{}"))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_StatusMustIncludeTransitions, "Status field settings must include 'transitions'.");
 
+        if (type is FieldType.Formula or FieldType.Rollup)
+        {
+            // Computed fields have no valid empty settings; syntax, node cap and shape are checked here,
+            // references and cycles against the Board's other fields in ComputedFieldGraph.
+            try
+            {
+                if (type == FieldType.Formula) Formulas.FormulaLanguage.Parse(Formulas.ComputedFieldGraph.ExpressionOf(data));
+                else Formulas.RollupSpec.Parse(data);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "Invalid JSON format in field settings.");
+            }
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(data) || data == "{}")
             return;
 

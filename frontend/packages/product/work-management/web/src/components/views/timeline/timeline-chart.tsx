@@ -1,8 +1,11 @@
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties, DragEvent, PointerEvent } from "react";
+import { Link2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { BAR_TONE_CLASS, PROGRESS_TONE_CLASS } from "./timeline-chrome";
+import type { TimelineCopy } from "./timeline.copy";
 import {
   cellInView,
+  fill,
   fitHeaderText,
   GROUP_ROW_HEIGHT,
   TASK_ROW_HEIGHT,
@@ -48,6 +51,36 @@ export interface TimelineChartProps {
   onBarPointerMove: (event: PointerEvent<HTMLElement>) => void;
   onBarPointerUp: (event: PointerEvent<HTMLElement>) => void;
   onBarPointerCancel: () => void;
+  /** Link connectors; absent = none are drawn (a host without dependencies). */
+  link?: TimelineChartLink;
+  /** The undated item dragged over the chart, as a day column. */
+  trayGhost?: { x: number; text: string; note: string } | null;
+  onBodyDragOver?: (event: DragEvent<HTMLElement>) => void;
+  onBodyDrop?: (event: DragEvent<HTMLElement>) => void;
+  onBodyDragLeave?: () => void;
+}
+
+export interface TimelineChartLink {
+  copy: TimelineCopy;
+  /** False for a viewer: the connectors show disabled with the reason. */
+  canEdit: boolean;
+  /** The drag in flight: the line, and the bar under it. */
+  drag: {
+    fromId: string;
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    target: {
+      id: string;
+      state: "ok" | "cycle" | "linked";
+      text: string;
+      note: string;
+    } | null;
+  } | null;
+  onOpen: (row: TaskLayout) => void;
+  onPointerDown: (row: TaskLayout, event: PointerEvent<HTMLElement>) => void;
+  onPointerMove: (event: PointerEvent<HTMLElement>) => void;
+  onPointerUp: (event: PointerEvent<HTMLElement>) => void;
+  onPointerCancel: () => void;
 }
 
 /**
@@ -71,6 +104,11 @@ export function TimelineChart({
   onBarPointerMove,
   onBarPointerUp,
   onBarPointerCancel,
+  link,
+  trayGhost = null,
+  onBodyDragOver,
+  onBodyDrop,
+  onBodyDragLeave,
 }: TimelineChartProps) {
   const compact = scale === "month";
   const barBox = compact
@@ -243,7 +281,58 @@ export function TimelineChart({
         </div>
       </div>
 
-      <div data-tl="body" className="relative">
+      <div
+        data-tl="body"
+        className="relative"
+        onDragOver={onBodyDragOver}
+        onDrop={onBodyDrop}
+        onDragLeave={onBodyDragLeave}
+      >
+        {link?.drag ? (
+          <svg
+            data-tl="linkdrag"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-[8] size-full overflow-visible"
+          >
+            <path
+              d={`M ${link.drag.from.x} ${link.drag.from.y} C ${link.drag.from.x + 40} ${link.drag.from.y}, ${link.drag.to.x - 40} ${link.drag.to.y}, ${link.drag.to.x} ${link.drag.to.y}`}
+              fill="none"
+              strokeWidth="2"
+              strokeDasharray="5 4"
+              className={
+                link.drag.target?.state === "cycle"
+                  ? "stroke-danger-text"
+                  : "stroke-primary"
+              }
+            />
+          </svg>
+        ) : null}
+        {trayGhost ? (
+          <>
+            <span
+              data-tl="trayghost"
+              aria-hidden="true"
+              className="absolute inset-y-0 z-[2] box-border border-x border-dashed border-primary bg-state-selected"
+              style={{ left: trayGhost.x, width: ppd }}
+            />
+            <span
+              data-tl="tip"
+              role="status"
+              className="absolute bottom-3 z-[7] rounded-[8px] bg-calendar-tip px-2.5 py-1.5 text-xs leading-[1.45] font-semibold whitespace-nowrap text-calendar-tip-foreground shadow-popover"
+              style={{
+                left: Math.max(
+                  4,
+                  Math.min(trayGhost.x, header.chartWidth - 260),
+                ),
+              }}
+            >
+              {trayGhost.text}
+              <small className="block text-mark-sm leading-[1.45] font-medium text-timeline-tip-note">
+                {trayGhost.note}
+              </small>
+            </span>
+          </>
+        ) : null}
         {header.bands.map((band, index) => (
           <span
             key={index}
@@ -326,6 +415,7 @@ export function TimelineChart({
               onBarPointerMove={onBarPointerMove}
               onBarPointerUp={onBarPointerUp}
               onBarPointerCancel={onBarPointerCancel}
+              link={link}
             />
           ),
         )}
@@ -355,7 +445,9 @@ function TaskTrack({
   onBarPointerMove,
   onBarPointerUp,
   onBarPointerCancel,
+  link,
 }: {
+  link?: TimelineChartLink;
   row: TaskLayout;
   compact: boolean;
   barBox: { top: number; height: number };
@@ -400,6 +492,46 @@ function TaskTrack({
             onBarPointerUp={onBarPointerUp}
             onBarPointerCancel={onBarPointerCancel}
           />
+        ) : null}
+        {link && bar && row.item.kind === "item" ? (
+          <Connector row={row} bar={bar} link={link} visible={hovered} />
+        ) : null}
+        {link?.drag?.target?.id === row.id ? (
+          <>
+            <span
+              data-tl="linktarget"
+              data-state={link.drag.target.state}
+              aria-hidden="true"
+              className={cn(
+                "pointer-events-none absolute z-[5] box-border border-2",
+                link.drag.target.state === "ok"
+                  ? "border-primary"
+                  : "border-danger-text",
+                compact
+                  ? "top-2.5 h-4 rounded-[4px]"
+                  : "top-2 h-5 rounded-[6px]",
+              )}
+              style={{ left: bar?.x ?? 0, width: bar?.width ?? 0 }}
+            />
+            <span
+              data-tl="tip"
+              role="status"
+              className={cn(
+                "absolute top-10 z-[9] rounded-[8px] px-2.5 py-1.5 text-xs leading-[1.45] font-semibold whitespace-nowrap shadow-popover",
+                link.drag.target.state === "ok"
+                  ? "bg-calendar-tip text-calendar-tip-foreground"
+                  : "bg-danger-text text-background",
+              )}
+              style={{
+                left: Math.max(4, Math.min(bar?.x ?? 0, chartWidth - 260)),
+              }}
+            >
+              {link.drag.target.text}
+              <small className="block text-mark-sm leading-[1.45] font-medium opacity-80">
+                {link.drag.target.note}
+              </small>
+            </span>
+          </>
         ) : null}
         {fin ? (
           <span
@@ -599,5 +731,66 @@ function Bar({
         style={{ width: `${bar.percent}%` }}
       />
     </span>
+  );
+}
+
+/**
+ * The 16px circle (in a 24px hit area) 6px after the bar's due end. Drag it
+ * to another bar, or Tab to it and press Enter to open "Liên kết với…".
+ */
+function Connector({
+  row,
+  bar,
+  link,
+  visible,
+}: {
+  row: TaskLayout;
+  bar: BarLayout;
+  link: TimelineChartLink;
+  visible: boolean;
+}) {
+  const text = link.copy.link;
+  const key = row.item.itemKey ?? row.item.title;
+  const disabled = !link.canEdit;
+  return (
+    <button
+      type="button"
+      data-tl="connector"
+      aria-label={fill(text.connector, { key })}
+      aria-disabled={disabled ? "true" : undefined}
+      aria-haspopup={disabled ? undefined : "dialog"}
+      title={
+        disabled ? text.readOnly : `${text.connectorTip}, ${text.connectorNote}`
+      }
+      className={cn(
+        "group/conn absolute top-1.5 z-[6] grid size-6 touch-none place-items-center rounded-full focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring",
+        visible || link.drag?.fromId === row.id ? "opacity-100" : "opacity-0",
+        disabled ? "cursor-not-allowed" : "cursor-crosshair",
+      )}
+      style={{ left: bar.x + bar.width + 6 - 4 }}
+      onClick={disabled ? undefined : () => link.onOpen(row)}
+      onPointerDown={
+        disabled ? undefined : (event) => link.onPointerDown(row, event)
+      }
+      onPointerMove={disabled ? undefined : link.onPointerMove}
+      onPointerUp={disabled ? undefined : link.onPointerUp}
+      onPointerCancel={disabled ? undefined : link.onPointerCancel}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid size-4 place-items-center rounded-full border-2 bg-popover",
+          disabled
+            ? "border-line-strong text-meta-foreground"
+            : "border-primary text-primary",
+        )}
+      >
+        {disabled ? (
+          <Lock className="size-2.5" />
+        ) : (
+          <Link2 className="size-2.5" />
+        )}
+      </span>
+    </button>
   );
 }

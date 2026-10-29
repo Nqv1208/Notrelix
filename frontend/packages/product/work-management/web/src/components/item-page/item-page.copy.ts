@@ -1,5 +1,9 @@
 import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
 import {
+  en as actionsEn,
+  vi as actionsVi,
+} from "../item-actions/item-actions.copy";
+import {
   ACTIVITY_WORDS_EN,
   ACTIVITY_WORDS_VI,
 } from "../card-detail/activity-words";
@@ -13,6 +17,8 @@ import {
  * (property labels, priorities, times) comes from the `item-sheet` catalog.
  */
 export const en = {
+  /** The item actions menu, shared by the sheet, the page and the board views. */
+  actions: actionsEn,
   /** Replies and reactions of a comment. */
   thread: threadEn,
   loading: "Loading the item",
@@ -385,6 +391,25 @@ export const en = {
     noDependency: "Nothing",
     followersLabel: "{{count}} followers",
     editNumber: "Change {{name}}",
+    saveLongText: "Save",
+    cancelLongText: "Cancel",
+    invalidLink: "Use an http:// or https:// address",
+    calculated: {
+      label: "Calculated, read only",
+      empty: "No value",
+      stale: "Updating",
+      error: "Error",
+      errors: {
+        "divide-by-zero": "Divided by zero",
+        "unknown-field": "A field this formula uses was not found",
+        cycle: "This field depends on itself",
+        type: "A value has the wrong type",
+        "unsupported-type":
+          "A field this formula uses cannot be calculated with",
+        "invalid-definition": "The formula or rollup is not valid",
+      } as Record<string, string>,
+      unknownError: "This value could not be calculated",
+    },
     noValue: "Not set",
   },
   views: {
@@ -412,6 +437,7 @@ export const en = {
 export type ItemPageCopy = typeof en;
 
 export const vi: ItemPageCopy = {
+  actions: actionsVi,
   thread: threadVi,
   loading: "Đang tải công việc",
   activityEvents: ACTIVITY_WORDS_VI,
@@ -778,6 +804,24 @@ export const vi: ItemPageCopy = {
     noDependency: "Không có",
     followersLabel: "{{count}} người theo dõi",
     editNumber: "Đổi {{name}}",
+    saveLongText: "Lưu",
+    cancelLongText: "Huỷ",
+    invalidLink: "Dùng địa chỉ http:// hoặc https://",
+    calculated: {
+      label: "Tự tính, chỉ xem",
+      empty: "Chưa có giá trị",
+      stale: "Đang cập nhật",
+      error: "Lỗi",
+      errors: {
+        "divide-by-zero": "Chia cho 0",
+        "unknown-field": "Chưa tìm thấy trường mà công thức dùng",
+        cycle: "Trường này phụ thuộc vào chính nó",
+        type: "Một giá trị sai kiểu dữ liệu",
+        "unsupported-type": "Không tính được với một trường mà công thức dùng",
+        "invalid-definition": "Công thức hoặc tổng hợp không hợp lệ",
+      } as Record<string, string>,
+      unknownError: "Không tính được giá trị này",
+    },
     noValue: "Chưa đặt",
   },
   views: {

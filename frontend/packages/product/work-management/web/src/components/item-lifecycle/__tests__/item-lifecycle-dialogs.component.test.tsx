@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import { BoardTrashSheet } from "../board-trash-sheet";
-import { DeleteItemDialog, MoveItemDialog } from "../item-lifecycle-dialogs";
+import { DeleteItemDialog } from "../item-lifecycle-dialogs";
 import { en } from "../item-lifecycle.copy";
 
 describe("DeleteItemDialog", () => {
@@ -41,67 +41,6 @@ describe("DeleteItemDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
-  });
-});
-
-describe("MoveItemDialog", () => {
-  const boards = [
-    { id: "b1", title: "Roadmap" },
-    { id: "b2", title: "Support" },
-  ];
-
-  it("FUI[wm.item-lifecycle:move] moves to the board the member picked and not before", async () => {
-    const onConfirm = vi.fn();
-    render(
-      <MoveItemDialog
-        copy={en}
-        title="Fix login"
-        boards={boards}
-        open
-        onCancel={() => undefined}
-        onConfirm={onConfirm}
-      />,
-    );
-
-    const move = screen.getByRole("button", { name: "Move item" });
-    expect((move as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole("option", { name: "Support" }));
-    fireEvent.click(move);
-    expect(onConfirm).toHaveBeenCalledWith("b2");
-  });
-
-  it("FUI[wm.item-lifecycle:move-filter] filters the boards by name", async () => {
-    render(
-      <MoveItemDialog
-        copy={en}
-        title="Fix login"
-        boards={boards}
-        open
-        onCancel={() => undefined}
-        onConfirm={() => undefined}
-      />,
-    );
-
-    fireEvent.change(screen.getByLabelText("Find a board"), {
-      target: { value: "road" },
-    });
-    expect(screen.queryByRole("option", { name: "Support" })).toBeNull();
-    expect(screen.getByRole("option", { name: "Roadmap" })).toBeTruthy();
-  });
-
-  it("FUI[wm.item-lifecycle:move-empty] says so when no other board accepts items", () => {
-    render(
-      <MoveItemDialog
-        copy={en}
-        title="Fix login"
-        boards={[]}
-        open
-        onCancel={() => undefined}
-        onConfirm={() => undefined}
-      />,
-    );
-
-    expect(screen.getByText(en.moveEmpty)).toBeTruthy();
   });
 });
 

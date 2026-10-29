@@ -34,7 +34,6 @@ import {
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useToggleCommentReaction,
-  useDuplicateCard,
   useMoveFieldOption,
   useRemoveFieldOption,
   useUpdateCard,
@@ -283,7 +282,6 @@ export function KanbanView({
     access?.myLevel,
     kanbanSettings.statusManageRoles,
   );
-  const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -701,7 +699,7 @@ export function KanbanView({
         },
         onCopyLink: handleCopyLink,
         onDuplicate: capabilities.canCreateCard
-          ? (cardId) => duplicateCard.mutate(cardId)
+          ? removal.requestDuplicate
           : undefined,
         onArchive: capabilities.canDelete
           ? (cardId) => {
@@ -981,7 +979,7 @@ export function KanbanView({
           onOpenFullPage={onOpenItemPage}
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
-          onDuplicate={(cardId) => duplicateCard.mutate(cardId)}
+          onDuplicate={removal.requestDuplicate}
           onArchive={(cardId) => {
             noteOrigin(cardId);
             archiveCard.mutate(cardId);
@@ -1075,7 +1073,6 @@ function KanbanSelectedItemReady({
   onOpenFullPage,
   onMoveToGroup,
   onUpdateFieldValue,
-  onDuplicate,
   onArchive,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
@@ -1184,11 +1181,15 @@ function KanbanSelectedItemReady({
                 () => false,
               ),
           ...extras.callbacks,
-          onDuplicate,
+          onDuplicate: removal.requestDuplicate,
           onArchive: (cardId) => {
             onArchive(cardId);
             onClose();
           },
+          onUnarchive: removal.unarchiveItem,
+          onComplete: removal.completeItem,
+          onReopen: removal.reopenItem,
+          onRemind: removal.requestRemind,
           onUpdateFieldValue,
           onRefreshActivity: () => {
             void activity.refetch();
@@ -1209,10 +1210,8 @@ function KanbanSelectedItemReady({
           onCopyLink,
           onOpenFullPage,
           onMoveToGroup,
-          onDelete: capabilities.canDelete ? removal.requestDelete : undefined,
-          onMoveToBoard: capabilities.canMoveCard
-            ? removal.requestMove
-            : undefined,
+          onDelete: removal.requestDelete,
+          onMoveToBoard: removal.requestMove,
         }}
       />
       {removal.dialogs}
