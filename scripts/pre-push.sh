@@ -74,8 +74,9 @@ if grep -q '^frontend/' <<<"$changed"; then
   run "mock freeze" pnpm -s mock:freeze:check
   run "generated contracts" pnpm -s codegen:check
   run "ui test markers" node scripts/check-ui-markers-static.mjs
-  # The source half of check:ui-evidence; the story half needs a Storybook build (CI).
-  run "ui evidence sources" bash -c '! pnpm -s exec tsx tooling/storybook/web/src/evidence/check-ui-evidence.ts /dev/null/no-index 2>&1 | grep -E "unclassified governed source|is classified [0-9]+ times|is governed by a different owner"'
+  # The source half of check:ui-evidence (incl. manifest JSON/schema errors, which
+  # reach it as `<manifest path>: <diagnostic>`); the story half needs a Storybook build (CI).
+  run "ui evidence sources" bash -c '! pnpm -s exec tsx tooling/storybook/web/src/evidence/check-ui-evidence.ts /dev/null/no-index 2>&1 | grep -E "unclassified governed source|is classified [0-9]+ times|is governed by a different owner|ui-evidence\.manifest\.json( is not valid JSON|:)"'
   run "typecheck (affected packages)" pnpm -s turbo run typecheck --continue --filter="...[$base_ref]" --output-logs=errors-only
   # The marketing host lints with eslint-config-next, whose react-hooks plugin
   # is not resolvable from a local install; its lint runs in CI only.
