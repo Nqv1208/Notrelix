@@ -44,11 +44,15 @@ public static class CommentAccessRules
         throw new ForbiddenException("Only the thread starter or an editor can change this thread.", ThreadStarterOrEditorCode);
     }
 
+    /// <summary>The same NotFound the pipeline gives a missing comment, so a hidden one cannot be told apart.</summary>
+    public static NotFoundException NotFound(Guid commentId) =>
+        new(ResourceKind.Create("collaboration.comment").ToString(), commentId);
+
     private static async Task RequireViewAsync(Comment comment, ICommentTargetAccess access, CancellationToken ct)
     {
         if (!await access.HasAsync(comment.Target, CommentTargetRight.View, ct))
         {
-            throw new NotFoundException(nameof(Comment), comment.Id);
+            throw NotFound(comment.Id);
         }
     }
 }

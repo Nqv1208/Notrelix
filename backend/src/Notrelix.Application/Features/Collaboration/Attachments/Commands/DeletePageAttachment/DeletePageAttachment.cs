@@ -46,9 +46,9 @@ public class DeletePageAttachmentCommandHandler : IRequestHandler<DeletePageAtta
                 && a.Target.ResourceId == request.PageId, ct);
 
         if (attachment is null)
-            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
+            throw AttachmentAccessRules.NotFound(request.Resource);
 
-        await AttachmentAccessRules.RequireDeleterAsync(attachment, _access, ct);
+        await AttachmentAccessRules.RequireDeleterAsync(attachment, request.Resource, _access, ct);
         attachment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

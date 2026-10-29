@@ -28,7 +28,7 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand,
     public async Task<Result> Handle(DeleteCommentCommand request, CancellationToken ct)
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
-        if (comment is null) throw new NotFoundException(nameof(Comment), request.CommentId);
+        if (comment is null) throw CommentAccessRules.NotFound(request.CommentId);
         await CommentAccessRules.RequireAuthorAsync(comment, _currentUser.UserId, _access, ct);
         comment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

@@ -28,7 +28,7 @@ public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand,
     public async Task<Result> Handle(UpdateCommentCommand request, CancellationToken ct)
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
-        if (comment is null) throw new NotFoundException(nameof(Comment), request.CommentId);
+        if (comment is null) throw CommentAccessRules.NotFound(request.CommentId);
         await CommentAccessRules.RequireAuthorAsync(comment, _currentUser.UserId, _access, ct);
         comment.UpdateContent(request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
