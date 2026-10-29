@@ -7351,6 +7351,12 @@ export interface components {
             archivedBy?: string | null;
             archivedByName?: string | null;
             descriptionMd?: string | null;
+            fieldValues?: {
+                [key: string]: unknown;
+            } | null;
+            computedValues?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+            } | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */
@@ -7415,6 +7421,12 @@ export interface components {
             /** Format: date-time */
             completedAt?: string | null;
             childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
+            fieldValues?: {
+                [key: string]: unknown;
+            } | null;
+            computedValues?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+            } | null;
             /** Format: int32 */
             openBlockerCount?: number;
         };
@@ -7545,6 +7557,11 @@ export interface components {
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemListDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto": {
+            state?: string | null;
+            value?: unknown;
+            errorCode?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto": {
             /** Format: uuid */

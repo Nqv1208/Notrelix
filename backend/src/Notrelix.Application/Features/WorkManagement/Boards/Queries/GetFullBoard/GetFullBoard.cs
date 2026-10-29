@@ -6,6 +6,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
+using Notrelix.Domain.WorkManagement.Formulas;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
@@ -161,6 +162,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .GroupBy(id => id)
             .ToDictionary(group => group.Key, group => group.Count());
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
+        var fieldProjection = await BoardItemFieldProjection.LoadAsync(_context, fields, cardIds, cancellationToken);
 
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
@@ -187,6 +189,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                     checklistStatsByCardId.TryGetValue(card.Id, out var checklistStats);
                     collaborationCounts.TryGetValue(card.Id, out var collaborationStats);
                     var values = readValues[card.Id];
+                    var projected = fieldProjection[card.Id];
 
                     return new BoardItemSummaryDto(
                         card.Id,
@@ -210,6 +213,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         card.StartedAt,
                         card.CompletedAt,
                         values.ChildProgress,
+                        projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+                        projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
                         openBlockerCountByCardId.GetValueOrDefault(card.Id)
                     );
                 })
@@ -226,6 +231,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 list.Version))
             .ToList();
 
+        var fieldInputs = fields.Where(f => f.DeletedAt == null)
+            .Select(f => new ComputedFieldInput(f.Id, f.Name, f.Type, f.Settings.Data.Value)).ToList();
         var columns = fields
             .OrderBy(column => column.Position)
             .Select(column => new BoardFieldDto(
@@ -233,7 +240,11 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.BoardId,
                 column.Name,
                 column.Type.ToString(),
-                JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
+                // A Formula's saved field ids are shown as the fields' current names.
+                column.Type == FieldType.Formula
+                    ? JsonSerializer.Serialize(
+                        FieldSettings.Create(JsonValue.Create(ComputedFieldGraph.RenderNames(column.Settings.Data.Value, fieldInputs))), (JsonSerializerOptions?)null)
+                    : JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
                 column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,

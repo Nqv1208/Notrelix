@@ -31,6 +31,7 @@ export * from "./utils/person-initials";
 export * from "./utils/item-file-rules";
 export * from "./utils/move-preview";
 export * from "./utils/checklist-ops";
+export * from "./field-types";
 
 // Kanban types
 export * from "./types/kanban-types";
