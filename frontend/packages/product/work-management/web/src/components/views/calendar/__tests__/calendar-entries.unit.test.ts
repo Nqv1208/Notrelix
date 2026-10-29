@@ -37,6 +37,13 @@ describe("buildCalendarEntries on the ERP board", () => {
     expect(undated[0]?.assigneeName).toBeNull();
   });
 
+  it("carries the priority and the open blocker count of the item", () => {
+    expect(entryOf("ERP-142")).toMatchObject({
+      priority: "urgent",
+      openBlockerCount: 0,
+    });
+  });
+
   it("puts an item on its due day in the zone of the view", () => {
     expect(entryOf("ERP-144")).toMatchObject({
       startDay: "2026-10-12",

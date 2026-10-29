@@ -125,7 +125,7 @@ describe("KanbanCard interactions", () => {
     expect(article.className).not.toContain("z-dropdown");
   });
 
-  it("has no grip, menu or status badge, and shows only the comment count of the three counters", () => {
+  it("has no grip, menu or status badge, and shows the comment and file counts", () => {
     const { article } = renderCard({
       status: "status-working",
       linkedPageId: "page-1",
@@ -136,10 +136,12 @@ describe("KanbanCard interactions", () => {
     ).toBeNull();
     expect(within(article).queryByRole("button", { name: /menu/i })).toBeNull();
     expect(article.querySelector("[data-slot='badge']")).toBeNull();
-    // Changed on purpose: the card now shows its comment count (3); files,
-    // linked documents and checklist items stay off the card.
+    // The face counts comments (3) and files (2); linked documents stay off
+    // the card, and the checklist chip needs the item's checklist progress.
     expect(article.querySelector("[data-comment-count='3']")).not.toBeNull();
-    expect(article.textContent).not.toMatch(/tệp|tài liệu|checklist/i);
+    expect(article.querySelector("[data-file-count='2']")).not.toBeNull();
+    expect(article.querySelector("[data-checklist-progress]")).toBeNull();
+    expect(article.textContent).not.toMatch(/tài liệu/i);
   });
 });
 
@@ -441,13 +443,35 @@ describe("KanbanCard priority", () => {
     },
   );
 
-  it.each(["medium", "low", undefined] as const)(
-    "shows nothing for %s priority",
-    (priority) => {
+  it.each([
+    ["medium", "Trung bình"],
+    ["low", "Thấp"],
+  ] as const)(
+    "shows %s with its own glyph and the word %s",
+    (priority, word) => {
       const { article } = renderCard({ priority });
-      expect(article.querySelector("[data-priority]")).toBeNull();
+      const marker = article.querySelector("[data-priority]")!;
+      expect(marker.textContent).toContain(word);
+      expect(marker.querySelector("svg")).not.toBeNull();
     },
   );
+
+  it("gives each level a different glyph, so colour is never the only signal", () => {
+    const glyphs = (["urgent", "high", "medium", "low"] as const).map(
+      (priority) => {
+        const { article, unmount } = renderCard({ priority });
+        const html = article.querySelector("[data-priority] svg")!.innerHTML;
+        unmount();
+        return html;
+      },
+    );
+    expect(new Set(glyphs).size).toBe(4);
+  });
+
+  it("shows nothing without a priority", () => {
+    const { article } = renderCard({ priority: undefined });
+    expect(article.querySelector("[data-priority]")).toBeNull();
+  });
 
   it("localises the priority word", () => {
     const { article } = renderCard({ priority: "high" }, { copy: EN });
@@ -505,5 +529,67 @@ describe("KanbanCard markup", () => {
     expect(html).not.toMatch(/rgba?\(/);
     expect(html).not.toMatch(/text-\[\d/);
     expect(html).not.toMatch(/z-index/);
+  });
+});
+
+describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
+  const FULL = {
+    dueAt: dueOn(16, 10),
+    startDate: dueOn(12, 10),
+    checklistProgress: { done: 3, total: 8 },
+    _count: { comments: 12, attachments: 4, checklistItems: 8 },
+    openBlockerCount: 2,
+    members: members(3),
+  };
+
+  it.each([
+    [VI, "Checklist đã xong 3 trên 8 mục", "Đang bị chặn bởi 2 việc", "4 tệp"],
+    [EN, "Checklist 3 of 8 items done", "Blocked by 2 items", "4 files"],
+  ] as const)("names every badge in %s", (copy, checklist, blocked, files) => {
+    const { article } = renderCard(FULL, { copy });
+    expect(within(article).getByText(checklist)).toBeTruthy();
+    expect(within(article).getByText(blocked)).toBeTruthy();
+    expect(within(article).getByText(files)).toBeTruthy();
+  });
+
+  it("is crowded from four chips: due date only, icon-only blocked, one avatar and +N", () => {
+    const { article } = renderCard(FULL);
+    const row = article.querySelector("[data-crowded]")!;
+    expect(row).not.toBeNull();
+    expect(row.className).toContain("flex-nowrap");
+    expect(row.textContent).not.toContain("→");
+    expect(row.querySelector("[data-blocked]")!.textContent).not.toContain(
+      "Bị chặn",
+    );
+    expect(row.textContent).toContain("+2");
+  });
+
+  it("shows the start-to-due range with three chips or fewer", () => {
+    const { article } = renderCard({
+      dueAt: dueOn(16, 10),
+      startDate: dueOn(12, 10),
+      _count: { comments: 2, attachments: 0, checklistItems: 0 },
+      checklistProgress: { done: 1, total: 2 },
+    });
+    expect(article.querySelector("[data-crowded]")).toBeNull();
+    expect(article.querySelector("[data-due]")!.textContent).toContain("→");
+  });
+
+  it("keeps the word Bị chặn when the row has room", () => {
+    const { article } = renderCard({ openBlockerCount: 1 });
+    expect(article.querySelector("[data-blocked]")!.textContent).toContain(
+      "Bị chặn",
+    );
+  });
+
+  it("shows 99+ above 99 comments and no blocked badge at 0", () => {
+    const { article } = renderCard({
+      _count: { comments: 140, attachments: 0, checklistItems: 0 },
+      openBlockerCount: 0,
+    });
+    expect(
+      article.querySelector("[data-comment-count]")!.textContent,
+    ).toContain("99+");
+    expect(article.querySelector("[data-blocked]")).toBeNull();
   });
 });

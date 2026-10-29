@@ -155,3 +155,22 @@ describe("buildTableRow", () => {
     expect(row({}).label).toBeNull();
   });
 });
+
+describe("buildTableRow counters", () => {
+  it("carries the checklist, comment and file counts", () => {
+    const counted = row({
+      checklistProgress: { done: 3, total: 8 },
+      _count: { comments: 12, attachments: 4, checklistItems: 8 },
+    });
+    expect(counted.checklist).toEqual({ done: 3, total: 8 });
+    expect(counted.commentCount).toBe(12);
+    expect(counted.fileCount).toBe(4);
+  });
+
+  it("has no checklist without items and zero counts by default", () => {
+    const plain = row({ checklistProgress: { done: 0, total: 0 } });
+    expect(plain.checklist).toBeNull();
+    expect(plain.commentCount).toBe(0);
+    expect(plain.fileCount).toBe(0);
+  });
+});

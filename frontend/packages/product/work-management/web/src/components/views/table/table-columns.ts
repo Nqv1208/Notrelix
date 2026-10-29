@@ -4,6 +4,9 @@ import {
   CircleCheck,
   Flag,
   ListChecks,
+  MessageCircle,
+  Paperclip,
+  SquareCheck,
   Tag,
   User,
   type LucideIcon,
@@ -24,8 +27,9 @@ export interface TableColumnSpec {
 }
 
 /**
- * The twelve columns of the table, in display order. The first nine are
- * shown by default ("Cột 9/12"); start, created and completed are opt-in.
+ * The fifteen columns of the table, in display order. The first nine are
+ * shown by default ("Cột 9/15"); start, created, completed, checklist,
+ * comments and files are opt-in.
  * Widths are the defaults (the mockup grid) `84 340 140 184 132 96 120 136 120`, plus the
  * 40 px selection column that the table adds in front.
  */
@@ -38,6 +42,9 @@ export const TABLE_COLUMNS: readonly TableColumnSpec[] = [
   { id: "priority", width: 96, Icon: Flag },
   { id: "label", width: 120, Icon: Tag },
   { id: "progress", width: 136, Icon: ListChecks },
+  { id: "checklist", width: 104, Icon: SquareCheck },
+  { id: "comments", width: 104, Icon: MessageCircle },
+  { id: "files", width: 80, Icon: Paperclip },
   { id: "updated", width: 120 },
   { id: "start", width: 120, Icon: Calendar },
   { id: "created", width: 120, Icon: Calendar },

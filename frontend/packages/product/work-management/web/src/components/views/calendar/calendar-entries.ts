@@ -147,6 +147,8 @@ export function buildCalendarEntries({
             ? DEFAULT_DUE_MINUTES
             : due.minutes
           : null,
+        priority: card.priority ?? null,
+        openBlockerCount: card.openBlockerCount ?? 0,
         assignee: person
           ? {
               initials: person.initials,

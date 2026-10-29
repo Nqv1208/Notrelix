@@ -27801,6 +27801,10 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
             },
             "nullable": true
+          },
+          "openBlockerCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

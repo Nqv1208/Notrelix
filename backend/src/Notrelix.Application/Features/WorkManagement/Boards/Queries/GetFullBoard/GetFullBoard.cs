@@ -106,6 +106,25 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 (item, checklist) => new { checklist.ItemId, IsDone = item.Status == ChecklistItemStatus.Done })
             .ToListAsync(cancellationToken);
 
+        var dependencyKind = ResourceKind.Create("work-management.board-item");
+        var blockerLinks = (await _context.BoardItemLinks
+                .AsNoTracking()
+                .Where(link => link.LinkType == BoardItemLinkType.Dependency && cardIds.Contains(link.SourceItemId))
+                .ToListAsync(cancellationToken))
+            .Where(link => link.Target.Kind == dependencyKind)
+            .ToList();
+        var blockerIds = blockerLinks.Select(link => link.Target.ResourceId).Distinct().ToList();
+        var openBlockerIds = (await _context.BoardItems
+                .AsNoTracking()
+                .Where(item => blockerIds.Contains(item.Id) && item.DeletedAt == null && item.CompletedAt == null)
+                .Select(item => item.Id)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+        var openBlockerCountByCardId = blockerLinks
+            .Where(link => openBlockerIds.Contains(link.Target.ResourceId))
+            .GroupBy(link => link.SourceItemId)
+            .ToDictionary(group => group.Key, group => group.Count());
+
         var collaborationCounts = await _collabReadPort.GetCountsAsync(cardIds, cancellationToken);
 
         var fields = await _context.BoardFields
@@ -195,7 +214,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         card.CompletedAt,
                         values.ChildProgress,
                         projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
-                        projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value)
+                        projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
+                        openBlockerCountByCardId.GetValueOrDefault(card.Id)
                     );
                 })
                 .ToList());

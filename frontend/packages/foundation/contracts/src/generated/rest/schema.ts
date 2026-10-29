@@ -7380,6 +7380,8 @@ export interface components {
             computedValues?: {
                 [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
             } | null;
+            /** Format: int32 */
+            openBlockerCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto": {
             /** Format: uuid */

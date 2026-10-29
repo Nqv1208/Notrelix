@@ -30,7 +30,9 @@ public record BoardItemSummaryDto(
     // Stored values of the Board's custom fields (excluding Status and priority), by field id; empty values are omitted.
     Dictionary<string, JsonElement>? FieldValues = null,
     // Formula and Rollup results by field id, evaluated on this read and never stored.
-    Dictionary<string, ComputedValueDto>? ComputedValues = null
+    Dictionary<string, ComputedValueDto>? ComputedValues = null,
+    // Derived: live, not-completed Items this Item is blocked by (Dependency links where it is the source).
+    int OpenBlockerCount = 0
 );
 
 /// <summary>

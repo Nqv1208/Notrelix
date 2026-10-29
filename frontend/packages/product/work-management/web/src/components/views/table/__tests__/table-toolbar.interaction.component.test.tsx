@@ -43,7 +43,7 @@ describe("MainTableToolbar", () => {
     expect(
       screen.getByRole("button", { name: "Nhóm theo Trạng thái" }),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Cột 9/12" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cột 9/15" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
     expect(props.onAddItem).toHaveBeenCalledOnce();
@@ -128,7 +128,7 @@ describe("MainTableToolbar", () => {
 
   it("FUI[wm.table.toolbar:columns] shows and hides columns and sets the row height", () => {
     const props = renderToolbar(erpTableToolbarProps("default"));
-    openMenu(screen.getByRole("button", { name: "Cột 9/12" }));
+    openMenu(screen.getByRole("button", { name: "Cột 9/15" }));
     const title = screen.getByRole("menuitemcheckbox", {
       name: "Tên công việc",
     });
@@ -156,7 +156,7 @@ describe("MainTableToolbar", () => {
 
   it("copes with long names and every facet selected", () => {
     renderToolbar(erpTableToolbarProps("edge"));
-    expect(screen.getByRole("button", { name: /^Cột 12\/12/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Cột 15\/15/ })).toBeTruthy();
     expect(
       screen.getByText(/Người phụ trách: Nguyễn Hoàng Phương Thảo Nguyên/),
     ).toBeTruthy();
@@ -167,6 +167,6 @@ describe("MainTableToolbar", () => {
     expect(screen.getByText("Status: not done")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add item" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sort Due ↑" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Columns 9/12" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns 9/15" })).toBeTruthy();
   });
 });
