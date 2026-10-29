@@ -6,7 +6,16 @@
 export interface SavedFilterCriteria {
   readonly filter?: string;
   readonly groupBy?: string;
+  /** Kanban swimlane field (second dimension). Absent in version 1. */
+  readonly swimlaneBy?: string;
 }
+
+/**
+ * Criteria JSON version. 1 (no `v` key) held a legacy facet `filter` string and
+ * `groupBy`; 2 adds `swimlaneBy`, and `filter` may be a `c2:` compound filter.
+ * Both parse; the `filter` string tells its own form apart.
+ */
+export const SAVED_FILTER_CRITERIA_VERSION = 2;
 
 /** A named filter of one board, personal or shared with the board. */
 export interface SavedFilter {
@@ -30,10 +39,13 @@ export function parseSavedFilterCriteria(
   try {
     const value: unknown = JSON.parse(raw);
     if (typeof value !== "object" || value === null) return {};
-    const { filter, groupBy } = value as Record<string, unknown>;
+    const { filter, groupBy, swimlaneBy } = value as Record<string, unknown>;
     return {
       ...(typeof filter === "string" && filter !== "" ? { filter } : {}),
       ...(typeof groupBy === "string" && groupBy !== "" ? { groupBy } : {}),
+      ...(typeof swimlaneBy === "string" && swimlaneBy !== ""
+        ? { swimlaneBy }
+        : {}),
     };
   } catch {
     return {};
@@ -44,7 +56,9 @@ export function serializeSavedFilterCriteria(
   criteria: SavedFilterCriteria,
 ): string {
   return JSON.stringify({
+    v: SAVED_FILTER_CRITERIA_VERSION,
     ...(criteria.filter ? { filter: criteria.filter } : {}),
     ...(criteria.groupBy ? { groupBy: criteria.groupBy } : {}),
+    ...(criteria.swimlaneBy ? { swimlaneBy: criteria.swimlaneBy } : {}),
   });
 }
