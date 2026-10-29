@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent,
   type PointerEvent,
 } from "react";
 import { cn } from "@notrelix/ui-web";
@@ -14,12 +15,18 @@ import {
   type DayKey,
 } from "../calendar/calendar-model";
 import { timelinePanelClass } from "./timeline-chrome";
-import { TimelineChart } from "./timeline-chart";
+import { TimelineChart, type TimelineChartLink } from "./timeline-chart";
+import { TimelineLinkDialog } from "./timeline-link-dialog";
+import { TimelineTray, type TimelineUndated } from "./timeline-tray";
 import { TimelineList } from "./timeline-list";
 import { TimelineToolbar, type TimelineToolbarProps } from "./timeline-toolbar";
 import {
   buildHeader,
+  datedRange,
   fill,
+  findLinkCycle,
+  fitTimeline,
+  hasLink,
   itemSpan,
   layoutTimeline,
   scaleSpec,
@@ -67,6 +74,16 @@ export interface BoardTimelineSurfaceProps {
   onOpenItem: (id: string) => void;
   onReschedule: (item: TimelineItem, change: TimelineReschedule) => void;
   onAddItem?: () => void;
+  /**
+   * Creates a finish-to-start link (`to` waits for `from`). Without it the
+   * chart draws no connectors.
+   */
+  onCreateLink?: (link: TimelineLink) => void;
+  onRemoveLink?: (link: TimelineLink) => void;
+  /** The items with no date, listed in the tray (the footer). */
+  undatedItems?: readonly TimelineUndated[];
+  /** Sets start and due of an undated item to one day. */
+  onSchedule?: (id: string, day: DayKey) => void;
   /** Starting states for stories and tests; the user's own actions replace them. */
   defaultDrag?: TimelineDrag | null;
   defaultCriticalPath?: boolean;
@@ -104,6 +121,10 @@ export function BoardTimelineSurface({
   onOpenItem,
   onReschedule,
   onAddItem,
+  onCreateLink,
+  onRemoveLink,
+  undatedItems,
+  onSchedule,
   defaultDrag = null,
   defaultCriticalPath = false,
 }: BoardTimelineSurfaceProps) {
@@ -111,6 +132,19 @@ export function BoardTimelineSurface({
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [linksShown, setLinksShown] = useState(true);
   const [criticalShown, setCriticalShown] = useState(defaultCriticalPath);
+  const [linkFor, setLinkFor] = useState<TimelineItem | null>(null);
+  const [linkDrag, setLinkDrag] = useState<{
+    fromId: string;
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    overId: string | null;
+  } | null>(null);
+  const [trayOpen, setTrayOpen] = useState(false);
+  const [trayDrag, setTrayDrag] = useState<{
+    item: TimelineUndated;
+    day: number | null;
+  } | null>(null);
+  const linkPress = useRef<{ id: string; moved: boolean } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const press = useRef<{
     id: string;
@@ -304,6 +338,168 @@ export function BoardTimelineSurface({
     setDrag(null);
   };
 
+  // ─── Dependencies: connector drag and the dialog ───
+  const linkableItems = useMemo(
+    () =>
+      groups.flatMap((group) => group.items.filter((i) => i.kind === "item")),
+    [groups],
+  );
+  const bodyPoint = (event: PointerEvent<HTMLElement>) => {
+    const body =
+      scroller.current?.querySelector<HTMLElement>('[data-tl="body"]');
+    const rect = body?.getBoundingClientRect();
+    return {
+      x: event.clientX - (rect?.left ?? 0),
+      y: event.clientY - (rect?.top ?? 0),
+    };
+  };
+  const overRow = (event: PointerEvent<HTMLElement>): string | null => {
+    const found =
+      typeof document.elementFromPoint === "function"
+        ? document.elementFromPoint(event.clientX, event.clientY)
+        : null;
+    return found?.closest<HTMLElement>("[data-row-id]")?.dataset.rowId ?? null;
+  };
+  const linkStateOf = (fromId: string, overId: string | null) => {
+    if (!overId || overId === fromId || !rowsById.has(overId)) return null;
+    if (hasLink(links, fromId, overId)) return "linked" as const;
+    return findLinkCycle(links, fromId, overId)
+      ? ("cycle" as const)
+      : ("ok" as const);
+  };
+  const onConnectorPointerDown = (
+    row: TaskLayout,
+    event: PointerEvent<HTMLElement>,
+  ) => {
+    if (event.button !== 0) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const point = bodyPoint(event);
+    linkPress.current = { id: row.id, moved: false };
+    setLinkDrag({ fromId: row.id, from: point, to: point, overId: null });
+  };
+  const onConnectorPointerMove = (event: PointerEvent<HTMLElement>) => {
+    const current = linkPress.current;
+    if (!current) return;
+    const point = bodyPoint(event);
+    if (
+      !current.moved &&
+      Math.hypot(
+        point.x - (linkDrag?.from.x ?? point.x),
+        point.y - (linkDrag?.from.y ?? point.y),
+      ) < 4
+    )
+      return;
+    current.moved = true;
+    setLinkDrag((existing) =>
+      existing ? { ...existing, to: point, overId: overRow(event) } : existing,
+    );
+  };
+  const onConnectorPointerUp = (event: PointerEvent<HTMLElement>) => {
+    const current = linkPress.current;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    const target = current?.moved ? overRow(event) : null;
+    setLinkDrag(null);
+    if (!current || !current.moved) {
+      linkPress.current = null;
+      return;
+    }
+    // The click that follows a drag must not open the dialog.
+    setTimeout(() => {
+      linkPress.current = null;
+    }, 0);
+    if (target && linkStateOf(current.id, target) === "ok") {
+      onCreateLink?.({ from: current.id, to: target });
+    }
+  };
+  const linkProps: TimelineChartLink | undefined = onCreateLink
+    ? {
+        copy,
+        canEdit,
+        drag: linkDrag
+          ? (() => {
+              const state = linkStateOf(linkDrag.fromId, linkDrag.overId);
+              const from = rowsById.get(linkDrag.fromId)?.item;
+              const to = linkDrag.overId
+                ? rowsById.get(linkDrag.overId)?.item
+                : undefined;
+              const names = {
+                from: from?.itemKey ?? from?.title ?? "",
+                to: to?.itemKey ?? to?.title ?? "",
+              };
+              return {
+                fromId: linkDrag.fromId,
+                from: linkDrag.from,
+                to: linkDrag.to,
+                target:
+                  state && linkDrag.overId
+                    ? {
+                        id: linkDrag.overId,
+                        state,
+                        text:
+                          state === "ok"
+                            ? fill(copy.link.dropTarget, {
+                                from: names.from,
+                                to: names.to,
+                              })
+                            : state === "linked"
+                              ? copy.link.dropLinked
+                              : copy.link.dropCycle,
+                        note:
+                          state === "ok"
+                            ? fill(copy.link.dropNote, {
+                                from: names.from,
+                                to: names.to,
+                              })
+                            : state === "cycle"
+                              ? fill(copy.link.dropCycleNote, {
+                                  from: names.from,
+                                  to: names.to,
+                                })
+                              : "",
+                      }
+                    : null,
+              };
+            })()
+          : null,
+        onOpen: (row) => {
+          if (linkPress.current?.moved) return;
+          setLinkFor(row.item);
+        },
+        onPointerDown: onConnectorPointerDown,
+        onPointerMove: onConnectorPointerMove,
+        onPointerUp: onConnectorPointerUp,
+        onPointerCancel: () => {
+          linkPress.current = null;
+          setLinkDrag(null);
+        },
+      }
+    : undefined;
+
+  // ─── Tray: dragging an undated item onto a day ───
+  const dayAtDrop = (event: DragEvent<HTMLElement>): number => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return (
+      spec.from +
+      Math.min(
+        spec.days - 1,
+        Math.max(0, Math.floor((event.clientX - rect.left) / spec.ppd)),
+      )
+    );
+  };
+  const trayItem = undatedItems?.find((item) => item.id === trayDrag?.item.id);
+  const trayGhost =
+    trayDrag && trayDrag.day !== null && trayItem
+      ? {
+          x: (trayDrag.day - spec.from) * spec.ppd,
+          text: fill(copy.tray.dropTip, {
+            key: trayItem.itemKey ?? trayItem.title,
+            day: dmy(trayDrag.day),
+          }),
+          note: fill(copy.tray.dropNote, { day: dmy(trayDrag.day) }),
+        }
+      : null;
+
+  const range = datedRange(groups);
   const toolbar: TimelineToolbarProps = {
     copy,
     scale,
@@ -312,6 +508,29 @@ export function BoardTimelineSurface({
       onAnchorChange(today);
       setTodayToken((token) => token + 1);
     },
+    atToday: anchorDay === today,
+    fit: range
+      ? {
+          tip: copy.fit.tip,
+          note: fill(copy.fit.tipNote, {
+            from: dmy(range.from),
+            to: dmy(range.to),
+            count: range.count,
+          }),
+          onFit: () => {
+            const element = scroller.current;
+            const left =
+              element?.querySelector<HTMLElement>('[data-tl="left"]');
+            const width =
+              (element?.clientWidth ?? 0) - (left?.offsetWidth ?? 0);
+            const fitted = fitTimeline(groups, width);
+            if (!fitted) return;
+            onScaleChange(fitted.scale);
+            onAnchorChange(fitted.anchor);
+            setTodayToken((token) => token + 1);
+          },
+        }
+      : undefined,
     onStep: (direction) =>
       onAnchorChange(stepTimelineAnchor(scale, anchorDay, direction)),
     links: {
@@ -326,7 +545,10 @@ export function BoardTimelineSurface({
     },
     undatedCount,
     undatedHref,
-    onOpenUndated,
+    onOpenUndated: undatedItems
+      ? () => setTrayOpen((open) => !open)
+      : onOpenUndated,
+    trayOpen: undatedItems ? trayOpen : undefined,
     canAdd: canEdit,
     onAddItem,
   };
@@ -346,7 +568,7 @@ export function BoardTimelineSurface({
   return (
     <div
       data-timeline-view=""
-      className="flex h-full min-h-0 flex-col bg-background font-body"
+      className="relative flex h-full min-h-0 flex-col bg-background font-body"
     >
       <TimelineToolbar {...toolbar} />
 
@@ -389,6 +611,37 @@ export function BoardTimelineSurface({
             onBarPointerMove={onBarPointerMove}
             onBarPointerUp={onBarPointerUp}
             onBarPointerCancel={onBarPointerCancel}
+            link={linkProps}
+            trayGhost={trayGhost}
+            onBodyDragOver={
+              trayDrag
+                ? (event) => {
+                    event.preventDefault();
+                    const day = dayAtDrop(event);
+                    setTrayDrag((existing) =>
+                      existing && existing.day !== day
+                        ? { ...existing, day }
+                        : existing,
+                    );
+                  }
+                : undefined
+            }
+            onBodyDrop={
+              trayDrag
+                ? (event) => {
+                    event.preventDefault();
+                    const day = dayAtDrop(event);
+                    const id = trayDrag.item.id;
+                    setTrayDrag(null);
+                    onSchedule?.(id, fromDayNumber(day));
+                  }
+                : undefined
+            }
+            onBodyDragLeave={() =>
+              setTrayDrag((existing) =>
+                existing ? { ...existing, day: null } : existing,
+              )
+            }
           />
         </div>
         {layout.rows.length === 0 ? (
@@ -403,6 +656,34 @@ export function BoardTimelineSurface({
           </div>
         ) : null}
       </div>
+
+      {undatedItems ? (
+        <TimelineTray
+          copy={copy}
+          items={undatedItems}
+          open={trayOpen}
+          onToggle={() => setTrayOpen((open) => !open)}
+          canEdit={canEdit && Boolean(onSchedule)}
+          onSchedule={(id, day) => onSchedule?.(id, day)}
+          onDragStart={(item, event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", item.id);
+            setTrayDrag({ item, day: null });
+          }}
+          onDragEnd={() => setTrayDrag(null)}
+        />
+      ) : null}
+      {linkFor && onCreateLink ? (
+        <TimelineLinkDialog
+          copy={copy}
+          item={linkFor}
+          items={linkableItems}
+          links={links}
+          onCreate={onCreateLink}
+          onRemove={(link) => onRemoveLink?.(link)}
+          onClose={() => setLinkFor(null)}
+        />
+      ) : null}
 
       <div
         data-tl="legendbar"

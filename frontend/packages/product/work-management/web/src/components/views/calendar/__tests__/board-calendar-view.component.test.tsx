@@ -220,7 +220,7 @@ describe("BoardCalendarView on the ERP board", () => {
     );
   });
 
-  it("puts the item back and says so when the write fails", async () => {
+  it("keeps the new position and offers Thử lại when the write fails", async () => {
     const { container } = renderCalendar(erpOwnerAccess(), {
       updateCard: async () => {
         throw new Error("rejected");
@@ -233,14 +233,19 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls[0]?.[0]).toContain("Không đổi được hạn");
-    // The card is on its own day again.
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Chưa lưu được ngày của ERP-151",
+    );
+    expect(toast.error.mock.calls[0]?.[1]).toMatchObject({
+      action: { label: "Thử lại" },
+    });
+    // The item stays where it was dropped, never silently reverted.
     await waitFor(() =>
       expect(
         eventOf(container, "ERP-151")
           .closest("[data-calendar-week]")
           ?.getAttribute("data-calendar-week"),
-      ).toBe("2026-10-12"),
+      ).toBe("2026-10-19"),
     );
   });
 
@@ -257,7 +262,10 @@ describe("BoardCalendarView on the ERP board", () => {
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
     expect(cards.updateCard).toHaveBeenLastCalledWith(
       erpItemId("ERP-153"),
-      { dueDate: "2026-10-22T10:00:00.000Z" },
+      {
+        startDate: "2026-10-22T01:00:00.000Z",
+        dueDate: "2026-10-22T10:00:00.000Z",
+      },
       expect.objectContaining({ expectedVersion: expect.any(Number) }),
     );
   });

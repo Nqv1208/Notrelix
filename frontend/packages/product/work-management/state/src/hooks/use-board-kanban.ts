@@ -138,7 +138,7 @@ export function useBoardKanban(
   workspaceId: string,
   { groupBy, filter, isOverdue, onWriteError }: UseBoardKanbanOptions,
 ) {
-  const { board, groups, isLoading, error } = useFullBoard(
+  const { board, groups, isLoading, error, refetch } = useFullBoard(
     boardId,
     workspaceId,
   );
@@ -221,6 +221,8 @@ export function useBoardKanban(
   return {
     board,
     groups,
+    /** Reads the board again (the "Tải lại" of a conflict). */
+    refetch,
     statusField,
     groupByField,
     groupByFields,
