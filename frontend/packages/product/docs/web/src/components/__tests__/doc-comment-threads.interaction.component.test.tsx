@@ -114,7 +114,7 @@ describe("docs comment threads", () => {
     expect(onCommentDelete).toHaveBeenCalledWith("open");
   });
 
-  it("FUI[docs.page.side-panel:comment-resolve-permitted] offers resolve and reopen only to the thread starter or an editor", () => {
+  it("offers resolve and reopen only to the thread starter or an editor", () => {
     // Someone else's threads, viewer cannot edit the page: nothing to resolve.
     panel({}, [
       { ...THREADS[0]!, mine: false, canResolve: false },
