@@ -364,6 +364,20 @@ export function createItemExtrasApi(
     async removeLink(itemId: string, linkId: string): Promise<void> {
       await api.delete<void>(`/board-items/${itemId}/links/${linkId}`, quiet);
     },
+    /** Timeline dependency `from -> to`: `to` waits for `from`. */
+    async addDependency(from: string, to: string): Promise<void> {
+      await this.addLink(to, { itemId: from, relation: "blocked-by" });
+    },
+    /** Removes the dependency `from -> to`; false when it is already gone. */
+    async removeDependency(from: string, to: string): Promise<boolean> {
+      const links = await this.getLinks(to);
+      const found = links.find(
+        (link) => link.relation === "blocked-by" && link.item.id === from,
+      );
+      if (!found) return false;
+      await this.removeLink(to, found.id);
+      return true;
+    },
     /** Adds a child item (sub-item) under an item. */
     async addChildItem(itemId: string, title: string): Promise<void> {
       await api.post<void>(

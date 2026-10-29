@@ -1701,6 +1701,7 @@
       "coveredSources": [
         "src/components/views/calendar/calendar-agenda.tsx",
         "src/components/views/calendar/calendar-aside.tsx",
+        "src/components/views/calendar/calendar-dates-dialog.tsx",
         "src/components/views/calendar/calendar-event.tsx",
         "src/components/views/calendar/calendar-grid.tsx",
         "src/components/views/calendar/calendar-toolbar.tsx"
@@ -1870,6 +1871,30 @@
         {
           "id": "edge-data",
           "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize-cancel",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "change-dates",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated-date",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only-handles",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -1880,8 +1905,10 @@
       "pureEntry": "src/components/views/timeline/board-timeline-surface.tsx",
       "coveredSources": [
         "src/components/views/timeline/timeline-chart.tsx",
+        "src/components/views/timeline/timeline-link-dialog.tsx",
         "src/components/views/timeline/timeline-list.tsx",
-        "src/components/views/timeline/timeline-toolbar.tsx"
+        "src/components/views/timeline/timeline-toolbar.tsx",
+        "src/components/views/timeline/timeline-tray.tsx"
       ],
       "stories": [
         {
@@ -2051,6 +2078,30 @@
         },
         {
           "id": "legend",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "zoom-fit",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-drag",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-dialog",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-cycle",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "tray",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "link-read-only",
           "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         }
       ]
