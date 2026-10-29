@@ -13,6 +13,10 @@ import {
   erpTableSelectedProps,
 } from "../../../verification/table-fixtures";
 import {
+  erpTableFieldProps,
+  writeKey,
+} from "../../../verification/table-field-fixtures";
+import {
   MainTableSurface,
   type MainTableSurfaceProps,
 } from "./main-table-surface";
@@ -148,6 +152,71 @@ export const HighDensity: Story = {
 export const ReadOnly: Story = {
   render: () => (
     <TableSurfaceStory base={erpTableReadOnlyProps({ hideDone: false })} />
+  ),
+  tags: ["fui-surface--wm.table.main", "fui-state--ReadOnly"],
+};
+
+/** The custom field columns: one of each type, a formula with ƒx, locks in read-only headers. */
+export const FieldColumns: Story = {
+  render: () => <TableSurfaceStory base={erpTableFieldProps()} />,
+  tags: ["fui-surface--wm.table.main", "fui-state--Default"],
+};
+
+/** A cell is saving: the value stays with "Đang lưu". */
+export const FieldSaving: Story = {
+  render: () => (
+    <TableSurfaceStory
+      base={erpTableFieldProps({
+        writes: {
+          [writeKey("ERP-145", "field-points")]: {
+            status: "pending",
+            value: 13,
+          },
+        },
+      })}
+    />
+  ),
+  tags: ["fui-surface--wm.table.main", "fui-state--Default"],
+};
+
+/** A write failed: the typed value stays with an inline error and "Thử lại". */
+export const FieldError: Story = {
+  render: () => (
+    <TableSurfaceStory
+      base={erpTableFieldProps({
+        writes: {
+          [writeKey("ERP-145", "field-points")]: {
+            status: "error",
+            value: 21,
+          },
+        },
+      })}
+    />
+  ),
+  tags: ["fui-surface--wm.table.main", "fui-state--Default"],
+};
+
+/** Someone else changed the value: keep mine or use the new one, in the cell. */
+export const FieldConflict: Story = {
+  render: () => (
+    <TableSurfaceStory
+      base={erpTableFieldProps({
+        writes: {
+          [writeKey("ERP-145", "field-points")]: {
+            status: "conflict",
+            value: 21,
+          },
+        },
+      })}
+    />
+  ),
+  tags: ["fui-surface--wm.table.main", "fui-state--Default"],
+};
+
+/** A viewer reads the custom values; every field column carries its header lock. */
+export const FieldColumnsReadOnly: Story = {
+  render: () => (
+    <TableSurfaceStory base={erpTableFieldProps({ canEdit: false })} />
   ),
   tags: ["fui-surface--wm.table.main", "fui-state--ReadOnly"],
 };

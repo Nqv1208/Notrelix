@@ -14,6 +14,7 @@ import {
   orderByKey,
   projectTableLanes,
   type Card,
+  type FieldDefinition,
   type KanbanStatusLane,
   type TableDensity,
   type TableSort,
@@ -38,6 +39,7 @@ import {
 } from "../components/views/table/main-table.copy";
 import { statusOptionFormCopy } from "../components/status-option/status-option-form.copy";
 import type { MainTableSurfaceProps } from "../components/views/table/main-table-surface";
+import type { TableFieldEditing } from "../components/views/table/table-field-cell";
 import type { MainTableToolbarProps } from "../components/views/table/table-toolbar";
 import {
   buildTableGroup,
@@ -144,6 +146,10 @@ export interface TableScenarioOptions {
   /** Search or filter narrow the board (lanes with no cards disappear). */
   narrowed?: boolean;
   boardTitle?: string;
+  /** Custom fields shown as columns. */
+  customFields?: readonly FieldDefinition[];
+  /** Editing of the custom field cells. */
+  fieldEditing?: TableFieldEditing;
 }
 
 /** The default hidden columns of a new view: start, created, completed, checklist, comments, files. */
@@ -186,6 +192,7 @@ export function erpTableProps(
       copy,
       timeZone: TABLE_STORY_TIME_ZONE,
       statuses,
+      customFields: options.customFields,
     }),
   );
   const canEdit = options.canEdit ?? true;
@@ -206,6 +213,7 @@ export function erpTableProps(
       onGroupByChange: noop,
       sort,
       onSortChange: noop,
+      customFields: options.customFields,
       hiddenColumnIds: options.hiddenColumnIds ?? TABLE_DEFAULT_HIDDEN_COLUMNS,
       onColumnVisibleChange: noop,
       density: options.density ?? "comfortable",
@@ -218,6 +226,7 @@ export function erpTableProps(
     collapsedGroupIds: new Set(options.collapsed ?? []),
     openItemId: options.openItemId ?? null,
     canEdit,
+    fieldEditing: options.fieldEditing,
     canCreate,
     canArchive: canEdit,
     addGroup: canEdit

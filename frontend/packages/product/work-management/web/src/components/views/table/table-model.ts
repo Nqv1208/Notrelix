@@ -1,7 +1,10 @@
 import {
+  cellValueOf,
   inferStatusCategory,
   isTableCardDone,
   type Card,
+  type ComputedValue,
+  type FieldDefinition,
   type KanbanStatusLane,
   type WorkStatusCategory,
 } from "@notrelix/work-management-core";
@@ -56,6 +59,13 @@ export interface TableRowModel {
   readonly startText: string | null;
   readonly createdText: string | null;
   readonly completedText: string | null;
+  /** What each custom field column shows, by field id. */
+  readonly fields: Readonly<
+    Record<
+      string,
+      { readonly value: unknown; readonly computed?: ComputedValue }
+    >
+  >;
 }
 
 /** One group of the table: a lane of the board and its rows. */
@@ -118,11 +128,13 @@ export interface BuildTableRowOptions {
   readonly timeZone?: string;
   /** Status options of the board by id. */
   readonly statuses: ReadonlyMap<string, TableStatusOption>;
+  /** Custom fields shown as columns. */
+  readonly customFields?: readonly FieldDefinition[];
 }
 
 export function buildTableRow(
   card: Card,
-  { now, copy, timeZone, statuses }: BuildTableRowOptions,
+  { now, copy, timeZone, statuses, customFields = [] }: BuildTableRowOptions,
 ): TableRowModel {
   const done = isTableCardDone(card);
   const dueIso = card.dueAt ?? card.dueDate;
@@ -205,6 +217,9 @@ export function buildTableRow(
     completedText: card.completedAt
       ? formatItemDate(card.completedAt, now, timeZone)
       : null,
+    fields: Object.fromEntries(
+      customFields.map((field) => [field.id, cellValueOf(field, card)]),
+    ),
   };
 }
 

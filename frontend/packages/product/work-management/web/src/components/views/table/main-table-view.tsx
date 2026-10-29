@@ -17,6 +17,7 @@ import {
   useAddFieldOption,
   useBoardTable,
   useMoveFieldOption,
+  useUpdateFieldValue,
   useMoveItemToBoard,
   useRemoveFieldOption,
   useUpdateCard,
@@ -29,6 +30,7 @@ import {
   isOptimisticOptionId,
   orderByKey,
   projectTableLanes,
+  type FieldContext,
   type Card,
   type KanbanStatusLane,
   type UpdateFieldValueInput,
@@ -57,6 +59,7 @@ import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
 import type { TableEditors } from "./table-cell-editors";
+import type { TableFieldEditing } from "./table-field-cell";
 import {
   buildTableGroup,
   tableStatusOptions,
@@ -68,6 +71,7 @@ import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
+import { useFieldCellWrites } from "./use-field-cell-writes";
 
 type ParamChange = (
   value: string | undefined,
@@ -167,6 +171,8 @@ export function MainTableView({
   );
 
   const titles = useRef(new Map<string, string>());
+  // Each failure toast takes its own id: reusing one id swallows the next result toast.
+  const toastAttempt = useRef(0);
   const onWriteError = useCallback(
     (failure: KanbanWriteFailure) => {
       const title =
@@ -178,7 +184,7 @@ export function MainTableView({
             ? copy.failed.status
             : copy.failed.save;
       toast.error(fillTableCopy(message, { title }), {
-        id: `table-write-${failure.cardId ?? "create"}`,
+        id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
       });
     },
     [copy],
@@ -205,7 +211,7 @@ export function MainTableView({
     onError: () =>
       toast.error(
         fillTableCopy(copy.failed.moveGroup, { name: optionWriteName.current }),
-        { id: "table-option-write" },
+        { id: `table-option-write-${++toastAttempt.current}` },
       ),
   });
   const removeOption = useRemoveFieldOption(boardId, workspaceId, {
@@ -214,17 +220,19 @@ export function MainTableView({
         fillTableCopy(copy.failed.deleteGroup, {
           name: optionWriteName.current,
         }),
-        { id: "table-option-write" },
+        { id: `table-option-write-${++toastAttempt.current}` },
       ),
   });
   const updateCard = useUpdateCard(boardId, workspaceId);
+  // Custom field cells keep their own saving, error and conflict state, so no toast here.
+  const cellFieldValue = useUpdateFieldValue(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
     onError: (_error, cardId) =>
       toast.error(
         fillTableCopy(copy.failed.archive, {
           title: titles.current.get(cardId) ?? "",
         }),
-        { id: `table-write-${cardId}` },
+        { id: `table-write-${cardId}-${++toastAttempt.current}` },
       ),
   });
   const removal = useItemRemoval({
@@ -247,7 +255,7 @@ export function MainTableView({
         fillTableCopy(copy.failed.move, {
           title: titles.current.get(cardId) ?? "",
         }),
-        { id: `table-write-${cardId}` },
+        { id: `table-write-${cardId}-${++toastAttempt.current}` },
       ),
   });
   const workspaceBoards = useWorkspaceBoards(workspaceId);
@@ -285,7 +293,10 @@ export function MainTableView({
       bulkMutate(
         { itemIds: pending.ids, change: { type: "archive" } },
         {
-          onError: () => toast.error(copy.failed.bulk, { id: "table-bulk" }),
+          onError: () =>
+            toast.error(copy.failed.bulk, {
+              id: `table-bulk-${++toastAttempt.current}`,
+            }),
           onSettled: () =>
             setPendingArchive((current) =>
               current === pending.ids ? [] : current,
@@ -416,6 +427,19 @@ export function MainTableView({
       }),
     [table.lanes, hiddenByArchive],
   );
+  const sortableFields = useMemo(() => {
+    const people = table.board?.members ?? [];
+    return new Map<string, FieldContext>(
+      table.customFields.map((field) => [
+        field.id,
+        {
+          field,
+          memberName: (userId: string) =>
+            people.find((member) => member.userId === userId)?.name ?? userId,
+        },
+      ]),
+    );
+  }, [table.customFields, table.board?.members]);
   const projection = useMemo(
     () =>
       projectTableLanes({
@@ -425,8 +449,17 @@ export function MainTableView({
         statusRank,
         isOverdue,
         narrowed: table.filterActive,
+        customFields: sortableFields,
       }),
-    [lanes, table.sort, showDone, statusRank, isOverdue, table.filterActive],
+    [
+      lanes,
+      table.sort,
+      showDone,
+      statusRank,
+      isOverdue,
+      table.filterActive,
+      sortableFields,
+    ],
   );
   const groups = useMemo(
     () =>
@@ -435,10 +468,22 @@ export function MainTableView({
           lane,
           lane.name ||
             (isStatusGrouping ? copy.group.noStatus : copy.group.noValue),
-          { now, copy, statuses: statusById },
+          {
+            now,
+            copy,
+            statuses: statusById,
+            customFields: table.customFields,
+          },
         ),
       ),
-    [projection.groups, isStatusGrouping, copy, now, statusById],
+    [
+      projection.groups,
+      isStatusGrouping,
+      copy,
+      now,
+      statusById,
+      table.customFields,
+    ],
   );
 
   const allCards = useMemo(
@@ -464,6 +509,16 @@ export function MainTableView({
         .sort((a, b) => a.position - b.position)
         .map((group) => ({ id: group.id, title: group.title })),
     [table.groups],
+  );
+
+  const sendCellValue = cellFieldValue.mutateAsync;
+  const cellWrites = useFieldCellWrites(
+    useCallback(
+      (cardId: string, fieldDefinitionId: string, value: unknown) =>
+        sendCellValue({ cardId, fieldDefinitionId, value }),
+      [sendCellValue],
+    ),
+    table.refetch,
   );
 
   const tableRef = useRef<HTMLDivElement>(null);
@@ -497,7 +552,12 @@ export function MainTableView({
     for (const id of selectedList) noteTitle(id);
     bulkMutate(
       { itemIds: selectedList, change },
-      { onError: () => toast.error(copy.failed.bulk, { id: "table-bulk" }) },
+      {
+        onError: () =>
+          toast.error(copy.failed.bulk, {
+            id: `table-bulk-${++toastAttempt.current}`,
+          }),
+      },
     );
     setSelection(new Set());
   };
@@ -544,6 +604,18 @@ export function MainTableView({
         },
       }
     : undefined;
+  const fieldEditing: TableFieldEditing = {
+    canEdit: capabilities.canEditFields,
+    members,
+    writeOf: cellWrites.writeOf,
+    onWrite: (cardId, fieldDefinitionId, value) => {
+      noteTitle(cardId);
+      cellWrites.write(cardId, fieldDefinitionId, value);
+    },
+    onRetry: cellWrites.retry,
+    onKeepMine: cellWrites.keepMine,
+    onUseTheirs: cellWrites.takeTheirs,
+  };
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(
       (candidate) =>
@@ -676,6 +748,9 @@ export function MainTableView({
             },
             sort: table.sort,
             onSortChange: table.setSort,
+            customFields: table.customFields,
+            columnOrder: table.columnOrder,
+            onColumnOrderChange: table.setColumnOrder,
             hiddenColumnIds: table.hiddenColumnIds,
             onColumnVisibleChange: table.setColumnVisible,
             density: table.density,
@@ -746,6 +821,7 @@ export function MainTableView({
           openItemId={selectedItemId}
           canEdit={capabilities.canEditFields}
           editors={editors}
+          fieldEditing={fieldEditing}
           onRename={
             capabilities.canEditFields
               ? (cardId, title) => {

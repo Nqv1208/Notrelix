@@ -300,6 +300,11 @@ export const ERP_HISTORY: readonly ErpHistoryEntry[] = [
 export const ERP_MODULE_COLUMN_ID = "mock-erp-col-module";
 export const ERP_ESTIMATE_COLUMN_ID = "mock-erp-col-estimate";
 export const ERP_REQUESTER_COLUMN_ID = "mock-erp-col-requester";
+/** Custom fields the Table shows as columns: a long text, a link, a number and a formula over it. */
+export const ERP_NOTE_COLUMN_ID = "mock-erp-col-note";
+export const ERP_LINK_COLUMN_ID = "mock-erp-col-link";
+export const ERP_POINTS_COLUMN_ID = "mock-erp-col-points";
+export const ERP_DOUBLE_COLUMN_ID = "mock-erp-col-double";
 
 export const ERP_MODULE_OPTIONS = [
   { id: "mock-erp-module-accounting", name: "Kế toán" },
@@ -325,5 +330,13 @@ export const ERP_CUSTOM_VALUES: Readonly<
     [ERP_MODULE_COLUMN_ID]: "mock-erp-module-accounting",
     [ERP_ESTIMATE_COLUMN_ID]: 40,
     [ERP_REQUESTER_COLUMN_ID]: "mock-erp-requester-accounting",
+  },
+  "ERP-144": {
+    [ERP_NOTE_COLUMN_ID]: "Cần xuất bản Excel cho kế toán trưởng",
+    [ERP_LINK_COLUMN_ID]: "https://erp.minhan.vn/t/144",
+    [ERP_POINTS_COLUMN_ID]: 13,
+  },
+  "ERP-147": {
+    [ERP_POINTS_COLUMN_ID]: 5,
   },
 };

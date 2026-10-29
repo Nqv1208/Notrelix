@@ -1267,6 +1267,8 @@
         "src/components/views/table/table-bulk-bar.tsx",
         "src/components/views/table/table-cell-editors.tsx",
         "src/components/views/table/table-column-resize.tsx",
+        "src/components/views/table/table-field-cell.tsx",
+        "src/components/views/table/table-field-editors.tsx",
         "src/components/views/table/table-group-menu.tsx",
         "src/components/views/table/table-group-section.tsx",
         "src/components/views/table/table-header-row.tsx",
@@ -1446,6 +1448,104 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-table-main-table--field-columns",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-saving",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-error",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-conflict",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-columns-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -1533,6 +1633,22 @@
         {
           "id": "group-delete",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "field-columns",
+          "testFile": "src/components/views/table/__tests__/main-table-view.fields.component.test.tsx"
+        },
+        {
+          "id": "field-edit",
+          "testFile": "src/components/views/table/__tests__/table-field-cell.interaction.component.test.tsx"
+        },
+        {
+          "id": "field-computed",
+          "testFile": "src/components/views/table/__tests__/table-field-cell.interaction.component.test.tsx"
+        },
+        {
+          "id": "field-write-states",
+          "testFile": "src/components/views/table/__tests__/table-field-cell.interaction.component.test.tsx"
         }
       ]
     },

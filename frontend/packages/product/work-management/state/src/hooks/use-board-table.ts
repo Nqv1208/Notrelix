@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import {
+  tableCustomFields,
   tableSortFromConfig,
   type TableDensity,
   type TableSort,
@@ -28,9 +29,18 @@ export function useBoardTable(
     isLoading: viewLoading,
   } = useBoardView(boardId, workspaceId);
 
+  // Custom fields shown as columns; the view config's hide, order, width and sort apply to them by field id.
+  const customFields = useMemo(
+    () => tableCustomFields(lanes.board?.fieldDefinitions ?? []),
+    [lanes.board],
+  );
   const sort = useMemo<TableSort>(
-    () => tableSortFromConfig(viewConfig.sortBy),
-    [viewConfig.sortBy],
+    () =>
+      tableSortFromConfig(
+        viewConfig.sortBy,
+        new Set(customFields.map((field) => field.id)),
+      ),
+    [viewConfig.sortBy, customFields],
   );
   const setSort = useCallback(
     (next: TableSort) =>
@@ -49,6 +59,12 @@ export function useBoardTable(
       });
     },
     [updateViewConfig, viewConfig.hiddenFields],
+  );
+
+  const columnOrder = viewConfig.columnOrder;
+  const setColumnOrder = useCallback(
+    (next: string[]) => updateViewConfig({ columnOrder: next }),
+    [updateViewConfig],
   );
 
   const density: TableDensity = viewConfig.density;
@@ -84,8 +100,11 @@ export function useBoardTable(
   return {
     ...lanes,
     isLoading: lanes.isLoading || viewLoading,
+    customFields,
     sort,
     setSort,
+    columnOrder,
+    setColumnOrder,
     hiddenColumnIds,
     setColumnVisible,
     density,

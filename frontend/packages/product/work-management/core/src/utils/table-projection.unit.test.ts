@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "../types";
+import type { FieldDefinition } from "../types/field-types";
+import type { FieldContext } from "../field-types/field-type-registry";
 import type { KanbanStatusLane } from "../types/kanban-types";
 import {
   DEFAULT_TABLE_SORT,
@@ -176,5 +178,94 @@ describe("projectTableLanes", () => {
     });
     expect(result.groups).toEqual([]);
     expect(result.hiddenCount).toBe(4);
+  });
+});
+
+describe("sorting by a custom field column", () => {
+  const points: FieldDefinition = {
+    id: "field-points",
+    boardId: "board-1",
+    name: "Điểm",
+    fieldType: "number",
+    options: [],
+    position: 1,
+    isHidden: false,
+    isSystemField: false,
+  };
+  const customFields = new Map<string, FieldContext>([
+    [points.id, { field: points, memberName: (id) => id }],
+  ]);
+  const cards = [
+    card("a", { fieldValues: { "field-points": 13 } }),
+    card("none"),
+    card("b", { fieldValues: { "field-points": 5 } }),
+    card("c", { fieldValues: { "field-points": 8 } }),
+  ];
+  const ids = (sorted: Card[]) => sorted.map((entry) => entry.id);
+
+  it("keeps a saved sort that names a custom field, and drops one the table has no column for", () => {
+    const known = new Set([points.id]);
+    expect(
+      tableSortFromConfig([{ fieldId: points.id, direction: "desc" }], known),
+    ).toEqual({ key: points.id, direction: "desc" });
+    expect(
+      tableSortFromConfig([{ fieldId: points.id, direction: "desc" }]),
+    ).toEqual(DEFAULT_TABLE_SORT);
+  });
+
+  it("orders with the type's comparator: empty last ascending", () => {
+    expect(
+      ids(
+        sortTableCards(
+          cards,
+          { key: points.id, direction: "asc" },
+          rankNone,
+          customFields,
+        ),
+      ),
+    ).toEqual(["b", "c", "a", "none"]);
+  });
+
+  it("flips the values and puts the empty first descending (the registry's null rule)", () => {
+    expect(
+      ids(
+        sortTableCards(
+          cards,
+          { key: points.id, direction: "desc" },
+          rankNone,
+          customFields,
+        ),
+      ),
+    ).toEqual(["none", "a", "c", "b"]);
+  });
+
+  it("keeps board order for equal values", () => {
+    const equal = [
+      card("x", { fieldValues: { "field-points": 1 } }),
+      card("y", { fieldValues: { "field-points": 1 } }),
+    ];
+    expect(
+      ids(
+        sortTableCards(
+          equal,
+          { key: points.id, direction: "desc" },
+          rankNone,
+          customFields,
+        ),
+      ),
+    ).toEqual(["x", "y"]);
+  });
+
+  it("projects lanes with the custom sort", () => {
+    const result = projectTableLanes({
+      lanes: [lane("todo", "Cần làm", [...cards])],
+      sort: { key: points.id, direction: "asc" },
+      hideDone: false,
+      statusRank: rankNone,
+      isOverdue: () => false,
+      narrowed: false,
+      customFields,
+    });
+    expect(ids(result.groups[0]!.cards)).toEqual(["b", "c", "a", "none"]);
   });
 });

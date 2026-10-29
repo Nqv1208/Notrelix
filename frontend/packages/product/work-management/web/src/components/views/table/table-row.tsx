@@ -36,6 +36,7 @@ import {
   PriorityEditor,
   type TableEditors,
 } from "./table-cell-editors";
+import { TableFieldCell, type TableFieldEditing } from "./table-field-cell";
 import { StatusDot, TableCheckbox } from "./table-parts";
 import { TableStatusPicker } from "./table-status-picker";
 
@@ -68,6 +69,8 @@ export interface TableRowProps {
   canEdit: boolean;
   /** In-place editors of assignee, due date and priority; absent = read-only. */
   editors?: TableEditors;
+  /** Editing of the custom field cells; absent = they are read-only. */
+  fieldEditing?: TableFieldEditing;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
   /** Saves a new title typed in place; absent = the title cannot be edited here. */
@@ -143,6 +146,7 @@ export function TableRow({
   tabStop,
   canEdit,
   editors,
+  fieldEditing,
   actions,
   onRename,
   expand,
@@ -572,6 +576,33 @@ export function TableRow({
             <span className="text-nav font-normal tabular-nums text-muted-foreground">
               {text}
             </span>
+          </Cell>
+        );
+      }
+      default: {
+        const field = column.field;
+        if (!field) return null;
+        return (
+          <Cell
+            key={column.id}
+            selected={selected}
+            className="focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-ring"
+          >
+            <TableFieldCell
+              field={field}
+              cell={row.fields[field.id] ?? { value: undefined }}
+              rowKey={keyLabel}
+              copy={copy}
+              members={fieldEditing?.members ?? []}
+              editable={Boolean(canEdit && fieldEditing?.canEdit)}
+              write={fieldEditing?.writeOf(row.id, field.id)}
+              onWrite={(value) =>
+                fieldEditing?.onWrite(row.id, field.id, value)
+              }
+              onRetry={() => fieldEditing?.onRetry(row.id, field.id)}
+              onKeepMine={() => fieldEditing?.onKeepMine(row.id, field.id)}
+              onUseTheirs={() => fieldEditing?.onUseTheirs(row.id, field.id)}
+            />
           </Cell>
         );
       }
