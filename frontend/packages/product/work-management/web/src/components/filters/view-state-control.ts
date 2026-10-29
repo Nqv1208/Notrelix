@@ -28,6 +28,6 @@ export interface ViewStateControl {
   readonly persistent: boolean;
   readonly saveFailed: boolean;
   /** Why the save was not sent or was refused for good: the view is too large, or the server rejected it. No retry helps. */
-  readonly saveIssue?: "too_large" | "rejected" | null;
+  readonly saveIssue?: "too_large" | "rejected" | "gone" | null;
   retrySave(): void;
 }

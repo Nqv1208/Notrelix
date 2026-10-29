@@ -43,6 +43,8 @@ export interface UseViewStateOptions {
   fieldDefinitions: readonly FieldDefinition[] | undefined;
   /** What the board has (status options, people, labels): ids an older facet filter names beyond it are dropped. */
   filterChoices?: KanbanFilterChoices | undefined;
+  /** A save made on a view the member already left failed: the host tells them. */
+  onSaveLost?: (() => void) | undefined;
 }
 
 const SAVE_DELAY_MS = 400;
@@ -68,9 +70,15 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
     onRouteGroupByChange,
     fieldDefinitions,
     filterChoices,
+    onSaveLost,
   } = options;
   const { viewId } = useBoardView(boardId, workspaceId);
-  const preference = useBoardPreference(boardId, workspaceId, viewId);
+  const preference = useBoardPreference(
+    boardId,
+    workspaceId,
+    viewId,
+    onSaveLost,
+  );
   const personal = useMemo(
     () =>
       preference.criteria ? viewStateFromCriteria(preference.criteria) : null,
@@ -162,7 +170,7 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
   // The pending save keeps the view it was made on, so a switch cannot redirect it.
   const pending = useRef<{
     state: ViewState;
-    target: { boardId: string; viewId: string };
+    target: { workspaceId: string; boardId: string; viewId: string };
   } | null>(null);
   const { save } = preference;
   const saveRef = useRef(save);
@@ -195,7 +203,10 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
       if (onRouteGroupByChange && next.group?.fieldId !== state.group?.fieldId)
         onRouteGroupByChange(next.group?.fieldId ?? "");
       if (viewId)
-        pending.current = { state: next, target: { boardId, viewId } };
+        pending.current = {
+          state: next,
+          target: { workspaceId, boardId, viewId },
+        };
       if (timer.current !== null) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(flush, SAVE_DELAY_MS);
     },
@@ -208,6 +219,7 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
       scope,
       state.group?.fieldId,
       viewId,
+      workspaceId,
     ],
   );
 

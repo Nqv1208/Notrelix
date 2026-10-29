@@ -6,11 +6,12 @@ import { MockStore } from "../state/mock-store";
 import { createMockFetch } from "../transport/create-mock-fetch";
 
 const BOARD = mockIds.boards.erp;
-const VIEW = "mock-view-personal";
-const url = endpoints.boardPreferences.forView(BOARD, VIEW);
+let url = "";
 
 function setup() {
   const store = new MockStore({ ...defaultConfig });
+  const viewId = store.savedViews.list(BOARD, store.getCurrentUser().id)[0]!.id;
+  url = endpoints.boardPreferences.forView(BOARD, viewId);
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
     fetchImpl: createMockFetch(store),
@@ -65,5 +66,19 @@ describe("Board preferences in the mock world (WorkManagement.BoardPreferences.*
       put(client, { criteria: `{"x":"${"a".repeat(8200)}"}` }),
     ).rejects.toMatchObject({ status: 422 });
     expect((await read(client)).criteria).toBe('{"v":2}');
+  });
+
+  it("answers NotFound for a view that does not exist (deleted by someone else)", async () => {
+    const { client, actAs } = setup();
+    actAs("owner");
+    const gone = endpoints.boardPreferences.forView(BOARD, "view-deleted");
+    await expect(
+      client.api.put<void>(
+        gone,
+        { criteria: '{"v":2}' },
+        { headers: { "Idempotency-Key": crypto.randomUUID() } },
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(client.api.get(gone)).rejects.toMatchObject({ status: 404 });
   });
 });

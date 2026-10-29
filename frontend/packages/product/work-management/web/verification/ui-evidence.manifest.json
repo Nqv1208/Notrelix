@@ -1203,6 +1203,10 @@
         {
           "id": "state-route-lag",
           "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
+        },
+        {
+          "id": "state-switch-workspace",
+          "testFile": "src/components/filters/__tests__/use-view-state.component.test.tsx"
         }
       ]
     },

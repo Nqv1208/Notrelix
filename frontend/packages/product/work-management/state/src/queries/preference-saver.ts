@@ -4,11 +4,12 @@ import {
   type SavedFilterCriteria,
 } from "@notrelix/work-management-core";
 
-/** Why a save was not sent or was refused for good (no retry helps): over the size cap, or rejected by the server. */
-export type PreferenceSaveIssue = "too_large" | "rejected";
+/** Why a save was not sent or was refused for good (no retry helps): over the size cap, rejected by the server, or the view no longer exists. */
+export type PreferenceSaveIssue = "too_large" | "rejected" | "gone";
 
 /** The view a saved state belongs to; a pending save keeps its own, so a view switch never redirects it. */
 export interface PreferenceTarget {
+  readonly workspaceId: string;
   readonly boardId: string;
   readonly viewId: string;
 }
@@ -31,11 +32,20 @@ export interface PreferenceSaverDeps {
   readonly report: (status: PreferenceStatus) => void;
 }
 
-const isValidationError = (error: unknown): boolean =>
+const kindOf = (error: unknown): string | null =>
   typeof error === "object" &&
   error !== null &&
   "kind" in error &&
-  error.kind === "validation";
+  typeof error.kind === "string"
+    ? error.kind
+    : null;
+/** Refusals no retry helps: the server rejected the criteria, or the view is gone (deleted by someone else). */
+const refusalOf = (error: unknown): PreferenceSaveIssue | null =>
+  kindOf(error) === "validation"
+    ? "rejected"
+    : kindOf(error) === "not_found"
+      ? "gone"
+      : null;
 
 /**
  * Saves a member's view state. Single-flight: a save starts only after the
@@ -78,13 +88,8 @@ export function createPreferenceSaver(deps: PreferenceSaverDeps) {
       },
       (error: unknown) => {
         if (ticket !== latest) return;
-        const rejected = isValidationError(error);
-        deps.report({
-          target,
-          pending: false,
-          failed: !rejected,
-          issue: rejected ? "rejected" : null,
-        });
+        const issue = refusalOf(error);
+        deps.report({ target, pending: false, failed: !issue, issue });
       },
     );
   };

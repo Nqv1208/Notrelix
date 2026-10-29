@@ -94,4 +94,15 @@ describe("condition editing", () => {
     expect(resolveOperand("@today+6", env)).toBe("2026-10-24");
     expect(resolveOperand("2026-01-01", env)).toBe("2026-01-01");
   });
+  it("flags an unresolvable relative operand as not applied and never throws", () => {
+    const bad = {
+      fieldId: "d",
+      operator: "equals" as const,
+      values: ["@today+99999999999999"],
+    };
+    expect(conditionIssue(bad)).toBe("incomplete");
+    expect(
+      effectiveFilter({ join: "and", conditions: [bad] }).conditions,
+    ).toEqual([]);
+  });
 });

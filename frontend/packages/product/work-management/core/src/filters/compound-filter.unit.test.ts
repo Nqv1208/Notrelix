@@ -256,4 +256,29 @@ describe("date operands in the workspace time zone", () => {
     expect(run("2026-10-21T05:00:00Z", "2026-10-14")).toBe(false);
     expect(run("2026-10-21T05:00:00Z", "2026-10-20")).toBe(true);
   });
+  it("never throws on an oversized or malformed relative operand; it matches nothing", () => {
+    const env = { now: new Date("2026-10-12T05:00:00Z") };
+    for (const bad of [
+      "@today+99999999999999",
+      "@today-99999",
+      "@bogus",
+      "@today+",
+    ]) {
+      expect(() => resolveOperand(bad, env)).not.toThrow();
+      expect(resolveOperand(bad, env)).toBe(bad);
+      expect(
+        evaluateFilter(
+          {
+            join: "and",
+            conditions: [{ fieldId: "f", operator: "equals", values: [bad] }],
+          },
+          {
+            resolve: () => ({ context: context("date"), value: "2026-10-12" }),
+          },
+          env,
+        ).matches,
+      ).toBe(false);
+    }
+    expect(resolveOperand("@today+9999", env)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
 });

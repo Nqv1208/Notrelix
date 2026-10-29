@@ -54,11 +54,16 @@ export function withOperator(
   };
 }
 
+/** A relative operand (`@...`) the resolver does not understand, or whose date is out of range. */
+const unresolved = (operand: string): boolean =>
+  operand.startsWith("@") && resolveOperand(operand) === operand;
+
 export type ConditionIssue = "incomplete" | "range" | null;
 
 /** Why a condition is not applied yet: no value, or a date range whose start is after its end. */
 export function conditionIssue(condition: FilterCondition): ConditionIssue {
   if (!operatorTakesValue(condition.operator)) return null;
+  if (condition.values.some(unresolved)) return "incomplete";
   if (condition.operator === "between") {
     const [from, to] = condition.values;
     if (!from || !to) return "incomplete";

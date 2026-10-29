@@ -35,15 +35,17 @@ const filterOf = (value: string): CompoundFilter => ({
 });
 const routeOf = (value: string) => serializeCompoundFilter(filterOf(value));
 
-type Props = Pick<UseViewStateOptions, "boardId" | "routeFilter">;
+type Props = Pick<UseViewStateOptions, "boardId" | "routeFilter"> & {
+  workspaceId?: string;
+};
 
 function setup(initial: Props) {
   const onRouteFilterChange = vi.fn();
   const hook = renderHook(
     (props: Props) =>
       useViewState({
-        ...props,
         workspaceId: "w1",
+        ...props,
         onRouteFilterChange,
         fieldDefinitions: undefined,
       }),
@@ -73,6 +75,7 @@ describe("useViewState", () => {
     rerender({ boardId: "b1", routeFilter: undefined });
     expect(mocks.save).toHaveBeenCalledTimes(1);
     expect(mocks.save.mock.calls[0]![1]).toEqual({
+      workspaceId: "w1",
       boardId: "b1",
       viewId: "v1",
     });
@@ -89,6 +92,23 @@ describe("useViewState", () => {
     act(() => result.current.setFilter(filterOf("a")));
     rerender({ boardId: "b2", routeFilter: undefined });
     expect(mocks.save.mock.calls[0]![1]).toEqual({
+      workspaceId: "w1",
+      boardId: "b1",
+      viewId: "v1",
+    });
+    expect(result.current.state.filter.conditions).toHaveLength(0);
+  });
+
+  it("FUI[wm.filters.bar:state-switch-workspace] a pending save flushed on a workspace switch keeps the workspace it was made in", () => {
+    const { result, rerender } = setup({
+      boardId: "b1",
+      routeFilter: undefined,
+      workspaceId: "w-old",
+    });
+    act(() => result.current.setFilter(filterOf("a")));
+    rerender({ boardId: "b9", routeFilter: undefined, workspaceId: "w-new" });
+    expect(mocks.save.mock.calls[0]![1]).toEqual({
+      workspaceId: "w-old",
       boardId: "b1",
       viewId: "v1",
     });

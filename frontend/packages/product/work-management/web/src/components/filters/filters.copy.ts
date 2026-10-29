@@ -164,7 +164,9 @@ export const en = {
         "Your view is too large to save. Remove some conditions or shorten their values.",
       rejected:
         "The server did not accept this view, so it is not saved. Change the conditions and try again.",
+      gone: "This view was deleted by someone else, so your own view of it cannot be saved.",
     },
+    saveLost: "Your own view of the previous view could not be saved.",
     retry: "Try again",
     restored: "Your own view was restored",
   },
@@ -356,7 +358,9 @@ export const vi: FiltersCopy = {
         "Cách xem quá lớn để lưu. Hãy bớt điều kiện hoặc rút gọn giá trị.",
       rejected:
         "Máy chủ không nhận cách xem này nên chưa lưu. Hãy đổi điều kiện rồi thử lại.",
+      gone: "View này đã bị người khác xóa nên không lưu được cách xem riêng của bạn.",
     },
+    saveLost: "Chưa lưu được cách xem riêng của view trước đó.",
     retry: "Thử lại",
     restored: "Đã khôi phục cách xem riêng của bạn",
   },

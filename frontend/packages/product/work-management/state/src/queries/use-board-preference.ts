@@ -24,6 +24,8 @@ export function useBoardPreference(
   boardId: string,
   workspaceId: string,
   viewId: string | undefined,
+  /** Called when a save made on another view (one the member left) fails: its notice would otherwise be lost. */
+  onLeftViewFailure?: (status: PreferenceStatus) => void,
 ) {
   const queryClient = useQueryClient();
   const { boardPreferences } = useWorkManagementServices();
@@ -41,8 +43,10 @@ export function useBoardPreference(
   });
 
   const [status, setStatus] = useState<PreferenceStatus | null>(null);
-  const workspaceRef = useRef(workspaceId);
-  workspaceRef.current = workspaceId;
+  const lostRef = useRef(onLeftViewFailure);
+  lostRef.current = onLeftViewFailure;
+  const current = useRef({ workspaceId, boardId, viewId });
+  current.current = { workspaceId, boardId, viewId };
   const saver = useMemo(
     () =>
       createPreferenceSaver({
@@ -51,13 +55,21 @@ export function useBoardPreference(
         cache: (target, criteria) =>
           queryClient.setQueryData(
             wmQueryKeys.boardPreference(
-              workspaceRef.current,
+              target.workspaceId,
               target.boardId,
               target.viewId,
             ),
             criteria,
           ),
-        report: setStatus,
+        report: (next) => {
+          setStatus(next);
+          const now = current.current;
+          const here =
+            next.target.workspaceId === now.workspaceId &&
+            next.target.boardId === now.boardId &&
+            next.target.viewId === now.viewId;
+          if (!here && (next.failed || next.issue)) lostRef.current?.(next);
+        },
       }),
     [boardPreferences, queryClient],
   );
@@ -66,7 +78,7 @@ export function useBoardPreference(
     (
       criteria: SavedFilterCriteria,
       target: PreferenceTarget | undefined = viewId
-        ? { boardId, viewId }
+        ? { workspaceId, boardId, viewId }
         : undefined,
     ) => {
       if (target && workspaceId) saver.save(criteria, target);

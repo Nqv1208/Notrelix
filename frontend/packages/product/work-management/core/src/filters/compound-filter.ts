@@ -77,10 +77,17 @@ const shiftDay = (day: string, days: number): Date => {
  */
 export function resolveOperand(operand: string, env: FilterEnv = {}): string {
   if (!operand.startsWith("@")) return operand;
-  const today = dayOf((env.now ?? new Date()).toISOString(), env.timeZone);
-  const offset = /^@today([+-]\d+)?$/.exec(operand);
+  const now = env.now ?? new Date();
+  const today = Number.isNaN(now.getTime())
+    ? null
+    : dayOf(now.toISOString(), env.timeZone);
+  const offset = /^@today([+-]\d{1,4})?$/.exec(operand);
   if (!today) return operand;
-  if (offset) return isoDay(shiftDay(today, Number(offset[1] ?? 0)));
+  if (offset) {
+    const shifted = shiftDay(today, Number(offset[1] ?? 0));
+    // Never throws: an out-of-range day stays an unresolved (invalid) operand.
+    return Number.isNaN(shifted.getTime()) ? operand : isoDay(shifted);
+  }
   const monday = shiftDay(
     today,
     -((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7),
@@ -234,7 +241,12 @@ export function evaluateFilter(
       stale.add(condition.fieldId);
       continue;
     }
-    results.push(matchesCondition(hit.context, condition, hit.value, env));
+    try {
+      results.push(matchesCondition(hit.context, condition, hit.value, env));
+    } catch {
+      // Criteria are opaque to the server: a malformed operand matches nothing, never crashes the board.
+      results.push(false);
+    }
   }
   const matches =
     results.length === 0 ||

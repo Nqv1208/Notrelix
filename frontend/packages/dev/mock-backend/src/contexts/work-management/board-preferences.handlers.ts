@@ -16,11 +16,21 @@ import {
   ok,
   validationError,
 } from "../../transport/create-response";
+import type { MockStore } from "../../state/mock-store";
 import { canReadBoard } from "./boards.handlers";
 
 type Params = { boardId: string; viewId: string };
 
 const MAX_CRITERIA_BYTES = 8192;
+
+/** A view of this board the caller can see; a missing one is NotFound, as on the producer. */
+function missingView(store: MockStore, boardId: string, viewId: string) {
+  const view = store.savedViews.find(boardId, viewId);
+  const me = store.getCurrentUser().id;
+  return !view || (view.visibility === "Private" && view.createdBy !== me)
+    ? notFound("View not found")
+    : null;
+}
 
 function isJsonObject(text: string): boolean {
   try {
@@ -43,6 +53,8 @@ export const boardPreferencesOperations = [
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store))
         return notFound("Board not found");
+      const gone = missingView(store, params.boardId, params.viewId);
+      if (gone) return gone;
       const me = store.getCurrentUser().id;
       return ok({
         id: params.viewId,
@@ -67,6 +79,8 @@ export const boardPreferencesOperations = [
     async handle({ params, body, store }) {
       if (!canReadBoard(params.boardId, store))
         return notFound("Board not found");
+      const gone = missingView(store, params.boardId, params.viewId);
+      if (gone) return gone;
       const criteria = body?.criteria;
       if (typeof criteria === "string" && criteria.trim() !== "") {
         if (new TextEncoder().encode(criteria).length > MAX_CRITERIA_BYTES)

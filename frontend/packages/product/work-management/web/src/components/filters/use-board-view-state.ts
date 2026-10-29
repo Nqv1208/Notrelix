@@ -4,6 +4,7 @@ import {
   useFullBoard,
   type UseBoardKanbanView,
 } from "@notrelix/work-management-state";
+import { toast } from "sonner";
 import { runtimeZone } from "../shared/board-clock";
 import { bucketLabel } from "./condition-label";
 import { useFiltersCopy } from "./use-filters-copy";
@@ -31,6 +32,7 @@ export function useBoardViewState(
     ...options,
     fieldDefinitions: board?.fieldDefinitions,
     filterChoices,
+    onSaveLost: () => toast.error(copy.personal.saveLost),
   });
   const kanbanView = useMemo<UseBoardKanbanView>(
     () => ({

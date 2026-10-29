@@ -4,7 +4,7 @@ import {
   type PreferenceStatus,
 } from "../queries/preference-saver";
 
-const target = { boardId: "b1", viewId: "v1" };
+const target = { workspaceId: "w1", boardId: "b1", viewId: "v1" };
 
 function setup() {
   const jobs: Array<{
@@ -58,7 +58,10 @@ describe("createPreferenceSaver", () => {
     saver.save({ groupBy: "x" }, target);
     await flushMicrotasks();
     jobs[0]!.resolve();
-    saver.save({ groupBy: "y" }, { boardId: "b2", viewId: "v9" });
+    saver.save(
+      { groupBy: "y" },
+      { workspaceId: "w2", boardId: "b2", viewId: "v9" },
+    );
     await flushMicrotasks();
     expect(jobs[1]!.viewId).toBe("v9");
   });
@@ -90,5 +93,27 @@ describe("createPreferenceSaver", () => {
     saver.retry();
     await flushMicrotasks();
     expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it("a view deleted by someone else is a refusal with a reason, not a retry", async () => {
+    const { saver, jobs, reports, flushMicrotasks } = setup();
+    saver.save({ groupBy: "x" }, target);
+    await flushMicrotasks();
+    jobs[0]!.reject({ kind: "not_found" });
+    await flushMicrotasks();
+    expect(reports.at(-1)).toMatchObject({ issue: "gone", failed: false });
+  });
+
+  it("a pending save flushed on a workspace switch caches and reports under the workspace it was made in", async () => {
+    const cached: Array<{ workspaceId: string }> = [];
+    const reports: Array<{ target: { workspaceId: string } }> = [];
+    const saver = createPreferenceSaver({
+      send: () => Promise.resolve(),
+      cache: (t) => cached.push(t),
+      report: (status) => reports.push(status),
+    });
+    saver.save({ groupBy: "x" }, { ...target, workspaceId: "w-old" });
+    expect(cached).toEqual([{ ...target, workspaceId: "w-old" }]);
+    expect(reports.every((r) => r.target.workspaceId === "w-old")).toBe(true);
   });
 });
