@@ -1,5 +1,9 @@
 import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
 import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
+import {
+  en as actionsEn,
+  vi as actionsVi,
+} from "../item-actions/item-actions.copy";
 
 /**
  * Item side sheet copy, vi and en, registered as the `item-sheet` catalog
@@ -9,6 +13,8 @@ import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
  * `fillSheetCopy`; counted messages carry `_one` / `_other` forms.
  */
 export const en = {
+  /** The item actions menu, shared by the sheet, the page and the board views. */
+  actions: actionsEn,
   /** Replies and reactions of a comment. */
   thread: threadEn,
   /** BCP 47 tag the sheet formats times with. */
@@ -173,6 +179,7 @@ export const en = {
 export type ItemSheetCopy = typeof en;
 
 export const vi: ItemSheetCopy = {
+  actions: actionsVi,
   thread: threadVi,
   locale: "vi",
   activityEvents: ACTIVITY_WORDS_VI,

@@ -579,7 +579,7 @@ describe("KanbanView on the ERP board", () => {
       within(dialog).getByRole("button", { name: "Thêm" }),
     );
     fireEvent.keyDown(more, { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
     await waitFor(() =>
       expect(cards.archiveCard).toHaveBeenCalledWith(
         erpItemId("ERP-142"),

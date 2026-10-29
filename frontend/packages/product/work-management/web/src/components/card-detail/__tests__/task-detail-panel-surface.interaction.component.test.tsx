@@ -354,14 +354,16 @@ describe.each([
       key: "Enter",
     });
     fireEvent.click(
-      screen.getByRole("menuitem", { name: copy.head.duplicate }),
+      screen.getByRole("menuitem", { name: copy.actions.duplicate }),
     );
     expect(callbacks.onDuplicate).toHaveBeenCalledWith("item-erp-142");
 
     fireEvent.keyDown(screen.getByRole("button", { name: copy.head.more }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitem", { name: copy.head.archive }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.actions.archive }),
+    );
     expect(callbacks.onArchive).toHaveBeenCalledWith("item-erp-142");
   });
 
@@ -477,7 +479,8 @@ describe.each([
     expect(callbacks.onUpdateFieldValue).not.toHaveBeenCalled();
 
     expect(screen.queryByRole("textbox", { name: copy.title.edit })).toBeNull();
-    expect(screen.queryByRole("button", { name: copy.head.more })).toBeNull();
+    // The menu stays for a commenter (copy link, remind); the edits in it are locked.
+    expect(screen.getByRole("button", { name: copy.head.more })).toBeTruthy();
     expect(screen.queryByRole("checkbox")).toBeNull();
 
     const composer = screen.getByRole("textbox", { name: copy.composer.label });

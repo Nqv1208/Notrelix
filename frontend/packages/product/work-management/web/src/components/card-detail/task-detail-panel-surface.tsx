@@ -33,6 +33,8 @@ export interface TaskDetailPanelSurfaceProps {
   readonly detailData?: TaskDetailData;
   readonly callbacks: TaskDetailCallbacks;
   readonly activeTab?: CardDetailTab;
+  /** The linked docs section, supplied by the container (it reads and writes the links). */
+  readonly linkedDocs?: React.ReactNode;
   readonly copy: ItemSheetCopy;
   /** Injected clock for due and comment wording. */
   readonly now: Date;
@@ -79,6 +81,7 @@ export function TaskDetailPanelSurface({
   detailData,
   callbacks,
   activeTab,
+  linkedDocs,
   copy,
   now,
   timeZone,
@@ -165,6 +168,10 @@ export function TaskDetailPanelSurface({
             onArchive={callbacks.onArchive}
             onDelete={callbacks.onDelete}
             onMoveToBoard={callbacks.onMoveToBoard}
+            onComplete={callbacks.onComplete}
+            onReopen={callbacks.onReopen}
+            onRemind={callbacks.onRemind}
+            onUnarchive={callbacks.onUnarchive}
             onMoveToGroup={callbacks.onMoveToGroup}
             following={detailData.following}
             onToggleFollow={callbacks.onToggleWatch}
@@ -204,6 +211,7 @@ export function TaskDetailPanelSurface({
               now={now}
               timeZone={timeZone}
               activeTab={activeTab}
+              linkedDocs={linkedDocs}
             />
           </div>
           <UpdateComposer
