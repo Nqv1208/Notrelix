@@ -26,20 +26,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 FROM workspace.workspaces w WHERE w.id = t.workspace_id;
                 DELETE FROM work.board_templates WHERE account_id IS NULL OR workspace_id IS NULL;
                 """);
-            migrationBuilder.AlterColumn<Guid>(
-                name: "account_id", schema: "work", table: "board_templates", type: "uuid", nullable: false,
-                oldClrType: typeof(Guid), oldType: "uuid", oldNullable: true);
-            migrationBuilder.AlterColumn<Guid>(
-                name: "workspace_id", schema: "work", table: "board_templates", type: "uuid", nullable: false,
-                oldClrType: typeof(Guid), oldType: "uuid", oldNullable: true);
+            // Plain SET NOT NULL: AlterColumn also emits ALTER COLUMN ... TYPE, which Postgres refuses on a column
+            // the table's RLS policies use (workspace_id), so an existing database could never apply this migration.
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE work.board_templates ALTER COLUMN account_id SET NOT NULL;
+                ALTER TABLE work.board_templates ALTER COLUMN workspace_id SET NOT NULL;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<Guid>(
-                name: "workspace_id", schema: "work", table: "board_templates", type: "uuid", nullable: true,
-                oldClrType: typeof(Guid), oldType: "uuid");
+            migrationBuilder.Sql("ALTER TABLE work.board_templates ALTER COLUMN workspace_id DROP NOT NULL;");
             migrationBuilder.DropColumn(name: "account_id", schema: "work", table: "board_templates");
         }
     }
