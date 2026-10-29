@@ -1,6 +1,12 @@
-import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
-import { Ban } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import type { DragEvent, KeyboardEvent, MouseEvent, PointerEvent } from "react";
+import { Ban, Lock } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  cn,
+} from "@notrelix/ui-web";
 import {
   PRIORITY_TONE_CLASS,
   PriorityGlyph,
@@ -100,6 +106,12 @@ export interface CalendarEventProps {
   onDragEnd: () => void;
   /** Alt and arrow keys: due date moved by `days`. */
   onShift: (entry: CalendarEntry, days: number) => void;
+  /** The week cuts the bar: its end on that side is square. */
+  clipStart?: boolean;
+  clipEnd?: boolean;
+  /** The menu's "Đổi ngày…" and "Chuyển về Chưa lên lịch"; absent = no menu. */
+  onChangeDates?: (entry: CalendarEntry) => void;
+  onUnschedule?: (entry: CalendarEntry) => void;
 }
 
 const ARROW_DAYS: Readonly<Record<string, number>> = {
@@ -127,6 +139,10 @@ export function CalendarEvent({
   onDragStart,
   onDragEnd,
   onShift,
+  clipStart = false,
+  clipEnd = false,
+  onChangeDates,
+  onUnschedule,
 }: CalendarEventProps) {
   const text = entryText(entry);
   const style = { gridColumn: `${col} / span ${span}`, gridRow: row + 2 };
@@ -136,6 +152,8 @@ export function CalendarEvent({
     TONE_CLASS[entry.tone],
     (entry.kind !== "item" || entry.tone === "overdue") && "font-semibold",
     lifting && "opacity-40",
+    clipStart && "ml-0 rounded-l-none",
+    clipEnd && "mr-0 rounded-r-none",
   );
   const dot = (
     <CalendarDot
@@ -186,7 +204,7 @@ export function CalendarEvent({
     onShift(entry, days);
   };
 
-  return (
+  const button = (
     <button
       type="button"
       data-calendar-event={entry.id}
@@ -234,6 +252,118 @@ export function CalendarEvent({
       ) : null}
       {entry.assignee ? <CalendarMark assignee={entry.assignee} /> : null}
     </button>
+  );
+  if (!onChangeDates || !canDrag || !entry.movable) return button;
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
+      <ContextMenuContent className="w-64">
+        <ContextMenuItem onSelect={() => onOpen(entry.id)}>
+          {copy.menu.open}
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => onChangeDates(entry)}>
+          <span className="grid">
+            {copy.menu.changeDates}
+            <small className="text-meta-foreground">
+              {copy.menu.changeDatesNote}
+            </small>
+          </span>
+        </ContextMenuItem>
+        {onUnschedule ? (
+          <ContextMenuItem onSelect={() => onUnschedule(entry)}>
+            <span className="grid">
+              {copy.menu.unschedule}
+              <small className="text-meta-foreground">
+                {copy.menu.unscheduleNote}
+              </small>
+            </span>
+          </ContextMenuItem>
+        ) : null}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+export interface CalendarHandlesProps {
+  entry: CalendarEntry;
+  copy: CalendarCopy;
+  col: number;
+  span: number;
+  row: number;
+  clipStart: boolean;
+  clipEnd: boolean;
+  /** False for a viewer: the handles stay, disabled, with the reason. */
+  canEdit: boolean;
+  onPointerDown: (
+    entry: CalendarEntry,
+    edge: "start" | "due",
+    event: PointerEvent<HTMLElement>,
+  ) => void;
+}
+
+/**
+ * The two 8px handles of a multi-day bar (in 24px hit areas): the left one
+ * moves the start day, the right one the due day. A week break leaves no
+ * handle on the cut side. They sit over the bar's cells without taking the
+ * pointer elsewhere.
+ */
+export function CalendarHandles({
+  entry,
+  copy,
+  col,
+  span,
+  row,
+  clipStart,
+  clipEnd,
+  canEdit,
+  onPointerDown,
+}: CalendarHandlesProps) {
+  if (entry.kind !== "item" || !entry.movable) return null;
+  const key = entry.itemKey ?? entry.title;
+  const edges = [
+    ...(clipStart ? [] : (["start"] as const)),
+    ...(clipEnd ? [] : (["due"] as const)),
+  ];
+  return (
+    <div
+      className="pointer-events-none relative z-[2] mx-1"
+      style={{ gridColumn: `${col} / span ${span}`, gridRow: row + 2 }}
+    >
+      {edges.map((edge) => (
+        <button
+          key={edge}
+          type="button"
+          tabIndex={-1}
+          data-calendar-handle={edge}
+          data-entry={entry.id}
+          aria-label={copy.handle[edge].replace("{{key}}", key)}
+          aria-disabled={canEdit ? undefined : "true"}
+          title={
+            canEdit
+              ? undefined
+              : `${copy.handle.readOnly}. ${copy.handle.readOnlyNote}`
+          }
+          className={cn(
+            "pointer-events-auto absolute top-0 grid h-6 w-6 place-items-center touch-none",
+            edge === "start" ? "-left-2" : "-right-2",
+            canEdit ? "cursor-ew-resize" : "cursor-not-allowed opacity-60",
+          )}
+          onPointerDown={
+            canEdit ? (event) => onPointerDown(entry, edge, event) : undefined
+          }
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "grid h-4 w-2 place-items-center rounded-[3px]",
+              canEdit ? "bg-primary" : "bg-meta-foreground text-background",
+            )}
+          >
+            {canEdit ? null : <Lock className="size-1.5" />}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }
 

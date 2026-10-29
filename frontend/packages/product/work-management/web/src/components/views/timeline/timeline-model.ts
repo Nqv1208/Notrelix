@@ -1278,3 +1278,44 @@ export function hasLink(
 ): boolean {
   return links.some((link) => link.from === from && link.to === to);
 }
+
+/** The first and last day of the dated items (phases and milestones included), and how many items have them. */
+export function datedRange(groups: readonly TimelineGroup[]): {
+  from: number;
+  to: number;
+  count: number;
+} | null {
+  let from = Infinity;
+  let to = -Infinity;
+  let count = 0;
+  for (const group of groups) {
+    for (const item of group.items) {
+      const first = item.startDay ?? item.dueDay;
+      const last = item.dueDay ?? item.startDay;
+      if (!first || !last) continue;
+      from = Math.min(from, dayNumber(first));
+      to = Math.max(to, dayNumber(last));
+      count += 1;
+    }
+  }
+  return count === 0 ? null : { from, to, count };
+}
+
+/**
+ * The finest scale whose whole window holds the dated range inside `width`
+ * chart pixels, centred on the range; Month when none does.
+ */
+export function fitTimeline(
+  groups: readonly TimelineGroup[],
+  width: number,
+): { scale: TimelineScale; anchor: DayKey } | null {
+  const range = datedRange(groups);
+  if (!range) return null;
+  const anchor = fromDayNumber(Math.round((range.from + range.to) / 2));
+  const days = range.to - range.from + 1;
+  const scale =
+    (["day", "week"] as const).find(
+      (candidate) => days * scaleSpec(candidate, anchor).ppd + 48 <= width,
+    ) ?? "month";
+  return { scale, anchor };
+}
