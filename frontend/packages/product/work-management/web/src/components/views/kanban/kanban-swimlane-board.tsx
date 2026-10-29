@@ -291,14 +291,14 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
         className="min-w-min overflow-hidden rounded-xl border border-line bg-popover dark:bg-card"
       >
         <div
-          role="row"
+          data-swimlane-header=""
           className="grid border-b border-line"
           style={{ gridTemplateColumns: template }}
         >
           {columns.map((column) => (
             <div
               key={keyOf(column.optionId)}
-              role="columnheader"
+              data-swimlane-column=""
               className="flex items-center gap-2 border-r border-line px-3 py-2 text-compact font-semibold last:border-r-0"
             >
               <span className="min-w-0 truncate">

@@ -35,7 +35,7 @@ describe("KanbanSwimlaneBoard", () => {
   it("FUI[wm.kanban.swimlanes:board] draws the status columns once and one lane per person, the unassigned lane last", () => {
     const scenario = erpSwimlaneScenario();
     const { container } = renderBoard(scenario);
-    const headers = screen.getAllByRole("columnheader");
+    const headers = [...container.querySelectorAll("[data-swimlane-column]")];
     expect(headers.map((h) => h.textContent)).toEqual(
       scenario.columns.map((c) => `${c.name}${c.cards.length}`),
     );
@@ -161,7 +161,7 @@ describe("KanbanSwimlaneBoard", () => {
     const { container } = renderBoard(
       erpSwimlaneScenario({ columns: erpKanbanEmptyLanes() }),
     );
-    expect(screen.getAllByRole("columnheader").length).toBe(4);
+    expect(container.querySelectorAll("[data-swimlane-column]").length).toBe(4);
     expect(lanesOf(container).length).toBe(0);
   });
 
