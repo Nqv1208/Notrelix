@@ -9,6 +9,7 @@ public static class GetBoardPreferenceEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.BoardPreferences.Get")
+            .Produces<BoardPreferenceDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardPreferences")
             .WithSummary("Get board preference for current user");
         return group;

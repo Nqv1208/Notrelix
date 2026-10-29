@@ -29,6 +29,15 @@ export const wmQueryKeys = {
       "saved-filters",
       boardId,
     ),
+  boardPreference: (workspaceId: string, boardId: string, viewId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "boards",
+      "preference",
+      boardId,
+      viewId,
+    ),
   boardTemplates: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "work-management", "templates"),
   boardTrash: (workspaceId: string, boardId: string) =>

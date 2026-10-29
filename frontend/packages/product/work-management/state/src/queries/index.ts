@@ -17,3 +17,4 @@ export * from "./use-item-actions";
 export * from "./use-board-settings";
 export * from "./use-workspace-automations";
 export * from "./use-offline-writes";
+export * from "./use-board-preference";

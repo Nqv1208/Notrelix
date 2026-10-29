@@ -12183,7 +12183,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference.BoardPreferenceDto"
                 }
               }
             }
@@ -27202,6 +27202,45 @@
           "restorableUntil": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference.BoardPreferenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "viewId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filterRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.FilterRule"
+            },
+            "nullable": true
+          },
+          "sortRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.SortRule"
+            },
+            "nullable": true
+          },
+          "groupRule": {
+            "$ref": "#/components/schemas/Notrelix.Domain.WorkManagement.Views.GroupRule"
+          },
+          "criteria": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

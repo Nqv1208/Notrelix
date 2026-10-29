@@ -304,6 +304,11 @@ export const endpoints = {
     visibility: (filterId: string) => `/saved-filters/${filterId}/visibility`,
     restore: (filterId: string) => `/saved-filters/${filterId}/restore`,
   },
+  // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
+  boardPreferences: {
+    forView: (boardId: string, viewId: string) =>
+      `/boards/${boardId}/preferences/${viewId}`,
+  },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
     saved: (boardId: string) => `/boards/${boardId}/views/saved`,

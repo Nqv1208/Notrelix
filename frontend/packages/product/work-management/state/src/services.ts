@@ -16,6 +16,7 @@ import { createColumnApi } from "./api/field.api";
 import { createFieldOptionApi } from "./api/field-option.api";
 import { createLabelApi } from "./api/label.api";
 import { createSavedFilterApi } from "./api/saved-filter.api";
+import { createBoardPreferenceApi } from "./api/board-preference.api";
 import { createTemplateApi } from "./api/template.api";
 import { createChecklistApi } from "./api/checklist.api";
 import { createCommentApi } from "./api/item-comments.api";
@@ -31,6 +32,7 @@ export interface WorkManagementServices {
   readonly fieldOptions: ReturnType<typeof createFieldOptionApi>;
   readonly labels: ReturnType<typeof createLabelApi>;
   readonly savedFilters: ReturnType<typeof createSavedFilterApi>;
+  readonly boardPreferences: ReturnType<typeof createBoardPreferenceApi>;
   readonly templates: ReturnType<typeof createTemplateApi>;
   readonly checklists: ReturnType<typeof createChecklistApi>;
   readonly comments: ReturnType<typeof createCommentApi>;
@@ -60,6 +62,7 @@ export function createWorkManagementServices(
     fieldOptions: createFieldOptionApi(client),
     labels: createLabelApi(client),
     savedFilters: createSavedFilterApi(client),
+    boardPreferences: createBoardPreferenceApi(client),
     templates: createTemplateApi(client),
     checklists: createChecklistApi(client),
     comments: createCommentApi(client),

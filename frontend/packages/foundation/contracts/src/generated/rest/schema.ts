@@ -7185,6 +7185,18 @@ export interface components {
             /** Format: date-time */
             restorableUntil?: string;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference.BoardPreferenceDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            viewId?: string;
+            filterRules?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
+            sortRules?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
+            groupRule?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
+            criteria?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
             boardId?: string;
@@ -15410,7 +15422,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference.BoardPreferenceDto"];
                 };
             };
         };
