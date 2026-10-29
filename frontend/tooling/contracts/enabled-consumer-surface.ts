@@ -1077,6 +1077,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "WorkManagement",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemLinkedPages",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.ListLinkedPages",
+    operationId: "WorkManagement.BoardItems.ListLinkedPages",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useItemLinkedPages",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.UnlinkPage",
+    operationId: "WorkManagement.BoardItems.UnlinkPage",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useItemFollowing",
     consumerFile:
       "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",

@@ -16,7 +16,6 @@ import {
   useBoardAccess,
   useAddFieldOption,
   useBoardTable,
-  useDuplicateCard,
   useMoveFieldOption,
   useMoveItemToBoard,
   useRemoveFieldOption,
@@ -218,7 +217,6 @@ export function MainTableView({
         { id: "table-option-write" },
       ),
   });
-  const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const updateCard = useUpdateCard(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
     onError: (_error, cardId) =>
@@ -826,7 +824,7 @@ export function MainTableView({
           }
           rowActions={{
             onDuplicate: capabilities.canCreateCard
-              ? (id) => duplicateCard.mutate(id)
+              ? removal.requestDuplicate
               : undefined,
             onCopyLink: handleCopyLink,
             onArchive: capabilities.canDelete
@@ -922,7 +920,7 @@ export function MainTableView({
           onCopyLink={handleCopyLink}
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
-          onDuplicate={(cardId) => duplicateCard.mutate(cardId)}
+          onDuplicate={removal.requestDuplicate}
           onArchive={(cardId) => {
             noteTitle(cardId);
             archiveCard.mutate(cardId);

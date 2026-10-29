@@ -13,7 +13,6 @@ import {
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useToggleCommentReaction,
-  useDuplicateCard,
   useFullBoard,
   useItemChildItems,
   useItemApprovals,
@@ -50,6 +49,7 @@ import type { TaskDetailCallbacks } from "../card-detail/task-detail-types";
 import { useItemPageCopy } from "./use-item-page-copy";
 import { formatFileSize } from "./item-page-format";
 import { useItemRemoval } from "../item-lifecycle/use-item-removal";
+import { LinkedDocsSection } from "../item-actions/linked-docs-section";
 import { saveBlobAs } from "./save-blob";
 import { ItemPageSurface } from "./item-page-surface";
 import type {
@@ -289,7 +289,6 @@ function ItemPageReady({
     card.workspaceId,
   );
   const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
-  const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
@@ -550,14 +549,20 @@ function ItemPageReady({
         () => true,
         () => false,
       ),
-    onDuplicate: (cardId) => duplicateCard.mutate(cardId),
+    onDuplicate: capabilities.canCreateCard
+      ? removal.requestDuplicate
+      : () => undefined,
     // "Lưu trữ" archives the item (it can be restored); it is not a delete.
     onArchive: (cardId) => {
       archiveCard.mutate(cardId);
       onBack();
     },
-    onDelete: capabilities.canDelete ? removal.requestDelete : undefined,
-    onMoveToBoard: capabilities.canMoveCard ? removal.requestMove : undefined,
+    onUnarchive: removal.unarchiveItem,
+    onComplete: removal.completeItem,
+    onReopen: removal.reopenItem,
+    onRemind: removal.requestRemind,
+    onDelete: removal.requestDelete,
+    onMoveToBoard: removal.requestMove,
     onUpdateFieldValue: (payload) => {
       setRefused(null);
       // The Status pill writes through the status endpoint, like a drag.
@@ -605,6 +610,13 @@ function ItemPageReady({
         card={card}
         capabilities={capabilities}
         callbacks={callbacks}
+        linkedDocs={
+          <LinkedDocsSection
+            itemId={card.id}
+            workspaceId={card.workspaceId}
+            canEdit={capabilities.canEditFields}
+          />
+        }
         navigation={navigation(position)}
         copy={copy}
         sheetCopy={sheetCopy}
