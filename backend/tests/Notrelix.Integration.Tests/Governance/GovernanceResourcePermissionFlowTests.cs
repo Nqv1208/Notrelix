@@ -14,7 +14,12 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment;
+using Notrelix.Application.Features.Collaboration.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
+using Notrelix.Application.Features.Collaboration.Comments.Services;
+using Notrelix.Domain.Collaboration.Attachments;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 using Notrelix.Domain.Documents.Blocks;
@@ -776,6 +781,80 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppForbidden>("a member who can view the page may not rewrite the Owner's comment");
 
         (await SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateComment_WhenTheAuthorLosesViewAccess_IsTheSameNotFoundAsAMissingComment()
+    {
+        var (accountId, _, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var commentId = (await SendAsync<Result<Guid>>(memberProvider, CreateCommentCommand.ForPage(pageId, "Mine", null))).Data;
+        await SeedPermissionRuleAsync(accountId, workspaceId, memberId, PermissionAction.ViewPage, "documents.page", pageId, PermissionEffect.Deny);
+
+        var hidden = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited"));
+        var missingId = Guid.NewGuid();
+        var missing = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(missingId, "Edited"));
+
+        var hiddenError = (await hidden.Should().ThrowAsync<AppNotFound>()).Which;
+        var missingError = (await missing.Should().ThrowAsync<AppNotFound>()).Which;
+        hiddenError.Message.Should().Be(missingError.Message.Replace(missingId.ToString(), commentId.ToString()));
+    }
+
+    [Fact]
+    public async Task ResolveComment_ByAMemberEditor_OfAnotherPersonsThread_Succeeds()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, memberId, PermissionLevel.Editor);
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var commentId = (await SendAsync<Result<Guid>>(ownerProvider, CreateCommentCommand.ForPage(pageId, "Owner's thread", null))).Data;
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        (await SendAsync<Result>(memberProvider, new ResolveCommentCommand(commentId))).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ResolveComment_ByANonEditorWhoIsNotTheStarter_IsForbiddenWithAStableCode()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, memberId, PermissionLevel.Viewer);
+        await SeedPermissionRuleAsync(accountId, workspaceId, memberId, PermissionAction.UpdatePage, "documents.page", pageId, PermissionEffect.Deny);
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var commentId = (await SendAsync<Result<Guid>>(ownerProvider, CreateCommentCommand.ForPage(pageId, "Owner's thread", null))).Data;
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var act = () => SendAsync<Result>(memberProvider, new ResolveCommentCommand(commentId));
+
+        (await act.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(CommentAccessRules.ThreadStarterOrEditorCode);
+    }
+
+    [Fact]
+    public async Task DeletePageAttachment_ByAnEditor_Succeeds_AndByAViewerWhoUploadedIt_IsEditorOnly()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        var byOwner = await SeedLinkAttachmentAsync(accountId, workspaceId, pageId, ownerId);
+        var byMember = await SeedLinkAttachmentAsync(accountId, workspaceId, pageId, memberId);
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, memberId, PermissionLevel.Viewer);
+        await SeedPermissionRuleAsync(accountId, workspaceId, memberId, PermissionAction.UpdatePage, "documents.page", pageId, PermissionEffect.Deny);
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var viewerDelete = () => SendAsync<Result>(memberProvider, new DeletePageAttachmentCommand(pageId, byMember));
+        (await viewerDelete.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(AttachmentAccessRules.EditorOnlyCode);
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        (await SendAsync<Result>(ownerProvider, new DeletePageAttachmentCommand(pageId, byOwner))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(ownerProvider, new DeletePageAttachmentCommand(pageId, byMember))).Succeeded.Should().BeTrue();
+    }
+
+    private async Task<Guid> SeedLinkAttachmentAsync(Guid accountId, Guid workspaceId, Guid pageId, Guid uploaderId)
+    {
+        var row = Attachment.Create(
+            accountId, workspaceId, ResourceRef.Create(ResourceKind.Create("documents.page"), pageId, workspaceId),
+            AttachmentType.Link, FileMetadata.Create("link", 0, "text/uri-list", url: "https://example.com"),
+            uploaderId, DateTimeOffset.UtcNow);
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.Attachments.Add(row);
+        await seed.SaveChangesAsync();
+        return row.Id;
     }
 
     [Fact]
@@ -1633,6 +1712,12 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<UpdateCommentCommand, Result>,
             UpdateCommentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<ResolveCommentCommand, Result>,
+            ResolveCommentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<DeletePageAttachmentCommand, Result>,
+            DeletePageAttachmentCommandHandler>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<MoveBoardItemUseCase>();

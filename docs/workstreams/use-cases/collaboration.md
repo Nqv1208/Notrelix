@@ -81,7 +81,7 @@ Collaboration has no dedicated capability for inbox, preferences, attachments, w
 
 | Defect | Where |
 |---|---|
-| Authorization of comment edit, delete, resolve, reopen and attachment delete (fixed): decided in the handler from the target, no longer Owner-only. The attachment delete route still ignores `{boardItemId}`. | `backend/src/Notrelix.Application/Features/Collaboration/Comments/Services/`, `.../Attachments/Services/AttachmentAccessRules.cs`, `.../Comments/Commands/*`, `.../Attachments/Commands/DeleteAttachment/DeleteAttachment.cs` |
+| Authorization of comment edit, delete, resolve, reopen and attachment delete (fixed): decided in the handler from the target, no longer Owner-only. The item attachment delete now matches the route's `{boardItemId}`. A comment or attachment on a deleted board item is NotFound, decided through the Work Management item fact. | `backend/src/Notrelix.Application/Features/Collaboration/Comments/Services/`, `.../Attachments/Services/AttachmentAccessRules.cs`, `.../Comments/Commands/*`, `.../Attachments/Commands/DeleteAttachment/DeleteAttachment.cs` |
 | No expected version on competing comment writes; comment create has no idempotency key. | `.../Comments/Commands/UpdateComment/UpdateComment.cs`, `backend/src/Notrelix.API/Endpoints/Collaboration/Comments/Commands/CreateCommentEndpoint.cs` |
 | Check-then-insert races: no unique index on reactions (target, user, emoji) or watchers (target, user). | `backend/src/Notrelix.Infrastructure/Data/Configurations/Collaboration/ReactionConfiguration.cs`, `ResourceWatcherConfiguration.cs`, `.../Reactions/Commands/AddReaction/AddReaction.cs`, `.../Watchers/Commands/FollowBoardItem/FollowBoardItem.cs` |
 | Unbounded read: all comments, reactions and actor names for a target in one call. | `.../Comments/Queries/GetComments/GetComments.cs` |
@@ -531,7 +531,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Attachment deletion; decision 10; spec DCREQ166.
 - Acceptance: Given an editor, when they delete, then it leaves the list; given a viewer, then 403.
 - Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (editor including the Owner, read-only uploader 403, other member 403, no view access NotFound) · Real e2e none
-- State: INTEGRATING — Editor-only rule implemented, decided from the attachment's own target; no real e2e. The route's boardItemId is still ignored.
+- State: INTEGRATING — Editor-only rule implemented, decided from the attachment's own target; no real e2e. The route's boardItemId is matched; an attachment of another item is NotFound.
 
 ### UC-COL-B12 Delete an attachment from a page
 - Capability: B, COL-002 Comment target contract
@@ -645,7 +645,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Author versus moderator (section 72), COL-003 of the team spec; spec DCREQ045, DCREQ052; decision 20 (UI offers delete only to the author, the backend still authorizes).
 - Acceptance: Given Member A's comment, when Member B sends PATCH or DELETE, then 403 and the comment is unchanged. Given A, then both succeed.
 - Evidence: BE UpdateCommentCommandHandler and DeleteCommentCommandHandler call CommentAccessRules.RequireAuthorAsync (CreatedBy against the caller; view access to the target through CommentTargetAccess); pipeline gate is ViewBoard on the comment · FE frontend/packages/product/work-management/web (comment actions); docs panel shows delete to the author only · Design WM-Comments · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs; backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs (UpdateComment_On*) · Real e2e none
-- State: INTEGRATING — Backend rule and Application tests exist; a real e2e is missing before HARDENING.
+- State: INTEGRATING — Backend rule, Application tests and real-pipeline integration tests exist; hidden and missing comments give the same NotFound; a real e2e is missing before HARDENING.
 
 ### UC-COL-C02 Moderator removes another person's comment
 - Capability: C, COL-003 Comment authorization
