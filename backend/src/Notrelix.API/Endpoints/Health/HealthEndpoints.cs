@@ -29,7 +29,7 @@ public static class HealthEndpoints
     private static async Task<IResult> GetHealth([FromServices] HealthCheckService healthCheck, HttpContext context)
     {
         var report = await healthCheck.CheckHealthAsync();
-        return Results.Ok(new
+        return Results.Json(new
         {
             status = report.Status.ToString(),
             checks = report.Entries.Select(e => new
@@ -38,8 +38,12 @@ public static class HealthEndpoints
                 status = e.Value.Status.ToString(),
                 duration = e.Value.Duration
             })
-        });
+        }, statusCode: StatusFor(report.Status));
     }
+
+    // Degraded still serves traffic, so it stays 200 with the status in the body.
+    private static int StatusFor(HealthStatus status) =>
+        status == HealthStatus.Unhealthy ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status200OK;
 
     private static IResult Live()
     {
@@ -52,7 +56,9 @@ public static class HealthEndpoints
         {
             var report = await healthCheck.CheckHealthAsync(
                 pred => pred.Tags.Contains("ready"));
-            return Results.Ok(new { status = report.Status.ToString(), timestamp = DateTime.UtcNow });
+            return Results.Json(
+                new { status = report.Status.ToString(), timestamp = DateTime.UtcNow },
+                statusCode: StatusFor(report.Status));
         }
         catch
         {
