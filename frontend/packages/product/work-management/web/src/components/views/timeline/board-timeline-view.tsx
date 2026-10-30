@@ -14,10 +14,7 @@ import {
 } from "@notrelix/work-management-core";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
-import type {
-  ItemSheetGroup,
-  ItemSheetMark,
-} from "../../card-detail/task-detail-types";
+import type { ItemSheetGroup } from "../../card-detail/task-detail-types";
 import { useBoardCapabilities } from "../../shared/board-capabilities";
 import { HANOI_ZONES, runtimeZone, useNow } from "../../shared/board-clock";
 import { calendarParts, identityMarkClass } from "../../shared/item-display";
@@ -436,9 +433,6 @@ export function BoardTimelineView({
     timeZone && HANOI_ZONES.includes(timeZone)
       ? copy.zone.hanoi
       : copy.zone.local;
-  const departmentMark: ItemSheetMark | undefined = header?.space
-    ? { initials: header.space.initials, tone: header.space.markTone }
-    : undefined;
   const sheetGroups: ItemSheetGroup[] = [...kanban.groups]
     .sort((a, b) => a.position - b.position)
     .map((group) => ({ id: group.id, title: group.title }));
@@ -515,7 +509,6 @@ export function BoardTimelineView({
           board={board}
           cardId={selectedItemId}
           capabilities={capabilities}
-          departmentMark={departmentMark}
           groups={sheetGroups}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}

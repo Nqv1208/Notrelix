@@ -59,7 +59,6 @@ import { BoardHeaderDataContext } from "../../board-layout/board-header-data-con
 import type {
   ItemSheetGroup,
   ItemSheetLinkCandidate,
-  ItemSheetMark,
   TaskDetailCapabilities,
 } from "../../card-detail/task-detail-types";
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
@@ -833,9 +832,6 @@ export function KanbanView({
   const step = (id: string | undefined) =>
     id ? () => onSelectedItemChange?.(id, { replace: true }) : undefined;
 
-  const departmentMark: ItemSheetMark | undefined = header?.space
-    ? { initials: header.space.initials, tone: header.space.markTone }
-    : undefined;
   const linkCandidates: ItemSheetLinkCandidate[] = kanban.groups
     .flatMap((group) => group.cards)
     .filter((entry) => entry.id !== selectedItemId && !entry.parentItemId)
@@ -1162,7 +1158,6 @@ export interface SelectedItemProps {
   board: Board;
   cardId: string;
   capabilities: TaskDetailCapabilities;
-  departmentMark?: ItemSheetMark;
   groups: readonly ItemSheetGroup[];
   /** Items a new link can point at (the board's items that are not sub-items). */
   linkCandidates?: readonly ItemSheetLinkCandidate[];
