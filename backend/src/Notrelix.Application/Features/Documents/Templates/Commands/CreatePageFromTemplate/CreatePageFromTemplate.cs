@@ -16,7 +16,8 @@ namespace Notrelix.Application.Features.Documents.Templates.Commands.CreatePageF
 /// Images, files and videos are not copied: an attachment belongs to the page it was uploaded to, so a copy
 /// would point at content the new page's readers cannot open. The result says how many blocks were left out.
 /// </summary>
-public record CreatePageFromTemplateCommand(Guid WorkspaceId, Guid TemplateId, string? Title, Guid? ParentId, Guid? SpaceId = null) : ICommand<Result<PageFromTemplateDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+[IdempotencyOperation("documents.templates.create-page-from-template.v1")]
+public record CreatePageFromTemplateCommand(Guid WorkspaceId, Guid TemplateId, string? Title, Guid? ParentId, Guid? SpaceId = null) : ICommand<Result<PageFromTemplateDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreatePage;
 

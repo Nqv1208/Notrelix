@@ -841,7 +841,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the pages in the trash of a workspace */
+        /** List the pages in the trash of a workspace, newest change first, one cursor page at a time */
         get: operations["Documents.Pages.ListTrashedPages"];
         put?: never;
         post?: never;
@@ -866,7 +866,7 @@ export interface paths {
         delete: operations["Documents.Pages.DeletePage"];
         options?: never;
         head?: never;
-        /** Update a page */
+        /** Rename a page */
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
@@ -5632,9 +5632,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Documents.Pages.Requests.UpdatePageRequest": {
             title?: string | null;
-            iconType?: string | null;
-            iconValue?: string | null;
-            coverUrl?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
             title?: string | null;
@@ -6387,6 +6386,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfPageDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -9916,7 +9920,10 @@ export interface operations {
     "Documents.Pages.CreatePage": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -9931,11 +9938,27 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9987,7 +10010,10 @@ export interface operations {
     };
     "Documents.Pages.ListTrashedPages": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -10002,7 +10028,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfPageDto"];
                 };
             };
         };
@@ -10238,7 +10264,10 @@ export interface operations {
     "Documents.Templates.CreatePageTemplate": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -10253,18 +10282,37 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Documents.Templates.CreatePageFromTemplate": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
                 templateId: string;
@@ -10280,11 +10328,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

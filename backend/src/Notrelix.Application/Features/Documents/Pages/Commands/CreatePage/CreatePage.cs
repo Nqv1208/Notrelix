@@ -12,14 +12,15 @@ namespace Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 /// caller cannot reach); in a Space, <c>CreatePage</c> on the Space (Editor
 /// level); otherwise the Workspace-level usage right. A nested page follows its
 /// parent's Space (docs/product/workspaces.md §79), so <c>SpaceId</c> must not
-/// be combined with <c>ParentId</c>.
+/// be combined with <c>ParentId</c>. The create is idempotent: a retry with the same key returns the same page.
 /// </summary>
+[IdempotencyOperation("documents.pages.create-page.v1")]
 public record CreatePageCommand(
     Guid WorkspaceId,
     string Title,
     Guid? ParentId,
     Guid? SpaceId = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreatePage;
 

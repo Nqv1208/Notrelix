@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetTrashedPages;
 
@@ -10,15 +11,15 @@ public static class ListTrashedPagesEndpoint
     {
         group.MapWorkspaceGet("/trash", HandleAsync)
             .WithName("Documents.Pages.ListTrashedPages")
-            .Produces<List<PageDto>>(StatusCodes.Status200OK, "application/json")
+            .Produces<CursorPage<PageDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
-            .WithSummary("List the pages in the trash of a workspace");
+            .WithSummary("List the pages in the trash of a workspace, newest change first, one cursor page at a time");
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid workspaceId, ISender sender)
+    private static async Task<IResult> HandleAsync(Guid workspaceId, string? cursor, int? limit, ISender sender)
     {
-        var result = await sender.Send(new GetTrashedPagesQuery(workspaceId));
+        var result = await sender.Send(new GetTrashedPagesQuery(workspaceId, cursor, limit));
         return result.ToApiResult();
     }
 }

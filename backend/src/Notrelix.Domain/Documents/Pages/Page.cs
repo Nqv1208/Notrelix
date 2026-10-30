@@ -162,17 +162,25 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// Takes an archived (trashed) page back out of the trash. An active page is
     /// a semantic no-op (no version bump, no second event).
     /// </summary>
-    public void Unarchive(Guid restoredBy, DateTimeOffset restoredAt)
+    /// <param name="detachFromParent">
+    /// The parent is no longer an active page (trashed or deleted): the page comes back at the root of its
+    /// Space instead of under it. Application decides this from the parent's current state.
+    /// </param>
+    public void Unarchive(Guid restoredBy, DateTimeOffset restoredAt, bool detachFromParent = false)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(restoredBy);
         if (Status == PageStatus.Active) return;
 
+        var oldParentId = detachFromParent ? ParentId : null;
         var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         Status = PageStatus.Active;
+        if (oldParentId is not null) ParentId = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        if (oldParentId is not null)
+            RaiseDomainEvent(new PageMovedDomainEvent(AccountId, WorkspaceId, Id, oldParentId, null, restoredBy, restoredAt));
     }
 
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

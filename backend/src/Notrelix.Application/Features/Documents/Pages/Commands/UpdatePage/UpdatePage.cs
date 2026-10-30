@@ -3,12 +3,18 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 
+/// <summary>
+/// Renames a page. Authorized as an edit of the page (<c>UpdatePage</c>, Editor level) and guarded by the
+/// page version the editor read: a stale version is refused (412) and changes nothing. The same title is a
+/// semantic no-op (no version bump, no event); a trashed page cannot be renamed.
+/// </summary>
 public record UpdatePageCommand(
     Guid PageId,
-    string? Title
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+    string Title,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
@@ -29,7 +35,7 @@ public class UpdatePageCommandHandler : IRequestHandler<UpdatePageCommand, Resul
         var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
-        if (request.Title is not null) page.Rename(request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        page.Rename(request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         return Result.Success();
     }
