@@ -320,11 +320,11 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | Cross-tenant/Private negative test; real e2e |
-| UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | API tests; real e2e |
-| UC-WM-N02 | Map form questions to fields | N | Editor | partial | yes | complete | none | INTEGRATING | AddFormQuestion, UpdateFormQuestion and RemoveFormQuestion carry no expected version and UpdateFormQuestion has no test (defects B-07, B-14). |
-| UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | INTEGRATING | API tests; real e2e |
-| UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | INTEGRATING | no real e2e or API-level test; the form fill page refuses unsupported question types. |
-| UC-WM-N05 | Process, reject or mark spam on a submission | N | Manager | yes | yes | complete | none | INTEGRATING | ListSubmissions needs UpdateItem, not ViewBoard (D78.4); security check not proven by a test. |
+| UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
+| UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
+| UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | INTEGRATING | tests and owner check |
+| UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | INTEGRATING | tests and owner check; the form fill page refuses unsupported question types. |
+| UC-WM-N05 | Process, reject or mark spam on a submission | N | Manager | yes | yes | complete | none | INTEGRATING | tests and owner check; D78.4 names UpdateItem for process, reject, spam and delete, the code needs ManageBoard (stricter, not loosened): owner to confirm. |
 | UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal and abuse controls |
 | UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | INTEGRATING | Design E/L/Er; one-line-per-action proof; real e2e |
 | UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | INTEGRATING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
@@ -2380,7 +2380,7 @@ Team capability WM-014.
 - Rules: product sections 54-58; WM-019; D70
 - Acceptance: Given an Editor creates a form, then it is draft and invisible to submitters.
 - Evidence: BE Forms.Create = POST /boards/{boardId:guid}/forms -> CreateFormCommand (`Forms/Commands/CreateForm/CreateForm.cs`) [- / Idem]; Forms.List = GET /boards/{boardId:guid}/forms -> ListFormsQuery (`Forms/Queries/ListForms/ListForms.cs`) [- / -]; Forms.UpdateDetails = PATCH /forms/{formId:guid} -> UpdateFormDetailsCommand (`Forms/Commands/UpdateFormDetails/UpdateFormDetails.cs`) [EV / Idem]; Forms.AddQuestion = POST /forms/{formId:guid}/questions -> AddFormQuestionCommand (`Forms/Commands/AddFormQuestion/AddFormQuestion.cs`) [- / Idem]; Forms.Get = GET /forms/{formId:guid} -> GetFormQuery (`Forms/Queries/GetForm/GetForm.cs`) [- / -] · FE FormBuilderPage, `frontend/packages/product/work-management/web/src/components/forms/form-builder-surface.tsx` · Design WM-Forms-List, WM-Forms-Builder · Tests `BoardManagementLevelTests.cs`, `FormCommandTests.cs`, `FormPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e
+- State: INTEGRATING — tests and owner check. Built: updating, publishing, closing and deleting a form, and adding, changing and removing a question, each name the form version the caller read (a missing one is a 400, a stale one a 409); the web client reads the form version before a write and writes one at a time. The form endpoints sent no version before, so the pipeline refused every one of these writes.
 
 ### UC-WM-N02 Map form questions to fields
 - Capability: N Form input (WM-014)
@@ -2394,7 +2394,7 @@ Team capability WM-014.
 - Rules: product sections 57, 55; WM-019; D70
 - Acceptance: Given a Text question mapped to a Number field, then rejected.
 - Evidence: BE Forms.UpdateQuestion = PATCH /forms/{formId:guid}/questions/{questionId:guid} -> UpdateFormQuestionCommand (`Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs`) [- / Idem]; Forms.RemoveQuestion = DELETE /forms/{formId:guid}/questions/{questionId:guid} -> RemoveFormQuestionCommand (`Forms/Commands/RemoveFormQuestion/RemoveFormQuestion.cs`) [- / Idem] · FE builder; some question types 'Sắp có' · Design WM-Forms-Builder · Tests `SubmitFormCommandTests.cs` · Real e2e none
-- State: INTEGRATING — AddFormQuestion, UpdateFormQuestion and RemoveFormQuestion carry no expected version and UpdateFormQuestion has no test (defects B-07, B-14).
+- State: INTEGRATING — tests and owner check. Built: the three question writes carry the form version (UpdateFormQuestion now goes through the Form so the version moves, and a change to what the question already is moves nothing); UpdateFormQuestion has no test (defect B-14).
 
 ### UC-WM-N03 Publish, close, delete or restore a form
 - Capability: N Form input (WM-014)
@@ -2408,7 +2408,7 @@ Team capability WM-014.
 - Rules: product sections 56, 54; D70
 - Acceptance: Given an Editor, when they publish, then 403.
 - Evidence: BE Forms.Publish = POST /forms/{formId:guid}/publish -> PublishFormCommand (`Forms/Commands/PublishForm/PublishForm.cs`) [EV / Idem]; Forms.Close = POST /forms/{formId:guid}/close -> CloseFormCommand (`Forms/Commands/CloseForm/CloseForm.cs`) [EV / Idem]; Forms.SoftDelete = DELETE /forms/{formId:guid} -> DeleteFormCommand (`Forms/Commands/DeleteForm/DeleteForm.cs`) [EV / Idem]; Forms.Restore = POST /forms/{formId:guid}/restore -> RestoreFormCommand (`Forms/Commands/RestoreForm/RestoreForm.cs`) [- / Idem] · FE forms list panel (no Mở lại) · Design WM-Forms-List (states) · Tests `FormCommandTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e
+- State: INTEGRATING — tests and owner check. Built: publish, close and delete name the form version (see UC-WM-N01); publishing a published form and updating a form with what it already holds change nothing.
 
 ### UC-WM-N04 Submit a form as an authenticated member
 - Capability: N Form input (WM-014)
@@ -2422,7 +2422,7 @@ Team capability WM-014.
 - Rules: product sections 55, 58; WM-019; D70, D77.1; WMREQ016
 - Acceptance: Given a submission, then exactly one Item exists with mapped values and the submission references it. Given a signed-in member submits, then the Item exists immediately with mapped values and the submission references it.
 - Evidence: BE Forms.Submit = POST /forms/{formId:guid}/submissions -> SubmitFormCommand (`Forms/Commands/SubmitForm/SubmitForm.cs`) [- / Idem] · FE FormFillPage · Design WM-Forms-Submit, WM-Forms-Submit-States · Tests `FormPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — no real e2e or API-level test; the form fill page refuses unsupported question types.
+- State: INTEGRATING — tests and owner check; the form fill page refuses unsupported question types.
 
 ### UC-WM-N05 Process, reject or mark spam on a submission
 - Capability: N Form input (WM-014)
@@ -2436,7 +2436,7 @@ Team capability WM-014.
 - Rules: product sections 58, 55; WM-019; D70, D77.1, D78.4
 - Acceptance: Given an Accepted submission, when Process is chosen, then the create-item dialog opens prefilled from the answers and saving links the submission to the new item. Given Reject or spam, then no item is created and the reason is kept. Given a person with ViewBoard only, then the inbox is refused.
 - Evidence: BE Forms.ListSubmissions = GET /forms/{formId:guid}/submissions -> ListFormSubmissionsQuery (`Forms/Queries/ListFormSubmissions/ListFormSubmissions.cs`) [- / -]; Forms.ProcessSubmission = POST /form-submissions/{submissionId:guid}/process -> ProcessFormSubmissionCommand (`Forms/Commands/ProcessFormSubmission/ProcessFormSubmission.cs`) [- / Idem]; Forms.RejectSubmission = POST /form-submissions/{submissionId:guid}/reject -> RejectFormSubmissionCommand (`Forms/Commands/RejectFormSubmission/RejectFormSubmission.cs`) [- / Idem]; Forms.MarkAsSpam = POST /form-submissions/{submissionId:guid}/spam -> MarkFormSubmissionAsSpamCommand (`Forms/Commands/MarkFormSubmissionAsSpam/MarkFormSubmissionAsSpam.cs`) [- / Idem]; Forms.DeleteSubmission = DELETE /form-submissions/{submissionId:guid} -> DeleteFormSubmissionCommand (`Forms/Commands/DeleteFormSubmission/DeleteFormSubmission.cs`) [- / Idem] · FE FormInboxPage · Design WM-Forms-Inbox(-States) · Tests `FormPipelineIntegrationTests.cs`, `FormSubmissionCommandTests.cs` · Real e2e none
-- State: INTEGRATING — ListSubmissions needs UpdateItem, not ViewBoard (D78.4); security check not proven by a test.
+- State: INTEGRATING — tests and owner check. Built: ListSubmissions needs UpdateItem (D78.4), so a person with ViewBoard only is refused. Open for the owner: D78.4 also names UpdateItem for process, reject, spam and delete, but those commands need ManageBoard; loosening them is an authorization change, so they are unchanged.
 
 ### UC-WM-N06 Submit a public (anonymous) form
 - Capability: N Form input (WM-014)
