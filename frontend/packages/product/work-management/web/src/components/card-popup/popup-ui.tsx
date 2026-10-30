@@ -274,7 +274,7 @@ export function EmptySection({
   return (
     <section
       aria-label={label}
-      className="relative box-border flex min-h-[52px] items-center gap-2 pt-5 pr-4 pl-4 md:pr-6 md:pl-[60px]"
+      className="relative box-border flex min-h-[52px] flex-wrap items-center gap-x-2 gap-y-0.5 pt-5 pr-4 pl-4 md:flex-nowrap md:pr-6 md:pl-[60px]"
     >
       <span
         aria-hidden="true"
@@ -282,12 +282,18 @@ export function EmptySection({
       >
         {icon}
       </span>
-      <b className="text-[14px] leading-[1.45] font-[650]">{label}</b>
-      <span className="text-[13.5px] leading-[1.45] text-meta-foreground">
+      <b className="text-[14px] leading-[1.45] font-[650] max-md:leading-[18px]">
+        {label}
+      </b>
+      <span className="text-[13.5px] leading-[1.45] text-meta-foreground max-md:leading-[18px]">
         · {none}
       </span>
       <span className="flex-1" />
-      {children}
+      {children ? (
+        <div className="flex w-full items-center max-md:min-h-11 md:w-auto">
+          {children}
+        </div>
+      ) : null}
     </section>
   );
 }

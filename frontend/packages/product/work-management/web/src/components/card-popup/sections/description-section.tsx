@@ -513,7 +513,7 @@ export function DescriptionSection() {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="box-border flex h-9 w-full items-center rounded-lg border border-line-strong bg-popover px-3 text-left text-[14px] text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="box-border flex h-9 w-fit items-center rounded-[8px] border border-line-strong bg-popover px-3 text-left md:w-full md:rounded-lg text-[14px] text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           {t.emptyHint}
         </button>

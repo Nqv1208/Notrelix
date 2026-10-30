@@ -119,9 +119,7 @@ export function CardPopupSurface({
                 <PopupBanners conflict={conflict} onReload={onReloadConflict} />
                 <PopupTitleRow />
                 <PopupQuickRow />
-                <div className="box-border flex flex-col gap-3 pt-3 pr-4 pl-4 md:pr-6 md:pl-[60px]">
-                  <ChipsRow />
-                </div>
+                <ChipsRow />
                 <DescriptionSection />
                 <FieldsSection />
                 <ChecklistsSection />

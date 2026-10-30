@@ -7,3 +7,10 @@ export function usePinnedFieldIds(): readonly string[] {
   const { viewConfig } = useBoardView(board.id, board.workspaceId);
   return viewConfig.cardFieldIds ?? [];
 }
+
+/** The ids of the pinned fields that hide while they are empty. */
+export function usePinnedHideEmptyIds(): readonly string[] {
+  const { board } = useCardPopup();
+  const { viewConfig } = useBoardView(board.id, board.workspaceId);
+  return viewConfig.cardHideEmpty ?? [];
+}

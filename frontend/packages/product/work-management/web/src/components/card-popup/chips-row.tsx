@@ -12,8 +12,11 @@ import { fillPopupCopy } from "./card-popup.copy";
 import { useCanEdit, useCardPopup } from "./card-popup-context";
 import { AvatarStack, ChipBtn, ChipReadOnly, FieldGroup } from "./popup-ui";
 import { FieldControl } from "./sections/field-editors";
-import { faceEligibleFields } from "./capabilities/face-fields";
-import { usePinnedFieldIds } from "./capabilities/use-pinned-fields";
+import { faceEligibleFields, faceFieldText } from "./capabilities/face-fields";
+import {
+  usePinnedFieldIds,
+  usePinnedHideEmptyIds,
+} from "./capabilities/use-pinned-fields";
 
 const ADD_CIRCLE =
   "grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-line-strong bg-transparent p-0 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -88,6 +91,7 @@ export function ChipsRow() {
   const t = copy.shell;
   const canEdit = useCanEdit();
   const pinnedIds = usePinnedFieldIds();
+  const hideEmptyIds = usePinnedHideEmptyIds();
   const eligible = faceEligibleFields(board.fieldDefinitions);
   const everyField = [...board.fieldDefinitions];
   const pinned = [
@@ -101,78 +105,106 @@ export function ChipsRow() {
     .filter(
       (field): field is NonNullable<typeof field> =>
         field !== undefined && field.fieldType !== "vote",
+    )
+    // A pinned field marked "hide when empty" shows once it has a value (or when the + Thêm menu put it here).
+    .filter(
+      (field) =>
+        addedFieldIds.includes(field.id) ||
+        !hideEmptyIds.includes(field.id) ||
+        faceFieldText(card, field) !== null,
     );
+  // Each group of the first row appears once the card holds something for it; the quick row adds it.
+  const hasDates = Boolean(card.startDate ?? card.dueAt ?? card.dueDate);
+  const hasPriority =
+    fields.priority !== undefined &&
+    faceFieldText(card, fields.priority) !== null;
+  const showFirstRow =
+    card.members.length > 0 ||
+    card.labels.length > 0 ||
+    hasDates ||
+    hasPriority;
+  if (!showFirstRow && pinned.length === 0 && !slots.chips) return null;
 
   return (
-    <>
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
-        <FieldGroup label={t.assignees}>
-          <div className="flex min-h-11 items-center md:min-h-9">
-            {canEdit || card.members.length > 0 ? (
-              <button
-                type="button"
-                disabled={!canEdit}
-                aria-label={
-                  card.members.length > 0
-                    ? `${t.assignees}: ${card.members.map((m) => m.name).join(", ")}`
-                    : t.assignees
-                }
-                aria-haspopup="dialog"
-                className="box-border flex h-11 items-center rounded-[8px] border-0 bg-transparent px-1.5 md:h-9 hover:bg-state-hover-strong disabled:cursor-default disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                onClick={(event) =>
-                  openPicker("assignees", event.currentTarget)
-                }
-              >
-                {card.members.length > 0 ? (
-                  <AvatarStack members={card.members} />
-                ) : (
-                  <span className="grid size-6 place-items-center rounded-full border border-dashed border-line-strong text-meta-foreground">
-                    <Plus aria-hidden="true" className="size-[13px]" />
+    <div className="box-border flex flex-col gap-3 pt-3 pr-4 pl-4 md:pr-6 md:pl-[60px]">
+      {showFirstRow ? (
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+          {card.members.length > 0 ? (
+            <FieldGroup label={t.assignees}>
+              <div className="flex min-h-11 items-center md:min-h-9">
+                {canEdit || card.members.length > 0 ? (
+                  <button
+                    type="button"
+                    disabled={!canEdit}
+                    aria-label={
+                      card.members.length > 0
+                        ? `${t.assignees}: ${card.members.map((m) => m.name).join(", ")}`
+                        : t.assignees
+                    }
+                    aria-haspopup="dialog"
+                    className="box-border flex h-11 items-center rounded-[8px] border-0 bg-transparent px-1.5 md:h-9 hover:bg-state-hover-strong disabled:cursor-default disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    onClick={(event) =>
+                      openPicker("assignees", event.currentTarget)
+                    }
+                  >
+                    {card.members.length > 0 ? (
+                      <AvatarStack members={card.members} />
+                    ) : (
+                      <span className="grid size-6 place-items-center rounded-full border border-dashed border-line-strong text-meta-foreground">
+                        <Plus aria-hidden="true" className="size-[13px]" />
+                      </span>
+                    )}
+                  </button>
+                ) : null}
+              </div>
+            </FieldGroup>
+          ) : null}
+          {card.labels.length > 0 ? (
+            <FieldGroup label={t.labels}>
+              <div className="flex min-h-8 items-center gap-1.5">
+                {card.labels.map((l) => (
+                  <span
+                    key={l.id}
+                    className={cn(
+                      "box-border inline-flex h-8 items-center gap-1.5 rounded-[6px] px-3 text-[13px] font-semibold whitespace-nowrap",
+                      ITEM_LABEL_TONE_CLASS[itemLabelTone(l)],
+                    )}
+                  >
+                    <ColourBlindLabelMark label={l} />
+                    {l.name}
                   </span>
-                )}
-              </button>
-            ) : null}
-          </div>
-        </FieldGroup>
-        <FieldGroup label={t.labels}>
-          <div className="flex min-h-8 items-center gap-1.5">
-            {card.labels.map((l) => (
-              <span
-                key={l.id}
-                className={cn(
-                  "box-border inline-flex h-8 items-center gap-1.5 rounded-[6px] px-3 text-[13px] font-semibold whitespace-nowrap",
-                  ITEM_LABEL_TONE_CLASS[itemLabelTone(l)],
-                )}
-              >
-                <ColourBlindLabelMark label={l} />
-                {l.name}
-              </span>
-            ))}
-            {canEdit ? (
-              <button
-                type="button"
-                aria-label={t.addLabel}
-                className={cn(ADD_CIRCLE, "rounded-[6px]")}
-                onClick={(event) => openPicker("labels", event.currentTarget)}
-              >
-                <Plus aria-hidden="true" className="size-[13px]" />
-              </button>
-            ) : null}
-          </div>
-        </FieldGroup>
-        <FieldGroup label={t.dates}>
-          <div className="relative flex items-center gap-2">
-            <DatesChip />
-          </div>
-        </FieldGroup>
-        {fields.priority ? (
-          <FieldGroup label={fields.priority.name}>
-            <div className="flex items-center gap-2">
-              <FieldControl field={fields.priority} variant="chip" />
-            </div>
-          </FieldGroup>
-        ) : null}
-      </div>
+                ))}
+                {canEdit ? (
+                  <button
+                    type="button"
+                    aria-label={t.addLabel}
+                    className={cn(ADD_CIRCLE, "rounded-[6px]")}
+                    onClick={(event) =>
+                      openPicker("labels", event.currentTarget)
+                    }
+                  >
+                    <Plus aria-hidden="true" className="size-[13px]" />
+                  </button>
+                ) : null}
+              </div>
+            </FieldGroup>
+          ) : null}
+          {hasDates ? (
+            <FieldGroup label={t.dates}>
+              <div className="relative flex items-center gap-2">
+                <DatesChip />
+              </div>
+            </FieldGroup>
+          ) : null}
+          {fields.priority && hasPriority ? (
+            <FieldGroup label={fields.priority.name}>
+              <div className="flex items-center gap-2">
+                <FieldControl field={fields.priority} variant="chip" />
+              </div>
+            </FieldGroup>
+          ) : null}
+        </div>
+      ) : null}
       {pinned.length > 0 || slots.chips ? (
         <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
           {pinned.map((field) => (
@@ -185,6 +217,6 @@ export function ChipsRow() {
           {slots.chips}
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

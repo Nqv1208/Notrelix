@@ -135,7 +135,9 @@ export function FieldsSection() {
   if (rows.length === 0)
     return addButton ? (
       <PopSection label={t.title} icon={SECTION_ICONS.fields}>
-        <div className="flex min-h-8 items-center">{addButton}</div>
+        <div className="flex min-h-11 items-center max-md:pl-2.5 md:min-h-8">
+          {addButton}
+        </div>
       </PopSection>
     ) : (
       <EmptySection
