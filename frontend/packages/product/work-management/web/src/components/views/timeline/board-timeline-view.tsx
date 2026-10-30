@@ -12,7 +12,7 @@ import {
   type Card,
   type WorkStatusCategory,
 } from "@notrelix/work-management-core";
-import { ItemCreateHost } from "../../item-create/item-create-host";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
@@ -496,7 +496,7 @@ export function BoardTimelineView({
         }
       />
       {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open={createOpen}
           onOpenChange={setCreateOpen}
           workspaceId={workspaceId}
@@ -507,6 +507,7 @@ export function BoardTimelineView({
           defaultStartDay={anchorDay}
           defaultDueDay={anchorDay}
           currentUserId={currentUserId}
+          onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
       {selectedItemId && board ? (

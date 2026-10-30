@@ -59,12 +59,12 @@ import { ViewStateBar } from "../../filters/view-state-bar";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
-import { ItemCreateHost } from "../../item-create/item-create-host";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { MainTableError } from "./main-table-error";
 import { fillTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
-import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
+import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
 import type { TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
@@ -723,13 +723,12 @@ export function MainTableView({
       payload.fieldDefinitionId === table.statusField?.id &&
       typeof payload.value === "string"
     ) {
-      table.updateStatus.mutate({
+      return table.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
-    table.updateFieldValue.mutate(payload);
+    return table.updateFieldValue.mutateAsync(payload);
   };
 
   const handleMoveToGroup = (cardId: string, groupId: string) => {
@@ -1041,7 +1040,7 @@ export function MainTableView({
       </div>
 
       {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open={createOpen}
           onOpenChange={setCreateOpen}
           workspaceId={workspaceId}
@@ -1050,6 +1049,7 @@ export function MainTableView({
           defaultGroupId={table.groups[0]?.id ?? ""}
           defaultStatusId={null}
           currentUserId={currentUserId}
+          onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
       {selectedItemId ? (

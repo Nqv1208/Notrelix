@@ -1,9 +1,7 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, redirect } from "@tanstack/react-router";
 import { workspaceRoute } from "./base.routes";
 import { boardSearchSchema } from "../schemas/board-search-schema";
 import { BoardPage } from "../../routes/workspaces/$workspaceId/boards/$boardId";
-import { BoardItemPage } from "../../routes/workspaces/$workspaceId/boards/$boardId.items.$itemId";
-import { itemSearchSchema } from "../schemas/item-search-schema";
 import { BoardSettingsRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.settings";
 import { BoardFormFillPage } from "../../routes/workspaces/$workspaceId/boards/$boardId.forms.$formId";
 import { BoardFormBuilderRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.forms.$formId.edit";
@@ -17,11 +15,21 @@ export const boardRoute = createRoute({
   component: BoardPage,
 });
 
+/**
+ * An item has no page of its own: its link opens the board with the card
+ * popup on that item, so a shared link and a bookmark keep working.
+ */
 export const boardItemRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/boards/$boardId/items/$itemId",
-  validateSearch: (search) => itemSearchSchema.parse(search),
-  component: BoardItemPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/workspaces/$workspaceId/boards/$boardId",
+      params: { workspaceId: params.workspaceId, boardId: params.boardId },
+      search: { view: "kanban", item: params.itemId },
+      replace: true,
+    });
+  },
 });
 
 export const boardSettingsRoute = createRoute({

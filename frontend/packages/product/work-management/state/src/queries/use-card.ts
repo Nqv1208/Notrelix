@@ -16,5 +16,6 @@ export function useCard(cardId: string, workspaceId: string) {
     card: query.data,
     isLoading: query.isLoading,
     error: query.error,
+    refetch: () => void query.refetch(),
   };
 }

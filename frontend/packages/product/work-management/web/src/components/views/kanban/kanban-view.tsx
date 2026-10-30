@@ -3,8 +3,8 @@ import {
   KanbanFaceProvider,
 } from "../../card-popup/capabilities";
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
-import { ItemCreateHost } from "../../item-create/item-create-host";
-import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
+import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import {
   useCallback,
@@ -73,6 +73,7 @@ import { KanbanBulkBar } from "./kanban-bulk-bar";
 import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
+import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneDrop } from "./kanban-dnd";
@@ -159,27 +160,6 @@ type CreateRequest =
       readonly lane: KanbanStatusLane;
       readonly title: string;
     };
-
-/** The colour of a lane's dot, as the lane header draws it. */
-function laneDot(lane: KanbanStatusLane): {
-  dotClassName: string;
-  dotStyle?: CSSProperties;
-} {
-  const base =
-    lane.category === "todo"
-      ? "border-2 border-work-status-todo"
-      : lane.category === "in_progress"
-        ? "bg-work-status-doing"
-        : lane.category === "review"
-          ? "bg-work-status-review"
-          : lane.category === "done"
-            ? "bg-work-status-done"
-            : "bg-muted-foreground";
-  if (!lane.color) return { dotClassName: base };
-  return lane.category === "todo"
-    ? { dotClassName: "border-2", dotStyle: { borderColor: lane.color } }
-    : { dotClassName: "", dotStyle: { backgroundColor: lane.color } };
-}
 
 /** The board group a new item of a lane goes into: the lane's last card's. */
 function groupForNewItem(
@@ -750,14 +730,13 @@ export function KanbanView({
       typeof payload.value === "string"
     ) {
       noteOrigin(payload.cardId);
-      kanban.updateStatus.mutate({
+      return kanban.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
     noteOrigin(payload.cardId);
-    kanban.updateFieldValue.mutate(payload);
+    return kanban.updateFieldValue.mutateAsync(payload);
   };
 
   const handleMoveToGroup = (cardId: string, groupId: string) => {
@@ -1113,7 +1092,7 @@ export function KanbanView({
         ) : null}
 
         {board && capabilities.canCreateCard ? (
-          <ItemCreateHost
+          <CardCreatePopup
             open={createOpen}
             onOpenChange={(next) => {
               if (!next) setCreate(null);
@@ -1129,7 +1108,6 @@ export function KanbanView({
                   "")
                 : (kanban.groups[0]?.id ?? "")
             }
-            hideGroup={isStatusGrouping}
             defaultStatusId={
               create && create.kind !== "toolbar" && isStatusGrouping
                 ? create.lane.optionId
@@ -1149,18 +1127,6 @@ export function KanbanView({
                     value: create.lane.optionId,
                   }
                 : null
-            }
-            focusDescription={create?.kind === "quick"}
-            context={
-              create && create.kind !== "toolbar"
-                ? {
-                    kind: create.kind,
-                    name:
-                      create.lane.name ||
-                      (isStatusGrouping ? laneCopy.noStatus : laneCopy.noValue),
-                    ...laneDot(create.lane),
-                  }
-                : undefined
             }
             onOpenItem={(itemId) => {
               setCreate(null);
@@ -1208,7 +1174,9 @@ export interface SelectedItemProps {
   onCopyLink: (cardId: string) => void;
   onOpenFullPage?: (cardId: string) => void;
   onMoveToGroup: (cardId: string, groupId: string) => void;
-  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  onUpdateFieldValue: (
+    payload: UpdateFieldValueInput,
+  ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
 }
 
@@ -1227,33 +1195,48 @@ export function KanbanSelectedItem({
   onRestoreFocus,
   ...rest
 }: SelectedItemProps) {
-  const { card, error } = useCard(cardId, board.workspaceId);
-  const notFound =
-    Boolean(error) ||
+  const { card, error, isLoading, refetch } = useCard(
+    cardId,
+    board.workspaceId,
+  );
+  // A card that is gone, moved to another board, or not for this viewer reads
+  // the same: one generic message, nothing about what or why.
+  const kind = (error as { kind?: string } | null)?.kind;
+  const gone =
+    kind === "not_found" ||
+    kind === "forbidden" ||
     (card !== undefined &&
       (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+  const failed = Boolean(error) && !gone;
   const lastShown = useRef<CardDetail | null>(null);
-  if (card && !notFound) lastShown.current = card;
-  const shown = notFound ? null : (card ?? lastShown.current);
+  if (card && !gone) lastShown.current = card;
+  const shown = gone
+    ? null
+    : failed && !card
+      ? null
+      : (card ?? lastShown.current);
+  const restore = (event: Event) => {
+    event.preventDefault();
+    onRestoreFocus(lastShown.current?.id ?? cardId);
+  };
 
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
-  useEffect(() => {
-    if (notFound) onCloseRef.current();
-  }, [notFound, cardId]);
-
-  if (!shown) return null;
+  if (!shown)
+    return (
+      <CardPopupSurface
+        status={
+          gone ? "gone" : failed ? "error" : isLoading ? "loading" : "loading"
+        }
+        onClose={onClose}
+        onRetry={refetch}
+        onCloseAutoFocus={restore}
+      />
+    );
   return (
     <KanbanSelectedItemReady
       board={board}
       card={shown}
       onClose={onClose}
-      onCloseAutoFocus={(event) => {
-        event.preventDefault();
-        onRestoreFocus(lastShown.current?.id ?? cardId);
-      }}
+      onCloseAutoFocus={restore}
       {...rest}
     />
   );
@@ -1263,7 +1246,6 @@ function KanbanSelectedItemReady({
   board,
   card,
   capabilities: boardCapabilitiesOfViewer,
-  departmentMark,
   groups,
   linkCandidates,
   onClose,
@@ -1324,7 +1306,6 @@ function KanbanSelectedItemReady({
         board={board}
         card={card}
         capabilities={capabilities}
-        departmentMark={departmentMark}
         groups={groups}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
@@ -1375,7 +1356,8 @@ function KanbanSelectedItemReady({
           onCancelApproval: (requestId) => approvals.cancel(requestId),
           onRenameTitle: (cardId, patch) =>
             updateCard.mutate({ cardId, patch }),
-          onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+          onUpdateItem: (cardId, patch) =>
+            updateCard.mutateAsync({ cardId, patch }),
           onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
           onCreateLabel: (name, color) =>
             labelWrites

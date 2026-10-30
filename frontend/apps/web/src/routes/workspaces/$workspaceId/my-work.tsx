@@ -21,7 +21,7 @@ import {
 import { useFormatters } from "@notrelix/i18n";
 import { useCurrentUser } from "@notrelix/features-auth";
 import {
-  BoardItemCreateDialog,
+  BoardCardCreate,
   BoardItemSheetHost,
 } from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
@@ -427,7 +427,7 @@ export function MyWorkPage() {
         sheet={sheet}
         firstDepartment={[...departments.values()][0] ?? null}
       />
-      <BoardItemCreateDialog
+      <BoardCardCreate
         open={form !== null}
         onOpenChange={(next) => {
           if (!next) setForm(null);

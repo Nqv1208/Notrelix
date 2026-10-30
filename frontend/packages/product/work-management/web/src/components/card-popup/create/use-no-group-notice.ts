@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { useAddGroup } from "../status-option/use-add-group";
-import { useItemCreateCopy } from "./use-item-create-copy";
+import { useAddGroup } from "../../status-option/use-add-group";
+import { useCardPopupCopy } from "../use-card-popup-copy";
 
 /**
  * What an add path says instead of doing nothing: a board without a group
@@ -10,7 +10,7 @@ import { useItemCreateCopy } from "./use-item-create-copy";
  * The offered group is created through the same flow as "Add group".
  */
 export function useNoGroupNotice(boardId: string, workspaceId: string) {
-  const copy = useItemCreateCopy();
+  const copy = useCardPopupCopy().create;
   const { addGroup } = useAddGroup(boardId, workspaceId);
 
   const noGroup = useCallback(() => {

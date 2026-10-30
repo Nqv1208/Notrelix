@@ -21,7 +21,7 @@ import {
   type SectionState,
 } from "@notrelix/features-workspace/web";
 import { useCurrentUser } from "@notrelix/features-auth";
-import { BoardItemCreateDialog } from "@notrelix/work-management-web";
+import { BoardCardCreate } from "@notrelix/work-management-web";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { HomeGettingStarted } from "@/routes/onboarding/home-getting-started";
@@ -335,7 +335,7 @@ export function HomePage() {
         onRetryMyWork={() => void myWorkQuery.refetch()}
       />
       {create.dialog}
-      <BoardItemCreateDialog
+      <BoardCardCreate
         open={addOpen}
         onOpenChange={setAddOpen}
         workspaceId={workspaceId}

@@ -191,7 +191,10 @@ export interface TaskDetailCallbacks {
    * Patches the item itself (title, start and due date). The item page's
    * "Ngày bắt đầu" uses it; the control stays disabled without it.
    */
-  readonly onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
+  readonly onUpdateItem?: (
+    cardId: string,
+    patch: UpdateCardInput,
+  ) => void | Promise<unknown>;
   readonly onToggleWatch: (watched: boolean) => void;
   /** Asks a board member to approve the item; "Request approval" is absent without it. */
   readonly onRequestApproval?: (approverUserId: string) => void;
@@ -231,7 +234,9 @@ export interface TaskDetailCallbacks {
   readonly onDelete?: (cardId: string) => void;
   /** Opens the board picker for moving the item to another board; absent: no menu entry. */
   readonly onMoveToBoard?: (cardId: string) => void;
-  readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  readonly onUpdateFieldValue: (
+    payload: UpdateFieldValueInput,
+  ) => void | Promise<unknown>;
   /** Puts a board label on the item or takes it off; labels stay read-only without it. */
   readonly onToggleLabel?: (labelId: string, on: boolean) => void;
   /**

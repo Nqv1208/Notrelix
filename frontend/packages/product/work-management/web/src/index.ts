@@ -21,11 +21,10 @@ export * from "./components/board-lifecycle/retired-boards-surface";
 export { retiredBoardsCatalog } from "./components/board-lifecycle/retired-boards.catalog";
 export { useRetiredBoardsCopy } from "./components/board-lifecycle/use-retired-boards-copy";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
-export { itemCreateCatalog } from "./components/item-create/item-create.catalog";
 export {
-  BoardItemCreateDialog,
-  type BoardItemCreateBoard,
-} from "./components/item-create/board-item-create-dialog";
+  BoardCardCreate,
+  type BoardCardCreateBoard,
+} from "./components/card-popup/create/board-card-create";
 export {
   boardHeaderCopy,
   type BoardHeaderCopy,
@@ -138,6 +137,7 @@ export * from "./components/card-detail/task-activity-tab";
 export * from "./components/card-detail/task-updates-tab";
 export * from "./components/card-detail/update-composer";
 export { itemSheetCatalog } from "./components/card-detail/item-sheet.catalog";
+export { cardPopupCatalog } from "./components/card-popup/card-popup.catalog";
 export { itemChecklistsCatalog } from "./components/checklists/item-checklists.catalog";
 export {
   itemSheetCopy,

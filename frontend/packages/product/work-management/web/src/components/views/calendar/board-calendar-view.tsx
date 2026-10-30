@@ -11,7 +11,7 @@ import {
   serializeCompoundFilter,
   type Card,
 } from "@notrelix/work-management-core";
-import { ItemCreateHost } from "../../item-create/item-create-host";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
@@ -473,7 +473,7 @@ export function BoardCalendarView({
         onAddItem={setCreateDay}
       />
       {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open={createDay !== null}
           onOpenChange={(next) => {
             if (!next) setCreateDay(null);
@@ -485,6 +485,7 @@ export function BoardCalendarView({
           defaultStatusId={null}
           defaultDueDay={createDay ?? undefined}
           currentUserId={currentUserId}
+          onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
       {selectedItemId && board ? (

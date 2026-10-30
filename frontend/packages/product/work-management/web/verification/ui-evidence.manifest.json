@@ -49,14 +49,14 @@
         "reason": "Container composing BoardSettingsSurface with the settings, board and access reads, every settings write and the Kanban view's own settings through useBoardView."
       },
       {
-        "path": "src/components/item-create/board-item-create-dialog.tsx",
+        "path": "src/components/card-popup/create/board-card-create.tsx",
         "category": "container",
-        "reason": "Container composing ItemCreateHost with the board read (useFullBoard) for a page that shows one board."
+        "reason": "Container asking which board a card from Home or My work goes to, reading it (useFullBoard) and opening CardCreatePopup on it."
       },
       {
-        "path": "src/components/item-create/item-create-host.tsx",
+        "path": "src/components/card-popup/create/card-create-popup.tsx",
         "category": "container",
-        "reason": "Container composing ItemCreateDialog with the board facts, the create command, the follow-up field writes and the result toasts."
+        "reason": "Container composing the card popup in create mode with the draft, the one-key create command (useCreateItemWithDetails), the discard confirm and the result toasts."
       },
       {
         "path": "src/components/item-lifecycle/board-trash-host.tsx",
@@ -3546,152 +3546,6 @@
         {
           "id": "workspace-rules-forbidden",
           "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
-      "surfaceId": "wm.item-create.dialog",
-      "owner": "@notrelix/work-management-web",
-      "surfaceKind": "form",
-      "pureEntry": "src/components/item-create/item-create-dialog.tsx",
-      "coveredSources": ["src/components/item-create/item-create-fields.tsx"],
-      "stories": [
-        {
-          "id": "work-management-item-create--default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-create--failed",
-          "state": "Error",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-create--pending",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-create--edge-data",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": ["Default", "Error", "Loading", "EdgeData"],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "Success",
-            "reason": "The dialog hands the draft to its container, which closes it or keeps it open for the next item; success is the new item on the board, evidenced by the board surfaces.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "A member who cannot add items is never offered the dialog: the container does not open it, so there is no read-only presentation.",
-            "authority": "docs/product/work-management.md"
-          }
-        ]
-      },
-      "responsive": true,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "another",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "assign-me",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "ctrl-enter",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "date-text",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "from-response",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "from-response-empty-title",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "dates",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "error",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "lane",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "pending",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "people",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "prefill",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "quick-add",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "quick-due",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "required",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "submit",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
         }
       ]
     },

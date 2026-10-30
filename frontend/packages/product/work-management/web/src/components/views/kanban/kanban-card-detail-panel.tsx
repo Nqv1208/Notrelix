@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { useCard } from "@notrelix/work-management-state";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
-import { TaskDetailPanelSurface } from "../../card-detail/task-detail-panel-surface";
-import type { ItemSheetCopy } from "../../card-detail/item-sheet.copy";
+import { usePickerActions } from "../../card-popup/pickers/use-picker-actions";
+import { CardPopupSurface } from "../../card-popup/card-popup-surface";
+import { useCardPopupModel } from "../../card-popup/use-card-popup-model";
+import type { CardPopupSlots } from "../../card-popup/card-popup-context";
 import { withBoardPriority } from "../../shared/item-priority";
-import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import type {
   ItemSheetGroup,
-  ItemSheetMark,
   TaskDetailCallbacks,
   TaskDetailCapabilities,
   TaskDetailData,
@@ -14,34 +15,27 @@ import type {
 
 interface KanbanCardDetailPanelProps {
   board: Board;
-  /** The selected card; the sheet stays closed while this is null. */
-  card: CardDetail | null;
+  /** The selected card. */
+  card: CardDetail;
   detailData: TaskDetailData;
   callbacks: TaskDetailCallbacks;
   /**
-   * Called as the sheet closes (unmounts). `preventDefault()` skips the
-   * default focus return so the container can put focus on the opener.
+   * Called as the popup closes. `preventDefault()` skips the default focus
+   * return so the container can put focus on the opener.
    */
   onCloseAutoFocus?: (event: Event) => void;
-  /**
-   * The viewer's capabilities on this board. Required: the container decides
-   * (a commenter gets read-only properties and keeps the composer).
-   */
+  /** The viewer's capabilities on this board: the container decides. */
   capabilities: TaskDetailCapabilities;
-  /** Copy for the active locale; resolved from the host locale when omitted. */
-  copy?: ItemSheetCopy;
   /** Injected clock; read once on open when omitted. */
   now?: Date;
-  departmentMark?: ItemSheetMark;
   groups?: readonly ItemSheetGroup[];
+  slots?: CardPopupSlots;
 }
 
 /**
- * Non-modal 560 px item sheet over the right edge of the board: no scrim, no
- * focus trap, the board behind stays interactive. Below the desktop width it
- * is absolutely placed over the board, so the Kanban view root must be the
- * positioned ancestor; from the desktop width it spans the full height of the
- * window edge, over the board header, as in the mockup.
+ * The card popup of the board views and My work: a modal over the page with
+ * the card's columns of detail and comments. The container reads and writes
+ * the card; this part shapes them into the popup's model.
  */
 export function KanbanCardDetailPanel({
   board,
@@ -50,30 +44,39 @@ export function KanbanCardDetailPanel({
   callbacks,
   onCloseAutoFocus,
   capabilities,
-  copy,
   now,
-  departmentMark,
   groups,
+  slots,
 }: KanbanCardDetailPanelProps) {
-  const localeCopy = useItemSheetCopy();
   const [openedAt] = useState(() => new Date());
-  if (!card) return null;
-
+  const pickerActions = usePickerActions(card);
+  const model = useCardPopupModel({
+    mode: "view",
+    board,
+    card: withBoardPriority(card, board),
+    capabilities,
+    data: detailData,
+    callbacks,
+    groups,
+    now: now ?? openedAt,
+    slots,
+    actions: {
+      moveToGroup: (groupId) => callbacks.onMoveToGroup?.(card.id, groupId),
+      ...pickerActions,
+    },
+  });
+  const { refetch } = useCard(card.id, card.workspaceId);
   return (
-    <div className="absolute inset-y-0 right-0 z-20 flex w-full max-w-full border-l border-line bg-popover shadow-sheet sm:w-140.25 lg:fixed">
-      <TaskDetailPanelSurface
-        status="ready"
-        board={board}
-        card={withBoardPriority(card, board)}
-        capabilities={capabilities}
-        detailData={detailData}
-        callbacks={callbacks}
-        copy={copy ?? localeCopy}
-        now={now ?? openedAt}
-        departmentMark={departmentMark}
-        groups={groups}
-        onReturnFocus={onCloseAutoFocus}
-      />
-    </div>
+    <CardPopupSurface
+      status="ready"
+      model={model}
+      conflict={model.conflict}
+      onReloadConflict={() => {
+        refetch();
+        model.clearConflict();
+      }}
+      onClose={callbacks.onClose}
+      onCloseAutoFocus={onCloseAutoFocus}
+    />
   );
 }
