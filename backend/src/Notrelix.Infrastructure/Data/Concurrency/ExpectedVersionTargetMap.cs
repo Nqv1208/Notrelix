@@ -52,6 +52,12 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwner
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceType;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibility;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.UpdateSpaceDescription;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace;
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
 using Notrelix.Domain.Documents.Pages;
@@ -224,6 +230,12 @@ public sealed class ExpectedVersionTargetMap
 
         // Workspaces — Space hierarchy and membership (WSP-021, WSP-024)
         [typeof(MoveSpaceCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(RenameSpaceCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(UpdateSpaceDescriptionCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(ChangeSpaceTypeCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(ChangeSpaceVisibilityCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(ArchiveSpaceCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(UnarchiveSpaceCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(AddSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(RemoveSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ChangeSpaceMemberRoleCommand)] = new(SpaceKind, typeof(Space)),

@@ -4882,7 +4882,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all spaces in a workspace */
+        /**
+         * Get the spaces of a workspace the caller can see
+         * @description Cursor-paginated (default 50, max 200), ordered by name. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Spaces.GetWorkspaceSpaces"];
         put?: never;
         /** Create a new space in the workspace */
@@ -4900,7 +4903,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the caller's visible space org tree as a parent-linked list */
+        /**
+         * Get the caller's visible space org tree as a parent-linked list
+         * @description Cursor-paginated (default 50, max 200) in space id order; read every page and order siblings by position. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Spaces.GetSpaceTree"];
         put?: never;
         post?: never;
@@ -6213,9 +6219,13 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceTypeRequest": {
             spaceType?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceVisibilityRequest": {
             visibility?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.CreateSpaceRequest": {
             name?: string | null;
@@ -6241,9 +6251,17 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.RenameSpaceRequest": {
             name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.SpaceVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.UpdateSpaceDescriptionRequest": {
             description?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.AddTeamMemberRequest": {
             /** Format: uuid */
@@ -6408,6 +6426,16 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfSpaceDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfSpaceTreeNodeDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -7901,6 +7929,8 @@ export interface components {
             isArchived?: boolean;
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto": {
             subjectType?: string | null;
@@ -19929,7 +19959,10 @@ export interface operations {
     };
     "Workspaces.Spaces.GetWorkspaceSpaces": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19944,7 +19977,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfSpaceDto"];
                 };
             };
         };
@@ -19952,7 +19985,10 @@ export interface operations {
     "Workspaces.Spaces.CreateSpace": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -19967,17 +20003,36 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Workspaces.Spaces.GetSpaceTree": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19992,7 +20047,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfSpaceTreeNodeDto"];
                 };
             };
         };
@@ -20161,7 +20216,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.SpaceVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -20184,7 +20243,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.SpaceVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

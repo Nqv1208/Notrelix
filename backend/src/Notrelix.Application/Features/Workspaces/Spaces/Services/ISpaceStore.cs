@@ -44,8 +44,11 @@ public interface ISpaceStore
 
     Task<bool> IsActiveTeamAsync(Guid workspaceId, Guid teamId, CancellationToken cancellationToken);
 
-    /// <summary>Read-only tree rows for the given Space ids (non-deleted).</summary>
-    Task<IReadOnlyList<SpaceTreeRow>> ListTreeAsync(Guid workspaceId, IReadOnlyList<Guid> spaceIds, CancellationToken cancellationToken);
+    /// <summary>
+    /// Read-only tree rows for the given Space ids (non-deleted), ascending by id, at most <paramref name="take"/>
+    /// rows after <paramref name="afterId"/> (null starts at the first).
+    /// </summary>
+    Task<IReadOnlyList<SpaceTreeRow>> ListTreeAsync(Guid workspaceId, IReadOnlyList<Guid> spaceIds, Guid? afterId, int take, CancellationToken cancellationToken);
 
     /// <summary>Member entries of a Space with the Team name when the subject is a Team.</summary>
     Task<IReadOnlyList<SpaceMemberRow>> ListMembersAsync(Guid workspaceId, Guid spaceId, CancellationToken cancellationToken);

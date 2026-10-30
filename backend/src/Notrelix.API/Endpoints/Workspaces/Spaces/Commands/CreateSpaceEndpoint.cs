@@ -11,6 +11,7 @@ public static class CreateSpaceEndpoint
         group.MapWorkspacePost("/", HandleAsync)
             .WithName("Workspaces.Spaces.CreateSpace")
             .WithTags("Workspaces.Spaces")
+            .WithIdempotencyKey()
             .WithSummary("Create a new space in the workspace")
             .Produces<Guid>(StatusCodes.Status201Created, "application/json");
         return group;
