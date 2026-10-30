@@ -1124,7 +1124,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Disable a share link */
+        /**
+         * Disable a share link
+         * @description Authorized on the shared resource named by the route with the action that creating a link there needs, so a Board manager may turn off a link on their board. A link that does not belong to that resource answers NotFound; a link already off answers 204 and changes nothing.
+         */
         delete: operations["Governance.ShareLinks.Disable"];
         options?: never;
         head?: never;

@@ -746,6 +746,8 @@ disabled
 
 A revoked/expired link must stop authorizing future access.
 
+Turning a link off is authorized on the shared resource, with the same action that creating a link on that resource needs (a Board manager may turn off a link on their board; a Page sharer on their page). It is not a workspace-administration act on a separate "share link" resource, and the link must belong to the resource the request names: a link of another resource answers the same NotFound as a link that does not exist (confirmed 2026-10-30).
+
 ---
 
 # 35. Share-link secret

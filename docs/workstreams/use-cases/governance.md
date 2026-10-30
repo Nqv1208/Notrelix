@@ -157,7 +157,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-F04 | Audit every high-impact governance and administration change | F | System | Part | No | No | No | DEFINED | Missing audit on role change, member lifecycle, API tokens, share links, sharing policy. |
 | UC-GOV-F05 | Audit denied attempts on security-sensitive actions | F | System | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-G01 | Create a share link for a Board or Page | G | Board or Page sharer | Part | No | Part | No | IMPLEMENTING | Defects: access mode is hard-coded `WorkspaceOnly`; request `Level` is ignored; the DTO returns `TokenHash`; no audit; no policy check; ... |
-| UC-GOV-G02 | Revoke (disable) a share link | G | Board or Page sharer, workspace Owner | Part | No | No | No | IMPLEMENTING | Defects: authorized as `ManageWorkspace` on a `governance.share-link` resource, so a Board manager who is not workspace Admin cannot ... |
+| UC-GOV-G02 | Revoke (disable) a share link | G | Board or Page sharer, workspace Owner | Part | No | No | No | IMPLEMENTING | Authorization built on the shared resource (decided 2026-10-30); tests and owner check; no audit |
 | UC-GOV-G03 | A visitor opens a resource through a share link | G | Anonymous or signed-in visitor | No | No | No | No | BLOCKED | Owner must decide the execution principal of an anonymous visitor, abuse controls and whether Board links are in scope at all (76.4 says ... |
 | UC-GOV-G04 | List the share links of a resource | G | Board or Page sharer | No | No | Part | No | DEFINED | No endpoint. Enterprise baseline. |
 | UC-GOV-G05 | Link expiry, password and rotation | G | Link sharer | Part | No | No | No | BLOCKED | Depends on UC-GOV-G03 (no consumer). Domain rules exist and are tested. |
@@ -874,17 +874,17 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 
 ### UC-GOV-G02 Revoke (disable) a share link
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
-- Actors and permission: Board or Page sharer, workspace Owner; `ManageWorkspace` today; should be the resource's share action
+- Actors and permission: Board or Page sharer, workspace Owner; the resource's share action (`ShareBoardView` on a Board, `SharePage` on a Page, other kinds `ManageWorkspace`), the same action as creating a link there (decided 2026-10-30)
 - Preconditions: The link exists.
 - Input: Resource kind, resource id, link id.
 - Output: Status Disabled; access through the link ends at once; `ShareLinkDisabled` fact; audit entry.
 - Main flow: 1. Open the link row. 2. Revoke. 3. Confirm.
-- No-op / rejection / concurrency / retry: Already Disabled: no-op (204). Link of another resource or workspace: NotFound. The route's resource id is not compared with the link's resource today.
+- No-op / rejection / concurrency / retry: Already Disabled: no-op (204). Link of another resource or workspace: NotFound (the link's kind and id are compared with the route's, so a Board manager cannot turn off a link on a board they do not manage).
 - UI states: destructive confirmation, pending, permission denied
 - Rules: [Governance §34, §36](../../product/governance.md) GOV-011; WGREQ102, WGREQ149.
 - Acceptance: Given an active link, When revoked, Then a visitor with the old URL is denied on the next request.
-- Evidence: BE `DELETE /api/v1/resources/{resourceType}/{resourceId}/share-links/{shareLinkId}` (Governance.ShareLinks.Disable, `DisableShareLinkCommand`) · FE none · Domain `Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`, `ShareLinkTokenHash.cs` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ShareLinks/ShareLinkTests.cs`, `ShareLinkBoundaryTests.cs`, `ShareLinkTokenHashTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - Defects: authorized as `ManageWorkspace` on a `governance.share-link` resource, so a Board manager who is not workspace Admin cannot revoke their own link; no audit; resource id of the route is unchecked.
+- Evidence: BE `DELETE /api/v1/resources/{resourceType}/{resourceId}/share-links/{shareLinkId}` (Governance.ShareLinks.Disable, `DisableShareLinkCommand`, `ShareLinks/ShareLinkResources.cs` shared with create) · FE none · Domain `Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`, `ShareLinkTokenHash.cs` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ShareLinks/ShareLinkTests.cs`, `ShareLinkBoundaryTests.cs`, `ShareLinkTokenHashTests.cs` · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-10-30): authorized on the shared resource named by the route with the action create uses, so a Board manager who is not workspace Admin can revoke their own link; the link must belong to that resource or the answer is NotFound. Left: no audit; tests and owner check (Application and API tests: Board manager allowed, member without the action and a link of another board both NotFound, already-off no-op).
 
 ### UC-GOV-G03 A visitor opens a resource through a share link
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)

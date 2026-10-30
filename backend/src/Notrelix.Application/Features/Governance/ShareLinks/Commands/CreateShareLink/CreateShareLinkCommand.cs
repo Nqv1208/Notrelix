@@ -15,21 +15,11 @@ public record CreateShareLinkCommand(
     string Level,
     DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
 {
-    internal ResourceKind Kind => ParseKind(ResourceKind);
+    internal ResourceKind Kind => ShareLinkResources.ParseKind(ResourceKind);
 
-    PermissionAction IRequirePermission.Action => Kind.Value switch
-    {
-        "work-management.board" => PermissionAction.ShareBoardView,
-        "documents.page" => PermissionAction.SharePage,
-        _ => PermissionAction.ManageWorkspace
-    };
+    PermissionAction IRequirePermission.Action => ShareLinkResources.ActionFor(Kind);
     ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
-
-    private static ResourceKind ParseKind(string value) =>
-        global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
-            ? kind
-            : throw new ArgumentException($"Invalid resource kind '{value}'. Expected a canonical kind such as 'work-management.board'.", nameof(value));
 }
 
 public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
