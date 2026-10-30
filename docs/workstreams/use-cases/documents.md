@@ -48,8 +48,8 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | Page lifecycle | 17 | 0 | 2 | 6 | 6 | 0 | 3 |
-| B | Page hierarchy | 5 | 0 | 2 | 3 | 0 | 0 | 0 |
-| C | Page move / reparent | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
+| B | Page hierarchy | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
+| C | Page move / reparent | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
 | D | Block lifecycle | 6 | 0 | 1 | 3 | 2 | 0 | 0 |
 | E | Block types and content contract | 9 | 1 | 0 | 6 | 2 | 0 | 0 |
 | F | Block ordering | 4 | 0 | 1 | 3 | 0 | 0 | 0 |
@@ -59,7 +59,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | J | Document events and activity | 8 | 2 | 1 | 5 | 0 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 2 | 0 | 0 | 1 |
 | L | Recovery and conflict hardening | 5 | 1 | 0 | 3 | 0 | 0 | 1 |
-| | Total | 82 | 10 | 8 | 44 | 15 | 0 | 5 |
+| | Total | 82 | 10 | 5 | 47 | 15 | 0 | 5 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing) and `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink). Everything else that has both backend and frontend code is INTEGRATING.
 
@@ -81,7 +81,7 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 | # | Defect | Where |
 |---|---|---|
 | 1 | Fixed for rename: `UpdatePage` (owner decision 2026-10-30), expected version, dead request fields removed; the page icon is still UC-DCT-A03 | `backend/src/Notrelix.Application/Features/Documents/Pages/Commands/UpdatePage/UpdatePage.cs`, `backend/src/Notrelix.API/Endpoints/Documents/Pages/Commands/UpdatePageEndpoint.cs` |
-| 2 | Dead handlers that throw `NotImplementedException` | `.../Pages/Commands/MovePage/MovePage.cs`, `.../PublishPage/PublishPage.cs`, `.../SetPageDeadline/SetPageDeadline.cs` (under `backend/src/Notrelix.Application/Features/Documents/`) |
+| 2 | Dead handlers that throw `NotImplementedException` (the move handler is now built, UC-DCT-C02) | `.../PublishPage/PublishPage.cs`, `.../SetPageDeadline/SetPageDeadline.cs` (under `backend/src/Notrelix.Application/Features/Documents/`) |
 | 3 | `GET /pages/{pageId}/history` always returns an empty list; the frontend still calls it | `.../Pages/Queries/GetPageHistory/GetPageHistory.cs`, `frontend/packages/product/docs/state/src/api/history.api.ts` |
 | 4 | Reorder takes client sort keys, has no expected version, loads no page and announces no save | `.../Blocks/Commands/ReorderBlocks/ReorderBlocks.cs` |
 | 5 | Single block delete has no expected version and does not delete child blocks (batch delete does) | `.../Blocks/Commands/DeleteBlock/DeleteBlock.cs` |
@@ -139,10 +139,10 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | partial | none | none | none | IMPLEMENTING | Rule exists but no endpoint reaches Move |
-| UC-DCT-B05 | Limit nesting depth | B | System | partial | none | none | none | IMPLEMENTING | Create is limited; move is not (UC-DCT-C02) |
-| UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
-| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | partial | none | none | none | IMPLEMENTING | Handler throws NotImplementedException; no route |
+| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
 | UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | No page block limit |
 | UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | No stale-write real e2e |
@@ -221,6 +221,7 @@ Every route under `backend/src/Notrelix.API/Endpoints/Documents/` appears in at 
 | `GET /api/v1/pages/{pageId}/breadcrumb` | UC-DCT-B03 |
 | `GET /api/v1/pages/{pageId}/history` | UC-DCT-J08 |
 | `GET /api/v1/pages/{pageId}/backlinks` | UC-DCT-G04, E07 |
+| `POST /api/v1/pages/{pageId}/move` | UC-DCT-C02, B04, B05 |
 | `POST /api/v1/pages/{pageId}/move-to-space` | UC-DCT-C01, C03 |
 | `GET /api/v1/pages/{pageId}/blocks` | UC-DCT-G01, G06 |
 | `POST /api/v1/pages/{pageId}/blocks` | UC-DCT-D01, F01 |
@@ -539,8 +540,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: validation error ("Cannot move a page into itself").
 - Rules: product doc sections 14, 15 (product rule DCT-005); `DCREQ007`, `DCREQ010`.
 - Acceptance: Given pages A > B, When A is moved under B, Then refused and unchanged.
-- Evidence: BE `Page.Move`, `PageTreeRules` (no route reaches it) · FE none · Design none · Tests `PageTreeRulesTests`, `PageHierarchyTests` · Real e2e none
-- State: IMPLEMENTING — the rule is tested in the Domain but unreachable until UC-DCT-C02 exists.
+- Evidence: BE `Page.Move`, `PageTreeRules.EnsureNoCycle`, reached through `POST /api/v1/pages/{pageId}/move` (the handler supplies the new parent's ancestry; a parent in another workspace, trashed or deleted is `404`) · FE the Move to dialog lists only places that are not the page, its own pages or its current parent, and words a `400` as a rule message · Design none · Tests `PageTreeRulesTests`, `PageHierarchyTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (cycle and own-parent refusals through the API, concurrent moves with the version).
 
 ### UC-DCT-B05 Limit nesting depth
 - Capability: B Page hierarchy
@@ -553,8 +554,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: validation error.
 - Rules: new rule in Part 5; team spec section 7 "maximum nesting if product-defined".
 - Acceptance: Given a page at depth 10, When a child is created, Then refused.
-- Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` (the move check takes the deepest descendant), applied on create and create from template · FE none · Design none · Tests none · Real e2e none
-- State: IMPLEMENTING — the move check waits for UC-DCT-C02; tests.
+- Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` applied on create, create from template and move (the move passes the level of the deepest descendant) · FE the Move to dialog words the `400` as a rule message · Design none · Tests none · Real e2e none
+- State: INTEGRATING — tests and owner check (depth 10 refused on create and on a move that deepens a subtree).
 
 ## Capability C: Page move / reparent
 
@@ -571,8 +572,8 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - UI states: pending, conflict, permission denied, validation error, offline.
 - Rules: product doc sections 16, 86; `DCREQ008`, `DCREQ034`, `DCREQ010`.
 - Acceptance: Given a root page with two children, When moved to Space S, Then all three show Space S. Given a stale version, Then `412` and no change.
-- Evidence: BE `POST /api/v1/pages/{pageId}/move-to-space`, `MovePageToSpaceCommandHandler` · FE `useMovePageToSpace` · Design Final-Docs-2 · Tests `page-move-to-space.unit.test.ts`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — real e2e for success, 412 and hidden target, artboard for the dialog.
+- Evidence: BE `POST /api/v1/pages/{pageId}/move-to-space`, `MovePageToSpaceCommandHandler` (now evaluates `UpdatePage` for every page below the root through `IPageSubtreeAuthorizer` before any page changes Space, and skips deleted pages that used to make the move throw) · FE `useMovePageToSpace`, the dialog shows a specific message when a page below is refused · Design Final-Docs-2 · Tests `page-move-to-space.unit.test.ts`, `PageHierarchyTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (refusal when a page below is not the caller's, deleted page below, real e2e for success, 412 and hidden target, artboard for the dialog).
 
 ### UC-DCT-C02 Move a page under another parent
 - Capability: C Page move / reparent
@@ -585,8 +586,8 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - UI states: pending, conflict, validation error, permission denied, offline.
 - Rules: product doc sections 14 to 16 (product rule DCT-005); `DCREQ008`, `DCREQ010`, `DCREQ034`; team spec section 8 lists what a move must define.
 - Acceptance: Given pages A and B, When A is moved under B, Then A's breadcrumb is B > A and a stale second move is `412`.
-- Evidence: BE `Page.Move` (domain); `MovePageCommandHandler` throws `NotImplementedException`; no route · FE none (drag in sidebar not built) · Design none · Tests `PageHierarchyTests`, `PageTreeRulesTests` · Real e2e none
-- State: IMPLEMENTING — endpoint, handler, version, UI, tests.
+- Evidence: BE `POST /api/v1/pages/{pageId}/move` (body `parentId`, `expectedVersion`), `MovePageCommand` is `UpdatePage` plus `IExpectedVersionRequest` (in `ExpectedVersionTargetMap`); `MovePageCommandHandler` authorizes `CreatePage` on the new parent (`IPageSpacePlacement.AuthorizeParentAsync`) or in the Space for a root page, refuses a trashed, deleted or foreign parent (`404`), a cycle and a nesting beyond 10 levels (`400`), puts the page and its subtree in the new parent's Space with one version bump (`Page.Move` with Space) and, when the Space changes, first evaluates `UpdatePage` for every page below · FE File menu Move to, `DocMovePageDialogSurface`, `useMovePage` (refreshes lists, tree, page and breadcrumb; conflict, subtree and rule messages), drag in the sidebar not built · Design none · Tests `PageHierarchyTests`, `PageTreeRulesTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (the dead `MovePageCommand` stub is replaced; `PublishPageCommand` and `SetPageDeadlineCommand` still throw `NotImplementedException` and are retired with UC-DCT-A15).
 
 ### UC-DCT-C03 Refuse a move to another workspace
 - Capability: C Page move / reparent

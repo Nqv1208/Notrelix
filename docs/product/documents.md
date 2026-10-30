@@ -246,6 +246,8 @@ Moving a Page changes organization, not identity.
 
 Derived breadcrumb/path state reconciles after move.
 
+A page moves under another parent when the caller may update the page and create under the new parent (or in the Space, for a root page), the parent is an active page of the same workspace, the move carries the page's expected version, and ancestry facts show no cycle. The page and the pages under it follow the Space of the new parent, and when the Space changes the caller must be allowed to edit every page below. A page is never moved to another workspace; content crosses workspaces by export and import or by duplicate.
+
 # 17. Page path
 
 A path is derived from current hierarchy and names. An ancestor the viewer may not see is shown as one unavailable crumb with no title, icon or id; a run of hidden ancestors is one crumb.
