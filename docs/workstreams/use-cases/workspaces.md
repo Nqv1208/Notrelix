@@ -172,12 +172,12 @@ Products compared and what was taken:
 | UC-WSP-G07 | Invite a guest to one Board or Page | G | Holder of `ManageBoardPermission` or `ManagePagePermission` on the resource | yes | no | Final-Share, Final-M-Share | none | IMPLEMENTING | Email invitation in the Share dialog (owner decision); real e2e; `AllowGuestInvites` proof. |
 | UC-WSP-G08 | Resend or revoke a resource invitation | G | The issuer with the permission on that resource | yes | no | Final-Share | none | IMPLEMENTING | No frontend caller. |
 | UC-WSP-G09 | Invite many people at once (enterprise baseline) | G | Owner, Admin | no | partial | Final-Onboarding | none | DEFINED | Batch contract; result UI. |
-| UC-WSP-H01 | Preview an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding, Final-Auth | none | INTEGRATING | Real e2e; enumeration and rate-limit proof. |
-| UC-WSP-H02 | Accept an invitation while signed in | H | The invited person | yes | yes | Final-Onboarding | none | INTEGRATING | Fail-closed seat gate; real e2e. |
-| UC-WSP-H03 | Accept an invitation and register in one step | H | A new person holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Real e2e; state the Account membership of the new user (WSP-004). |
-| UC-WSP-H04 | Decline an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Real e2e. |
+| UC-WSP-H01 | Preview an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding, Final-Auth | none | INTEGRATING | Tests and owner check: real e2e; enumeration proof (the preview, decline and register-with-token routes carry the credential rate limit). Nothing found to build. |
+| UC-WSP-H02 | Accept an invitation while signed in | H | The invited person | yes | yes | Final-Onboarding | none | INTEGRATING | Tests and owner check: seat refused, real e2e. A Removed member who accepts a plain invitation is not re-activated (open question). |
+| UC-WSP-H03 | Accept an invitation and register in one step | H | A new person holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Tests and owner check: real e2e. Nothing found to build. |
+| UC-WSP-H04 | Decline an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Tests and owner check: real e2e. Nothing found to build. |
 | UC-WSP-H05 | Decline an invitation I see in my account | H | The invited person, signed in | yes | no | none | none | IMPLEMENTING | Frontend action. |
-| UC-WSP-H06 | See my pending invitations | H | Any signed-in person | yes | yes | Final-Account | none | INTEGRATING | Real e2e; accept action from the menu. |
+| UC-WSP-H06 | See my pending invitations | H | Any signed-in person | yes | yes | Final-Account | none | INTEGRATING | Tests and owner check: verify against the real stack. UNRESOLVED, see the block: the read and decline-by-id are global requests over workspace-scoped rows, and the menu is not mounted. |
 | UC-WSP-I01 | Switch the active workspace | I | Any member of both workspaces | n/a | yes | BC-Shell-1440, BC-Shell-1280-768, BC-Shell-320 | workspace-isolation.real.e2e.spec.ts | HARDENING | Tests and owner check: out-of-order response test; realtime dispose proof; design diff at 3 widths and both themes. |
 | UC-WSP-I02 | List the workspaces I belong to | I | Any signed-in person | yes | yes | BC-Shell-1440, Final-Account | none | INTEGRATING | Tests and owner check: direct real assertion; the Archived group has no artboard and no way to open an archived workspace yet (banner is I05/D02). |
 | UC-WSP-I03 | Choose my default workspace | I | Any active member | yes | yes | Final-Account | none | INTEGRATING | Tests and owner check: real e2e; sign-in open check. |
@@ -786,12 +786,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `token`.
 - Output: Active membership (or reused), entries and resource grant applied in one transaction; invitation Accepted; `WorkspaceMemberAdded`.
 - Main flow: 1. `POST /api/v1/invitations/accept`. 2. Email and status checks. 3. Billing seat gate. 4. One transaction applies everything.
-- No-op / rejection / concurrency / retry: Different email: refused. A repeat creates no second membership (WSP-009). Revoked meanwhile: one winner. Removed or suspended member with entries: cannot accept. The seat gate is optional in code (`IBillingSeatGate? = null`), so an unregistered gate admits (LD-08).
+- No-op / rejection / concurrency / retry: Different email: refused. A repeat creates no second membership (WSP-009). Revoked meanwhile: one winner. Removed or suspended member with entries: cannot accept. The seat gate is a required dependency (LD-08): a new membership asks Billing first and a refusal fails the acceptance with the plan-limit message; an acceptance that cannot ask Billing does not admit. An existing membership reuses its row: a Removed member who accepts a plain invitation (no entries) is not re-activated and a Suspended one stays suspended, while one with entries is refused; what an invitation should do for a Removed member is not decided in the product docs.
 - UI states: Join page: pending, success (go to the workspace), error states.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 24, 75; WSP-006, WSP-009, WSP-019; WGREQ030, WGREQ031, WGREQ146; NRX-010.
 - Acceptance: Given the right person, When they accept twice, Then one membership exists. Given another email, Then refused and no change.
-- Evidence: BE `POST /api/v1/invitations/accept`, `AcceptInvitationCommandHandler`, `InvitationAcceptanceService` · FE `auth-flow.service.ts` (auth feature), `onboarding-join-surface.tsx` · Design `Final-Onboarding` · Tests `AcceptInvitationTransactionEvidenceTests`, `WorkspaceInvitationConcurrencyEvidenceTests`, `WorkspaceCredentialAndInvitationEscalationTests`, `InvitationTokenFlowHttpTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Fail-closed seat gate; real e2e.
+- Evidence: BE `POST /api/v1/invitations/accept`, `AcceptInvitationCommandHandler`, `InvitationAcceptanceService` (now requires `IBillingSeatGate`; tests that build either without a gate need the argument) · FE `auth-flow.service.ts` (auth feature), `onboarding-join-surface.tsx` · Design `Final-Onboarding` · Tests `AcceptInvitationTransactionEvidenceTests`, `WorkspaceInvitationConcurrencyEvidenceTests`, `WorkspaceCredentialAndInvitationEscalationTests`, `InvitationTokenFlowHttpTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING — Tests and owner check: seat refused with the plan-limit message, seat free, repeat accept, another email refused, real e2e. Open question for the lead: should accepting an invitation re-activate a Removed member (with a seat check, as direct add does)?
 
 ### UC-WSP-H03 Accept an invitation and register in one step
 - Capability: H Invitation accept / reject / revoke
@@ -805,7 +805,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 75; see [identity](identity.md); WGREQ033.
 - Acceptance: Given a valid token and a strong password, Then user and membership exist and the person is signed in.
 - Evidence: BE `POST /api/v1/invitations/accept-with-registration`, `AcceptInvitationWithRegistrationCommandHandler` · FE `auth-flow.service.ts`, join surface · Design `Final-Onboarding` · Tests `InvitationTokenFlowHttpTests`, `WorkspaceCredentialAndInvitationEscalationTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; state the Account membership of the new user (WSP-004).
+- State: INTEGRATING — Tests and owner check: real e2e. The new user becomes an Account member of the workspace's Account when the invitation is accepted (`EnsureAccountMembershipAsync` in `InvitationAcceptanceService`); that is how people outside the Account join, and direct add (F01) is for people already in it.
 
 ### UC-WSP-H04 Decline an invitation from its link
 - Capability: H Invitation accept / reject / revoke
@@ -847,7 +847,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 75.
 - Acceptance: Given two pending invitations, Then two rows.
 - Evidence: BE `GET /api/v1/invitations/pending`, `GetUserPendingInvitationsQueryHandler` · FE `pending-invitations-menu.tsx`, `use-pending-invitations.ts` · Design `Final-Account` · Tests `InvitationEndpointTests` · Real e2e none
-- State: INTEGRATING — Real e2e; accept action from the menu.
+- State: INTEGRATING — UNRESOLVED, not built. (1) The pending list and decline-by-id (H05) are global requests that read workspace-scoped invitations without lifting the tenant filter, so in the real stack they likely return nothing or NotFound; this needs a real-stack check and, if confirmed, a read keyed to the caller's confirmed email, which may also need a database policy (schema change). (2) `UserPendingInvitationDto.Token` returns the stored token hash, which is credential material and cannot be used to accept (accept hashes what it receives); accepting from the list needs an accept-by-id command with the same email and seat checks, and the field should go. (3) `PendingInvitationsMenu` is exported but mounted nowhere in the web app, is English-only and has no artboard-matched design. Decision needed from the lead on the invitee-side flow before building.
 
 ## I. Workspace selection / switch integration
 
