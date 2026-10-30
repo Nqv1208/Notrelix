@@ -1,9 +1,6 @@
 import { useMemo } from "react";
 import { useBoardKanban } from "@notrelix/work-management-state";
-import type {
-  ItemSheetGroup,
-  ItemSheetMark,
-} from "../card-detail/task-detail-types";
+import type { ItemSheetGroup } from "../card-detail/task-detail-types";
 import { emptyKanbanFilter } from "../views/kanban/kanban-filter";
 import { KanbanSelectedItem } from "../views/kanban/kanban-view";
 import { BoardViewerContext } from "./board-viewer";
@@ -16,8 +13,6 @@ export interface BoardItemSheetHostProps {
   readonly workspaceId: string;
   readonly boardId: string;
   readonly itemId: string;
-  /** The department (Space) mark before the Board name in the sheet's crumb. */
-  readonly departmentMark?: ItemSheetMark;
   readonly onClose: () => void;
   /** Gives focus back to the opener as the sheet closes. */
   readonly onRestoreFocus: (itemId: string) => void;
@@ -36,7 +31,6 @@ export function BoardItemSheetHost({
   workspaceId,
   boardId,
   itemId,
-  departmentMark,
   onClose,
   onRestoreFocus,
   onOpenFullPage,
@@ -65,7 +59,6 @@ export function BoardItemSheetHost({
         board={board}
         cardId={itemId}
         capabilities={capabilities}
-        departmentMark={departmentMark}
         groups={groups}
         onClose={onClose}
         onRestoreFocus={onRestoreFocus}

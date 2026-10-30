@@ -129,13 +129,6 @@ export {
   BoardItemSheetHost,
   type BoardItemSheetHostProps,
 } from "./components/shared/board-item-sheet-host";
-export * from "./components/card-detail/task-detail-panel";
-export * from "./components/card-detail/task-detail-header";
-export * from "./components/card-detail/task-detail-tabs";
-export * from "./components/card-detail/task-detail-empty-state";
-export * from "./components/card-detail/task-activity-tab";
-export * from "./components/card-detail/task-updates-tab";
-export * from "./components/card-detail/update-composer";
 export { itemSheetCatalog } from "./components/card-detail/item-sheet.catalog";
 export { cardPopupCatalog } from "./components/card-popup/card-popup.catalog";
 export { itemChecklistsCatalog } from "./components/checklists/item-checklists.catalog";
@@ -146,8 +139,6 @@ export {
 export { useItemSheetCopy } from "./components/card-detail/use-item-sheet-copy";
 
 // Item page (full-width view of one item)
-export * from "./components/item-page/item-page-container";
-export * from "./components/item-page/item-page-surface";
 export * from "./components/item-page/item-page-types";
 export { itemPageCatalog } from "./components/item-page/item-page.catalog";
 export {

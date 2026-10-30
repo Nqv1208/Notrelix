@@ -42,10 +42,7 @@ import {
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
-import type {
-  ItemSheetGroup,
-  ItemSheetMark,
-} from "../../card-detail/task-detail-types";
+import type { ItemSheetGroup } from "../../card-detail/task-detail-types";
 import { findItemFields } from "../../card-detail/item-field-editors";
 import { useBoardCapabilities } from "../../shared/board-capabilities";
 import {
@@ -764,9 +761,6 @@ export function MainTableView({
   const nextId = selectedIndex >= 0 ? order[selectedIndex + 1] : undefined;
   const step = (id: string | undefined) =>
     id ? () => onSelectedItemChange?.(id, { replace: true }) : undefined;
-  const departmentMark: ItemSheetMark | undefined = header?.space
-    ? { initials: header.space.initials, tone: header.space.markTone }
-    : undefined;
   const sheetGroups: ItemSheetGroup[] = orderedGroupIds;
 
   return (
@@ -1057,7 +1051,6 @@ export function MainTableView({
           board={board}
           cardId={selectedItemId}
           capabilities={capabilities}
-          departmentMark={departmentMark}
           groups={sheetGroups}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}

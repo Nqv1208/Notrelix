@@ -375,14 +375,6 @@ export function MyWorkPage() {
       boardId={openItem.boardId}
       itemId={openItem.id}
       viewerUserId={user?.id ?? null}
-      departmentMark={
-        openItem.department
-          ? {
-              initials: initialsFor(openItem.department.name),
-              tone: openItem.department.markTone,
-            }
-          : undefined
-      }
       onClose={() => setItem(undefined, { replace: true })}
       onRestoreFocus={(itemId) =>
         document

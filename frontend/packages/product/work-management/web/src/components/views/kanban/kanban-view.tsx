@@ -56,7 +56,6 @@ import { BoardHeaderDataContext } from "../../board-layout/board-header-data-con
 import type {
   ItemSheetGroup,
   ItemSheetLinkCandidate,
-  ItemSheetMark,
   TaskDetailCapabilities,
 } from "../../card-detail/task-detail-types";
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
@@ -823,9 +822,6 @@ export function KanbanView({
   const step = (id: string | undefined) =>
     id ? () => onSelectedItemChange?.(id, { replace: true }) : undefined;
 
-  const departmentMark: ItemSheetMark | undefined = header?.space
-    ? { initials: header.space.initials, tone: header.space.markTone }
-    : undefined;
   const linkCandidates: ItemSheetLinkCandidate[] = kanban.groups
     .flatMap((group) => group.cards)
     .filter((entry) => entry.id !== selectedItemId && !entry.parentItemId)
@@ -1108,7 +1104,6 @@ export function KanbanView({
           board={board}
           cardId={selectedItemId}
           capabilities={capabilities}
-          departmentMark={departmentMark}
           groups={sheetGroups}
           linkCandidates={linkCandidates}
           onClose={handleClosePanel}
@@ -1131,7 +1126,6 @@ export interface SelectedItemProps {
   board: Board;
   cardId: string;
   capabilities: TaskDetailCapabilities;
-  departmentMark?: ItemSheetMark;
   groups: readonly ItemSheetGroup[];
   /** Items a new link can point at (the board's items that are not sub-items). */
   linkCandidates?: readonly ItemSheetLinkCandidate[];
@@ -1142,7 +1136,9 @@ export interface SelectedItemProps {
   onCopyLink: (cardId: string) => void;
   onOpenFullPage?: (cardId: string) => void;
   onMoveToGroup: (cardId: string, groupId: string) => void;
-  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void | Promise<unknown>;
+  onUpdateFieldValue: (
+    payload: UpdateFieldValueInput,
+  ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
 }
 
