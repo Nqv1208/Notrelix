@@ -292,6 +292,8 @@ export interface DocTrashView {
   readonly loading: boolean;
   /** A restore or delete failed. */
   readonly failed: boolean;
+  /** It failed because the caller may not change some page under the page. */
+  readonly subtreeRefused: boolean;
   /** The page a write is running on. */
   readonly busyId: string | null;
   /** The list itself could not be read. */
@@ -308,6 +310,8 @@ export interface DocTrashConfirmView {
   readonly below: number;
   readonly busy: boolean;
   readonly failed: boolean;
+  /** It failed because the caller may not change some page under the page. */
+  readonly subtreeRefused: boolean;
 }
 
 /** A page the picker offers for a page reference. */

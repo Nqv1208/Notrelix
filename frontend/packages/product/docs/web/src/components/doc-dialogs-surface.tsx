@@ -111,7 +111,7 @@ export function DocTrashDialogSurface({
           role="alert"
           className="m-0 px-5 pb-2 text-crumb font-semibold text-danger-text"
         >
-          {t.failed}
+          {trash.subtreeRefused ? t.subtreeRefused : t.failed}
         </p>
       ) : null}
       <div className="flex min-h-[120px] flex-col gap-1 overflow-auto px-5 pb-5">
@@ -242,7 +242,7 @@ export function DocTrashConfirmDialogSurface({
           role="alert"
           className="m-0 px-5 pb-2 text-crumb font-semibold text-danger-text"
         >
-          {t.failed}
+          {confirm.subtreeRefused ? t.subtreeRefused : t.failed}
         </p>
       ) : null}
       <div className="flex justify-end gap-2 px-5 pt-2 pb-5">

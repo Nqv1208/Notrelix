@@ -3503,8 +3503,9 @@ export class MockStore {
   deletePage(pageId: string): boolean {
     const page = this.pagesById.get(pageId);
     if (!page) return false;
+    // Only the pages that went to the trash together with it (one trash time).
     for (const record of [page, ...this.pagesBelow(pageId)]) {
-      if (record.id !== pageId && !record.trashedAt) continue;
+      if (record.id !== pageId && record.trashedAt !== page.trashedAt) continue;
       this.removeIndex(
         this.pageIdsByWorkspaceId,
         record.workspaceId,
@@ -4487,6 +4488,8 @@ export class MockStore {
     const stamp = trashed ? this.clock.isoNow() : null;
     for (const record of [page, ...this.pagesBelow(pageId)]) {
       if (Boolean(record.trashedAt) === trashed) continue;
+      // A restore brings back only what went to the trash with the page.
+      if (!trashed && record.trashedAt !== page.trashedAt) continue;
       const parent = record.parentId
         ? this.pagesById.get(record.parentId)
         : undefined;

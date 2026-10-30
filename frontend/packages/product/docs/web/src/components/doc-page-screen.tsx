@@ -115,6 +115,14 @@ const REPEATING: ReadonlySet<BlockType> = new Set([
   "todo",
 ]);
 
+/** The producer refused a trash, restore or delete because some page under the page is not the caller's to change. */
+function isSubtreeRefusal(error: unknown): boolean {
+  return (
+    (error as { code?: unknown } | null)?.code ===
+    "documents.page.subtree-not-permitted"
+  );
+}
+
 /** How many pages the list holds below `rootId`, at any depth. */
 function pagesBelow(
   pages: readonly { id: string; parentId: string | null }[],
@@ -888,6 +896,15 @@ export function createDocPageScreen({
     // The page and the pages under it go to the trash together; the toast offers the way back.
     const trashOpenPage = (below: number) =>
       archivePage.mutate(pageId, {
+        // The confirmation shows its own failure; with nothing to confirm the toast does.
+        onError: (error) => {
+          if (below === 0)
+            host.notify?.(
+              isSubtreeRefusal(error)
+                ? copy.trash.subtreeRefused
+                : copy.trash.failed,
+            );
+        },
         onSuccess: () => {
           setOverlay(NONE);
           host.leaveDoc?.();
@@ -1570,6 +1587,7 @@ export function createDocPageScreen({
                 below: overlay.below,
                 busy: archivePage.isPending,
                 failed: archivePage.isError,
+                subtreeRefused: isSubtreeRefusal(archivePage.error),
               }
             : undefined
         }
@@ -1586,6 +1604,9 @@ export function createDocPageScreen({
           loadingMore: trashQuery.isFetchingNextPage,
           loading: trashQuery.isLoading,
           failed: restorePage.isError || deletePage.isError,
+          subtreeRefused:
+            isSubtreeRefusal(restorePage.error) ||
+            isSubtreeRefusal(deletePage.error),
           busyId:
             (restorePage.isPending ? restorePage.variables : null) ??
             (deletePage.isPending ? deletePage.variables : null) ??

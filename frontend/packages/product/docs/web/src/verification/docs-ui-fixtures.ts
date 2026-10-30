@@ -631,6 +631,7 @@ export function docsPageScreenTrashScenario(): DocPageScreenSurfaceProps {
       loading: false,
       failed: false,
       busyId: null,
+      subtreeRefused: false,
       listFailed: false,
       hasMore: false,
       loadingMore: false,
@@ -643,7 +644,12 @@ export function docsPageScreenTrashConfirmScenario(): DocPageScreenSurfaceProps 
   return {
     ...docsPageScreenDefaultScenario(),
     overlay: { kind: "trashPage", below: 4 },
-    trashConfirm: { below: 4, busy: false, failed: false },
+    trashConfirm: {
+      below: 4,
+      busy: false,
+      failed: false,
+      subtreeRefused: false,
+    },
   };
 }
 

@@ -80,7 +80,7 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 
 | # | Defect | Where |
 |---|---|---|
-| 1 | Fixed for rename (`UpdatePage`, expected version, dead request fields removed); the page icon is still UC-DCT-A03 | `backend/src/Notrelix.Application/Features/Documents/Pages/Commands/UpdatePage/UpdatePage.cs`, `backend/src/Notrelix.API/Endpoints/Documents/Pages/Commands/UpdatePageEndpoint.cs` |
+| 1 | Rename now carries the expected version and the dead request fields are gone; it is still authorized as `ManageBoard` (aligning to `UpdatePage` waits for the owner); the page icon is still UC-DCT-A03 | `backend/src/Notrelix.Application/Features/Documents/Pages/Commands/UpdatePage/UpdatePage.cs`, `backend/src/Notrelix.API/Endpoints/Documents/Pages/Commands/UpdatePageEndpoint.cs` |
 | 2 | Dead handlers that throw `NotImplementedException` | `.../Pages/Commands/MovePage/MovePage.cs`, `.../PublishPage/PublishPage.cs`, `.../SetPageDeadline/SetPageDeadline.cs` (under `backend/src/Notrelix.Application/Features/Documents/`) |
 | 3 | `GET /pages/{pageId}/history` always returns an empty list; the frontend still calls it | `.../Pages/Queries/GetPageHistory/GetPageHistory.cs`, `frontend/packages/product/docs/state/src/api/history.api.ts` |
 | 4 | Reorder takes client sort keys, has no expected version, loads no page and announces no save | `.../Blocks/Commands/ReorderBlocks/ReorderBlocks.cs` |
@@ -269,8 +269,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading, validation error, read-only, conflict, pending, permission denied, offline.
 - Rules: product doc section 9 and product rule DCT-025; `DCREQ113`, `DCREQ136`, `DCREQ137`.
 - Acceptance: Given a title change, When patched, Then version +1 and one `PageRenamed`. Given the same title, Then no version change. Given a stale version, Then `412` and the title is unchanged. Given a Viewer, Then `404`.
-- Evidence: BE `PATCH /api/v1/pages/{pageId}` (body `title`, `expectedVersion`; the dead `iconType`, `iconValue`, `coverUrl` fields are gone), `UpdatePageCommand` is `UpdatePage` plus `IExpectedVersionRequest` (registered in `ExpectedVersionTargetMap`), `UpdatePageCommandHandler` · FE `useDocEditor.updateTitle` (sends the cached page version; on 412 it reads the page, treats an already applied rename as success, otherwise shows the stored title and the notice `header.titleConflict`) · Design Final-Docs-2 · Tests `PageTests`, `PageRulesTests`, `ExpectedVersionArchitectureTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (stale-write test, no-op test, Viewer `404`, real e2e for the 412; the handler tests and `GovernanceResourcePermissionFlowTests` still build the old `UpdatePageCommand(pageId, title)`).
+- Evidence: BE `PATCH /api/v1/pages/{pageId}` (body `title`, `expectedVersion`; the dead `iconType`, `iconValue`, `coverUrl` fields are gone), `UpdatePageCommand` keeps `ManageBoard` and adds `IExpectedVersionRequest` (registered in `ExpectedVersionTargetMap`), `UpdatePageCommandHandler` · FE `useDocEditor.updateTitle` (sends the cached page version; on 412 it reads the page, treats an already applied rename as success, otherwise shows the stored title and the notice `header.titleConflict`) · Design Final-Docs-2 · Tests `PageTests`, `PageRulesTests`, `ExpectedVersionArchitectureTests` · Real e2e `documents.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (stale-write test, no-op test, Viewer `404`, real e2e for the 412; the handler tests and `GovernanceResourcePermissionFlowTests` still build the old `UpdatePageCommand(pageId, title)`). Rename authorized as ManageBoard; aligning to UpdatePage waits for the owner.
 
 ### UC-DCT-A03 Set a page icon
 - Capability: A Page lifecycle
@@ -297,8 +297,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: pending, permission denied, offline, destructive confirmation not required (reversible), undo toast with Restore.
 - Rules: product doc sections 10, 11 (product rule DCT-003); `DCREQ004`; decision LD1 for children.
 - Acceptance: Given an active page, When trashed, Then `GET /pages/{id}` is `404` and the trash list holds it. Given it is trashed again, Then no second event.
-- Evidence: BE `POST /api/v1/pages/{pageId}/archive`, `ArchivePageCommandHandler` archives the page and every non-deleted descendant in one unit of work through `IPageSubtreeStore` (an already trashed page still sweeps its subtree) · FE `useArchivePage`, File menu, `pagesBelow` count, `DocTrashConfirmDialogSurface` when pages sit under the page, toast with Undo (`host.notify` action restores and reopens the page) · Design Final-Docs-2 (confirmation and toast not drawn) · Tests `ArchivePageCommandHandlerTests`, `PageTrashHandlerTests`, `PageArchivedOutboxEvidenceTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (subtree trash, no-op, cross-tenant negative test; the handler tests still construct the handler with `IDocumentDbContext`).
+- Evidence: BE `POST /api/v1/pages/{pageId}/archive`, `ArchivePageCommandHandler` archives the page and every active descendant with one archive time in one unit of work through `IPageSubtreeStore`; `IPageSubtreeAuthorizer` first evaluates `ArchivePage` for every descendant it would change and one refused page refuses the whole operation (`403` `documents.page.subtree-not-permitted`, count only); an already trashed page is a no-op · FE `useArchivePage`, File menu, `pagesBelow` count, `DocTrashConfirmDialogSurface` when pages sit under the page, toast with Undo (`host.notify` action restores and reopens the page) · Design Final-Docs-2 (confirmation and toast not drawn) · Tests `ArchivePageCommandHandlerTests`, `PageTrashHandlerTests`, `PageArchivedOutboxEvidenceTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (subtree trash, refusal when one descendant is not allowed, no-op, cross-tenant negative test; the handler tests still construct the handler with `IDocumentDbContext`; the subtree check costs one access-facts lookup per descendant).
 
 ### UC-DCT-A05 Restore a page from the trash
 - Capability: A Page lifecycle
@@ -311,8 +311,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading, empty trash, pending, permission denied, offline.
 - Rules: product doc sections 94, 95 (product rule DCT-030: restore validates current constraints).
 - Acceptance: Given a trashed page, When restored, Then `GET /pages/{id}` is `200` and the trash list no longer holds it.
-- Evidence: BE `POST /api/v1/pages/{pageId}/restore`, `RestorePageCommandHandler` restores the page and the archived pages under it in one unit of work; a parent that is trashed, deleted or missing brings the page back at the root of its Space (`Page.Unarchive(detachFromParent)`), an archived Space is refused with `409` `workspaces.space.inactive`; an active page is a no-op · FE `useRestorePage`, trash dialog · Design Final-Docs-2 (trash dialog not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (subtree restore, detach to root, archived Space, no-op; a page trashed on its own before its parent returns with the parent, since the unit is not marked; trash dialog artboard).
+- Evidence: BE `POST /api/v1/pages/{pageId}/restore`, `RestorePageCommandHandler` restores the page and the archived pages that went to the trash with it (same archive time as the page) in one unit of work, after `IPageSubtreeAuthorizer` evaluated `RestorePage` for each of them; a parent that is trashed, deleted or missing brings the page back at the root of its Space (`Page.Unarchive(detachFromParent)`), an archived Space is refused with `409` `workspaces.space.inactive`; an active page is a no-op · FE `useRestorePage`, trash dialog · Design Final-Docs-2 (trash dialog not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (subtree restore, a page trashed on its own earlier stays in the trash, detach to root, archived Space, refusal when one page is not allowed, no-op; trash dialog artboard; moving a root to a Space rewrites the archive time of archived pages below it, which then stay in the trash on restore).
 
 ### UC-DCT-A06 Delete a trashed page permanently
 - Capability: A Page lifecycle
@@ -325,7 +325,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: destructive confirmation, pending, permission denied, offline.
 - Rules: product doc sections 11, 89, 90 (product rules DCT-003, DCT-028); `DCREQ004`.
 - Acceptance: Given a trashed page and a Manager, When deleted, Then `GET` is `404`. Given an active page, Then refused and unchanged. Given an Editor who is not Manager, Then `404`.
-- Evidence: BE `DELETE /api/v1/pages/{pageId}`, `DeletePageCommandHandler` deletes the page and the trashed pages under it in one unit of work (an active page below it is left alone) · FE `useDeletePage`, trash dialog (note names the subtree) · Design Final-Docs-2 (confirm step not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- Evidence: BE `DELETE /api/v1/pages/{pageId}`, `DeletePageCommandHandler` deletes the page and the pages that went to the trash with it (same archive time) in one unit of work, after `IPageSubtreeAuthorizer` evaluated `DeletePage` for each of them (an active page or a page trashed on its own below it is left alone) · FE `useDeletePage`, trash dialog (note names the subtree) · Design Final-Docs-2 (confirm step not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
 - State: HARDENING — tests and owner check (dependents (versions, links, comments, attachments, search) still wait for the retention decision, UC-DCT-A17 and L05; confirm artboard).
 
 ### UC-DCT-A07 Browse the trash
@@ -353,7 +353,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: destructive confirmation with count, pending, permission denied.
 - Rules: product doc sections 89, 90 (product rule DCT-028: lifecycle workflow, not ORM cascade); `DCREQ004`, `DCREQ006`. New rule in Part 5.
 - Acceptance: Given a page with two children, When trashed, Then neither child is in the tree or readable. When the parent is restored, Then both are back.
-- Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` · FE confirmation with the visible page count (`pagesBelow`), undo toast, trash note · Design none · Tests none · Real e2e none
+- Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` and `IPageSubtreeAuthorizer` · FE confirmation with the count of visible active pages below (`pagesBelow`, the set the trash changes), undo toast, trash note, the refusal message · Design none · Tests none · Real e2e none
 - State: INTEGRATING — tests and owner check (subtree trash, restore and delete; descendants the caller cannot see; confirmation artboard).
 
 ### UC-DCT-A09 Duplicate a page

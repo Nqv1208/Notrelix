@@ -426,6 +426,8 @@ export const vi = {
     moveBody:
       "“{{title}}” và {{count}} trang bên dưới sẽ vào thùng rác cùng nhau. Khôi phục “{{title}}” sẽ đưa cả nhóm trở lại.",
     moveConfirm: "Chuyển vào thùng rác",
+    subtreeRefused:
+      "Bạn không có quyền với một số trang bên dưới, nên chưa có gì thay đổi.",
   },
   picker: {
     title: "Liên kết tới trang",
@@ -1174,6 +1176,8 @@ export const en: DocPageCopy = {
     moveBody:
       "“{{title}}” and {{count}} pages under it go to the trash together. Restoring “{{title}}” brings them all back.",
     moveConfirm: "Move to the trash",
+    subtreeRefused:
+      "You cannot change some of the pages under this page, so nothing was changed.",
   },
   picker: {
     title: "Link to a page",

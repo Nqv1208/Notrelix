@@ -4,9 +4,10 @@ using Notrelix.Application.Features.Documents.Pages.Services;
 namespace Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
 
 /// <summary>
-/// Deletes a page for good, with the pages in the trash under it. Only a page already in the trash can be
-/// deleted, and only by a Manager of the page (<c>DeletePage</c>). An active page below it (older data that
-/// never went to the trash with it) is left alone.
+/// Deletes a page for good, with the pages that went to the trash together with it (the same archive time).
+/// Only a page already in the trash can be deleted, and only by a Manager of the page (<c>DeletePage</c>); the
+/// caller must be allowed to delete every page the cascade changes, and one refused page refuses the whole
+/// operation. A page trashed on its own earlier, or an active page below it, is left alone.
 /// </summary>
 public record DeletePageCommand(Guid PageId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
@@ -17,12 +18,14 @@ public record DeletePageCommand(Guid PageId) : ICommand<Result>, IWriteRequest, 
 public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Result>
 {
     private readonly IPageSubtreeStore _pages;
+    private readonly IPageSubtreeAuthorizer _subtree;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public DeletePageCommandHandler(IPageSubtreeStore pages, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public DeletePageCommandHandler(IPageSubtreeStore pages, IPageSubtreeAuthorizer subtree, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _pages = pages;
+        _subtree = subtree;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -36,10 +39,16 @@ public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Resul
         if (page.Status != PageStatus.Archived)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(Notrelix.Domain.Documents.DocumentRuleCodes.Documents_Page_NotInTrash, "Only a page in the trash can be deleted for good.");
 
+        // One archive time marks what went to the trash together (the cascade wrote a single `now`).
+        var archivedAt = page.UpdatedAt;
+        var together = (await _pages.LoadDescendantsAsync(workspaceId, page.Id, ct))
+            .Where(descendant => archivedAt is not null && !descendant.IsDeleted && descendant.Status == PageStatus.Archived && descendant.UpdatedAt == archivedAt)
+            .ToList();
+        await _subtree.EnsureAllowedAsync(together.Select(descendant => descendant.Id), id => new DeletePageCommand(id), ct);
+
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
-        foreach (var descendant in await _pages.LoadDescendantsAsync(workspaceId, page.Id, ct))
-            if (!descendant.IsDeleted && descendant.Status == PageStatus.Archived) descendant.Delete(userId, now);
+        foreach (var descendant in together) descendant.Delete(userId, now);
         page.Delete(userId, now);
         return Result.Success();
     }
