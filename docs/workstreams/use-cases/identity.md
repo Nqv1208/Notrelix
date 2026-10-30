@@ -120,15 +120,15 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | IMPLEMENTING | no caller, no consumer decision |
 | UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes | HARDENING | tests and owner check |
 | UC-IDN-A04 | Mobile token transport | A | Mobile client | no | no | Final-M-Auth | no | DEFINED | header and body transport absent |
-| UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | always answers password |
-| UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | no 1 px diff, no owner check |
-| UC-IDN-B03 | Register | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | email disclosure open |
-| UC-IDN-B04 | Confirm the email from the link | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | HARDENING | no rate-limit attribute |
-| UC-IDN-B05 | Request or resend the confirmation | B | Visitor, signed-in person | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
-| UC-IDN-B06 | Ask for a password reset | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | error side channel, no real e2e |
+| UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests and owner check; the SSO branch waits on B08 |
+| UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
+| UC-IDN-B03 | Register | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests, owner check, email disclosure decision |
+| UC-IDN-B04 | Confirm the email from the link | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
+| UC-IDN-B05 | Request or resend the confirmation | B | Visitor, signed-in person | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the onboarding notice shows no countdown |
+| UC-IDN-B06 | Ask for a password reset | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the reset screen is B07 |
 | UC-IDN-B07 | Complete a password reset | B | Visitor | yes | no | none | no | IMPLEMENTING | no reset screen, code versus link |
 | UC-IDN-B08 | Sign in through the company provider | B | Visitor | no | mock only | Final-Auth | no | BLOCKED | Accounts enforcement fact, protocol |
-| UC-IDN-B09 | Lock sign-in after repeated failures | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
+| UC-IDN-B09 | Lock sign-in after repeated failures | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the mock locks after five, the rule is ten |
 | UC-IDN-C01 | Sign out this device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
 | UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | unbounded list |
 | UC-IDN-C03 | Sign out one other device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
@@ -296,7 +296,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 14 and 15; IAREQ015.
 - Acceptance: Given a fresh link, when it is opened twice, then the first confirms and the second shows the dead-link state.
 - Evidence: BE `Verification/Commands/ConfirmEmail/ConfirmEmail.cs`; API `Auth/Commands/EmailVerificationEndpoints.cs` (`POST /api/v1/auth/email-verification/confirm`) · FE `packages/features/auth/src/web/components/auth-verify-email-surface.tsx`, route `verify-email.tsx` · Design Final-Auth · Tests Application `ConfirmEmailTests`; Domain `EmailVerificationTokenTests` · Real e2e `email-confirmation.real.e2e.spec.ts`
-- State: HARDENING. Missing: rate-limit policy on the endpoint, 1 px diff, owner check.
+- State: HARDENING. Built: the endpoint carries the `AuthCredentialByIp` limit (429 documented). Missing: tests and owner check.
 
 ### UC-IDN-B05 Request or resend the confirmation
 - Capability: B Login
@@ -310,7 +310,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 14 and 15, 67.
 - Acceptance: Given an unconfirmed account, when the person resends twice, then only the latest link confirms. Given an unknown email, then the answer equals the known case.
 - Evidence: BE `Verification/Commands/RequestEmailVerification`, `ResendEmailVerification`; API `Auth/Commands/EmailVerificationEndpoints.cs` (`POST /api/v1/auth/email-verification/request`, `POST /api/v1/auth/email-verification/resend`) · FE `packages/features/auth/src/core/api/auth-flow.service.ts` · Design Final-Auth · Tests Application `RequestEmailVerificationTests`, `ResendEmailVerificationTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec, rate-limit attribute on `request`.
+- State: INTEGRATING. Built: `request` carries the `AuthSensitiveByUser` limit (429 documented). Missing: tests and owner check; the onboarding notice shows no countdown, and the resend answer stays generic when throttled.
 
 ### UC-IDN-B06 Ask for a password reset
 - Capability: B Login
@@ -324,7 +324,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 13 and 66; IAREQ014.
 - Acceptance: Given a known and an unknown email, when each is submitted, then the answer is identical, including when the mail provider fails.
 - Evidence: BE `Auth/Commands/ForgotPassword/ForgotPassword.cs`; API `Auth/Commands/ForgotPasswordEndpoint.cs` (`POST /api/v1/auth/forgot-password`) · FE `packages/features/auth/src/web/components/auth-forgot-surface.tsx`, route `forgot-password.tsx` · Design Final-Auth · Tests Application `ForgotPasswordTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: close the send-failure side channel, real spec.
+- State: INTEGRATING. Built: a failed send is logged and answered like an unknown email; the request limit answers 429 `identity.auth.rate-limited` as the contract says; the page shows a rate-limited message and keeps the person on the sent step when a send again is refused. Missing: tests and owner check (the existing send-failure and limit assertions of `ForgotPasswordTests` need updating); the mail time still differs for a known account, which needs an asynchronous send; the web copy says link while the mail carries a code (B07).
 
 ### UC-IDN-B07 Complete a password reset
 - Capability: B Login

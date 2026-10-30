@@ -104,6 +104,7 @@ export const en = {
     invalid: "Enter an email like name@company.com.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    limited: "Too many requests for this email. Try again in a little while.",
   },
   sent: {
     title: "Check your email",
@@ -115,6 +116,9 @@ export const en = {
     resendWaitLabel: ", available in {{seconds}} seconds",
     back: "Back to sign-in",
     other: "Use another email",
+    limited: "Too many requests for this email. Try again in a little while.",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
   },
   verifyEmail: {
     confirmingTitle: "Confirming your email",
@@ -284,6 +288,7 @@ export const vi: AuthCopy = {
     back: "Quay lại đăng nhập",
     invalid: "Nhập email dạng ten@congty.vn.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    limited: "Đã yêu cầu quá nhiều lần cho email này. Bạn thử lại sau ít phút.",
   },
   sent: {
     title: "Kiểm tra email của bạn",
@@ -295,6 +300,8 @@ export const vi: AuthCopy = {
     resendWaitLabel: ", dùng được sau {{seconds}} giây",
     back: "Quay lại đăng nhập",
     other: "Dùng email khác",
+    limited: "Đã yêu cầu quá nhiều lần cho email này. Bạn thử lại sau ít phút.",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
   },
   verifyEmail: {
     confirmingTitle: "Đang xác nhận email của bạn",
