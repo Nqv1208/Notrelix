@@ -122,6 +122,7 @@ function InlineText({
     <input
       ref={ref}
       type="text"
+      data-popup-esc=""
       value={draft}
       maxLength={200}
       aria-label={label}
