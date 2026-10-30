@@ -73,6 +73,11 @@ export interface FullBoardResponse {
   board: Board;
   groups: BoardGroup[];
   fieldDefinitions: FieldDefinition[];
+  /**
+   * The archived groups. They are not in `groups` (they leave every view), but an
+   * item inside one is still opened by its link and is read-only.
+   */
+  archivedGroupIds?: readonly string[];
 }
 
 /** A saved view of a board: a tab with its layout and config. */

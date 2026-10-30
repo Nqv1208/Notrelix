@@ -27,6 +27,11 @@ export interface TaskDetailCapabilities {
    * follows `canEditFields`.
    */
   readonly canComment?: boolean;
+  /**
+   * The board, or the item's group, is archived: the server refuses every write
+   * on it, a personal one (follow, remind) too, so those controls are off.
+   */
+  readonly frozen?: boolean;
 }
 
 /**

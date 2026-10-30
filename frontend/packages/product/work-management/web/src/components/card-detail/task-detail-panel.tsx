@@ -20,7 +20,10 @@ import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { useIsMobile } from "@notrelix/ui-web";
 import { TaskDetailPanelSurface } from "./task-detail-panel-surface";
 import type { TaskDetailCapabilities } from "./task-detail-types";
-import { useBoardCapabilities } from "../shared/board-capabilities";
+import {
+  useBoardCapabilities,
+  useItemCapabilities,
+} from "../shared/board-capabilities";
 import { withBoardPriority } from "../shared/item-priority";
 import { useItemSheetCopy } from "./use-item-sheet-copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
@@ -125,7 +128,17 @@ function TaskDetailPanelContent({
 }) {
   const { card, isLoading, error } = useCard(cardId, board.workspaceId);
   // The viewer's level on this board; read-only until it is known.
-  const { capabilities } = useBoardCapabilities(board.id, board.workspaceId);
+  const { capabilities: boardCapabilitiesOfViewer } = useBoardCapabilities(
+    board.id,
+    board.workspaceId,
+  );
+  // An item inside an archived group stays readable and takes no write.
+  const capabilities = useItemCapabilities(
+    boardCapabilitiesOfViewer,
+    board.id,
+    board.workspaceId,
+    card?.listId,
+  );
 
   if (isLoading)
     return (

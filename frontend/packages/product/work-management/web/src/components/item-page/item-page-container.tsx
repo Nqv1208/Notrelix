@@ -37,7 +37,10 @@ import {
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { collaborationRefusalMessage } from "./collaboration-refusal";
-import { useBoardCapabilities } from "../shared/board-capabilities";
+import {
+  useBoardCapabilities,
+  useItemCapabilities,
+} from "../shared/board-capabilities";
 import { formatItemDate, nextLabelColor } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
@@ -157,7 +160,15 @@ export function ItemPage(props: ItemPageProps) {
     isLoading: boardLoading,
   } = useFullBoard(boardId, workspaceId);
   const { card, isLoading: cardLoading, error } = useCard(itemId, workspaceId);
-  const { access, capabilities } = useBoardCapabilities(boardId, workspaceId);
+  const { access, capabilities: boardCapabilitiesOfViewer } =
+    useBoardCapabilities(boardId, workspaceId);
+  // An item inside an archived group stays readable and takes no write.
+  const capabilities = useItemCapabilities(
+    boardCapabilitiesOfViewer,
+    boardId,
+    workspaceId,
+    card?.listId,
+  );
 
   // An item that belongs to another board, or does not load, is not this page's.
   const unseen = isUnseenError(error);

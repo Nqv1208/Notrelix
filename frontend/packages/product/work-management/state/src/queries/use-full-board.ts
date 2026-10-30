@@ -21,6 +21,7 @@ export function useFullBoard(boardId?: string, workspaceId?: string) {
   return {
     board: query.data?.board,
     groups: query.data?.groups ?? [],
+    archivedGroupIds: query.data?.archivedGroupIds ?? [],
     fieldDefinitions: query.data?.fieldDefinitions ?? [],
     isLoading: query.isLoading,
     error: query.error,

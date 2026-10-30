@@ -176,12 +176,16 @@ export function mapFullBoardDto(
   const lists: AnyGroup[] = (dto.lists ?? []).filter(
     (list) => list.isArchived !== true,
   );
+  const archivedGroupIds = (dto.lists ?? [])
+    .filter((list) => list.isArchived === true)
+    .map((list) => list.id ?? "");
   return {
     board,
     fieldDefinitions,
     groups: orderByKey(lists, (list) => list.position).map((list, index) =>
       mapListDto(list, index, board, fieldDefinitions),
     ),
+    ...(archivedGroupIds.length > 0 ? { archivedGroupIds } : {}),
   };
 }
 

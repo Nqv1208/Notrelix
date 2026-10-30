@@ -90,6 +90,7 @@ import { buildCardLink } from "./kanban-view-helpers";
 import {
   canManageStatuses,
   useBoardCapabilities,
+  useItemCapabilities,
 } from "../../shared/board-capabilities";
 import { nextLabelColor } from "../../shared/item-display";
 import {
@@ -1229,7 +1230,7 @@ export function KanbanSelectedItem({
 function KanbanSelectedItemReady({
   board,
   card,
-  capabilities,
+  capabilities: boardCapabilitiesOfViewer,
   departmentMark,
   groups,
   linkCandidates,
@@ -1245,6 +1246,13 @@ function KanbanSelectedItemReady({
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
 }) {
+  // An item inside an archived group stays readable and takes no write.
+  const capabilities = useItemCapabilities(
+    boardCapabilitiesOfViewer,
+    card.boardId,
+    card.workspaceId,
+    card.listId,
+  );
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);

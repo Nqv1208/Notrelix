@@ -24,11 +24,18 @@ export type BoardLifecycleFailure =
 export const RESTORE_WINDOW_ELAPSED =
   "WorkManagement_Board_RestoreWindowElapsed";
 
+/**
+ * The code the server sends for a write on an archived board: archiving a board that a peer
+ * already archived is such a write, so the person is told the board changed, like a stale version.
+ */
+export const BOARD_ARCHIVED = "WorkManagement_Board_Archived";
+
 export function classifyBoardLifecycleError(
   error: unknown,
 ): BoardLifecycleFailure {
   const { kind, code } = (error ?? {}) as { kind?: string; code?: unknown };
   if (code === RESTORE_WINDOW_ELAPSED) return "window";
+  if (code === BOARD_ARCHIVED) return "conflict";
   if (kind === "conflict") return "conflict";
   if (kind === "forbidden") return "denied";
   if (kind === "not_found") return "gone";

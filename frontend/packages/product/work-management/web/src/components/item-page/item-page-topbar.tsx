@@ -212,7 +212,7 @@ export function ItemPageTopbar({
               remove: capabilities.canDelete,
             }}
             on={{
-              remind: callbacks.onRemind,
+              remind: capabilities.frozen ? undefined : callbacks.onRemind,
               complete: callbacks.onComplete,
               reopen: callbacks.onReopen,
               duplicate: callbacks.onDuplicate,

@@ -199,11 +199,14 @@ function FollowRow({
   card,
   data,
   onToggle,
+  frozen,
   copy,
 }: {
   card: CardDetail;
   data: TaskDetailData | undefined;
   onToggle?: (watched: boolean) => void;
+  /** The board or the item's group is archived: the server refuses following too. */
+  frozen?: boolean;
   copy: ItemPageCopy;
 }) {
   const t = copy.rail;
@@ -225,13 +228,14 @@ function FollowRow({
   const faces = people.slice(0, 3);
   const more = people.length - faces.length;
   // Without a producer to follow through, the button is not offered.
-  if (!(known && onToggle) && people.length === 0) return null;
+  const active = known && Boolean(onToggle) && !frozen;
+  if (!active && people.length === 0) return null;
   const button = (
     <button
       type="button"
       aria-pressed={following}
-      aria-disabled={known && onToggle ? undefined : "true"}
-      onClick={known && onToggle ? () => onToggle(!following) : undefined}
+      aria-disabled={active ? undefined : "true"}
+      onClick={active ? () => onToggle?.(!following) : undefined}
       className={BUTTON_SM_VARIANT_CLASS.outline}
     >
       <Bell aria-hidden="true" className="size-3.5" />
@@ -240,10 +244,12 @@ function FollowRow({
   );
   return (
     <div className="flex items-center gap-2">
-      {known && onToggle ? (
+      {active ? (
         button
       ) : (
-        <DisabledControl reason={t.followUnavailable}>{button}</DisabledControl>
+        <DisabledControl reason={frozen ? t.followFrozen : t.followUnavailable}>
+          {button}
+        </DisabledControl>
       )}
       {people.length > 0 ? (
         <div
@@ -713,6 +719,7 @@ export function ItemPageRail({
         card={card}
         data={data}
         onToggle={callbacks.onToggleWatch}
+        frozen={capabilities.frozen}
         copy={copy}
       />
 

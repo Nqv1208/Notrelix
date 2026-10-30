@@ -24,6 +24,13 @@ const READ_ONLY: TaskDetailCapabilities = {
 };
 
 /**
+ * Read-only because the board, or the item's group, is archived (GOV-033): the
+ * server refuses every write on it, so the personal ones (follow, remind) are
+ * off too, which a plain viewer keeps.
+ */
+const FROZEN: TaskDetailCapabilities = { ...READ_ONLY, frozen: true };
+
+/**
  * What the viewer may do on the board, from their effective level on the
  * board access read. Editors and managers edit; a commenter only comments;
  * a viewer, and anyone while the level is not known yet, is read-only. There
@@ -36,7 +43,7 @@ export function boardCapabilities(
 ): TaskDetailCapabilities {
   // An archived board is read-only for everyone, a manager included: its
   // writes are refused until it is unarchived, so no write control is offered.
-  if (archived) return READ_ONLY;
+  if (archived) return FROZEN;
   if (level === "editor" || level === "manager") return FULL;
   if (level === "commenter") return { ...READ_ONLY, canComment: true };
   return READ_ONLY;
@@ -74,4 +81,22 @@ export function useBoardCapabilities(boardId?: string, workspaceId?: string) {
       board?.isArchived === true,
     ),
   };
+}
+
+/**
+ * What the viewer may do on one item: the board's capabilities, and none while
+ * the item's group is archived (the item stays readable, the server refuses
+ * every write on it). An item whose group is not in the board read yet keeps
+ * the board's capabilities; the server decides every write either way.
+ */
+export function useItemCapabilities(
+  boardCapabilitiesOfViewer: TaskDetailCapabilities,
+  boardId: string,
+  workspaceId: string,
+  groupId: string | undefined,
+): TaskDetailCapabilities {
+  const { archivedGroupIds } = useFullBoard(boardId, workspaceId);
+  const groupArchived =
+    groupId !== undefined && archivedGroupIds.includes(groupId);
+  return groupArchived ? FROZEN : boardCapabilitiesOfViewer;
 }
