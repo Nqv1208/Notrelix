@@ -1,4 +1,5 @@
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
+import type { KanbanCardSelection } from "./kanban-selection";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -120,6 +121,8 @@ export interface KanbanBoardProps {
   keyboardMove?: boolean;
   /** Hover and focus actions of the cards; absent: none. */
   cardActions?: KanbanCardActions;
+  /** Picking cards for the bulk bar. */
+  cardSelection?: KanbanCardSelection;
   /** Lane value id to its WIP limit (a warning number); absent: no limits. */
   wipLimits?: Readonly<Record<string, number>>;
   /** Set or (null) remove a lane's limit; absent: the viewer cannot. */
@@ -191,6 +194,7 @@ export function KanbanBoard({
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   keyboardMove = true,
   cardActions,
+  cardSelection,
   wipLimits,
   onWipLimitChange,
   onRequestCreate,
@@ -504,6 +508,7 @@ export function KanbanBoard({
               laneCardLimit={laneCardLimit}
               draggedCardId={drag?.cardId ?? movedId ?? undefined}
               cardActions={cardActions}
+              cardSelection={cardSelection}
               onMoveCardByKey={
                 canDrag && keyboardMove ? handleMoveByKey : undefined
               }

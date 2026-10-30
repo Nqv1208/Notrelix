@@ -29,6 +29,7 @@ export const en = {
   fileCount: "{{count}} files",
   blocked: "Blocked",
   blockedBy: "Blocked by {{count}} items",
+  selectCard: "Select {{title}}",
   /** Shown instead of a number above 99. */
   overflowCount: "99+",
   childProgress: "{{done}} of {{total}} child items done",
@@ -70,6 +71,7 @@ export const vi: KanbanCardCopy = {
   fileCount: "{{count}} tệp",
   blocked: "Bị chặn",
   blockedBy: "Đang bị chặn bởi {{count}} việc",
+  selectCard: "Chọn {{title}}",
   overflowCount: "99+",
   childProgress: "Đã xong {{done}} trên {{total}} việc con",
   assignedTo: "Được giao cho {{name}}",

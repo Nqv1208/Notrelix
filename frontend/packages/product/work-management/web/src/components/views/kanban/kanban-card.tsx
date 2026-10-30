@@ -24,6 +24,8 @@ import {
 } from "./kanban-card-quick-actions";
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
+import type { KanbanCardSelection } from "./kanban-selection";
+import { TableCheckbox } from "../table/table-parts";
 import type { KanbanMoveDirection } from "./kanban-dnd";
 import {
   PRIORITY_TONE_CLASS,
@@ -519,6 +521,7 @@ export function KanbanCard({
   onMoveKey,
   onOpenDetails,
   actions,
+  selection,
 }: {
   card: Card;
   /** The lane this card is shown in (the lane it is dragged over while dragging). */
@@ -540,8 +543,12 @@ export function KanbanCard({
   onOpenDetails: (cardId: string) => void;
   /** Hover and focus actions; absent: the card has none. */
   actions?: KanbanCardActions;
+  /** Picking cards for the bulk bar (checkbox, Space, Shift+click); absent: the card cannot be picked. */
+  selection?: KanbanCardSelection;
 }) {
   const [dueOpen, setDueOpen] = useState(false);
+  const picked = selection?.selectedIds.has(card.id) ?? false;
+  const picking = (selection?.selectedIds.size ?? 0) > 0;
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
@@ -578,12 +585,14 @@ export function KanbanCard({
       }}
       {...dragListeners}
       aria-current={selected ? "true" : undefined}
+      data-picked={picked ? "" : undefined}
       data-dragging={isDragging ? "" : undefined}
       className={cn(
         CARD_CLASS,
         "group cursor-pointer shadow-card transition-shadow hover:shadow-card-hover",
         !dragDisabled && "touch-manipulation",
         selected && "shadow-card-hover ring-2 ring-inset ring-primary",
+        picked && "bg-state-selected ring-2 ring-inset ring-primary/60",
         // The slot the card leaves is the gap it will fill: an empty, tinted
         // box of the card's own height (its content stays, hidden).
         isDragging &&
@@ -607,7 +616,17 @@ export function KanbanCard({
             .filter(Boolean)
             .join(" ") || undefined
         }
-        onClick={() => onOpenDetails(card.id)}
+        onClick={(event) => {
+          if (selection && event.shiftKey) {
+            selection.onToggle(card.id, { range: true });
+            return;
+          }
+          if (selection && (event.metaKey || event.ctrlKey)) {
+            selection.onToggle(card.id);
+            return;
+          }
+          onOpenDetails(card.id);
+        }}
         onKeyDown={(event) => {
           const direction = onMoveKey ? ALT_ARROW[event.key] : undefined;
           if (direction && event.altKey && !event.ctrlKey && !event.metaKey) {
@@ -633,12 +652,34 @@ export function KanbanCard({
               return;
             }
           }
+          // With picking on, Space picks the card and Enter opens it.
+          if (selection && event.key === " ") {
+            event.preventDefault();
+            selection.onToggle(card.id, { range: event.shiftKey });
+            return;
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onOpenDetails(card.id);
           }
         }}
       />
+      {selection && !isDragging ? (
+        <span
+          className={cn(
+            "absolute top-2 left-2 z-20 grid place-items-center rounded-[5px] bg-popover/90 p-0.5 dark:bg-card/90",
+            !picked &&
+              !picking &&
+              "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
+          )}
+        >
+          <TableCheckbox
+            checked={picked}
+            label={fillCopy(copy.selectCard, { title: card.title })}
+            onChange={() => selection.onToggle(card.id)}
+          />
+        </span>
+      ) : null}
       {actions && !isDragging ? (
         <KanbanCardQuickActions
           card={card}

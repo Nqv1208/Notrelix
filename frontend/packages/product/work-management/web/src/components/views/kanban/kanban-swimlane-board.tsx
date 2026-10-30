@@ -31,6 +31,7 @@ import {
 import { fillFiltersCopy, type FiltersCopy } from "../../filters/filters.copy";
 import { KanbanCard, KanbanCardOverlay } from "./kanban-card";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
+import type { KanbanCardSelection } from "./kanban-selection";
 import type { KanbanCardCopy } from "./kanban-card.copy";
 import type { KanbanMoveDirection } from "./kanban-dnd";
 
@@ -68,6 +69,8 @@ export interface KanbanSwimlaneBoardProps {
   selectedItemId: string | undefined;
   canDrag: boolean;
   cardActions: KanbanCardActions | undefined;
+  /** Picking cards for the bulk bar. */
+  cardSelection?: KanbanCardSelection | undefined;
   onOpenDetails: (cardId: string) => void;
   onDrop: (drop: SwimlaneDrop) => void;
   onRefused: (refusal: SwimlaneRefusal) => void;
@@ -423,6 +426,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
                               dragDisabled={!props.canDrag}
                               onMoveKey={props.canDrag ? moveByKey : undefined}
                               actions={props.cardActions}
+                              selection={props.cardSelection}
                               onOpenDetails={props.onOpenDetails}
                             />
                           ))}

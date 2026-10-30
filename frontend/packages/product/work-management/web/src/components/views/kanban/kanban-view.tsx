@@ -65,6 +65,8 @@ import { findItemFields } from "../../card-detail/item-field-editors";
 import { useItemSheetExtras } from "../../card-detail/use-item-sheet-extras";
 import { useBoardViewerId } from "../../shared/board-viewer";
 import { KanbanBoard } from "./kanban-board";
+import { KanbanBulkBar } from "./kanban-bulk-bar";
+import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
@@ -776,6 +778,15 @@ export function KanbanView({
 
   /** The hover and focus actions of a card, each only when the viewer may do it. */
   const personField = board ? findItemFields(board).person : undefined;
+  // Picking cards: only an editor can change several items at once.
+  const orderedCardIds = useMemo(
+    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
+    [kanban.lanes],
+  );
+  const picking = useKanbanSelection(orderedCardIds);
+  const cardSelection = capabilities.canEditFields
+    ? picking.selection
+    : undefined;
   const cardActions: KanbanCardActions | undefined = capabilities.canEditFields
     ? {
         currentUserId,
@@ -853,6 +864,10 @@ export function KanbanView({
       ref={boardRef}
       data-kanban-board=""
       tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && picking.selectedIds.size > 0)
+          picking.clear();
+      }}
       className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
     >
       <div
@@ -944,6 +959,7 @@ export function KanbanView({
                 selectedItemId={selectedItemId}
                 canDrag={capabilities.canMoveCard}
                 cardActions={cardActions}
+                cardSelection={cardSelection}
                 onOpenDetails={handleOpenDetail}
                 onDrop={handleSwimlaneDrop}
                 onRefused={handleSwimlaneRefused}
@@ -989,6 +1005,7 @@ export function KanbanView({
               laneCardLimit={kanbanSettings.laneCardLimit}
               keyboardMove={kanbanSettings.keyboardMove}
               cardActions={cardActions}
+              cardSelection={cardSelection}
               wipLimits={kanbanSettings.wipLimits}
               onWipLimitChange={
                 showStatusControls ? handleWipLimitChange : undefined
@@ -1051,6 +1068,17 @@ export function KanbanView({
           ) : null,
         )}
       </div>
+
+      {board && cardSelection && picking.selectedIds.size > 0 ? (
+        <KanbanBulkBar
+          boardId={boardId}
+          workspaceId={workspaceId}
+          board={board}
+          capabilities={capabilities}
+          selectedIds={picking.selectedIds}
+          onClear={picking.clear}
+        />
+      ) : null}
 
       {board && capabilities.canCreateCard ? (
         <ItemCreateHost
