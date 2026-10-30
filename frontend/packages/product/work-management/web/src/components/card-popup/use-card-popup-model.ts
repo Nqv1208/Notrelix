@@ -47,6 +47,15 @@ const NO_GROUPS: readonly ItemSheetGroup[] = [];
 export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
   const copy = useCardPopupCopy();
   const [picker, setPicker] = useState<CardPopupPicker | null>(null);
+  const [pickerAnchor, setPickerAnchor] = useState<HTMLElement | null>(null);
+  const openPicker = useCallback(
+    (next: CardPopupPicker | null, anchor?: HTMLElement | null) => {
+      setPicker(next);
+      if (next === null) setPickerAnchor(null);
+      else if (anchor !== undefined) setPickerAnchor(anchor);
+    },
+    [],
+  );
   const [saves, setSaves] = useState<Record<string, FieldSave | undefined>>({});
   const [conflict, setConflict] = useState(false);
   const mounted = useRef(true);
@@ -120,6 +129,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     conflict,
     clearConflict: () => setConflict(false),
     picker,
-    openPicker: setPicker,
+    pickerAnchor,
+    openPicker,
   };
 }

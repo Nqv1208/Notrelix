@@ -93,7 +93,16 @@ export interface CardPopupModel {
   readonly clearConflict: () => void;
   /** The open picker; null: none. */
   readonly picker: CardPopupPicker | null;
-  readonly openPicker: (picker: CardPopupPicker | null) => void;
+  /** The control that opened the picker; the panel opens under it. Null: the quick row's own button. */
+  readonly pickerAnchor: HTMLElement | null;
+  /**
+   * Opens a picker (null closes it). `anchor` is the control the panel opens under: pass the element that was
+   * clicked, `null` for the quick row's own buttons; left out, the earlier anchor stays (a menu entry).
+   */
+  readonly openPicker: (
+    picker: CardPopupPicker | null,
+    anchor?: HTMLElement | null,
+  ) => void;
 }
 
 const CardPopupContext = createContext<CardPopupModel | null>(null);

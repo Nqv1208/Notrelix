@@ -65,7 +65,10 @@ function DatesChip() {
     </>
   );
   return canEdit ? (
-    <ChipBtn aria-haspopup="dialog" onClick={() => openPicker("dates")}>
+    <ChipBtn
+      aria-haspopup="dialog"
+      onClick={(event) => openPicker("dates", event.currentTarget)}
+    >
       {body}
       <ChevronDown
         aria-hidden="true"
@@ -110,7 +113,9 @@ export function ChipsRow() {
                 type="button"
                 aria-label={t.addAssignee}
                 className={ADD_CIRCLE}
-                onClick={() => openPicker("assignees")}
+                onClick={(event) =>
+                  openPicker("assignees", event.currentTarget)
+                }
               >
                 <Plus aria-hidden="true" className="size-[13px]" />
               </button>
@@ -136,7 +141,7 @@ export function ChipsRow() {
                 type="button"
                 aria-label={t.addLabel}
                 className={cn(ADD_CIRCLE, "rounded-[6px]")}
-                onClick={() => openPicker("labels")}
+                onClick={(event) => openPicker("labels", event.currentTarget)}
               >
                 <Plus aria-hidden="true" className="size-[13px]" />
               </button>

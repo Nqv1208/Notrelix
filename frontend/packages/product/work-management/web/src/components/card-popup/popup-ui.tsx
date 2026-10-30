@@ -6,6 +6,7 @@ import {
 } from "react";
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
   Sheet,
   SheetContent,
@@ -234,6 +235,7 @@ export function SectionHead({
 /** `.pv`: the panel of a picker, a menu or a form that opens under a button. */
 function PanelPopoverDesktop({
   trigger,
+  anchor,
   open,
   onOpenChange,
   width = 320,
@@ -244,6 +246,8 @@ function PanelPopoverDesktop({
   restoreFocus = true,
 }: {
   trigger: ReactNode;
+  /** A control elsewhere that opened the panel; it opens under it instead of under `trigger`. */
+  anchor?: HTMLElement | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   width?: number;
@@ -256,8 +260,14 @@ function PanelPopoverDesktop({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       {trigger}
+      {anchor ? <PopoverAnchor virtualRef={{ current: anchor }} /> : null}
       <PopoverContent
-        align={align}
+        align={
+          // Under a control on the right half of the screen the panel grows leftward, over the card, not the comments.
+          anchor && anchor.getBoundingClientRect().left > window.innerWidth * 0.4
+            ? "end"
+            : align
+        }
         side={side}
         sideOffset={4}
         style={{ width }}
@@ -272,7 +282,16 @@ function PanelPopoverDesktop({
           // Without one the panel itself takes focus: no ring on the first item.
           (field ?? (event.currentTarget as HTMLElement)).focus();
         }}
-        onCloseAutoFocus={restoreFocus ? undefined : (e) => e.preventDefault()}
+        onInteractOutside={(event) => {
+          // A press on the control that opened the panel is not a dismissal.
+          if (anchor?.contains(event.target as Node)) event.preventDefault();
+        }}
+        onCloseAutoFocus={(event) => {
+          if (anchor) {
+            event.preventDefault();
+            anchor.focus();
+          } else if (!restoreFocus) event.preventDefault();
+        }}
         className={cn(
           "z-modal gap-0 rounded-[12px] border border-line-strong bg-popover p-3 text-[14px] text-popover-foreground shadow-popover ring-0 outline-none",
           className,

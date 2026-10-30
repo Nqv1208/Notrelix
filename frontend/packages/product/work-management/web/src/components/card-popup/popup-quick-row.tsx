@@ -39,13 +39,16 @@ const ADD_ENTRIES: ReadonlyArray<{
 
 /** The "+ Thêm" menu: six entries; the first four open their picker directly. */
 function AddMenu() {
-  const { copy, picker, openPicker } = useCardPopup();
+  const { copy, picker, pickerAnchor, openPicker } = useCardPopup();
   const t = copy.shell;
   const isOpen = picker === "add" || picker === "attach";
   return (
     <PanelPopover
       open={isOpen}
-      onOpenChange={(next) => openPicker(next ? "add" : null)}
+      anchor={pickerAnchor}
+      onOpenChange={(next) =>
+        openPicker(next ? "add" : null, next ? null : undefined)
+      }
       width={344}
       trigger={
         <PopoverTrigger asChild>
@@ -104,12 +107,15 @@ function PickerButton({
   width: number;
   children: (close: () => void) => ReactNode;
 }) {
-  const { picker, openPicker } = useCardPopup();
+  const { picker, pickerAnchor, openPicker } = useCardPopup();
   const open = picker === id;
   return (
     <PanelPopover
       open={open}
-      onOpenChange={(next) => openPicker(next ? id : null)}
+      anchor={pickerAnchor}
+      onOpenChange={(next) =>
+        openPicker(next ? id : null, next ? null : undefined)
+      }
       width={width}
       trigger={
         <PopoverTrigger asChild>

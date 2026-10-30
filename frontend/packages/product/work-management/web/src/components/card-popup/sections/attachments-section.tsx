@@ -264,7 +264,7 @@ export function AttachmentsSection() {
             className="max-md:h-11"
             aria-haspopup="dialog"
             aria-label={t.addLabel}
-            onClick={() => openPicker("attach")}
+            onClick={(event) => openPicker("attach", event.currentTarget)}
           >
             <Plus aria-hidden="true" className="size-[13px]" />
             {t.add}
