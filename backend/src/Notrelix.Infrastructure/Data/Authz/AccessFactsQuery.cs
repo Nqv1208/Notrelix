@@ -20,8 +20,8 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// the child (permission rules scoped to the Board included), and an explicit
 /// grant on the child itself still counts. GOV-025 step 1: a Board is missing when it
 /// is deleted or in another Workspace; an archived Board still exists (columns 6 and 7)
-/// and column 19 tells the policy to refuse writes on it. <c>@board_restore</c> is true
-/// only for the restore command, the one request that reaches a deleted Board. Only
+/// and column 19 tells the policy to refuse writes on it. <c>@board_deleted_ok</c> is true
+/// only for the restore and delete commands, the requests that reach a deleted Board. Only
 /// work.boards and work.board_members are read here (WG-DEBT-006 unchanged). ResourceVisibilityQuery encodes the same decision for
 /// collections and is pinned to the engine by the PostgreSQL parity suite.
 /// </remarks>
@@ -38,7 +38,7 @@ public static class AccessFactsQuery
             WHEN @resource_type = 'workspaces.space' THEN @resource_id
             WHEN @board_id IS NOT NULL THEN (
               SELECT b.space_id FROM work.boards b WHERE b.id = @board_id
-                AND b.workspace_id = @workspace_id AND (b.deleted_at IS NULL OR @board_restore) LIMIT 1)
+                AND b.workspace_id = @workspace_id AND (b.deleted_at IS NULL OR @board_deleted_ok) LIMIT 1)
             WHEN @resource_type = 'documents.page' THEN @page_space_id
           END AS id),
         space_path AS MATERIALIZED (
@@ -62,7 +62,7 @@ public static class AccessFactsQuery
             WHEN @resource_type = 'work-management.board' OR @board_child THEN
               (@resource_type = 'work-management.board' OR @resource_was_located) AND EXISTS (
               SELECT 1 FROM work.boards b WHERE b.id = @board_id
-                AND b.workspace_id = @workspace_id AND (b.deleted_at IS NULL OR @board_restore))
+                AND b.workspace_id = @workspace_id AND (b.deleted_at IS NULL OR @board_deleted_ok))
             WHEN @resource_type = 'workspaces.workspace' THEN EXISTS (
               SELECT 1 FROM workspace.workspaces w WHERE w.id = @resource_id AND w.deleted_at IS NULL)
             ELSE @resource_was_located
@@ -70,7 +70,7 @@ public static class AccessFactsQuery
           CASE
             WHEN @board_id IS NOT NULL THEN (
               SELECT b.visibility FROM work.boards b WHERE b.id = @board_id
-                AND b.workspace_id = @workspace_id AND (b.deleted_at IS NULL OR @board_restore) LIMIT 1)
+                AND b.workspace_id = @workspace_id AND (b.deleted_at IS NULL OR @board_deleted_ok) LIMIT 1)
           END,
           CASE WHEN @board_id IS NOT NULL THEN (
             SELECT bm.role FROM work.board_members bm

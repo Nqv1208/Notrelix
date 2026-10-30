@@ -107,7 +107,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
             Add(command, "board_id", boardId, NpgsqlDbType.Uuid);
             Add(command, "board_child", boardChild.IsBoardChild, NpgsqlDbType.Boolean);
-            Add(command, "board_restore", resource?.Kind.Value == BoardKind && request is IBoardRestoreRequest, NpgsqlDbType.Boolean);
+            Add(command, "board_deleted_ok", resource?.Kind.Value == BoardKind && request is IBoardReachesDeletedRequest, NpgsqlDbType.Boolean);
             Add(command, "page_space_id",
                 page is not null && page.WorkspaceId == context.WorkspaceId ? page.SpaceId : null,
                 NpgsqlDbType.Uuid);
