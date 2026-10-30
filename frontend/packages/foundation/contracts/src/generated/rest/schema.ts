@@ -774,7 +774,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reorder blocks */
+        /** Move blocks of a page against the versions read */
         post: operations["Documents.Blocks.ReorderBlocks"];
         delete?: never;
         options?: never;
@@ -5617,10 +5617,15 @@ export interface components {
         "Notrelix.API.Contracts.Documents.Blocks.Requests.ReorderBlockItemRequest": {
             /** Format: uuid */
             blockId?: string;
-            /** Format: double */
-            position?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             parentId?: string | null;
+            /** Format: uuid */
+            afterBlockId?: string | null;
+            /** Format: uuid */
+            beforeBlockId?: string | null;
+            position?: string | null;
         };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.ReorderBlocksRequest": {
             /** Format: uuid */
@@ -9943,7 +9948,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

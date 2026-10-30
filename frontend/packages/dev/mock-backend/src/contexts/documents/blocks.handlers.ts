@@ -113,6 +113,7 @@ interface BlockWriteBody {
   properties?: JsonObject | null;
   position?: string | null;
   afterBlockId?: string | null;
+  beforeBlockId?: string | null;
   parentId?: string | null;
   expectedVersion?: number;
 }
@@ -158,7 +159,10 @@ function placeBlock(
   current: MockBlockRecord | undefined,
 ): { parentBlockId: string | null; position: number } | null {
   const sent =
-    data.position != null || data.afterBlockId != null || "parentId" in data;
+    data.position != null ||
+    data.afterBlockId != null ||
+    data.beforeBlockId != null ||
+    "parentId" in data;
   if (!sent && current) return null;
   const parent =
     data.parentId !== undefined
@@ -188,6 +192,20 @@ function placeBlock(
     return {
       parentBlockId: parent,
       position: next === undefined ? here + 1000 : (here + next) / 2,
+    };
+  }
+  if (data.beforeBlockId != null) {
+    const before = siblings.findIndex((b) => b.id === data.beforeBlockId);
+    if (before < 0) {
+      throw new WriteRefused(
+        invalid("beforeBlockId must be a sibling under that parent."),
+      );
+    }
+    const here = siblings[before]!.position;
+    const previous = siblings[before - 1]?.position;
+    return {
+      parentBlockId: parent,
+      position: previous === undefined ? here - 1000 : (previous + here) / 2,
     };
   }
   const last = siblings[siblings.length - 1]?.position;
@@ -413,7 +431,7 @@ export const blocksOperations = [
     },
   }),
 
-  // ─── POST /pages/:pageId/blocks/reorder ─────────────────────────────────
+  // ─── POST /blocks/reorder ───────────────────────────────────────────────
 
   defineMockOperation<
     never,
@@ -422,12 +440,14 @@ export const blocksOperations = [
       items?:
         | {
             blockId: string;
-            parentBlockId?: string | null;
-            position?: number;
+            expectedVersion?: number;
+            parentId?: string | null;
+            afterBlockId?: string | null;
+            beforeBlockId?: string | null;
           }[]
         | null;
     },
-    void
+    BlockDtoApi[]
   >({
     id: "docs.blocks.reorder",
     contract: {
@@ -437,14 +457,40 @@ export const blocksOperations = [
     method: "POST",
     route: "/blocks/reorder",
     async handle({ body, store }) {
+      const pageId = body?.pageId ?? "";
       const items = body?.items ?? [];
-      for (const item of items) {
-        store.updateBlock(item.blockId, {
-          parentBlockId: item.parentBlockId,
-          position: item.position,
-        });
+      if (!store.getPage(pageId)) return notFound("Page not found");
+      if (items.length < 1) {
+        return invalid("A reorder holds at least one block.") as MockHttpResult<
+          BlockDtoApi[]
+        >;
       }
-      return ok<void>(undefined);
+      // All or nothing: a refused move puts the page back as it was.
+      const snapshot = store.getPageBlocks(pageId).map((b) => ({ ...b }));
+      const moved: MockBlockRecord[] = [];
+      try {
+        for (const item of items) {
+          const existing = store
+            .getPageBlocks(pageId)
+            .find((b) => b.id === item.blockId);
+          if (!existing) throw new WriteRefused(notFound("Block not found"));
+          if (!(typeof item.expectedVersion === "number")) {
+            throw new WriteRefused(invalid("expectedVersion is required."));
+          }
+          if (item.expectedVersion !== existing.version) {
+            throw new WriteRefused(versionConflict(existing));
+          }
+          const place = placeBlock(store, pageId, item, existing);
+          moved.push(place ? store.updateBlock(existing.id, place)! : existing);
+        }
+      } catch (error) {
+        store.restorePageBlocks(pageId, snapshot);
+        if (error instanceof WriteRefused) {
+          return error.result as MockHttpResult<BlockDtoApi[]>;
+        }
+        throw error;
+      }
+      return ok<BlockDtoApi[]>(moved.map(toBlockDto));
     },
   }),
 
