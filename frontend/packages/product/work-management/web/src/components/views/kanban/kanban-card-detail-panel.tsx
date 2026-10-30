@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCard } from "@notrelix/work-management-state";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { usePickerActions } from "../../card-popup/pickers/use-picker-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
@@ -64,10 +65,16 @@ export function KanbanCardDetailPanel({
       ...pickerActions,
     },
   });
+  const { refetch } = useCard(card.id, card.workspaceId);
   return (
     <CardPopupSurface
       status="ready"
       model={model}
+      conflict={model.conflict}
+      onReloadConflict={() => {
+        refetch();
+        model.clearConflict();
+      }}
       onClose={callbacks.onClose}
       onCloseAutoFocus={onCloseAutoFocus}
     />

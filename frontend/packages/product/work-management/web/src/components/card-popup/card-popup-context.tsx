@@ -88,6 +88,9 @@ export interface CardPopupModel {
   readonly saves: Readonly<Record<string, FieldSave | undefined>>;
   /** Runs a write and tracks it under `key`; a failure keeps `retry`. */
   readonly track: (key: string, run: () => Promise<unknown>) => void;
+  /** A write was refused because someone else saved first. */
+  readonly conflict: boolean;
+  readonly clearConflict: () => void;
   /** The open picker; null: none. */
   readonly picker: CardPopupPicker | null;
   readonly openPicker: (picker: CardPopupPicker | null) => void;

@@ -47,6 +47,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
   const copy = useCardPopupCopy();
   const [picker, setPicker] = useState<CardPopupPicker | null>(null);
   const [saves, setSaves] = useState<Record<string, FieldSave | undefined>>({});
+  const [conflict, setConflict] = useState(false);
   const mounted = useRef(true);
 
   const track = useCallback((key: string, run: () => Promise<unknown>) => {
@@ -58,7 +59,15 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
           if (mounted.current)
             setSaves((current) => ({ ...current, [key]: undefined }));
         },
-        () => {
+        (error: unknown) => {
+          // A refused version is not a retry: the fields are re-read and the notice shows.
+          if ((error as { kind?: string } | null)?.kind === "conflict") {
+            if (mounted.current) {
+              setConflict(true);
+              setSaves((current) => ({ ...current, [key]: undefined }));
+            }
+            return;
+          }
           if (mounted.current)
             setSaves((current) => ({
               ...current,
@@ -70,11 +79,13 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     attempt();
   }, []);
 
-  const readOnly = input.readOnly ?? (input.capabilities.frozen
-    ? "archived"
-    : input.capabilities.canEditFields
-      ? null
-      : "permission");
+  const readOnly =
+    input.readOnly ??
+    (input.capabilities.frozen
+      ? "archived"
+      : input.capabilities.canEditFields
+        ? null
+        : "permission");
   const fields = useMemo(() => findItemFields(input.board), [input.board]);
 
   return {
@@ -94,6 +105,8 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     slots: input.slots ?? NO_SLOTS,
     saves,
     track,
+    conflict,
+    clearConflict: () => setConflict(false),
     picker,
     openPicker: setPicker,
   };
