@@ -436,6 +436,7 @@ export function CommentsColumn() {
           {copy.shell.comments}
         </h3>
         <SmallBtn
+          className="max-md:h-11"
           aria-pressed={details}
           disabled={create}
           onClick={() => setDetails((v) => !v)}
@@ -496,5 +497,16 @@ export function CommentsColumn() {
         </div>
       )}
     </>
+  );
+}
+
+/** On a phone the composer is pinned under the scrolling card instead of sitting in the column. */
+export function CommentsBar() {
+  const { mode } = useCardPopup();
+  if (mode === "create") return null;
+  return (
+    <div className="flex-none border-t border-line bg-popover px-4 py-2.5 md:hidden">
+      <Composer />
+    </div>
   );
 }

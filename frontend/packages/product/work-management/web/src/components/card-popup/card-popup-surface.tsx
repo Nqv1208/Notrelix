@@ -12,7 +12,7 @@ import { FieldsSection } from "./sections/fields-section";
 import { ChecklistsSection } from "./sections/checklists-section";
 import { AttachmentsSection } from "./sections/attachments-section";
 import { LinksSection } from "./sections/links-section";
-import { CommentsColumn } from "./comments/comments-column";
+import { CommentsBar, CommentsColumn } from "./comments/comments-column";
 import {
   PopupBanners,
   PopupGone,
@@ -104,11 +104,12 @@ export function CardPopupSurface({
               </div>
               <aside
                 aria-label={model.copy.shell.comments}
-                className="relative box-border flex min-w-0 flex-col gap-3.5 border-t border-line bg-background px-5 pt-4 pb-6 md:w-[400px] md:flex-none md:overflow-y-auto md:border-t-0 md:border-l"
+                className="relative box-border flex min-w-0 flex-col gap-3.5 border-t border-line bg-background px-4 pt-4 pb-6 md:w-[400px] md:px-5 md:flex-none md:overflow-y-auto md:border-t-0 md:border-l"
               >
                 <CommentsColumn />
               </aside>
             </div>
+            <CommentsBar />
             {footer}
             {overlays}
           </CardPopupProvider>

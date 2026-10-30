@@ -186,6 +186,7 @@ function ChecklistBlock({
       <SectionHead title={list.title}>
         {done > 0 ? (
           <SmallBtn
+            className="max-md:h-11"
             aria-pressed={hideDone}
             onClick={() => setHideDone((v) => !v)}
           >
@@ -194,6 +195,7 @@ function ChecklistBlock({
         ) : null}
         {canWrite ? (
           <SmallBtn
+            className="max-md:h-11"
             aria-label={fillPopupCopy(t.deleteListLabel, { name: list.title })}
             onClick={() => model.deleteList(list.id)}
           >
@@ -204,7 +206,7 @@ function ChecklistBlock({
       {total > 0 ? (
         <div className="mt-1.5 mb-1 flex items-center gap-2.5">
           <span className="w-9 text-[12px] text-meta-foreground tabular-nums">
-            {percent}%
+            {`${percent}%`}
           </span>
           <span
             role="progressbar"
@@ -234,7 +236,7 @@ function ChecklistBlock({
               role="listitem"
               aria-busy={pending || undefined}
               className={cn(
-                "group/cli relative box-border flex min-h-9 items-center gap-2.5 rounded-[8px] px-1.5 hover:bg-state-hover-strong focus-within:bg-state-hover-strong",
+                "group/cli relative box-border flex min-h-9 items-center gap-2.5 rounded-[8px] px-1.5 max-md:min-h-11 hover:bg-state-hover-strong focus-within:bg-state-hover-strong",
                 pending && "opacity-70",
               )}
             >
@@ -282,7 +284,7 @@ function ChecklistBlock({
                 </span>
               )}
               {writableItem && editing !== item.id ? (
-                <span className="hidden gap-0.5 group-focus-within/cli:flex group-hover/cli:flex">
+                <span className="hidden gap-0.5 group-focus-within/cli:flex group-hover/cli:flex pointer-coarse:flex">
                   {model.canConvert ? (
                     <IconBtn
                       small
@@ -322,7 +324,9 @@ function ChecklistBlock({
               onClose={() => setAdding(false)}
             />
           ) : (
-            <SmallBtn onClick={() => setAdding(true)}>{t.addItem}</SmallBtn>
+            <SmallBtn className="max-md:h-11" onClick={() => setAdding(true)}>
+              {t.addItem}
+            </SmallBtn>
           )}
         </div>
       ) : null}

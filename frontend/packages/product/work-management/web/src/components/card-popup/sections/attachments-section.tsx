@@ -47,7 +47,7 @@ import {
 } from "../popup-ui";
 
 const THUMB =
-  "box-border grid h-12 w-[72px] shrink-0 place-items-center overflow-hidden rounded-md text-[11px] font-bold";
+  "box-border grid h-12 w-[72px] shrink-0 place-items-center overflow-hidden rounded-[6px] text-[11px] font-bold";
 
 function extensionOf(name: string): string {
   const dot = name.lastIndexOf(".");
@@ -261,6 +261,7 @@ export function AttachmentsSection() {
       <SectionHead title={t.title}>
         {canEdit ? (
           <SmallBtn
+            className="max-md:h-11"
             aria-haspopup="dialog"
             aria-label={t.addLabel}
             onClick={() => openPicker("attach")}

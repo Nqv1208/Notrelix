@@ -363,7 +363,7 @@ export function LinksSection() {
             width={380}
             trigger={
               <PopoverTrigger asChild>
-                <SmallBtn aria-haspopup="dialog">
+                <SmallBtn className="max-md:h-11" aria-haspopup="dialog">
                   <Plus aria-hidden="true" className="size-[13px]" />
                   {t.add}
                 </SmallBtn>
