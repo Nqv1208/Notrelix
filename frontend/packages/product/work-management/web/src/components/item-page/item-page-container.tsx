@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  useArchiveCard,
   useBoardAccess,
   useCard,
   useCardActivity,
@@ -288,7 +287,6 @@ function ItemPageReady({
     card.boardId,
     card.workspaceId,
   );
-  const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
@@ -552,11 +550,8 @@ function ItemPageReady({
     onDuplicate: capabilities.canCreateCard
       ? removal.requestDuplicate
       : () => undefined,
-    // "Lưu trữ" archives the item (it can be restored); it is not a delete.
-    onArchive: (cardId) => {
-      archiveCard.mutate(cardId);
-      onBack();
-    },
+    // "Lưu trữ" asks first, then archives the item (it can be restored); it is not a delete.
+    onArchive: removal.requestArchive,
     onUnarchive: removal.unarchiveItem,
     onComplete: removal.completeItem,
     onReopen: removal.reopenItem,

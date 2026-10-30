@@ -295,14 +295,31 @@ describe("runArchiveCardCommand", () => {
     );
     await vi.waitFor(() => expect(archiveCard).toHaveBeenCalled());
     expect(order(queryClient, "g-1")).toEqual(["a", "c"]);
-    const [cardId, options] = archiveCard.mock.calls[0] as unknown as [
-      string,
-      { idempotencyKey: string },
-    ];
+    const [cardId, expectedVersion, options] = archiveCard.mock
+      .calls[0] as unknown as [string, number, { idempotencyKey: string }];
     expect(cardId).toBe("b");
+    expect(expectedVersion).toBe(3);
     expect(options.idempotencyKey).toMatch(/^archive-item:b:/);
     write.resolve();
     await pending;
+  });
+
+  it("leaves the version to the client when the board read does not carry it", async () => {
+    const queryClient = seeded();
+    const archiveCard = vi.fn(async () => undefined);
+    queryClient.setQueryData<FullBoardResponse>(boardKey, (current) => ({
+      ...current!,
+      groups: current!.groups.map((group) => ({
+        ...group,
+        cards: group.cards.map((item) => ({ ...item, version: null })),
+      })),
+    }));
+    await runArchiveCardCommand(
+      queryClient,
+      { archiveCard },
+      { workspaceId: "ws-1", boardId: "b-1", cardId: "b" },
+    );
+    expect(archiveCard).toHaveBeenCalledWith("b", undefined, expect.anything());
   });
 
   it("puts the card back when archiving fails", async () => {

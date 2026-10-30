@@ -45,7 +45,9 @@ const cardQuery = vi.hoisted(() => ({
     error: null as unknown,
   },
   useCard: vi.fn(),
-  deleteMutate: vi.fn(),
+  deleteMutate: vi.fn((_id: string, options?: { onSuccess?: () => void }) =>
+    options?.onSuccess?.(),
+  ),
 }));
 
 vi.mock("@notrelix/work-management-state", async (importOriginal) => {
@@ -369,7 +371,13 @@ describe("KanbanView item detail through selectedItemId", () => {
       key: "Enter",
     });
     fireEvent.click(screen.getByRole("menuitem", { name: "Archive…" }));
-    expect(cardQuery.deleteMutate).toHaveBeenCalledWith("card-item");
+    // Archiving asks first; nothing is sent until it is confirmed.
+    expect(cardQuery.deleteMutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Archive item" }));
+    expect(cardQuery.deleteMutate).toHaveBeenCalledWith(
+      "card-item",
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
 
     // Back restores `?item=card-item`; the card is gone, so the query fails.

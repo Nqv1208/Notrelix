@@ -50,6 +50,9 @@ type CreateItemResponse = OperationResponse<CreateItemOp, 200>;
 type UpdateItemOp = "WorkManagement.BoardItems.Update";
 type UpdateItemBody = OperationRequestBody<UpdateItemOp>;
 
+type ArchiveItemOp = "WorkManagement.BoardItems.Archive";
+type ArchiveItemBody = OperationRequestBody<ArchiveItemOp>;
+
 type MoveItemOp = "WorkManagement.BoardItems.Move";
 type MoveItemBody = OperationRequestBody<MoveItemOp>;
 type MoveItemResponse = OperationResponse<MoveItemOp, 200>;
@@ -146,13 +149,22 @@ export function createCardApi(client: NotrelixClient) {
       await api.delete<void>(endpoints.boardItems.detail(cardId));
     },
 
+    /**
+     * `POST /board-items/{id}/archive` with the item version the person saw: a
+     * stale version is refused (412) and nothing changes.
+     */
     async archiveCard(
       cardId: string,
+      expectedVersion: number | undefined,
       options?: ApiRequestOptions,
     ): Promise<void> {
+      const body: ArchiveItemBody = {
+        expectedVersion:
+          expectedVersion ?? (await this.getCard(cardId)).version ?? undefined,
+      };
       await api.post<void>(
         endpoints.boardItems.archive(cardId),
-        undefined,
+        body,
         options ?? { idempotencyKey: crypto.randomUUID() },
       );
     },

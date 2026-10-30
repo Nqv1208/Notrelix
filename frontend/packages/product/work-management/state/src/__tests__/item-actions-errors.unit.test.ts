@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   REMIND_TOO_SOON_CODE,
+  classifyArchiveError,
   classifyMoveError,
   classifyRemindError,
 } from "../api/item-extras.api";
@@ -16,6 +17,19 @@ describe("classifyMoveError", () => {
     expect(classifyMoveError({ status: 409 })).toBe("conflict");
     expect(classifyMoveError({ status: 500 })).toBe("error");
     expect(classifyMoveError(null)).toBe("error");
+  });
+});
+
+describe("classifyArchiveError", () => {
+  it("tells a newer edit, a missing right, a gone item and a network failure apart", () => {
+    expect(classifyArchiveError({ status: 412 })).toBe("conflict");
+    expect(classifyArchiveError({ status: 409 })).toBe("conflict");
+    expect(classifyArchiveError({ status: 403 })).toBe("denied");
+    expect(classifyArchiveError({ status: 404 })).toBe("gone");
+    expect(classifyArchiveError({ status: 503 })).toBe("error");
+    expect(classifyArchiveError(new TypeError("Failed to fetch"))).toBe(
+      "error",
+    );
   });
 });
 

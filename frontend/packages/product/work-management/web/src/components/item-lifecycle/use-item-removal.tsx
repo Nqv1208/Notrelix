@@ -1,13 +1,16 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
+  classifyArchiveError,
   classifyMoveError,
   classifyRemindError,
   useBoardLabels,
+  useArchiveCard,
   useBoardTrash,
   useDeleteCard,
   useDuplicateCard,
   useFullBoard,
+  useItemLinks,
   useMoveItemToBoard,
   useRefreshItem,
   useWorkManagementServices,
@@ -33,6 +36,10 @@ import {
   type RemindDialogState,
 } from "../item-actions/remind-dialog";
 import { useItemActionsCopy } from "../item-actions/use-item-actions-copy";
+import {
+  ArchiveItemDialog,
+  type ArchiveDialogStatus,
+} from "./archive-item-dialog";
 import { DeleteItemDialog } from "./item-lifecycle-dialogs";
 import { fillLifecycleCopy, pluralLifecycleCopy } from "./item-lifecycle.copy";
 import { useItemLifecycleCopy } from "./use-item-lifecycle-copy";
@@ -70,7 +77,7 @@ function hasValue(value: unknown): boolean {
 }
 
 /**
- * What one item's actions need beyond the menu: delete, move (with the
+ * What one item's actions need beyond the menu: archive and delete, move (with the
  * preview), duplicate (with options) and remind, each with its confirmation,
  * toasts and failure handling. `requestX` opens the dialog; `dialogs` is
  * rendered once by the host. `onGone` runs once the item has left the board
@@ -90,6 +97,7 @@ export function useItemRemoval({
   /** Opens another item in the host (the item a move landed on, a copy). */
   onOpenItem?: (itemId: string) => void;
 }): {
+  requestArchive: (itemId: string) => void;
   requestDelete: (itemId: string) => void;
   requestMove: (itemId: string) => void;
   requestDuplicate: (itemId: string) => void;
@@ -103,6 +111,9 @@ export function useItemRemoval({
   const actions = useItemActionsCopy();
   const { itemExtras } = useWorkManagementServices();
   const viewerId = useBoardViewerId();
+  const [archiving, setArchiving] = useState<Pending | null>(null);
+  const [archiveStatus, setArchiveStatus] =
+    useState<ArchiveDialogStatus>("idle");
   const [deleting, setDeleting] = useState<Pending | null>(null);
   const [moving, setMoving] = useState<Pending | null>(null);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
@@ -111,6 +122,8 @@ export function useItemRemoval({
   const [reminding, setReminding] = useState<Pending | null>(null);
   const [remindState, setRemindState] = useState<RemindDialogState>("confirm");
   const [remindWhen, setRemindWhen] = useState<string | null>(null);
+  const archiveCard = useArchiveCard(boardId, workspaceId);
+  const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const trash = useBoardTrash(boardId, workspaceId, false);
@@ -196,6 +209,34 @@ export function useItemRemoval({
     setMoving(null);
     setMoveTarget(null);
     setMoveStatus("idle");
+  };
+
+  const confirmArchive = () => {
+    if (!archiving) return;
+    const { id, title } = archiving;
+    setArchiveStatus("busy");
+    archiveCard.mutate(id, {
+      onSuccess: () => {
+        setArchiving(null);
+        setArchiveStatus("idle");
+        toast.success(fillLifecycleCopy(copy.archived, { title }), {
+          action: {
+            label: copy.archivedUndo,
+            onClick: () =>
+              quick(
+                id,
+                () => itemExtras.restoreItem(id),
+                actions.unarchived,
+                actions.archiveFailed,
+              ),
+          },
+        });
+        onGone?.(id);
+      },
+      // The board read is fetched again when the write ends, so a try after a
+      // conflict carries the newer version.
+      onError: (error) => setArchiveStatus(classifyArchiveError(error)),
+    });
   };
 
   const confirmDelete = () => {
@@ -412,7 +453,18 @@ export function useItemRemoval({
       null)
     : null;
 
+  const archiveCardView = archiving
+    ? findCard(sourceBoard as FullBoardResponse, archiving.id)?.card
+    : undefined;
+  const dependencyLinks = (archiveLinks.data ?? []).filter(
+    (link) => link.relation !== "related",
+  );
+
   return {
+    requestArchive: (itemId) => {
+      setArchiveStatus("idle");
+      setArchiving({ id: itemId, title: titleOf(itemId) });
+    },
     requestDelete: (itemId) =>
       setDeleting({ id: itemId, title: titleOf(itemId) }),
     requestMove: (itemId) => {
@@ -452,6 +504,24 @@ export function useItemRemoval({
       ),
     dialogs: (
       <>
+        <ArchiveItemDialog
+          copy={copy}
+          title={archiving?.title ?? ""}
+          impact={{
+            subItems: archiveCardView?.childProgress?.total ?? 0,
+            dependencies: {
+              count: dependencyLinks.length,
+              keys: dependencyLinks
+                .map((link) => link.item.key)
+                .filter((key): key is string => Boolean(key)),
+            },
+            checking: archiveLinks.isLoading,
+          }}
+          status={archiveStatus}
+          open={archiving !== null}
+          onCancel={() => setArchiving(null)}
+          onConfirm={confirmArchive}
+        />
         <DeleteItemDialog
           copy={copy}
           actions={actions}

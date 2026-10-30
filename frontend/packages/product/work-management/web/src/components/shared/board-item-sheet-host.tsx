@@ -78,7 +78,6 @@ export function BoardItemSheetHost({
         onMoveToGroup={sheet.onMoveToGroup}
         onUpdateFieldValue={sheet.onUpdateFieldValue}
         onDuplicate={sheet.onDuplicate}
-        onArchive={sheet.onArchive}
       />
     </BoardViewerContext.Provider>
   );

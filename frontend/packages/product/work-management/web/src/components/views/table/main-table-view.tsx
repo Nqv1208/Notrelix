@@ -828,11 +828,7 @@ export function MainTableView({
               : undefined,
             onCopyLink: handleCopyLink,
             onArchive: capabilities.canDelete
-              ? (id) => {
-                  noteTitle(id);
-                  startArchive([id]);
-                  setSelection(new Set());
-                }
+              ? removal.requestArchive
               : undefined,
             onDelete: capabilities.canDelete
               ? removal.requestDelete
@@ -921,10 +917,6 @@ export function MainTableView({
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
           onDuplicate={removal.requestDuplicate}
-          onArchive={(cardId) => {
-            noteTitle(cardId);
-            archiveCard.mutate(cardId);
-          }}
         />
       ) : null}
       {removal.dialogs}
