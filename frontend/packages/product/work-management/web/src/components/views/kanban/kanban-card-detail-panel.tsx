@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
+import { usePickerActions } from "../../card-popup/pickers/use-picker-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { useCardPopupModel } from "../../card-popup/use-card-popup-model";
 import type { CardPopupSlots } from "../../card-popup/card-popup-context";
@@ -47,6 +48,7 @@ export function KanbanCardDetailPanel({
   slots,
 }: KanbanCardDetailPanelProps) {
   const [openedAt] = useState(() => new Date());
+  const pickerActions = usePickerActions(card);
   const model = useCardPopupModel({
     mode: "view",
     board,
@@ -59,6 +61,7 @@ export function KanbanCardDetailPanel({
     slots,
     actions: {
       moveToGroup: (groupId) => callbacks.onMoveToGroup?.(card.id, groupId),
+      ...pickerActions,
     },
   });
   return (

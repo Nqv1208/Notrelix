@@ -12,7 +12,12 @@ import type { CardPopupCopy } from "./card-popup.copy";
 export type CardPopupMode = "view" | "create";
 
 /** Why every write is off: a viewer without the right, or an archived board. */
-export type CardPopupReadOnly = "permission" | "archived" | null;
+export type CardPopupReadOnly =
+  | "permission"
+  | "archived"
+  /** A create is on its way: every field is read-only until it answers. */
+  | "creating"
+  | null;
 
 /** The state of one field's save: the chip row and the sections show it in place. */
 export type FieldSave =
@@ -55,6 +60,8 @@ export interface CardPopupActions {
     labelId: string,
     patch: { readonly name?: string; readonly color?: string },
   ) => Promise<boolean>;
+  /** Deletes a board label (it leaves every card); resolves false when refused. */
+  readonly removeLabel?: (labelId: string) => Promise<boolean>;
   /** Attaches a web link (CreateBoardItemAttachment with a URL). */
   readonly addWebLink?: (url: string, name: string) => Promise<boolean>;
   /** Links a Documents page to the card (LinkPageToBoardItem). */

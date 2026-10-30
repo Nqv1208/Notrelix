@@ -4,7 +4,15 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { Popover, PopoverContent, cn } from "@notrelix/ui-web";
+import {
+  Popover,
+  PopoverContent,
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  cn,
+  useMediaQuery,
+} from "@notrelix/ui-web";
 import {
   AlignLeft,
   LayoutList,
@@ -224,7 +232,7 @@ export function SectionHead({
 }
 
 /** `.pv`: the panel of a picker, a menu or a form that opens under a button. */
-export function PanelPopover({
+function PanelPopoverDesktop({
   trigger,
   open,
   onOpenChange,
@@ -263,6 +271,41 @@ export function PanelPopover({
         {children}
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * The panel of a picker or a menu: a popover under its button, and from the
+ * phone width down a bottom sheet (the artboard's `.bsh`: 16 px top corners, a
+ * grab handle, up to 94 % of the screen).
+ */
+export function PanelPopover(
+  props: ComponentProps<typeof PanelPopoverDesktop>,
+) {
+  const phone = useMediaQuery("(max-width: 767px)");
+  if (!phone) return <PanelPopoverDesktop {...props} />;
+  const { trigger, open, onOpenChange, children } = props;
+  return (
+    <>
+      <Popover open={false} onOpenChange={onOpenChange}>
+        {trigger}
+      </Popover>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          aria-describedby={undefined}
+          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] bg-popover px-4 pt-2 pb-6 text-[14px] text-popover-foreground"
+        >
+          <SheetTitle className="sr-only" />
+          <div
+            aria-hidden="true"
+            className="mx-auto mb-2 h-1 w-10 rounded-sm bg-line-strong"
+          />
+          {children}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 
