@@ -300,6 +300,8 @@ A password reset, MFA/security event, account-link change, or administrative ide
 
 Do not leave stale authority active accidentally.
 
+Turning the second factor off ends every session of the person, the one that asked included (confirmed 2026-10-30); the person signs in again.
+
 # 21. Session claims
 
 Claims may cache identity/security hints for performance.
