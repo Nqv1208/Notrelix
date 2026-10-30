@@ -317,7 +317,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
 | UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | INTEGRATING | tests and owner check. |
-| UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | Detail is roadmap 02 (D76.18); multi-day bars, undated aside redraw (D72) |
+| UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | Roadmap 02 (D76.18); no auto-reschedule test; cycle check |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | Cross-tenant/Private negative test; real e2e |
 | UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | API tests; real e2e |
@@ -2325,8 +2325,8 @@ Team capability WM-011.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 52, 138; WMREQ021; views pack section 7; LD5
 - Acceptance: Given the Calendar over field Due, when an item's due changes, then it moves on the calendar for all members.
-- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -] · FE BoardCalendarView (69 tests) · Design Final-Calendar, WM-Cal-Interactions, WM-Toolbar-Calendar · Tests `ComputedFieldsIntegrationTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
-- State: INTEGRATING — Detail is roadmap 02 (D76.18); multi-day bars, undated aside redraw (D72)
+- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -] · FE `board-calendar-view.tsx` with the view bar (filter, personal state, saved filters) in `calendar-toolbar.tsx` · Design Final-Calendar, WM-Cal-Interactions, WM-Toolbar-Calendar · Tests `ComputedFieldsIntegrationTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
+- State: INTEGRATING — tests and owner check. Built: the Calendar filters with the member's own view state (an item with no date still lists in the undated aside; phases and milestones hide under a filter). Not built: a date field chosen per Calendar view.
 
 ## L. Timeline view
 
