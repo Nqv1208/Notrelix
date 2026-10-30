@@ -287,6 +287,7 @@ export function mapBoardSettings(
       isArchived: board.isArchived === true,
     },
     fields,
+    fieldOrder: columns.map((column) => column.id ?? ""),
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
     archivedFields: [],
     views: savedViews.map((view) => mapSettingsView(view, fields)),
@@ -480,11 +481,17 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         ids,
       );
       if (!moved) return;
+      // The page lists the custom fields only; the server orders all of them.
+      const listed = new Set(s.fields.map((field) => field.id));
+      let next = 0;
+      const full = (s.fieldOrder ?? s.fields.map((field) => field.id)).map(
+        (id) => (listed.has(id) ? ids[next++]! : id),
+      );
       await api.post<void>(
         endpoints.boardFields.move(s.boardId, moved),
         {
           expectedVersion: fieldOf(s, moved).version ?? 0,
-          ...neighbours(ids, moved),
+          ...neighbours(full, moved),
         },
         quiet,
       );

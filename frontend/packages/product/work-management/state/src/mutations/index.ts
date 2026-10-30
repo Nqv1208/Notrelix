@@ -18,7 +18,6 @@ export * from "./use-field-option";
 export * from "./use-duplicate-group";
 export * from "./use-move-card";
 export * from "./use-move-row";
-export * from "./use-reorder-kanban-columns";
 export * from "./use-bulk-update-items";
 export * from "./use-board-label-writes";
 export * from "./use-saved-filter-writes";

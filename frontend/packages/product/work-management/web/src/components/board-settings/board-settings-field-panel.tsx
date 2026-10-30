@@ -491,7 +491,14 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
         <SortableList
           ids={field.options.map((option) => option.id)}
           onReorder={(ids) =>
-            void run(() => actions.reorderOptions(field.id, ids), scope)
+            run(() => actions.reorderOptions(field.id, ids), scope)
+          }
+          announce={(id, position, total) =>
+            fillCopy(copy.common.moved, {
+              name: field.options.find((entry) => entry.id === id)?.name ?? "",
+              position,
+              total,
+            })
           }
         >
           {(order) =>

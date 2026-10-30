@@ -150,7 +150,14 @@ export function GroupsSection() {
           </div>
           <SortableList
             ids={groups.map((group) => group.id)}
-            onReorder={(ids) => void run(() => actions.reorderGroups(ids))}
+            onReorder={(ids) => run(() => actions.reorderGroups(ids))}
+            announce={(id, position, total) =>
+              fillCopy(copy.common.moved, {
+                name: groups.find((entry) => entry.id === id)?.name ?? "",
+                position,
+                total,
+              })
+            }
           >
             {(order) =>
               order.map((id) => {

@@ -167,7 +167,16 @@ export function FieldsSection({
           ) : (
             <SortableList
               ids={settings.fields.map((field) => field.id)}
-              onReorder={(ids) => void run(() => actions.reorderFields(ids))}
+              onReorder={(ids) => run(() => actions.reorderFields(ids))}
+              announce={(id, position, total) =>
+                fillCopy(copy.common.moved, {
+                  name:
+                    settings.fields.find((entry) => entry.id === id)?.name ??
+                    "",
+                  position,
+                  total,
+                })
+              }
             >
               {(order) =>
                 order.map((id) => {

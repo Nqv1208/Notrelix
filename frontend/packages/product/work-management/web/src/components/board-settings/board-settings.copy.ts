@@ -57,6 +57,7 @@ export const en = {
     dragHandle: "Drag to reorder",
     reorderUp: "Move up",
     reorderDown: "Move down",
+    moved: "{{name}} moved to position {{position}} of {{total}}",
     lockedReason: "This cannot be changed here",
   },
   feedback: {
@@ -659,6 +660,7 @@ export const vi: BoardSettingsCopy = {
     dragHandle: "Kéo để sắp xếp",
     reorderUp: "Chuyển lên",
     reorderDown: "Chuyển xuống",
+    moved: "Đã chuyển “{{name}}” đến vị trí {{position}} trên {{total}}",
     lockedReason: "Mục này không đổi được ở đây",
   },
   feedback: {

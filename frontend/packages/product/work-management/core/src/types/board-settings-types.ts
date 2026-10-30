@@ -203,6 +203,12 @@ export interface BoardSettingsDto {
   readonly itemCount: number;
   readonly general: BoardSettingsGeneralDto;
   readonly fields: readonly BoardSettingsFieldDto[];
+  /**
+   * Every live field of the board, locked system fields included, in the order
+   * the server keeps. A move names its neighbours in this order, so a locked
+   * field between two custom ones does not make the move stale.
+   */
+  readonly fieldOrder?: readonly string[];
   readonly systemFields: readonly BoardSettingsSystemFieldDto[];
   readonly archivedFields: readonly BoardSettingsArchivedFieldDto[];
   readonly views: readonly BoardSettingsViewDto[];
