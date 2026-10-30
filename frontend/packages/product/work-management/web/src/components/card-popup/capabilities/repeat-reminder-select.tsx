@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Bell, Repeat } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,10 @@ import { useItemSettingsWrites } from "@notrelix/work-management-state";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
 
 const NONE = "none";
+
+/** The select button of the dates panel: `.in` with its icon and chevron (36 px, 8 px radius). */
+const TRIGGER =
+  "box-border h-9 w-full justify-start gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground [&>svg:last-child]:ml-auto [&>svg:last-child]:size-[13px]";
 
 function scopeOf(card: CardDetail) {
   return {
@@ -40,10 +45,10 @@ export function RepeatSelect({
   const [error, setError] = useState<string | null>(null);
   const hasDue = Boolean(card.dueAt ?? card.dueDate);
   return (
-    <div className="flex flex-col gap-1">
+    <div className="mt-3 flex flex-col gap-1.5">
       <label
         htmlFor={id}
-        className="text-micro font-semibold text-meta-foreground"
+        className="text-[12px] leading-[18px] font-semibold text-muted-foreground"
       >
         {copy.repeat.label}
       </label>
@@ -57,7 +62,8 @@ export function RepeatSelect({
             .catch(() => setError(copy.repeat.failed));
         }}
       >
-        <SelectTrigger id={id} className="w-full">
+        <SelectTrigger id={id} className={TRIGGER}>
+          <Repeat aria-hidden="true" className="size-4 shrink-0" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -104,40 +110,45 @@ export function ReminderSelect({
   const [error, setError] = useState<string | null>(null);
   const current = card.reminderOffsetMinutes ?? CARD_REMINDER_DEFAULT;
   return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={id}
-        className="text-micro font-semibold text-meta-foreground"
-      >
-        {copy.reminder.label}
-      </label>
-      <Select
-        value={String(current)}
-        disabled={disabled || writes.pending}
-        onValueChange={(value) => {
-          setError(null);
-          writes
-            .setReminder(Number(value))
-            .catch(() => setError(copy.reminder.failed));
-        }}
-      >
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {CARD_REMINDER_OFFSETS.map((offset) => (
-            <SelectItem key={offset} value={String(offset)}>
-              {reminderLabel(copy, offset)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <p className="text-micro text-meta-foreground">{copy.reminder.note}</p>
-      {error ? (
-        <p role="alert" className="text-micro text-danger-subtle-foreground">
-          {error}
-        </p>
-      ) : null}
-    </div>
+    <>
+      <div className="mt-3 flex flex-col gap-1.5">
+        <label
+          htmlFor={id}
+          className="text-[12px] leading-[18px] font-semibold text-muted-foreground"
+        >
+          {copy.reminder.label}
+        </label>
+        <Select
+          value={String(current)}
+          disabled={disabled || writes.pending}
+          onValueChange={(value) => {
+            setError(null);
+            writes
+              .setReminder(Number(value))
+              .catch(() => setError(copy.reminder.failed));
+          }}
+        >
+          <SelectTrigger id={id} className={TRIGGER}>
+            <Bell aria-hidden="true" className="size-4 shrink-0" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CARD_REMINDER_OFFSETS.map((offset) => (
+              <SelectItem key={offset} value={String(offset)}>
+                {reminderLabel(copy, offset)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {error ? (
+          <p role="alert" className="text-micro text-danger-subtle-foreground">
+            {error}
+          </p>
+        ) : null}
+      </div>
+      <p className="m-0 mt-2 text-[12.5px] leading-[1.45] text-meta-foreground">
+        {copy.reminder.note}
+      </p>
+    </>
   );
 }

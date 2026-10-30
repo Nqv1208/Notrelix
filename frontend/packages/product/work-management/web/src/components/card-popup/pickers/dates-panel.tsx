@@ -260,7 +260,7 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
   const ic = "size-4";
 
   return (
-    <div>
+    <>
       <PickerHead title={t.title} onClose={onClose} />
       <div className="mb-1 flex items-center justify-between">
         {navBtn(
@@ -464,8 +464,8 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
         {dueBad ? <Hint error>{t.invalid}</Hint> : null}
       </div>
 
-      {slots.repeat ? <div className="mt-3">{slots.repeat}</div> : null}
-      {slots.reminder ? <div className="mt-3">{slots.reminder}</div> : null}
+      {slots.repeat}
+      {slots.reminder}
 
       <PanelBtn
         variant="primary"
@@ -478,6 +478,6 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
       <PanelBtn className="mt-2 w-full" onClick={() => write(null, null)}>
         {t.clear}
       </PanelBtn>
-    </div>
+    </>
   );
 }
