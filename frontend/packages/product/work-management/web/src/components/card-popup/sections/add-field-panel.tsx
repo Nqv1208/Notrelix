@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Calendar,
   Hash,
@@ -43,10 +43,17 @@ export function AddFieldPanel({
   empty: readonly FieldDefinition[];
   onPick: (field: FieldDefinition) => void;
 }) {
-  const { copy, callbacks } = useCardPopup();
+  const { copy, callbacks, newFieldName } = useCardPopup();
   const t = copy.sections.fields;
   const sheet = useItemSheetCopy();
   const [query, setQuery] = useState("");
+  // The new-field form of a typed name opens after the panel has taken focus, or it would close at once.
+  const [settled, setSettled] = useState(newFieldName === null);
+  useEffect(() => {
+    if (newFieldName === null) return;
+    const id = window.setTimeout(() => setSettled(true), 200);
+    return () => window.clearTimeout(id);
+  }, [newFieldName]);
   const needle = foldForSearch(query);
   const list = empty.filter((f) => !needle || foldForSearch(f.name).includes(needle));
   return (
@@ -93,7 +100,7 @@ export function AddFieldPanel({
           </div>
         </>
       )}
-      {callbacks.onCreateField ? (
+      {callbacks.onCreateField && settled ? (
         <div className="mt-1 border-t border-line pt-1">
           <AddPropertyPopover
             t={sheet.properties}
@@ -102,6 +109,7 @@ export function AddFieldPanel({
             onCreate={callbacks.onCreateField}
             onCreated={() => undefined}
             triggerLabel={t.createField}
+            initialName={newFieldName ?? undefined}
             triggerClassName="flex h-9 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] font-semibold text-brand-ink hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />
         </div>

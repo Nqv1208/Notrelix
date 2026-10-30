@@ -134,6 +134,7 @@ export function CoverPicker({
             variant="ghost"
             size="icon"
             disabled={disabled}
+            data-popup-cover=""
             aria-label={copy.cover.open}
             title={copy.cover.open}
           >

@@ -12,11 +12,13 @@ export function FaceFieldsButton({
   workspaceId,
   fields,
   canEdit,
+  trigger,
 }: {
   boardId: string;
   workspaceId: string;
   fields: readonly FieldDefinition[];
   canEdit: boolean;
+  trigger?: React.ReactNode;
 }) {
   const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
   return (
@@ -27,6 +29,7 @@ export function FaceFieldsButton({
         cardHideEmpty: viewConfig.cardHideEmpty ?? [],
       }}
       canEdit={canEdit}
+      trigger={trigger}
       onChange={(next) => updateViewConfig(next)}
     />
   );

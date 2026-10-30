@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   Calendar as CalendarIcon,
@@ -341,7 +341,7 @@ export function FieldControl({
   field: FieldDefinition;
   variant: "chip" | "ctl";
 }) {
-  const { card, copy, fields } = useCardPopup();
+  const { card, copy, fields, openFieldId, clearOpenField } = useCardPopup();
   const priorityId = fields.priority?.id;
   const t = copy.sections.chips;
   const f = copy.sections.fields;
@@ -349,6 +349,14 @@ export function FieldControl({
   const canEdit = useCanEdit();
   const { write, save } = useFieldWrite(field);
   const [open, setOpen] = useState(false);
+  // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
+  useEffect(() => {
+    if (openFieldId !== field.id) return;
+    if (["select", "multi_select", "date"].includes(field.fieldType)) {
+      setOpen(true);
+      clearOpenField();
+    }
+  }, [openFieldId, field.id, field.fieldType, clearOpenField]);
   const raw = card.fieldValues[field.id];
   const chip = variant === "chip";
   const saving = save?.status === "saving";
@@ -725,17 +733,25 @@ export function FieldControl({
   }
 
   // number, text, long_text, link: typed in the control, saved on leaving the box.
-  return <TypedControl field={field} raw={raw} />;
+  return <TypedControl field={field} raw={raw} chip={chip} />;
 }
 
 function TypedControl({
   field,
   raw,
+  chip,
 }: {
   field: FieldDefinition;
   raw: unknown;
+  chip: boolean;
 }) {
-  const { copy } = useCardPopup();
+  const { copy, openFieldId, clearOpenField } = useCardPopup();
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (openFieldId !== field.id) return;
+    input.current?.focus();
+    clearOpenField();
+  }, [openFieldId, field.id, clearOpenField]);
   const t = copy.sections.chips;
   const f = copy.sections.fields;
   const canEdit = useCanEdit();
@@ -772,6 +788,8 @@ function TypedControl({
       <label
         className={cn(
           ro ? CTL_RO : CTL,
+          chip &&
+            "ml-0 h-9 w-48 border-line-strong bg-popover px-3 text-[13.5px]",
           "cursor-text",
           (invalid || save?.status === "error") && "border-danger",
         )}
@@ -781,6 +799,7 @@ function TypedControl({
           className="size-[13px] shrink-0 text-muted-foreground"
         />
         <input
+          ref={input}
           type="text"
           inputMode={kind === "number" ? "decimal" : undefined}
           value={draft}

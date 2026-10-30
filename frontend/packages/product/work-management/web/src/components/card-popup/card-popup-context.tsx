@@ -26,7 +26,15 @@ export type FieldSave =
 
 /** The pickers the quick row and the "+ Thêm" menu open. */
 export type CardPopupPicker =
-  "labels" | "dates" | "checklist" | "assignees" | "attach" | "fields" | "add";
+  "labels"
+  | "dates"
+  | "checklist"
+  | "assignees"
+  | "attach"
+  | "link"
+  | "subitem"
+  | "fields"
+  | "add";
 
 /**
  * Mount slots for capabilities another part of the product fills in: each is
@@ -103,6 +111,17 @@ export interface CardPopupModel {
     picker: CardPopupPicker | null,
     anchor?: HTMLElement | null,
   ) => void;
+  /** Board fields the "+ Thêm" menu added to this card's chip row, in the order added. */
+  readonly addedFieldIds: readonly string[];
+  /** Adds the field's chip to the chip row and asks its editor to open. */
+  readonly addField: (fieldId: string) => void;
+  /** The field whose editor is asked to open; its control clears it once open. */
+  readonly openFieldId: string | null;
+  readonly clearOpenField: () => void;
+  /** The name typed in the menu for a field that does not exist yet; the new-field form starts with it. */
+  readonly newFieldName: string | null;
+  /** Opens the new-field form of the fields section, named `name`; null forgets the name. */
+  readonly startNewField: (name: string | null) => void;
 }
 
 const CardPopupContext = createContext<CardPopupModel | null>(null);

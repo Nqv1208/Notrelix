@@ -34,11 +34,14 @@ export function AddPropertyPopover({
   manageHref,
   triggerClassName,
   triggerLabel,
+  initialName,
 }: {
   /** Classes of the "+" trigger the popover renders itself. */
   triggerClassName: string;
   /** Words beside the "+"; absent: the icon alone. */
   triggerLabel?: string;
+  /** A name already typed (the popup menu's "Tạo trường “…”"): the panel opens on the new-field form with it. */
+  initialName?: string;
   t: ItemSheetCopy["properties"];
   /** Custom properties with no value on this item. */
   emptyFields: readonly FieldDefinition[];
@@ -49,9 +52,9 @@ export function AddPropertyPopover({
   /** Board settings › Fields; absent: no "Quản lý trường" link. */
   manageHref?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
+  const [open, setOpen] = useState(initialName !== undefined);
+  const [creating, setCreating] = useState(initialName !== undefined);
+  const [name, setName] = useState(initialName ?? "");
   const [type, setType] = useState<(typeof TYPES)[number]>("select");
   const [choices, setChoices] = useState(["", ""]);
   const [busy, setBusy] = useState(false);

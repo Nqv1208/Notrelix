@@ -56,6 +56,21 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     },
     [],
   );
+  const [addedFieldIds, setAddedFieldIds] = useState<readonly string[]>([]);
+  const [openFieldId, setOpenFieldId] = useState<string | null>(null);
+  const [newFieldName, setNewFieldName] = useState<string | null>(null);
+  const addField = useCallback((fieldId: string) => {
+    setAddedFieldIds((ids) => (ids.includes(fieldId) ? ids : [...ids, fieldId]));
+    setOpenFieldId(fieldId);
+  }, []);
+  const clearOpenField = useCallback(() => setOpenFieldId(null), []);
+  const startNewField = useCallback(
+    (name: string | null) => {
+      setNewFieldName(name);
+      if (name !== null) openPicker("fields");
+    },
+    [openPicker],
+  );
   const [saves, setSaves] = useState<Record<string, FieldSave | undefined>>({});
   const [conflict, setConflict] = useState(false);
   const mounted = useRef(true);
@@ -131,5 +146,11 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     picker,
     pickerAnchor,
     openPicker,
+    addedFieldIds,
+    addField,
+    openFieldId,
+    clearOpenField,
+    newFieldName,
+    startNewField,
   };
 }

@@ -42,11 +42,14 @@ export function useFieldList() {
  * The custom fields the section can list: not the priority (its own chip), not the fields pinned on the
  * card face (chips too), split into those holding a value (their rows) and those empty (the add panel).
  */
-function useSectionFields() {
-  const { board, card, fields } = useCardPopup();
+export function useSectionFields() {
+  const { board, card, fields, addedFieldIds } = useCardPopup();
   const pinned = usePinnedFieldIds();
   const rest = customItemFields(board).filter(
-    (f) => f.id !== fields.priority?.id && !pinned.includes(f.id),
+    (f) =>
+      f.id !== fields.priority?.id &&
+      !pinned.includes(f.id) &&
+      !addedFieldIds.includes(f.id),
   );
   const filled = (f: (typeof rest)[number]) => {
     const computed = card.computedValues?.[f.id];
@@ -65,8 +68,16 @@ const computedKind = (f: { fieldType: string }) =>
 
 /** The custom fields that hold a value, as label and value rows edited in place; the rest sit behind "+ Thêm trường". */
 export function FieldsSection() {
-  const { board, card, copy, mode, picker, openPicker, timeZone } =
-    useCardPopup();
+  const {
+    board,
+    card,
+    copy,
+    mode,
+    picker,
+    openPicker,
+    timeZone,
+    startNewField,
+  } = useCardPopup();
   const t = copy.sections.fields;
   const canEdit = useCanEdit();
   const { filled, empty } = useSectionFields();
@@ -96,7 +107,10 @@ export function FieldsSection() {
   const addButton = canEdit ? (
     <PanelPopover
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) startNewField(null);
+      }}
       width={340}
       trigger={
         <PopoverTrigger asChild>

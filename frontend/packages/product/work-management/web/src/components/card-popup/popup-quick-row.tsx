@@ -1,14 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  Clock,
-  ListChecks,
-  Paperclip,
-  Plus,
-  SquareCheck,
-  Tag,
-  UserPlus,
-  LayoutList,
-} from "lucide-react";
+import { Clock, ListChecks, Tag, UserPlus } from "lucide-react";
 import { PopoverTrigger } from "@notrelix/ui-web";
 import { useCardPopup, useCanEdit } from "./card-popup-context";
 import { PanelPopover, QuickBtn } from "./popup-ui";
@@ -16,82 +7,7 @@ import { LabelsPanel } from "./pickers/labels-panel";
 import { DatesPanel } from "./pickers/dates-panel";
 import { PeoplePanel } from "./pickers/people-panel";
 import { ChecklistPanel } from "./pickers/checklist-panel";
-import { AttachPanel } from "./pickers/attach-panel";
-import { PickerHead } from "./pickers/picker-bits";
-
-const ADD_ENTRIES: ReadonlyArray<{
-  key: "labels" | "dates" | "checklist" | "assignees" | "attach" | "fields";
-  icon: ReactNode;
-}> = [
-  { key: "labels", icon: <Tag aria-hidden="true" className="size-4" /> },
-  { key: "dates", icon: <Clock aria-hidden="true" className="size-4" /> },
-  {
-    key: "checklist",
-    icon: <SquareCheck aria-hidden="true" className="size-4" />,
-  },
-  {
-    key: "assignees",
-    icon: <UserPlus aria-hidden="true" className="size-4" />,
-  },
-  { key: "attach", icon: <Paperclip aria-hidden="true" className="size-4" /> },
-  { key: "fields", icon: <LayoutList aria-hidden="true" className="size-4" /> },
-];
-
-/** The "+ Thêm" menu: six entries; the first four open their picker directly. */
-function AddMenu() {
-  const { copy, picker, pickerAnchor, openPicker } = useCardPopup();
-  const t = copy.shell;
-  const isOpen = picker === "add" || picker === "attach";
-  return (
-    <PanelPopover
-      open={isOpen}
-      anchor={pickerAnchor}
-      onOpenChange={(next) =>
-        openPicker(next ? "add" : null, next ? null : undefined)
-      }
-      width={344}
-      trigger={
-        <PopoverTrigger asChild>
-          <QuickBtn on={isOpen} title={t.addTitle} aria-haspopup="dialog">
-            <Plus aria-hidden="true" className="size-4" />
-            {t.add}
-          </QuickBtn>
-        </PopoverTrigger>
-      }
-    >
-      {picker === "attach" ? (
-        <AttachPanel
-          onClose={() => openPicker(null)}
-          onBack={() => openPicker("add")}
-        />
-      ) : (
-        <>
-          <PickerHead title={t.addTitle} onClose={() => openPicker(null)} />
-          {ADD_ENTRIES.map(({ key, icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => openPicker(key)}
-              className="flex w-full items-center gap-3 rounded-[8px] border-0 bg-transparent px-2 py-2.5 text-left md:py-2 text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              <span className="grid size-[38px] shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
-                {icon}
-              </span>
-              <span>
-                <b className="block text-[14px] leading-[1.3] font-semibold">
-                  {t.addMenu[key].title}
-                </b>
-                <small className="block text-[12.5px] leading-[1.35] font-normal text-meta-foreground">
-                  {t.addMenu[key].hint}
-                </small>
-              </span>
-            </button>
-          ))}
-        </>
-      )}
-    </PanelPopover>
-  );
-}
+import { AddMenu } from "./add-menu";
 
 /** One quick button that owns the picker anchored under it. */
 function PickerButton({

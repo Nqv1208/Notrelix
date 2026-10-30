@@ -124,7 +124,7 @@ function ParentRow() {
 }
 
 /** "Thêm liên kết": pick the relation, find an item of this board, add. */
-function AddLinkPanel({ onClose }: { onClose: () => void }) {
+export function AddLinkPanel({ onClose }: { onClose: () => void }) {
   const { card, board, data, callbacks, copy } = useCardPopup();
   const t = copy.related.links;
   const [relation, setRelation] =

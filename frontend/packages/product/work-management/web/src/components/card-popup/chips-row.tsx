@@ -83,13 +83,20 @@ function DatesChip() {
 
 /** The labelled chips under the quick row, editable in place. */
 export function ChipsRow() {
-  const { board, card, copy, openPicker, slots, fields } = useCardPopup();
+  const { board, card, copy, openPicker, slots, fields, addedFieldIds } =
+    useCardPopup();
   const t = copy.shell;
   const canEdit = useCanEdit();
   const pinnedIds = usePinnedFieldIds();
   const eligible = faceEligibleFields(board.fieldDefinitions);
-  const pinned = pinnedIds
-    .map((id) => eligible.find((field) => field.id === id))
+  const everyField = [...board.fieldDefinitions];
+  const pinned = [
+    ...pinnedIds.map((id) => eligible.find((field) => field.id === id)),
+    // Fields the "+ Thêm" menu put on this card show as chips until the popup closes.
+    ...addedFieldIds
+      .filter((id) => !pinnedIds.includes(id) && id !== fields.priority?.id)
+      .map((id) => everyField.find((field) => field.id === id)),
+  ]
     .filter((field): field is NonNullable<typeof field> => field !== undefined);
 
   return (
@@ -101,7 +108,11 @@ export function ChipsRow() {
               <button
                 type="button"
                 disabled={!canEdit}
-                aria-label={[t.assignees, ...card.members.map((m) => m.name)].join(": ").replace(": ", ": ")}
+                aria-label={
+                  card.members.length > 0
+                    ? `${t.assignees}: ${card.members.map((m) => m.name).join(", ")}`
+                    : t.assignees
+                }
                 aria-haspopup="dialog"
                 className="box-border flex h-9 items-center rounded-[8px] border-0 bg-transparent px-1.5 hover:bg-state-hover-strong disabled:cursor-default disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 onClick={(event) =>
