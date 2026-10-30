@@ -2478,6 +2478,12 @@ These settings and interactions belong to the Item and are written through the I
 
 **Face fields.** The fields a Kanban card shows, their order and which of them hide while empty are settings of the Kanban view's own config (`cardFieldIds`, `cardHideEmpty`). Changing them needs edit rights on the board. A field with no value shows a dash unless it hides while empty.
 
+**Repeat on a status move.** Moving a repeating Item with a due date from an open status to a done status completes its occurrence, exactly like the complete action: the Item stays open at its current status and its dates move to the next occurrence, in the same change. An Item with no open status before the move, or with no due date, completes normally.
+
+**Checklist item people and dates.** A checklist item may carry one assignee and its own due time, both optional and both owned by the checklist. Giving an item to a person needs the assign right and a person who can already see the Board; the item due time is a plain update. Both are semantic no-ops when the value does not change.
+
+**Label tones.** The ten label colours of the popup (blue, teal, violet, amber, rose, gray, orange, green, indigo, red) each have a tone in the design tokens; a label colour shows as its own tone by name first, then by hue. The Đêm theme's popover surface and accent follow the card popup artboards (`--panel` #1A2028, accent #5AA9FF with ink #04111F).
+
 # 178. Final Work Management rule
 
 For every Work Management capability, Notrelix must be able to answer:
