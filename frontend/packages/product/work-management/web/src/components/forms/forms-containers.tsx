@@ -16,7 +16,7 @@ import type {
   FormSubmissionStatus,
 } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
-import { ItemCreateHost } from "../item-create/item-create-host";
+import { CardCreatePopup } from "../card-popup/create/card-create-popup";
 import { FormBuilderSurface } from "./form-builder-surface";
 import { FormFillSurface } from "./form-fill-surface";
 import { FormInboxSurface, whenLong } from "./form-inbox-surface";
@@ -423,7 +423,7 @@ export function FormInboxPage({
         backLabel={manager ? undefined : copy.inbox.backToBoard}
       />
       {board && creating && form && prefill ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open
           onOpenChange={(next) => {
             if (!next) setCreating(null);
@@ -438,7 +438,6 @@ export function FormInboxPage({
           defaultPriorityId={prefill.priorityOptionId}
           defaultDueDay={prefill.dueDay}
           currentUserId={currentUserId}
-          heading={copy.createFromResponse.title}
           submitLabel={copy.createFromResponse.submit}
           successMessage={copy.inbox.createdToast}
           hideAnother
@@ -453,38 +452,14 @@ export function FormInboxPage({
                 name: nameOf(creating),
                 when: whenLong(creating.submittedAt, locale, tz),
               })}
+              {prefill.left.length > 0
+                ? prefill.left
+                    .map((entry) =>
+                      fillFormsCopy(copy.createFromResponse.unmapped, entry),
+                    )
+                    .join(" ")
+                : null}
             </>
-          }
-          sources={{
-            name: prefill.from.title
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.title,
-                })
-              : undefined,
-            description: prefill.from.description
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.description,
-                })
-              : undefined,
-            priority: prefill.from.priority
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.priority,
-                })
-              : undefined,
-            due: prefill.from.due
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.due,
-                })
-              : undefined,
-          }}
-          footnote={
-            prefill.left.length > 0
-              ? prefill.left
-                  .map((entry) =>
-                    fillFormsCopy(copy.createFromResponse.unmapped, entry),
-                  )
-                  .join(" ")
-              : undefined
           }
           onCreated={async ({ itemId }) => {
             const response = creating;

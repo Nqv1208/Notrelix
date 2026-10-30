@@ -23,7 +23,7 @@ import {
   erpItemId,
   erpOwnerAccess,
 } from "@notrelix/work-management-testing";
-import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
+import { cardPopupCatalog } from "../../../card-popup/card-popup.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
@@ -122,7 +122,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
-          itemCreateCatalog,
+          cardPopupCatalog,
         ]}
         initialLocale="vi"
       >

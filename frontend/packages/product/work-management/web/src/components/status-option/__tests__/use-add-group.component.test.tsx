@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { I18nProvider } from "@notrelix/i18n";
 import { act, renderHook } from "@notrelix/testing";
-import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
+import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../use-add-group";
 
 const mutateAsync = vi.fn();

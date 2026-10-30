@@ -1,6 +1,6 @@
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
-import { ItemCreateHost } from "../../item-create/item-create-host";
-import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
+import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import {
   useCallback,
@@ -156,27 +156,6 @@ type CreateRequest =
       readonly lane: KanbanStatusLane;
       readonly title: string;
     };
-
-/** The colour of a lane's dot, as the lane header draws it. */
-function laneDot(lane: KanbanStatusLane): {
-  dotClassName: string;
-  dotStyle?: CSSProperties;
-} {
-  const base =
-    lane.category === "todo"
-      ? "border-2 border-work-status-todo"
-      : lane.category === "in_progress"
-        ? "bg-work-status-doing"
-        : lane.category === "review"
-          ? "bg-work-status-review"
-          : lane.category === "done"
-            ? "bg-work-status-done"
-            : "bg-muted-foreground";
-  if (!lane.color) return { dotClassName: base };
-  return lane.category === "todo"
-    ? { dotClassName: "border-2", dotStyle: { borderColor: lane.color } }
-    : { dotClassName: "", dotStyle: { backgroundColor: lane.color } };
-}
 
 /** The board group a new item of a lane goes into: the lane's last card's. */
 function groupForNewItem(
@@ -1082,7 +1061,7 @@ export function KanbanView({
       ) : null}
 
       {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open={createOpen}
           onOpenChange={(next) => {
             if (!next) setCreate(null);
@@ -1098,7 +1077,6 @@ export function KanbanView({
                 "")
               : (kanban.groups[0]?.id ?? "")
           }
-          hideGroup={isStatusGrouping}
           defaultStatusId={
             create && create.kind !== "toolbar" && isStatusGrouping
               ? create.lane.optionId
@@ -1118,18 +1096,6 @@ export function KanbanView({
                   value: create.lane.optionId,
                 }
               : null
-          }
-          focusDescription={create?.kind === "quick"}
-          context={
-            create && create.kind !== "toolbar"
-              ? {
-                  kind: create.kind,
-                  name:
-                    create.lane.name ||
-                    (isStatusGrouping ? laneCopy.noStatus : laneCopy.noValue),
-                  ...laneDot(create.lane),
-                }
-              : undefined
           }
           onOpenItem={(itemId) => {
             setCreate(null);

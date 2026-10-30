@@ -30,7 +30,6 @@ import { docPageCatalog } from "@notrelix/docs-web";
 import {
   retiredBoardsCatalog,
   boardHeaderCatalog,
-  itemCreateCatalog,
   boardSettingsCatalog,
   boardShareCatalog,
   calendarCatalog,
@@ -87,7 +86,6 @@ export const webCatalogs: readonly MessageCatalog[] = [
   itemPageCatalog,
   retiredBoardsCatalog,
   boardHeaderCatalog,
-  itemCreateCatalog,
   boardSettingsCatalog,
   boardShareCatalog,
   notificationBellCatalog,
