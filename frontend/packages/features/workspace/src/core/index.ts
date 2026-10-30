@@ -48,6 +48,7 @@ export {
   createInvitationsService,
   createWorkspaceInvitationsService,
   parseInvitations,
+  PENDING_INVITATION_EXISTS_CODE,
   type InvitationsEndpoints,
   type WorkspaceInvitationsEndpoints,
   type WorkspaceInvitationsService,

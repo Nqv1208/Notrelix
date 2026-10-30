@@ -63,6 +63,8 @@ export interface WorkspaceInvitation {
   expiresAt: string;
   isAccepted: boolean;
   isExpired?: boolean;
+  /** The invitation's version; changing its role quotes it. */
+  version?: number;
   createdAt: string;
   workspaceId?: string;
   workspaceSlug?: string;

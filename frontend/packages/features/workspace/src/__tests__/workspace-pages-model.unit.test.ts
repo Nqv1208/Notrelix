@@ -325,10 +325,10 @@ describe("Invitations", () => {
           `/workspaces/${id}/invitations/${inv}/resend`,
       },
     });
-    await service.changeRole("ws", "inv-9", "guest");
+    await service.changeRole("ws", "inv-9", "guest", 2);
     expect(api.patch).toHaveBeenCalledWith(
       "/workspaces/ws/invitations/inv-9/role",
-      { newRole: "Guest" },
+      { newRole: 0, expectedVersion: 2 },
     );
     await service.resend("ws", "inv-9");
     expect(api.post).toHaveBeenCalledWith(

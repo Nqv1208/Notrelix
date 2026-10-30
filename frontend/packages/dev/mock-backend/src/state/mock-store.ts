@@ -167,6 +167,8 @@ export interface MockInvitationRecord {
   createdAt: string;
   expiresAt: string;
   status: "pending" | "accepted" | "revoked";
+  /** Moves with every real change (role, resend, revoke); a role change quotes it. */
+  version: number;
 }
 
 export interface MockWorkspaceSettingsRecord {
@@ -3713,8 +3715,19 @@ export class MockStore {
       createdAt: this.clock.offsetSeconds(this.navigationTick),
       expiresAt: this.clock.offsetDays(days),
       status: "pending",
+      version: 1,
     });
     return id;
+  }
+
+  getInvitation(
+    workspaceId: string,
+    invitationId: string,
+  ): MockInvitationRecord | null {
+    const invitation = this.invitationsById.get(invitationId);
+    return invitation && invitation.workspaceId === workspaceId
+      ? invitation
+      : null;
   }
 
   /** Changes the role a waiting invitation offers; `null` when it is not found. */
@@ -3726,7 +3739,10 @@ export class MockStore {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
-    invitation.role = role;
+    if (invitation.role !== role) {
+      invitation.role = role;
+      invitation.version += 1;
+    }
     return true;
   }
 
@@ -3739,13 +3755,17 @@ export class MockStore {
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
     invitation.expiresAt = this.clock.offsetDays(7);
+    invitation.version += 1;
     return true;
   }
 
   revokeInvitation(workspaceId: string, invitationId: string): boolean {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return false;
-    if (invitation.status === "pending") invitation.status = "revoked";
+    if (invitation.status === "pending") {
+      invitation.status = "revoked";
+      invitation.version += 1;
+    }
     return true;
   }
 

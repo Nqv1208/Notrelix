@@ -24,7 +24,10 @@ import {
   type MembersTab,
   type WorkspaceMembersCopy,
 } from "@notrelix/features-workspace/web";
-import { describeWorkspaceFailure } from "@notrelix/features-workspace/core";
+import {
+  describeWorkspaceFailure,
+  PENDING_INVITATION_EXISTS_CODE,
+} from "@notrelix/features-workspace/core";
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { SeatInviteDialog } from "./billing/seat-invite";
@@ -163,6 +166,15 @@ export function MembersPage() {
           const failure = describeWorkspaceFailure(error);
           const fieldMessage =
             Object.values(failure.fieldErrors).flat()[0] ?? null;
+          // Someone else invited this address a moment ago: the same words as the check before sending.
+          if (failure.errorCode === PENDING_INVITATION_EXISTS_CODE) {
+            setInviteError(
+              formatCopy(copy.invitations.alreadyPending, {
+                email: input.email,
+              }),
+            );
+            return;
+          }
           if (failure.kind === "validation" || failure.kind === "rule") {
             // Shown next to the field; the typed address is kept.
             setInviteError(
@@ -222,7 +234,11 @@ export function MembersPage() {
     ) => {
       pendingInvitations.add(invitation.id);
       changeInvitationRole.mutate(
-        { invitationId: invitation.id, role },
+        {
+          invitationId: invitation.id,
+          role,
+          expectedVersion: invitation.version,
+        },
         {
           onSuccess: () =>
             toast.success(
