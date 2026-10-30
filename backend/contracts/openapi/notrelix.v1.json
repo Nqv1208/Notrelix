@@ -23819,6 +23819,10 @@
           "criteria": {
             "type": "string",
             "nullable": true
+          },
+          "columns": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

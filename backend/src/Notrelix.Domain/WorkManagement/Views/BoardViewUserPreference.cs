@@ -21,6 +21,11 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
 
     public const int MaxCriteriaLength = 8192;
 
+    /// <summary>The member's own table columns (hidden, order, widths) as opaque versioned JSON; null = the shared view's.</summary>
+    public string? Columns { get; private set; }
+
+    public const int MaxColumnsLength = 4096;
+
     private BoardViewUserPreference() : base() { }
 
     public static BoardViewUserPreference Create(
@@ -107,6 +112,27 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
             updatedAt));
     }
 
+    /// <summary>Replaces the opaque column state; null or blank clears it. Size and JSON shape are validated by the Application boundary (MaxColumnsLength).</summary>
+    public void ApplyColumns(string? columns, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        var normalized = string.IsNullOrWhiteSpace(columns) ? null : columns;
+        if (normalized == Columns) return;
+
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
+        Columns = normalized;
+        ApplyAuditUpdate(pending);
+
+        RaiseDomainEvent(new BoardViewUserPreferenceColumnsChangedDomainEvent(
+            AccountId,
+            WorkspaceId,
+            BoardId,
+            ViewId,
+            UserId,
+            Id,
+            updatedAt));
+    }
+
     public void ApplySort(
         IEnumerable<SortRule> rules,
         DateTimeOffset updatedAt)
@@ -141,6 +167,8 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
 
         if (groupRule is not null)
             BoardViewPreferenceRules.EnsureValidGroupRule(groupRule);
+
+        if (Equals(GroupRule, groupRule)) return;
 
         var pending = PrepareAuditUpdate(UserId, updatedAt);
         GroupRule = groupRule;

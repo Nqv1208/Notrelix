@@ -35,7 +35,8 @@ public class GetBoardPreferenceQueryHandler : IRequestHandler<GetBoardPreference
                 p.FilterRules.ToList(),
                 p.SortRules.ToList(),
                 p.GroupRule,
-                p.Criteria))
+                p.Criteria,
+                p.Columns))
             .FirstOrDefaultAsync(ct);
 
         if (dto is null)
@@ -45,6 +46,7 @@ public class GetBoardPreferenceQueryHandler : IRequestHandler<GetBoardPreference
                 request.ViewId,
                 [],
                 [],
+                null,
                 null,
                 null));
 
@@ -59,7 +61,8 @@ public record BoardPreferenceDto(
     List<FilterRule> FilterRules,
     List<SortRule> SortRules,
     GroupRule? GroupRule,
-    string? Criteria = null);
+    string? Criteria = null,
+    string? Columns = null);
 
 public class GetBoardPreferenceQueryValidator : AbstractValidator<GetBoardPreferenceQuery>
 {

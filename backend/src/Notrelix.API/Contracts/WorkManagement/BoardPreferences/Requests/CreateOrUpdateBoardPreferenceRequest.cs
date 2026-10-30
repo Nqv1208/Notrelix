@@ -6,4 +6,5 @@ public record CreateOrUpdateBoardPreferenceRequest(
     List<FilterRule>? Filters = null,
     List<SortRule>? Sorts = null,
     GroupRule? Group = null,
-    string? Criteria = null);
+    string? Criteria = null,
+    string? Columns = null);

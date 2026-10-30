@@ -19,6 +19,7 @@ public class BoardViewUserPreferenceConfiguration : IEntityTypeConfiguration<Boa
         builder.Property(x => x.GroupRule).HasColumnName("group_rule_id");
 
         builder.Property(x => x.Criteria).HasColumnName("criteria").HasMaxLength(8192);
+        builder.Property(x => x.Columns).HasColumnName("columns").HasMaxLength(4096);
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");

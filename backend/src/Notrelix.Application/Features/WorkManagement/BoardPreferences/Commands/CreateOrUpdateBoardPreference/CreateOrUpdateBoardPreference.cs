@@ -9,7 +9,8 @@ public record CreateOrUpdateBoardPreferenceCommand(
     List<FilterRule>? Filters = null,
     List<SortRule>? Sorts = null,
     GroupRule? Group = null,
-    string? Criteria = null)
+    string? Criteria = null,
+    string? Columns = null)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -53,6 +54,9 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
             if (request.Criteria is not null)
                 existing.ApplyCriteria(request.Criteria, now);
 
+            if (request.Columns is not null)
+                existing.ApplyColumns(request.Columns, now);
+
             return Result.Success();
         }
 
@@ -75,6 +79,9 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
         if (request.Criteria is not null)
             preference.ApplyCriteria(request.Criteria, now);
 
+        if (request.Columns is not null)
+            preference.ApplyColumns(request.Columns, now);
+
         _context.BoardViewUserPreferences.Add(preference);
 
         return Result.Success();
@@ -92,6 +99,11 @@ public class CreateOrUpdateBoardPreferenceCommandValidator : AbstractValidator<C
             .WithMessage("Criteria must be at most 8 KB.")
             .Must(BeAJsonObjectOrBlank).WithMessage("Criteria must be a JSON object.")
             .When(x => x.Criteria is not null);
+        RuleFor(x => x.Columns)
+            .Must(c => System.Text.Encoding.UTF8.GetByteCount(c!) <= BoardViewUserPreference.MaxColumnsLength)
+            .WithMessage("Columns must be at most 4 KB.")
+            .Must(BeAJsonObjectOrBlank).WithMessage("Columns must be a JSON object.")
+            .When(x => x.Columns is not null);
     }
 
     private static bool BeAJsonObjectOrBlank(string? criteria)

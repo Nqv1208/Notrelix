@@ -5962,6 +5962,7 @@ export interface components {
             sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
             group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
             criteria?: string | null;
+            columns?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest": {
             filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
