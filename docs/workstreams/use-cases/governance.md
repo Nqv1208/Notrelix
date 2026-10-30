@@ -825,7 +825,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; server-only use case
 - Rules: [Governance §65-§70](../../product/governance.md) GOV-020, GOV-021; WGREQ105-WGREQ110.
 - Acceptance: Given a revoke, When committed, Then an audit row with action `RevokeResourcePermission` exists.
-- Evidence: BE `Notrelix.Infrastructure/Auditing/AuditService.cs`, `GrantResourcePermissionCommandHandler` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e none · Design none · BE (this unit) `Application/Common/Auditing/IAuditService.cs` (`AuditChange`), `RevokeResourcePermissionCommand.cs`
+- Evidence: BE `Notrelix.Infrastructure/Auditing/AuditService.cs`, `GrantResourcePermissionCommandHandler` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e none · Design none · BE `Application/Common/Auditing/IAuditService.cs` (`AuditChange`)
 - State: INTEGRATING. Built: the audit row now carries the subject (type and id), the level before and after (a level word, no secret), the correlation and causation ids, and the client address and user agent read from the request; a grant at the level the subject already holds records nothing (a semantic no-op); a failed change leaves no row. Missing: tests and owner check (the audit service is shared with Workspaces and Work Management callers, which now also get the correlation id and the client address), the read path (UC-GOV-H02).
 
 ### UC-GOV-F04 Audit every high-impact governance and administration change
