@@ -102,11 +102,13 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// caller without access still gets the identical NotFound and never learns the Board is
     /// archived. An archived Board and its children stay readable; any write on them, and any
     /// write on an Item inside an archived Group, is refused with a stable code. The Board
-    /// lifecycle commands (<see cref="IBoardLifecycleRequest"/>) are the way back and pass.
+    /// lifecycle commands (<see cref="IBoardLifecycleRequest"/>) are the way back and pass, and so
+    /// do a person's own preferences and follows (<see cref="IPersonalBoardRequest"/>), which
+    /// change nothing on the Board.
     /// </summary>
     private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
     {
-        if (request is not IWriteRequest || request is IBoardLifecycleRequest)
+        if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)
         {
             return null;
         }

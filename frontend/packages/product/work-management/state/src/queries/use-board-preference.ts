@@ -8,7 +8,6 @@ import {
 } from "@notrelix/work-management-core";
 import type { BoardPreferenceState } from "../api/board-preference.api";
 import { useWorkManagementServices } from "../services";
-import { useFullBoard } from "./use-full-board";
 import { wmQueryKeys } from "./keys";
 
 /**
@@ -16,9 +15,7 @@ import { wmQueryKeys } from "./keys";
  * and swimlane as saved criteria, and the table's hidden columns, order and
  * widths. Any board viewer may read and write it: it is theirs alone and never
  * changes the shared view. `viewId` is absent while the board has no saved
- * view of the open layout: the state then lives on screen only. On an archived
- * board the server refuses every write, this personal one included, so the
- * state stays on screen only there as well; what was saved is still read.
+ * view of the open layout: the state then lives on screen only.
  */
 export function useBoardPreference(
   boardId: string,
@@ -28,8 +25,6 @@ export function useBoardPreference(
   const queryClient = useQueryClient();
   const { boardPreferences } = useWorkManagementServices();
   const enabled = Boolean(boardId && workspaceId && viewId);
-  const { board } = useFullBoard(boardId, workspaceId);
-  const writable = enabled && board?.isArchived !== true;
   const queryKey = wmQueryKeys.boardPreference(
     workspaceId,
     boardId,
@@ -68,9 +63,9 @@ export function useBoardPreference(
 
   const save = useCallback(
     (criteria: SavedFilterCriteria) => {
-      if (writable) mutate(criteria);
+      if (enabled) mutate(criteria);
     },
-    [writable, mutate],
+    [enabled, mutate],
   );
   const retry = useCallback(() => {
     if (lastSent.current) save(lastSent.current);
@@ -78,8 +73,7 @@ export function useBoardPreference(
 
   // The member's columns: written through their own mutation so a failed
   // column save never shows as a failed filter save.
-  const [localColumns, setLocalColumns] =
-    useState<TableColumnPreference | null>(null);
+  const [localColumns, setLocalColumns] = useState<TableColumnPreference>({});
   const lastColumns = useRef<TableColumnPreference | null>(null);
   const [columnsFailed, setColumnsFailed] = useState(false);
   const columnsMutation = useMutation({
@@ -102,10 +96,10 @@ export function useBoardPreference(
   const { mutate: mutateColumns } = columnsMutation;
   const saveColumns = useCallback(
     (columns: TableColumnPreference) => {
-      if (writable) mutateColumns(columns);
+      if (enabled) mutateColumns(columns);
       else setLocalColumns(columns);
     },
-    [writable, mutateColumns],
+    [enabled, mutateColumns],
   );
   const retryColumns = useCallback(() => {
     if (lastColumns.current) saveColumns(lastColumns.current);
@@ -115,15 +109,13 @@ export function useBoardPreference(
     /** What was saved; `undefined` until read (or when there is no saved view to hold it). */
     criteria: query.data?.criteria,
     isLoading: enabled && query.isLoading,
-    persistent: writable,
+    persistent: enabled,
     save,
     saving: mutation.isPending,
     saveFailed: failed,
     retry,
     /** The member's own table columns; empty when they have none. */
-    columns: writable
-      ? (query.data?.columns ?? {})
-      : (localColumns ?? (enabled ? (query.data?.columns ?? {}) : {})),
+    columns: enabled ? (query.data?.columns ?? {}) : localColumns,
     saveColumns,
     columnsSaving: columnsMutation.isPending,
     columnsFailed,

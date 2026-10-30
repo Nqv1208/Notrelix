@@ -25,8 +25,8 @@ const READ_ONLY: TaskDetailCapabilities = {
 
 /**
  * Read-only because the board, or the item's group, is archived (GOV-033): the
- * server refuses every write on it, so the personal ones (follow, remind) are
- * off too, which a plain viewer keeps.
+ * server refuses every write on it except a person's own preference and follow,
+ * so only remind, which a plain viewer keeps off too, is switched off here.
  */
 const FROZEN: TaskDetailCapabilities = { ...READ_ONLY, frozen: true };
 

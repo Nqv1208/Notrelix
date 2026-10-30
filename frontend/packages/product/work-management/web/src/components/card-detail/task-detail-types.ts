@@ -29,7 +29,8 @@ export interface TaskDetailCapabilities {
   readonly canComment?: boolean;
   /**
    * The board, or the item's group, is archived: the server refuses every write
-   * on it, a personal one (follow, remind) too, so those controls are off.
+   * on it except a person's own preference and follow, so remind is off while a
+   * plain viewer, who cannot remind either, keeps follow.
    */
   readonly frozen?: boolean;
 }
