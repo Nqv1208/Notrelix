@@ -2,16 +2,20 @@ import { useCallback, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   serializeSavedFilterCriteria,
+  serializeTableColumnPreference,
   type SavedFilterCriteria,
+  type TableColumnPreference,
 } from "@notrelix/work-management-core";
+import type { BoardPreferenceState } from "../api/board-preference.api";
 import { useWorkManagementServices } from "../services";
 import { wmQueryKeys } from "./keys";
 
 /**
- * The signed-in member's personal state of one view (filter, sort, grouping,
- * swimlane) as saved criteria. Any board viewer may read and write it: it is
- * theirs alone and never changes the shared view. `viewId` is absent while the
- * board has no saved view of the open layout: the state then lives on screen only.
+ * The signed-in member's personal state of one view: filter, sort, grouping
+ * and swimlane as saved criteria, and the table's hidden columns, order and
+ * widths. Any board viewer may read and write it: it is theirs alone and never
+ * changes the shared view. `viewId` is absent while the board has no saved
+ * view of the open layout: the state then lives on screen only.
  */
 export function useBoardPreference(
   boardId: string,
@@ -26,7 +30,7 @@ export function useBoardPreference(
     boardId,
     viewId ?? "none",
   );
-  const query = useQuery<SavedFilterCriteria>({
+  const query = useQuery<BoardPreferenceState>({
     queryKey,
     queryFn: () => boardPreferences.get(boardId, viewId!),
     enabled,
@@ -47,7 +51,10 @@ export function useBoardPreference(
     onMutate: (criteria) => {
       lastSent.current = criteria;
       setFailed(false);
-      queryClient.setQueryData(queryKey, criteria);
+      queryClient.setQueryData<BoardPreferenceState>(queryKey, (state) => ({
+        columns: state?.columns ?? {},
+        criteria,
+      }));
     },
     // No silent revert: the member keeps what they see and gets "Thử lại".
     onError: () => setFailed(true),
@@ -64,14 +71,54 @@ export function useBoardPreference(
     if (lastSent.current) save(lastSent.current);
   }, [save]);
 
+  // The member's columns: written through their own mutation so a failed
+  // column save never shows as a failed filter save.
+  const [localColumns, setLocalColumns] = useState<TableColumnPreference>({});
+  const lastColumns = useRef<TableColumnPreference | null>(null);
+  const [columnsFailed, setColumnsFailed] = useState(false);
+  const columnsMutation = useMutation({
+    mutationFn: (columns: TableColumnPreference) =>
+      boardPreferences.saveColumns(
+        boardId,
+        viewId!,
+        serializeTableColumnPreference(columns),
+      ),
+    onMutate: (columns) => {
+      lastColumns.current = columns;
+      setColumnsFailed(false);
+      queryClient.setQueryData<BoardPreferenceState>(queryKey, (state) => ({
+        criteria: state?.criteria ?? {},
+        columns,
+      }));
+    },
+    onError: () => setColumnsFailed(true),
+  });
+  const { mutate: mutateColumns } = columnsMutation;
+  const saveColumns = useCallback(
+    (columns: TableColumnPreference) => {
+      if (enabled) mutateColumns(columns);
+      else setLocalColumns(columns);
+    },
+    [enabled, mutateColumns],
+  );
+  const retryColumns = useCallback(() => {
+    if (lastColumns.current) saveColumns(lastColumns.current);
+  }, [saveColumns]);
+
   return {
     /** What was saved; `undefined` until read (or when there is no saved view to hold it). */
-    criteria: query.data,
+    criteria: query.data?.criteria,
     isLoading: enabled && query.isLoading,
     persistent: enabled,
     save,
     saving: mutation.isPending,
     saveFailed: failed,
     retry,
+    /** The member's own table columns; empty when they have none. */
+    columns: enabled ? (query.data?.columns ?? {}) : localColumns,
+    saveColumns,
+    columnsSaving: columnsMutation.isPending,
+    columnsFailed,
+    retryColumns,
   };
 }

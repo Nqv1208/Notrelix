@@ -6,7 +6,8 @@
  *
  * The rules mirror the producer: anyone who can view the board reads and
  * writes their own (viewers included); the criteria is an opaque JSON object
- * of at most 8 KB (UTF-8); blank clears it; omitting it leaves it unchanged.
+ * of at most 8 KB (UTF-8) and the columns an opaque JSON object of at most
+ * 4 KB; blank clears either; omitting one leaves it unchanged.
  */
 
 import { defineMockOperation } from "../../operations/types";
@@ -21,6 +22,7 @@ import { canReadBoard } from "./boards.handlers";
 type Params = { boardId: string; viewId: string };
 
 const MAX_CRITERIA_BYTES = 8192;
+const MAX_COLUMNS_BYTES = 4096;
 
 function isJsonObject(text: string): boolean {
   try {
@@ -52,11 +54,20 @@ export const boardPreferencesOperations = [
         sortRules: [],
         groupRule: null,
         criteria: store.boardPreferences.get(me, params.boardId, params.viewId),
+        columns: store.boardPreferences.getColumns(
+          me,
+          params.boardId,
+          params.viewId,
+        ),
       });
     },
   }),
 
-  defineMockOperation<Params, { criteria?: string | null }, void>({
+  defineMockOperation<
+    Params,
+    { criteria?: string | null; columns?: string | null },
+    void
+  >({
     id: "boards.preferences.update",
     contract: {
       kind: "openapi",
@@ -78,12 +89,26 @@ export const boardPreferencesOperations = [
             criteria: ["Criteria must be a JSON object."],
           });
       }
+      const columns = body?.columns;
+      if (typeof columns === "string" && columns.trim() !== "") {
+        if (new TextEncoder().encode(columns).length > MAX_COLUMNS_BYTES)
+          return validationError({
+            columns: ["Columns must be at most 4 KB."],
+          });
+        if (!isJsonObject(columns))
+          return validationError({
+            columns: ["Columns must be a JSON object."],
+          });
+      }
+      const me = store.getCurrentUser().id;
       if (typeof criteria === "string")
-        store.boardPreferences.set(
-          store.getCurrentUser().id,
+        store.boardPreferences.set(me, params.boardId, params.viewId, criteria);
+      if (typeof columns === "string")
+        store.boardPreferences.setColumns(
+          me,
           params.boardId,
           params.viewId,
-          criteria,
+          columns,
         );
       return noContent();
     },

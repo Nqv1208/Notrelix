@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -27,6 +28,23 @@ import {
   visibleTableColumns,
 } from "./table-columns";
 
+/** The member's own columns and what they can do with them. */
+export interface TableColumnState {
+  /** The member has hidden, ordered or resized columns of their own. */
+  personal: boolean;
+  /** An editor may make them the shared view's; a viewer sees why not. */
+  canSaveToView: boolean;
+  savingToView: boolean;
+  onSaveToView: () => void;
+  /** Drops the member's columns: the shared view's show again. */
+  onReset: () => void;
+  /** The last save of the member's columns failed; the screen keeps them. */
+  saveFailed: boolean;
+  onRetrySave: () => void;
+  /** The shared view refused the member's columns. */
+  saveToViewFailed: boolean;
+}
+
 export interface MainTableToolbarProps {
   copy: MainTableCopy;
   searchQuery: string;
@@ -43,6 +61,8 @@ export interface MainTableToolbarProps {
   /** The column order in effect (personal, else the shared view's); empty = the default order. */
   columnOrder?: readonly string[];
   onColumnOrderChange?: (order: string[]) => void;
+  /** The member's own columns; absent = the toolbar offers no personal state. */
+  columnState?: TableColumnState;
   hiddenColumnIds: readonly string[];
   onColumnVisibleChange: (columnId: string, visible: boolean) => void;
   density: TableDensity;
@@ -95,6 +115,7 @@ export function MainTableToolbar({
   customFields = [],
   columnOrder = [],
   onColumnOrderChange,
+  columnState,
   hiddenColumnIds,
   onColumnVisibleChange,
   density,
@@ -193,6 +214,71 @@ export function MainTableToolbar({
           <p className="m-0 px-2 pt-1.5 pb-1 text-crumb text-meta-foreground">
             {t.columns.reorderHint}
           </p>
+          {columnState ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                {t.columns.personal}
+              </DropdownMenuLabel>
+              {columnState.saveFailed ? (
+                <p
+                  role="alert"
+                  className="m-0 flex items-center gap-1.5 px-2 pb-1 text-crumb text-destructive"
+                >
+                  <span className="min-w-0 flex-1">{t.columns.saveFailed}</span>
+                  <button
+                    type="button"
+                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-state-selected-foreground underline focus-visible:outline-2 focus-visible:outline-ring"
+                    onClick={columnState.onRetrySave}
+                  >
+                    {t.columns.retry}
+                  </button>
+                </p>
+              ) : null}
+              <DropdownMenuItem
+                disabled={
+                  !columnState.canSaveToView ||
+                  !columnState.personal ||
+                  columnState.savingToView
+                }
+                onSelect={(event) => {
+                  event.preventDefault();
+                  columnState.onSaveToView();
+                }}
+              >
+                {columnState.savingToView
+                  ? t.columns.saving
+                  : t.columns.saveToView}
+              </DropdownMenuItem>
+              {!columnState.canSaveToView ? (
+                <p className="m-0 px-2 pb-1 text-crumb text-meta-foreground">
+                  {t.columns.saveToViewViewer}
+                </p>
+              ) : !columnState.personal ? (
+                <p className="m-0 px-2 pb-1 text-crumb text-meta-foreground">
+                  {t.columns.saveToViewIdle}
+                </p>
+              ) : null}
+              {columnState.saveToViewFailed ? (
+                <p
+                  role="alert"
+                  className="m-0 px-2 pb-1 text-crumb text-destructive"
+                >
+                  {t.columns.saveToViewFailed}
+                </p>
+              ) : null}
+              {columnState.personal ? (
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    columnState.onReset();
+                  }}
+                >
+                  {t.columns.reset}
+                </DropdownMenuItem>
+              ) : null}
+            </>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t.columns.density}

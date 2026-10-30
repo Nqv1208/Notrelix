@@ -1,11 +1,13 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
+  hasTableColumnPreference,
   tableCustomFields,
   tableSortFromConfig,
   type TableDensity,
   type TableSort,
 } from "@notrelix/work-management-core";
 import { useBoardKanban, type UseBoardKanbanOptions } from "./use-board-kanban";
+import { useBoardPreference } from "../queries/use-board-preference";
 import { useBoardView } from "./use-board-view";
 
 /**
@@ -16,6 +18,11 @@ import { useBoardView } from "./use-board-view";
  *
  * The saved view config is the view's own settings (`GET/PUT /boards/{id}/views`);
  * selection, collapsed groups and "hide finished" are local to the open table.
+ *
+ * Hidden columns, column order and widths are the member's own: they are kept
+ * on the board preference and replace the shared view's for that member alone.
+ * `saveColumnsToView` makes them the shared default (an editor's change) and
+ * `resetColumns` drops them.
  */
 export function useBoardTable(
   boardId: string,
@@ -24,10 +31,14 @@ export function useBoardTable(
 ) {
   const lanes = useBoardKanban(boardId, workspaceId, options);
   const {
+    viewId,
     viewConfig,
     updateViewConfig,
     isLoading: viewLoading,
   } = useBoardView(boardId, workspaceId);
+  const preference = useBoardPreference(boardId, workspaceId, viewId);
+  const personal = preference.columns;
+  const { saveColumns } = preference;
 
   // Custom fields shown as columns; the view config's hide, order, width and sort apply to them by field id.
   const customFields = useMemo(
@@ -50,21 +61,22 @@ export function useBoardTable(
     [updateViewConfig],
   );
 
-  const hiddenColumnIds = viewConfig.hiddenFields;
+  const hiddenColumnIds = personal.hidden ?? viewConfig.hiddenFields;
   const setColumnVisible = useCallback(
     (columnId: string, visible: boolean) => {
-      const without = viewConfig.hiddenFields.filter((id) => id !== columnId);
-      updateViewConfig({
-        hiddenFields: visible ? without : [...without, columnId],
+      const without = hiddenColumnIds.filter((id) => id !== columnId);
+      saveColumns({
+        ...personal,
+        hidden: visible ? without : [...without, columnId],
       });
     },
-    [updateViewConfig, viewConfig.hiddenFields],
+    [saveColumns, personal, hiddenColumnIds],
   );
 
-  const columnOrder = viewConfig.columnOrder;
+  const columnOrder = personal.order ?? viewConfig.columnOrder;
   const setColumnOrder = useCallback(
-    (next: string[]) => updateViewConfig({ columnOrder: next }),
-    [updateViewConfig],
+    (next: string[]) => saveColumns({ ...personal, order: next }),
+    [saveColumns, personal],
   );
 
   const density: TableDensity = viewConfig.density;
@@ -73,29 +85,61 @@ export function useBoardTable(
     [updateViewConfig],
   );
 
-  const columnWidths = viewConfig.columnWidths;
+  // The member's widths replace the shared ones as a whole, so a reset to the
+  // design width stays a reset even when the shared view names a width.
+  const columnWidths = personal.widths ?? viewConfig.columnWidths;
   const setColumnWidth = useCallback(
     (columnId: string, width: number) =>
-      updateViewConfig({
-        columnWidths: {
-          ...viewConfig.columnWidths,
-          [columnId]: Math.round(width),
-        },
+      saveColumns({
+        ...personal,
+        widths: { ...columnWidths, [columnId]: Math.round(width) },
       }),
-    [updateViewConfig, viewConfig.columnWidths],
+    [saveColumns, personal, columnWidths],
   );
   const resetColumnWidth = useCallback(
-    (columnId: string) => {
-      updateViewConfig({
-        columnWidths: Object.fromEntries(
-          Object.entries(viewConfig.columnWidths).filter(
-            ([id]) => id !== columnId,
-          ),
+    (columnId: string) =>
+      saveColumns({
+        ...personal,
+        widths: Object.fromEntries(
+          Object.entries(columnWidths).filter(([id]) => id !== columnId),
         ),
-      });
-    },
-    [updateViewConfig, viewConfig.columnWidths],
+      }),
+    [saveColumns, personal, columnWidths],
   );
+
+  const columnsPersonal = hasTableColumnPreference(personal);
+  const resetColumns = useCallback(() => saveColumns({}), [saveColumns]);
+  const [savingToView, setSavingToView] = useState(false);
+  const [saveToViewFailed, setSaveToViewFailed] = useState(false);
+  // The shared view takes the member's columns first; theirs are dropped only
+  // once that write went through, so a refused write loses nothing.
+  const saveColumnsToView = useCallback(() => {
+    setSavingToView(true);
+    setSaveToViewFailed(false);
+    updateViewConfig(
+      {
+        hiddenFields: [...hiddenColumnIds],
+        columnOrder: [...columnOrder],
+        columnWidths,
+      },
+      {
+        onSuccess: () => {
+          setSavingToView(false);
+          saveColumns({});
+        },
+        onError: () => {
+          setSavingToView(false);
+          setSaveToViewFailed(true);
+        },
+      },
+    );
+  }, [
+    updateViewConfig,
+    saveColumns,
+    hiddenColumnIds,
+    columnOrder,
+    columnWidths,
+  ]);
 
   return {
     ...lanes,
@@ -112,6 +156,14 @@ export function useBoardTable(
     columnWidths,
     setColumnWidth,
     resetColumnWidth,
+    /** The member has columns of their own (hidden, order or widths). */
+    columnsPersonal,
+    resetColumns,
+    saveColumnsToView,
+    savingColumnsToView: savingToView,
+    saveColumnsToViewFailed: saveToViewFailed,
+    columnsSaveFailed: preference.columnsFailed,
+    retryColumnsSave: preference.retryColumns,
   };
 }
 

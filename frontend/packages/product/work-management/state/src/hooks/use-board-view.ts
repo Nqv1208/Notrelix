@@ -206,6 +206,12 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
   };
 }
 
+/** What a caller of `updateViewConfig` hears once the write ended. */
+export interface ViewConfigWriteResult {
+  readonly onSuccess?: () => void;
+  readonly onError?: () => void;
+}
+
 /**
  * The saved view a board screen reads and writes: its layout and config. The
  * view comes from the selection (the tabs) given here or by
@@ -228,22 +234,25 @@ export function useBoardView(
   const creating = useRef<Promise<SavedBoardView> | null>(null);
 
   const writeConfig = useCallback(
-    (next: ViewConfig) => {
+    (next: ViewConfig, result?: ViewConfigWriteResult) => {
       if (active) {
-        saveConfig({ viewId: active.id, viewConfig: next });
+        saveConfig({ viewId: active.id, viewConfig: next }, result);
         return;
       }
       if (creating.current) {
         // The view this change belongs to is being made: save to it after.
         void creating.current
-          .then((made) => saveConfig({ viewId: made.id, viewConfig: next }))
-          .catch(() => undefined);
+          .then((made) =>
+            saveConfig({ viewId: made.id, viewConfig: next }, result),
+          )
+          .catch(() => result?.onError?.());
         return;
       }
       const made = create({ viewMode, viewConfig: next });
       creating.current = made;
       void made
-        .catch(() => undefined)
+        .then(() => result?.onSuccess?.())
+        .catch(() => result?.onError?.())
         .finally(() => {
           creating.current = null;
         });
@@ -252,7 +261,8 @@ export function useBoardView(
   );
 
   const updateViewConfig = useCallback(
-    (patch: Partial<ViewConfig>) => writeConfig({ ...viewConfig, ...patch }),
+    (patch: Partial<ViewConfig>, result?: ViewConfigWriteResult) =>
+      writeConfig({ ...viewConfig, ...patch }, result),
     [viewConfig, writeConfig],
   );
 
