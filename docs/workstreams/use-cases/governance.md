@@ -110,7 +110,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
 | UC-GOV-A01 | Admit a protected resource kind with its action vocabulary | A | Developer of an owning context | Yes | No | No | No | IMPLEMENTING | Kinds exist for Board, Page and workspace; Items, Automation and Integration rely on the workspace kind or the Board. A written ... |
-| UC-GOV-A02 | Resolve a resource's kind, workspace and owner from its id | A | Application pipeline (system) | Yes | No | No | Part | HARDENING | Locator has no per-kind cross-tenant negative test for every kind (Page, share-link). |
+| UC-GOV-A02 | Resolve a resource's kind, workspace and owner from its id | A | Application pipeline (system) | Yes | No | No | Part | HARDENING | tests and owner check |
 | UC-GOV-A03 | Classify every permission action in the role baseline | A | Developer | Yes | No | No | No | IMPLEMENTING | Stored-rule migration on rename is specified (§85) but has no test. |
 | UC-GOV-A04 | Field-level permission (deferred) | A | Workspace Owner, Admin | Part | No | No | No | DEFINED | Lead decision L11: deferred behind Work Management field work. Domain type exists and is unused. |
 | UC-GOV-B01 | Decide a workspace action from the built-in role baseline | B | Server (every protected request) | Yes | Part | Part | Part | HARDENING | tests and owner check |
@@ -214,7 +214,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §13](../../product/governance.md) GOV-004, GOV-025 step 1; WGREQ046, WGREQ047, WGREQ086, WGREQ096.
 - Acceptance: Given a Board id of workspace W2, When a W1 member requests it, Then the answer equals the answer for a random id.
 - Evidence: BE `Notrelix.Infrastructure/Services/ResourceLocator.cs` · Tests `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e `frontend/e2e/real/workspace-isolation.real.e2e.spec.ts` (workspace switch only) · Design none
-- State: HARDENING - Locator has no per-kind cross-tenant negative test for every kind (Page, share-link).
+- State: HARDENING. Nothing left to build: `ResourceLocator` covers every canonical kind (Board and its children, Page, Block, Comment, Attachment, permission, share link, automation, calendar integration), runs in the actor's user scope so a row the actor holds no grant on is not found, and answers null for an unknown kind. Missing: tests and owner check (a cross-tenant negative test per kind, Page and share link first).
 
 ### UC-GOV-A03 Classify every permission action in the role baseline
 - Capability: A WG-GOV resource/action model (team spec, Governance list)
