@@ -50,9 +50,12 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoar
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.AddFormQuestion;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.RemoveFormQuestion;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormQuestion;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormDetails;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSavedFilter;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.RenameSavedFilter;
@@ -232,6 +235,9 @@ public sealed class ExpectedVersionTargetMap
         [typeof(PublishFormCommand)] = new(FormKind, typeof(Form)),
         [typeof(CloseFormCommand)] = new(FormKind, typeof(Form)),
         [typeof(DeleteFormCommand)] = new(FormKind, typeof(Form)),
+        [typeof(AddFormQuestionCommand)] = new(FormKind, typeof(Form)),
+        [typeof(UpdateFormQuestionCommand)] = new(FormKind, typeof(Form)),
+        [typeof(RemoveFormQuestionCommand)] = new(FormKind, typeof(Form)),
 
         // Work Management — saved filters (board views)
         [typeof(RenameSavedFilterCommand)] = new(SavedFilterKind, typeof(SavedFilter)),

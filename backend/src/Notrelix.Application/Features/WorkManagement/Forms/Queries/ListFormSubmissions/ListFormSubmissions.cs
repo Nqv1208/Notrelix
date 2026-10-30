@@ -6,7 +6,8 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Queries.ListFormSub
 
 public record ListFormSubmissionsQuery(Guid FormId) : IQuery<Result<List<FormSubmissionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ViewBoard;
+    // Responses can hold respondent data: they need edit rights on the board, not read rights.
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
 }
 

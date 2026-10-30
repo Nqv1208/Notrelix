@@ -30,7 +30,8 @@ public static class UpdateFormQuestionEndpoint
             body.IsRequired,
             body.ConfigJson,
             body.Position,
-            body.BoardFieldId), cancellationToken);
+            body.BoardFieldId,
+            body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

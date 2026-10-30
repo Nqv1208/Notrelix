@@ -4,11 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RemoveFormQuestion;
 
 [IdempotencyOperation("work-management.forms.remove-form-question.v1")]
-public record RemoveFormQuestionCommand(Guid FormId, Guid QuestionId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record RemoveFormQuestionCommand(Guid FormId, Guid QuestionId, long? ExpectedVersion = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class RemoveFormQuestionCommandHandler : IRequestHandler<RemoveFormQuestionCommand, Result>

@@ -13,11 +13,14 @@ public record AddFormQuestionCommand(
     bool IsRequired,
     string? ConfigJson,
     string? Position,
-    Guid? BoardFieldId = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    Guid? BoardFieldId = null,
+    long? ExpectedVersion = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionCommand, Result>

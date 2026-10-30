@@ -6103,6 +6103,8 @@ export interface components {
             questionKey?: string | null;
             questionType?: components["schemas"]["Notrelix.Domain.WorkManagement.Forms.FormQuestionType"];
             label?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
@@ -6127,10 +6129,14 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
             title?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             description?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormQuestionRequest": {
             label?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
@@ -17443,7 +17449,9 @@ export interface operations {
     };
     "WorkManagement.Forms.SoftDelete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17529,7 +17537,9 @@ export interface operations {
     };
     "WorkManagement.Forms.Publish": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17570,7 +17580,9 @@ export interface operations {
     };
     "WorkManagement.Forms.Close": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17697,7 +17709,9 @@ export interface operations {
     };
     "WorkManagement.Forms.RemoveQuestion": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
