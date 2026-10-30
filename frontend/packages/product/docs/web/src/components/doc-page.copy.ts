@@ -8,6 +8,7 @@
  */
 export const vi = {
   crumbLabel: "Đường dẫn",
+  crumbUnavailable: "Trang không khả dụng",
   loading: "Đang tải tài liệu",
   notFound: "Không tìm thấy tài liệu hoặc bạn không có quyền xem.",
   untitled: "Tài liệu chưa đặt tên",
@@ -757,6 +758,7 @@ export type DocPageCopy = typeof vi;
 
 export const en: DocPageCopy = {
   crumbLabel: "Breadcrumb",
+  crumbUnavailable: "Page unavailable",
   loading: "Loading document",
   notFound: "Document not found, or you do not have permission to view it.",
   untitled: "Untitled document",

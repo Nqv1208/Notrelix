@@ -800,7 +800,9 @@ export function createDocPageScreen({
     const title = page.title;
     const crumbs = [
       ...(host.space ? [host.space.name] : []),
-      ...(breadcrumbQuery.data?.map((item) => item.title) ?? [title]),
+      ...(breadcrumbQuery.data?.map((item) =>
+        item.unavailable ? copy.crumbUnavailable : item.title,
+      ) ?? [title]),
     ];
     const latest = versionList[0];
     const latestActivity = (historyQuery.data ?? [])

@@ -70,6 +70,8 @@ export interface BreadcrumbItem {
   id: ID;
   title: string;
   icon: string | null;
+  /** The viewer may not see this ancestor: no id, title or icon; a run of them is one crumb. */
+  unavailable?: boolean;
 }
 
 export interface PageDetail extends Page {

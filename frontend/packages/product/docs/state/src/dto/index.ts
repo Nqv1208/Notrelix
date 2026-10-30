@@ -34,9 +34,11 @@ export type TrashPageDtoApi = {
 };
 
 export type BreadcrumbDtoApi = {
-  id: string;
-  title: string;
+  /** Absent on a crumb the viewer may not see (`unavailable`). */
+  id?: string | null;
+  title?: string | null;
   icon?: string | null;
+  unavailable?: boolean;
 };
 
 export type CommentDtoApi = {
