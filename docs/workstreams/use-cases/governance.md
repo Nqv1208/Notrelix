@@ -139,18 +139,18 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-D13 | Explicit permission rules with priority and time window | D | Workspace Owner (future API) | Part | No | No | No | DEFINED | Engine evaluates rules; no command, endpoint or UI creates them. Lead decision L15: not built until a product need exists. |
 | UC-GOV-D14 | Apply a permission template | D | Workspace Owner (future) | Part | No | No | No | DEFINED | Domain only; no handler or endpoint. Not part of the owner's next scope. |
 | UC-GOV-D15 | Share a Page | D | Page manager | Yes | Part | No | No | IMPLEMENTING | Frontend page share uses a Documents extras route, not the Governance contract; no sharing summary for Pages; no real e2e. |
-| UC-GOV-E01 | Decide a Board or Page action in the fixed order | E | Server | Yes | Part | No | Part | HARDENING | Real e2e covers one Guest path; Page decisions have a thinner matrix than Board decisions. |
-| UC-GOV-E02 | Space-derived access | E | Server | Yes | Yes | Yes | No | INTEGRATING | No real e2e of Space-derived access. |
+| UC-GOV-E01 | Decide a Board or Page action in the fixed order | E | Server | Yes | Part | No | Part | HARDENING | tests and owner check |
+| UC-GOV-E02 | Space-derived access | E | Server | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
 | UC-GOV-E03 | A Team is an evaluated subject | E | Server | Yes | No | No | No | IMPLEMENTING | No frontend or real e2e proof. |
-| UC-GOV-E04 | Board child resources are authorized through their Board | E | Server | Yes | Part | No | No | HARDENING | Board relations are unreachable; no real e2e of a child denial. |
-| UC-GOV-E05 | Collections return what a single read would allow | E | Server | Yes | Yes | No | Part | HARDENING | Parity test for Page search and My Work not named; no load test on scale (WGREQ166-WGREQ170). |
-| UC-GOV-E06 | Return the same NotFound to people without access | E | Server | Yes | Part | No | Part | HARDENING | The real spec accepts 403 or 404; README §7 requires identical NotFound. |
+| UC-GOV-E04 | Board child resources are authorized through their Board | E | Server | Yes | Part | No | No | HARDENING | tests and owner check |
+| UC-GOV-E05 | Collections return what a single read would allow | E | Server | Yes | Yes | No | Part | HARDENING | tests and owner check |
+| UC-GOV-E06 | Return the same NotFound to people without access | E | Server | Yes | Part | No | Part | HARDENING | tests and owner check |
 | UC-GOV-E07 | Fail closed when facts are missing, stale or unavailable | E | Server | Yes | No | No | No | IMPLEMENTING | No fault-injection integration test of a provider outage. |
 | UC-GOV-E08 | Permission-sensitive cache carries scope and version | E | Server | Part | No | No | No | IMPLEMENTING | A projection table exists; invalidation-on-change tests are not found. Treat as unproven. |
 | UC-GOV-E09 | Realtime access ends when authority ends | E | Connected user | Part | No | No | No | IMPLEMENTING | Authorization at subscribe time is proven; revocation while connected is not found in source or tests. |
 | UC-GOV-E10 | Export, search and analytics keep source authorization | E | Any reader | Part | No | No | No | DEFINED | Export audit not built; owned per context, Governance supplies the rule. |
 | UC-GOV-E11 | Entitlement and permission stay separate | E | Server | Yes | No | No | No | IMPLEMENTING | Billing is not built; the port always allows. |
-| UC-GOV-E12 | Show permission state in the UI as a projection of the server | E | Any user | Yes | Yes | Part | No | INTEGRATING | No real e2e; no axe proof for the forbidden state. |
+| UC-GOV-E12 | Show permission state in the UI as a projection of the server | E | Any user | Yes | Yes | Part | No | INTEGRATING | tests and owner check |
 | UC-GOV-F01 | Declare the resource and action on every request | F | Developer | Yes | No | No | No | HARDENING | tests and owner check |
 | UC-GOV-F02 | Authorize background and system actions explicitly | F | System, Automation, Integration principal | Yes | No | No | No | IMPLEMENTING | Automation execution identity decided per context; no cross-context end-to-end proof. |
 | UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | tests and owner check |
@@ -628,7 +628,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23.1, §99](../../product/governance.md) GOV-024, GOV-025, GOV-027; WGREQ080-WGREQ086.
 - Acceptance: Given a Private Board and a Space Admin who is not a member, When they read it, Then NotFound. Given the Owner, Then allowed.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · Tests `EffectiveBoardAccessTests`, `ResourceLevelEnforcementMatrixTests`, `BoardManagementLevelTests`, `GovernanceResourcePermissionFlowTests`, `PostgresAccessFactsProviderTests` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` (partial) · Design none
-- State: HARDENING - Real e2e covers one Guest path; Page decisions have a thinner matrix than Board decisions.
+- State: HARDENING. Nothing left to build: the engine decides in the fixed order and a hidden resource is NotFound. Missing: tests and owner check (a real e2e beyond one Guest path; Page decisions have a thinner matrix than Board decisions). The archived-board rule is a pending owner decision and was not touched.
 
 ### UC-GOV-E02 Space-derived access
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -642,7 +642,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23, §23.1, §23.3-§23.4](../../product/governance.md) GOV-007, GOV-025, GOV-027, GOV-028; Workspace Spaces: see [Workspaces use cases](workspaces.md).
 - Acceptance: Given Space S with a Viewer, When they edit a Board in S, Then denied; When they view it, Then allowed.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · FE Space pages `frontend/e2e/mock/space-members.mock.e2e.spec.ts` · Tests `EffectiveBoardAccessTests`, `BoardChildAccessMatrixTests` · Real e2e none · Design `Final-Space`
-- State: INTEGRATING - No real e2e of Space-derived access.
+- State: INTEGRATING. Built end to end (the engine maps Space roles to levels, an unknown Space closure denies, a Private resource ignores Space roles; the Space pages exist); nothing left to build. Missing: tests and owner check (real e2e of Space-derived access).
 
 ### UC-GOV-E03 A Team is an evaluated subject
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -670,7 +670,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23.6](../../product/governance.md) GOV-033.
 - Acceptance: Given a Viewer, When they edit an item, Then denied. Given a Commenter, When they comment, Then allowed.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · Tests `BoardChildAccessMatrixTests`, `BoardChildHardeningTests`, `BoardTemplateManagementLevelTests` · Real e2e none · Design none
-- State: HARDENING - Board relations are unreachable; no real e2e of a child denial.
+- State: HARDENING. Nothing left to build: a child is authorized through its Board and a personal saved filter is NotFound to others. Missing: tests and owner check (a real e2e of a child denial; Board relations are not reachable yet).
 
 ### UC-GOV-E05 Collections return what a single read would allow
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -684,7 +684,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23.5, §62-§63](../../product/governance.md) GOV-019, GOV-029; WGREQ170.
 - Acceptance: Given 100 boards and 10 allowed, When listed, Then 10 and the query plan filters in SQL.
 - Evidence: BE Board, Page, Space list queries · Tests parity tests in `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` · Design none
-- State: HARDENING - Parity test for Page search and My Work not named; no load test on scale (WGREQ166-WGREQ170).
+- State: HARDENING. Nothing left to build: Board, Page and Space lists filter inside the query. Missing: tests and owner check (parity tests for Page search and My Work, a load test at scale).
 
 ### UC-GOV-E06 Return the same NotFound to people without access
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -698,7 +698,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §6](../../product/governance.md) GOV-025; WGREQ086, WGREQ155.
 - Acceptance: Given a Private Board, When a non-member reads it, Then the body equals that of a random id.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` (accepts 403 or 404) · Design none
-- State: HARDENING - The real spec accepts 403 or 404; README §7 requires identical NotFound.
+- State: HARDENING. Nothing left to build: the pipeline maps a denied or hidden resource to `NotFoundException(kind, id)`, the same exception and body as a missing resource of that kind and id; 403 only where the resource is visible and the action is not allowed. Missing: tests and owner check (the real spec must assert NotFound, not 403 or 404).
 
 ### UC-GOV-E07 Fail closed when facts are missing, stale or unavailable
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -782,7 +782,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §91-§95](../../product/governance.md) GOV-023; WGREQ155.
 - Acceptance: Given a Viewer, When the board opens, Then edit controls are disabled with a reason.
 - Evidence: FE `frontend/packages/foundation/platform/src/permissions/ability.ts`, `core.ts`, `frontend/apps/web/src/router/guards/require-permission.ts`, `frontend/packages/ui/web/src/components/feedback/forbidden-state.tsx` · Tests `frontend/packages/foundation/platform/src/__tests__/platform-boundaries.unit.test.ts` · Real e2e none · Design `Final-States`
-- State: INTEGRATING - No real e2e; no axe proof for the forbidden state.
+- State: INTEGRATING. Built end to end (loading state, disabled or absent controls, the forbidden state, a server 403 or NotFound wins over a local flag); nothing left to build. Missing: tests and owner check (real e2e, an axe check of the forbidden state).
 
 ## Capability F: Protected operation integration
 
