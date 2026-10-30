@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clock, Plus } from "lucide-react";
+import { Clock, Plus, SlidersHorizontal } from "lucide-react";
 import { FaceFieldsButton } from "../capabilities/face-fields-button";
 import { usePinnedFieldIds } from "../capabilities/use-pinned-fields";
 import { customItemFields } from "../../card-detail/item-field-editors";
@@ -13,6 +13,7 @@ import {
   PopSection,
   SECTION_ICONS,
   SectionHead,
+  SmallBtn,
 } from "../popup-ui";
 import { PopoverTrigger } from "@notrelix/ui-web";
 import { AddFieldPanel } from "./add-field-panel";
@@ -153,6 +154,12 @@ export function FieldsSection() {
             workspaceId={board.workspaceId}
             fields={board.fieldDefinitions}
             canEdit={canEdit}
+            trigger={
+              <SmallBtn>
+                <SlidersHorizontal aria-hidden="true" className="size-[13px]" />
+                {copy.sections.fields.showOnCard}
+              </SmallBtn>
+            }
           />
         ) : null}
       </SectionHead>

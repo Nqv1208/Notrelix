@@ -55,7 +55,7 @@ export function PopupQuickRow() {
   if (!canEdit) return null;
   const close = () => openPicker(null);
   return (
-    <div className="box-border flex flex-wrap gap-2 pt-2 pr-4 pl-4 md:h-11 md:flex-nowrap md:pr-6 md:pl-[60px]">
+    <div className="box-border flex flex-wrap gap-2 pt-2 pr-4 pl-4 md:h-11 md:pt-1 md:flex-nowrap md:pr-6 md:pl-[60px]">
       <AddMenu />
       <PickerButton
         id="labels"

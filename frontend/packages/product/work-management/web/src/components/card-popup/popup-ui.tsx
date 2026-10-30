@@ -230,7 +230,7 @@ export function SectionHead({
 }) {
   return (
     <div className="flex min-h-8 items-center gap-2">
-      <h3 className="m-0 flex-1 text-[15px] font-[650] tracking-[-0.005em]">
+      <h3 className="m-0 flex-1 text-[15px] leading-[1.45] font-[650] tracking-[-0.005em]">
         {title}
       </h3>
       {children}
@@ -280,8 +280,8 @@ export function EmptySection({
       >
         {icon}
       </span>
-      <b className="text-[14px] font-[650]">{label}</b>
-      <span className="text-[13.5px] text-meta-foreground">· {none}</span>
+      <b className="text-[14px] leading-[1.45] font-[650]">{label}</b>
+      <span className="text-[13.5px] leading-[1.45] text-meta-foreground">· {none}</span>
       <span className="flex-1" />
       {children}
     </section>
