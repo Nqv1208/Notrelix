@@ -33,9 +33,12 @@ export function AddPropertyPopover({
   onCreated,
   manageHref,
   triggerClassName,
+  triggerLabel,
 }: {
   /** Classes of the "+" trigger the popover renders itself. */
   triggerClassName: string;
+  /** Words beside the "+"; absent: the icon alone. */
+  triggerLabel?: string;
   t: ItemSheetCopy["properties"];
   /** Custom properties with no value on this item. */
   emptyFields: readonly FieldDefinition[];
@@ -107,6 +110,7 @@ export function AddPropertyPopover({
           className={triggerClassName}
         >
           <Plus aria-hidden="true" className="size-4" />
+          {triggerLabel}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-1">

@@ -10,6 +10,7 @@ import {
   ChevronsRight,
   Hash,
   Loader2,
+  Minus,
   Sigma,
   Type,
   X,
@@ -17,8 +18,13 @@ import {
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
 import {
   fieldTypeRegistry,
+  priorityFromOptionName,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
+import {
+  PRIORITY_TONE_CLASS,
+  PriorityGlyph,
+} from "../../shared/priority-glyph";
 import { describeComputed } from "../../card-detail/item-field-extra-editors";
 import {
   isFieldValueEmpty,
@@ -48,10 +54,11 @@ const CLOSE_ICONS = {
   close: <X aria-hidden="true" className="size-[13px]" />,
 };
 
+/** `.frv`: the value of a field row, drawn as plain text until it is hovered or edited, 8 px wider than its column so the text lines up with the label's column. */
 const CTL =
-  "box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-left text-[13.5px] text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "box-border flex h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] border border-transparent bg-transparent px-2 text-left text-[14px] text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed focus-within:border-primary focus-within:bg-popover focus-within:ring-[3px] focus-within:ring-brand-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 const CTL_RO =
-  "box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-dashed border-line-strong bg-background px-3 text-[13.5px] text-muted-foreground";
+  "box-border flex h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] border border-transparent bg-transparent px-2 text-[14px] text-muted-foreground";
 
 /** `dd/mm/yyyy` of a `yyyy-mm-dd` value; "" when it is not a day. */
 export function dayText(value: unknown): string {
@@ -263,6 +270,9 @@ const optionDot = (color?: string) => (
   />
 );
 
+const PRIORITY_OPT =
+  "flex h-9 w-full items-center gap-2 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+
 const OPT =
   "flex min-h-9 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong";
 
@@ -331,7 +341,8 @@ export function FieldControl({
   field: FieldDefinition;
   variant: "chip" | "ctl";
 }) {
-  const { card, copy } = useCardPopup();
+  const { card, copy, fields } = useCardPopup();
+  const priorityId = fields.priority?.id;
   const t = copy.sections.chips;
   const f = copy.sections.fields;
   const sheetCopy = useItemSheetCopy();
@@ -505,6 +516,84 @@ export function FieldControl({
             onClose={() => setOpen(false)}
           />
         ) : null}
+      </PanelPopover>
+    );
+  }
+
+  if (field.fieldType === "select" && field.id === priorityId) {
+    const glyph = (name: string | undefined) => {
+      const level = name ? priorityFromOptionName(name) : undefined;
+      return level ? (
+        <PriorityGlyph
+          level={level}
+          className={cn("size-4", PRIORITY_TONE_CLASS[level])}
+        />
+      ) : (
+        <Minus
+          aria-hidden="true"
+          className="size-4 text-meta-foreground"
+        />
+      );
+    };
+    const current = field.options.find((o) => o.id === raw);
+    return (
+      <PanelPopover
+        open={open}
+        onOpenChange={setOpen}
+        width={220}
+        className="p-1.5"
+        trigger={trigger(
+          <>
+            {glyph(current?.label)}
+            {wrapChip(current?.label ?? t.noPriority)}
+          </>,
+          { haspopup: "listbox" },
+        )}
+      >
+        <div role="listbox" aria-label={field.name}>
+          {field.options.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="option"
+              aria-selected={o.id === raw}
+              onClick={() => {
+                write(o.id);
+                setOpen(false);
+              }}
+              className={cn(PRIORITY_OPT, o.id === raw && "font-semibold")}
+            >
+              {glyph(o.label)}
+              {o.label}
+              {o.id === raw ? (
+                <Check
+                  aria-hidden="true"
+                  className="ml-auto size-[13px] text-primary"
+                />
+              ) : null}
+            </button>
+          ))}
+          <div className="-mx-1.5 my-1 h-px bg-line" />
+          <button
+            type="button"
+            role="option"
+            aria-selected={!current}
+            className={cn(PRIORITY_OPT, !current && "font-semibold")}
+            onClick={() => {
+              write(null);
+              setOpen(false);
+            }}
+          >
+            {glyph(undefined)}
+            {t.noPriority}
+            {!current ? (
+              <Check
+                aria-hidden="true"
+                className="ml-auto size-[13px] text-primary"
+              />
+            ) : null}
+          </button>
+        </div>
       </PanelPopover>
     );
   }
@@ -711,7 +800,7 @@ function TypedControl({
               setInvalid(undefined);
             }
           }}
-          className="min-w-0 flex-1 border-0 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-meta-foreground"
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] text-foreground outline-none placeholder:text-meta-foreground"
         />
         {saving ? (
           <Loader2

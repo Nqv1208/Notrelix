@@ -12,7 +12,8 @@ import { fillPopupCopy } from "./card-popup.copy";
 import { useCanEdit, useCardPopup } from "./card-popup-context";
 import { AvatarStack, ChipBtn, ChipReadOnly, FieldGroup } from "./popup-ui";
 import { FieldControl } from "./sections/field-editors";
-import { dateTimeText, useFieldList } from "./sections/fields-section";
+import { faceEligibleFields } from "./capabilities/face-fields";
+import { usePinnedFieldIds } from "./capabilities/use-pinned-fields";
 
 const ADD_CIRCLE =
   "grid size-8 shrink-0 place-items-center rounded-full border border-dashed border-line-strong bg-transparent p-0 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -82,27 +83,18 @@ function DatesChip() {
 
 /** The labelled chips under the quick row, editable in place. */
 export function ChipsRow() {
-  const { card, copy, mode, openPicker, slots, timeZone, fields } =
-    useCardPopup();
+  const { board, card, copy, openPicker, slots, fields } = useCardPopup();
   const t = copy.shell;
   const canEdit = useCanEdit();
-  const list = useFieldList().filter(
-    (f) =>
-      f.id === fields.priority?.id ||
-      f.fieldType === "checkbox" ||
-      f.fieldType === "date",
-  );
-  const hasAny =
-    card.members.length > 0 ||
-    card.labels.length > 0 ||
-    card.dueAt ||
-    card.dueDate ||
-    card.startDate;
-  void hasAny;
+  const pinnedIds = usePinnedFieldIds();
+  const eligible = faceEligibleFields(board.fieldDefinitions);
+  const pinned = pinnedIds
+    .map((id) => eligible.find((field) => field.id === id))
+    .filter((field): field is NonNullable<typeof field> => field !== undefined);
 
   return (
     <>
-      <div className="flex flex-wrap items-start gap-3">
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         <FieldGroup label={t.assignees}>
           <div className="flex min-h-9 items-center">
             {canEdit || card.members.length > 0 ? (
@@ -158,28 +150,25 @@ export function ChipsRow() {
             <DatesChip />
           </div>
         </FieldGroup>
-      </div>
-      <div className="flex flex-wrap items-start gap-3">
-        {list.map((field) => (
-          <FieldGroup key={field.id} label={field.name}>
+        {fields.priority ? (
+          <FieldGroup label={fields.priority.name}>
             <div className="flex items-center gap-2">
-              <FieldControl field={field} variant="chip" />
+              <FieldControl field={fields.priority} variant="chip" />
             </div>
           </FieldGroup>
-        ))}
-        <FieldGroup label={t.created}>
-          <div className="flex items-center gap-2">
-            <ChipReadOnly title={t.createdHint}>
-              <Clock aria-hidden="true" className="size-[13px]" />
-              {mode === "create"
-                ? copy.sections.fields.createdValue
-                : dateTimeText(card.createdAt, timeZone)}
-            </ChipReadOnly>
-          </div>
-        </FieldGroup>
+        ) : null}
       </div>
-      {slots.chips ? (
-        <div className="flex flex-wrap items-start gap-3">{slots.chips}</div>
+      {pinned.length > 0 || slots.chips ? (
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+          {pinned.map((field) => (
+            <FieldGroup key={field.id} label={field.name}>
+              <div className="flex items-center gap-2">
+                <FieldControl field={field} variant="chip" />
+              </div>
+            </FieldGroup>
+          ))}
+          {slots.chips}
+        </div>
       ) : null}
     </>
   );
