@@ -3747,14 +3747,17 @@ export class MockStore {
   }
 
   /**
-   * A resend re-issues the link: the invitation keeps its id and waits seven
-   * more days. Only an invitation that waits or has run out can be sent again.
+   * A resend re-issues the link: the invitation keeps its id and waits as long
+   * as a new one does (the workspace's invitation expiry setting). Only an
+   * invitation that waits or has run out can be sent again.
    */
   resendInvitation(workspaceId: string, invitationId: string): boolean | null {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
-    invitation.expiresAt = this.clock.offsetDays(7);
+    invitation.expiresAt = this.clock.offsetDays(
+      this.getWorkspaceSettings(workspaceId).invitationExpiryDays,
+    );
     invitation.version += 1;
     return true;
   }
