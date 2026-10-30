@@ -68,6 +68,8 @@ export const en = {
       "That code is not right, or it was already used. Wait for the next code and try again.",
     wrongPassword: "That password is not right.",
     wait: "Too many tries. Try again in {{seconds}} seconds.",
+    expired:
+      "That verification expired, so we started a new one. Enter a fresh code.",
     codesTitle: "Save your backup codes",
     codesText:
       "Each code works once when you don't have your phone. They are shown only now.",
@@ -218,6 +220,7 @@ export const vi: AccountSecurityCopy = {
       "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     wrongPassword: "Mật khẩu chưa đúng.",
     wait: "Thử quá nhiều lần. Thử lại sau {{seconds}} giây.",
+    expired: "Lần xác minh đó đã hết hạn nên đã mở lần mới. Hãy nhập mã mới.",
     codesTitle: "Lưu mã dự phòng của bạn",
     codesText:
       "Mỗi mã dùng được một lần khi bạn không có điện thoại. Mã chỉ hiện lúc này.",

@@ -59,7 +59,7 @@ export function AccountSecurityPage() {
   const [notice, showNotice] = useToast();
   const [step, setStep] = useState<Step | null>(null);
   const [stepError, setStepError] = useState<{
-    error: "wrong" | "wait" | "failed";
+    error: "wrong" | "wait" | "failed" | "expired";
     wait?: number;
   } | null>(null);
   const [passwordError, setPasswordError] = useState<{
@@ -293,12 +293,20 @@ export function AccountSecurityPage() {
           await invalidate();
         }
       } catch (error) {
-        fail(error, true);
+        // The proof or the challenge is gone (out of tries, too old): open a fresh one for the same step.
+        if (
+          (error as { code?: string }).code ===
+          "identity.security.step-up-invalid"
+        ) {
+          await beginStepUp(current.purpose);
+          setStepError({ error: "expired" });
+        } else fail(error, true);
       } finally {
         setBusy(false);
       }
     },
     [
+      beginStepUp,
       copy.others.doneCount_one,
       copy.others.doneCount_other,
       copy.others.nobody,

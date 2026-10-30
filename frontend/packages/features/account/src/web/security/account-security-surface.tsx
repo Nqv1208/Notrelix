@@ -67,7 +67,7 @@ export type AccountSecurityFlow =
       readonly kind: "enroll";
       readonly secret: string;
       readonly otpAuthUri: string;
-      readonly error: "wrong" | "wait" | "failed" | null;
+      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
       readonly wait?: number;
     }
   | {
@@ -75,7 +75,8 @@ export type AccountSecurityFlow =
       /** What the proof is for: two-factor off, fresh backup codes, or ending every other device. */
       readonly purpose: "disable" | "renew" | "others";
       readonly factor: "code" | "password";
-      readonly error: "wrong" | "wait" | "failed" | null;
+      /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. */
+      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
       readonly wait?: number;
     }
   | { readonly kind: "codes"; readonly codes: readonly string[] }
@@ -308,11 +309,13 @@ function FlowPanel({
       ? usesPassword
         ? t.wrongPassword
         : t.wrongCode
-      : flow.error === "wait"
-        ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
-        : flow.error === "failed"
-          ? copy.actionError
-          : null;
+      : flow.error === "expired"
+        ? t.expired
+        : flow.error === "wait"
+          ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
+          : flow.error === "failed"
+            ? copy.actionError
+            : null;
   const title =
     flow.kind === "enroll"
       ? t.enrollTitle
