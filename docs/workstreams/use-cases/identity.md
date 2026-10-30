@@ -148,9 +148,9 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
 | UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
-| UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
-| UC-IDN-J02 | Regenerate recovery codes | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no rate-limit attribute |
-| UC-IDN-J03 | Turn the second factor off | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | blocked-by-policy case |
+| UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
+| UC-IDN-J02 | Regenerate recovery codes | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-J03 | Turn the second factor off | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-J04 | Recover an account that lost both factors | J | Person, Account admin | no | no | none | no | BLOCKED | who may reset another person |
 | UC-IDN-J05 | Enforce an account-required second factor | J | System | no | no | none | no | BLOCKED | Accounts policy fact |
 | UC-IDN-K01 | Read my security summary | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
