@@ -1,5 +1,8 @@
 import { cn } from "@notrelix/ui-web";
-import type { CardCover as CardCoverModel, CardCoverColor } from "@notrelix/work-management-core";
+import type {
+  CardCover as CardCoverModel,
+  CardCoverColor,
+} from "@notrelix/work-management-core";
 import { useCardImageUrl } from "@notrelix/work-management-state";
 
 /** Literal classes, so Tailwind sees every one of them. */

@@ -1,10 +1,5 @@
 import { ThumbsUp, Eye } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  cn,
-} from "@notrelix/ui-web";
+import { Popover, PopoverContent, PopoverTrigger, cn } from "@notrelix/ui-web";
 import type {
   CardDetail,
   CardVoteValue,
@@ -41,7 +36,10 @@ function initials(name: string): string {
 }
 
 /** The value of a Vote field on a card, `{ count: 0, voted: false }` when it carries none. */
-export function readVoteValue(card: CardDetail, fieldId: string): CardVoteValue {
+export function readVoteValue(
+  card: CardDetail,
+  fieldId: string,
+): CardVoteValue {
   const raw = card.fieldValues?.[fieldId] as Partial<CardVoteValue> | undefined;
   return { count: raw?.count ?? 0, voted: raw?.voted === true };
 }
@@ -60,7 +58,11 @@ export function VoteChip({
   canVote: boolean;
 }) {
   const copy = useCapabilitiesCopy();
-  const scope = { itemId: card.id, boardId: card.boardId, workspaceId: card.workspaceId };
+  const scope = {
+    itemId: card.id,
+    boardId: card.boardId,
+    workspaceId: card.workspaceId,
+  };
   const write = useVoteWrites(scope, field.id);
   const value = readVoteValue(card, field.id);
   const voters = useItemVotes(card.id, field.id, card.workspaceId, true);
@@ -85,7 +87,9 @@ export function VoteChip({
         <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label={fillCapabilityCopy(copy.vote.count, { count: shown.count })}
+            aria-label={fillCapabilityCopy(copy.vote.count, {
+              count: shown.count,
+            })}
             className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-state-hover-strong px-1.5 text-nav font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-ring"
           >
             {shown.count}
@@ -100,7 +104,10 @@ export function VoteChip({
           </p>
           <ul className="flex flex-col gap-1.5">
             {(voters.data?.voters ?? []).map((voter) => (
-              <li key={voter.userId} className="flex items-center gap-2 text-nav">
+              <li
+                key={voter.userId}
+                className="flex items-center gap-2 text-nav"
+              >
                 <span
                   aria-hidden="true"
                   className="grid size-6 place-items-center rounded-full bg-state-hover-strong text-mark-xs"
@@ -156,7 +163,10 @@ export function ViewersChip({
         ) : null}
         <ul className="flex flex-col gap-1.5">
           {(viewers.data?.viewers ?? []).map((viewer) => (
-            <li key={viewer.userId} className="flex items-center gap-2 text-nav">
+            <li
+              key={viewer.userId}
+              className="flex items-center gap-2 text-nav"
+            >
               <span
                 aria-hidden="true"
                 className="grid size-6 place-items-center rounded-full bg-state-hover-strong text-mark-xs"

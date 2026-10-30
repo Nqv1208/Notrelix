@@ -100,7 +100,8 @@ export const en = {
   },
   links: {
     clearAll: "Remove all links",
-    confirm: "Remove all {{count}} links from this card? The linked cards stay.",
+    confirm:
+      "Remove all {{count}} links from this card? The linked cards stay.",
     confirmAction: "Remove all",
     cancel: "Cancel",
     failed: "The links could not be removed.",
@@ -222,7 +223,8 @@ export const vi: CardCapabilitiesCopy = {
   },
   links: {
     clearAll: "Gỡ tất cả liên kết",
-    confirm: "Gỡ cả {{count}} liên kết khỏi thẻ này? Các thẻ được liên kết vẫn còn.",
+    confirm:
+      "Gỡ cả {{count}} liên kết khỏi thẻ này? Các thẻ được liên kết vẫn còn.",
     confirmAction: "Gỡ tất cả",
     cancel: "Huỷ",
     failed: "Chưa gỡ được các liên kết.",
@@ -245,7 +247,9 @@ export const vi: CardCapabilitiesCopy = {
   },
 };
 
-export function cardCapabilitiesCopy(locale: "vi" | "en"): CardCapabilitiesCopy {
+export function cardCapabilitiesCopy(
+  locale: "vi" | "en",
+): CardCapabilitiesCopy {
   return locale === "vi" ? vi : en;
 }
 

@@ -28,7 +28,10 @@ function shortDate(value: unknown): string | null {
 }
 
 /** The words a field value shows on the card face; null when the card has no value (an empty field). */
-export function faceFieldText(card: Card, field: FieldDefinition): string | null {
+export function faceFieldText(
+  card: Card,
+  field: FieldDefinition,
+): string | null {
   const computed = card.computedValues?.[field.id];
   const value =
     computed !== undefined
@@ -42,7 +45,9 @@ export function faceFieldText(card: Card, field: FieldDefinition): string | null
       return optionLabel(field, value);
     case "multi_select": {
       const labels = Array.isArray(value)
-        ? value.map((id) => optionLabel(field, id)).filter((x): x is string => x !== null)
+        ? value
+            .map((id) => optionLabel(field, id))
+            .filter((x): x is string => x !== null)
         : [];
       return labels.length > 0 ? labels.join(", ") : null;
     }

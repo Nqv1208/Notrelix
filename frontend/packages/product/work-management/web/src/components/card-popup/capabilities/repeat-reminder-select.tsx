@@ -19,7 +19,11 @@ import { useCapabilitiesCopy } from "./use-capabilities-copy";
 const NONE = "none";
 
 function scopeOf(card: CardDetail) {
-  return { itemId: card.id, boardId: card.boardId, workspaceId: card.workspaceId };
+  return {
+    itemId: card.id,
+    boardId: card.boardId,
+    workspaceId: card.workspaceId,
+  };
 }
 
 /** "Lặp lại": how the item repeats. Completing a repeating item reopens it at the next due date. */
@@ -37,7 +41,10 @@ export function RepeatSelect({
   const hasDue = Boolean(card.dueAt ?? card.dueDate);
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-micro font-semibold text-meta-foreground">
+      <label
+        htmlFor={id}
+        className="text-micro font-semibold text-meta-foreground"
+      >
         {copy.repeat.label}
       </label>
       <Select
@@ -63,7 +70,9 @@ export function RepeatSelect({
         </SelectContent>
       </Select>
       {!hasDue && !card.repeatRule ? (
-        <p className="text-micro text-meta-foreground">{copy.repeat.needsDue}</p>
+        <p className="text-micro text-meta-foreground">
+          {copy.repeat.needsDue}
+        </p>
       ) : null}
       {error ? (
         <p role="alert" className="text-micro text-danger-subtle-foreground">
@@ -96,7 +105,10 @@ export function ReminderSelect({
   const current = card.reminderOffsetMinutes ?? CARD_REMINDER_DEFAULT;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-micro font-semibold text-meta-foreground">
+      <label
+        htmlFor={id}
+        className="text-micro font-semibold text-meta-foreground"
+      >
         {copy.reminder.label}
       </label>
       <Select
@@ -104,7 +116,9 @@ export function ReminderSelect({
         disabled={disabled || writes.pending}
         onValueChange={(value) => {
           setError(null);
-          writes.setReminder(Number(value)).catch(() => setError(copy.reminder.failed));
+          writes
+            .setReminder(Number(value))
+            .catch(() => setError(copy.reminder.failed));
         }}
       >
         <SelectTrigger id={id} className="w-full">

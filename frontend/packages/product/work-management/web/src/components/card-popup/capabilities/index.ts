@@ -10,7 +10,19 @@ export {
   useColourBlindLabelsControl,
 } from "./colour-blind-label-mark";
 export { ChecklistCopyFrom, ClearAllLinks } from "./checklist-links-controls";
-export { FaceFieldsPopover, type FaceFieldsSetting } from "./face-fields-popover";
+export {
+  FaceFieldsPopover,
+  type FaceFieldsSetting,
+} from "./face-fields-popover";
 export { faceEligibleFields, faceFieldText, faceFieldsOf } from "./face-fields";
 export { cardCapabilitiesCatalog } from "./capabilities.catalog";
-export { KanbanFaceProvider, useKanbanFace, type KanbanFace } from "./face-context";
+export {
+  KanbanFaceProvider,
+  useKanbanFace,
+  type KanbanFace,
+} from "./face-context";
+export { FaceFieldsButton } from "./face-fields-button";
+export {
+  useCapabilitySlots,
+  type CapabilitySlots,
+} from "./use-capability-slots";

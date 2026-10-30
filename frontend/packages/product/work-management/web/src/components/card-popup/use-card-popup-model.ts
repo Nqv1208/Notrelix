@@ -16,6 +16,7 @@ import {
   type CardPopupSlots,
   type FieldSave,
 } from "./card-popup-context";
+import { useCapabilitySlots } from "./capabilities/use-capability-slots";
 import { useCardPopupCopy } from "./use-card-popup-copy";
 
 export interface CardPopupModelInput {
@@ -87,6 +88,17 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
         ? null
         : "permission");
   const fields = useMemo(() => findItemFields(input.board), [input.board]);
+  const capabilitySlots = useCapabilitySlots({
+    card: input.card,
+    board: input.board,
+    exists: input.mode === "view",
+    canEdit: readOnly === null,
+    canVote: input.capabilities.canComment ?? input.capabilities.canEditFields,
+  });
+  const slots = useMemo(
+    () => ({ ...capabilitySlots, ...(input.slots ?? NO_SLOTS) }),
+    [capabilitySlots, input.slots],
+  );
 
   return {
     mode: input.mode,
@@ -102,7 +114,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     copy,
     now: input.now,
     timeZone: input.timeZone,
-    slots: input.slots ?? NO_SLOTS,
+    slots,
     saves,
     track,
     conflict,

@@ -53,7 +53,10 @@ function ImageChoice({
       {url ? (
         <img src={url} alt="" className="size-full object-cover" />
       ) : (
-        <ImageIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+        <ImageIcon
+          className="size-4 text-muted-foreground"
+          aria-hidden="true"
+        />
       )}
     </button>
   );
@@ -80,7 +83,9 @@ export function CoverPicker({
   };
   const writes = useItemSettingsWrites(scope, card.version ?? 0);
   const files = useCardFiles(card.id, card.workspaceId);
-  const [style, setStyle] = useState<CardCoverStyle>(card.cover?.style ?? "strip");
+  const [style, setStyle] = useState<CardCoverStyle>(
+    card.cover?.style ?? "strip",
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -193,7 +198,9 @@ export function CoverPicker({
                     "ring-2 ring-primary ring-offset-2 ring-offset-popover",
                 )}
               >
-                {selected ? <Check className="size-4" aria-hidden="true" /> : null}
+                {selected ? (
+                  <Check className="size-4" aria-hidden="true" />
+                ) : null}
               </button>
             );
           })}
@@ -202,7 +209,9 @@ export function CoverPicker({
           {copy.cover.images}
         </p>
         {images.length === 0 ? (
-          <p className="text-micro text-meta-foreground">{copy.cover.noImages}</p>
+          <p className="text-micro text-meta-foreground">
+            {copy.cover.noImages}
+          </p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {images.map((file) => (
@@ -212,7 +221,9 @@ export function CoverPicker({
                 attachmentId={file.id}
                 name={file.name}
                 selected={cover?.attachmentId === file.id}
-                label={fillCapabilityCopy(copy.cover.useImage, { name: file.name })}
+                label={fillCapabilityCopy(copy.cover.useImage, {
+                  name: file.name,
+                })}
                 onPick={() =>
                   void save({ color: null, attachmentId: file.id, style })
                 }
@@ -240,7 +251,9 @@ export function CoverPicker({
           <ImagePlus aria-hidden="true" />
           {uploading ? copy.cover.uploading : copy.cover.upload}
         </Button>
-        <p className="text-micro text-meta-foreground">{copy.cover.uploadNote}</p>
+        <p className="text-micro text-meta-foreground">
+          {copy.cover.uploadNote}
+        </p>
         {cover ? (
           <Button type="button" variant="ghost" onClick={() => void save(null)}>
             {copy.cover.remove}

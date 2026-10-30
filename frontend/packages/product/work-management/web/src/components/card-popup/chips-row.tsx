@@ -1,3 +1,4 @@
+import { ColourBlindLabelMark } from "./capabilities/colour-blind-label-mark";
 import { ChevronDown, Clock, Plus } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import {
@@ -126,6 +127,7 @@ export function ChipsRow() {
                   ITEM_LABEL_TONE_CLASS[itemLabelTone(l)],
                 )}
               >
+                <ColourBlindLabelMark color={l.color} className="mr-1" />
                 {l.name}
               </span>
             ))}

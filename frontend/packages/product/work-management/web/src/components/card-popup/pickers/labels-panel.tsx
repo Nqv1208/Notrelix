@@ -1,3 +1,4 @@
+import { ColourBlindLabelMark } from "../capabilities/colour-blind-label-mark";
 import { useMemo, useState } from "react";
 import { Check, Pencil } from "lucide-react";
 import { useFullBoard } from "@notrelix/work-management-state";
@@ -40,6 +41,7 @@ function LabelChip({
         className,
       )}
     >
+      <ColourBlindLabelMark color={label.color} className="mr-1" />
       {label.name}
     </span>
   );

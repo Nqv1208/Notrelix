@@ -68,7 +68,9 @@ export function CardPopupSurface({
         aria-describedby={undefined}
         // An inline editor closes itself on Escape; the popup stays open.
         onEscapeKeyDown={(event) => {
-          if ((event.target as HTMLElement | null)?.closest?.("[data-popup-esc]"))
+          if (
+            (event.target as HTMLElement | null)?.closest?.("[data-popup-esc]")
+          )
             event.preventDefault();
         }}
         overlayClassName="bg-black/40 backdrop-blur-none"

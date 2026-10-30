@@ -44,9 +44,7 @@ const PATHS: Readonly<Record<LabelShape, ReactNode>> = {
   ),
   dash: <rect x="1.5" y="5" width="9" height="2" rx="1" fill="currentColor" />,
   hexagon: <path d="M3.5 1.5h5L11 6l-2.5 4.5h-5L1 6Z" fill="currentColor" />,
-  plus: (
-    <path d="M5 1.5h2V5h3.5v2H7v3.5H5V7H1.5V5H5Z" fill="currentColor" />
-  ),
+  plus: <path d="M5 1.5h2V5h3.5v2H7v3.5H5V7H1.5V5H5Z" fill="currentColor" />,
   cross: (
     <path
       d="m2.5 1 3.5 3.5L9.5 1 11 2.5 7.5 6 11 9.5 9.5 11 6 7.5 2.5 11 1 9.5 4.5 6 1 2.5Z"
@@ -54,7 +52,14 @@ const PATHS: Readonly<Record<LabelShape, ReactNode>> = {
     />
   ),
   ring: (
-    <circle cx="6" cy="6" r="3.5" fill="none" stroke="currentColor" strokeWidth="2" />
+    <circle
+      cx="6"
+      cy="6"
+      r="3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
   ),
 };
 

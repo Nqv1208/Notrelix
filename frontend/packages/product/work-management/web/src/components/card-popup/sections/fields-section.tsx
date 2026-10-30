@@ -1,3 +1,4 @@
+import { FaceFieldsButton } from "../capabilities/face-fields-button";
 import { useEffect, useRef } from "react";
 import { cn } from "@notrelix/ui-web";
 import { customItemFields } from "../../card-detail/item-field-editors";
@@ -30,7 +31,7 @@ export function useFieldList() {
 
 /** Every custom field with its editor; the created time is read-only. */
 export function FieldsSection() {
-  const { card, copy, mode, callbacks, picker, openPicker, timeZone } =
+  const { board, card, copy, mode, callbacks, picker, openPicker, timeZone } =
     useCardPopup();
   const t = copy.sections.fields;
   const canEdit = useCanEdit();
@@ -47,6 +48,14 @@ export function FieldsSection() {
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.fields}>
       <SectionHead title={t.title}>
+        {mode === "view" ? (
+          <FaceFieldsButton
+            boardId={board.id}
+            workspaceId={board.workspaceId}
+            fields={board.fieldDefinitions}
+            canEdit={canEdit}
+          />
+        ) : null}
         {canEdit && callbacks.onCreateField ? (
           <div ref={add}>
             <AddPropertyPopover

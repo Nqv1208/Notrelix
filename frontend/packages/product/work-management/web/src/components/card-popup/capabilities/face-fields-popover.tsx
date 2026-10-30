@@ -41,7 +41,9 @@ export function FaceFieldsPopover({
   const shown = value.cardFieldIds
     .map((id) => byId.get(id))
     .filter((field): field is FieldDefinition => field !== undefined);
-  const rest = eligible.filter((field) => !value.cardFieldIds.includes(field.id));
+  const rest = eligible.filter(
+    (field) => !value.cardFieldIds.includes(field.id),
+  );
 
   const set = (ids: string[], hide = value.cardHideEmpty) =>
     onChange({
@@ -91,7 +93,9 @@ export function FaceFieldsPopover({
                 key={field.id}
                 className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1"
               >
-                <span className="min-w-0 flex-1 truncate text-nav">{field.name}</span>
+                <span className="min-w-0 flex-1 truncate text-nav">
+                  {field.name}
+                </span>
                 <label className="flex items-center gap-1 text-micro text-meta-foreground">
                   <Checkbox
                     disabled={!canEdit}
@@ -105,7 +109,9 @@ export function FaceFieldsPopover({
                   variant="ghost"
                   size="icon"
                   disabled={!canEdit || index === 0}
-                  aria-label={fillCapabilityCopy(copy.face.moveUp, { name: field.name })}
+                  aria-label={fillCapabilityCopy(copy.face.moveUp, {
+                    name: field.name,
+                  })}
                   onClick={() => move(index, -1)}
                 >
                   <ArrowUp aria-hidden="true" />
@@ -115,7 +121,9 @@ export function FaceFieldsPopover({
                   variant="ghost"
                   size="icon"
                   disabled={!canEdit || index === shown.length - 1}
-                  aria-label={fillCapabilityCopy(copy.face.moveDown, { name: field.name })}
+                  aria-label={fillCapabilityCopy(copy.face.moveDown, {
+                    name: field.name,
+                  })}
                   onClick={() => move(index, 1)}
                 >
                   <ArrowDown aria-hidden="true" />
@@ -125,7 +133,9 @@ export function FaceFieldsPopover({
                   variant="ghost"
                   size="sm"
                   disabled={!canEdit}
-                  aria-label={fillCapabilityCopy(copy.face.remove, { name: field.name })}
+                  aria-label={fillCapabilityCopy(copy.face.remove, {
+                    name: field.name,
+                  })}
                   onClick={() =>
                     set(value.cardFieldIds.filter((id) => id !== field.id))
                   }
@@ -147,7 +157,9 @@ export function FaceFieldsPopover({
                   <button
                     type="button"
                     disabled={!canEdit}
-                    aria-label={fillCapabilityCopy(copy.face.show, { name: field.name })}
+                    aria-label={fillCapabilityCopy(copy.face.show, {
+                      name: field.name,
+                    })}
                     onClick={() => set([...value.cardFieldIds, field.id])}
                     className="w-full rounded-md px-2 py-1 text-left text-nav text-muted-foreground hover:bg-state-hover disabled:opacity-60"
                   >

@@ -19,6 +19,7 @@ import {
   useBoardChecklists,
   useClearItemLinks,
   useCopyChecklist,
+  useItemLinks,
 } from "@notrelix/work-management-state";
 import { fillCapabilityCopy } from "./capabilities.copy";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
@@ -95,19 +96,19 @@ export function ChecklistCopyFrom({
   );
 }
 
-/** "Gỡ tất cả liên kết": asks once, then removes every link of the card; the linked cards stay. */
+/** "Gỡ tất cả liên kết": shows only when the card has links, asks once, then removes every link of the card; the linked cards stay. */
 export function ClearAllLinks({
   card,
-  linkCount,
   disabled = false,
 }: {
   card: CardDetail;
-  linkCount: number;
   disabled?: boolean;
 }) {
   const copy = useCapabilitiesCopy();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const links = useItemLinks(card.id, card.workspaceId, card.boardId);
+  const linkCount = links.data?.length ?? 0;
   const write = useClearItemLinks({
     itemId: card.id,
     boardId: card.boardId,
