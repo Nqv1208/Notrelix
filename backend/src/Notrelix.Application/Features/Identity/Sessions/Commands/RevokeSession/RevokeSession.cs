@@ -58,7 +58,8 @@ public sealed class RevokeSessionCommandHandler
                 ApplicationErrorType.NotFound));
         }
 
-        if (session.Status == SessionStatus.Revoked)
+        // Already ended (revoked or expired): nothing to change and no second activity line.
+        if (session.Status != SessionStatus.Active)
         {
             return Result.Success();
         }

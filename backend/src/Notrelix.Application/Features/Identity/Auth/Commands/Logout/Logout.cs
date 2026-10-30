@@ -14,17 +14,20 @@ public record LogoutCommand : ICommand<Result>, IWriteRequest, IGlobalRequest, I
 public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
 {
     private readonly IIdentityDbContext _context;
+    private readonly ICurrentRequestContext _currentUser;
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LogoutCommandHandler> _logger;
 
     public LogoutCommandHandler(
         IIdentityDbContext context,
+        ICurrentRequestContext currentUser,
         IJwtBlacklistService jwtBlacklist,
         IDateTimeProvider dateTimeProvider,
         ILogger<LogoutCommandHandler> logger)
     {
         _context = context;
+        _currentUser = currentUser;
         _jwtBlacklist = jwtBlacklist;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
@@ -34,20 +37,44 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
 
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
-        var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
-        var session = await _context.Sessions
-            .FirstOrDefaultAsync(s => s.RefreshTokenHash.Hash == tokenHash.Hash, cancellationToken);
+        var userId = _currentUser.UserId;
+        var now = _dateTimeProvider.UtcNow;
 
-        if (session is not null)
+        // This device only: the session the access credential names and the one the refresh
+        // cookie holds, both the caller's own. Another person's cookie never ends their session.
+        var currentSessionId = _currentUser.SessionId ?? Guid.Empty;
+        var refreshHash = string.IsNullOrWhiteSpace(request.RefreshToken)
+            ? string.Empty
+            : RefreshTokenHash.Create(request.RefreshToken).Hash;
+
+        var sessions = await _context.Sessions
+            .Where(s =>
+                s.UserId == userId &&
+                s.Status == SessionStatus.Active &&
+                (s.Id == currentSessionId || s.RefreshTokenHash.Hash == refreshHash))
+            .ToListAsync(cancellationToken);
+
+        var endedIds = new HashSet<Guid>();
+        foreach (var session in sessions)
         {
-            var now = _dateTimeProvider.UtcNow;
             session.Revoke(now, SessionRevocationReasons.UserRequested);
-            await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
+            endedIds.Add(session.Id);
+        }
+
+        // A second sign-out finds nothing active and changes nothing; the marker is
+        // still set so the access credential of this device stays refused.
+        if (currentSessionId != Guid.Empty)
+        {
+            endedIds.Add(currentSessionId);
+        }
+
+        foreach (var sessionId in endedIds)
+        {
+            await _jwtBlacklist.RevokeSessionBeforeAsync(sessionId, now, SessionRevocationMarkerTtl);
         }
 
         if (!string.IsNullOrWhiteSpace(request.AccessToken))
         {
-            var now = _dateTimeProvider.UtcNow;
             await BlacklistAccessTokenAsync(request.AccessToken, now);
         }
 
