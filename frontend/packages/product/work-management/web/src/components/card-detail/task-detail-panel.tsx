@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
 import {
-  useBoardAccess,
   useCard,
   useCardActivity,
   useCardComments,
@@ -21,7 +20,7 @@ import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { useIsMobile } from "@notrelix/ui-web";
 import { TaskDetailPanelSurface } from "./task-detail-panel-surface";
 import type { TaskDetailCapabilities } from "./task-detail-types";
-import { boardCapabilities } from "../shared/board-capabilities";
+import { useBoardCapabilities } from "../shared/board-capabilities";
 import { withBoardPriority } from "../shared/item-priority";
 import { useItemSheetCopy } from "./use-item-sheet-copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
@@ -126,8 +125,7 @@ function TaskDetailPanelContent({
 }) {
   const { card, isLoading, error } = useCard(cardId, board.workspaceId);
   // The viewer's level on this board; read-only until it is known.
-  const { access } = useBoardAccess(board.id, board.workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { capabilities } = useBoardCapabilities(board.id, board.workspaceId);
 
   if (isLoading)
     return (

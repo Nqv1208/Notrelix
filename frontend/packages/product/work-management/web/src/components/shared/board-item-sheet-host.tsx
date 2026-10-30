@@ -1,8 +1,5 @@
 import { useMemo } from "react";
-import {
-  useBoardAccess,
-  useBoardKanban,
-} from "@notrelix/work-management-state";
+import { useBoardKanban } from "@notrelix/work-management-state";
 import type {
   ItemSheetGroup,
   ItemSheetMark,
@@ -10,7 +7,7 @@ import type {
 import { emptyKanbanFilter } from "../views/kanban/kanban-filter";
 import { KanbanSelectedItem } from "../views/kanban/kanban-view";
 import { BoardViewerContext } from "./board-viewer";
-import { boardCapabilities } from "./board-capabilities";
+import { useBoardCapabilities } from "./board-capabilities";
 import { useItemSheetActions } from "./use-item-sheet-actions";
 
 const NEVER_OVERDUE = () => false;
@@ -50,8 +47,7 @@ export function BoardItemSheetHost({
     filter,
     isOverdue: NEVER_OVERDUE,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
   const { board } = kanban;
   const groups = useMemo<ItemSheetGroup[]>(

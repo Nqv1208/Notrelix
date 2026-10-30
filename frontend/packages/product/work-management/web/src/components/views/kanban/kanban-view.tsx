@@ -18,7 +18,6 @@ import {
   useBoardLabels,
   useCardLabelWrites,
   dropUnknownFilterIds,
-  useBoardAccess,
   useBoardKanban,
   useBoardView,
   useCard,
@@ -81,8 +80,8 @@ import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { buildCardLink } from "./kanban-view-helpers";
 import {
-  boardCapabilities,
   canManageStatuses,
+  useBoardCapabilities,
 } from "../../shared/board-capabilities";
 import { nextLabelColor } from "../../shared/item-display";
 import {
@@ -261,8 +260,7 @@ export function KanbanView({
     isOverdue,
     onWriteError,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { access, capabilities } = useBoardCapabilities(boardId, workspaceId);
   const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   // The view's Kanban settings (lane limit, who sees the status controls,
   // keyboard move). A view saved without them gives today's behaviour. The
@@ -277,10 +275,9 @@ export function KanbanView({
     () => resolveKanbanSettings(viewConfig),
     [viewConfig],
   );
-  const showStatusControls = canManageStatuses(
-    access?.myLevel,
-    kanbanSettings.statusManageRoles,
-  );
+  const showStatusControls =
+    capabilities.canEditFields &&
+    canManageStatuses(access?.myLevel, kanbanSettings.statusManageRoles);
   const removal = useItemRemoval({
     workspaceId,
     boardId,

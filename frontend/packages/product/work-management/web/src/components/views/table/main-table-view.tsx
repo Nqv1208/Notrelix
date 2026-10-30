@@ -13,7 +13,6 @@ import {
   dropUnknownFilterIds,
   useArchiveCard,
   useBulkUpdateItems,
-  useBoardAccess,
   useAddFieldOption,
   useBoardTable,
   useMoveFieldOption,
@@ -39,7 +38,7 @@ import type {
   ItemSheetMark,
 } from "../../card-detail/task-detail-types";
 import { findItemFields } from "../../card-detail/item-field-editors";
-import { boardCapabilities } from "../../shared/board-capabilities";
+import { useBoardCapabilities } from "../../shared/board-capabilities";
 import {
   isKanbanCardOverdue,
   parseKanbanFilter,
@@ -190,8 +189,7 @@ export function MainTableView({
     isOverdue,
     onWriteError,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const addOption = useAddFieldOption(boardId, workspaceId);
   const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   const { addGroup, isPending: addingGroup } = useAddGroup(

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  useBoardAccess,
   useCard,
   useCardActivity,
   useCardComments,
@@ -38,7 +37,7 @@ import {
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { collaborationRefusalMessage } from "./collaboration-refusal";
-import { boardCapabilities } from "../shared/board-capabilities";
+import { useBoardCapabilities } from "../shared/board-capabilities";
 import { formatItemDate, nextLabelColor } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
 import type { ItemSheetCopy } from "../card-detail/item-sheet.copy";
@@ -158,8 +157,7 @@ export function ItemPage(props: ItemPageProps) {
     isLoading: boardLoading,
   } = useFullBoard(boardId, workspaceId);
   const { card, isLoading: cardLoading, error } = useCard(itemId, workspaceId);
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { access, capabilities } = useBoardCapabilities(boardId, workspaceId);
 
   // An item that belongs to another board, or does not load, is not this page's.
   const unseen = isUnseenError(error);
@@ -267,8 +265,8 @@ function ItemPageReady({
   board: Board;
   groups: ReturnType<typeof useFullBoard>["groups"];
   card: CardDetail;
-  capabilities: ReturnType<typeof boardCapabilities>;
-  access: ReturnType<typeof useBoardAccess>["access"];
+  capabilities: ReturnType<typeof useBoardCapabilities>["capabilities"];
+  access: ReturnType<typeof useBoardCapabilities>["access"];
   copy: ReturnType<typeof useItemPageCopy>;
   sheetCopy: ItemSheetCopy;
   now: Date;

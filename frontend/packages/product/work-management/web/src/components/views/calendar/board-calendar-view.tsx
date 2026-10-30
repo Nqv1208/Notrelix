@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
   dropUnknownFilterIds,
-  useBoardAccess,
   useBoardKanban,
   useBoardPlanItems,
   useCreateDatedItem,
@@ -23,7 +22,7 @@ import type {
   ItemSheetGroup,
   ItemSheetMark,
 } from "../../card-detail/task-detail-types";
-import { boardCapabilities } from "../../shared/board-capabilities";
+import { useBoardCapabilities } from "../../shared/board-capabilities";
 import {
   HANOI_ZONES,
   runtimeZone,
@@ -152,8 +151,7 @@ export function BoardCalendarView({
     filter: parsedFilter,
     isOverdue,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
 
   const { board, filterChoices } = kanban;

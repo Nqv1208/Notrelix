@@ -2,7 +2,6 @@ import { useContext, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
-  useBoardAccess,
   useBoardKanban,
   useBoardPlanItems,
   useTimelineDependencies,
@@ -15,7 +14,7 @@ import type {
   ItemSheetGroup,
   ItemSheetMark,
 } from "../../card-detail/task-detail-types";
-import { boardCapabilities } from "../../shared/board-capabilities";
+import { useBoardCapabilities } from "../../shared/board-capabilities";
 import { HANOI_ZONES, runtimeZone, useNow } from "../../shared/board-clock";
 import { calendarParts, identityMarkClass } from "../../shared/item-display";
 import { useItemSheetActions } from "../../shared/use-item-sheet-actions";
@@ -122,8 +121,7 @@ export function BoardTimelineView({
     filter,
     isOverdue: NEVER_OVERDUE,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
   const updateCard = useUpdateCard(boardId, workspaceId);
   const dependencies = useTimelineDependencies(boardId, workspaceId);
