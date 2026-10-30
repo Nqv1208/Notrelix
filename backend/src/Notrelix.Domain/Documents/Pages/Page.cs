@@ -154,6 +154,7 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void RecordBlocksSaved(Guid savedBy, DateTimeOffset savedAt, IReadOnlyList<BlockMentionAdded> mentions)
     {
         EnsureNotDeleted();
+        Rules.PageRules.EnsureCanEdit(Status);
         Guard.NotEmpty(savedBy);
         Guard.NotNull(mentions);
         RaiseDomainEvent(new PageBlocksSavedDomainEvent(AccountId, WorkspaceId, Id, Title, savedBy, mentions, savedAt));

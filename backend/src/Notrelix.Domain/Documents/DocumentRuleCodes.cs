@@ -12,6 +12,7 @@ public static class DocumentRuleCodes
     public const string Documents_Page_NestedPageFollowsRootSpace = "Documents_Page_NestedPageFollowsRootSpace";
     public const string Documents_Page_CannotEditArchived = "Documents_Page_CannotEditArchived";
     public const string Documents_Page_NotInTrash = "Documents_Page_NotInTrash";
+    public const string Documents_Page_BlockLimitReached = "Documents_Page_BlockLimitReached";
 
     // ── Version ───────────────────────────────────────────────────────────
     public const string Documents_Version_NameRequired = "Documents_Version_NameRequired";

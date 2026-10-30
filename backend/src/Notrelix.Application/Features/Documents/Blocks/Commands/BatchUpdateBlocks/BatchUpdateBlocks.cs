@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Blocks.Services;
 using Notrelix.Application.Features.Documents.Common;
 using Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Domain.Documents.Rules;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
 
@@ -12,7 +13,9 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlo
 /// owns the transaction; a failing operation throws before anything commits). An <c>upsert</c> creates
 /// the block with the caller's id or edits the existing one against its <c>ExpectedVersion</c>; a
 /// <c>delete</c> removes the block (and the blocks under it) against its version. Operations apply in order,
-/// so a later one may place itself after a block an earlier one created.
+/// so a later one may place itself after a block an earlier one created. An upsert with a type and no version
+/// for a block that already exists is a retry of its create when type, content and properties match (the stored
+/// block is answered, nothing changes) and a conflict otherwise.
 /// </summary>
 public record BatchUpdateBlocksCommand(
     Guid PageId,
@@ -69,6 +72,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
         var page = await _context.Pages
             .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
+        PageRules.EnsureCanEdit(page.Status);
 
         var accountId = _requestContext.RequireAccountId();
         var userId = _requestContext.UserId;
@@ -94,6 +98,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
         }
 
         var saved = new List<Block>();
+        var answered = new List<Block>();
         var tracker = new BlockSaveTracker();
         foreach (var item in request.Blocks)
         {
@@ -116,6 +121,14 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
                 _context.Blocks.Add(block);
                 set.Add(block);
             }
+            else if (item.ExpectedVersion is null && type is not null)
+            {
+                // No version and an existing id: only a retry of the create that made the block may pass.
+                if (!block.IsRetryOfCreate(type.Value, content ?? BlockContent.Create(JsonValue.EmptyObject()), properties))
+                    throw new ConflictException($"Block '{item.Id}' already exists.", "documents.block.id-taken");
+                if (!answered.Contains(block)) answered.Add(block);
+                continue;
+            }
             else
             {
                 PageBlockSet.EnsureVersion(block, item.ExpectedVersion);
@@ -126,11 +139,13 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
             }
 
             if (!saved.Contains(block)) saved.Add(block);
+            if (!answered.Contains(block)) answered.Add(block);
         }
 
+        set.EnsureWithinLimit();
         tracker.Complete(page, saved, userId, now);
 
-        return Result<List<BlockDto>>.Success(saved
+        return Result<List<BlockDto>>.Success(answered
             .Where(block => !block.IsDeleted)
             .Select(DocumentDtoMapper.ToBlockDto)
             .ToList());
@@ -149,16 +164,6 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
     {
         var block = set.Find(item.Id) ?? throw new NotFoundException(nameof(Block), item.Id);
         PageBlockSet.EnsureVersion(block, item.ExpectedVersion);
-
-        // The blocks under a deleted block go with it, so no live block is left under a deleted parent.
-        var doomed = new List<Block> { block };
-        for (var i = 0; i < doomed.Count; i++)
-            doomed.AddRange(set.Siblings(doomed[i].Id));
-
-        foreach (var victim in doomed)
-        {
-            victim.Delete(userId, now);
-            set.Remove(victim);
-        }
+        set.Delete(block, userId, now);
     }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Features.Documents.Common;
+using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Services;
@@ -32,6 +33,26 @@ internal sealed class PageBlockSet
     public void Add(Block block) => _blocks[block.Id] = block;
 
     public void Remove(Block block) => _blocks.Remove(block.Id);
+
+    /// <summary>Refuses a set that holds more live blocks than a page may.</summary>
+    public void EnsureWithinLimit() => PageRules.EnsureBlockCountWithinLimit(_blocks.Count);
+
+    /// <summary>
+    /// Deletes a block and every block under it, so no live block is left under a deleted parent. Every
+    /// route that deletes a block goes through here, so the single and the batch route behave the same.
+    /// </summary>
+    public void Delete(Block block, Guid userId, DateTimeOffset now)
+    {
+        var doomed = new List<Block> { block };
+        for (var i = 0; i < doomed.Count; i++)
+            doomed.AddRange(Siblings(doomed[i].Id));
+
+        foreach (var victim in doomed)
+        {
+            victim.Delete(userId, now);
+            Remove(victim);
+        }
+    }
 
     /// <summary>Live children of a parent (null = page root) in display order, optionally leaving one block out.</summary>
     public List<Block> Siblings(Guid? parentId, Guid? excluding = null) =>
