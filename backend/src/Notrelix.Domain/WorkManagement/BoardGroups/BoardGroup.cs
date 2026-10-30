@@ -53,10 +53,11 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (Title == normalizedTitle) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldTitle = Title;
         Title = normalizedTitle;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Title, normalizedTitle, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldTitle, normalizedTitle, updatedBy, updatedAt));
     }
 
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
