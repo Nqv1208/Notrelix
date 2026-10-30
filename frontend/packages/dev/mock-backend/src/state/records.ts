@@ -258,6 +258,8 @@ export interface MockAttachmentRecord {
   contentType: string;
   uploadedBy: string;
   createdAt: string;
+  /** Set for a web link; a stored file has none. */
+  url?: string;
 }
 
 /** A file attached to a Documents page (`GET /pages/{id}/attachments`); the bytes are kept. */

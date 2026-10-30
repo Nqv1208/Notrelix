@@ -4,6 +4,7 @@
  * an idempotent `POST /board-items/:id/complete`.
  */
 import { defineMockOperation } from "../../operations/types";
+import { rollRepeatOnCompletion } from "./item-capabilities.handlers";
 import {
   noContent,
   notFound,
@@ -58,6 +59,7 @@ export const myWorkOperations = [
           "Idempotency-Key": ["The header is required."],
         });
       }
+      if (rollRepeatOnCompletion(store, params.id)) return noContent();
       return store.completeCard(params.id) ? noContent() : notFound();
     },
   }),

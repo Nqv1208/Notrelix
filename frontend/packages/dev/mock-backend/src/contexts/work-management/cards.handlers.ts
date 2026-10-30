@@ -64,6 +64,7 @@ import {
 } from "./item-capabilities.handlers";
 import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
+import { rollRepeatOnCompletion } from "./item-capabilities.handlers";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
 import {
   assignMember,
@@ -182,11 +183,11 @@ function attachmentDto(file: MockAttachmentRecord, store: MockStore) {
     id: file.id,
     resourceId: file.cardId,
     filename: file.filename,
-    url: "",
-    kind: "File",
+    url: file.url ?? "",
+    kind: file.url ? "Link" : "File",
     sizeBytes: file.sizeBytes,
     contentType: file.contentType,
-    source: "upload",
+    source: file.url ? "link" : "upload",
     uploadedBy: file.uploadedBy,
     uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
     createdAt: file.createdAt,
@@ -783,6 +784,8 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const status = (body as { status?: string | null } | undefined)?.status;
       if (!status) return badRequest({ status: ["The status is required."] });
+      // A repeating item moved to a done status rolls to its next occurrence and keeps its status.
+      if (rollRepeatOnCompletion(store, params.id, status)) return noContent();
       const result = store.updateItemStatus(params.id, status);
       if (result === "not-found") return notFound("Card not found");
       if (result === "invalid") {
@@ -995,16 +998,69 @@ export const cardsOperations = [
           filename: file.filename,
           // A stored file has no public address: it downloads through the
           // content route (`GET .../attachments/:attachmentId/content`).
-          url: "",
-          kind: "File",
+          url: file.url ?? "",
+          kind: file.url ? "Link" : "File",
           sizeBytes: file.sizeBytes,
           contentType: file.contentType,
-          source: "upload",
+          source: file.url ? "link" : "upload",
           uploadedBy: file.uploadedBy,
           uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
           createdAt: file.createdAt,
         })),
       );
+    },
+  }),
+
+  // ─── POST /board-items/:id/attachments ──────────────────────────────────────────
+  // Collaboration.Attachments.Create: attaches a web link (name and http(s) address).
+
+  defineMockOperation<
+    { id: string },
+    { filename?: string | null; url?: string | null },
+    void
+  >({
+    id: "cards.attachments.createLink",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.Create",
+    },
+    method: "POST",
+    route: "/board-items/:id/attachments",
+    async handle({ params, body, store, request }) {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "Idempotency-Key is required.",
+        );
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (store.getUploadByKey(params.id, key)) return noContent();
+      const name = body?.filename?.trim();
+      const url = body?.url?.trim();
+      if (!name || !url || !/^https?:\/\/\S+$/i.test(url))
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "A name and an http or https address are required.",
+        );
+      if (store.getAttachments(params.id).length >= MOCK_MAX_ATTACHMENTS)
+        return attachmentProblem(
+          409,
+          "attachment.limit_exceeded",
+          "The item has the most attachments it can hold.",
+        );
+      const record = store.addAttachment(params.id, {
+        filename: name,
+        sizeBytes: 0,
+        contentType: "text/uri-list",
+        url,
+      });
+      if (!record) return notFound("Card not found");
+      store.rememberUpload(params.id, key, record);
+      return noContent();
     },
   }),
 

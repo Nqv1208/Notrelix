@@ -4264,7 +4264,12 @@ export class MockStore {
 
   addAttachment(
     cardId: string,
-    file: { filename: string; sizeBytes: number; contentType: string },
+    file: {
+      filename: string;
+      sizeBytes: number;
+      contentType: string;
+      url?: string;
+    },
   ): MockAttachmentRecord | undefined {
     if (!this.cardsById.has(cardId)) return undefined;
     const record: MockAttachmentRecord = {
@@ -4273,6 +4278,7 @@ export class MockStore {
       filename: file.filename,
       sizeBytes: file.sizeBytes,
       contentType: file.contentType,
+      ...(file.url ? { url: file.url } : {}),
       uploadedBy: this.getCurrentUser().id,
       createdAt: this.clock.isoNow(),
     };

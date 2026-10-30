@@ -89,7 +89,10 @@ export function projectVoteValues(
   for (const column of store.getColumns(boardId)) {
     if (column.fieldType.toLowerCase() !== "vote") continue;
     const voters = stateOf(store).votes.get(`${itemId}:${column.id}`);
-    values[column.id] = { count: voters?.size ?? 0, voted: voters?.has(me) ?? false };
+    values[column.id] = {
+      count: voters?.size ?? 0,
+      voted: voters?.has(me) ?? false,
+    };
   }
   return values;
 }
@@ -126,6 +129,61 @@ function bump(store: MockStore, itemId: string) {
   store.updateCard(itemId, { version: (item?.version ?? 1) + 1 });
 }
 
+/** The first occurrence of a repeat rule after `due` that is also after `after` (the producer's `ItemRepeat.NextDue`). */
+function nextDue(due: Date, rule: string, after: Date): Date {
+  let next = new Date(due);
+  do {
+    const day = next.getUTCDay();
+    if (rule === "daily") next.setUTCDate(next.getUTCDate() + 1);
+    else if (rule === "weekdays")
+      next.setUTCDate(next.getUTCDate() + (day === 5 ? 3 : day === 6 ? 2 : 1));
+    else if (rule === "weekly") next.setUTCDate(next.getUTCDate() + 7);
+    else if (rule === "biweekly") next.setUTCDate(next.getUTCDate() + 14);
+    else next.setUTCMonth(next.getUTCMonth() + 1);
+    next = new Date(next);
+  } while (next <= after);
+  return next;
+}
+
+/**
+ * Completing a repeating item with a due date does not close it: the dates move to the next occurrence and
+ * the item stays open, in one change. Returns whether it did so; false leaves the caller to complete the item.
+ * `optionId` is the status being written (absent for the complete endpoint): only a done status that follows
+ * an open one rolls over.
+ */
+export function rollRepeatOnCompletion(
+  store: MockStore,
+  itemId: string,
+  optionId?: string,
+): boolean {
+  const item = store.getCard(itemId);
+  const rule = settingsOf(store, itemId).repeatRule;
+  if (!item || !rule || !item.dueAt || item.completedAt) return false;
+  const statusColumn = store
+    .getColumns(item.boardId)
+    .find((column) => column.fieldType === "status");
+  const category = (id: string | undefined) =>
+    statusColumn?.options?.find((option) => option.id === id)?.category;
+  const current = store.getFieldValues(itemId)[statusColumn?.id ?? ""];
+  if (optionId !== undefined && category(optionId) !== "done") return false;
+  if (category(current as string | undefined) === "done") return false;
+  const previousDue = new Date(item.dueAt);
+  const due = nextDue(previousDue, rule, new Date(store.getClock().isoNow()));
+  const shift = due.getTime() - previousDue.getTime();
+  store.updateCard(itemId, {
+    dueAt: due.toISOString(),
+    ...(item.startedAt
+      ? {
+          startedAt: new Date(
+            new Date(item.startedAt).getTime() + shift,
+          ).toISOString(),
+        }
+      : {}),
+    version: (item.version ?? 1) + 1,
+  });
+  return true;
+}
+
 /** Every item of a board, across its groups. */
 function boardCards(store: MockStore, boardId: string) {
   return store.getLists(boardId).flatMap((list) => store.getCards(list.id));
@@ -137,7 +195,11 @@ const contract = (operationId: keyof operations) =>
 export const itemCapabilitiesOperations = [
   defineMockOperation<
     { id: string },
-    { color?: string | null; attachmentId?: string | null; style?: string | null } & VersionBody,
+    {
+      color?: string | null;
+      attachmentId?: string | null;
+      style?: string | null;
+    } & VersionBody,
     void
   >({
     id: "wm.boardItems.setCover",
@@ -164,9 +226,16 @@ export const itemCapabilitiesOperations = [
         return badRequest({ color: ["A cover is one colour or one image."] });
       if (
         attachmentId &&
-        !store.getAttachments(params.id).some((file) => file.id === attachmentId && file.contentType.startsWith("image/"))
+        !store
+          .getAttachments(params.id)
+          .some(
+            (file) =>
+              file.id === attachmentId && file.contentType.startsWith("image/"),
+          )
       )
-        return badRequest({ attachmentId: ["The cover image must be attached to this item."] });
+        return badRequest({
+          attachmentId: ["The cover image must be attached to this item."],
+        });
       const settings = settingsOf(store, params.id);
       const style = clearing ? null : (body?.style ?? null);
       if (
@@ -174,13 +243,21 @@ export const itemCapabilitiesOperations = [
         settings.coverAttachmentId !== attachmentId ||
         settings.coverStyle !== style
       ) {
-        Object.assign(settings, { coverColor: color, coverAttachmentId: attachmentId, coverStyle: style });
+        Object.assign(settings, {
+          coverColor: color,
+          coverAttachmentId: attachmentId,
+          coverStyle: style,
+        });
         bump(store, params.id);
       }
       return noContent();
     },
   }),
-  defineMockOperation<{ id: string }, { rule?: string | null } & VersionBody, void>({
+  defineMockOperation<
+    { id: string },
+    { rule?: string | null } & VersionBody,
+    void
+  >({
     id: "wm.boardItems.setRepeat",
     contract: contract("WorkManagement.BoardItems.SetRepeat"),
     method: "PUT",
@@ -197,7 +274,9 @@ export const itemCapabilitiesOperations = [
       if (rule !== null && !RULES.includes(rule))
         return badRequest({ rule: ["Unknown repeat rule."] });
       if (rule !== null && !item.dueAt)
-        return badRequest({ rule: ["Set a due date before the item repeats."] });
+        return badRequest({
+          rule: ["Set a due date before the item repeats."],
+        });
       const settings = settingsOf(store, params.id);
       if (settings.repeatRule !== rule) {
         settings.repeatRule = rule;
@@ -206,7 +285,11 @@ export const itemCapabilitiesOperations = [
       return noContent();
     },
   }),
-  defineMockOperation<{ id: string }, { offsetMinutes?: number } & VersionBody, void>({
+  defineMockOperation<
+    { id: string },
+    { offsetMinutes?: number } & VersionBody,
+    void
+  >({
     id: "wm.boardItems.setReminder",
     contract: contract("WorkManagement.BoardItems.SetReminder"),
     method: "PUT",
@@ -230,7 +313,11 @@ export const itemCapabilitiesOperations = [
       return noContent();
     },
   }),
-  defineMockOperation<{ id: string; fieldId: string }, { voted?: boolean }, { count: number; voted: boolean }>({
+  defineMockOperation<
+    { id: string; fieldId: string },
+    { voted?: boolean },
+    { count: number; voted: boolean }
+  >({
     id: "wm.boardItems.setVote",
     contract: contract("WorkManagement.BoardItems.SetVote"),
     method: "PUT",
@@ -239,10 +326,15 @@ export const itemCapabilitiesOperations = [
       const missing = missingKey(request);
       if (missing) return missing;
       const item = store.getCard(params.id);
-      if (!item || !canReadBoard(item.boardId, store)) return notFound("Card not found");
-      const isVote = store.getColumns(item.boardId).some(
-        (column) => column.id === params.fieldId && column.fieldType.toLowerCase() === "vote",
-      );
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Card not found");
+      const isVote = store
+        .getColumns(item.boardId)
+        .some(
+          (column) =>
+            column.id === params.fieldId &&
+            column.fieldType.toLowerCase() === "vote",
+        );
       if (!isVote) return notFound("Field not found");
       const me = store.getCurrentUser().id;
       const votes = stateOf(store).votes;
@@ -262,9 +354,12 @@ export const itemCapabilitiesOperations = [
     route: "/board-items/:id/votes/:fieldId",
     async handle({ params, store }) {
       const item = store.getCard(params.id);
-      if (!item || !canReadBoard(item.boardId, store)) return notFound("Card not found");
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Card not found");
       const me = store.getCurrentUser().id;
-      const voters = stateOf(store).votes.get(`${params.id}:${params.fieldId}`) ?? new Map<string, string>();
+      const voters =
+        stateOf(store).votes.get(`${params.id}:${params.fieldId}`) ??
+        new Map<string, string>();
       return ok({
         count: voters.size,
         voted: voters.has(me),
@@ -284,7 +379,8 @@ export const itemCapabilitiesOperations = [
     route: "/board-items/:id/views",
     async handle({ params, store }) {
       const item = store.getCard(params.id);
-      if (!item || !canReadBoard(item.boardId, store)) return notFound("Card not found");
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Card not found");
       const views = stateOf(store).views;
       const row = views.get(params.id) ?? new Map<string, string>();
       const me = store.getCurrentUser().id;
@@ -302,8 +398,10 @@ export const itemCapabilitiesOperations = [
     route: "/board-items/:id/viewers",
     async handle({ params, store }) {
       const item = store.getCard(params.id);
-      if (!item || !canReadBoard(item.boardId, store)) return notFound("Card not found");
-      const row = stateOf(store).views.get(params.id) ?? new Map<string, string>();
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Card not found");
+      const row =
+        stateOf(store).views.get(params.id) ?? new Map<string, string>();
       const viewers = [...row]
         .sort((a, b) => b[1].localeCompare(a[1]))
         .map(([userId, lastViewedAt]) => ({
@@ -331,7 +429,11 @@ export const itemCapabilitiesOperations = [
       return ok(links.length);
     },
   }),
-  defineMockOperation<{ id: string }, { sourceChecklistId?: string; title?: string | null }, string>({
+  defineMockOperation<
+    { id: string },
+    { sourceChecklistId?: string; title?: string | null },
+    string
+  >({
     id: "wm.checklists.copy",
     contract: contract("WorkManagement.Checklists.Copy"),
     method: "POST",
@@ -345,10 +447,16 @@ export const itemCapabilitiesOperations = [
       const sources = boardCards(store, item.boardId).flatMap((card) =>
         store.getCardChecklists(card.id),
       );
-      const source = sources.find((checklist) => checklist.id === body?.sourceChecklistId);
+      const source = sources.find(
+        (checklist) => checklist.id === body?.sourceChecklistId,
+      );
       if (!source) return notFound("Checklist not found");
-      const created = store.createChecklist(params.id, body?.title?.trim() || source.title);
-      for (const entry of source.items) store.createChecklistItem(created.id, entry.title);
+      const created = store.createChecklist(
+        params.id,
+        body?.title?.trim() || source.title,
+      );
+      for (const entry of source.items)
+        store.createChecklistItem(created.id, entry.title);
       return ok(created.id);
     },
   }),
