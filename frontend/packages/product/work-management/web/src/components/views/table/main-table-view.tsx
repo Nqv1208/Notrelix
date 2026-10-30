@@ -827,8 +827,13 @@ export function MainTableView({
               ? removal.requestDuplicate
               : undefined,
             onCopyLink: handleCopyLink,
+            // A row archives with the table's own undo window, not a dialog.
             onArchive: capabilities.canDelete
-              ? removal.requestArchive
+              ? (id) => {
+                  noteTitle(id);
+                  startArchive([id]);
+                  setSelection(new Set());
+                }
               : undefined,
             onDelete: capabilities.canDelete
               ? removal.requestDelete

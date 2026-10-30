@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
-using Notrelix.Domain.Governance.Permissions;using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.SharedKernel.Ordering;
 using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
