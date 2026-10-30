@@ -46,10 +46,7 @@ public sealed class StartMfaEnrollmentCommandHandler
 
         if (user is null)
         {
-            return Result<MfaEnrollmentStartResult>.Failure(new ApplicationError(
-                "identity.mfa.user-not-found",
-                "User not found.",
-                ApplicationErrorType.NotFound));
+            return Result<MfaEnrollmentStartResult>.Failure(SessionErrors.SessionUserMissing);
         }
 
         var hasActiveMethod = await _context.UserMfaMethods

@@ -49,7 +49,7 @@ public sealed class UpdateEmailCommandHandler
                 cancellationToken);
 
         if (user is null)
-            return Result<UpdateEmailResultDto>.Failure("User not found.");
+            return Result<UpdateEmailResultDto>.Failure(SessionErrors.SessionUserMissing);
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         // Another person's row is not visible to this user's own-row access: the boolean probe answers for

@@ -43,8 +43,7 @@ public sealed class GetAccountSecuritySummaryQueryHandler
 
         if (hasPassword is null)
         {
-            return Result<AccountSecuritySummaryDto>.Failure(new ApplicationError(
-                "identity.auth.user-not-found", "User not found.", ApplicationErrorType.NotFound));
+            return Result<AccountSecuritySummaryDto>.Failure(SessionErrors.SessionUserMissing);
         }
 
         var passwordChangedAt = await _context.UserSecuritySettings
