@@ -445,12 +445,14 @@ function Editor({
         {tooLong ? (
           <span
             role="alert"
-            className="flex flex-1 items-start gap-1.5 text-[12.5px] font-medium text-danger-text"
+            className="flex flex-1 items-start gap-1.5 text-[12.5px] leading-[1.45] font-medium text-danger-text"
           >
-            <AlertCircle aria-hidden="true" className="mt-px size-4 shrink-0" />
-            {fillPopupCopy(t.overLimit, {
-              count: over.toLocaleString(copy.locale),
-            })}
+            <AlertCircle aria-hidden="true" className="size-[13px] shrink-0" />
+            <span>
+              {fillPopupCopy(t.overLimit, {
+                count: over.toLocaleString(copy.locale),
+              })}
+            </span>
           </span>
         ) : save?.status === "error" ? (
           <span
