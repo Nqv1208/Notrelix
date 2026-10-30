@@ -5,5 +5,6 @@ public class UpdateBoardVisibilityCommandValidator : AbstractValidator<UpdateBoa
     public UpdateBoardVisibilityCommandValidator()
     {
         RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
     }
 }

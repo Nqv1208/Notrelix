@@ -1,12 +1,13 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 
 [IdempotencyOperation("work-management.boards.remove-board-member.v1")]
-public record RemoveBoardMemberCommand(Guid BoardId, Guid UserId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequirePermissionTarget, IIdempotentRequest
+public record RemoveBoardMemberCommand(Guid BoardId, Guid UserId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequirePermissionTarget, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -23,12 +24,18 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardSharingSummary _sharing;
 
     public RemoveBoardMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        BoardAccessChangeLog changeLog)
+        BoardAccessChangeLog changeLog,
+        IDateTimeProvider dateTimeProvider,
+        IBoardSharingSummary sharing)
     {
+        _dateTimeProvider = dateTimeProvider;
+        _sharing = sharing;
         _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
@@ -46,7 +53,12 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
 
         if (member is not null)
         {
+            // Removing the only manager would leave the Board with nobody to manage it.
+            if (BoardRoleLevels.RankOf(member.Role.ToString()) >= 4)
+                await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, board.Id, request.UserId, ct);
+
             _context.BoardMembers.Remove(member);
+            board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
             await _changeLog.MemberRemovedAsync(board.Id, request.UserId, member.Role, ct);
         }
 

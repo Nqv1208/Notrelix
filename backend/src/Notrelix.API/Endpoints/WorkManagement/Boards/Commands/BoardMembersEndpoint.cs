@@ -49,10 +49,11 @@ public static class BoardMembersEndpoint
     private static async Task<IResult> HandleRemoveBoardMember(
         Guid boardId,
         Guid userId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RemoveBoardMemberCommand(boardId, userId), cancellationToken);
+        var result = await sender.Send(new RemoveBoardMemberCommand(boardId, userId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 
@@ -64,7 +65,7 @@ public static class BoardMembersEndpoint
         CancellationToken cancellationToken)
     {
         var role = Enum.Parse<BoardRole>(body.Role, ignoreCase: true);
-        var result = await sender.Send(new UpdateBoardMemberRoleCommand(boardId, userId, role), cancellationToken);
+        var result = await sender.Send(new UpdateBoardMemberRoleCommand(boardId, userId, role, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

@@ -42,7 +42,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
     {
         var board = await _context.Boards
             .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == request.BoardId && !b.IsArchived, cancellationToken);
+            .FirstOrDefaultAsync(b => b.Id == request.BoardId, cancellationToken);
 
         if (board == null)
             throw new NotFoundException(nameof(Board), request.BoardId);
@@ -312,7 +312,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             members,
             board.Version,
             spaceId,
-            string.IsNullOrWhiteSpace(board.ItemKeyPrefix) ? null : board.ItemKeyPrefix
+            string.IsNullOrWhiteSpace(board.ItemKeyPrefix) ? null : board.ItemKeyPrefix,
+            board.IsArchived
         ));
     }
 

@@ -66,6 +66,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
 
         var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
         _context.BoardMembers.Add(member);
+        board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberAddedAsync(board.Id, request.UserId, role, ct);
 
         return Result.Success();

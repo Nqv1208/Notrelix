@@ -82,8 +82,12 @@ public class CreateBoardTemplateCommandHandler : IRequestHandler<CreateBoardTemp
             .ToListAsync(ct);
         var kept = items.Where(i => groupIds.Contains(i.GroupId))
             .OrderBy(i => i.Position.Value, StringComparer.Ordinal)
-            .Take(BoardTemplateStructure.MaxItems)
             .ToList();
+        // A template never holds a silently shortened board: past the cap the save is refused with the reason.
+        if (kept.Count > BoardTemplateStructure.MaxItems)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_BoardTemplate_TooManyItems,
+                $"A template can hold at most {BoardTemplateStructure.MaxItems} items; this board has {kept.Count}. Save it without items or archive some first.");
         var itemIds = kept.Select(i => i.Id).ToList();
         var values = await _context.BoardItemValues.AsNoTracking()
             .Where(v => itemIds.Contains(v.ItemId) && fieldIds.Contains(v.FieldId))

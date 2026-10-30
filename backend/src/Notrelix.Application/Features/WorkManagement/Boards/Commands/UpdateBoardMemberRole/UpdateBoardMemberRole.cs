@@ -8,8 +8,8 @@ using Notrelix.Application.Features.WorkManagement.Boards.Services;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 
 [IdempotencyOperation("work-management.boards.update-board-member-role.v1")]
-public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequireGrantPermission, IRequirePermissionTarget, IIdempotentRequest
+public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequireGrantPermission, IRequirePermissionTarget, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -28,13 +28,16 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardSharingSummary _sharing;
 
     public UpdateBoardMemberRoleCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        BoardAccessChangeLog changeLog)
+        BoardAccessChangeLog changeLog,
+        IBoardSharingSummary sharing)
     {
+        _sharing = sharing;
         _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
@@ -52,7 +55,14 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         if (member is null) throw new NotFoundException(nameof(BoardMemberEntity), request.UserId);
 
         var previous = member.Role;
+        if (previous == request.Role) return Result.Success();
+
+        // Lowering the only manager would leave the Board with nobody to manage it.
+        if (BoardRoleLevels.RankOf(previous.ToString()) >= 4 && BoardRoleLevels.RankOf(request.Role.ToString()) < 4)
+            await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, request.BoardId, request.UserId, ct);
+
         member.UpdateRole(request.Role);
+        board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberRoleChangedAsync(request.BoardId, request.UserId, previous, request.Role, ct);
         return Result.Success();
     }

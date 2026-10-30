@@ -31,7 +31,14 @@ using Notrelix.Application.Features.WorkManagement.Approvals.Commands.RejectAppr
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
@@ -166,6 +173,13 @@ public sealed class ExpectedVersionTargetMap
         // (the P3 versioned-request manifest, SPEC WM-V3-DEC-007 / WM-V3-CONC-001)
         [typeof(UpdateBoardCommand)] = new(BoardKind, typeof(Board)),
         [typeof(MoveBoardToSpaceCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(ArchiveBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(UnarchiveBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(DeleteBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(RestoreBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(UpdateBoardMemberRoleCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(UpdateBoardVisibilityCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(RemoveBoardMemberCommand)] = new(BoardKind, typeof(Board)),
         [typeof(UpdateBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(MoveBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(AddFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),

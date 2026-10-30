@@ -3,6 +3,12 @@ namespace Notrelix.Domain.WorkManagement.Boards;
 
 public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
+    /// <summary>A board name is 1 to 120 characters after trim.</summary>
+    public const int MaxTitleLength = 120;
+
+    /// <summary>A deleted board stays restorable by a Manager for this long, then it is purged.</summary>
+    public static readonly TimeSpan RestoreWindow = TimeSpan.FromDays(30);
+
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid? SpaceId { get; private set; }
@@ -35,10 +41,12 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(title);
-        Guard.MaxLength(title, 255);
+        Guard.MaxLength(title.Trim(), MaxTitleLength);
         Guard.MaxLength(description, 5000);
         Guard.MaxLength(itemKeyPrefix, 10);
         Guard.NotEmpty(accountId);
+        if (visibility == BoardVisibility.PublicLink)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_PublicLinkNotSupported, "A board cannot be shared by a public link.");
 
         var board = new Board
         {
@@ -65,7 +73,7 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
-        Guard.MaxLength(title, 255);
+        Guard.MaxLength(title.Trim(), MaxTitleLength);
 
         if (IsArchived)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot rename an archived board.");
@@ -155,6 +163,8 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (IsArchived)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeVisibilityArchived, "Cannot change visibility of an archived board.");
+        if (visibility == BoardVisibility.PublicLink)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_PublicLinkNotSupported, "A board cannot be shared by a public link.");
         if (Visibility == visibility) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
@@ -223,6 +233,20 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
+    /// <summary>
+    /// Records that who can reach the Board changed (a member added, re-roled or removed). The Board
+    /// version advances so a person who read the access list before the change cannot overwrite it
+    /// blind. The sharing log and the audit trail carry the change itself.
+    /// </summary>
+    public void RecordAccessChange(Guid changedBy, DateTimeOffset changedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(changedBy);
+        var pending = PrepareAuditUpdate(changedBy, changedAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -269,6 +293,8 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+        if (restoredAt - DeletedAt!.Value > RestoreWindow)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_RestoreWindowElapsed, "The 30-day window to restore this board has passed.");
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
         IncrementVersion();

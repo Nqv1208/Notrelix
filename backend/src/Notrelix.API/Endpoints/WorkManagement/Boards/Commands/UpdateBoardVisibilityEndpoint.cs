@@ -22,7 +22,7 @@ public static class UpdateBoardVisibilityEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateBoardVisibilityCommand(boardId, body.Visibility), cancellationToken);
+        var result = await sender.Send(new UpdateBoardVisibilityCommand(boardId, body.Visibility, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

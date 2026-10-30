@@ -16,6 +16,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_InvalidItemKeyPrefix = "WorkManagement_Board_InvalidItemKeyPrefix";
     public const string WorkManagement_Board_ItemKeyPrefixInUse = "WorkManagement_Board_ItemKeyPrefixInUse";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
+    public const string WorkManagement_Board_RestoreWindowElapsed = "WorkManagement_Board_RestoreWindowElapsed";
+    public const string WorkManagement_Board_PublicLinkNotSupported = "WorkManagement_Board_PublicLinkNotSupported";
+    public const string WorkManagement_Board_LastManager = "WorkManagement_Board_LastManager";
     public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
     public const string WorkManagement_Group_ItemsNeedTargetGroup = "WorkManagement_Group_ItemsNeedTargetGroup";
     public const string WorkManagement_Group_InvalidTargetGroup = "WorkManagement_Group_InvalidTargetGroup";
@@ -158,6 +161,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Approval_TeamDecisionNotSupported = "WorkManagement_Approval_TeamDecisionNotSupported";
 
     // ── Template ──────────────────────────────────────────────────────────
+    public const string WorkManagement_BoardTemplate_TooManyItems = "WorkManagement_BoardTemplate_TooManyItems";
     public const string WorkManagement_BoardTemplate_CannotDraftArchived = "WorkManagement_BoardTemplate_CannotDraftArchived";
     public const string WorkManagement_BoardTemplate_CannotPublishArchived = "WorkManagement_BoardTemplate_CannotPublishArchived";
     public const string WorkManagement_BoardTemplate_CanOnlyRestoreArchived = "WorkManagement_BoardTemplate_CanOnlyRestoreArchived";

@@ -4,6 +4,7 @@ public class ArchiveBoardCommandValidator : AbstractValidator<ArchiveBoardComman
 {
     public ArchiveBoardCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
     }
 }

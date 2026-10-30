@@ -13,6 +13,7 @@ public static class MapBoardEndpoints
             .WithOpenApi();
 
         wsGroup.MapListWorkspaceBoards();
+        wsGroup.MapListRetiredBoards();
         wsGroup.MapCreateBoard();
 
         var boardGroup = app
@@ -25,6 +26,7 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoardOverview();
         boardGroup.MapGetBoardAccess();
         boardGroup.MapGetBoardSharing();
+        boardGroup.MapGetBoardLifecycleImpact();
         boardGroup.MapMakeBoardPrivate();
         boardGroup.MapArchiveBoard();
         boardGroup.MapUnarchiveBoard();

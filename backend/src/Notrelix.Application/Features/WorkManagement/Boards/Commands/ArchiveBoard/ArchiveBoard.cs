@@ -5,11 +5,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 
 [IdempotencyOperation("work-management.boards.archive-board.v1")]
-public record ArchiveBoardCommand(Guid BoardId)
+public record ArchiveBoardCommand(Guid BoardId, long ExpectedVersion)
     : ICommand<Result>,
       IWriteRequest, IAuthenticatedRequest,
       IResourceScopedRequest,
       IRequirePermission,
+      IExpectedVersionRequest,
       IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
