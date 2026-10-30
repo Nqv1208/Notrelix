@@ -636,17 +636,15 @@ export function FieldControl({
   }
 
   // number, text, long_text, link: typed in the control, saved on leaving the box.
-  return <TypedControl field={field} raw={raw} chip={chip} />;
+  return <TypedControl field={field} raw={raw} />;
 }
 
 function TypedControl({
   field,
   raw,
-  chip,
 }: {
   field: FieldDefinition;
   raw: unknown;
-  chip: boolean;
 }) {
   const { copy } = useCardPopup();
   const t = copy.sections.chips;
