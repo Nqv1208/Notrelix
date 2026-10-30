@@ -14,16 +14,16 @@
     "clean": "rm -rf node_modules dist"
   },
   "dependencies": {
-    "expo": "latest",
-    "expo-linking": "latest",
-    "expo-router": "latest",
-    "react": "latest",
-    "react-native": "~0.81.5",
-    "react-native-gesture-handler": "latest",
-    "react-native-reanimated": "latest",
-    "react-native-safe-area-context": "latest",
-    "react-native-screens": "latest",
-    "react-native-web": "^0.21.2",
+    "expo": "~58.0.21",
+    "expo-linking": "~58.0.15",
+    "expo-router": "~58.0.28",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-gesture-handler": "~3.3.0",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0",
+    "react-native-web": "~0.21.4",
     "@notrelix/runtime-mobile": "workspace:*",
     "@notrelix/ui-mobile": "workspace:*",
     "@notrelix/ui-tokens": "workspace:*",
@@ -31,12 +31,14 @@
     "@notrelix/work-management-mobile": "workspace:*",
     "@notrelix/docs-mobile": "workspace:*",
     "@notrelix/automation-mobile": "workspace:*",
-    "@tanstack/react-query": "catalog:"
+    "@tanstack/react-query": "catalog:",
+    "react-native-worklets": "0.13.0",
+    "expo-constants": "~58.0.14"
   },
   "devDependencies": {
-    "hermes-compiler": "latest",
-    "typescript": "^5.0.0",
-    "@types/react": "^19.0.0",
+    "hermes-compiler": "260318099.0.5",
+    "typescript": "~6.0.3",
+    "@types/react": "~19.3.0",
     "@notrelix/eslint-config": "workspace:*"
   }
 }

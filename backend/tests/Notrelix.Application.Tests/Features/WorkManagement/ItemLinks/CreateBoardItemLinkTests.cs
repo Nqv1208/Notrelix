@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Domain.WorkManagement;
 namespace Notrelix.Application.Tests.Features.WorkManagement.ItemLinks;
 
 public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
@@ -12,7 +13,8 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
         _handler = new CreateBoardItemLinkCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Mock.Of<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock>());
     }
 
     [Fact]
@@ -148,5 +150,81 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
 
         result.Data.Should().Be(existing.Id);
         DbContextMock.Object.BoardItemLinks.Should().ContainSingle();
+    }
+
+    private BoardItemLink DependencyRow(BoardItem source, BoardItem target)
+    {
+        var link = BoardItemLink.Create(
+            TestAccountId,
+            TestWorkspaceId,
+            source.BoardId,
+            source.Id,
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), target.Id, TestWorkspaceId),
+            BoardItemLinkType.Dependency,
+            TestUserId,
+            TestNow);
+        return link;
+    }
+
+    [Fact]
+    public async Task Handle_BlockedByWhenTheOtherAlreadyWaitsOnTheItem_IsRefusedAsACycle()
+    {
+        var a = CreateBoardItem();
+        var b = CreateBoardItem(boardId: a.BoardId);
+        SetupBoardItems(a, b);
+        SetupBoardItemLinks(DependencyRow(b, a)); // B waits on A
+
+        var act = () => _handler.Handle(new CreateBoardItemLinkCommand(a.Id, b.Id, "blocked-by"), CancellationToken.None);
+
+        var ex = (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which;
+        ex.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle);
+        ex.Message.Should().Contain(a.Id.ToString()).And.Contain(b.Id.ToString());
+        DbContextMock.Object.BoardItemLinks.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Handle_BlockedByThroughOtherItems_IsRefusedAndNamesTheExistingPath()
+    {
+        var a = CreateBoardItem();
+        var b = CreateBoardItem(boardId: a.BoardId);
+        var c = CreateBoardItem(boardId: a.BoardId);
+        SetupBoardItems(a, b, c);
+        SetupBoardItemLinks(DependencyRow(b, c), DependencyRow(c, a)); // B waits on C, C waits on A
+
+        var act = () => _handler.Handle(new CreateBoardItemLinkCommand(a.Id, b.Id, "blocked-by"), CancellationToken.None);
+
+        var ex = (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which;
+        ex.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle);
+        var m = ex.Message;
+        m.IndexOf(b.Id.ToString(), StringComparison.Ordinal).Should().BeInRange(0, m.Length);
+        m.IndexOf(b.Id.ToString(), StringComparison.Ordinal)
+            .Should().BeLessThan(m.IndexOf(c.Id.ToString(), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Handle_BlocksIsTheInverse_ClosingACycleIsRefused()
+    {
+        var a = CreateBoardItem();
+        var b = CreateBoardItem(boardId: a.BoardId);
+        SetupBoardItems(a, b);
+        SetupBoardItemLinks(DependencyRow(a, b)); // A waits on B
+
+        // "A blocks B" means B waits on A, which closes the loop.
+        var act = () => _handler.Handle(new CreateBoardItemLinkCommand(a.Id, b.Id, "blocks"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+    }
+
+    [Fact]
+    public async Task Handle_RelatedBetweenItemsThatWaitOnEachOther_IsAllowed()
+    {
+        var a = CreateBoardItem();
+        var b = CreateBoardItem(boardId: a.BoardId);
+        SetupBoardItems(a, b);
+        SetupBoardItemLinks(DependencyRow(a, b));
+
+        var result = await _handler.Handle(new CreateBoardItemLinkCommand(b.Id, a.Id, "related"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
     }
 }

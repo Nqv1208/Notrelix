@@ -131,8 +131,8 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Integrations | 55 | 13 | 20 | 11 | 11 | 0 |
 | Billing | 99 | 57 | 27 | 4 | 7 | 4 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
-| Platform and Foundation | 58 | 4 | 35 | 4 | 14 | 1 |
-| **Total** | **957** | **212** | **228** | **344** | **133** | **40** |
+| Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
+| **Total** | **957** | **212** | **226** | **344** | **135** | **40** |
 
 No use case is DONE: none has a recorded owner check or design-fidelity proof.
 

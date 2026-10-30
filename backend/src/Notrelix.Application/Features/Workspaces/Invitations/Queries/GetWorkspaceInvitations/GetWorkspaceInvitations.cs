@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorksp
 public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IQuery<Result<List<WorkspaceInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     Guid IWorkspaceRequest.WorkspaceId => WorkspaceId;
-    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewMembers;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

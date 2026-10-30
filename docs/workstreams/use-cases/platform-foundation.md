@@ -61,10 +61,10 @@ Letters follow the capability lanes of the team spec (section 6): PF-01 is A, PF
 | K | Frontend query/server-state foundation | 3 | 0 | 1 | 0 | 2 | 0 | 0 |
 | L | Frontend runtime and host composition | 4 | 1 | 2 | 0 | 1 | 0 | 0 |
 | M | UI tokens and primitive foundation | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
-| N | Observability and health | 7 | 1 | 6 | 0 | 0 | 0 | 0 |
+| N | Observability and health | 7 | 1 | 4 | 0 | 2 | 0 | 0 |
 | O | Architecture/dependency enforcement | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | P | CI, container, security and packaging evidence | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| | Total | 58 | 4 | 35 | 4 | 14 | 0 | 1 |
+| | Total | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
 
 No use case is DONE: none has an owner check, and design fidelity does not apply to most. State rules used here: HARDENING means a `frontend/e2e/real` spec exercises the mechanism, directly or because every real spec signs in (so sign-in, CSRF, context, authorization, idempotent writes and the outbox are exercised by all of them); IMPLEMENTING means the mechanism exists with its own unit, integration or architecture tests but no real spec shows it from outside, including tooling gates that are not browser subjects; INTEGRATING means backend and frontend both exist but end-to-end proof or a state is missing. Design columns are "n/a" for mechanisms without a screen.
 
@@ -79,7 +79,7 @@ The spec's preparation-time posture table (spec section 5) is a snapshot; where 
 
 ## 1.3 The ten most important gaps
 
-1. Readiness and full health always answer 200 even when a check is Unhealthy, so a load balancer cannot take a broken instance out (`HealthEndpoints.cs`). N03, N04.
+1. FIXED: readiness and full health now answer 503 when a check is Unhealthy (Degraded stays 200), so a load balancer can take a broken instance out (`HealthEndpoints.cs`). N03, N04.
 2. No offline behaviour in the web app beyond the realtime client's `offline` state: no banner, no query pause policy, no queued writes. L02.
 3. Account is not a first-class id in the browser (TEMPORARY MODEL), so an account switch cannot be told apart from a user change. B04.
 4. Ordered delivery is undecided for any consumer that needs it: no stream identity or contiguous sequence exists on integration events, and the Platform ordering and poison classes are not in the production graph. H03, H04.
@@ -159,8 +159,8 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-M01 | Serve design tokens from one package | M | Frontend build | n/a | yes | Themes | no | IMPLEMENTING | no real e2e needed; token tests exist |
 | UC-PLT-N01 | Carry a correlation id on every request and log | N | API middleware | yes | yes | n/a | no | IMPLEMENTING | no end-to-end trace proof |
 | UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | IMPLEMENTING | no test of the route |
-| UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | IMPLEMENTING | returns 200 when Unhealthy |
-| UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | IMPLEMENTING | returns 200 when Unhealthy |
+| UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
+| UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | IMPLEMENTING | covered by integration tests; no alert rule |
 | UC-PLT-N06 | Answer a startup probe (enterprise baseline) | N | Orchestrator | no | n/a | n/a | no | DEFINED | not specified |
 | UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | unit-tested, no real e2e |
@@ -913,8 +913,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ100; BE-PLT-038.
 - Acceptance: Given the database down, When probed, Then 503.
-- Evidence: BE `HealthEndpoints.cs` `Ready`, `DatabaseHealthCheck.cs`, `RedisHealthCheck.cs`, `OutboxHealthCheck.cs`, registration in `backend/src/Notrelix.API/DependencyInjection.cs` · FE n/a · Design n/a · Tests none for readiness · Real e2e none
-- State: IMPLEMENTING — defect: it returns 200 even when a check is Unhealthy.
+- Evidence: BE `HealthEndpoints.cs` `Ready`, `DatabaseHealthCheck.cs`, `RedisHealthCheck.cs`, `OutboxHealthCheck.cs`, registration in `backend/src/Notrelix.API/DependencyInjection.cs` · FE n/a · Design n/a · Tests `HealthEndpointTests.cs` (`Probe_ShouldMapReportStatusToHttpStatus`, `/health/ready` rows) · Real e2e none
+- State: HARDENING — 503 when Unhealthy, 200 when Healthy or Degraded; no probe proof against the real compose stack yet.
 
 ### UC-PLT-N04 Show full health with each check
 - Capability: N, PF-14
@@ -927,8 +927,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ100.
 - Acceptance: Given an unauthenticated call, When made, Then 401. Given Redis down, When called by an operator, Then the body shows Redis Unhealthy.
-- Evidence: BE `HealthEndpoints.cs` `GetHealth` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Contracts/HealthEndpointTests.cs` (`GetHealth_WhenNotAuthenticated_ShouldReturnUnauthorized`) · Real e2e none
-- State: IMPLEMENTING — the status code does not reflect an Unhealthy report.
+- Evidence: BE `HealthEndpoints.cs` `GetHealth` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Contracts/HealthEndpointTests.cs` (`GetHealth_WhenNotAuthenticated_ShouldReturnUnauthorized`, `Probe_ShouldMapReportStatusToHttpStatus`) · Real e2e none
+- State: HARDENING — 503 when Unhealthy, 200 when Healthy or Degraded; no probe proof against the real compose stack yet.
 
 ### UC-PLT-N05 Report outbox age and dead letters
 - Capability: N, PF-14

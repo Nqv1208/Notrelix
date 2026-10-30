@@ -73,7 +73,53 @@ public class V4DomainRulesTests
 
         Action act = () => DependencyRules.EnsureNoCycle(itemC, itemA, graph);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("Adding this dependency would create a cycle.");
+        act.Should().Throw<BusinessRuleException>().WithMessage("Adding this dependency would create a cycle*");
+    }
+
+    [Fact]
+    public void DependencyRules_EnsureNoCycle_ShouldNameTheClosingPathInOrder()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var c = Guid.NewGuid();
+        // B waits on C, C waits on A; adding "A waits on B" closes A -> B -> C -> A.
+        var graph = new Dictionary<Guid, ItemDependencySnapshot>
+        {
+            [b] = new ItemDependencySnapshot(b, new List<Guid> { c }),
+            [c] = new ItemDependencySnapshot(c, new List<Guid> { a }),
+        };
+
+        Action act = () => DependencyRules.EnsureNoCycle(a, b, graph);
+
+        var ex = act.Should().Throw<BusinessRuleException>().Which;
+        ex.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle);
+        ex.Message.Should().Contain($"{a} -> {b} -> {c} -> {a}");
+    }
+
+    [Fact]
+    public void DependencyRules_EnsureNoCycle_ShouldThrow_OnADirectReverseLink()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var graph = new Dictionary<Guid, ItemDependencySnapshot> { [b] = new ItemDependencySnapshot(b, new List<Guid> { a }) };
+
+        Action act = () => DependencyRules.EnsureNoCycle(a, b, graph);
+
+        act.Should().Throw<BusinessRuleException>().Which.Message.Should().Contain($"{a} -> {b} -> {a}");
+    }
+
+    [Fact]
+    public void DependencyRules_EnsureNoCycle_ShouldAllow_AnAcyclicDiamond()
+    {
+        var a = Guid.NewGuid(); var b = Guid.NewGuid(); var c = Guid.NewGuid(); var d = Guid.NewGuid();
+        var graph = new Dictionary<Guid, ItemDependencySnapshot>
+        {
+            [b] = new ItemDependencySnapshot(b, new List<Guid> { d }),
+            [c] = new ItemDependencySnapshot(c, new List<Guid> { d }),
+        };
+
+        DependencyRules.EnsureNoCycle(a, b, graph);
+        DependencyRules.EnsureNoCycle(a, c, graph);
     }
 
     [Fact]
