@@ -2460,6 +2460,24 @@ frontend/docs/architecture/realtime.md
 
 ---
 
+# 178A. Card popup capabilities (decided 2026-10-30)
+
+These settings and interactions belong to the Item and are written through the Item's own use cases; none of them is a field value except the Vote field.
+
+**Cover sources.** An Item cover is one of ten colour tokens (blue, teal, violet, amber, rose, gray, orange, green, indigo, red) or an image attachment of the same Item, shown as a top strip or over the whole card. Collaboration owns the attachment; Work keeps only its id and asks Collaboration whether it is a stored image of the Item. Uploading an image from the picker also adds it to the Item's attachments. Set and remove are one write against the Item version; the same cover again changes nothing. No image from an outside service is accepted.
+
+**Repeat semantics.** Options: does not repeat, every day, weekdays (Monday to Friday), every week, every two weeks, every month. A repeating Item needs a due date. Completing a repeating Item with a due date does not leave it completed: in the same Complete use case the due date (and the start date, by the same distance) moves to the first occurrence after the completion, the Item stays open and a repeated fact is raised. A retry under the same idempotency key replays the first result. Completion through a status change is not a repeat. Checklist items are not reset.
+
+**Reminder audience.** One reminder per Item: off, when due, 15 minutes, 1 hour, 1 day (the default), 2 days or 1 week before the due time. It goes to every assignee and every follower of the Item, once per person for the Item, due time and offset, so changing the due date or the offset arms it again. The default (1 day) is the daily due-date job, which now tells followers as well as assignees; the other offsets are told by the same job when their time comes. Each person's own notification preference for due dates still applies.
+
+**Vote visibility.** Vote is a Field Type with no stored value: its value is the number of votes and whether the reader has voted. One vote per person per Item and field; voting again or withdrawing a vote that is not there changes nothing. Voting needs the right to comment, never edit rights. Anyone who can view the board sees who voted. It cannot be written as an ordinary field value. It sorts and filters by its count.
+
+**Viewer tracking.** Opening an Item records the last time each board member viewed it, at most once every five minutes per person and Item. Workspace guests are never recorded. The count and the list (names and last times) are visible to whoever can view the board. The records go with the Item and follow the workspace row-level policy of the Item tables.
+
+**Colour-blind mode.** An account preference (default off). When on, each label colour shows a small shape beside the label name in the picker, the chip row and the card face.
+
+**Face fields.** The fields a Kanban card shows, their order and which of them hide while empty are settings of the Kanban view's own config (`cardFieldIds`, `cardHideEmpty`). Changing them needs edit rights on the board. A field with no value shows a dash unless it hides while empty.
+
 # 178. Final Work Management rule
 
 For every Work Management capability, Notrelix must be able to answer:

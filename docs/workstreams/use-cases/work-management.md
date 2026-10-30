@@ -3002,6 +3002,20 @@ Lead decision (2026-10-30): LD4. Realtime frames carry the resource version (the
 
 Lead decision (2026-10-30): LD5. Calendar and Timeline read dated items through the ordinary board item read with their date fields; the raw `plan-items` path of the frontend is removed because the backend has no such route.
 
+## 4.9 Card popup capabilities (built 2026-10-30)
+
+These are new capabilities of the item card popup; each is built backend to frontend and checked only by compiling, so the gap is the same for all of them: tests and owner check. Product rules: product section 178A.
+
+- Item cover (colour or image attachment, strip or whole card, card face shows it): Evidence: BE BoardItems.SetCover = PUT /board-items/{itemId}/cover -> SetBoardItemCoverCommand (`BoardItems/Commands/SetBoardItemCover/SetBoardItemCover.cs`) [EV / Idem] · FE `components/card-popup/capabilities/cover-picker.tsx`, `card-cover.tsx`, `views/kanban/kanban-card.tsx`. State: INTEGRATING — tests and owner check.
+- Repeat and complete-and-reopen: Evidence: BE BoardItems.SetRepeat -> SetBoardItemRepeatCommand; `BoardItem.CompleteOccurrence` used by CompleteBoardItemCommand [EV / Idem] · FE `repeat-reminder-select.tsx`. State: INTEGRATING — tests and owner check.
+- Reminder before due and followers on the due-date job: Evidence: BE BoardItems.SetReminder -> SetBoardItemReminderCommand; `DueDateNotificationSweeper` in `Infrastructure/BackgroundJobs/DueDateNotificationSweep.cs` · FE `repeat-reminder-select.tsx`. State: INTEGRATING — tests and owner check.
+- Vote field type: Evidence: BE `FieldType.Vote`, BoardItems.SetVote / ListVotes -> SetBoardItemVoteCommand [- / Idem], `BoardItemFieldProjection` · FE `vote-viewers-chips.tsx`, `field-type-registry.ts`. State: INTEGRATING — tests and owner check.
+- Viewers ("Đã xem"): Evidence: BE BoardItems.RecordView / ListViewers -> RecordBoardItemViewCommand, `board_item_views` with RLS · FE `ViewersChip`. State: INTEGRATING — tests and owner check.
+- Colour-blind mode: Evidence: BE Identity.Profile.UpdatePreferences `colourBlindLabels` · FE `colour-blind-label-mark.tsx`, `apps/web/src/providers/app-providers.tsx`. State: INTEGRATING — tests and owner check.
+- Copy a checklist: Evidence: BE Checklists.Copy -> CopyChecklistCommand, Checklists.ListForBoard · FE `ChecklistCopyFrom`. State: INTEGRATING — tests and owner check.
+- Remove all links: Evidence: BE BoardItems.ClearLinks -> ClearBoardItemLinksCommand [- / Idem] · FE `ClearAllLinks`. State: INTEGRATING — tests and owner check.
+- Face fields of the Kanban card: Evidence: FE `face-fields-popover.tsx`, `face-fields.ts`, view config `cardFieldIds` and `cardHideEmpty` (the unused backend `KanbanViewConfig.VisibleFieldIds` refuses an empty list, which would break showing no fields, so the saved view config carries it). State: INTEGRATING — tests and owner check.
+
 # 5. Canonical updates required
 
 The product doc [work-management](../../product/work-management.md) should absorb the following. Each item names the section that owns it.
