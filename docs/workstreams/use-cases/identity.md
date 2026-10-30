@@ -153,15 +153,15 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-J03 | Turn the second factor off | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | blocked-by-policy case |
 | UC-IDN-J04 | Recover an account that lost both factors | J | Person, Account admin | no | no | none | no | BLOCKED | who may reset another person |
 | UC-IDN-J05 | Enforce an account-required second factor | J | System | no | no | none | no | BLOCKED | Accounts policy fact |
-| UC-IDN-K01 | Read my security summary | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-K02 | Read my security activity | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-K03 | Ask which step-up factor applies | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-K04 | Step up with a second-factor code | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-K05 | Step up with the password | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
+| UC-IDN-K01 | Read my security summary | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-K02 | Read my security activity | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-K03 | Ask which step-up factor applies | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-K04 | Step up with a second-factor code | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-K05 | Step up with the password | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-K06 | Step up with a linked provider | K | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
-| UC-IDN-K07 | Change my password | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
+| UC-IDN-K07 | Change my password | K | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-K08 | Set a first password (enterprise baseline) | K | Signed-in person | no | no | none | no | DEFINED | provider-only accounts |
-| UC-IDN-K09 | Change my sign-in email | K | Signed-in person | yes | no | none | no | IMPLEMENTING | no proof, no screen |
+| UC-IDN-K09 | Change my sign-in email | K | Signed-in person | yes | no | none | no | IMPLEMENTING | step-up built; pending-email model, old-address notice, neutral answer, screen, artboard |
 | UC-IDN-K10 | Notify me of security changes (enterprise baseline) | K | System | no | no | none | no | DEFINED | no mail |
 | UC-IDN-K11 | Operator audit of identity security changes | K | Auditor | partial | n/a | n/a | no | IMPLEMENTING | owner is Governance audit |
 | UC-IDN-L01 | List workspace API tokens | L | Workspace Owner or Admin | yes | no | none | no | IMPLEMENTING | no screen, unbounded |
@@ -757,12 +757,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: the purpose (disable MFA, regenerate codes, link or unlink a provider, issue an API token, change password, revoke other sessions).
 - Output: the factor to use: MFA first, then password, then provider re-authentication.
 - Main flow: 1. The page posts `POST /api/v1/auth/security/step-up/requirement`. 2. It shows the matching prompt.
-- No-op / rejection / concurrency / retry: read-like; no state change; a purpose with no mapping is refused.
-- UI states: pending, prompt.
+- No-op / rejection / concurrency / retry: read-like; no state change; a purpose with no mapping is refused with 400 (a number or an unknown name used to parse to an undefined purpose and fail as a 500; this holds for the three step-up calls and the provider step-up start).
+- UI states: pending (the security page's buttons wait while the requirement is read), prompt.
 - Rules: ID-006; IAREQ056.
 - Acceptance: Given MFA on, when the requirement is asked, then it says MFA; given a provider-only person, then provider.
-- Evidence: BE `Security/Queries/GetStepUpRequirement`, `Security/StepUpPurposeMapping.cs`; API `Auth/Commands/SecurityStepUpEndpoints.cs` (`POST /api/v1/auth/security/step-up/requirement`) · FE `account.service.ts` · Design Final-Account · Tests Application `SecurityStepUpServiceThrottleTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec.
+- Evidence: BE `Security/Queries/GetStepUpRequirement`, `Security/StepUpPurposeMapping.cs`; API `Auth/Commands/SecurityStepUpEndpoints.cs`, `StepUpPurposeInput.cs` (`POST /api/v1/auth/security/step-up/requirement`) · FE `account.service.ts` · Design Final-Account · Tests Application `SecurityStepUpServiceThrottleTests` · Real e2e none
+- State: INTEGRATING. Built: the purpose is read by name only. Missing: tests and owner check, real spec.
 
 ### UC-IDN-K04 Step up with a second-factor code
 - Capability: K Security settings
@@ -772,11 +772,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Output: a single-use step-up proof bound to the user, the session and the purpose, short lived.
 - Main flow: 1. The person types the code. 2. The client posts `POST /api/v1/auth/security/step-up/complete-mfa`. 3. The page sends the proof with the sensitive request.
 - No-op / rejection / concurrency / retry: the proof works once, for that purpose and that session only; wrong codes count against the lockout; a locked attempt is not verified.
-- UI states: code entry, wrong code, locked, success.
+- UI states: code entry, wrong code, expired (the challenge is out of tries or the proof is too old: the page opens a fresh challenge for the same step and says so, instead of repeating "wrong code"), locked, success.
 - Rules: ID section 67, ID-006; IAREQ056.
 - Acceptance: Given a proof, when used twice, then the second use fails. Given a proof for another purpose, then it fails.
 - Evidence: BE `Security/Commands/CompleteStepUpMfa`; API `SecurityStepUpEndpoints.cs` (`POST /api/v1/auth/security/step-up/complete-mfa`) · FE `account-security-surface.tsx` · Design Final-Account · Tests Application `SecurityStepUpServiceThrottleTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec; the proof is bound to a session id that refresh replaces (UC-IDN-D01).
+- State: INTEGRATING. Built: the step-up challenge dies at the fifth wrong code (it was removed only by the attempt after it, as the sign-in challenge used to be); a code that already opened something is refused (UC-IDN-I01 guard, shared verifier); the dead-challenge state on the page. Missing: tests and owner check, real spec; the proof is bound to a session id that refresh replaces (UC-IDN-D01).
 
 ### UC-IDN-K05 Step up with the password
 - Capability: K Security settings
@@ -818,7 +818,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 12, 20; ID-006; IAREQ015, IAREQ056.
 - Acceptance: Given a second device, when the password changes, then that device is signed out. Given a wrong current password, then no change.
 - Evidence: BE `Auth/Commands/ChangePassword/ChangePassword.cs`; API `Auth/Commands/ChangePasswordEndpoint.cs` (`POST /api/v1/auth/change-password`) · FE `account-password-panel.tsx`, `packages/features/account/src/core/password.ts` · Design Final-Account · Tests Application `ChangePasswordTests`, API `ChangePasswordEndpointTests`, FE `password.unit.test.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec.
+- State: INTEGRATING. Reviewed, nothing changed: the current password and (with a factor on) the proof are both checked and share the step-up lockout; the validator refuses the same password; every session, this one too, ends and the user's access tokens are cut off. Missing: tests and owner check, real spec.
 
 ### UC-IDN-K08 Set a first password (enterprise baseline)
 - Capability: K Security settings
@@ -845,8 +845,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: step-up prompt, sent, validation error, confirmed.
 - Rules: ID-002, section 63; ID-006.
 - Acceptance: Given an unconfirmed new address, when the person signs in with the old one, then it works; after confirmation only the new one works and the User id is unchanged.
-- Evidence: BE `Profiles/Commands/UpdateEmail/UpdateEmail.cs` (changes the email at once, no step-up, answers "Email is already in use."); API `Profile/Commands/UpdateEmailEndpoint.cs` (`POST /api/v1/profile/email`) · FE none · Design none · Tests Application `UpdateEmailTests`, API `ProfileEndpointTests` · Real e2e none
-- State: IMPLEMENTING. Missing: step-up, pending-email model, old-address notice, neutral answer, screen, artboard.
+- Evidence: BE `Profiles/Commands/UpdateEmail/UpdateEmail.cs` (needs a `ChangeSecurityIdentity` proof when the address changes, checked before anything else so an unproven session cannot probe which addresses are taken; still changes the email at once and answers "Email is already in use." to a proven one); API `Profile/Commands/UpdateEmailEndpoint.cs` (`POST /api/v1/profile/email`, body `{ email, stepUpToken }`, 412 without a proof) · FE none · Design none · Tests Application `UpdateEmailTests`, API `ProfileEndpointTests` · Real e2e none
+- State: IMPLEMENTING. Built (security stop-gap inside the lead decision): the step-up. Missing: the pending-email model (the sign-in email still changes before the new address is proven), the old-address notice, the neutral answer, other sessions ending on confirmation, the screen, an artboard. `UpdateEmailTests` call the command without a proof and need updating. A session without proof can no longer change the sign-in email, which closed an account takeover path (change the email, then reset the password to it).
 
 ### UC-IDN-K10 Notify me of security changes (enterprise baseline)
 - Capability: K Security settings
