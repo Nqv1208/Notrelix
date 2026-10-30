@@ -16,5 +16,12 @@ export function useDeleteCardUpdate(cardId: string, workspaceId: string) {
         queryKey: wmQueryKeys.cardActivity(workspaceId, cardId),
       });
     },
+    // A refusal (403, or 404 when the item is no longer visible) leaves the
+    // list stale: read it again so it shows what the server holds.
+    onError: () => {
+      queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),
+      });
+    },
   });
 }

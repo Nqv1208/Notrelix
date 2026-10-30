@@ -8828,6 +8828,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                boardItemId: string;
                 attachmentId: string;
             };
             cookie?: never;

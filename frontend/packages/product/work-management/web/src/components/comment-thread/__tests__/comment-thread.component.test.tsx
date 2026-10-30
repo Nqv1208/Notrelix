@@ -18,7 +18,10 @@ import {
   vi as sheetVi,
   fillSheetCopy,
 } from "../../card-detail/item-sheet.copy";
-import { commenterSheetCapabilities } from "../../../verification/item-sheet-fixtures";
+import {
+  commenterSheetCapabilities,
+  editorSheetCapabilities,
+} from "../../../verification/item-sheet-fixtures";
 import {
   erpPageBoard,
   erpPageDetailData,
@@ -93,8 +96,9 @@ const thread: CardUpdate[] = [
 function mount(
   copy: ItemPageCopy,
   capabilities: ItemPageSurfaceProps["capabilities"],
+  updates: CardUpdate[] = thread,
 ) {
-  const item = erpPageItem({ updates: thread });
+  const item = erpPageItem({ updates });
   const callbacks: ItemPageSurfaceProps["callbacks"] = {
     onClose: vi.fn(),
     onRenameTitle: vi.fn(),
@@ -118,7 +122,7 @@ function mount(
       board={erpPageBoard()}
       card={item}
       capabilities={capabilities}
-      detailData={{ ...erpPageDetailData(item), updates: thread }}
+      detailData={{ ...erpPageDetailData(item), updates }}
       callbacks={callbacks}
       navigation={erpPageNavigation({
         onBack: vi.fn(),
@@ -271,3 +275,38 @@ describe.each([
     });
   },
 );
+
+describe.each([
+  ["vi", viCopy],
+  ["en", en],
+] as const)("who may edit or delete a comment (%s)", (_l, copy) => {
+  const mine = update("mine", "2026-10-11T09:00:00+07:00", {
+    author: { ...author, id: erpPageViewer.id, userId: erpPageViewer.userId },
+  });
+  const theirs = update("theirs", "2026-10-11T10:00:00+07:00");
+
+  it("offers Edit and Delete on the viewer's own comment only, even to an editor", () => {
+    const callbacks = mount(copy, editorSheetCapabilities, [mine, theirs]);
+    const menus = screen.getAllByRole("button", {
+      name: copy.activity.actions,
+    });
+    // The editor's menu appears on their own comment alone.
+    expect(menus).toHaveLength(1);
+    fireEvent.pointerDown(menus[0]!, { button: 0, ctrlKey: false });
+    fireEvent.keyDown(menus[0]!, { key: "Enter" });
+    expect(
+      screen.getByRole("menuitem", { name: copy.activity.edit }),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.activity.delete }),
+    );
+    expect(callbacks.onDeleteUpdate).toHaveBeenCalledWith("mine");
+  });
+
+  it("offers nothing on someone else's comment", () => {
+    mount(copy, editorSheetCapabilities, [theirs]);
+    expect(
+      screen.queryByRole("button", { name: copy.activity.actions }),
+    ).toBeNull();
+  });
+});

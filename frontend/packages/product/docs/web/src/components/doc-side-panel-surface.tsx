@@ -355,7 +355,7 @@ function CommentsPanel({
               </div>
             ) : (
               <div className="mt-0.5 flex gap-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100">
-                {!comment.resolved && canComment ? (
+                {!comment.resolved && canComment && comment.canResolve ? (
                   <button
                     type="button"
                     aria-label={c.resolveThread}
@@ -366,7 +366,7 @@ function CommentsPanel({
                     <Check aria-hidden="true" className="size-3.5" />
                   </button>
                 ) : null}
-                {comment.resolved && canComment ? (
+                {comment.resolved && canComment && comment.canResolve ? (
                   <button
                     type="button"
                     aria-label={c.reopenThread}

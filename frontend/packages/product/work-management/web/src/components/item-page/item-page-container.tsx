@@ -38,6 +38,7 @@ import {
   type CardFile,
   type UpdateCardInput,
 } from "@notrelix/work-management-core";
+import { collaborationRefusalMessage } from "./collaboration-refusal";
 import { boardCapabilities } from "../shared/board-capabilities";
 import { formatItemDate, nextLabelColor } from "../shared/item-display";
 import { useItemSheetCopy } from "../card-detail/use-item-sheet-copy";
@@ -310,6 +311,13 @@ function ItemPageReady({
       : {}),
     retryable: canRetryItemFileUpload(upload),
   }));
+  /** A comment or file write the server refused: say why, the list is read again by the mutation. */
+  const toastRefusal = (error: unknown) =>
+    onToast?.({
+      kind: "error",
+      dismissLabel: copy.toasts.dismiss,
+      title: collaborationRefusalMessage(error, copy.toasts),
+    });
   /** Saves a stored file with the session: the content route takes no URL token. */
   const downloadFile = (file: CardFile) => {
     cardServices
@@ -547,7 +555,10 @@ function ItemPageReady({
     onDeleteFile: (file) =>
       deleteFile.mutateAsync(file.id).then(
         () => true,
-        () => false,
+        (error) => {
+          toastRefusal(error);
+          return false;
+        },
       ),
     onDuplicate: capabilities.canCreateCard
       ? removal.requestDuplicate
@@ -583,8 +594,10 @@ function ItemPageReady({
       }),
     onToggleReaction: (commentId, emoji, on) =>
       toggleReaction.mutate({ commentId, emoji, on }),
-    onUpdateUpdate: (updateId, body) => updateUpdate.mutate({ updateId, body }),
-    onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
+    onUpdateUpdate: (updateId, body) =>
+      updateUpdate.mutate({ updateId, body }, { onError: toastRefusal }),
+    onDeleteUpdate: (updateId) =>
+      deleteUpdate.mutate(updateId, { onError: toastRefusal }),
     onSelectTab: () => undefined,
     onPrevious: previousId ? () => onOpenItem(previousId) : undefined,
     onNext: nextId ? () => onOpenItem(nextId) : undefined,

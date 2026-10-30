@@ -1,18 +1,20 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Comments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment;
 
 /// <summary>
-/// Removes an attachment of a Documents page. Requires edit permission on the page, and the
+/// Removes an attachment of a Documents page. An editor of the page may delete it, and the
 /// attachment must belong to exactly this page. The stored object is retained and purged by the
 /// attachment retention job, not here.
 /// </summary>
 public record DeletePageAttachmentCommand(Guid PageId, Guid AttachmentId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.UpdatePage;
+    // A coarse gate; the editor-only rule is decided in the handler from the attachment's target.
+    public PermissionAction Action => PermissionAction.ViewPage;
     public ResourceRef Resource => ResourceRef.Create(AttachmentTargets.Page, PageId);
 }
 
@@ -21,15 +23,18 @@ public class DeletePageAttachmentCommandHandler : IRequestHandler<DeletePageAtta
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICommentTargetAccess _access;
 
     public DeletePageAttachmentCommandHandler(
         ICollaborationDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ICommentTargetAccess access)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _access = access;
     }
 
     public async Task<Result> Handle(DeletePageAttachmentCommand request, CancellationToken ct)
@@ -41,8 +46,9 @@ public class DeletePageAttachmentCommandHandler : IRequestHandler<DeletePageAtta
                 && a.Target.ResourceId == request.PageId, ct);
 
         if (attachment is null)
-            throw new NotFoundException(nameof(Attachment), request.AttachmentId);
+            throw AttachmentAccessRules.NotFound(request.Resource);
 
+        await AttachmentAccessRules.RequireDeleterAsync(attachment, request.Resource, _access, ct);
         attachment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

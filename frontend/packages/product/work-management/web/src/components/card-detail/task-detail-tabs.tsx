@@ -364,6 +364,7 @@ function ActivitySection({
             )}
             isLoading={data.updatesLoading}
             capabilities={capabilities}
+            viewerUserId={data.viewerUserId}
             copy={copy}
             now={now}
             timeZone={timeZone}
