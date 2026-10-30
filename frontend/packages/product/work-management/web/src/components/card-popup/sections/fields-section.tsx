@@ -154,6 +154,7 @@ export function FieldsSection() {
             workspaceId={board.workspaceId}
             fields={board.fieldDefinitions}
             canEdit={canEdit}
+            sampleCard={card}
             trigger={
               <SmallBtn>
                 <SlidersHorizontal aria-hidden="true" className="size-[13px]" />

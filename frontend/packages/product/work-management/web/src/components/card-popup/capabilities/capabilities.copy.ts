@@ -84,13 +84,13 @@ export const en = {
     note: "Each colour gets a small shape. Applies to your account.",
     shapes: {
       blue: "circle",
-      teal: "square",
-      violet: "triangle",
-      amber: "diamond",
-      rose: "star",
+      teal: "triangle",
+      violet: "diamond",
+      amber: "square",
+      rose: "plus",
       gray: "dash",
       orange: "hexagon",
-      green: "plus",
+      green: "star",
       indigo: "cross",
       red: "ring",
     },
@@ -98,7 +98,8 @@ export const en = {
   checklist: {
     copyFrom: "Copy items from…",
     none: "(none)",
-    entry: "{{title}} · {{item}} ({{count}})",
+    entry: "{{item}} · {{count}} items",
+    thisCard: "In this card",
     failed: "The checklist could not be copied.",
   },
   links: {
@@ -112,7 +113,11 @@ export const en = {
   face: {
     open: "Fields shown on the card",
     title: "Fields shown on the card",
-    note: "Choose the fields shown on the card face and drag to reorder. Applies to every card in this Kanban view.",
+    note: "Choose the fields shown on the card face and in the top chip row. Drag to reorder.",
+    applies:
+      "Applies to every card in this Kanban view. Only people who can set up the board can change it.",
+    reorder: "Reorder {{name}}: drag, or use the up and down arrow keys",
+    hideEmptyOf: "Hide when empty: {{name}}",
     shown: "Shown, in order",
     hidden: "Not shown",
     hideEmpty: "Hide when empty",
@@ -210,13 +215,13 @@ export const vi: CardCapabilitiesCopy = {
     note: "Mỗi màu có thêm một hình nhỏ. Áp dụng cho tài khoản của bạn.",
     shapes: {
       blue: "tròn",
-      teal: "vuông",
-      violet: "tam giác",
-      amber: "thoi",
-      rose: "sao",
+      teal: "tam giác",
+      violet: "thoi",
+      amber: "vuông",
+      rose: "dấu cộng",
       gray: "gạch",
       orange: "lục giác",
-      green: "dấu cộng",
+      green: "sao",
       indigo: "dấu nhân",
       red: "vòng",
     },
@@ -224,7 +229,8 @@ export const vi: CardCapabilitiesCopy = {
   checklist: {
     copyFrom: "Chép mục từ…",
     none: "(không)",
-    entry: "{{title}} · {{item}} ({{count}})",
+    entry: "{{item}} · {{count}} mục",
+    thisCard: "Trong thẻ này",
     failed: "Chưa chép được checklist.",
   },
   links: {
@@ -238,7 +244,11 @@ export const vi: CardCapabilitiesCopy = {
   face: {
     open: "Trường hiển thị trên thẻ",
     title: "Trường hiển thị trên thẻ",
-    note: "Chọn trường hiện ở mặt thẻ, kéo để đổi thứ tự. Áp dụng cho mọi thẻ ở chế độ xem Kanban này.",
+    note: "Chọn trường hiện ở mặt thẻ và ở hàng chip trên cùng. Kéo để đổi thứ tự.",
+    applies:
+      "Áp dụng cho mọi thẻ ở chế độ xem Kanban này. Người sửa được thiết lập board mới đổi được.",
+    reorder: "Đổi thứ tự {{name}}: kéo, hoặc dùng phím mũi tên lên xuống",
+    hideEmptyOf: "Ẩn khi trống: {{name}}",
     shown: "Hiển thị, theo thứ tự",
     hidden: "Không hiển thị",
     hideEmpty: "Ẩn khi trống",

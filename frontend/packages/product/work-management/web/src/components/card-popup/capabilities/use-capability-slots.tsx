@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
+import type { CardPopupSlots } from "../card-popup-context";
 import { CardCover } from "./card-cover";
 import { ChecklistCopyFrom, ClearAllLinks } from "./checklist-links-controls";
 import {
@@ -18,7 +19,7 @@ export interface CapabilitySlots {
   readonly reminder?: React.ReactNode;
   readonly chips?: React.ReactNode;
   readonly labelMarks?: React.ReactNode;
-  readonly checklistExtras?: React.ReactNode;
+  readonly checklistExtras?: CardPopupSlots["checklistExtras"];
   readonly linksExtras?: React.ReactNode;
 }
 
@@ -62,7 +63,6 @@ export function useCapabilitySlots({
       reminder: <ReminderSelect card={card} disabled={!canEdit} />,
       chips: (
         <>
-          <ViewersChip card={card} />
           {voteFields.map((field) => (
             <VoteChip
               key={field.id}
@@ -71,6 +71,7 @@ export function useCapabilitySlots({
               canVote={canVote}
             />
           ))}
+          <ViewersChip card={card} />
         </>
       ),
       labelMarks: colourBlind.setEnabled ? (
@@ -79,7 +80,16 @@ export function useCapabilitySlots({
           onToggle={colourBlind.setEnabled}
         />
       ) : null,
-      checklistExtras: canEdit ? <ChecklistCopyFrom card={card} /> : null,
+      checklistExtras: canEdit
+        ? ({ source, onSourceChange, failed }) => (
+            <ChecklistCopyFrom
+              card={card}
+              value={source}
+              onChange={onSourceChange}
+              error={failed}
+            />
+          )
+        : undefined,
       linksExtras: canEdit ? <ClearAllLinks card={card} /> : null,
     };
   }, [board.fieldDefinitions, canEdit, canVote, card, colourBlind, exists]);

@@ -85,3 +85,11 @@ export function faceFieldsOf(
   }
   return shown;
 }
+
+/** The second line of a field's row in the face fields list: what kind of field it is. */
+export function faceFieldLabel(
+  field: FieldDefinition,
+  typeNames: Readonly<Record<string, string>>,
+): string {
+  return typeNames[field.fieldType] ?? field.fieldType;
+}

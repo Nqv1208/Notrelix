@@ -76,7 +76,13 @@ function Marked({ text, query }: { text: string; query: string }) {
 }
 
 /** The sub-item title field the menu's "Việc con" opens. */
-function SubItemPanel({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+function SubItemPanel({
+  onBack,
+  onClose,
+}: {
+  onBack: () => void;
+  onClose: () => void;
+}) {
   const { copy, callbacks } = useCardPopup();
   const t = copy.shell.addMenu;
   const [title, setTitle] = useState("");
@@ -142,16 +148,15 @@ function MenuBody({ onClose }: { onClose: () => void }) {
 
   const empty = useMemo(() => {
     const own = fields.priority ? [fields.priority] : [];
-    return [...own, ...customItemFields(board)]
-      .filter(
-        (f, i, list) =>
-          list.findIndex((o) => o.id === f.id) === i &&
-          !pinned.includes(f.id) &&
-          !addedFieldIds.includes(f.id) &&
-          f.fieldType !== "formula" &&
-          f.fieldType !== "rollup" &&
-          isFieldValueEmpty(card.fieldValues[f.id]),
-      );
+    return [...own, ...customItemFields(board)].filter(
+      (f, i, list) =>
+        list.findIndex((o) => o.id === f.id) === i &&
+        !pinned.includes(f.id) &&
+        !addedFieldIds.includes(f.id) &&
+        f.fieldType !== "formula" &&
+        f.fieldType !== "rollup" &&
+        isFieldValueEmpty(card.fieldValues[f.id]),
+    );
   }, [addedFieldIds, board, card.fieldValues, fields.priority, pinned]);
 
   const groups = useMemo<Group[]>(() => {
@@ -196,7 +201,12 @@ function MenuBody({ onClose }: { onClose: () => void }) {
       props.push({
         id: "all",
         label: fillPopupCopy(t.fields.seeAll, { count: empty.length }),
-        icon: <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />,
+        icon: (
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 shrink-0 text-brand-ink"
+          />
+        ),
         strong: true,
         run: () => setAll(true),
       });
@@ -204,7 +214,9 @@ function MenuBody({ onClose }: { onClose: () => void }) {
       props.push({
         id: "create",
         label: t.fields.create,
-        icon: <Plus aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />,
+        icon: (
+          <Plus aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
+        ),
         strong: true,
         run: () => startNewField(""),
       });
@@ -237,17 +249,33 @@ function MenuBody({ onClose }: { onClose: () => void }) {
             workspaceId={board.workspaceId}
             fields={board.fieldDefinitions}
             canEdit
+            sampleCard={card}
             trigger={row({}) as React.ReactElement}
           />
         ),
       });
-    const keep = (e: Entry) => !needle || foldForSearch(e.label).includes(needle);
+    const keep = (e: Entry) =>
+      !needle || foldForSearch(e.label).includes(needle);
     return [
       { id: "content", title: t.groups.content, entries: content.filter(keep) },
       { id: "fields", title: t.groups.fields, entries: props.filter(keep) },
       { id: "display", title: t.groups.display, entries: display.filter(keep) },
     ];
-  }, [addField, all, board, callbacks, empty, mode, needle, onClose, openPicker, slots.cover, startNewField, t]);
+  }, [
+    addField,
+    all,
+    board,
+    callbacks,
+    card,
+    empty,
+    mode,
+    needle,
+    onClose,
+    openPicker,
+    slots.cover,
+    startNewField,
+    t,
+  ]);
 
   const flat = groups.flatMap((g) => g.entries);
   const noMatch = needle !== "" && flat.length === 0;
@@ -258,7 +286,12 @@ function MenuBody({ onClose }: { onClose: () => void }) {
         {
           id: "create-named",
           label: fillPopupCopy(t.fields.createNamed, { name: query.trim() }),
-          icon: <Plus aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />,
+          icon: (
+            <Plus
+              aria-hidden="true"
+              className="size-4 shrink-0 text-brand-ink"
+            />
+          ),
           strong: true,
           run: () => startNewField(query.trim()),
         },
@@ -291,10 +324,17 @@ function MenuBody({ onClose }: { onClose: () => void }) {
       <>
         {entry.icon}
         <span className="min-w-0 flex-1 truncate">
-          {entry.strong ? entry.label : <Marked text={entry.label} query={query} />}
+          {entry.strong ? (
+            entry.label
+          ) : (
+            <Marked text={entry.label} query={query} />
+          )}
         </span>
         {entry.chevron ? (
-          <ChevronRight aria-hidden="true" className="size-3.5 text-meta-foreground" />
+          <ChevronRight
+            aria-hidden="true"
+            className="size-3.5 text-meta-foreground"
+          />
         ) : null}
       </>
     );
@@ -314,7 +354,10 @@ function MenuBody({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className="flex h-11 items-center gap-2 border-b-2 border-meta-foreground pr-1.5 pl-3 text-meta-foreground focus-within:border-primary">
-        <Search aria-hidden="true" className="size-4 shrink-0 text-meta-foreground" />
+        <Search
+          aria-hidden="true"
+          className="size-4 shrink-0 text-meta-foreground"
+        />
         <input
           data-picker-search=""
           type="text"
@@ -334,7 +377,9 @@ function MenuBody({ onClose }: { onClose: () => void }) {
               event.preventDefault();
               setMoved(true);
               const step = event.key === "ArrowDown" ? 1 : -1;
-              setActive((current + step + rows.length) % Math.max(rows.length, 1));
+              setActive(
+                (current + step + rows.length) % Math.max(rows.length, 1),
+              );
             } else if (event.key === "Enter") {
               event.preventDefault();
               rows[current]?.run();
@@ -367,8 +412,14 @@ function MenuBody({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           groups.map((group) =>
-            group.entries.length === 0 && !(group.id === "fields" && emptyBoard) ? null : (
-              <div key={group.id} role="group" aria-label={group.title} className="contents">
+            group.entries.length === 0 &&
+            !(group.id === "fields" && emptyBoard) ? null : (
+              <div
+                key={group.id}
+                role="group"
+                aria-label={group.title}
+                className="contents"
+              >
                 <div className="mt-1 flex h-7 items-center px-2 text-[12px] font-medium text-meta-foreground">
                   {group.title}
                 </div>
@@ -379,7 +430,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
                 ) : null}
                 {group.entries.map(renderRow)}
               </div>
-            )
+            ),
           )
         )}
       </div>

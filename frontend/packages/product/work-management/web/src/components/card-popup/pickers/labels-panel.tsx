@@ -41,7 +41,7 @@ function LabelChip({
         className,
       )}
     >
-      <ColourBlindLabelMark color={label.color} className="mr-1" />
+      <ColourBlindLabelMark label={label} />
       {label.name}
     </span>
   );

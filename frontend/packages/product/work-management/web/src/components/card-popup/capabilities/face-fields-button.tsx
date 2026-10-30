@@ -1,4 +1,4 @@
-import type { FieldDefinition } from "@notrelix/work-management-core";
+import type { Card, FieldDefinition } from "@notrelix/work-management-core";
 import { useBoardView } from "@notrelix/work-management-state";
 import { FaceFieldsPopover } from "./face-fields-popover";
 
@@ -13,12 +13,14 @@ export function FaceFieldsButton({
   fields,
   canEdit,
   trigger,
+  sampleCard,
 }: {
   boardId: string;
   workspaceId: string;
   fields: readonly FieldDefinition[];
   canEdit: boolean;
   trigger?: React.ReactNode;
+  sampleCard?: Card;
 }) {
   const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
   return (
@@ -30,6 +32,7 @@ export function FaceFieldsButton({
       }}
       canEdit={canEdit}
       trigger={trigger}
+      sampleCard={sampleCard}
       onChange={(next) => updateViewConfig(next)}
     />
   );

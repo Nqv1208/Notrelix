@@ -1,76 +1,38 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { cn } from "@notrelix/ui-web";
+import { itemLabelTone, type ItemLabelTone } from "../../shared/item-display";
+import { PanelBtn } from "../popup-ui";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
 
-/** The ten shapes, one per colour family, drawn in the colour of the text beside them. */
-const SHAPES = [
-  "circle",
-  "square",
-  "triangle",
-  "diamond",
-  "star",
-  "dash",
-  "hexagon",
-  "plus",
-  "cross",
-  "ring",
-] as const;
-export type LabelShape = (typeof SHAPES)[number];
+/** The copy key of the spoken name of each tone's shape. */
+const TONE_COLOR = {
+  data: "blue",
+  security: "rose",
+  training: "teal",
+  report: "amber",
+  doc: "gray",
+  test: "violet",
+  orange: "orange",
+  green: "green",
+  indigo: "indigo",
+  red: "red",
+} as const satisfies Record<ItemLabelTone, string>;
 
-/** The copy key of each shape's spoken name. */
-const SHAPE_COLOR = {
-  circle: "blue",
-  square: "teal",
-  triangle: "violet",
-  diamond: "amber",
-  star: "rose",
-  dash: "gray",
-  hexagon: "orange",
-  plus: "green",
-  cross: "indigo",
-  ring: "red",
-} as const;
-
-const PATHS: Readonly<Record<LabelShape, ReactNode>> = {
-  circle: <circle cx="6" cy="6" r="4" fill="currentColor" />,
-  square: <rect x="2" y="2" width="8" height="8" rx="1" fill="currentColor" />,
-  triangle: <path d="M6 1.5 11 10H1Z" fill="currentColor" />,
-  diamond: <path d="M6 1 11 6 6 11 1 6Z" fill="currentColor" />,
-  star: (
-    <path
-      d="m6 1 1.4 3.2 3.4.3-2.6 2.2.8 3.3L6 8.3 3 10l.8-3.3L1.2 4.5l3.4-.3Z"
-      fill="currentColor"
-    />
+/** One shape per tone, drawn on a 24 grid: filled, or stroked only for the open ones (plus, dash, cross, ring). */
+const PATHS: Readonly<Record<ItemLabelTone, ReactNode>> = {
+  data: <circle cx="12" cy="12" r="7" />,
+  security: <path d="M12 4v16M4 12h16" style={{ fill: "none" }} />,
+  training: <path d="M12 4 21 20H3z" />,
+  report: <rect x="5" y="5" width="14" height="14" />,
+  doc: <path d="M5 12h14" style={{ fill: "none" }} />,
+  test: <path d="M12 3 21 12 12 21 3 12z" />,
+  orange: <path d="M12 3 20 7.5v9L12 21 4 16.5v-9z" />,
+  green: (
+    <path d="m12 3 2.6 5.8 6.4.6-4.8 4.3 1.4 6.3L12 16.7 6.4 20l1.4-6.3L3 9.4l6.4-.6Z" />
   ),
-  dash: <rect x="1.5" y="5" width="9" height="2" rx="1" fill="currentColor" />,
-  hexagon: <path d="M3.5 1.5h5L11 6l-2.5 4.5h-5L1 6Z" fill="currentColor" />,
-  plus: <path d="M5 1.5h2V5h3.5v2H7v3.5H5V7H1.5V5H5Z" fill="currentColor" />,
-  cross: (
-    <path
-      d="m2.5 1 3.5 3.5L9.5 1 11 2.5 7.5 6 11 9.5 9.5 11 6 7.5 2.5 11 1 9.5 4.5 6 1 2.5Z"
-      fill="currentColor"
-    />
-  ),
-  ring: (
-    <circle
-      cx="6"
-      cy="6"
-      r="3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    />
-  ),
+  indigo: <path d="m6 6 12 12M18 6 6 18" style={{ fill: "none" }} />,
+  red: <circle cx="12" cy="12" r="6.5" style={{ fill: "none" }} />,
 };
-
-/** A stable shape for a label colour: the same colour string always gets the same shape. */
-export function labelShapeFor(color: string): LabelShape {
-  let hash = 0;
-  for (let index = 0; index < color.length; index += 1) {
-    hash = (hash * 31 + color.charCodeAt(index)) | 0;
-  }
-  return SHAPES[Math.abs(hash) % SHAPES.length] ?? "circle";
-}
 
 interface ColourBlindControl {
   readonly enabled: boolean;
@@ -112,31 +74,34 @@ export function useColourBlindLabelsControl(): ColourBlindControl {
 }
 
 /**
- * The small shape beside a label's name when colour-blind mode is on; nothing otherwise. Pass `force`
- * to draw it regardless (the toggle's own preview).
+ * The small shape beside a label's name when colour-blind mode is on; nothing otherwise. The shape follows
+ * the tone the chip is painted with, so one colour always has one shape. Pass `force` to draw it regardless.
  */
 export function ColourBlindLabelMark({
-  color,
+  label,
   force = false,
   className,
 }: {
-  color: string;
+  label: { readonly name: string; readonly color?: string | null };
   force?: boolean;
   className?: string;
 }) {
   const on = useColourBlindLabels();
   const copy = useCapabilitiesCopy();
   if (!on && !force) return null;
-  const shape = labelShapeFor(color);
+  const tone = itemLabelTone(label);
   return (
     <svg
-      viewBox="0 0 12 12"
+      viewBox="0 0 24 24"
       role="img"
-      aria-label={copy.colorBlind.shapes[SHAPE_COLOR[shape]]}
-      data-label-shape={shape}
-      className={cn("size-2.5 shrink-0", className)}
+      aria-label={copy.colorBlind.shapes[TONE_COLOR[tone]]}
+      data-label-shape={tone}
+      className={cn(
+        "size-3 shrink-0 fill-current stroke-current stroke-[2.4] [stroke-linecap:round] [stroke-linejoin:round]",
+        className,
+      )}
     >
-      {PATHS[shape]}
+      {PATHS[tone]}
     </svg>
   );
 }
@@ -153,19 +118,20 @@ export function ColourBlindToggle({
 }) {
   const copy = useCapabilitiesCopy();
   return (
-    <div className="flex flex-col gap-0.5 border-t border-border pt-2">
-      <button
-        type="button"
+    <>
+      <PanelBtn
+        className="w-full"
         disabled={disabled}
         aria-pressed={enabled}
         onClick={() => onToggle(!enabled)}
-        className="rounded-md px-1 py-1 text-left text-nav font-medium text-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring"
       >
         {enabled ? copy.colorBlind.off : copy.colorBlind.on}
-      </button>
-      <p className="px-1 text-micro text-meta-foreground">
-        {copy.colorBlind.note}
-      </p>
-    </div>
+      </PanelBtn>
+      {enabled ? (
+        <p className="mx-0.5 mt-2 text-[12.5px] text-meta-foreground">
+          {copy.colorBlind.note}
+        </p>
+      ) : null}
+    </>
   );
 }

@@ -26,7 +26,7 @@ export type FieldSave =
 
 /** The pickers the quick row and the "+ Thêm" menu open. */
 export type CardPopupPicker =
-  "labels"
+  | "labels"
   | "dates"
   | "checklist"
   | "assignees"
@@ -54,7 +54,11 @@ export interface CardPopupSlots {
   /** Colour-blind marks of the label picker. */
   readonly labelMarks?: ReactNode;
   /** Extra entries of the checklist menu ("Chép mục từ checklist khác"). */
-  readonly checklistExtras?: ReactNode;
+  readonly checklistExtras?: (props: {
+    readonly source: string;
+    readonly onSourceChange: (next: string) => void;
+    readonly failed: boolean;
+  }) => ReactNode;
   /** Extra entries of the links section ("Gỡ tất cả liên kết"). */
   readonly linksExtras?: ReactNode;
 }

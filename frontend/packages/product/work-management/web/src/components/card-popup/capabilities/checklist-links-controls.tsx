@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -7,7 +7,6 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogTitle,
-  Button,
   Select,
   SelectContent,
   SelectItem,
@@ -18,78 +17,93 @@ import type { CardDetail } from "@notrelix/work-management-core";
 import {
   useBoardChecklists,
   useClearItemLinks,
-  useCopyChecklist,
   useItemLinks,
 } from "@notrelix/work-management-state";
+import { SmallBtn } from "../popup-ui";
 import { fillCapabilityCopy } from "./capabilities.copy";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
 
-const NONE = "none";
+export const CHECKLIST_COPY_NONE = "none";
+
+/** The select button of the add-checklist form: `.in` (36 px, 8 px radius) with its chevron. */
+const TRIGGER =
+  "box-border h-9 w-full justify-start gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground [&>svg:last-child]:ml-auto [&>svg:last-child]:size-[13px]";
+
+/** `.ddl` and `.opt`: a 10 px radius list with 6 px around 44 px rows (the viewport keeps the trigger's width). */
+const LIST = "rounded-[10px] p-0.5 [&_[data-radix-select-viewport]]:min-w-0";
+const OPTION =
+  "min-h-11 rounded-[8px] px-2.5 py-0 text-[14px] [&>span:first-child]:right-2.5";
 
 /**
  * The "Chép mục từ…" choice of the add-checklist form: another checklist of the same board whose items
- * are copied into the new one, in one change. Pick one and press the button: nothing is created until then.
+ * go into the new one. It only picks: the form's button creates the checklist (and copies the items).
  */
 export function ChecklistCopyFrom({
   card,
+  value,
+  onChange,
+  error,
   disabled = false,
-  onCopied,
 }: {
   card: CardDetail;
+  value: string;
+  onChange: (next: string) => void;
+  error?: boolean;
   disabled?: boolean;
-  onCopied?: (checklistId: string) => void;
 }) {
   const copy = useCapabilitiesCopy();
+  const id = useId();
   const [open, setOpen] = useState(false);
-  const [source, setSource] = useState(NONE);
-  const [error, setError] = useState<string | null>(null);
   const checklists = useBoardChecklists(card.boardId, card.workspaceId, open);
-  const write = useCopyChecklist({
-    itemId: card.id,
-    boardId: card.boardId,
-    workspaceId: card.workspaceId,
-  });
+  // This card's own checklists first, then the board's in its order.
+  const entries = [...(checklists.data ?? [])].sort(
+    (a, b) => Number(b.itemId === card.id) - Number(a.itemId === card.id),
+  );
+  const picked = entries.find((entry) => entry.id === value);
   return (
-    <div className="flex items-center gap-2">
-      <Select
-        value={source}
-        disabled={disabled || write.isPending}
-        onOpenChange={setOpen}
-        onValueChange={(value) => {
-          setSource(value);
-          if (value === NONE) return;
-          setError(null);
-          write.mutate(
-            { sourceChecklistId: value },
-            {
-              onSuccess: (id) => {
-                setSource(NONE);
-                onCopied?.(id);
-              },
-              onError: () => setError(copy.checklist.failed),
-            },
-          );
-        }}
+    <div className="flex flex-col gap-1.5">
+      <label
+        htmlFor={id}
+        className="text-[12px] leading-[18px] font-semibold text-muted-foreground"
       >
-        <SelectTrigger aria-label={copy.checklist.copyFrom} className="w-full">
-          <SelectValue placeholder={copy.checklist.copyFrom} />
+        {copy.checklist.copyFrom}
+      </label>
+      <Select
+        value={value}
+        disabled={disabled}
+        onOpenChange={setOpen}
+        onValueChange={onChange}
+      >
+        <SelectTrigger id={id} className={TRIGGER}>
+          <SelectValue placeholder={copy.checklist.none}>
+            {picked ? picked.title : copy.checklist.none}
+          </SelectValue>
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={NONE}>{copy.checklist.none}</SelectItem>
-          {(checklists.data ?? []).map((entry) => (
-            <SelectItem key={entry.id} value={entry.id}>
-              {fillCapabilityCopy(copy.checklist.entry, {
-                title: entry.title,
-                item: entry.itemKey ?? entry.itemName,
-                count: entry.itemCount,
-              })}
+        <SelectContent className={LIST}>
+          <SelectItem value={CHECKLIST_COPY_NONE} className={OPTION}>
+            {copy.checklist.none}
+          </SelectItem>
+          {entries.map((entry) => (
+            <SelectItem key={entry.id} value={entry.id} className={OPTION}>
+              <span className="flex flex-col leading-[1.3]">
+                <span>{entry.title}</span>
+                <small className="text-[12.5px] text-meta-foreground">
+                  {fillCapabilityCopy(copy.checklist.entry, {
+                    item:
+                      entry.itemId === card.id
+                        ? copy.checklist.thisCard
+                        : (entry.itemKey ?? entry.itemName),
+                    count: entry.itemCount,
+                  })}
+                </small>
+              </span>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       {error ? (
         <p role="alert" className="text-micro text-danger-subtle-foreground">
-          {error}
+          {copy.checklist.failed}
         </p>
       ) : null}
     </div>
@@ -117,15 +131,12 @@ export function ClearAllLinks({
   if (linkCount === 0) return null;
   return (
     <>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
+      <SmallBtn
         disabled={disabled || write.isPending}
         onClick={() => setOpen(true)}
       >
         {copy.links.clearAll}
-      </Button>
+      </SmallBtn>
       {error ? (
         <p role="alert" className="text-micro text-danger-subtle-foreground">
           {error}

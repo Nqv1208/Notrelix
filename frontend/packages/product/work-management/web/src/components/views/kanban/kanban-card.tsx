@@ -287,7 +287,7 @@ function KanbanCardContent({
                       : "bg-state-hover-strong text-muted-foreground",
                   )}
                 >
-                  <ColourBlindLabelMark color={label.color} className="mr-1" />
+                  <ColourBlindLabelMark label={label} />
                   {label.name}
                 </span>
               </span>

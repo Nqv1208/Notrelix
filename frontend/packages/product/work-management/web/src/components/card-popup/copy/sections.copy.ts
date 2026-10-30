@@ -110,6 +110,8 @@ export const en = {
       multi_select: "Select many",
       date: "Date",
       link: "Link",
+      vote: "Vote",
+      formula: "Formula",
     } as Record<string, string>,
   },
 };
@@ -225,6 +227,8 @@ export const vi: SectionsCopy = {
       multi_select: "Chọn nhiều",
       date: "Ngày",
       link: "Liên kết",
+      vote: "Bình chọn",
+      formula: "Công thức",
     },
   },
 };
