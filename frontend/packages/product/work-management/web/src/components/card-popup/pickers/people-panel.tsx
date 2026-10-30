@@ -1,15 +1,12 @@
 import { useMemo, useState } from "react";
-import { Check, UserPlus } from "lucide-react";
+import { Plus, UserPlus, X } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { personInitials } from "@notrelix/work-management-core";
 import { foldForSearch } from "../../item-page/item-pickers";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup } from "../card-popup-context";
-import { PanelBtn, PersonMark } from "../popup-ui";
+import { IconBtn, PanelBtn, PersonMark } from "../popup-ui";
 import { Caption, Hint, PickerHead, SearchField } from "./picker-bits";
-
-/** People shown before the search narrows the list. */
-const SHOWN = 6;
 
 interface Person {
   readonly userId: string;
@@ -17,10 +14,9 @@ interface Person {
 }
 
 /**
- * The assignee picker: search, the viewer first, "Giao cho tôi" in one touch,
- * tick to assign and tick again to take someone off. The list is the people
- * who can see the board (the directory's board members and the board's own
- * members), plus the viewer and whoever is already assigned.
+ * The assignee picker: search, the people already assigned (each with "Bỏ"), the other members of the
+ * board (each with "+"), and "Giao cho tôi" at the foot. The list is the people who can see the board
+ * (the directory's board members and the board's own members), plus the viewer and whoever is assigned.
  */
 export function PeoplePanel({ onClose }: { onClose: () => void }) {
   const { card, board, data, fields, copy, callbacks } = useCardPopup();
@@ -45,16 +41,18 @@ export function PeoplePanel({ onClose }: { onClose: () => void }) {
         byId.set(member.userId, { userId: member.userId, name: member.name });
     if (viewerId && !byId.has(viewerId))
       byId.set(viewerId, { userId: viewerId, name: t.you });
-    const rest = [...byId.values()].filter((p) => p.userId !== viewerId);
-    const me = viewerId ? byId.get(viewerId) : undefined;
-    return me ? [me, ...rest] : rest;
+    return [...byId.values()];
   }, [board.members, card.members, data.people, t.you, viewerId]);
 
   const needle = foldForSearch(query);
-  const matches = needle
-    ? people.filter((p) => foldForSearch(p.name).includes(needle))
-    : people;
-  const shown = needle ? matches : matches.slice(0, SHOWN);
+  const fits = (p: Person) => !needle || foldForSearch(p.name).includes(needle);
+  // The assigned keep the card's order; the others put the viewer first.
+  const given = assigned
+    .map((id) => people.find((p) => p.userId === id))
+    .filter((p): p is Person => p !== undefined && fits(p));
+  const others = people
+    .filter((p) => !assigned.includes(p.userId) && fits(p))
+    .sort((a, b) => Number(b.userId === viewerId) - Number(a.userId === viewerId));
 
   const write = (ids: string[]) => {
     if (!fields.person) return;
@@ -71,6 +69,44 @@ export function PeoplePanel({ onClose }: { onClose: () => void }) {
         : [...assigned, userId],
     );
   const mine = viewerId !== null && assigned.includes(viewerId);
+  const label = (person: Person) =>
+    person.userId === viewerId && person.name !== t.you
+      ? `${person.name} ${t.you}`
+      : person.name;
+  const mark = (person: Person) => (
+    <PersonMark
+      size={24}
+      member={{
+        userId: person.userId,
+        name: person.name,
+        initials: personInitials(person.name),
+      }}
+    />
+  );
+  const row = (person: Person, on: boolean) => (
+    <div
+      key={person.userId}
+      className="group flex min-h-11 items-center gap-2.5 rounded-[8px] pr-1 pl-1.5 hover:bg-state-hover-strong"
+    >
+      {mark(person)}
+      <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+        {label(person)}
+      </span>
+      <IconBtn
+        small
+        aria-label={fillPopupCopy(on ? t.removeOne : t.assignOne, {
+          name: person.name,
+        })}
+        onClick={() => toggle(person.userId)}
+      >
+        {on ? (
+          <X aria-hidden="true" className="size-4" />
+        ) : (
+          <Plus aria-hidden="true" className="size-4" />
+        )}
+      </IconBtn>
+    </div>
+  );
 
   return (
     <div>
@@ -81,63 +117,39 @@ export function PeoplePanel({ onClose }: { onClose: () => void }) {
         label={t.searchLabel}
         placeholder={t.search}
       />
-      {viewerId ? (
-        <PanelBtn className="mt-2.5 w-full" onClick={() => toggle(viewerId)}>
-          <UserPlus aria-hidden="true" className="size-4" />
-          {mine ? t.unassignMe : t.assignMe}
-        </PanelBtn>
+      {given.length > 0 ? (
+        <>
+          <Caption>{fillPopupCopy(t.assigned, { count: assigned.length })}</Caption>
+          <div role="list" aria-label={t.assigned.split(" ·")[0]}>
+            {given.map((person) => row(person, true))}
+          </div>
+        </>
       ) : null}
-      <Caption>
-        {needle
-          ? fillPopupCopy(t.results, { query })
-          : fillPopupCopy(t.boardMembers, { count: people.length })}
-      </Caption>
-      <div role="listbox" aria-multiselectable="true" aria-label={t.title}>
-        {shown.map((person) => {
-          const on = assigned.includes(person.userId);
-          return (
-            <button
-              key={person.userId}
-              type="button"
-              role="option"
-              aria-selected={on}
-              onClick={() => toggle(person.userId)}
-              className={cn(
-                "flex min-h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong",
-                on &&
-                  "bg-brand-subtle font-semibold text-brand-subtle-foreground",
-              )}
-            >
-              <PersonMark
-                size={24}
-                member={{
-                  userId: person.userId,
-                  name: person.name,
-                  initials: personInitials(person.name),
-                }}
-              />
-              <span>
-                {person.name}
-                {person.userId === viewerId && person.name !== t.you
-                  ? ` ${t.you}`
-                  : ""}
-              </span>
-              {on ? (
-                <Check aria-hidden="true" className="ml-auto size-4" />
-              ) : null}
-            </button>
-          );
-        })}
-        {shown.length === 0 ? (
-          <Hint className="px-2.5 py-2">
-            {fillPopupCopy(t.empty, { query })}
-          </Hint>
-        ) : null}
-      </div>
-      {!needle && matches.length > SHOWN ? (
-        <Hint className="mt-2 mr-2.5 mb-0.5 ml-2.5">
-          {fillPopupCopy(t.more, { count: matches.length - SHOWN })}
+      {others.length > 0 ? (
+        <>
+          <Caption>{t.others}</Caption>
+          <div role="list" aria-label={t.others}>
+            {others.map((person) => row(person, false))}
+          </div>
+        </>
+      ) : null}
+      {given.length === 0 && others.length === 0 ? (
+        <Hint className="mt-3 px-2.5 py-2">
+          {fillPopupCopy(t.empty, { query })}
         </Hint>
+      ) : null}
+      {viewerId ? (
+        <>
+          <div className="-mx-3 mt-2 h-px bg-line" />
+          <PanelBtn
+            variant="ghost"
+            className={cn("mt-2 w-full justify-start")}
+            onClick={() => toggle(viewerId)}
+          >
+            <UserPlus aria-hidden="true" className="size-[13px]" />
+            {mine ? t.unassignMe : t.assignMe}
+          </PanelBtn>
+        </>
       ) : null}
     </div>
   );

@@ -149,7 +149,7 @@ function cardParts(
       : null;
 
   const assignee = card.members?.[0];
-  const shownAssignees = (card.members ?? []).slice(0, crowded ? 1 : 2);
+  const shownAssignees = (card.members ?? []).slice(0, crowded ? 1 : 3);
   const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
   const hiddenAssignees = Math.max(
     (card.members?.length ?? 0) - shownAssignees.length,

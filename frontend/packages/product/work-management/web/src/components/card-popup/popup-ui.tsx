@@ -65,7 +65,13 @@ export const QuickBtn = forwardRef<
     <button
       ref={ref}
       type={type}
-      className={cn(FIELD_BTN, on && "bg-state-hover-strong", FOCUS, className)}
+      className={cn(
+        FIELD_BTN,
+        "md:h-8 md:px-2.5 md:text-[13px]",
+        on && "bg-state-hover-strong",
+        FOCUS,
+        className,
+      )}
       {...props}
     />
   );
@@ -122,7 +128,7 @@ export const SmallBtn = forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-popover px-3 text-[13px] font-medium text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-7 items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-popover px-2.5 text-[12.5px] font-medium text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50",
         on && "bg-state-hover-strong ring-2 ring-primary",
         FOCUS,
         className,
@@ -201,11 +207,11 @@ export function PopSection({
   return (
     <section
       aria-label={label}
-      className={cn("relative pt-7 pr-4 pl-4 md:pr-6 md:pl-[60px]", className)}
+      className={cn("relative pt-5 pr-4 pl-4 md:pr-6 md:pl-[60px]", className)}
     >
       <span
         aria-hidden="true"
-        className="absolute top-[31px] left-6 hidden text-muted-foreground md:block"
+        className="absolute top-[26px] left-6 hidden text-muted-foreground md:block"
       >
         {icon}
       </span>
@@ -224,11 +230,61 @@ export function SectionHead({
 }) {
   return (
     <div className="flex min-h-8 items-center gap-2">
-      <h3 className="m-0 flex-1 text-[16px] font-[650] tracking-[-0.005em]">
+      <h3 className="m-0 flex-1 text-[15px] font-[650] tracking-[-0.005em]">
         {title}
       </h3>
       {children}
     </div>
+  );
+}
+
+/** `.act`: the quiet action of a collapsed section ("+ Thêm"): link-coloured text, no frame. */
+export const LinkBtn = forwardRef<
+  HTMLButtonElement,
+  ButtonHTMLAttributes<HTMLButtonElement>
+>(function LinkBtn({ className, type = "button", ...props }, ref) {
+  return (
+    <button
+      ref={ref}
+      type={type}
+      className={cn(
+        "inline-flex h-7 items-center gap-1.5 rounded-[6px] border-0 bg-transparent px-2.5 text-[13px] font-semibold text-brand-ink hover:bg-state-hover-strong disabled:opacity-50",
+        FOCUS,
+        className,
+      )}
+      {...props}
+    />
+  );
+});
+
+/** `.sec.e`: a section with nothing in it, folded to one line: its name, "Chưa có gì" and its action. */
+export function EmptySection({
+  label,
+  icon,
+  none,
+  children,
+}: {
+  label: string;
+  icon: ReactNode;
+  none: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section
+      aria-label={label}
+      className="relative box-border flex min-h-[52px] items-center gap-2 pt-5 pr-4 pl-4 md:pr-6 md:pl-[60px]"
+    >
+      <span
+        aria-hidden="true"
+        className="absolute top-[26px] left-6 hidden text-muted-foreground md:block"
+      >
+        {icon}
+      </span>
+      <b className="text-[14px] font-[650]">{label}</b>
+      <span className="text-[13.5px] text-meta-foreground">· {none}</span>
+      <span className="flex-1" />
+      {children}
+    </section>
   );
 }
 
@@ -437,6 +493,46 @@ export function PersonMark({
       )}
     >
       {member.initials || Array.from(member.name)[0]?.toUpperCase() || "?"}
+    </span>
+  );
+}
+
+/** Most marks the stack of assignees draws before it folds the rest into "+N". */
+export const STACK_MAX = 3;
+
+/**
+ * `.stk`: the assignees as one stack: 24 px marks overlapping by 6 px, each with a 2 px ring of the panel's
+ * colour, at most three and then a "+N" disc. Every mark names its person on hover; the disc names the rest.
+ */
+export function AvatarStack({
+  members,
+  className,
+}: {
+  members: readonly Pick<CardMember, "userId" | "name" | "initials">[];
+  className?: string;
+}) {
+  const shown = members.slice(0, STACK_MAX);
+  const rest = members.slice(STACK_MAX);
+  return (
+    <span className={cn("flex items-center", className)}>
+      {shown.map((member, index) => (
+        <PersonMark
+          key={member.userId || member.name}
+          member={member}
+          size={24}
+          className={cn("ring-2 ring-popover", index > 0 && "-ml-1.5")}
+        />
+      ))}
+      {rest.length > 0 ? (
+        <span
+          role="img"
+          aria-label={rest.map((member) => member.name).join(", ")}
+          title={rest.map((member) => member.name).join(", ")}
+          className="-ml-1.5 inline-grid size-6 shrink-0 place-items-center rounded-full bg-state-hover-strong text-[9.5px] font-bold text-muted-foreground ring-2 ring-popover"
+        >
+          +{rest.length}
+        </span>
+      ) : null}
     </span>
   );
 }

@@ -10,7 +10,7 @@ import {
 import { isItemDone } from "../card-detail/item-field-editors";
 import { fillPopupCopy } from "./card-popup.copy";
 import { useCanEdit, useCardPopup } from "./card-popup-context";
-import { ChipBtn, ChipReadOnly, FieldGroup, PersonMark } from "./popup-ui";
+import { AvatarStack, ChipBtn, ChipReadOnly, FieldGroup } from "./popup-ui";
 import { FieldControl } from "./sections/field-editors";
 import { dateTimeText, useFieldList } from "./sections/fields-section";
 
@@ -104,20 +104,25 @@ export function ChipsRow() {
     <>
       <div className="flex flex-wrap items-start gap-3">
         <FieldGroup label={t.assignees}>
-          <div className="flex min-h-8 items-center gap-1.5">
-            {card.members.map((m) => (
-              <PersonMark key={m.userId || m.id} member={m} />
-            ))}
-            {canEdit ? (
+          <div className="flex min-h-9 items-center">
+            {canEdit || card.members.length > 0 ? (
               <button
                 type="button"
-                aria-label={t.addAssignee}
-                className={ADD_CIRCLE}
+                disabled={!canEdit}
+                aria-label={[t.assignees, ...card.members.map((m) => m.name)].join(": ").replace(": ", ": ")}
+                aria-haspopup="dialog"
+                className="box-border flex h-9 items-center rounded-[8px] border-0 bg-transparent px-1.5 hover:bg-state-hover-strong disabled:cursor-default disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 onClick={(event) =>
                   openPicker("assignees", event.currentTarget)
                 }
               >
-                <Plus aria-hidden="true" className="size-[13px]" />
+                {card.members.length > 0 ? (
+                  <AvatarStack members={card.members} />
+                ) : (
+                  <span className="grid size-6 place-items-center rounded-full border border-dashed border-line-strong text-meta-foreground">
+                    <Plus aria-hidden="true" className="size-[13px]" />
+                  </span>
+                )}
               </button>
             ) : null}
           </div>

@@ -169,7 +169,7 @@ export function PopupQuickRow() {
         id="assignees"
         icon={<UserPlus aria-hidden="true" className="size-4" />}
         label={t.assignees}
-        width={336}
+        width={312}
       >
         {() => <PeoplePanel onClose={close} />}
       </PickerButton>
