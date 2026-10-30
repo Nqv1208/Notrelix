@@ -349,6 +349,8 @@ Ordering must preserve adjacency, prefix/boundary correctness, concurrency behav
 
 No floating midpoint, array-index durable identity, or client-only ordering authority.
 
+The server makes the sort key. A request names the sibling a Block goes right after (or right before, or neither for last) under a parent; a client key is accepted only next to a named sibling and only when it lies strictly between the siblings the request names, otherwise `400`. Two named siblings must be neighbours. A reorder (`POST /blocks/reorder`) names the version of each Block it moves, applies all moves or none, answers the moved Blocks with their new versions, and announces one Page save when something moved; a stale version is `412` with the current Block and a Block of another Page is `404`.
+
 # 30. Reorder no-op
 
 Moving to the effective current parent/position should avoid unnecessary version/event/history churn.

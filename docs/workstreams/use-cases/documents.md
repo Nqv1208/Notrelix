@@ -68,7 +68,7 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 1. Real end-to-end proof covers 15 of 82 use cases. Versions, restore, templates, import, export, move to space, search, stale-write rebase and mobile have only unit, component and mock e2e proof.
 2. Trashing a page leaves its child pages active; the tree then shows them as roots. Subtree trash, restore and delete are undefined in code (UC-DCT-A08).
 3. Moving a page under another parent cannot be done: the handler throws `NotImplementedException` and there is no route (UC-DCT-C02). The cycle rule is therefore unreachable (UC-DCT-B04).
-4. Competing writes without an expected version: block reorder (UC-DCT-F02); page rename and single block delete are fixed (UC-DCT-A02, D04). Reorder also accepts client-made sort keys, which breaks "ordering is server-authoritative", and announces no page save, so reorders create no automatic version and no live refresh.
+4. Competing writes without an expected version: block reorder, page rename and single block delete are fixed (UC-DCT-F02, A02, D04). Reorder also accepts client-made sort keys, which breaks "ordering is server-authoritative", and announces no page save, so reorders create no automatic version and no live refresh.
 5. Rename is authorized with `ManageBoard`, a Work Management action, and three stubs do the same (UC-DCT-I02).
 6. No bounds: block count per page, page count per list and tree, version list, trash list and backlinks are all unbounded reads (UC-DCT-G02, G06, J05).
 7. No idempotency for creates (page, template, version, page from template) (UC-DCT-L04).
@@ -83,10 +83,10 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 | 1 | Fixed for rename: `UpdatePage` (owner decision 2026-10-30), expected version, dead request fields removed; the page icon is still UC-DCT-A03 | `backend/src/Notrelix.Application/Features/Documents/Pages/Commands/UpdatePage/UpdatePage.cs`, `backend/src/Notrelix.API/Endpoints/Documents/Pages/Commands/UpdatePageEndpoint.cs` |
 | 2 | Dead handlers that throw `NotImplementedException` (the move handler is now built, UC-DCT-C02) | `.../PublishPage/PublishPage.cs`, `.../SetPageDeadline/SetPageDeadline.cs` (under `backend/src/Notrelix.Application/Features/Documents/`) |
 | 3 | `GET /pages/{pageId}/history` always returns an empty list; the frontend still calls it | `.../Pages/Queries/GetPageHistory/GetPageHistory.cs`, `frontend/packages/product/docs/state/src/api/history.api.ts` |
-| 4 | Reorder takes client sort keys, has no expected version, loads no page and announces no save | `.../Blocks/Commands/ReorderBlocks/ReorderBlocks.cs` |
+| 4 | Fixed: reorder names the version of each block, the server makes the key (a client key must lie between the siblings named), and one page save is announced (UC-DCT-F02) | `.../Blocks/Commands/ReorderBlocks/ReorderBlocks.cs` |
 | 5 | Fixed: single block delete takes the expected version and deletes the blocks under it, like the batch (UC-DCT-D04) | `.../Blocks/Commands/DeleteBlock/DeleteBlock.cs` |
 | 6 | Fixed: trash, restore and permanent delete work on the subtree (UC-DCT-A08) | `.../Pages/Commands/ArchivePage/ArchivePage.cs`, `.../Pages/Queries/GetPageTree/GetPageTree.cs` |
-| 7 | Fixed for create, edit, delete and batch: the handler refuses a trashed page (UC-DCT-D05); reorder follows with UC-DCT-F02 | `.../Blocks/Commands/*` |
+| 7 | Fixed for create, edit, delete, batch and reorder: the handler refuses a trashed page (UC-DCT-D05) | `.../Blocks/Commands/*` |
 | 8 | Unbounded reads | `.../Pages/Queries/GetWorkspacePages`, `GetPageTree`, `GetTrashedPages`, `GetPageBacklinks`, `.../Versions/Queries/ListPageVersions`, `.../Blocks/Queries/GetPageBlocks` |
 | 9 | No idempotency on creates | `CreatePage`, `CreatePageFromTemplate`, `CreatePageTemplate`, `CreatePageVersion` handlers |
 | 10 | `ResourceLink` aggregate, table and events have no command, query or route | `backend/src/Notrelix.Domain/Documents/ResourceLinks/`, `backend/src/Notrelix.Infrastructure/Data/Configurations/Documents/ResourceLinkConfiguration.cs` |
@@ -159,9 +159,9 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-E07 | Reference another page | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E09 | Open a block type this client does not know | E | Any viewer | partial | partial | none | none | DEFINED | No placeholder behaviour |
-| UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
-| UC-DCT-F02 | Reorder blocks | F | Editor | partial | yes | none | none | INTEGRATING | Client sets keys; no version; no page fact |
-| UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | INTEGRATING | No real e2e |
+| UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
 | UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
 | UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | INTEGRATING | Unbounded |
@@ -675,7 +675,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc section 77; `DCREQ003`, `DCREQ004`.
 - Acceptance: Given a trashed page, When a block is created, Then refused and no block exists.
 - Evidence: BE `PageRules.EnsureCanEdit` called by `CreateBlockCommandHandler`, `UpdateBlockCommandHandler`, `DeleteBlockCommandHandler` and `BatchUpdateBlocksCommandHandler` before anything changes, and by `Page.RecordBlocksSaved`; `PostgresPageAuthorizationFacts` still hides a trashed page first; `CreatePageVersionCommandHandler` (checks) · FE none · Design none · Tests none · Real e2e none
-- State: INTEGRATING — tests and owner check (reorder joins the guard with UC-DCT-F02; the read-only banner for a page trashed under an open editor belongs to UC-DCT-I06).
+- State: INTEGRATING — tests and owner check (reorder has the same guard; the read-only banner for a page trashed under an open editor belongs to UC-DCT-I06).
 
 ### UC-DCT-D06 Convert a checklist line to a task
 - Capability: D Block lifecycle
@@ -836,8 +836,8 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - UI states: saved, conflict.
 - Rules: product doc sections 28, 29; `DCREQ018` to `DCREQ021`.
 - Acceptance: Given blocks A and B, When C is inserted after A, Then the order is A, C, B for every reader.
-- Evidence: BE `PageBlockSet.PositionFor`, `FractionalIndexGenerator` · FE `block-insert.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTreeRulesTests`, `block-mapping.unit.test.ts` · Real e2e none
-- State: INTEGRATING — real e2e of the order after reload.
+- Evidence: BE `PageBlockSet.PositionFor` (bounds from the named neighbours; `afterBlockId` that is not a sibling is `400`, a key from the client only between the named siblings), `FractionalIndexGenerator` · FE `block-insert.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTreeRulesTests`, `block-mapping.unit.test.ts` · Real e2e none
+- State: INTEGRATING — tests and owner check (real e2e of the order after reload; a batch item that carried a position key without naming a sibling is now `400`, the editor never sent one).
 
 ### UC-DCT-F02 Reorder blocks
 - Capability: F Block ordering
@@ -850,8 +850,8 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - UI states: moving, conflict, announced result, read-only.
 - Rules: product doc sections 27, 28, 30 (product rule DCT-010: ordering is server-authoritative); `DCREQ018`, `DCREQ021`.
 - Acceptance: Given three blocks, When the third moves to the top, Then every reader sees it first and one page save is announced.
-- Evidence: BE `POST /api/v1/blocks/reorder`, `ReorderBlocksCommandHandler` · FE `useReorderBlocks`, `block-move.ts`, `block-handle.tsx` · Design none · Tests `block-move.component.test.tsx`, `BlockMoveFailureAtomicityTests` · Real e2e none
-- State: INTEGRATING — server-validated keys, version, page fact, real e2e.
+- Evidence: BE `POST /api/v1/blocks/reorder` body `{pageId, items: [{blockId, expectedVersion, parentId, afterBlockId, beforeBlockId, position}]}`, `ReorderBlocksCommandHandler` (one transaction through `PageBlockSet.Place`: version checked per item with `412` and the current block, trashed page refused, the key made by the server or a client key kept only between the named siblings, a block already between them is left alone, one page save announced when something moved, answers the moved blocks) · FE `createBlockApi.reorder` and `useReorderBlocks` send the new body (`ReorderBlocksInput.moves`); the editor's own moves (`block-move.ts`, `block-handle.tsx`, Alt+Shift+Arrow with a live-region announcement) still travel in `batch` through the same placement · Design none · Tests `block-move.component.test.tsx`, `BlockMoveFailureAtomicityTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (key between siblings, stale version, no-op, one save announced, trashed page; real e2e).
 
 ### UC-DCT-F03 Nest or un-nest a block
 - Capability: F Block ordering
@@ -865,7 +865,7 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Rules: product doc sections 25 to 27 (product rules DCT-006, DCT-009); `DCREQ117` to `DCREQ120`.
 - Acceptance: Given a block, When moved under its own child, Then refused and unchanged.
 - Evidence: BE `Block.MoveUnder`, `BlockTreeRules` · FE `block-move.ts` · Design none · Tests `BlockHierarchyTests`, `BlockTreeRulesTests`, `BlockMoveFailureAtomicityTests` · Real e2e none
-- State: INTEGRATING — real e2e.
+- State: INTEGRATING — tests and owner check (cycle and cross-page refusal are in the Domain; a failed move in a reorder or batch rolls the whole request back; real e2e).
 
 ### UC-DCT-F04 Insert many blocks densely
 - Capability: F Block ordering
