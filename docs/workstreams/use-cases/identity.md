@@ -138,7 +138,7 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-D03 | Reject a replayed refresh credential | D | System | no | n/a | n/a | no | DEFINED | no reuse detection |
 | UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | no caller, no revocation |
 | UC-IDN-D05 | Bound the absolute session lifetime | D | System | no | n/a | n/a | no | DEFINED | sliding forever |
-| UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | provider needs credentials |
+| UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
 | UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | partial | none | no | IMPLEMENTING | FE error states |
 | UC-IDN-G01 | Link a provider to my account | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
@@ -505,14 +505,14 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Actors and permission: any visitor; public, `AuthCredentialByIp`.
 - Preconditions: the provider is enabled by configuration.
 - Input: provider in the path, optional `returnUrl` (internal paths only).
-- Output: a redirect to the provider with state, nonce and PKCE held server side.
+- Output: a redirect to the provider with state, nonce and PKCE held server side; an unknown, disabled or unconfigured provider redirects to the sign-in page with `error=identity.oauth.provider-unavailable` and makes no redirect to a provider.
 - Main flow: 1. The person presses the provider button. 2. The browser opens `GET /api/v1/auth/oauth/{provider}/start`. 3. The server stores the state and redirects.
-- No-op / rejection / concurrency / retry: a disabled or unknown provider answers a failure and no redirect; every start makes a new state; an external `returnUrl` is dropped.
-- UI states: redirecting, provider unavailable.
+- No-op / rejection / concurrency / retry: a disabled or unknown provider answers a failure and no redirect to it (the browser lands on the sign-in page with the code, never on raw JSON); every start makes a new state held 10 minutes; an external `returnUrl` is dropped; both providers carry an S256 code challenge and the matching verifier is sent at the token endpoint.
+- UI states: redirecting (the clicked button says where the browser goes and the buttons wait; a page restored from the back-forward cache starts over), provider unavailable (a message under the email field that points to email and password).
 - Rules: ID-008, section 29 (this is Identity OAuth, not an Integrations connection); IAREQ040, IAREQ041.
 - Acceptance: Given an enabled provider, when sign-in starts, then the redirect carries state and a code challenge. Given a disabled provider, then no redirect.
-- Evidence: BE `OAuth/Commands/StartOAuthLogin/StartOAuthLoginCommand.cs`; API `Auth/Commands/StartOAuthLoginEndpoint.cs` (`GET /api/v1/auth/oauth/{provider}/start`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx`, `google-mark.tsx`, `microsoft-mark.tsx` · Design Final-Auth · Tests Domain `OAuthSecretLeakageTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: Application test, real spec (needs a provider test double).
+- Evidence: BE `OAuth/Commands/StartOAuthLogin/StartOAuthLoginCommand.cs`, `OAuth/OAuthPkce.cs`; Infrastructure `Identity/OAuth/OAuthProviderClient.cs`; API `Auth/Commands/StartOAuthLoginEndpoint.cs` (`GET /api/v1/auth/oauth/{provider}/start`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx`, `containers/sign-in-flow.tsx`, `google-mark.tsx`, `microsoft-mark.tsx` · Design Final-Auth · Tests Domain `OAuthSecretLeakageTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING. Built: the Microsoft authorization URL now carries `response_type=code` (it had none, so the provider would have refused it) and a PKCE challenge, redeemed with the verifier; the same rule applies to the link and step-up starts; a refused start redirects to the sign-in page with the code instead of answering 400 JSON; the redirecting and provider-unavailable states. Missing: tests and owner check (`PublicAuthEndpointTests` assertions of a 400 for a bad provider need updating), real spec (needs a provider test double), 1 px diff. A rate-limited start still answers 429 JSON in the browser; Google still asks for offline access and forced consent at every sign-in although no provider token is kept (not changed here).
 
 ## Capability F: OAuth callback
 
