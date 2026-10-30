@@ -1965,7 +1965,7 @@ export interface paths {
         put?: never;
         /**
          * Revoke all other sessions
-         * @description Revokes every active session of the current user except the session that issued the request.
+         * @description Revokes every active session of the current user except the session that issued the request. Requires a single-use step-up proof for the RevokeOtherSessions purpose; with no other active session nothing changes and the proof is not consumed.
          */
         post: operations["Identity.Sessions.RevokeOthers"];
         delete?: never;
@@ -6335,6 +6335,9 @@ export interface components {
             password?: string | null;
             name?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
         };
@@ -6949,6 +6952,10 @@ export interface components {
             challengeToken?: string | null;
             /** Format: date-time */
             expiresAt?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult": {
+            /** Format: int32 */
+            revokedCount?: number;
         };
         "Notrelix.Application.Features.Identity.Sessions.DTOs.SessionInfoDto": {
             /** Format: uuid */
@@ -12659,17 +12666,50 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };

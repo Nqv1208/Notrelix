@@ -7278,14 +7278,61 @@
           "Identity.Sessions"
         ],
         "summary": "Revoke all other sessions",
-        "description": "Revokes every active session of the current user except the session that issued the request.",
+        "description": "Revokes every active session of the current user except the session that issued the request. Requires a single-use step-up proof for the RevokeOtherSessions purpose; with no other active session nothing changes and the proof is not consumed.",
         "operationId": "Identity.Sessions.RevokeOthers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -24896,6 +24943,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
         "type": "object",
         "properties": {
@@ -26719,6 +26776,16 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult": {
+        "type": "object",
+        "properties": {
+          "revokedCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

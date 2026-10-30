@@ -29,11 +29,16 @@ public static class SessionEndpoints
 
         group.MapAuthenticatedPost("/sessions/revoke-others", RevokeOtherSessionsAsync)
             .WithName("Identity.Sessions.RevokeOthers")
-            .Produces(StatusCodes.Status200OK)
-            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
+            .Produces<RevokeOtherSessionsResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(
+                StatusCodes.Status400BadRequest,
+                StatusCodes.Status401Unauthorized,
+                StatusCodes.Status409Conflict,
+                StatusCodes.Status412PreconditionFailed,
+                StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Sessions")
             .WithSummary("Revoke all other sessions")
-            .WithDescription("Revokes every active session of the current user except the session that issued the request.")
+            .WithDescription("Revokes every active session of the current user except the session that issued the request. Requires a single-use step-up proof for the RevokeOtherSessions purpose; with no other active session nothing changes and the proof is not consumed.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
@@ -53,9 +58,16 @@ public static class SessionEndpoints
         return result.ToApiResult();
     }
 
-    private static async Task<IResult> RevokeOtherSessionsAsync(ISender sender)
+    private static async Task<IResult> RevokeOtherSessionsAsync(
+        RevokeOtherSessionsRequest request,
+        ISender sender)
     {
-        var result = await sender.Send(new RevokeOtherSessionsCommand());
+        var result = await sender.Send(new RevokeOtherSessionsCommand { StepUpToken = request.StepUpToken });
         return result.ToApiResult();
     }
+}
+
+public sealed record RevokeOtherSessionsRequest
+{
+    public string StepUpToken { get; init; } = string.Empty;
 }
