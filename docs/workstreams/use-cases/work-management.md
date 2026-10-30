@@ -1742,7 +1742,7 @@ Team capability WM-005.
 - Rules: product sections 38-39; WM-014; D49; WMREQ044, WMREQ048, WMREQ132, WMREQ140
 - Acceptance: Given an Editor, when they add a group, then it appears for everyone and no item changes. Given a Viewer, then Add group is absent.
 - Evidence: BE BoardGroups.Create = POST /boards/{boardId:guid}/groups -> CreateBoardGroupCommand (`BoardGroups/Commands/CreateBoardGroup/CreateBoardGroup.cs`) [- / Idem]; BoardGroups.Duplicate = POST /board-groups/{groupId:guid}/duplicate (group duplicate; UI `useDuplicateGroup`) · FE `frontend/packages/product/work-management/web/src/components/views/table/table-add-group.tsx`, `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-add-lane.tsx`, `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-groups.tsx` · Design Final-Settings `nhom-viec`; create flow, Er, P not drawn · Tests `BoardManagementLevelTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (adds group)
-- State: HARDENING — Design for create flow; no-group notice proof
+- State: HARDENING — tests and owner check. Not built: duplicate group in the UI (the server copy clones sub-items as top-level items and names the copy in English; the copy rules are undecided), design for the create flow.
 
 ### UC-WM-E02 Rename or edit a group
 - Capability: E Groups and grouping (WM-005)
@@ -1756,7 +1756,7 @@ Team capability WM-005.
 - Rules: product sections 38-39; WM-014; WMREQ110-113
 - Acceptance: Given a renamed group, when another member reloads, then they see the new name and the same group id.
 - Evidence: BE BoardGroups.Update = PATCH /board-groups/{groupId:guid} -> UpdateBoardGroupCommand (`BoardGroups/Commands/UpdateBoardGroup/UpdateBoardGroup.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-groups.tsx` (rename, recolor) · Design Final-Settings `nhom-viec` · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (renames group)
-- State: HARDENING — Design Er/P; no-op (same name) proof
+- State: HARDENING — tests and owner check. Built: the renamed event carries the old title. Not built: design Er/P, rename from a group menu in the views (rename lives in board settings).
 
 ### UC-WM-E03 Archive or delete a group
 - Capability: E Groups and grouping (WM-005)
@@ -1769,8 +1769,8 @@ Team capability WM-005.
 - UI states: destructive confirm (names the impact)
 - Rules: product sections 125, 38; WM-014, WM-033; D76.6
 - Acceptance: Given a group with 3 items, when delete is attempted without a target, then it is refused. Given a target group, then the 3 items move and keep their keys.
-- Evidence: BE BoardGroups.Archive = POST /board-groups/{groupId:guid}/archive -> ArchiveBoardGroupCommand (`BoardGroups/Commands/ArchiveBoardGroup/ArchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Unarchive = POST /board-groups/{groupId:guid}/unarchive -> UnarchiveBoardGroupCommand (`BoardGroups/Commands/UnarchiveBoardGroup/UnarchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Delete = DELETE /board-groups/{groupId:guid} -> DeleteBoardGroupCommand (`BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs`) [EV / Idem] · FE delete with item reassignment; archive/unarchive not in UI · Design none; needs delete group holding items (move-to picker), archive/unarchive · Tests `ArchiveBoardGroupTests.cs`, `BoardManagementLevelTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete group with items)
-- State: HARDENING — Design; archive/unarchive UI or drop; dialog-open case
+- Evidence: BE BoardGroups.Archive = POST /board-groups/{groupId:guid}/archive -> ArchiveBoardGroupCommand (`BoardGroups/Commands/ArchiveBoardGroup/ArchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Unarchive = POST /board-groups/{groupId:guid}/unarchive -> UnarchiveBoardGroupCommand (`BoardGroups/Commands/UnarchiveBoardGroup/UnarchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Delete = DELETE /board-groups/{groupId:guid} -> DeleteBoardGroupCommand (`BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs`) [EV / Idem] · FE delete with item reassignment; create dialog guards a deleted group (`item-create-dialog.tsx`); archive/unarchive not in UI · Design none; needs delete group holding items (move-to picker), archive/unarchive · Tests `ArchiveBoardGroupTests.cs`, `BoardManagementLevelTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete group with items)
+- State: HARDENING — tests and owner check. Built: a create dialog whose group was deleted says it is no longer available, offers the other groups and holds the submit. Not built: archive and unarchive in the UI (the product rule for an archived group and its items is undecided; the two operations also carry no expected version), design.
 
 ### UC-WM-E04 Move an item between groups (Table)
 - Capability: E Groups and grouping (WM-005)
@@ -1797,8 +1797,8 @@ Team capability WM-005.
 - UI states: success (collapsed and expanded), empty group
 - Rules: product sections 38; D38
 - Acceptance: Given a collapsed group, when a refetch happens, then it stays collapsed. Given another device, then the group is expanded.
-- Evidence: BE not applicable (client-side, 38) · FE `frontend/packages/product/work-management/web/src/components/views/kanban/use-kanban-collapsed-lanes.ts`; Table group collapse persistence unproven · Design BC-Table collapsed, Kanban-Card-States · Tests none found · Real e2e none
-- State: INTEGRATING — proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence.
+- Evidence: BE not applicable (client-side, 38) · FE `frontend/packages/product/work-management/web/src/components/views/kanban/use-kanban-collapsed-lanes.ts` (Kanban lanes and Table groups) · Design BC-Table collapsed, Kanban-Card-States · Tests none found · Real e2e none
+- State: INTEGRATING — tests and owner check. Built: the Table keeps its collapsed groups per workspace and board on this device, as the Kanban does for lanes.
 
 ### UC-WM-E06 Move an item between groups (Table)
 - Capability: E Groups and grouping (WM-005)
