@@ -150,21 +150,33 @@ describe("ArchiveItemDialog", () => {
     ).toBe(true);
   });
 
-  it.each([
-    ["error", "Couldn't archive", true],
-    ["conflict", "Someone changed this item", true],
-    ["denied", "You can't archive this item", false],
-    ["gone", "This item is no longer here", false],
-  ] as const)(
-    "FUI[wm.item-lifecycle:archive-%s] explains the refusal in place",
-    (status, heading, canRetry) => {
-      render(<ArchiveItemDialog {...props} status={status} />);
-      expect(screen.getByRole("alert").textContent).toContain(heading);
-      expect(Boolean(screen.queryByRole("button", { name: "Try again" }))).toBe(
-        canRetry,
-      );
-    },
-  );
+  const refusal = (
+    status: "error" | "conflict" | "denied" | "gone",
+    heading: string,
+    canRetry: boolean,
+  ) => {
+    render(<ArchiveItemDialog {...props} status={status} />);
+    expect(screen.getByRole("alert").textContent).toContain(heading);
+    expect(Boolean(screen.queryByRole("button", { name: "Try again" }))).toBe(
+      canRetry,
+    );
+  };
+
+  it("FUI[wm.item-lifecycle:archive-error] explains a network failure in place and offers Try again", () => {
+    refusal("error", "Couldn't archive", true);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-conflict] says someone changed the item and offers Try again", () => {
+    refusal("conflict", "Someone changed this item", true);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-denied] says the person may not archive and offers no retry", () => {
+    refusal("denied", "You can't archive this item", false);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-gone] says the item is gone and offers no retry", () => {
+    refusal("gone", "This item is no longer here", false);
+  });
 
   it("FUI[wm.item-lifecycle:archive-links-pending] waits for the dependency count before it can be confirmed", () => {
     render(

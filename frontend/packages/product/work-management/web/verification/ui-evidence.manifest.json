@@ -66,7 +66,7 @@
       {
         "path": "src/components/item-lifecycle/use-item-removal.tsx",
         "category": "container",
-        "reason": "Stateful hook owning the delete, move, duplicate, remind, complete and unarchive requests, their commands and toasts, and rendering the registered delete, move, duplicate and remind dialogs."
+        "reason": "Stateful hook owning the archive, delete, move, duplicate, remind, complete and unarchive requests, their commands and toasts, and rendering the registered archive, delete, move, duplicate and remind dialogs."
       },
       {
         "path": "src/components/item-actions/linked-docs-section.tsx",
@@ -3586,6 +3586,7 @@
       "pureEntry": "src/components/item-lifecycle/item-lifecycle-dialogs.tsx",
       "coveredSources": [
         "src/components/item-lifecycle/board-trash-sheet.tsx",
+        "src/components/item-lifecycle/archive-item-dialog.tsx",
         "src/components/item-actions/move-board-dialog.tsx",
         "src/components/item-actions/duplicate-item-dialog.tsx",
         "src/components/item-actions/remind-dialog.tsx",
@@ -3730,6 +3731,38 @@
         },
         {
           "id": "delete-cancel",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-plain",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-busy",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-error",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-conflict",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-denied",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-gone",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-links-pending",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
