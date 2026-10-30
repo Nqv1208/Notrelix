@@ -116,9 +116,9 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-IDN-A01 | Read the signed-in person | A | Signed-in person | yes | yes | Final-Auth | yes (sign-in) | HARDENING | no 1 px diff, no owner check |
+| UC-IDN-A01 | Read the signed-in person | A | Signed-in person | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
 | UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | IMPLEMENTING | no caller, no consumer decision |
-| UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes (all writes) | HARDENING | production deploy smoke |
+| UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes | HARDENING | tests and owner check |
 | UC-IDN-A04 | Mobile token transport | A | Mobile client | no | no | Final-M-Auth | no | DEFINED | header and body transport absent |
 | UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | always answers password |
 | UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | no 1 px diff, no owner check |
@@ -180,7 +180,7 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 
 # 3. Use cases
 
-Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; a missing or expired session answers 401. Every unsafe request carries the CSRF header (UC-IDN-A03). Evidence paths are relative: `BE` under `backend/src/Notrelix.Application/Features/Identity/` unless it starts with `Notrelix.`; `API` under `backend/src/Notrelix.API/Endpoints/Identity/`; `FE` under `frontend/`; tests under `backend/tests/Notrelix.<Layer>.Tests/`. Real e2e: only `email-confirmation.real.e2e.spec.ts` and the sign-in helper `real-session.ts` exist; "none" means no spec. Owner checks and 1 px diffs are missing for every use case, so the State lines say only what else is missing.
+Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; a missing or expired session answers 401. Every unsafe request carries the CSRF header (UC-IDN-A03). Evidence paths are relative: `BE` under `backend/src/Notrelix.Application/Features/Identity/` unless it starts with `Notrelix.`; `API` under `backend/src/Notrelix.API/Endpoints/Identity/`; `FE` under `frontend/`; tests under `backend/tests/Notrelix.<Layer>.Tests/`. Real e2e: only `email-confirmation.real.e2e.spec.ts`, `session-bootstrap.real.e2e.spec.ts` and the sign-in helper `real-session.ts` exist; "none" means no spec. Owner checks and 1 px diffs are missing for every use case, so the State lines say only what else is missing.
 
 ## Capability A: Session bootstrap
 
@@ -191,12 +191,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: none.
 - Output: id, email, name, avatar address, email-confirmed flag of the caller only.
 - Main flow: 1. The client calls `GET /api/v1/auth/me` on start and after a sign-in. 2. The server resolves the user from the session. 3. The client holds the answer as the principal and routes on.
-- No-op / rejection / concurrency / retry: no session or a revoked session answers 401 `identity.*` problem; a deleted user answers the same 401; a read, so retry is safe.
-- UI states: loading (bootstrap), error, session expired. No empty, no conflict.
+- No-op / rejection / concurrency / retry: no session or a revoked session answers 401; a session of a person who no longer exists answers 401 `identity.auth.session-invalid`; a read, so retry is safe.
+- UI states: loading (bootstrap, announced), error (the session could not be read: the person stays on the page and may retry), session expired (sign-in with the page remembered). No empty, no conflict.
 - Rules: ID-012, section 58 and 59; IAREQ018.
 - Acceptance: Given a signed-in person, when the client reads `/auth/me`, then only their own fields return and no workspace role or entitlement is in the answer. Given a revoked session, when the client reads it, then the answer is 401 and the app shows the sign-in page.
-- Evidence: BE `Auth/Queries/GetCurrentUser`; API `Auth/Queries/GetCurrentUserEndpoint.cs` (`GET /api/v1/auth/me`) · FE `packages/features/auth/src/web/hooks/use-auth-user.ts` · Design Final-Auth · Tests Application `GetCurrentUserTests`, API `AuthenticatedAuthEndpointTests` · Real e2e `support/real-session.ts` (through every real spec)
-- State: HARDENING. Missing: one real spec that asserts the revoked-session answer, 1 px diff, owner check.
+- Evidence: BE `Auth/Queries/GetCurrentUser`; API `Auth/Queries/GetCurrentUserEndpoint.cs` (`GET /api/v1/auth/me`) · FE `packages/features/auth/src/web/hooks/use-auth-user.ts`, `apps/web/src/shell/guards/auth-guard.tsx` · Design Final-Auth (sign-in page; no artboard draws the session check or the retry screen) · Tests Application `GetCurrentUserTests` (4), Integration `GetCurrentUserQueryHandlerTests` (2), API `AuthenticatedAuthEndpointTests`, `GetCurrentUserErrorContractTests`; FE `auth-guard.component.test.tsx` (6) · Real e2e `session-bootstrap.real.e2e.spec.ts` (own facts only, no session 401, revoked session 401 then sign-in with the page remembered)
+- State: HARDENING. Missing: tests and owner check (the tests above are written and have not been run together); design: an artboard for the session check and retry screens (the build uses the shared loading and error states). A disabled or suspended person still reads this endpoint until UC-IDN-D04.
 
 ### UC-IDN-A02 Bootstrap read for a client
 - Capability: A Session bootstrap
@@ -223,8 +223,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: none visible; a repeated failure shows the generic error.
 - Rules: IAREQ126 to IAREQ130; team spec section 13 (resolved).
 - Acceptance: Given a browser with no token, when it posts without the header, then 403 and no change. Given a stale token, when the client re-fetches and retries once, then the write succeeds once.
-- Evidence: API `Auth/Commands/IssueCsrfTokenEndpoint.cs` (`GET /api/v1/auth/csrf`) · FE `packages/foundation/contracts/src/client/` (`csrf-transport`) · Design n/a · Tests API `CsrfProtectionTests`, `CsrfCrossStackFlowTests`, `CsrfEnforcementDefaultsTests`; FE `csrf-transport.unit.test.ts` · Real e2e every real spec writes through the transport
-- State: HARDENING. Missing: staging and production deployment smoke (certification item P14-MIG-003).
+- Evidence: API `Auth/Commands/IssueCsrfTokenEndpoint.cs` (`GET /api/v1/auth/csrf`) · FE `packages/foundation/contracts/src/client/` (`csrf-transport`) · Design n/a · Tests API `CsrfProtectionTests`, `CsrfCrossStackFlowTests`, `CsrfEnforcementDefaultsTests`; FE `csrf-transport.unit.test.ts` · Real e2e `session-bootstrap.real.e2e.spec.ts` (no header and wrong header answer 403 and change nothing; a stale token is refused once, recovered once, and the write lands once), and every real spec writes through the transport
+- State: HARDENING. Missing: tests and owner check (the real spec is written and has not been run; the real backend run now keeps the CSRF gate on, which development settings turn off). The staging and production deployment smoke (certification item P14-MIG-003) needs a deployed stack; none exists yet.
 
 ### UC-IDN-A04 Mobile token transport
 - Capability: A Session bootstrap

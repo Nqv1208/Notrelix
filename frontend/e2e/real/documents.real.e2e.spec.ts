@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { findWorkspace, realUsers, signIn } from "./support/real-session";
+import {
+  apiWrite,
+  findWorkspace,
+  realUsers,
+  signIn,
+} from "./support/real-session";
 
 test.use({ viewport: { width: 1440, height: 900 } });
 test.setTimeout(180_000);
@@ -19,12 +24,14 @@ test("an owner writes a document, renames it, reloads it and shares it with a me
   const workspace = await findWorkspace(page, "Workspace 3");
 
   // The document is created through the same producer write the shell's create menu uses.
-  const created = await page.request.post(
-    `${apiUrl}/workspaces/${workspace.id}/pages`,
-    { data: { title } },
+  const created = await apiWrite<string>(
+    page,
+    "POST",
+    `/workspaces/${workspace.id}/pages`,
+    { title },
   );
-  expect(created.status()).toBe(201);
-  const docId = (await created.json()) as string;
+  expect(created.status).toBe(201);
+  const docId = created.data as string;
 
   await page.goto(`/workspaces/${workspace.id}/docs/${docId}`);
   await expect(page.locator("article h1")).toHaveText(title);

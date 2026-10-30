@@ -45,6 +45,9 @@ services:
       ConnectionStrings__NotrelixMigrationDb: Host=postgres;Port=5432;Database=notrelix_real_e2e;Username=postgres;Password=${REAL_E2E_POSTGRES_PASSWORD:-real-e2e-postgres-password}
       ConnectionStrings__Redis: redis:6379,password=${REAL_E2E_REDIS_PASSWORD:-real-e2e-redis-password}
       Rls__RoleEnforcement: Enforce
+      # The development settings turn the browser CSRF gate off; the real runs keep it on so a
+      # write that skips the token fails here and the stale-token recovery is proven.
+      Security__Csrf__Enabled: "true"
       # Every spec signs in on its own, far above the per-minute credential limit of one address.
       RateLimiting__Policies__AuthCredentialByIp__PermitLimit: "1000"
       Database__MigrateOnStartup: "true"
