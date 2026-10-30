@@ -44,6 +44,7 @@ import {
   mainTableCatalog,
   savedFiltersCatalog,
   statusOptionFormCatalog,
+  viewStateCatalog,
   timelineCatalog,
 } from "@notrelix/work-management-web";
 import { routerStatesCatalog } from "../router/router-states.catalog";
@@ -76,6 +77,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   mainTableCatalog,
   savedFiltersCatalog,
   formsCatalog,
+  viewStateCatalog,
   calendarCatalog,
   timelineCatalog,
   itemSheetCatalog,
