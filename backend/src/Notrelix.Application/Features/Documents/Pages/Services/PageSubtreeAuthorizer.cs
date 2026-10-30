@@ -12,8 +12,8 @@ public interface IPageSubtreeAuthorizer
 {
     /// <summary>
     /// Throws a <see cref="ForbiddenException"/> with <see cref="SubtreeNotPermittedCode"/> when any page is
-    /// not allowed. Only the number of refused pages is reported: a page the actor cannot even view counts but
-    /// is never named or revealed.
+    /// not allowed. The answer is generic: it names no page and gives no count, so a page the actor cannot
+    /// even view is never revealed.
     /// </summary>
     Task EnsureAllowedAsync<TRequest>(IEnumerable<Guid> pageIds, Func<Guid, TRequest> commandFor, CancellationToken cancellationToken)
         where TRequest : notnull;
@@ -47,7 +47,6 @@ public sealed class PageSubtreeAuthorizer : IPageSubtreeAuthorizer
             ?? throw new SecurityMisconfigurationException("Page subtree authorization requires the request execution context.");
         var descriptor = _descriptors.GetRequired(typeof(TRequest));
 
-        var refused = 0;
         foreach (var pageId in pageIds)
         {
             // Authorization descriptor only: the command is never dispatched.
@@ -59,12 +58,11 @@ public sealed class PageSubtreeAuthorizer : IPageSubtreeAuthorizer
             };
 
             var facts = await _factsProvider.ResolveAsync(descriptor, snapshot, request, cancellationToken);
-            if (_policy.Evaluate(descriptor, snapshot, facts, request).Kind != AccessDecisionKind.Allowed) refused++;
+            // The first refused page ends the check: nothing has been written yet.
+            if (_policy.Evaluate(descriptor, snapshot, facts, request).Kind != AccessDecisionKind.Allowed)
+                throw new ForbiddenException(
+                    "Some pages under this page cannot be changed by you, so nothing was changed.",
+                    SubtreeNotPermittedCode);
         }
-
-        if (refused > 0)
-            throw new ForbiddenException(
-                $"{refused} page(s) under this page cannot be changed by you, so nothing was changed.",
-                SubtreeNotPermittedCode);
     }
 }

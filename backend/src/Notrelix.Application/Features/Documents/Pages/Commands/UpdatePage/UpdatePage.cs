@@ -4,10 +4,10 @@ using Notrelix.Application.Features.Documents.Abstractions;
 namespace Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 
 /// <summary>
-/// Renames a page. Authorized as <c>ManageBoard</c> on the page (as before; aligning it with the edit right
-/// <c>UpdatePage</c> waits for the owner) and guarded by the page version the editor read: a stale version is
-/// refused (412) and changes nothing. The same title is a semantic no-op (no version bump, no event); a
-/// trashed page cannot be renamed.
+/// Renames a page. Authorized as <c>UpdatePage</c> on the page, the same right as editing its content (owner
+/// decision 2026-10-30), and guarded by the page version the editor read: a stale version is refused (412) and
+/// changes nothing. The same title is a semantic no-op (no version bump, no event); a trashed page cannot be
+/// renamed.
 /// </summary>
 public record UpdatePageCommand(
     Guid PageId,
@@ -15,7 +15,7 @@ public record UpdatePageCommand(
     long ExpectedVersion
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 

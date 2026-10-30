@@ -194,7 +194,7 @@ rather than reintroducing universal `SoftDeleted`.
 
 Trashing a page trashes its whole subtree as one unit and gives every page of it the same trash time. Restoring a parent restores the pages that went to the trash with it (the same trash time); permanent delete removes those pages. A page trashed on its own earlier stays in the trash, and a restored page whose parent stays in the trash returns at the root of its Space. A child page can be restored alone only when its parent is active. Restore checks today's constraints: a Space that is archived refuses the restore.
 
-The caller must be allowed to apply the action (trash, restore or delete) to every page the cascade changes, because a child can carry narrower access than its parent. One page that is not allowed refuses the whole operation and changes nothing (`documents.page.subtree-not-permitted`); the answer gives how many pages refused, never their titles or ids.
+The caller must be allowed to apply the action (trash, restore or delete) to every page the cascade changes, because a child can carry narrower access than its parent. One page that is not allowed refuses the whole operation and changes nothing (`documents.page.subtree-not-permitted`); the answer is generic and gives neither titles, ids nor a count, so a page the caller cannot see is never revealed.
 
 # 11. DCT-003 — Archive and delete are different lifecycle operations
 
@@ -521,7 +521,7 @@ manage template
 
 Governance evaluates authorization.
 
-Move to Space and save as template require `UpdatePage`; trash and restore require `ArchivePage`; permanent delete requires `DeletePage`. Rename is still authorized as `ManageBoard`; aligning it with `UpdatePage` waits for the owner.
+Rename, move to Space and save as template require `UpdatePage`; trash and restore require `ArchivePage`; permanent delete requires `DeletePage`.
 
 # 60. DCT-019 — Documents does not authorize by visibility alone
 
