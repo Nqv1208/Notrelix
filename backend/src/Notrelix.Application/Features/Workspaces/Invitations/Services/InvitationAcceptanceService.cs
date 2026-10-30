@@ -23,7 +23,7 @@ public sealed class InvitationAcceptanceService
     private readonly InvitationInitialEntries _initialEntries;
     private readonly IGuestResourceAccessActions _guestResourceAccess;
     private readonly IAuditService _auditService;
-    private readonly IBillingSeatGate? _seatGate;
+    private readonly IBillingSeatGate _seatGate;
 
     public InvitationAcceptanceService(
         IWorkspaceDbContext workspaceContext,
@@ -33,7 +33,7 @@ public sealed class InvitationAcceptanceService
         InvitationInitialEntries initialEntries,
         IGuestResourceAccessActions guestResourceAccess,
         IAuditService auditService,
-        IBillingSeatGate? seatGate = null)
+        IBillingSeatGate seatGate)
     {
         _seatGate = seatGate;
         _workspaceContext = workspaceContext;
@@ -103,9 +103,9 @@ public sealed class InvitationAcceptanceService
                 "Your membership in this workspace is not active.");
 
         // Billing owns the seat decision: a new membership takes a Member or Guest seat of the
-        // account's plan unless the person already holds that seat in another workspace.
+        // account's plan unless the person already holds that seat in another workspace. The gate is
+        // required, never optional: an acceptance that cannot ask Billing must not admit (LD-08).
         if (existingMember is null
-            && _seatGate is not null
             && !await _seatGate.CanAdmitAsync(
                 workspace.AccountId, invitation.WorkspaceId, userId, invitation.Role == WorkspaceRole.Guest, ct))
         {
