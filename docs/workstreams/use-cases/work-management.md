@@ -1830,7 +1830,7 @@ Team capability WM-006.
 - Rules: product sections 42-45, 130; WM-016; WMREQ041-045, WMREQ114, WMREQ132, WMREQ141
 - Acceptance: Given two Editors reorder at once, then the final order is deterministic and no duplicate keys exist.
 - Evidence: BE BoardFields.Move = POST /boards/{boardId:guid}/fields/{fieldId:guid}/move -> MoveBoardFieldCommand (`BoardFields/Commands/MoveBoardField/MoveBoardField.cs`) [EV / Idem] · FE settings reorder; Alt+Arrow Cột menu in PR #204 · Design WM-Table-Columns; field reorder drag/Er missing · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — concurrent reorder test; design; Table column order is in open PR #204.
+- State: INTEGRATING — tests and owner check. Built: the field list of board settings moves a field by drag or Alt+Arrow on its handle, names its neighbours in the server's whole field order (locked system fields included), puts the old order back when the write fails, and announces the new place. Not built: personal Table column order (BoardPreference, with the Table unit), design for the Alt+Arrow and conflict states, the conflict notice does not name the actor (the 409 carries none).
 
 ### UC-WM-F02 Reorder groups
 - Capability: F Ordering (WM-006)
@@ -1844,7 +1844,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ042-044, WMREQ132, WMREQ140
 - Acceptance: Given two groups swapped, when the board is read, then the order is the same for everyone. Given a drop on the current position, then the version does not change.
 - Evidence: BE BoardGroups.Move = POST /board-groups/{groupId:guid}/move -> MoveBoardGroupCommand (`BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs`) [EV / Idem] · FE useMoveRow, Table menu 'move group up/down' · Design none; needs group reorder (move up/down), conflict · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — Design; deterministic-order test
+- State: INTEGRATING — tests and owner check. Built: the group list of board settings has the same drag and Alt+Arrow move with rollback; an archived group between two visible groups no longer makes every move between them fail, because the server checks the neighbours against the visible groups and keeps the archived group's key. Not built: design for group reorder and conflict, the conflict notice does not name the actor.
 
 ### UC-WM-F03 Reorder an item within its group or lane
 - Capability: F Ordering (WM-006)
@@ -1858,7 +1858,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ041-044, WMREQ050-052, WMREQ114, WMREQ131, WMREQ139
 - Acceptance: Given an item dragged one place down, when the board reloads, then the order holds for everyone. Given two people dragging at once, then one gets a conflict and the other order stands.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem]; BoardItems.MoveChild = POST /board-items/{itemId:guid}/move-within-parent -> MoveChildItemCommand (`BoardItems/Commands/MoveChildItem/MoveChildItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts`, useMoveRow · Design BC-Table, BC-Kanban · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `SubItemTests.cs` · Real e2e none
-- State: INTEGRATING — No-op move proof; real e2e
+- State: INTEGRATING — tests and owner check. Built: an archived item between two visible items (in a group or under a parent) no longer makes a drop between them stale; the key is generated in front of the archived item. Not built: the Table has no row drag (Kanban only), design for the conflict state.
 
 ### UC-WM-F04 Resolve an ordering collision
 - Capability: F Ordering (WM-006)
@@ -1872,7 +1872,7 @@ Team capability WM-006.
 - Rules: product sections 130, 43; WM-016; WMREQ042, WMREQ050-052, WMREQ114
 - Acceptance: Given 10 concurrent inserts at one position, then 10 distinct keys and a deterministic order.
 - Evidence: BE fractional ordering/rebalance (Ordering 15 tests) · FE fractional-index (core) · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — test of ten concurrent inserts into one ordering scope.
+- State: INTEGRATING — tests and owner check. Built: nothing new in the scope lock or the unique-violation mapping (both present: stale placement and ordering conflict answer 409 with stable codes); the placement rule now ignores archived siblings when it checks neighbours so a reload does cure a stale drop.
 
 ## G. Checklists
 
