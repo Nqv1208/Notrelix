@@ -219,7 +219,7 @@ export function MainTableView({
   });
   const updateCard = useUpdateCard(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
-    onError: (_error, cardId) =>
+    onError: (_error, { cardId }) =>
       toast.error(
         fillTableCopy(copy.failed.archive, {
           title: titles.current.get(cardId) ?? "",
@@ -294,7 +294,7 @@ export function MainTableView({
       );
       return;
     }
-    for (const id of pending.ids) archiveMutate(id);
+    for (const id of pending.ids) archiveMutate({ cardId: id });
     setPendingArchive([]);
   }, [archiveMutate, bulkMutate, copy]);
   useEffect(() => {
@@ -827,6 +827,7 @@ export function MainTableView({
               ? removal.requestDuplicate
               : undefined,
             onCopyLink: handleCopyLink,
+            // A row archives with the table's own undo window, not a dialog.
             onArchive: capabilities.canDelete
               ? (id) => {
                   noteTitle(id);
@@ -921,10 +922,6 @@ export function MainTableView({
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
           onDuplicate={removal.requestDuplicate}
-          onArchive={(cardId) => {
-            noteTitle(cardId);
-            archiveCard.mutate(cardId);
-          }}
         />
       ) : null}
       {removal.dialogs}

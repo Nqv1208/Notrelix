@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
 import {
-  useArchiveCard,
   useBoardAccess,
   useCard,
   useCardActivity,
@@ -191,7 +190,6 @@ function TaskDetailReadyContainer({
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
-  const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
   const removal = useItemRemoval({
     workspaceId: card.workspaceId,
     boardId: card.boardId,
@@ -249,11 +247,8 @@ function TaskDetailReadyContainer({
             updateCard.mutate({ cardId, patch }),
           onToggleWatch: () => undefined,
           onDuplicate: removal.requestDuplicate,
-          // "Lưu trữ" archives the item (it can be restored); it is not a delete.
-          onArchive: (cardId) => {
-            archiveCard.mutate(cardId);
-            onClose();
-          },
+          // "Lưu trữ" asks first, then archives the item (it can be restored); it is not a delete.
+          onArchive: removal.requestArchive,
           onUnarchive: removal.unarchiveItem,
           onComplete: removal.completeItem,
           onReopen: removal.reopenItem,

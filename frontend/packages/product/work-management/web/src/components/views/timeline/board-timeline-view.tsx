@@ -451,7 +451,6 @@ export function BoardTimelineView({
           onMoveToGroup={sheet.onMoveToGroup}
           onUpdateFieldValue={sheet.onUpdateFieldValue}
           onDuplicate={sheet.onDuplicate}
-          onArchive={sheet.onArchive}
         />
       ) : null}
     </div>

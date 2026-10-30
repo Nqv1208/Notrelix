@@ -394,7 +394,7 @@ describe("ERP board in the mock world", () => {
     it("archive: the item leaves the board read; a commenter cannot archive", async () => {
       const { client, store } = clientFor();
       const item = erpCard(store, "ERP-149");
-      await createCardApi(client).archiveCard(item.id);
+      await createCardApi(client).archiveCard(item.id, item.version ?? 1);
       const full = await createBoardApi(client).getFullBoard(boardId, {
         workspaceId,
       });
@@ -407,7 +407,10 @@ describe("ERP board in the mock world", () => {
       const commenter = clientFor("commenter");
       const theirs = erpCard(commenter.store, "ERP-151");
       await expect(
-        createCardApi(commenter.client).archiveCard(theirs.id),
+        createCardApi(commenter.client).archiveCard(
+          theirs.id,
+          theirs.version ?? 1,
+        ),
       ).rejects.toBeTruthy();
     });
 
