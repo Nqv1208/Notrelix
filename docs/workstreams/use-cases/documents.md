@@ -150,14 +150,14 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Rejection path not in real e2e |
-| UC-DCT-E02 | Change a block's type | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
-| UC-DCT-E03 | Use structured blocks | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Per-type e2e missing |
-| UC-DCT-E04 | Use a table block | E | Editor | yes | yes | none | none | INTEGRATING | No artboard |
-| UC-DCT-E05 | Add an image, file or video block | E | Editor | yes | yes | none | none | INTEGRATING | Attachment flow owned by Collaboration; no artboard |
-| UC-DCT-E06 | Embed a board in a page | E | Editor | partial | yes | none | none | INTEGRATING | Target authorization re-check unproven |
-| UC-DCT-E07 | Reference another page | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Trashed target case not proven |
-| UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
+| UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-E02 | Change a block's type | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-E03 | Use structured blocks | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-E04 | Use a table block | E | Editor | yes | yes | none | none | INTEGRATING | Tests, artboard and owner check |
+| UC-DCT-E05 | Add an image, file or video block | E | Editor | yes | yes | none | none | INTEGRATING | Tests, artboard and owner check |
+| UC-DCT-E06 | Embed a board in a page | E | Editor | yes | yes | none | none | INTEGRATING | Tests, artboard and owner check |
+| UC-DCT-E07 | Reference another page | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E09 | Open a block type this client does not know | E | Any viewer | partial | partial | none | none | DEFINED | No placeholder behaviour |
 | UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
 | UC-DCT-F02 | Reorder blocks | F | Editor | partial | yes | none | none | INTEGRATING | Client sets keys; no version; no page fact |
@@ -707,7 +707,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc section 21A (product rules DCT-007, DCT-008); `DCREQ015`, `DCREQ016`; decision 2.
 - Acceptance: Given two adjacent runs with the same marks, When saved, Then one run. Given a `javascript:` link, Then `400`.
 - Evidence: BE `PATCH /api/v1/pages/{pageId}/blocks/{blockId}`, `RichText`, `BlockRules` · FE `use-doc-rich-editor.ts`, `block-mapping.ts`, rich-text types in docs-core · Design Final-Docs-2 · Tests `BlockContentValidatorTests`, `BlockPropertiesValidatorTests`, `rich-text.unit.test.ts`, `block-mapping.unit.test.ts`, `format-commands.component.test.tsx` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — real e2e for a rejected write.
+- State: HARDENING — tests and owner check (real e2e for a rejected write; the server refuses every case listed through `BlockContentValidator`).
 
 ### UC-DCT-E02 Change a block's type
 - Capability: E Block types and content contract
@@ -721,7 +721,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 20, 21; `DCREQ014`, `DCREQ016`.
 - Acceptance: Given a paragraph with text, When turned into Heading 2, Then the id is unchanged and the text kept.
 - Evidence: BE `UpdateBlockCommandHandler`, `Block.Edit` · FE `editor-commands.ts`, `slash-menu.tsx` · Design Final-Docs-2 · Tests `BlockChangeTypeTests`, `format-commands.component.test.tsx` · Real e2e none
-- State: INTEGRATING — real e2e.
+- State: INTEGRATING — tests and owner check (real e2e; the server keeps the id, converts text between text-like types and starts empty otherwise, and a trashed page refuses the edit).
 
 ### UC-DCT-E03 Use structured blocks
 - Capability: E Block types and content contract
@@ -735,7 +735,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 20, 21, 23, 99, 102; `DCREQ014`, `DCREQ015`.
 - Acceptance: Given a code block with language `ts`, When reloaded, Then the language is kept and highlighted.
 - Evidence: BE `BlockProperties`, `BlockRules` · FE `extensions.tsx`, `code-block.tsx`, `toggle-collapse.ts`, `doc-table-of-contents.tsx` · Design Final-Docs-2 · Tests `BlockPropertiesTests`, `code-fence.component.test.tsx`, `list-continuation.component.test.tsx`, `toggle-collapse.component.test.tsx`, `table-of-contents.component.test.tsx`, `outline.component.test.tsx` · Real e2e none
-- State: INTEGRATING — one real e2e per type family.
+- State: INTEGRATING — tests and owner check (one real e2e per type family).
 
 ### UC-DCT-E04 Use a table block
 - Capability: E Block types and content contract
@@ -748,8 +748,8 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - UI states: saved, conflict, validation error, read-only.
 - Rules: product doc section 21A; `DCREQ015`.
 - Acceptance: Given a 2 by 2 table, When a row is added and saved, Then reload shows 3 rows.
-- Evidence: BE `BlockProperties` (table rows) · FE `table.ts`, `table-commands.ts`, `table-menu.tsx`, `block-wire.ts` · Design none · Tests `table-commands.component.test.tsx`, `table-mapping.unit.test.ts`, `block-wire-table.unit.test.ts` · Real e2e none
-- State: INTEGRATING — artboard, real e2e, per-cell conflict note.
+- Evidence: BE `BlockProperties` (table rows) · FE `table.ts`, `table-commands.ts`, `table-menu.tsx`, `block-wire.ts`; a table edit refused as stale keeps the member's cells in the recovery panel row by row (`draftRecoveryText`) under the note "A table is one block, so two people editing different cells still conflict" (`recovery.bodyTable`) · Design none · Tests `table-commands.component.test.tsx`, `table-mapping.unit.test.ts`, `block-wire-table.unit.test.ts` · Real e2e none
+- State: INTEGRATING — tests, artboard and owner check (no artboard draws the table menu or the conflict note; real e2e).
 
 ### UC-DCT-E05 Add an image, file or video block
 - Capability: E Block types and content contract
@@ -763,7 +763,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 69 to 71 (product rule DCT-022); `DCREQ144` to `DCREQ146`; decisions 4, 10. Attachments are Collaboration use cases: see [collaboration.md](collaboration.md).
 - Acceptance: Given an image, When inserted and the page reloaded, Then it renders through an authorized read; a person without page access gets `404` for the file.
 - Evidence: BE Collaboration page-attachment routes (see collaboration.md) · FE `media.tsx`, `media-commands.ts`, `attachment-uploads.ts`, `usePageAttachments` · Design none · Tests `media.component.test.tsx`, `attachment-uploads.unit.test.ts`, `page-attachments.unit.test.ts`, `PageAttachmentEndpointTests`, `PageAttachmentTests` · Real e2e none
-- State: INTEGRATING — artboard, real e2e, template and duplicate behaviour (dropped).
+- State: INTEGRATING — tests, artboard and owner check (no artboard draws the upload states; duplicate leaves image and file blocks behind with a toast and a template drops them with `droppedBlockCount`, see UC-DCT-A09 and A11; real e2e).
 
 ### UC-DCT-E06 Embed a board in a page
 - Capability: E Block types and content contract
@@ -777,7 +777,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 38 to 44 (product rules DCT-014, DCT-015, DCT-020); `DCREQ122` to `DCREQ127`.
 - Acceptance: Given a page that embeds a private board, When a person without access opens the page, Then they see "unavailable" and no board data.
 - Evidence: BE block type `Board`; board reads in Work Management · FE `doc-embeds` tests, `media-host.ts` · Design none · Tests `doc-embeds.component.test.tsx`, `doc-embeds.unit.test.ts` · Real e2e none
-- State: INTEGRATING — artboard, server proof that the embed leaks nothing, real e2e.
+- State: INTEGRATING — tests, artboard and owner check (server proof that the page read carries only `boardId` and `viewId` and no board data, so the reader's own Work Management right decides what shows; no artboard; real e2e). Not built, needs a decision: a write-time check that the target exists and the editor can view it would also refuse a duplicate or import that keeps an embed whose board the person cannot see (lead decision LD7 keeps references pointing at the original targets), so the editor's picker lists only boards the person can view and the server keeps a stored reference as written.
 
 ### UC-DCT-E07 Reference another page
 - Capability: E Block types and content contract
@@ -791,7 +791,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 20, 38 to 45; `DCREQ122` to `DCREQ127`; decisions 11, 21.
 - Acceptance: Given a reference to a page the reader cannot see, When rendered, Then "page unavailable" with no title.
 - Evidence: BE `BlockRules`, `GetPageBacklinks` · FE `mark-chips.tsx`, `doc-embeds` · Design Final-Docs-2 · Tests `mark-chips.component.test.tsx`, `BlockContentValidatorTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — trashed-target proof.
+- State: HARDENING — tests and owner check (trashed-target proof: the page list the viewer reads excludes trashed pages, so the chip reads "page unavailable"; backlinks also leave out trashed referrers). Not built, needs a decision: refusing a reference to a page in another workspace at write time has the same conflict with LD7 as the board embed, and the chip lookup reads the whole page list, which unit G bounds.
 
 ### UC-DCT-E08 Mention a person in a page
 - Capability: E Block types and content contract
@@ -805,7 +805,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 35, 63; `DCREQ153` to `DCREQ157`; decision 12. See [collaboration.md](collaboration.md).
 - Acceptance: Given a new mention, When saved, Then one notification; When saved again unchanged, Then none.
 - Evidence: BE `BlockMentions`, `BlockSaveTracker`, `PageBlocksSavedMentionConsumer` · FE `mention-trigger.tsx` · Design Final-Docs-2 · Tests `BlockMentionsTests`, `PageBlocksSavedTests`, `PageBlocksSavedConsumersTests`, `mention.component.test.tsx` · Real e2e none
-- State: INTEGRATING — real e2e of notify once.
+- State: INTEGRATING — tests and owner check (real e2e of notify once; `PageBlocksSavedMentionConsumer` already skips self-mentions, dedups by save, block and person, and notifies only people who can view the page). The suggestion list still offers every workspace member: a Collaboration-owned read of people who can view the page is UC-COL-B05.
 
 ### UC-DCT-E09 Open a block type this client does not know
 - Capability: E Block types and content contract
