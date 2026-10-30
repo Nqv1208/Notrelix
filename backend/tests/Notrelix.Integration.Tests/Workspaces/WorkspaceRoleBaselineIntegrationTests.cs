@@ -78,7 +78,13 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         services.AddSingleton(encryptor.Object);
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<InvitationInitialEntries>();
+        services.AddSingleton(AlwaysAdmitSeatGate);
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts, Notrelix.Application.Features.Accounts.Members.AccountMembershipFactsProvider>();
     }
+
+    private static readonly Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate AlwaysAdmitSeatGate =
+        Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g =>
+            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true));
 
     private async Task<(OrgStack Stack, Guid Admin, Guid Member, Guid Guest)> SeedAsync()
     {
@@ -117,6 +123,39 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, user, role));
 
         (await MemberRowAsync(stack, user)).Role.Should().Be(role);
+    }
+
+    [Fact]
+    public async Task Admin_CannotAddUserOfAnotherAccountOrUnknownUser_AndNothingIsPersisted()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        var otherAccountUser = (await _host.SeedWorkspaceAsync()).OwnerId;
+        using var asAdmin = As(stack, admin);
+
+        foreach (var target in new[] { otherAccountUser, Guid.CreateVersion7() })
+        {
+            var act = () => OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, target, WorkspaceRole.Member));
+
+            (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+                .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_NotInAccount);
+            (await HasMemberRowAsync(stack, target)).Should().BeFalse();
+        }
+    }
+
+    [Fact]
+    public async Task Admin_CannotAddMember_WhenNoSeatIsAvailable_AndNothingIsPersisted()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        var user = await NewUserAsync(stack);
+        var noSeat = Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g =>
+            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(false));
+        using var asAdmin = _host.CreateProvider(stack.AccountId, admin, s => { RegisterServices(s); s.AddSingleton(noSeat); });
+
+        var act = () => OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, user, WorkspaceRole.Member));
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_SeatUnavailable);
+        (await HasMemberRowAsync(stack, user)).Should().BeFalse();
     }
 
     [Theory]

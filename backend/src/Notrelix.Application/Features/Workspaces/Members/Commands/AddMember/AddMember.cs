@@ -1,4 +1,6 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Domain.Workspaces.Rules;
@@ -21,13 +23,17 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
+    private readonly IBillingSeatGate _seatGate;
+    private readonly IAccountMembershipFacts _accountFacts;
 
-    public AddMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection)
+    public AddMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IBillingSeatGate seatGate, IAccountMembershipFacts accountFacts)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _grantProjection = grantProjection;
+        _seatGate = seatGate;
+        _accountFacts = accountFacts;
     }
 
     public async Task<Result> Handle(AddMemberCommand request, CancellationToken ct)
@@ -41,6 +47,20 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
         var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
             _context, request.WorkspaceId, _requestContext.UserId, ct);
         WorkspaceMemberRules.EnsureActorCanAssignRole(actorRole, request.Role);
+
+        // Direct add is for people already in the Account; the refusal is the same for an unknown
+        // user, another Account's user and an inactive member, so it reveals nothing about the user.
+        if (!await _accountFacts.IsActiveMemberAsync(workspace.AccountId, request.UserId, ct))
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Member_NotInAccount,
+                "This person is not a member of this account. Invite them instead.");
+
+        // Billing owns the seat decision; a Guest takes a guest seat, every other role a member seat.
+        if (!await _seatGate.CanAdmitAsync(
+                workspace.AccountId, request.WorkspaceId, request.UserId, WorkspaceMemberRules.TakesGuestSeat(request.Role), ct))
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Member_SeatUnavailable,
+                "No seat of this account's plan is available for this role.");
 
         var existingMember = await _context.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == request.WorkspaceId && m.UserId == request.UserId, ct);

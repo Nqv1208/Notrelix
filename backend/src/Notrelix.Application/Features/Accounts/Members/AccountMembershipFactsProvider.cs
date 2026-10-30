@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Domain.Accounts.Accounts;
+using Notrelix.Domain.Accounts.Members;
 
 namespace Notrelix.Application.Features.Accounts.Members;
 
@@ -35,4 +36,14 @@ public sealed class AccountMembershipFactsProvider : IAccountMembershipFacts
 
         return new AccountMembershipAdmissionFact(canAdmitMember);
     }
+
+    public Task<bool> IsActiveMemberAsync(
+        Guid accountId,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        _context.AccountMembers
+            .AsNoTracking()
+            .AnyAsync(
+                m => m.AccountId == accountId && m.UserId == userId && m.Status == AccountMemberStatus.Active,
+                cancellationToken);
 }

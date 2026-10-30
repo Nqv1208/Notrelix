@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Domain.Workspaces;
 using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
 
@@ -5,8 +7,81 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Members.Commands;
 
 public class AddMemberCommandHandlerTests : WorkspaceHandlerTestBase
 {
+    private readonly Mock<IBillingSeatGate> _seatGate = new();
+    private readonly Mock<IAccountMembershipFacts> _accountFacts = new();
+
+    public AddMemberCommandHandlerTests()
+    {
+        _seatGate.Setup(g => g.CanAdmitAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _accountFacts.Setup(f => f.IsActiveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+    }
+
     private AddMemberCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, _seatGate.Object, _accountFacts.Object);
+
+    [Theory]
+    [InlineData("another account")]
+    [InlineData("inactive account member")]
+    [InlineData("unknown user")]
+    public async Task Handle_WhenTargetIsNotAnActiveAccountMember_IsRefusedIdenticallyAndNothingChanges(string _)
+    {
+        var workspace = CreateWorkspace(id: TestWorkspaceId);
+        SetupWorkspaces(workspace);
+        SetupMembers(CreateMember(WorkspaceRole.Owner));
+        var userId = Guid.CreateVersion7();
+        _accountFacts.Setup(f => f.IsActiveMemberAsync(workspace.AccountId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        Func<Task> act = () => CreateSut().Handle(new AddMemberCommand(workspace.Id, userId, WorkspaceRole.Member), CancellationToken.None);
+
+        var ex = (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which;
+        ex.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_NotInAccount);
+        _seatGate.Verify(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        DbContextMock.Verify(c => c.WorkspaceMembers.Add(It.IsAny<WorkspaceMember>()), Times.Never);
+        GrantProjectionMock.Verify(
+            p => p.SyncWorkspaceMemberGrantAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<WorkspaceRole>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Theory]
+    [InlineData(WorkspaceRole.Member, false)]
+    [InlineData(WorkspaceRole.Guest, true)]
+    public async Task Handle_WhenNoSeatIsAvailable_IsRefusedWithStableCodeAndNothingChanges(WorkspaceRole role, bool asGuest)
+    {
+        var workspace = CreateWorkspace(id: TestWorkspaceId);
+        SetupWorkspaces(workspace);
+        SetupMembers(CreateMember(WorkspaceRole.Owner));
+        var userId = Guid.CreateVersion7();
+        _seatGate.Setup(g => g.CanAdmitAsync(workspace.AccountId, workspace.Id, userId, asGuest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        Func<Task> act = () => CreateSut().Handle(new AddMemberCommand(workspace.Id, userId, role), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_SeatUnavailable);
+        GrantProjectionMock.Verify(
+            p => p.SyncWorkspaceMemberGrantAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<WorkspaceRole>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAdminAddsGuestAndMember_AsksForAGuestSeatAndAMemberSeat()
+    {
+        var workspace = CreateWorkspace(id: TestWorkspaceId);
+        SetupWorkspaces(workspace);
+        SetupMembers(CreateMember(WorkspaceRole.Admin));
+
+        await CreateSut().Handle(new AddMemberCommand(workspace.Id, Guid.CreateVersion7(), WorkspaceRole.Guest), CancellationToken.None);
+        await CreateSut().Handle(new AddMemberCommand(workspace.Id, Guid.CreateVersion7(), WorkspaceRole.Member), CancellationToken.None);
+
+        _seatGate.Verify(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), true, It.IsAny<CancellationToken>()), Times.Once);
+        _seatGate.Verify(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), false, It.IsAny<CancellationToken>()), Times.Once);
+    }
 
     [Fact]
     public async Task Handle_WhenWorkspaceExists_AddsMemberSuccessfully()
