@@ -723,13 +723,12 @@ export function MainTableView({
       payload.fieldDefinitionId === table.statusField?.id &&
       typeof payload.value === "string"
     ) {
-      table.updateStatus.mutate({
+      return table.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
-    table.updateFieldValue.mutate(payload);
+    return table.updateFieldValue.mutateAsync(payload);
   };
 
   const handleMoveToGroup = (cardId: string, groupId: string) => {

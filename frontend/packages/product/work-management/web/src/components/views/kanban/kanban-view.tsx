@@ -740,14 +740,13 @@ export function KanbanView({
       typeof payload.value === "string"
     ) {
       noteOrigin(payload.cardId);
-      kanban.updateStatus.mutate({
+      return kanban.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
     noteOrigin(payload.cardId);
-    kanban.updateFieldValue.mutate(payload);
+    return kanban.updateFieldValue.mutateAsync(payload);
   };
 
   const handleMoveToGroup = (cardId: string, groupId: string) => {
@@ -1177,7 +1176,7 @@ export interface SelectedItemProps {
   onCopyLink: (cardId: string) => void;
   onOpenFullPage?: (cardId: string) => void;
   onMoveToGroup: (cardId: string, groupId: string) => void;
-  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
 }
 
@@ -1357,7 +1356,8 @@ function KanbanSelectedItemReady({
           onCancelApproval: (requestId) => approvals.cancel(requestId),
           onRenameTitle: (cardId, patch) =>
             updateCard.mutate({ cardId, patch }),
-          onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+          onUpdateItem: (cardId, patch) =>
+            updateCard.mutateAsync({ cardId, patch }),
           onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
           onCreateLabel: (name, color) =>
             labelWrites

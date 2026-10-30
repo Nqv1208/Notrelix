@@ -54,22 +54,29 @@ export const en = {
   retry: "Retry",
   readOnlyPermission: "You can view this card but not edit it.",
   readOnlyArchived: "This board is archived, so its cards are read-only.",
+  readOnlyPermissionTitle: "You can only view this card",
+  readOnlyPermissionBody:
+    "You need edit rights to change it. You can still read the whole card, its comments and links.",
+  readOnlyArchivedTitle: "This board is archived",
+  readOnlyArchivedBody:
+    "The card is view-only. A board manager can restore the board to keep editing.",
   loading: "Loading card",
   loadError: {
     title: "Could not load the card",
-    body: "Network or server problem. The card is unchanged.",
+    body: "Check your connection and try again. The card is unchanged on the board.",
     retry: "Try again",
-    ref: "Request code {{ref}}",
+    ref: "Request code {{ref}} · send it to an administrator if the error repeats",
+    close: "Close",
   },
   gone: {
-    title: "This card is gone or you no longer have access",
-    body: "It may have been deleted, moved, or its access changed.",
-    close: "Close",
+    title: "The card is gone, or you no longer have access",
+    body: "It may have been deleted or moved to another board, or you were removed from the board. No information about the card is shown.",
+    close: "Back to the board",
   },
   conflict: {
     title: "Someone else just edited this card",
     body: "We refreshed the fields with their version. Your change was not saved.",
-    reload: "Reload",
+    reload: "Reload the card",
   },
 };
 export type ShellCopy = typeof en;
@@ -128,21 +135,28 @@ export const vi: ShellCopy = {
   retry: "Thử lại",
   readOnlyPermission: "Bạn chỉ xem được thẻ này, không sửa được.",
   readOnlyArchived: "Board đã lưu trữ nên thẻ chỉ đọc.",
+  readOnlyPermissionTitle: "Bạn chỉ có quyền xem thẻ này",
+  readOnlyPermissionBody:
+    "Cần quyền sửa để đổi nội dung. Bạn vẫn đọc được toàn bộ thẻ, bình luận và liên kết.",
+  readOnlyArchivedTitle: "Board này đã lưu trữ",
+  readOnlyArchivedBody:
+    "Thẻ ở chế độ chỉ xem. Quản lý board có thể khôi phục board để tiếp tục sửa.",
   loading: "Đang tải thẻ",
   loadError: {
-    title: "Chưa tải được thẻ",
-    body: "Lỗi mạng hoặc máy chủ. Thẻ vẫn nguyên.",
+    title: "Không tải được thẻ",
+    body: "Kiểm tra kết nối rồi thử lại. Thẻ vẫn nguyên trên board.",
     retry: "Thử lại",
-    ref: "Mã yêu cầu {{ref}}",
+    ref: "Mã yêu cầu {{ref}} · gửi mã này cho quản trị viên nếu lỗi lặp lại",
+    close: "Đóng",
   },
   gone: {
-    title: "Thẻ không còn hoặc bạn không còn quyền xem",
-    body: "Thẻ có thể đã bị xoá, chuyển đi hoặc đổi quyền truy cập.",
-    close: "Đóng",
+    title: "Thẻ không còn, hoặc bạn không còn quyền xem",
+    body: "Thẻ có thể đã bị xoá hay chuyển sang board khác, hoặc bạn đã được gỡ khỏi board. Không có thông tin nào của thẻ được hiển thị.",
+    close: "Về board",
   },
   conflict: {
     title: "Người khác vừa sửa thẻ này",
     body: "Các ô đã cập nhật theo bản mới. Thay đổi của bạn chưa được lưu.",
-    reload: "Tải lại",
+    reload: "Tải lại thẻ",
   },
 };
