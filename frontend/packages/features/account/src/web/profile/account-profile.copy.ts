@@ -16,6 +16,10 @@ export const en = {
   changePhotoLabel: "Change profile photo",
   removePhoto: "Remove photo",
   removePhotoLabel: "Remove profile photo",
+  removePhotoConfirm: "Remove your photo?",
+  removePhotoYes: "Remove",
+  removePhotoKeep: "Keep it",
+  photoWorking: "Updating your photo…",
   photoUnsupported: "We couldn't use that photo. Choose a PNG, JPEG or WebP.",
   photoTooLarge: "That photo is too large. Choose one under 1.5 MB.",
   photoFailed: "We couldn't change your photo. Try again.",
@@ -23,6 +27,7 @@ export const en = {
   nameLabel: "Name",
   namePlaceholder: "Your name",
   nameRequired: "Enter your name.",
+  nameTooLong: "Use at most {{count}} characters.",
   jobTitleLabel: "Job title",
   emailLabel: "Email",
   emailManaged:
@@ -52,6 +57,8 @@ export const en = {
   saving: "Saving…",
   saved: "Profile updated.",
   saveError: "We couldn't save your changes. Try again.",
+  saveConflict:
+    "These settings were changed on another device, so nothing was saved. Check them and save again.",
   discard: "Discard changes",
   timezones: {
     UTC: "UTC",
@@ -78,6 +85,10 @@ export const vi: AccountProfileCopy = {
   changePhotoLabel: "Đổi ảnh đại diện",
   removePhoto: "Gỡ ảnh",
   removePhotoLabel: "Gỡ ảnh đại diện",
+  removePhotoConfirm: "Gỡ ảnh của bạn?",
+  removePhotoYes: "Gỡ",
+  removePhotoKeep: "Giữ lại",
+  photoWorking: "Đang cập nhật ảnh…",
   photoUnsupported:
     "Không dùng được ảnh này. Hãy chọn ảnh PNG, JPEG hoặc WebP.",
   photoTooLarge: "Ảnh quá lớn. Hãy chọn ảnh dưới 1,5 MB.",
@@ -86,6 +97,7 @@ export const vi: AccountProfileCopy = {
   nameLabel: "Tên",
   namePlaceholder: "Tên của bạn",
   nameRequired: "Hãy nhập tên của bạn.",
+  nameTooLong: "Chỉ dùng tối đa {{count}} ký tự.",
   jobTitleLabel: "Chức danh",
   emailLabel: "Email",
   emailManaged:
@@ -114,6 +126,8 @@ export const vi: AccountProfileCopy = {
   saving: "Đang lưu…",
   saved: "Đã cập nhật hồ sơ.",
   saveError: "Không thể lưu thay đổi của bạn. Hãy thử lại.",
+  saveConflict:
+    "Các thiết lập này đã được đổi trên thiết bị khác nên chưa lưu được gì. Hãy kiểm tra rồi lưu lại.",
   discard: "Hủy thay đổi",
   timezones: {
     UTC: "UTC",
