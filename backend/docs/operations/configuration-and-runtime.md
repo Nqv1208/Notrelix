@@ -272,6 +272,17 @@ overridable per environment. The MFA wrong-code budget per challenge (5) is a co
 | `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
 | `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
 
+`Governance:AccessChanges:Retention` (Infrastructure, `ResourceAccessChangeRetentionOptions`, validated on
+start by `ResourceAccessChangeRetentionOptionsValidator`) configures the sweep of the Board access-change log
+(`ResourceAccessChangeRetentionService`, a hosted service). Each row carries its own `retention_until` (90 days
+after the change), so the sweep only removes rows that reads already hide:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is deleted. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
+
 `Workspaces:Onboarding:DraftSweep` (Infrastructure, `OnboardingDraftSweepOptions`, validated on start by
 `OnboardingDraftSweepOptionsValidator`) configures the sweep of expired onboarding drafts
 (`OnboardingDraftSweepService`, a hosted service; the retention itself is the Domain constant of 30 days after the last
