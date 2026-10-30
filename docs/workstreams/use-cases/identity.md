@@ -68,7 +68,7 @@ No use case is DONE: none has a recorded owner check or a 1 px design diff yet. 
 4. **Company single sign-on is a stub.** `IdentifySignIn` always answers "password"; the mock backend invents an SSO path that the real backend cannot serve (UC-IDN-B08).
 5. **Refresh has no replay detection and no absolute lifetime.** A replayed rotated credential simply fails; the family stays valid, and each refresh creates a new 30-day session, so a stolen chain lives forever (UC-IDN-D03, D05).
 6. **Disabling a person does not end their access.** Domain `Deactivate` and `Suspend` exist; no use case calls them; sessions and access tokens are not revoked, only a refresh is blocked (UC-IDN-D04, L08).
-7. **Revoke-other-sessions has no step-up** although owner decision 48 requires one (UC-IDN-C04).
+7. **Revoke-other-sessions has no step-up** although owner decision 48 requires one (UC-IDN-C04). Built; tests pending.
 8. **Changing the sign-in email needs no proof.** No step-up, no notice to the old address, no session revocation, and no web screen (UC-IDN-K09).
 9. **Provider link and unlink have no screen**, and the security page cannot show or change linked providers (UC-IDN-G01, G02).
 10. **No mobile token transport** (owner decision 47, `X-Notrelix-Client: mobile`): the backend does not read the header, and refresh reads only the cookie (UC-IDN-A04).
@@ -82,9 +82,9 @@ No use case is DONE: none has a recorded owner check or a 1 px design diff yet. 
 | Register answers "Email is already in use" (accepted trade-off, owner sign-off pending) | `backend/src/Notrelix.Application/Features/Identity/Registration/Commands/Register/RegisterCommandHandler.cs` | B03 |
 | Same disclosure on email change, to a signed-in person | `Profiles/Commands/UpdateEmail/UpdateEmail.cs` | K09 |
 | Email change: no step-up, no notice to the old address, login email changes before the new one is proven | `UpdateEmail.cs`; purpose `ChangeSecurityIdentity` exists in `Security/DTOs/StepUpTypes.cs` and nothing uses it | K09 |
-| Revoke-others needs no step-up (owner decision 48) | `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs` | C04 |
+| Revoke-others needs no step-up (owner decision 48): built, tests pending | `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs` | C04 |
 | API token scopes are not enforced; `scopes: null` at issue; expiry optional (a token may never expire) | `ApiTokens/Commands/CreateApiToken/CreateApiTokenCommand.cs`; `backend/src/Notrelix.Infrastructure/Auth/ApiTokens/ApiTokenAuthenticationHandler.cs` | L02, L04, L05 |
-| Unbounded reads: the session list returns every session ever created, revoked and expired included; the token list has no page | `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; `ApiTokens/Queries/ListApiTokens/ListApiTokensQuery.cs` | C02, L01 |
+| Unbounded reads: the session list returned every session ever created (bounded now, tests pending); the token list has no page | `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; `ApiTokens/Queries/ListApiTokens/ListApiTokensQuery.cs` | C02, L01 |
 | Refresh: no reuse detection, a new 30-day session per refresh (sliding forever), the session id changes at every refresh | `Auth/Commands/RefreshToken/RefreshToken.cs` | D01, D03, D05 |
 | Refresh reads only the cookie; the mobile bearer transport of decision 47 is absent | `backend/src/Notrelix.API/Endpoints/Identity/Auth/Commands/RefreshTokenEndpoint.cs` | A04 |
 | Dead code: `IdentifySignInQueryHandler` always returns password; user disable and delete exist in Domain with no Application caller | `Auth/Queries/IdentifySignIn/IdentifySignIn.cs`; `backend/src/Notrelix.Domain/Identity/Users/User.cs` | B08, D04 |
@@ -129,10 +129,10 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-B07 | Complete a password reset | B | Visitor | yes | no | none | no | IMPLEMENTING | no reset screen, code versus link |
 | UC-IDN-B08 | Sign in through the company provider | B | Visitor | no | mock only | Final-Auth | no | BLOCKED | Accounts enforcement fact, protocol |
 | UC-IDN-B09 | Lock sign-in after repeated failures | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the mock locks after five, the rule is ten |
-| UC-IDN-C01 | Sign out this device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | unbounded list |
-| UC-IDN-C03 | Sign out one other device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-C04 | Sign out all other devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no step-up |
+| UC-IDN-C01 | Sign out this device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-C03 | Sign out one other device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-C04 | Sign out all other devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | no | INTEGRATING | session id changes each refresh |
 | UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-States | no | INTEGRATING | no real e2e |
 | UC-IDN-D03 | Reject a replayed refresh credential | D | System | no | n/a | n/a | no | DEFINED | no reuse detection |
@@ -377,12 +377,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: none.
 - Output: the session is revoked, cookies cleared, access credentials of the session refused at once.
 - Main flow: 1. The person chooses Sign out. 2. The client posts `POST /api/v1/auth/logout`. 3. The app returns to the sign-in page and drops all cached server state.
-- No-op / rejection / concurrency / retry: logging out an already revoked session is a no-op success; revoked state is never revived (ID-005).
-- UI states: pending, signed out.
+- No-op / rejection / concurrency / retry: only the caller's own sessions end (the one the access credential names and the one the refresh cookie holds); another person's cookie never ends their session; a missing refresh cookie still signs this device out; a second sign-out with a live credential finds nothing active and changes nothing; a call whose session is already gone answers 401 and the client counts that as signed out; revoked state is never revived (ID-005). Sign-out records no activity line (the recorded facts list has none).
+- UI states: pending, signed out, failed (the server session may still be alive: the person is told, stays signed in and may retry).
 - Rules: ID-005; sections 16 to 19; IAREQ020.
 - Acceptance: Given a session, when the person signs out, then the next call with the old cookies is 401. Given a second logout, then success and no second activity line.
-- Evidence: BE `Auth/Commands/Logout/Logout.cs`; API `Auth/Commands/LogoutEndpoint.cs` (`POST /api/v1/auth/logout`) · FE `packages/features/auth/src/web/hooks/use-logout.ts` · Design Final-Account · Tests Application `LogoutTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec, rate-limit attribute not needed (own session), 1 px diff.
+- Evidence: BE `Auth/Commands/Logout/Logout.cs`; API `Auth/Commands/LogoutEndpoint.cs` (`POST /api/v1/auth/logout`) · FE `packages/features/auth/src/web/hooks/use-logout.ts`, `apps/web/src/shell/workspace/workspace-shell.tsx` (failure toast) · Design Final-Account · Tests Application `LogoutTests` (written before the change, needs updating) · Real e2e none
+- State: INTEGRATING. Built: sign-out is scoped to the caller's own sessions and no longer fails without a refresh cookie; a failed call (not a 401) keeps the person on the page with a failure toast instead of showing the sign-in page over a live session. Missing: tests and owner check (`LogoutTests` and Integration `LogoutCommandHandlerTests` build the handler without the current-request context and need updating), real spec, 1 px diff. A rate-limit attribute is not needed (own session). Two parallel sign-outs of one session may meet an optimistic-concurrency refusal on the second; not yet proven.
 
 ### UC-IDN-C02 List my sessions and devices
 - Capability: C Logout
@@ -391,12 +391,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: none.
 - Output: per session: id, status, created and last-seen time, client address, user agent, "this device" flag.
 - Main flow: 1. The security page reads `GET /api/v1/auth/sessions`. 2. It shows active sessions, newest first, with a description of the device.
-- No-op / rejection / concurrency / retry: another person's session never appears and a foreign id is indistinguishable from an unknown id; read, safe to retry.
+- No-op / rejection / concurrency / retry: another person's session never appears and a foreign id is indistinguishable from an unknown id; the list holds every live session and at most 20 ended ones; a session past its end time that nothing closed reads as expired; read, safe to retry.
 - UI states: loading, empty (only this device), success, error.
 - Rules: section 67 (account security facts); owner decision 48 (a device is a session; address and user agent only); IAREQ023.
 - Acceptance: Given two signed-in devices, when the list is read, then both show and one is marked current. Given another person, then none of my rows appear.
 - Evidence: BE `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; API `Auth/Commands/SessionEndpoints.cs` (`GET /api/v1/auth/sessions`) · FE `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` · Design Final-Account · Tests Domain `UserSessionTests`; Integration `UserScopeIsolationTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: the list is unbounded (return active sessions and the last 20 ended ones), real spec.
+- State: INTEGRATING. Built: the list is bounded (live sessions plus the 20 most recent ended ones) and reads expiry from the end time. Missing: tests and owner check, real spec. The producer has no last-seen time (each refresh starts a new session), so the page shows the sign-in time of the current session of the chain.
 
 ### UC-IDN-C03 Sign out one other device
 - Capability: C Logout
@@ -406,11 +406,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Output: that session is revoked and its access credentials refused at once; a "session revoked" line.
 - Main flow: 1. The person chooses Sign out on a device row. 2. The client posts `POST /api/v1/auth/sessions/{sessionId}/revoke`. 3. The row disappears.
 - No-op / rejection / concurrency / retry: revoking an already revoked session is a no-op success; an unknown or foreign id answers the same 404 as a missing one; revoking the current session signs this device out.
-- UI states: pending, success, not found, destructive confirmation for the current device.
+- UI states: pending, success, not found (the row is gone: the list refreshes and says the device was already signed out), destructive confirmation for the current device (the safe answer is focused).
 - Rules: ID-005; section 19; IAREQ021.
 - Acceptance: Given a second device, when its row is revoked, then its next call is 401. Given another person's session id, then 404 and no change.
-- Evidence: BE `Sessions/Commands/RevokeSession/RevokeSession.cs`; API `Auth/Commands/SessionEndpoints.cs` (`POST /api/v1/auth/sessions/{sessionId}/revoke`) · FE `.../account/security.tsx` · Design Final-Account · Tests Domain `UserSessionTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: Application test for foreign id, real spec.
+- Evidence: BE `Sessions/Commands/RevokeSession/RevokeSession.cs`; API `Auth/Commands/SessionEndpoints.cs` (`POST /api/v1/auth/sessions/{sessionId}/revoke`) · FE `.../account/security.tsx`, `packages/features/account/src/web/security/account-security-surface.tsx` · Design Final-Account · Tests Domain `UserSessionTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING. Built: an expired session answers success like a revoked one (it used to raise a rule error); the page asks before ending this device, drops the cached state and leaves for sign-in; a 404 refreshes the list with a notice. Missing: tests and owner check (Application test for foreign id, expired and revoked no-ops), real spec.
 
 ### UC-IDN-C04 Sign out all other devices
 - Capability: C Logout
@@ -423,8 +423,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: step-up prompt, pending, success, error.
 - Rules: ID-006; owner decision 48; IAREQ021, IAREQ056.
 - Acceptance: Given three sessions, when the person steps up and revokes others, then one remains. Given no proof, then 4xx and all three remain.
-- Evidence: BE `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs` (no step-up call); API `Auth/Commands/SessionEndpoints.cs` (`POST /api/v1/auth/sessions/revoke-others`) · FE `.../account/security.tsx` · Design Final-Account · Tests mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: the step-up purpose and its check (defect), Application and API tests, real spec.
+- Evidence: BE `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs`, `Security/DTOs/StepUpTypes.cs` (`RevokeOtherSessions`); API `Auth/Commands/SessionEndpoints.cs` (`POST /api/v1/auth/sessions/revoke-others`, body `{ stepUpToken }`, answer `{ revokedCount }`) · FE `.../account/security.tsx`, `packages/features/account/src/core/api/account.service.ts`, mock `account-security.handlers.ts` · Design Final-Account · Tests mock e2e `account-pages.mock.e2e.spec.ts` and web `account-pages.component.test.tsx` (both call revoke-others without a proof and need updating) · Real e2e none
+- State: INTEGRATING. Built: the endpoint needs a single-use proof of purpose `RevokeOtherSessions` bound to the user and the current session; with no other live session it is a no-op that spends no proof and records nothing; the page runs the step-up, then shows how many devices ended. Missing: tests and owner check (Application and API tests, real spec). A client older than this change posts no body and is refused with 412.
 
 ## Capability D: Session expiration
 
@@ -754,7 +754,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Capability: K Security settings
 - Actors and permission: signed-in person; `AuthSensitiveByUser`.
 - Preconditions: a sensitive action is about to run.
-- Input: the purpose (disable MFA, regenerate codes, link or unlink a provider, issue an API token, change password).
+- Input: the purpose (disable MFA, regenerate codes, link or unlink a provider, issue an API token, change password, revoke other sessions).
 - Output: the factor to use: MFA first, then password, then provider re-authentication.
 - Main flow: 1. The page posts `POST /api/v1/auth/security/step-up/requirement`. 2. It shows the matching prompt.
 - No-op / rejection / concurrency / retry: read-like; no state change; a purpose with no mapping is refused.
