@@ -2,12 +2,13 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Ordering;
+using Notrelix.Application.Features.WorkManagement.Templates.Services;
 using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
 [IdempotencyOperation("work-management.board-groups.duplicate-board-group.v1")]
-public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DuplicateBoardGroupCommand(Guid GroupId, string? Title = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     // Duplicating a group edits Board content (Editor), not Board management.
     public PermissionAction Action => PermissionAction.CreateItem;
@@ -52,27 +53,56 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             .FirstOrDefaultAsync(b => b.Id == source.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(Board), source.BoardId);
 
-        var now = _timeProvider.UtcNow;
+        // The copy takes the group's settings and its active top-level items, each with its active
+        // sub-items; archived items stay behind. Past the item cap nothing is copied and nothing is cut.
+        var items = await _context.BoardItems
+            .AsNoTracking()
+            .Where(c => c.GroupId == source.Id && c.DeletedAt == null && !c.IsArchived)
+            .ToListAsync(ct);
+        var roots = items
+            .Where(c => c.ParentItemId is null)
+            .OrderBy(c => c.Position.Value, StringComparer.Ordinal)
+            .ToList();
+        var rootIds = roots.Select(c => c.Id).ToHashSet();
+        var subItems = items
+            .Where(c => c.ParentItemId is { } parentId && rootIds.Contains(parentId))
+            .OrderBy(c => c.Position.Value, StringComparer.Ordinal)
+            .ToLookup(c => c.ParentItemId!.Value);
+        var total = roots.Count + subItems.Sum(group => group.Count());
+        if (total > BoardTemplateStructure.MaxItems)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Group_DuplicateTooManyItems,
+                $"A group can be duplicated with at most {BoardTemplateStructure.MaxItems} items; this group has {total}. Archive or move some first.");
 
+        var now = _timeProvider.UtcNow;
         var accountId = _requestContext.RequireAccountId();
-        var duplicate = BoardGroup.Create(accountId, board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _requestContext.UserId, now);
+        var duplicate = BoardGroup.Create(accountId, board.WorkspaceId, source.BoardId, CopyTitle(request.Title, source.Title), source.Color, nextPosition, _requestContext.UserId, now);
         _context.BoardGroups.Add(duplicate);
 
-        var cards = await _context.BoardItems
-            .AsNoTracking()
-            .Where(c => c.GroupId == source.Id && c.DeletedAt == null)
-            .OrderBy(c => c.Position)
-            .ToListAsync(ct);
-
         // Every copy is a new Item with its own key, allocated after the ordering lock.
-        var keys = await _keys.AllocateAsync(_context, board.Id, cards.Count, ct);
-        for (var i = 0; i < cards.Count; i++)
+        var keys = await _keys.AllocateAsync(_context, board.Id, total, ct);
+        var next = 0;
+        foreach (var card in roots)
         {
-            var card = cards[i];
-            _context.BoardItems.Add(CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _requestContext.UserId, card.Name, card.Position, now, keys[i]));
+            var copy = CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _requestContext.UserId, card.Name, card.Position, now, keys[next++]);
+            _context.BoardItems.Add(copy);
+            foreach (var sub in subItems[card.Id])
+            {
+                var key = keys[next++];
+                _context.BoardItems.Add(BoardItem.CreateSubItem(copy, sub.Name, sub.Position, _requestContext.UserId, now, key.Key, key.Sequence));
+            }
         }
 
         return Result<Guid>.Success(duplicate.Id);
+    }
+
+    /// <summary>The client names the copy in its own language; only when it sends none does the server name it.</summary>
+    private static string CopyTitle(string? requested, string sourceTitle)
+    {
+        if (!string.IsNullOrWhiteSpace(requested)) return requested;
+        const string suffix = " copy";
+        var room = 255 - suffix.Length;
+        return (sourceTitle.Length > room ? sourceTitle[..room] : sourceTitle) + suffix;
     }
 
     internal static BoardItem CloneCard(BoardItem source, Guid accountId, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt, BoardItemKey key)

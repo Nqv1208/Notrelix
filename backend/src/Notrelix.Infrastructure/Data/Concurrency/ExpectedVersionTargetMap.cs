@@ -3,7 +3,9 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoar
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
@@ -189,6 +191,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(MoveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(DeleteBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(ArchiveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(UnarchiveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(UpdateBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ArchiveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(MoveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),

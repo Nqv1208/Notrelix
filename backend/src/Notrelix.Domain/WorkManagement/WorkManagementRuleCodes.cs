@@ -20,6 +20,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_PublicLinkNotSupported = "WorkManagement_Board_PublicLinkNotSupported";
     public const string WorkManagement_Board_LastManager = "WorkManagement_Board_LastManager";
     public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
+    public const string WorkManagement_Group_CannotModifyArchived = "WorkManagement_Group_CannotModifyArchived";
+    public const string WorkManagement_Group_CannotReceiveItemsArchived = "WorkManagement_Group_CannotReceiveItemsArchived";
+    public const string WorkManagement_Group_DuplicateTooManyItems = "WorkManagement_Group_DuplicateTooManyItems";
     public const string WorkManagement_Group_ItemsNeedTargetGroup = "WorkManagement_Group_ItemsNeedTargetGroup";
     public const string WorkManagement_Group_InvalidTargetGroup = "WorkManagement_Group_InvalidTargetGroup";
 

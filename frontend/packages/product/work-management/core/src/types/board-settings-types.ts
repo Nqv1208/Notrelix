@@ -207,6 +207,8 @@ export interface BoardSettingsDto {
   readonly archivedFields: readonly BoardSettingsArchivedFieldDto[];
   readonly views: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
+  /** Groups taken out of every view; their items stay in them, read-only, until the group is unarchived. */
+  readonly archivedGroups: readonly BoardSettingsGroupDto[];
   readonly automations: readonly BoardSettingsAutomationDto[];
   readonly impact?: BoardSettingsLifecycleImpact;
   readonly unavailable?: BoardSettingsUnavailable;

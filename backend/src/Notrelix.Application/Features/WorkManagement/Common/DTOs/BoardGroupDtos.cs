@@ -7,7 +7,9 @@ public record BoardGroupDto(
     string Position,
     bool IsArchived,
     List<BoardItemSummaryDto> BoardItems,
-    long Version
+    long Version,
+    // The group's active top-level Items. An archived group lists none, so this is how its size is known.
+    int ItemCount = 0
 );
 
 public record BoardGroupSchemaDto(

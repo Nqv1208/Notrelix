@@ -154,6 +154,13 @@ export interface BoardSettingsActions {
     groupId: string,
     moveToGroupId: string | null,
   ): Promise<BoardSettingsWriteResult>;
+  /** The copy keeps the group's settings and its active items and sub-items; `title` is already in the person's language. */
+  duplicateGroup(
+    groupId: string,
+    title: string,
+  ): Promise<BoardSettingsWriteResult>;
+  archiveGroup(groupId: string): Promise<BoardSettingsWriteResult>;
+  unarchiveGroup(groupId: string): Promise<BoardSettingsWriteResult>;
   setAutomationEnabled(
     automationId: string,
     enabled: boolean,

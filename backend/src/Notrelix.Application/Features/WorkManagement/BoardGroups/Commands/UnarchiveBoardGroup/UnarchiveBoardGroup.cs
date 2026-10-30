@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 
 [IdempotencyOperation("work-management.board-groups.unarchive-board-group.v1")]
-public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UnarchiveBoardGroupCommand(Guid GroupId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     // Unarchiving a group edits Board content (Editor), not Board management.
     public PermissionAction Action => PermissionAction.UpdateItem;

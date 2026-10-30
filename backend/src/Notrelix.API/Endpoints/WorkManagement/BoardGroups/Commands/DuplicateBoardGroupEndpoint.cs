@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
@@ -11,16 +12,17 @@ public static class DuplicateBoardGroupEndpoint
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardGroups.Duplicate")
             .WithTags("WorkManagement.BoardGroups")
-            .WithSummary("Duplicate a group and its items");
+            .WithSummary("Duplicate a group with its active items and their sub-items");
         return group;
     }
 
     private static async Task<IResult> HandleAsync(
         Guid groupId,
+        DuplicateBoardGroupRequest? body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DuplicateBoardGroupCommand(groupId), cancellationToken);
+        var result = await sender.Send(new DuplicateBoardGroupCommand(groupId, body?.Title), cancellationToken);
         return result.ToCreatedResult();
     }
 }

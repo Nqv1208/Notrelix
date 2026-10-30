@@ -53,7 +53,18 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .OrderBy(l => l.Position)
             .ToListAsync(cancellationToken);
 
-        var listIds = lists.Select(list => list.Id).ToList();
+        // An archived group is listed (the settings offer to unarchive it) but its Items are not: they
+        // stay in the group and come back with it.
+        var archivedListIds = lists.Where(list => list.IsArchived).Select(list => list.Id).ToList();
+        var listIds = lists.Where(list => !list.IsArchived).Select(list => list.Id).ToList();
+        var archivedItemCounts = archivedListIds.Count == 0
+            ? new Dictionary<Guid, int>()
+            : await _context.BoardItems
+                .AsNoTracking()
+                .Where(card => archivedListIds.Contains(card.GroupId) && card.DeletedAt == null && !card.IsArchived && card.ParentItemId == null)
+                .GroupBy(card => card.GroupId)
+                .Select(group => new { GroupId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(row => row.GroupId, row => row.Count, cancellationToken);
         // Group items are the non-archived root Items; child Items appear only in
         // their parent's progress and in the item detail.
         var cards = await _context.BoardItems
@@ -226,9 +237,12 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 list.Title,
                 list.Color.ToString(),
                 list.Position.Value,
-                list.DeletedAt != null,
+                list.IsArchived,
                 cardsByListId.GetValueOrDefault(list.Id) ?? [],
-                list.Version))
+                list.Version,
+                list.IsArchived
+                    ? archivedItemCounts.GetValueOrDefault(list.Id)
+                    : (cardsByListId.GetValueOrDefault(list.Id) ?? []).Count))
             .ToList();
 
         var fieldInputs = fields.Where(f => f.DeletedAt == null)

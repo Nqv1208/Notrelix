@@ -667,6 +667,12 @@ It may have:
 
 ---
 
+An archived BoardGroup is hidden from every view together with its active Items; the Items keep their group and are read-only, and unarchiving brings back the group and the Items that were active before. Archiving and unarchiving a group carry the group's version. An archived group cannot receive new or moved Items (rule `WorkManagement_Group_CannotReceiveItemsArchived`).
+
+Duplicating a BoardGroup copies its settings and its active top-level Items, each with its active sub-Items kept as sub-Items; archived Items are not copied. A group with more than 500 such Items is refused with `WorkManagement_Group_DuplicateTooManyItems`, never cut. The client sends the copy's title already in the person's language ("Copy of {title}", "Bản sao của {title}"); the server names the copy only when none is sent.
+
+---
+
 # 39. WM-014 — BoardGroup is not universal status
 
 Moving Item between BoardGroups changes structural group/ordering.

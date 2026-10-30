@@ -9451,7 +9451,7 @@
           "WorkManagement.BoardGroups",
           "WorkManagement.BoardGroups"
         ],
-        "summary": "Duplicate a group and its items",
+        "summary": "Duplicate a group with its active items and their sub-items",
         "operationId": "WorkManagement.BoardGroups.Duplicate",
         "parameters": [
           {
@@ -9475,6 +9475,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.DuplicateBoardGroupRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -9617,6 +9626,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -9683,6 +9702,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -23302,6 +23331,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest": {
         "type": "object",
         "properties": {
@@ -23321,6 +23360,16 @@
           "nextSiblingId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.DuplicateBoardGroupRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -27961,6 +28010,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

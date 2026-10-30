@@ -164,6 +164,12 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         write((api, s) => api.updateGroup(s, groupId, changes)),
       deleteGroup: (groupId, moveToGroupId) =>
         write((api, s) => api.deleteGroup(s, groupId, moveToGroupId)),
+      duplicateGroup: (groupId, title) =>
+        write((api, s) => api.duplicateGroup(s, groupId, title)),
+      archiveGroup: (groupId) =>
+        write((api, s) => api.archiveGroup(s, groupId)),
+      unarchiveGroup: (groupId) =>
+        write((api, s) => api.unarchiveGroup(s, groupId)),
       setAutomationEnabled: unsupported,
     }),
     [copy, savedViews.views, write],

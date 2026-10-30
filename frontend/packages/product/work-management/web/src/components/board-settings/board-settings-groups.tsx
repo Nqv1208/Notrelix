@@ -185,8 +185,68 @@ export function GroupsSection() {
           </SortableList>
         </div>
         <p className={cn(HINT_CLASS, "mt-2.5 mb-0 px-0.5")}>{t.footnote}</p>
+        {settings.archivedGroups.length > 0 ? (
+          <div className="mt-5">
+            <SectionLine
+              title={t.archivedList}
+              count={fillCopy(t.archivedSummary, {
+                count: settings.archivedGroups.length,
+              })}
+              note={t.archivedNote}
+            />
+            <div
+              role="list"
+              className="overflow-hidden rounded-[10px] border border-line bg-popover"
+            >
+              {settings.archivedGroups.map((group) => (
+                <ArchivedGroupRow key={group.id} group={group} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
+  );
+}
+
+/** An archived group: out of every view, its items inside; Unarchive brings the group and them back. */
+function ArchivedGroupRow({ group }: { group: BoardSettingsGroupDto }) {
+  const { copy, actions, run } = useSettings();
+  const t = copy.groups;
+  const errorId = useId();
+  const scope = `group:${group.id}`;
+  return (
+    <>
+      <div
+        role="listitem"
+        className="grid min-h-[47px] grid-cols-[14px_minmax(0,1fr)_92px_auto] items-center gap-2.5 border-t border-line pr-2.5 pl-3.5 text-item-ui text-meta-foreground first:border-t-0"
+      >
+        <ColorSquare color={group.color} />
+        <span className="truncate font-medium">{group.name}</span>
+        <span className="text-crumb">
+          {plural(
+            copy.common.items_one,
+            copy.common.items_other,
+            group.itemCount,
+          )}
+        </span>
+        <span className="flex justify-end">
+          <button
+            type="button"
+            aria-label={fillCopy(t.unarchiveLabel, { name: group.name })}
+            onClick={() =>
+              void run(() => actions.unarchiveGroup(group.id), scope)
+            }
+            className={BUTTON_CLASS.ghostBrand}
+          >
+            {t.unarchive}
+          </button>
+        </span>
+      </div>
+      <div role="listitem" className="empty:hidden pl-3.5">
+        <WriteError scope={scope} id={errorId} />
+      </div>
+    </>
   );
 }
 
@@ -220,7 +280,9 @@ function GroupRow({
     settings.unavailable?.nonEmptyGroupDelete === true && group.itemCount > 0;
   const [name, setName] = useState(group.name);
   const [moveTo, setMoveTo] = useState(defaultTargetId);
+  const [archiving, setArchiving] = useState(false);
   const confirmId = useId();
+  const archiveId = useId();
   const renameScope = `group:${group.id}`;
   const renameErrorId = `${confirmId}-rename-error`;
   const renameFailedProps = useWriteErrorProps(renameScope, renameErrorId);
@@ -239,6 +301,11 @@ function GroupRow({
     }
     setName(group.name);
     onRenameDone();
+  }
+
+  async function confirmArchive() {
+    const result = await run(() => actions.archiveGroup(group.id), renameScope);
+    if (result.ok) setArchiving(false);
   }
 
   async function confirmDelete() {
@@ -314,6 +381,28 @@ function GroupRow({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void run(
+                        () =>
+                          actions.duplicateGroup(
+                            group.id,
+                            fillCopy(t.copyName, { name: group.name }),
+                          ),
+                        renameScope,
+                      )
+                    }
+                  >
+                    {t.duplicate}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      onDeleteDone();
+                      setArchiving(true);
+                    }}
+                  >
+                    {t.archive}
+                  </DropdownMenuItem>
                   {last || keepsItems ? (
                     <DisabledControl reason={last ? t.lastGroup : t.notEmpty}>
                       <DropdownMenuItem
@@ -324,7 +413,13 @@ function GroupRow({
                       </DropdownMenuItem>
                     </DisabledControl>
                   ) : (
-                    <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => {
+                        setArchiving(false);
+                        onDelete();
+                      }}
+                    >
                       {t.delete}
                     </DropdownMenuItem>
                   )}
@@ -337,6 +432,40 @@ function GroupRow({
       <div role="listitem" className="empty:hidden pl-[58px]">
         <WriteError scope={renameScope} id={renameErrorId} />
       </div>
+      {archiving ? (
+        <div
+          id={archiveId}
+          role="listitem"
+          aria-label={fillCopy(t.archiveQuestion, { name: group.name })}
+          className="flex flex-col gap-2.5 border-t border-line bg-background px-3.5 pt-3 pb-3.5 pl-[58px]"
+        >
+          <p className="m-0 text-item-small text-muted-foreground">
+            <b className="font-semibold text-foreground">
+              {fillCopy(t.archiveQuestion, { name: group.name })}
+            </b>{" "}
+            {group.itemCount > 0
+              ? fillCopy(t.archiveBody, { count: group.itemCount })
+              : t.archiveBodyEmpty}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex-1" />
+            <button
+              type="button"
+              onClick={() => setArchiving(false)}
+              className={BUTTON_CLASS.outline}
+            >
+              {copy.common.cancel}
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmArchive()}
+              className={BUTTON_CLASS.primary}
+            >
+              {t.archiveConfirm}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {deleting ? (
         <div
           id={confirmId}

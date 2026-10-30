@@ -266,6 +266,7 @@ export const endpoints = {
     duplicate: (groupId: string) => `/board-groups/${groupId}/duplicate`,
     move: (groupId: string) => `/board-groups/${groupId}/move`,
     archive: (groupId: string) => `/board-groups/${groupId}/archive`,
+    unarchive: (groupId: string) => `/board-groups/${groupId}/unarchive`,
   },
   boardItems: {
     create: (boardId: string) => `/boards/${boardId}/items`,

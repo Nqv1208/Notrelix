@@ -203,7 +203,8 @@ function mapGroup(group: OverviewGroup): BoardSettingsGroupDto {
     version: group.version ?? 0,
     name: group.title ?? "",
     color: group.color ?? DEFAULT_COLOR,
-    itemCount: (group.boardItems ?? []).length,
+    // An archived group lists no items; the read carries its size.
+    itemCount: group.itemCount ?? (group.boardItems ?? []).length,
   };
 }
 
@@ -262,6 +263,9 @@ export function mapBoardSettings(
   const groups = byPosition(
     (board.lists ?? []).filter((group) => group.isArchived !== true),
   ).map(mapGroup);
+  const archivedGroups = byPosition(
+    (board.lists ?? []).filter((group) => group.isArchived === true),
+  ).map(mapGroup);
   const fields = columns
     .filter((column) => !isLockedSystemField(column))
     .map(mapField);
@@ -287,6 +291,7 @@ export function mapBoardSettings(
     archivedFields: [],
     views: savedViews.map((view) => mapSettingsView(view, fields)),
     groups,
+    archivedGroups,
     automations: [],
     unavailable: UNAVAILABLE,
   };
@@ -619,6 +624,24 @@ export function createBoardSettingsApi(client: NotrelixClient) {
           title: changes.name,
           color: changes.color,
         },
+        quiet,
+      ),
+    duplicateGroup: (_s: BoardSettingsDto, groupId: string, title: string) =>
+      api.post<unknown>(
+        endpoints.boardGroups.duplicate(groupId),
+        { title },
+        quiet,
+      ),
+    archiveGroup: (s: BoardSettingsDto, groupId: string) =>
+      api.post<void>(
+        endpoints.boardGroups.archive(groupId),
+        { expectedVersion: find([...s.groups], groupId).version ?? 0 },
+        quiet,
+      ),
+    unarchiveGroup: (s: BoardSettingsDto, groupId: string) =>
+      api.post<void>(
+        endpoints.boardGroups.unarchive(groupId),
+        { expectedVersion: find([...s.archivedGroups], groupId).version ?? 0 },
         quiet,
       ),
     /** Items of a group that has some move to `moveToGroupId` (a group of the same board). */

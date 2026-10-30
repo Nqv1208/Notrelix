@@ -2467,7 +2467,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Duplicate a group and its items */
+        /** Duplicate a group with its active items and their sub-items */
         post: operations["WorkManagement.BoardGroups.Duplicate"];
         delete?: never;
         options?: never;
@@ -5810,6 +5810,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest": {
             title?: string | null;
             color?: string | null;
@@ -5817,6 +5821,9 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.DuplicateBoardGroupRequest": {
+            title?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest": {
             /** Format: int64 */
@@ -7380,6 +7387,8 @@ export interface components {
             boardItems?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSummaryDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: int32 */
+            itemCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupSchemaDto": {
             /** Format: uuid */
@@ -13960,7 +13969,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.DuplicateBoardGroupRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14046,7 +14059,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14087,7 +14104,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

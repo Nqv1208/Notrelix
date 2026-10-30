@@ -6,5 +6,8 @@ public class DuplicateBoardGroupCommandValidator : AbstractValidator<DuplicateBo
     {
         RuleFor(x => x.GroupId)
             .NotEmpty();
+        RuleFor(x => x.Title)
+            .MaximumLength(255)
+            .When(x => x.Title is not null);
     }
 }

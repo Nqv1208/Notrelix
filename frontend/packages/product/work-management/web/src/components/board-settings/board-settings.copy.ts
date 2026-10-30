@@ -478,6 +478,20 @@ export const en = {
       "Deleting a group never deletes items. The last group of a board cannot be deleted.",
     lastGroup: "The last group of a board cannot be deleted",
     notEmpty: "Move the items out of the group first; then it can be deleted",
+    duplicate: "Duplicate the group",
+    copyName: "Copy of {{name}}",
+    archive: "Archive the group",
+    archiveQuestion: "Archive the group “{{name}}”?",
+    archiveBody:
+      "Its {{count}} items are hidden from every view and stay in the group, read-only. Unarchive the group to bring them back.",
+    archiveBodyEmpty:
+      "The group has no item. It is hidden from every view until you unarchive it.",
+    archiveConfirm: "Archive the group",
+    archivedList: "Archived groups",
+    archivedSummary: "{{count}} archived",
+    archivedNote: "Hidden from every view; their items stay inside.",
+    unarchive: "Unarchive",
+    unarchiveLabel: "Unarchive the group {{name}}",
   },
   labels: {
     title: "Labels",
@@ -1059,6 +1073,20 @@ export const vi: BoardSettingsCopy = {
       "Xoá nhóm không bao giờ xoá việc. Nhóm cuối cùng của board không xoá được.",
     lastGroup: "Nhóm cuối cùng của board không xoá được",
     notEmpty: "Chuyển hết việc ra khỏi nhóm trước, rồi mới xoá được",
+    duplicate: "Nhân bản nhóm",
+    copyName: "Bản sao của {{name}}",
+    archive: "Lưu trữ nhóm",
+    archiveQuestion: 'Lưu trữ nhóm "{{name}}"?',
+    archiveBody:
+      "{{count}} việc trong nhóm bị ẩn khỏi mọi chế độ xem và vẫn nằm trong nhóm, chỉ để xem. Bỏ lưu trữ nhóm để đưa chúng trở lại.",
+    archiveBodyEmpty:
+      "Nhóm không có việc nào. Nhóm bị ẩn khỏi mọi chế độ xem cho đến khi bạn bỏ lưu trữ.",
+    archiveConfirm: "Lưu trữ nhóm",
+    archivedList: "Nhóm đã lưu trữ",
+    archivedSummary: "{{count}} nhóm",
+    archivedNote: "Ẩn khỏi mọi chế độ xem; việc vẫn nằm bên trong.",
+    unarchive: "Bỏ lưu trữ",
+    unarchiveLabel: "Bỏ lưu trữ nhóm {{name}}",
   },
   labels: {
     title: "Nhãn",
