@@ -15,6 +15,7 @@ const webEnv = {
   VITE_API_URL: realBackend.apiUrl,
   VITE_WS_URL: "ws://127.0.0.1:58000/api/v1/realtime",
   VITE_APP_URL: realBackend.appUrl,
+  REAL_E2E_BASE_URL: realBackend.appUrl,
   VITE_RELEASE_SHA: "real-e2e",
   VITE_MOCK_API: "false",
 };
@@ -39,7 +40,7 @@ try {
       "--host",
       "127.0.0.1",
       "--port",
-      "5173",
+      realBackend.webPort,
     ],
     { env: webEnv },
   );
