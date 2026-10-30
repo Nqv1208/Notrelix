@@ -32,7 +32,7 @@ public static class StartOAuthStepUpEndpoint
             return EndpointExtensions.InvalidInput($"Invalid OAuth provider: {provider}");
         }
 
-        if (!Enum.TryParse<StepUpPurpose>(purpose, ignoreCase: true, out var stepUpPurpose))
+        if (!StepUpPurposeInput.TryParse(purpose, out var stepUpPurpose))
         {
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {purpose}");
         }
