@@ -236,6 +236,66 @@ export function useChecklistWrites(
     [api, checklists, queue],
   );
 
+  const setItemAssignee = useCallback(
+    (checklistId: string, itemId: string, assigneeId: string | null) => {
+      const current = checklists
+        .find((list) => list.id === checklistId)
+        ?.items.find((item) => item.id === itemId);
+      if (!current || (current.assigneeId ?? null) === assigneeId) return;
+      queue.schedule({
+        id: opId("assign-item"),
+        kind: "assign-item",
+        checklistId,
+        itemId,
+        text: current.title,
+        apply: (lists) =>
+          mapList(lists, checklistId, (list) => ({
+            ...list,
+            items: list.items.map((item) =>
+              item.id === itemId ? { ...item, assigneeId } : item,
+            ),
+          })),
+        send: (version) =>
+          api.setChecklistItemAssignee({
+            itemId,
+            assigneeUserId: assigneeId,
+            expectedVersion: version ?? 0,
+          }),
+      });
+    },
+    [api, checklists, queue],
+  );
+
+  const setItemDue = useCallback(
+    (checklistId: string, itemId: string, dueAt: string | null) => {
+      const current = checklists
+        .find((list) => list.id === checklistId)
+        ?.items.find((item) => item.id === itemId);
+      if (!current || (current.dueAt ?? null) === dueAt) return;
+      queue.schedule({
+        id: opId("due-item"),
+        kind: "due-item",
+        checklistId,
+        itemId,
+        text: current.title,
+        apply: (lists) =>
+          mapList(lists, checklistId, (list) => ({
+            ...list,
+            items: list.items.map((item) =>
+              item.id === itemId ? { ...item, dueAt } : item,
+            ),
+          })),
+        send: (version) =>
+          api.setChecklistItemDue({
+            itemId,
+            dueAt,
+            expectedVersion: version ?? 0,
+          }),
+      });
+    },
+    [api, checklists, queue],
+  );
+
   /** Removes an item at once; the request waits for "Hoàn tác". */
   const deleteItem = useCallback(
     (
@@ -357,6 +417,8 @@ export function useChecklistWrites(
     addItem,
     renameItem,
     toggleItem,
+    setItemAssignee,
+    setItemDue,
     deleteItem,
     moveItem,
     convertItem,

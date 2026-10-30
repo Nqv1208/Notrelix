@@ -736,6 +736,10 @@ function mapChecklist(
             ),
       position:
         typeof item.position === "number" ? item.position : itemIndex + 1,
+      ...("assigneeUserId" in item && item.assigneeUserId
+        ? { assigneeId: item.assigneeUserId }
+        : {}),
+      ...("dueAt" in item && item.dueAt ? { dueAt: item.dueAt } : {}),
     })),
   };
 }

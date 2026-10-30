@@ -3,6 +3,10 @@ export interface ChecklistItem {
   title: string;
   isDone: boolean;
   position: number;
+  /** The person the item is given to ("Giao mục này"); absent: nobody. */
+  assigneeId?: string | null;
+  /** The item's own due time as an ISO instant; absent: none. */
+  dueAt?: string | null;
 }
 
 export interface Checklist {

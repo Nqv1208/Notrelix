@@ -24,6 +24,9 @@ type CreateChecklistItemResponse = OperationResponse<
 type UpdateChecklistItemOp = "WorkManagement.Checklists.UpdateItem";
 type UpdateChecklistItemBody = OperationRequestBody<UpdateChecklistItemOp>;
 
+type SetItemAssigneeBody = OperationRequestBody<"WorkManagement.Checklists.SetItemAssignee">;
+type SetItemDueBody = OperationRequestBody<"WorkManagement.Checklists.SetItemDue">;
+
 type MoveChecklistOp = "WorkManagement.Checklists.Move";
 type MoveChecklistBody = OperationRequestBody<MoveChecklistOp>;
 
@@ -189,6 +192,38 @@ export function createChecklistApi(client: NotrelixClient) {
       await api.post<void>(
         `${endpoints.checklistItems.toggle(input.itemId)}?expectedVersion=${input.expectedVersion}`,
         undefined,
+        quiet(options),
+      );
+    },
+
+    /** Gives the item to a person, or to nobody (`null`). */
+    async setChecklistItemAssignee(
+      input: ChecklistItemRef & { assigneeUserId: string | null },
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: SetItemAssigneeBody = {
+        expectedVersion: input.expectedVersion,
+        assigneeUserId: input.assigneeUserId,
+      };
+      await api.put<void>(
+        endpoints.checklistItems.assignee(input.itemId),
+        body,
+        quiet(options),
+      );
+    },
+
+    /** Sets the item's own due time (an ISO instant), or clears it (`null`). */
+    async setChecklistItemDue(
+      input: ChecklistItemRef & { dueAt: string | null },
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: SetItemDueBody = {
+        expectedVersion: input.expectedVersion,
+        dueAt: input.dueAt,
+      };
+      await api.put<void>(
+        endpoints.checklistItems.due(input.itemId),
+        body,
         quiet(options),
       );
     },

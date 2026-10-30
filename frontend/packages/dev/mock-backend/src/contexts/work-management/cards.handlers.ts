@@ -223,6 +223,8 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
       isChecked: item.isChecked,
       dueDate: item.dueDate ?? null,
       assigneeId: item.assigneeId ?? null,
+      dueAt: item.dueDate ?? null,
+      assigneeUserId: item.assigneeId ?? null,
       position: item.position ?? idx + 1,
     })),
   }));
@@ -1415,6 +1417,8 @@ export const cardsOperations = [
             isChecked: item.isChecked,
             dueDate: item.dueDate ?? null,
             assigneeId: item.assigneeId ?? null,
+            dueAt: item.dueDate ?? null,
+            assigneeUserId: item.assigneeId ?? null,
             position: item.position ?? idx + 1,
           })),
         })),
@@ -1555,6 +1559,60 @@ export const cardsOperations = [
       if (!store.toggleChecklistItem(params.id))
         return notFound("ChecklistItem not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── PUT /checklist-items/:id/assignee ────────────────────────────────────
+  // WorkManagement.Checklists.SetItemAssignee: a person of the workspace, or nobody.
+
+  defineMockOperation<
+    { id: string },
+    { assigneeUserId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "checklistItems.setAssignee",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.SetItemAssignee",
+    } as any,
+    method: "PUT",
+    route: "/checklist-items/:id/assignee",
+    async handle({ params, body, store, request }) {
+      const missing = missingIdempotencyKey(request);
+      if (missing) return missing;
+      const assignee = body?.assigneeUserId ?? null;
+      if (assignee !== null && !store.getUser(assignee))
+        return badRequest({ assigneeUserId: ["Unknown person."] });
+      if (!store.updateChecklistItem(params.id, { assigneeId: assignee }))
+        return notFound("ChecklistItem not found");
+      return noContent();
+    },
+  }),
+
+  // ─── PUT /checklist-items/:id/due ─────────────────────────────────────────
+  // WorkManagement.Checklists.SetItemDue: the item's own due time, or none.
+
+  defineMockOperation<
+    { id: string },
+    { dueAt?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "checklistItems.setDue",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.SetItemDue",
+    } as any,
+    method: "PUT",
+    route: "/checklist-items/:id/due",
+    async handle({ params, body, store, request }) {
+      const missing = missingIdempotencyKey(request);
+      if (missing) return missing;
+      const due = body?.dueAt ?? null;
+      if (due !== null && Number.isNaN(Date.parse(due)))
+        return badRequest({ dueAt: ["Not a date and time."] });
+      if (!store.updateChecklistItem(params.id, { dueDate: due }))
+        return notFound("ChecklistItem not found");
+      return noContent();
     },
   }),
 

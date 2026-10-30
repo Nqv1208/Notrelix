@@ -18,6 +18,8 @@ export type ChecklistWriteKind =
   | "add-item"
   | "rename-item"
   | "toggle-item"
+  | "assign-item"
+  | "due-item"
   | "delete-item"
   | "move-item"
   /** The second step of "convert to sub-item": the sub-item exists, the item is still listed. */
