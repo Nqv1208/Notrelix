@@ -143,9 +143,9 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | yes | none | no | INTEGRATING | tests, owner check and an artboard |
 | UC-IDN-G01 | Link a provider to my account | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
 | UC-IDN-G02 | Unlink a provider | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
-| UC-IDN-H01 | Start second-factor enrollment | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-H02 | Verify and activate the second factor | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
+| UC-IDN-H01 | Start second-factor enrollment | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-H02 | Verify and activate the second factor | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
 | UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
 | UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
@@ -584,25 +584,25 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Output: a pending authenticator method with a secret and a setup URI for a QR code; the secret is shown now and never again.
 - Main flow: 1. The person chooses "Turn on two-factor". 2. The client posts `POST /api/v1/auth/mfa/enrollment/start`. 3. The page shows the QR code and the manual key.
 - No-op / rejection / concurrency / retry: a pending, unverified method is not active MFA (ID section 24); starting again replaces the pending method; starting with an active factor is refused.
-- UI states: pending, showing the code, error.
+- UI states: pending (the buttons wait, so a second start cannot replace the secret the first one shows), showing the code (focus lands on the code field), error.
 - Rules: ID-004, ID-007; sections 22 to 24; IAREQ048, IAREQ049, IAREQ053.
 - Acceptance: Given no factor, when enrollment starts, then the method is pending and sign-in still needs no second step.
-- Evidence: BE `Mfa/Commands/StartMfaEnrollment/StartMfaEnrollment.cs`; API `Auth/Commands/StartMfaEnrollmentEndpoint.cs` (`POST /api/v1/auth/mfa/enrollment/start`) · FE `packages/features/account/src/web/security/account-qr-code.tsx` · Design Final-Account · Tests Domain `MfaMethodTests`; Infrastructure `MfaTotpServiceTests`; FE `account-qr-code.unit.test.ts` · Real e2e none
-- State: INTEGRATING. Missing: Application test, real spec, rate-limit attribute.
+- Evidence: BE `Mfa/Commands/StartMfaEnrollment/StartMfaEnrollment.cs`; API `Auth/Commands/StartMfaEnrollmentEndpoint.cs` (`POST /api/v1/auth/mfa/enrollment/start`) · FE `packages/features/account/src/web/security/account-qr-code.tsx`, `account-security-surface.tsx`, `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` · Design Final-Account · Tests Domain `MfaMethodTests`; Infrastructure `MfaTotpServiceTests`; FE `account-qr-code.unit.test.ts` · Real e2e none
+- State: INTEGRATING. Built: the endpoint carries the `AuthSensitiveByUser` limit and answers `Cache-Control: no-store` (the answer holds the secret); the page waits during a start. Missing: tests and owner check (Application test, real spec). Not decided and left alone: starting an enrollment needs no step-up, so a person holding a stolen session could enrol their own authenticator and lock the owner out; whether enabling a factor needs a proof (and ends the other sessions) is a product decision. The person's account that no longer exists answers 404 here (same class as the session read).
 
 ### UC-IDN-H02 Verify and activate the second factor
 - Capability: H MFA enrollment
 - Actors and permission: signed-in person; `AuthSensitiveByUser`.
 - Preconditions: a pending method.
 - Input: the 6-digit code.
-- Output: the method is Active; ten recovery codes are shown once; a "second factor enabled" line.
+- Output: the method is Active; eight recovery codes (`MfaPolicy.RecoveryCodeCount`) are shown once; a "second factor enabled" line.
 - Main flow: 1. The person types the code. 2. The client posts `POST /api/v1/auth/mfa/enrollment/verify`. 3. The page shows the recovery codes with a "I saved them" gate.
-- No-op / rejection / concurrency / retry: a wrong code leaves the method pending; the code counts against the lockout; verifying an active method is a no-op; the codes are never readable again.
+- No-op / rejection / concurrency / retry: a wrong code leaves the method pending and answers 400 `identity.mfa.invalid-verification-code`; only the per-user request limit applies (the person is shown the secret they are verifying, so a guess gains nothing; the lockout of ID section 67 names step-up and password change, not enrollment); another person's method id and an unknown id answer the same 400 `identity.mfa.enrollment-not-found`; verifying a method that is already active answers that same 400 (the codes are never readable again, so a retry cannot replay them); the answer says no-store; two parallel verifies meet the method's version and one wins.
 - UI states: pending, wrong code, success with codes.
 - Rules: ID-004, ID-006; section 24; IAREQ049, IAREQ051, IAREQ054.
-- Acceptance: Given a pending method, when the right code is sent, then MFA is active and the summary shows ten codes left.
-- Evidence: BE `Mfa/Commands/VerifyMfaEnrollment/VerifyMfaEnrollment.cs`; API `Auth/Commands/VerifyMfaEnrollmentEndpoint.cs` (`POST /api/v1/auth/mfa/enrollment/verify`) · FE `packages/features/account/src/web/security/account-security-surface.tsx` · Design Final-Account · Tests Domain `MfaRecoveryBatchTests`, `UserSecuritySettingsTests` · Real e2e none
-- State: INTEGRATING. Missing: Application and API tests, real spec.
+- Acceptance: Given a pending method, when the right code is sent, then MFA is active and the summary shows eight codes left.
+- Evidence: BE `Mfa/Commands/VerifyMfaEnrollment/VerifyMfaEnrollment.cs`; API `Auth/Commands/VerifyMfaEnrollmentEndpoint.cs` (`POST /api/v1/auth/mfa/enrollment/verify`) · FE `packages/features/account/src/web/security/account-security-surface.tsx`, `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` · Design Final-Account · Tests Domain `MfaRecoveryBatchTests`, `UserSecuritySettingsTests` · Real e2e none
+- State: INTEGRATING. Built: no-store on the answer; the page strips the spaces an authenticator app groups digits with (the producer takes exactly six digits); focus moves to the code field and, once the codes show, to the button that confirms they were saved; the mock backend now answers the producer's codes and counts (eight codes, 409 when a factor is on). Missing: tests and owner check (Application and API tests, real spec). Earlier catalog text said ten codes; the producer issues eight and no decision says ten.
 
 ### UC-IDN-H03 Read the second-factor status
 - Capability: H MFA enrollment
@@ -615,8 +615,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, off, on, error.
 - Rules: ID-014; IAREQ053.
 - Acceptance: Given an active factor, when status is read, then no secret or code is in the body.
-- Evidence: BE `Mfa/Queries`; API `Auth/Queries/GetMfaStatusEndpoint.cs` (`GET /api/v1/auth/mfa/status`) · FE `packages/features/account/src/core/api/account.service.ts` · Design Final-Account · Tests API `AuthenticatedAuthEndpointTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec; the page may read the summary (UC-IDN-K01) and make this call redundant.
+- Evidence: BE `Mfa/Queries`, `Mfa/Services/MfaStatusProjection.cs`; API `Auth/Queries/GetMfaStatusEndpoint.cs` (`GET /api/v1/auth/mfa/status`) · FE `packages/features/account/src/core/api/account.service.ts` · Design Final-Account · Tests API `AuthenticatedAuthEndpointTests` · Real e2e none
+- State: INTEGRATING. Built: the endpoint carries the `GeneralAuthenticated` limit; the body holds only the flag, the method name and the number of codes left. Missing: tests and owner check, real spec; the page reads the summary (UC-IDN-K01), so this call has no web caller yet.
 
 ## Capability I: MFA challenge
 
