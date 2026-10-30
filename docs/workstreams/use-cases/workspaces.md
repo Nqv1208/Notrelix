@@ -153,7 +153,7 @@ Products compared and what was taken:
 | UC-WSP-D06 | React to Account suspension or closure | D | System | no | no | Final-States | none | BLOCKED | Decision with Accounts: effect of Suspended and Closed on workspace access. |
 | UC-WSP-E01 | List workspace members | E | Owner, Admin, Member | yes | yes | none for the roster (`Final-Members`, `Final-M-Members` are the department Members tab) | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; an approved roster artboard and its diff at 3 widths and both themes; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
 | UC-WSP-E02 | Read my own membership | E | Any active member, Guest included | yes | yes | none | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
-| UC-WSP-F01 | Add an existing user as a member directly | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | Account-membership and seat checks are merged (branch fix/add-member-account-and-seat); tests; owner decision: a caller for the endpoint or its removal. |
+| UC-WSP-F01 | Add an existing user as a member directly | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | Kept for admin use; no screen. Account-membership and seat checks are merged; tests. |
 | UC-WSP-F02 | Change a member's workspace role | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, stale 412, no-op; real e2e. |
 | UC-WSP-F03 | Suspend a member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, stale 412, no-op; real e2e. |
 | UC-WSP-F04 | Activate a suspended member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: seat refusal, expected version, no-op; real e2e. |
@@ -507,7 +507,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 10, 22.1, WSP-004, WSP-026, WSP-011; WGREQ016.
 - Acceptance: Given an Admin, When they add a user as member, Then the user is active. Given the user is in another Account, Then it is refused and nothing changes. Given an Admin adds an Admin, Then rejected.
 - Evidence: BE `POST /api/v1/workspaces/{id}/members/add`, `AddMemberCommandHandler`, now requiring an active Account membership (`Workspaces_Member_NotInAccount`) and a Billing seat (`Workspaces_Member_SeatUnavailable`) through the merged branch `fix/add-member-account-and-seat` · FE none (UI uses invitations and Space/Team pickers) · Design none · Tests `NewMemberEndpointTests`, `WorkspaceRoleBaselineIntegrationTests`, `WorkspaceMemberRulesTests`, plus the tests that branch added · Real e2e none
-- State: IMPLEMENTING — The defect is closed. Owner decision: the endpoint has no caller; keep it for a future directory pick or remove it. Two concurrent admissions can still exceed the seat limit by one (admissions do not serialize; separate use case).
+- State: IMPLEMENTING — The defect is closed. Lead decision: kept for admin use; no screen (no UI is built for it). Tests: refused outside the Account, refused with no seat, success. Two concurrent admissions can still exceed the seat limit by one (admissions do not serialize; separate use case).
 
 ### UC-WSP-F02 Change a member's workspace role
 - Capability: F Membership add / remove / change
