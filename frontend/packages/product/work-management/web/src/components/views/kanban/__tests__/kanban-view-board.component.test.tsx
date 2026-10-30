@@ -604,6 +604,46 @@ describe("KanbanView on the ERP board", () => {
     await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
   }, 20_000);
 
+  it("keeps listing the sub-items in the dialog while the archive is out", async () => {
+    let release = () => {};
+    const { cards } = renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-142") },
+      {
+        archiveCard: () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      },
+    );
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    const more = await waitFor(() =>
+      within(dialog).getByRole("button", { name: "Thêm" }),
+    );
+    fireEvent.keyDown(more, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    const listed = within(confirm).getByText(/việc con/).textContent;
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
+    await waitFor(() => expect(cards.archiveCard).toHaveBeenCalledTimes(1));
+    // The card has left the board read by now; the dialog still lists what it asked about.
+    expect(within(confirm).getByText(/việc con/).textContent).toBe(listed);
+    expect(
+      within(confirm).getByRole("button", { name: "Đang lưu trữ…" }),
+    ).toBeTruthy();
+    release();
+  }, 20_000);
+
   it("says in the dialog that someone changed the item when the archive is refused as stale, and keeps the item", async () => {
     const { cards } = renderKanban(
       erpOwnerAccess(),

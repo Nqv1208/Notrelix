@@ -5,6 +5,7 @@ import {
   Archive,
   TriangleAlert,
   Loader2,
+  X,
 } from "lucide-react";
 import {
   Button,
@@ -39,7 +40,13 @@ export interface ArchiveImpact {
 }
 
 const lineClass = "flex items-start gap-2.5";
-const iconClass = "mt-0.5 size-4 shrink-0 text-meta-foreground";
+const iconClass = "size-4 shrink-0";
+// The mockup's `.btn.l`: 13 px, 7 px radius, 14 px side padding; 44 px and 14 px type on a
+// phone. While the write is out both buttons go flat grey rather than faded.
+const buttonClass =
+  "rounded-[7px] px-3.5 text-compact leading-[1.45] max-sm:h-11 max-sm:text-sm disabled:border-line-strong disabled:bg-state-hover-strong disabled:font-medium disabled:text-meta-foreground disabled:opacity-100 dark:disabled:border-line-strong dark:disabled:bg-state-hover-strong";
+const cancelClass =
+  "border-line-strong bg-popover font-medium shadow-none dark:border-line-strong dark:bg-card";
 
 /**
  * Asks before an item is archived and names what it takes along: its
@@ -80,8 +87,9 @@ export function ArchiveItemDialog({
     >
       <DialogContent
         showCloseButton={false}
+        overlayClassName="bg-modal-scrim backdrop-blur-none"
         className={cn(
-          "gap-0 overflow-hidden rounded-[14px] p-0 sm:max-w-110",
+          "box-border gap-0 overflow-hidden rounded-[14px] border border-line bg-popover p-0 leading-[1.45] shadow-popover ring-0 sm:max-w-110 dark:bg-card",
           "max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[16px]",
         )}
         // The safe choice has focus, so Enter does not archive by accident.
@@ -101,7 +109,7 @@ export function ArchiveItemDialog({
           className="mx-auto mt-2 hidden h-1 w-9 rounded-full bg-line-strong max-sm:block"
         />
         <DialogHeader className="flex-row items-center gap-2.5 px-5 pt-4 pb-2">
-          <DialogTitle className="min-w-0 flex-1 text-[17px] leading-snug font-[650]">
+          <DialogTitle className="min-w-0 flex-1 text-[17px] leading-[1.45] font-[650]">
             {copy.archiveTitle}
           </DialogTitle>
           {busy ? null : (
@@ -109,14 +117,12 @@ export function ArchiveItemDialog({
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="max-sm:size-11"
+              className="rounded-[7px] text-muted-foreground max-sm:size-11"
               aria-label={copy.archiveClose}
               title={copy.archiveClose}
               onClick={onCancel}
             >
-              <span aria-hidden="true" className="text-lg leading-none">
-                ×
-              </span>
+              <X aria-hidden="true" className="size-4" strokeWidth={1.8} />
             </Button>
           )}
         </DialogHeader>
@@ -171,14 +177,14 @@ export function ArchiveItemDialog({
           {refusal ? (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive"
+              className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text dark:bg-danger-text/14"
             >
               <TriangleAlert
                 aria-hidden="true"
                 className="mt-0.5 size-4 shrink-0"
               />
-              <span className="flex flex-col gap-0.5">
-                <b>{refusal.title}</b>
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <b className="font-semibold text-foreground">{refusal.title}</b>
                 <span>{refusal.body}</span>
               </span>
             </div>
@@ -190,7 +196,7 @@ export function ArchiveItemDialog({
             type="button"
             variant="outline"
             disabled={busy}
-            className="px-3.5 max-sm:h-11"
+            className={cn(buttonClass, cancelClass)}
             onClick={onCancel}
           >
             {blocked ? copy.archiveClose : copy.archiveCancel}
@@ -199,7 +205,7 @@ export function ArchiveItemDialog({
             <Button
               type="button"
               disabled={busy || impact.checking}
-              className="px-3.5 max-sm:h-11"
+              className={cn(buttonClass, "border-primary font-semibold")}
               onClick={onConfirm}
             >
               {busy ? (

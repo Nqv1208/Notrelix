@@ -53,6 +53,8 @@ interface Pending {
 /** An archive waiting for its answer, with the item version the dialog opened on. */
 interface ArchivePending extends Pending {
   readonly version?: number;
+  /** What the dialog listed when the write went out: the card has left the board read by then. */
+  readonly subItems?: number;
 }
 
 function findCard(
@@ -221,6 +223,10 @@ export function useItemRemoval({
   const confirmArchive = () => {
     if (!archiving) return;
     const { id, title, version } = archiving;
+    setArchiving({
+      ...archiving,
+      subItems: archiveCardView?.childProgress?.total ?? 0,
+    });
     setArchiveStatus("busy");
     archiveCard.mutate(
       { cardId: id, expectedVersion: version },
@@ -244,12 +250,18 @@ export function useItemRemoval({
         },
         onError: (error) => {
           const failure = classifyArchiveError(error);
-          // The reads are fetched again when the write ends, so after a conflict
-          // a try carries the newer version the person is told to review.
-          if (failure === "conflict")
-            setArchiving((current) =>
-              current ? { ...current, version: undefined } : current,
-            );
+          // The card is back on the board read, which is fetched again when the
+          // write ends, so the dialog lists the live item; after a conflict a
+          // try also carries the newer version the person is told to review.
+          setArchiving((current) =>
+            current
+              ? {
+                  ...current,
+                  subItems: undefined,
+                  ...(failure === "conflict" ? { version: undefined } : {}),
+                }
+              : current,
+          );
           setArchiveStatus(failure);
         },
       },
@@ -529,7 +541,8 @@ export function useItemRemoval({
           copy={copy}
           title={archiving?.title ?? ""}
           impact={{
-            subItems: archiveCardView?.childProgress?.total ?? 0,
+            subItems:
+              archiving?.subItems ?? archiveCardView?.childProgress?.total ?? 0,
             dependencies: {
               count: dependencyLinks.length,
               keys: dependencyLinks
