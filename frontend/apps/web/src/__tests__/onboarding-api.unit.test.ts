@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createOnboardingApi,
   type OnboardingApiClient,
-} from "../routes/onboarding/onboarding-api";
+} from "@notrelix/features-workspace/web";
 
 const WS = "w1";
 

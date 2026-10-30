@@ -346,6 +346,14 @@ export {
 } from "./onboarding/onboarding-models";
 export { newInviteRow } from "./onboarding/onboarding-steps";
 export {
+  createOnboardingApi,
+  type DraftDto,
+  type GettingStartedDto,
+  type JoinDto,
+  type OnboardingApiClient,
+  type SlugCheckDto,
+} from "./onboarding/onboarding-api";
+export {
   onboardingSuggestions,
   type DepartmentSuggestion,
   type OnboardingSuggestions,

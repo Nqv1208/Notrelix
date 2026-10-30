@@ -9,7 +9,7 @@ import type {
   DepartmentColor,
   InviteRole,
   OnboardingStepId,
-} from "@notrelix/features-workspace/web";
+} from "./onboarding-models";
 
 /** `api` is the runtime client; every call is quiet: the pages say what went wrong themselves. */
 export interface OnboardingApiClient {
@@ -167,9 +167,18 @@ const isRowRefusal = (failure: unknown): boolean =>
  */
 export function createOnboardingApi(api: OnboardingApiClient) {
   const key = () => crypto.randomUUID();
-  // The workspace create keeps its key while the same request is retried, so a retry after a lost
-  // answer returns the workspace the first attempt made instead of a second one.
-  let creating: { signature: string; key: string } | null = null;
+  // A create keeps its key while the same request is retried, so a retry after a lost answer returns what the
+  // first attempt made (workspace, department, invitation, Board) instead of a second one. A request that
+  // succeeded or was refused for good forgets its key.
+  const attempts = new Map<string, string>();
+  const attemptKey = (signature: string) => {
+    let existing = attempts.get(signature);
+    if (!existing) {
+      existing = key();
+      attempts.set(signature, existing);
+    }
+    return existing;
+  };
   // The member's Account, read once from the bootstrap (a failure is not kept).
   let account: Promise<string> | null = null;
   const accountId = (): Promise<string> => {
@@ -253,15 +262,13 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         size: SIZE_BAND[input.size],
         language: input.locale,
       };
-      const signature = JSON.stringify(body);
-      if (creating?.signature !== signature)
-        creating = { signature, key: key() };
+      const signature = JSON.stringify(["workspace", body]);
       const id = await api.post<string>(
         endpoints.accounts.workspaces(await accountId()),
         body,
-        { ...QUIET, idempotencyKey: creating.key },
+        { ...QUIET, idempotencyKey: attemptKey(signature) },
       );
-      creating = null;
+      attempts.delete(signature);
       return { id, slug: input.slug };
     },
     /**
@@ -279,11 +286,13 @@ export function createOnboardingApi(api: OnboardingApiClient) {
           visibility: "Private",
           spaceType: "Department",
         };
+        const signature = JSON.stringify(["space", workspaceId, body]);
         const id = await api.post<string>(
           endpoints.workspaces.spaces(workspaceId),
           body,
-          QUIET,
+          { ...QUIET, idempotencyKey: attemptKey(signature) },
         );
+        attempts.delete(signature);
         made.push({ id, name: department.name, color: department.color });
       }
       return { departments: made };
@@ -307,17 +316,19 @@ export function createOnboardingApi(api: OnboardingApiClient) {
             ? [{ kind: "Space", targetId: invite.spaceId, role: invite.role }]
             : [],
         };
+        const signature = JSON.stringify(["invite", workspaceId, body]);
         try {
           await api.post<string>(
             endpoints.workspaces.members(workspaceId),
             body,
-            QUIET,
+            { ...QUIET, idempotencyKey: attemptKey(signature) },
           );
           sent += 1;
         } catch (failure) {
           if (!isRowRefusal(failure)) throw failure;
           skipped.push(invite.email.toLowerCase());
         }
+        attempts.delete(signature);
       }
       return { sent, skipped };
     },
@@ -330,11 +341,13 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         title: input.name,
         ...(input.spaceId ? { spaceId: input.spaceId } : {}),
       };
+      const signature = JSON.stringify(["board", workspaceId, body]);
       const id = await api.post<unknown>(
         endpoints.boards.listByWorkspaceId(workspaceId),
         body,
-        { ...QUIET, idempotencyKey: key() },
+        { ...QUIET, idempotencyKey: attemptKey(signature) },
       );
+      attempts.delete(signature);
       return {
         id: typeof id === "string" ? id : "",
         templateId: input.templateId,
