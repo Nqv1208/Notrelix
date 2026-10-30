@@ -6,7 +6,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { Clock, Lock, Mail, Timer } from "lucide-react";
+import { Clock, Loader2, Lock, Mail, Timer } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
@@ -36,6 +36,8 @@ export type AuthSignInStep =
         /** A provider sign-in was stopped: the account has a second factor, so it signs in with its password. */
         | "mfa-required"
         | "provider-failed"
+        /** The provider is not available (switched off or not set up): no redirect was made. */
+        | "provider-unavailable"
         | null;
     }
   | {
@@ -70,6 +72,8 @@ export interface AuthSignInSurfaceProps {
   readonly copy: AuthCopy;
   readonly step: AuthSignInStep;
   readonly pending?: boolean;
+  /** The provider the browser is being sent to; its button says so while the page leaves. */
+  readonly redirecting?: "google" | "microsoft" | null;
   /** The email typed earlier (the email step starts with it). */
   readonly initialEmail?: string;
   readonly onContinue: (email: string) => void;
@@ -139,6 +143,7 @@ function CredentialsStep({
   copy,
   step,
   pending,
+  redirecting = null,
   initialEmail = "",
   onContinue,
   onProvider,
@@ -257,6 +262,9 @@ function CredentialsStep({
           {emailError === "provider-failed" ? (
             <FieldError>{te.providerFailed}</FieldError>
           ) : null}
+          {emailError === "provider-unavailable" ? (
+            <FieldError>{te.providerUnavailable}</FieldError>
+          ) : null}
         </div>
 
         <Reveal open={isPassword}>
@@ -361,21 +369,49 @@ function CredentialsStep({
               <button
                 type="button"
                 disabled={pending}
+                aria-busy={redirecting === "google" || undefined}
                 onClick={() => onProvider("google")}
                 className={BUTTON_CLASS.outline}
               >
-                <GoogleMark className="size-4.5 shrink-0" />
-                {te.google}
+                {redirecting === "google" ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="size-4.5 shrink-0 animate-spin motion-reduce:animate-none"
+                  />
+                ) : (
+                  <GoogleMark className="size-4.5 shrink-0" />
+                )}
+                {redirecting === "google"
+                  ? fillAuthCopy(te.redirecting, { provider: "Google" })
+                  : te.google}
               </button>
               <button
                 type="button"
                 disabled={pending}
+                aria-busy={redirecting === "microsoft" || undefined}
                 onClick={() => onProvider("microsoft")}
                 className={BUTTON_CLASS.outline}
               >
-                <MicrosoftMark className="size-4.5 shrink-0" />
-                {te.microsoft}
+                {redirecting === "microsoft" ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="size-4.5 shrink-0 animate-spin motion-reduce:animate-none"
+                  />
+                ) : (
+                  <MicrosoftMark className="size-4.5 shrink-0" />
+                )}
+                {redirecting === "microsoft"
+                  ? fillAuthCopy(te.redirecting, { provider: "Microsoft" })
+                  : te.microsoft}
               </button>
+              <span role="status" className="sr-only">
+                {redirecting
+                  ? fillAuthCopy(te.redirecting, {
+                      provider:
+                        redirecting === "google" ? "Google" : "Microsoft",
+                    })
+                  : null}
+              </span>
             </div>
             <p className="m-0 text-center text-item-ui text-muted-foreground">
               {te.noAccount}{" "}

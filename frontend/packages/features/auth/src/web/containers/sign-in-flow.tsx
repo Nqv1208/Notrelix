@@ -38,7 +38,11 @@ function useCountdown(seconds: number | null): number {
 }
 
 type EmailError =
-  "invalid" | "unreachable" | "mfa-required" | "provider-failed";
+  | "invalid"
+  | "unreachable"
+  | "mfa-required"
+  | "provider-failed"
+  | "provider-unavailable";
 
 type Phase =
   | { kind: "email"; error: EmailError | null }
@@ -111,7 +115,9 @@ export function SignInFlow({
           error: providerError
             ? providerError === IDENTITY_ERROR.oauthMfaRequired
               ? "mfa-required"
-              : "provider-failed"
+              : providerError === IDENTITY_ERROR.oauthProviderUnavailable
+                ? "provider-unavailable"
+                : "provider-failed"
             : null,
         },
   );
@@ -224,11 +230,28 @@ export function SignInFlow({
     },
   });
 
-  /** The provider's page and the way back are the backend's: the browser leaves. */
-  const startProvider = (name: string) =>
-    navigation.startProviderSignIn(service.oauthStartPath(name, returnTo));
+  // The browser is leaving for the provider: the buttons wait and say where it goes. A page
+  // restored from the back-forward cache is the same page again, so it starts over.
+  const [redirecting, setRedirecting] = useState<string | null>(null);
+  useEffect(() => {
+    const restore = (event: PageTransitionEvent) => {
+      if (event.persisted) setRedirecting(null);
+    };
+    window.addEventListener("pageshow", restore);
+    return () => window.removeEventListener("pageshow", restore);
+  }, []);
 
-  const pending = identify.isPending || login.isPending || verify.isPending;
+  /** The provider's page and the way back are the backend's: the browser leaves. */
+  const startProvider = (name: string) => {
+    setRedirecting(name);
+    navigation.startProviderSignIn(service.oauthStartPath(name, returnTo));
+  };
+
+  const pending =
+    identify.isPending ||
+    login.isPending ||
+    verify.isPending ||
+    redirecting !== null;
 
   const step: AuthSignInStep =
     phase.kind === "password"
@@ -258,6 +281,11 @@ export function SignInFlow({
       copy={copy}
       step={step}
       pending={pending}
+      redirecting={
+        redirecting === "google" || redirecting === "microsoft"
+          ? redirecting
+          : null
+      }
       initialEmail={typedEmail}
       onContinue={(email) => identify.mutate(email)}
       onProvider={startProvider}

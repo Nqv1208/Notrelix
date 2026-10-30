@@ -36,6 +36,9 @@ export const en = {
       "This account uses a second step, so it signs in with its email and password and then the authenticator code.",
     providerFailed:
       "Signing in with the provider did not work. Try again, or use your email and password.",
+    providerUnavailable:
+      "Signing in with that provider isn't available right now. Use your email and password.",
+    redirecting: "Taking you to {{provider}}…",
   },
   password: {
     title: "Enter your password",
@@ -224,6 +227,9 @@ export const vi: AuthCopy = {
       "Tài khoản này có xác minh hai bước, nên đăng nhập bằng email và mật khẩu rồi nhập mã từ ứng dụng xác thực.",
     providerFailed:
       "Đăng nhập bằng nhà cung cấp chưa được. Thử lại, hoặc dùng email và mật khẩu.",
+    providerUnavailable:
+      "Hiện chưa đăng nhập được bằng nhà cung cấp này. Hãy dùng email và mật khẩu.",
+    redirecting: "Đang chuyển đến {{provider}}…",
   },
   password: {
     title: "Nhập mật khẩu",
