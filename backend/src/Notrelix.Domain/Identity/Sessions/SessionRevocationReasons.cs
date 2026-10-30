@@ -15,4 +15,5 @@ public static class SessionRevocationReasons
     public const string MfaDisabled = "mfa-disabled";
     public const string UserDeactivated = "user-deactivated";
     public const string SecurityRecovery = "security-recovery";
+    public const string RefreshTokenReuse = "refresh-token-reuse";
 }

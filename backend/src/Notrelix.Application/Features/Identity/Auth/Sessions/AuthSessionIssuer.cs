@@ -31,7 +31,7 @@ public sealed class AuthSessionIssuer : IAuthSessionIssuer
         var refreshToken = _jwtService.GenerateRefreshToken();
         var tokenHash = RefreshTokenHash.Create(refreshToken);
 
-        var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now,
+        var session = UserSession.Create(user.Id, tokenHash, now + SessionLifetimePolicy.IdleLifetime, now,
             _clientMetadata.IpAddress, _clientMetadata.UserAgent);
         _identityContext.Sessions.Add(session);
         _activity.Record(user.Id, SecurityActivityType.SignInSucceeded, now, session.Id);

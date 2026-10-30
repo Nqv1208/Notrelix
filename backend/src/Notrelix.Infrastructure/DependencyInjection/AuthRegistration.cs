@@ -25,6 +25,7 @@ public static class AuthRegistration
         services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtBlacklistService, JwtBlacklistService>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Auth.Services.IRefreshRotationLedger, Notrelix.Infrastructure.Identity.Auth.RefreshRotationLedger>();
 
         // API token secrets (single-use raw secret + persisted digest).
         services.AddSingleton<IApiTokenSecretService, ApiTokenSecretService>();
