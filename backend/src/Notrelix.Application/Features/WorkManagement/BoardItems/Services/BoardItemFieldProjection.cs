@@ -29,7 +29,8 @@ public static class BoardItemFieldProjection
         IWorkManagementDbContext context,
         IReadOnlyCollection<BoardField> boardFields,
         IReadOnlyCollection<Guid> itemIds,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? viewerUserId = null)
     {
         if (itemIds.Count == 0) return new Dictionary<Guid, BoardItemFieldValues>();
 
@@ -66,6 +67,17 @@ public static class BoardItemFieldProjection
             stored[(row.ItemId, row.FieldId)] = doc.RootElement.Clone();
         }
 
+        // A Vote field holds no stored value: its value is the count of votes and whether the viewer cast one.
+        var voteFieldIds = fields.Where(f => f.Type == FieldType.Vote).Select(f => f.Id).ToList();
+        var votes = voteFieldIds.Count == 0
+            ? new Dictionary<(Guid Item, Guid Field), (int Count, bool Voted)>()
+            : (await context.BoardItemVotes.AsNoTracking()
+                    .Where(v => itemIds.Contains(v.ItemId) && voteFieldIds.Contains(v.FieldId))
+                    .Select(v => new { v.ItemId, v.FieldId, v.UserId })
+                    .ToListAsync(cancellationToken))
+                .GroupBy(v => (v.ItemId, v.FieldId))
+                .ToDictionary(g => g.Key, g => (g.Count(), g.Any(v => v.UserId == viewerUserId)));
+
         var evaluator = new Evaluator(fields, stored, children);
         var result = new Dictionary<Guid, BoardItemFieldValues>(itemIds.Count);
         foreach (var itemId in itemIds)
@@ -73,6 +85,12 @@ public static class BoardItemFieldProjection
             var own = storedFields
                 .Where(f => stored.ContainsKey((itemId, f.Id)))
                 .ToDictionary(f => f.Id.ToString(), f => stored[(itemId, f.Id)]);
+            foreach (var voteFieldId in voteFieldIds)
+            {
+                var (count, voted) = votes.GetValueOrDefault((itemId, voteFieldId));
+                own[voteFieldId.ToString()] = JsonSerializer.SerializeToElement(new { count, voted });
+            }
+
             var computed = computedFields.ToDictionary(f => f.Id.ToString(), f => ToDto(evaluator.Value(itemId, f)));
             result[itemId] = new BoardItemFieldValues(own, computed);
         }

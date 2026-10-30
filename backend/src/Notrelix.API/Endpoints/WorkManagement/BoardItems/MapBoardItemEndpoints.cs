@@ -54,6 +54,10 @@ public static class MapBoardItemEndpoints
         itemGroup.MapSetBoardItemCover();
         itemGroup.MapSetBoardItemRepeat();
         itemGroup.MapSetBoardItemReminder();
+        itemGroup.MapSetBoardItemVote();
+        itemGroup.MapListBoardItemVotes();
+        itemGroup.MapRecordBoardItemView();
+        itemGroup.MapListBoardItemViewers();
         itemGroup.MapCreateChildItem();
         itemGroup.MapListChildItems();
         itemGroup.MapMoveChildItem();
