@@ -17,9 +17,10 @@ public static class RemoveMemberEndpoint
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         Guid userId,
-        ISender sender)
+        ISender sender,
+        [FromQuery] long expectedVersion)
     {
-        var result = await sender.Send(new RemoveMemberCommand(workspaceId, userId));
+        var result = await sender.Send(new RemoveMemberCommand(workspaceId, userId, expectedVersion));
         return result.ToNoContentResult();
     }
 }

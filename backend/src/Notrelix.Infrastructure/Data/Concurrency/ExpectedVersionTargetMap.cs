@@ -70,6 +70,10 @@ using Notrelix.Application.Features.Workspaces.Teams.Commands.ChangeTeamMemberRo
 using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberJobTitle;
+using Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMyJobTitle;
 
 namespace Notrelix.Infrastructure.Data.Concurrency;
@@ -224,6 +228,12 @@ public sealed class ExpectedVersionTargetMap
         // Workspaces — member profile (job title, D15)
         [typeof(UpdateMemberJobTitleCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
         [typeof(UpdateMyJobTitleCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfWorkspace),
+
+        // Workspaces — membership writes (LD-07): role, suspend, activate and remove quote the target member's version
+        [typeof(UpdateMemberRoleCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
+        [typeof(SuspendMemberCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
+        [typeof(ActivateMemberCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
+        [typeof(RemoveMemberCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
 
         // Workspaces — Team writes (RestoreTeam addresses a deleted Team and stays version-less)
         [typeof(RenameTeamCommand)] = new(TeamKind, typeof(Team)),

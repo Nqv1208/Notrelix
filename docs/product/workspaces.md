@@ -830,6 +830,13 @@ Examples:
 
 Retry/concurrent acceptance/removal must not produce duplicate active memberships or violate owner invariants.
 
+A write that changes an existing member (role change, suspend, activate, remove) quotes the version of the
+member it was decided on. A version that has moved is refused with a precondition failure and nothing changes,
+so two administrators who read the same member cannot overwrite each other; a request that leaves the member as
+it is (same role, already suspended, already active, already removed) changes nothing and does not move the
+version. Activating a suspended member takes a seat again, so it asks Billing like admitting a new member and is
+refused when no seat is free.
+
 # 73. Idempotency
 
 Creation/invitation acceptance/member removal may be retried at transport/application level.
