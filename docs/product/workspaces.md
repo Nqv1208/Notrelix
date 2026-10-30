@@ -565,6 +565,13 @@ role:    Admin | Member | Viewer
 
 Existing Spaces created before membership existed receive their creator as Space Admin during migration.
 
+Every write to a Space (rename, description, type, visibility, archive, unarchive, move and the membership writes) carries the
+Space `version` the client last read; a version that moved is refused with 412 and nothing changes. A write that changes
+nothing bumps nothing. Creating a Space takes an `Idempotency-Key`: a retry returns the Space the first attempt made, and a
+different body under the same key is refused. The Space tree (`GET .../spaces/tree`) and the list (`GET .../spaces`) page by
+cursor, 50 a page by default and at most 200; the tree pages in Space id order and the client reads every page and orders
+siblings by position.
+
 # 45. Teams
 
 A Team can group Workspace members for collaboration/organization.

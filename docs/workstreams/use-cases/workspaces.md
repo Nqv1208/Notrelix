@@ -1002,12 +1002,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name`, `description`, `type` (Folder, Portfolio, Department, ProjectArea), `visibility`, `parentId`, neighbour for position.
 - Output: A Space with a fractional position key; the creator is its first Space Admin; Department defaults to Private, other types to Workspace.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/spaces`. 2. Application supplies ancestry and sibling names. 3. Domain validates and creates. 4. Closure index updated. 5. Creator entry added.
-- No-op / rejection / concurrency / retry: Sibling name clash (case-insensitive): refused. Parent archived, deleted or in another workspace: refused before mutation. A stale neighbour intent is refused, not guessed. No idempotency key.
+- No-op / rejection / concurrency / retry: Sibling name clash (case-insensitive): refused. Parent archived, deleted or in another workspace: refused before mutation. A stale neighbour intent is refused, not guessed. A retry under the same Idempotency-Key returns the Space the first attempt made; a different body under that key is refused.
 - UI states: Loading, success, validation error, permission denied, conflict, pending, offline, destructive confirmation.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 43.1, 44, 68; WSP-013, WSP-021, WSP-024; WGREQ038, WGREQ040, WGREQ041; WX-SPACE-001.
 - Acceptance: Given an Admin, When they create `IT` as a Department, Then it is Private and the Admin is its Space Admin. Given a sibling `it`, Then refused.
 - Evidence: BE `POST /api/v1/workspaces/{id}/spaces`, `CreateSpaceCommandHandler` · FE `create-space-dialog.tsx`, `use-create-space.tsx`, `spaces.service.ts` · Design `Final-Space`, `Final-M-Space` · Tests `SpaceTests`, `SpaceHierarchyTests`, `CreateSpaceCommandHandlerTests`, `SpaceHierarchyIntegrationTests`, `SpaceEndpointTests`, `workspace-spaces.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff; idempotency.
+- State: INTEGRATING — Tests and owner check. Built: the create takes an Idempotency-Key (the endpoint and the dialog hook keep one key per input), the mock replays by key. Tests to update: `CreateSpaceCommandHandlerTests`, `SpaceHierarchyHandlerTests` (command shape unchanged), endpoint test for the key. Real e2e; design diff.
 
 ### UC-WSP-K02 Read the Space tree and list Spaces
 - Capability: K Spaces (added by this catalog)
@@ -1016,26 +1016,26 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`.
 - Output: The org tree (ordered siblings) and the flat list of visible Spaces.
 - Main flow: 1. `GET .../spaces/tree` and `GET .../spaces`. 2. Governance visibility filters the ids. 3. Handler returns nodes.
-- No-op / rejection / concurrency / retry: A Private Space the caller cannot reach is absent, never counted (GOV-029). Both reads are unbounded.
+- No-op / rejection / concurrency / retry: A Private Space the caller cannot reach is absent, never counted (GOV-029). Both reads are cursor pages (LD-06): 50 a page by default, at most 200; the tree pages in Space id order and the client reads every page and orders siblings by position; the list is ordered by name.
 - UI states: Loading, empty (first steps), success, error.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 43, 44.1; WSP-021, WSP-023; WX-SPACE-002.
 - Acceptance: Given a Private Space and a Member outside it, Then the tree omits it.
 - Evidence: BE `GET .../spaces/tree`, `GET .../spaces`, `GetSpaceTreeQueryHandler`, `GetWorkspaceSpacesQueryHandler` · FE `space-tree-nav.tsx`, `use-spaces.ts`, `use-space-tree-expansion.ts` · Design `Final-Space`, `BC-Shell-1440` · Tests `SpaceAccessMatrixIntegrationTests`, `CollectionVisibilityIntegrationTests`, `SpaceHierarchyHandlerTests` · Real e2e none
-- State: INTEGRATING — Size bound (LD-06); real e2e; windowing for large trees.
+- State: INTEGRATING — Tests and owner check. Built: cursor pages on the tree and the list, the client (Space service, onboarding join read) walks every page, the mock pages the tree. Not built: windowing (virtualising) of a very large tree in the nav. Tests to update: `SpaceHierarchyHandlerTests`, `SpaceAccessMatrixIntegrationTests` (tree and list now return a page), OpenAPI shape tests. Real e2e.
 
 ### UC-WSP-K03 Read one Space
 - Capability: K Spaces (added by this catalog)
 - Actors and permission: Any member who can see the Space (`ViewWorkspace` plus visibility)
 - Preconditions: The Space is visible to the caller.
 - Input: `spaceId`.
-- Output: Name, description, type, visibility, status, parent, my effective role, version.
+- Output: Name, description, type, visibility, status, parent, version (my effective role is on the tree node).
 - Main flow: 1. `GET .../spaces/{spaceId}`. 2. Visibility check. 3. Return.
 - No-op / rejection / concurrency / retry: A caller without access gets the same NotFound as for a missing id.
 - UI states: Loading, success, not found.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 44.1; WSP-023; GOV-025.
 - Acceptance: Given a Private Space and an outsider, Then 404 identical to a missing id.
 - Evidence: BE `GET .../spaces/{spaceId}`, `GetSpaceQueryHandler` · FE `spaces.service.ts` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `SpaceEndpointTests` · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check. Built: the read returns the version (the client re-reads it between the writes of one save). Real e2e.
 
 ### UC-WSP-K04 Rename a Space or edit its description
 - Capability: K Spaces (added by this catalog)
@@ -1044,12 +1044,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name` or `description`.
 - Output: Updated Space, version +1.
 - Main flow: 1. `PUT .../spaces/{spaceId}` (rename) or `PUT .../spaces/{spaceId}/description`. 2. Domain checks sibling uniqueness.
-- No-op / rejection / concurrency / retry: Same value: no-op. Clash: refused. Neither command carries an expected version, so the last writer wins (defect, LD-07).
+- No-op / rejection / concurrency / retry: Same value: no-op. Clash: refused. Both carry an expected version; a stale one is 412 and nothing changes.
 - UI states: Inline edit, validation, pending, conflict.
 - Rules: [workspaces](../../product/workspaces.md) section 43.1; WGREQ038, WGREQ039; WX-SPACE-003.
 - Acceptance: Given a rename to a taken sibling name, Then refused.
 - Evidence: BE `PUT .../spaces/{spaceId}`, `PUT .../spaces/{spaceId}/description`, `RenameSpaceCommandHandler`, `UpdateSpaceDescriptionCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests`, `SpaceVersionTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on rename and description (body), mapped in the expected-version target map; the Space page sends the node version and, when one save changes several fields, re-reads the version between the writes. Tests to update: rename and description handler and integration tests (command shape), `SpaceVersionTests`. Real e2e.
 
 ### UC-WSP-K05 Change a Space's type
 - Capability: K Spaces (added by this catalog)
@@ -1058,12 +1058,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `spaceType`.
 - Output: New type; visibility is not changed by it.
 - Main flow: 1. `PUT .../spaces/{spaceId}/type`. 2. Domain sets the type.
-- No-op / rejection / concurrency / retry: Same type: no-op. No expected version (LD-07).
+- No-op / rejection / concurrency / retry: Same type: no-op. Carries an expected version; a stale one is 412.
 - UI states: Select, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 44.1.
 - Acceptance: Given a Folder, When set to Department, Then the type changes and visibility stays.
 - Evidence: BE `PUT .../spaces/{spaceId}/type`, `ChangeSpaceTypeCommandHandler` · FE `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on the type write (same path as K04). Not built: a control to change the type (the settings panel shows the type but offers no control; no artboard shows one). Real e2e.
 
 ### UC-WSP-K06 Change a Space's visibility
 - Capability: K Spaces (added by this catalog)
@@ -1072,12 +1072,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `visibility` (Private or Workspace).
 - Output: New visibility; inheritance of Member and Viewer roles to descendants changes accordingly; access narrowing warns about assignees (Work Management).
 - Main flow: 1. `PUT .../spaces/{spaceId}/visibility`. 2. Domain sets it. 3. Governance reads the new value.
-- No-op / rejection / concurrency / retry: Same value: no-op. No expected version (LD-07). Making a Space Private may remove access from people who hold Boards in it.
+- No-op / rejection / concurrency / retry: Same value: no-op. Carries an expected version; a stale one is 412. Making a Space Private may remove access from people who hold Boards in it.
 - UI states: Choice with consequence text, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) sections 44.1; WSP-023; GOV-025.
 - Acceptance: Given a Workspace Space, When set Private, Then a non-member loses it from the tree.
 - Evidence: BE `PUT .../spaces/{spaceId}/visibility`, `ChangeSpaceVisibilityCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on the visibility write (same path as K04). Real e2e.
 
 ### UC-WSP-K07 Move or reorder a Space
 - Capability: K Spaces (added by this catalog)
@@ -1091,7 +1091,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 43.1; WSP-021; WGREQ038; WX-SPACE-004.
 - Acceptance: Given A with child B, When A moves under B, Then refused and nothing changes.
 - Evidence: BE `POST .../spaces/{spaceId}/move`, `MoveSpaceCommandHandler` · FE `move-to-space-dialog.tsx` (Boards and Docs), Space settings · Design `Final-Space` · Tests `SpaceHierarchyTests`, `SpaceHierarchyIntegrationTests` · Real e2e none
-- State: INTEGRATING — Frontend tree drag; real e2e.
+- State: INTEGRATING — Tests and owner check. The Move picker in Space settings already sends the version. Not built: dragging in the tree (no artboard shows it; the picker is the keyboard path). Real e2e.
 
 ### UC-WSP-K08 Archive or unarchive a Space
 - Capability: K Spaces (added by this catalog)
@@ -1100,12 +1100,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `spaceId`.
 - Output: Status Archived or Active.
 - Main flow: 1. `POST .../spaces/{spaceId}/archive` or `.../unarchive`. 2. Application supplies child and resource facts. 3. Domain checks.
-- No-op / rejection / concurrency / retry: Archive with active content: refused with the reason (no cascade, WSP-022). Already in that state: no-op. No expected version (LD-07).
+- No-op / rejection / concurrency / retry: Archive with active content: refused with the reason (no cascade, WSP-022). Already in that state: no-op. Both carry an expected version in the body; a stale one is 412.
 - UI states: Confirmation, blocked state with reason, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 43.2; WSP-022; WGREQ039.
 - Acceptance: Given a Space with one Board, When archived, Then refused naming the Board.
 - Evidence: BE `POST .../archive`, `POST .../unarchive`, `ArchiveSpaceCommandHandler`, `UnarchiveSpaceCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `ArchiveSpaceCommandHandlerTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on archive and unarchive (new body), sent by the Space page. Tests to update: `ArchiveSpaceCommandHandlerTests` and the integration tests that archive a Space (command shape). Real e2e.
 
 ### UC-WSP-K09 Delete or restore a Space
 - Capability: K Spaces (added by this catalog)
@@ -1133,7 +1133,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 44.2, 44.3, 48.2; WSP-024, WSP-026.
 - Acceptance: Given a Team entry, Then its active members show once at the highest role.
 - Evidence: BE `GET .../members`, `GET .../members-extra`, `GetSpaceMembersQueryHandler`, `GetSpaceMembersExtraQueryHandler` · FE `space-members-view.tsx`, `use-space-members-extra.ts` · Design `Final-Space`, `Final-M-Space` · Tests `SpaceMembersExtraIntegrationTests`, `space-members.mock.e2e.spec.ts`, `design-fidelity-members.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Pagination for large Teams; real e2e; design diff.
+- State: INTEGRATING — Tests and owner check. Not built: paging of the members-extra read. The tab filters and counts people client-side over the whole set, so paging it needs a server-side filter and search contract: owner call. Real e2e; design diff.
 
 ### UC-WSP-K11 Add a person or Team to a Space
 - Capability: K Spaces (added by this catalog)
