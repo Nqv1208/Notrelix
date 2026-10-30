@@ -146,8 +146,8 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-H01 | Start second-factor enrollment | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-H02 | Verify and activate the second factor | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
-| UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
-| UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
+| UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
+| UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
 | UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
 | UC-IDN-J02 | Regenerate recovery codes | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no rate-limit attribute |
 | UC-IDN-J03 | Turn the second factor off | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | blocked-by-policy case |
@@ -627,12 +627,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: the 6-digit code (the challenge is in the cookie).
 - Output: a session; the challenge cookie cleared; a "sign-in succeeded" line.
 - Main flow: 1. Password or provider step answers "second step needed". 2. The person types the code. 3. The client posts `POST /api/v1/auth/mfa/verify`. 4. The app routes on, keeping `returnTo`.
-- No-op / rejection / concurrency / retry: a wrong code counts as a failed sign-in; a missing or expired challenge answers "verification expired" and asks to start again; the challenge never appears in a URL.
-- UI states: code entry, wrong code, expired, pending.
+- No-op / rejection / concurrency / retry: a wrong code counts as a failed sign-in; a missing or expired challenge answers "verification expired" and asks to start again; the challenge never appears in a URL; a code (or recovery code) that already opened something is refused, so a second request with the same code never opens a second session (RFC 6238 section 5.2): the first claim of a person's time step, or of a recovery code, wins; two parallel requests with one valid code open one session.
+- UI states: code entry, wrong code (the boxes empty and focus returns to the first), expired (the verify button is off; "Back to sign-in" is the way on), pending.
 - Rules: ID-007; section 22; IAREQ050.
 - Acceptance: Given a challenge, when the right code is sent, then a session opens. Given no challenge cookie, then the expired state.
-- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` (`POST /api/v1/auth/mfa/verify`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; Infrastructure `CookieServiceMfaChallengeTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec, Application test.
+- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`, `Mfa/Services/MfaCodeVerifier.cs`, `Mfa/Abstractions/IMfaCodeUseGuard.cs`; Infrastructure `Identity/Mfa/MfaCodeUseGuard.cs`, `MfaTotpService.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` (`POST /api/v1/auth/mfa/verify`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; Infrastructure `CookieServiceMfaChallengeTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING. Built: TOTP replay protection and the one-time claim of a recovery code (Redis claims, so no schema change; a code just used at sign-in is refused for the rest of its window, also at step-up, and the wrong-code sentence says so); the wrong-code boxes clear. Missing: tests and owner check (Application tests for the claim, the replay and the parallel recovery code; `MfaCodeVerifier` and `IMfaTotpService` doubles need the new members), real spec. A code that enrols the factor (UC-IDN-H02) is not claimed, so it can still be replayed once at the next sign-in inside its window.
 
 ### UC-IDN-I02 Expire a challenge after wrong codes
 - Capability: I MFA challenge
@@ -641,12 +641,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: wrong codes.
 - Output: after 5 wrong codes the challenge is dead and the cookie is deleted; the person signs in again from the password step.
 - Main flow: 1. Each wrong code counts. 2. The fifth kills the challenge. 3. The account and address counters keep counting (UC-IDN-B09).
-- No-op / rejection / concurrency / retry: no answer tells how many attempts remain; a dead challenge cannot be revived by a correct code.
+- No-op / rejection / concurrency / retry: no answer tells how many attempts remain; a dead challenge cannot be revived by a correct code; the fifth wrong code removes the challenge at once (it used to be removed by the attempt after it, so the fifth wrong answer still looked retryable) and answers expired.
 - UI states: wrong code, expired.
 - Rules: ID section 67; IAREQ050.
 - Acceptance: Given five wrong codes, when the right one follows, then it is refused.
 - Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` · FE `auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; mock e2e `auth-flow.mock.e2e.spec.ts` ("a wrong second-step code is refused") · Real e2e none
-- State: INTEGRATING. Missing: real spec.
+- State: INTEGRATING. Built: the challenge dies at the fifth wrong code (the mock already did). Missing: tests and owner check (an Application test of five wrong codes then the right one), real spec. The step-up challenge (UC-IDN-K04) still removes its challenge on the attempt after the fifth.
 
 ## Capability J: MFA recovery
 
