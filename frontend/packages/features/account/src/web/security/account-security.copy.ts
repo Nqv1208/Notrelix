@@ -64,7 +64,8 @@ export const en = {
     passwordLabel: "Current password",
     confirm: "Confirm",
     cancel: "Cancel",
-    wrongCode: "That code is not right. Check the app and try again.",
+    wrongCode:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
     wrongPassword: "That password is not right.",
     wait: "Too many tries. Try again in {{seconds}} seconds.",
     codesTitle: "Save your backup codes",
@@ -83,7 +84,8 @@ export const en = {
     codeLabel: "Code",
     codeRequired:
       "Enter the code from your authenticator app or a backup code.",
-    wrongCode: "That code is not right. Check the app and try again.",
+    wrongCode:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
     newLabel: "New password",
     newHint:
       "At least {{count}} characters, different from your current password.",
@@ -212,7 +214,8 @@ export const vi: AccountSecurityCopy = {
     passwordLabel: "Mật khẩu hiện tại",
     confirm: "Xác nhận",
     cancel: "Hủy",
-    wrongCode: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    wrongCode:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     wrongPassword: "Mật khẩu chưa đúng.",
     wait: "Thử quá nhiều lần. Thử lại sau {{seconds}} giây.",
     codesTitle: "Lưu mã dự phòng của bạn",
@@ -230,7 +233,8 @@ export const vi: AccountSecurityCopy = {
     wrongCurrent: "Mật khẩu chưa đúng.",
     codeLabel: "Mã",
     codeRequired: "Hãy nhập mã từ ứng dụng xác thực hoặc một mã dự phòng.",
-    wrongCode: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    wrongCode:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     newLabel: "Mật khẩu mới",
     newHint: "Ít nhất {{count}} ký tự, khác mật khẩu hiện tại.",
     tooShort: "Hãy dùng ít nhất {{count}} ký tự.",

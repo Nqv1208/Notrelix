@@ -576,6 +576,17 @@ function OtpStep({
   const code = step.backup ? backup.trim() : digits.join("");
   const ready = step.backup ? code.length >= 8 : code.length === 6;
   const focusBox = (index: number) => boxes.current[index]?.focus();
+  // The challenge is gone (expired, out of tries) or the account cannot sign in: no code helps.
+  const dead = step.error === "expired" || step.error === "inactive";
+  // A wrong code is not kept: the boxes start empty again for the next try.
+  const wrongCode = step.error === "wrong";
+  useEffect(() => {
+    if (wrongCode && !pending) {
+      setDigits(Array(6).fill(""));
+      setBackup("");
+      boxes.current[0]?.focus();
+    }
+  }, [wrongCode, pending]);
 
   const setFrom = (start: number, text: string) => {
     const chars = text
@@ -702,7 +713,7 @@ function OtpStep({
         {failure ? <FieldError>{failure}</FieldError> : null}
         <button
           type="submit"
-          disabled={!ready || pending}
+          disabled={!ready || pending || dead}
           className={BUTTON_CLASS.primary}
         >
           {pending ? t.verifying : t.verify}

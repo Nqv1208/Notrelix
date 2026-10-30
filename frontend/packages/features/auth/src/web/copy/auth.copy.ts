@@ -97,7 +97,8 @@ export const en = {
     backupPlaceholder: "XXXX-XXXX-XXXX",
     useApp: "Use the authenticator app",
     back: "Back to sign-in",
-    wrong: "That code is not right. Check the app and try again.",
+    wrong:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
     expired: "This verification expired. Sign in again.",
     inactive:
       "This account cannot sign in right now. Contact your administrator.",
@@ -293,7 +294,8 @@ export const vi: AuthCopy = {
     backupPlaceholder: "XXXX-XXXX-XXXX",
     useApp: "Dùng ứng dụng xác thực",
     back: "Quay lại đăng nhập",
-    wrong: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    wrong:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     expired: "Phiên xác minh đã hết hạn. Hãy đăng nhập lại.",
     inactive:
       "Tài khoản này tạm thời không đăng nhập được. Hãy liên hệ quản trị viên.",
