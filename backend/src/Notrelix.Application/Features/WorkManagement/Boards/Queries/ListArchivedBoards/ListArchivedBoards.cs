@@ -35,7 +35,7 @@ public class ListArchivedBoardsQueryHandler : IRequestHandler<ListArchivedBoards
 
     public async Task<Result<List<RetiredBoardDto>>> Handle(ListArchivedBoardsQuery request, CancellationToken ct)
     {
-        var visible = await _visibility.VisibleBoardIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
+        var visible = await _visibility.VisibleArchivedBoardIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
         if (visible.Count == 0) return Result<List<RetiredBoardDto>>.Success([]);
 
         var spaces = (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet();

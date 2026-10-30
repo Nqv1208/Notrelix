@@ -27,6 +27,9 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
     public Task<IReadOnlyList<Guid>> VisibleBoardIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
         QueryAsync(ResourceVisibilityQuery.VisibleBoardsSql, workspaceId, userId, BoardKind, ResourceVisibilityQuery.BoardReadAction, cancellationToken);
 
+    public Task<IReadOnlyList<Guid>> VisibleArchivedBoardIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
+        QueryAsync(ResourceVisibilityQuery.VisibleArchivedBoardsSql, workspaceId, userId, BoardKind, ResourceVisibilityQuery.BoardReadAction, cancellationToken);
+
     public Task<IReadOnlyList<Guid>> VisiblePageIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
         QueryAsync(ResourceVisibilityQuery.VisiblePagesSql, workspaceId, userId, PageKind, ResourceVisibilityQuery.PageReadAction, cancellationToken);
 

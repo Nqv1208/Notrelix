@@ -1,6 +1,7 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard;
 
@@ -11,7 +12,8 @@ public record DeleteBoardCommand(Guid BoardId, long ExpectedVersion)
       IResourceScopedRequest,
       IRequirePermission,
       IExpectedVersionRequest,
-      IIdempotentRequest
+      IIdempotentRequest,
+      IBoardLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

@@ -55,6 +55,19 @@ public sealed record AccessFacts(
     /// request is decided on (see <see cref="IRequirePermissionTarget"/>), or null.
     /// </summary>
     public string? TargetBoardMemberRole { get; init; }
+
+    /// <summary>
+    /// The Board the request is decided on (the Board itself, or the parent Board of a
+    /// Board child) is archived. An archived Board stays reachable (<see cref="ResourceExists"/>);
+    /// the policy refuses writes on it once the normal decision is Allow.
+    /// </summary>
+    public bool BoardArchived { get; init; }
+
+    /// <summary>
+    /// The resource is an Item, or belongs to one, whose Group is archived: the Item stays
+    /// readable and read-only.
+    /// </summary>
+    public bool ChildInArchivedGroup { get; init; }
 }
 
 public sealed record AccessPermissionRule(int Priority, string Effect);

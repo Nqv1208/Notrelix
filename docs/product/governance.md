@@ -475,7 +475,10 @@ Account membership still never implies Workspace access, and Workspace membershi
 For a Board or Page in Workspace `W` (placed in Space `S` or unplaced), the decision is evaluated in this order; the first matching step decides:
 
 ```text
-1. resource missing / archived / deleted / other Workspace → NotFound
+1. resource missing / deleted / other Workspace          → NotFound
+   (an archived Board is not missing: steps 2–6 decide it, then it takes no write, below;
+   a deleted Board is reachable only for its restore; a Page in the trash is reachable
+   only for restore and delete-for-good)
 2. Workspace Owner                                        → Allow
 3. explicit permission rules for the action (User/Team subject),
    lowest priority value first, Deny wins at equal priority → Deny / Allow
@@ -486,6 +489,13 @@ For a Board or Page in Workspace `W` (placed in Space `S` or unplaced), the deci
 6. Workspace default (resource unplaced, Workspace-visible): Members allowed,
    Guests need explicit access
 ```
+
+**An archived Board stays reachable (decided 2026-10-30).** An archived (not deleted) Board and its children are decided by steps 2–6 like an active one, so a Viewer keeps reading it, and a person who fails those steps still gets the identical NotFound, never "archived". Only after the decision is Allow does the policy refuse, with a Forbidden decision carrying the stable code `WorkManagement_Board_Archived`:
+
+- any write on a child of an archived Board;
+- any write on the archived Board itself, except the Board lifecycle commands: unarchive, delete and restore.
+
+The Board lifecycle commands are the way back and pass the ordinary ManageBoard (Manager) decision. A deleted Board is NotFound to every request except its restore (ManageBoard, inside the 30-day window); its children are NotFound. The archived Board list applies the same single-read decision as the active list (GOV-029).
 
 A Workspace-visible resource inherits the access of its Space and may be restricted further by making it Private and granting outsiders explicitly. A resource placed in a Space is hidden (NotFound) from a principal who has no Space access, no board membership and no explicit grant.
 
@@ -560,7 +570,7 @@ Board lists (by Workspace and by slug), Space lists/tree, Page lists/tree/search
 
 Decided 2026-10-13. Every resource that lives inside a Board — Items (and their comments, activity, attachments, links and checklists), Checklist items, Groups, Fields, Views and Labels — is authorized by evaluating the requested action against its parent Board:
 
-- the same visibility: a principal who cannot see the Board receives NotFound for any of its children (GOV-025), and a child of an archived or deleted Board, or one whose Board cannot be resolved, is NotFound;
+- the same visibility: a principal who cannot see the Board receives NotFound for any of its children (GOV-025), and a child of a deleted Board, or one whose Board cannot be resolved, is NotFound. A child of an archived Board stays reachable and read-only: any write on it is refused with `WorkManagement_Board_Archived` after the decision is Allow (GOV-025). An Item inside an archived Group, and the checklists of such an Item, are read-only the same way, refused with `WorkManagement_Group_Archived`;
 - the same order as the Board itself: explicit permission rules scoped to the Board (or to the child) apply to its children, then the level and action thresholds (GOV-027) and the Guest cap (GOV-030): reading needs Viewer, commenting on an Item needs Commenter, every other change needs Editor;
 - an explicit grant on the child itself still counts as a source of access in addition to the Board's sources;
 - a child accepts only Board-child actions (read, comment, item, field and view changes, Board management); any other action on a child is refused.
