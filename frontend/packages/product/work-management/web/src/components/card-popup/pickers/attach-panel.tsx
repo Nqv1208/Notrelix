@@ -1,123 +1,185 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  AlertCircle,
+  Check,
   FileText,
   Link2,
+  Loader2,
   Paperclip,
-  SquareArrowOutUpRight,
+  Search,
+  SquareCheck,
+  X,
 } from "lucide-react";
-import {
-  useFullBoard,
-  useLinkablePages,
-} from "@notrelix/work-management-state";
+import { useFullBoard, useLinkablePages } from "@notrelix/work-management-state";
 import { cn } from "@notrelix/ui-web";
-import { STATUS_DOT_CLASS } from "../../card-detail/item-field-editors";
 import { foldForSearch } from "../../item-page/item-pickers";
+import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup } from "../card-popup-context";
-import { PanelBtn, PanelInput } from "../popup-ui";
-import {
-  Caption,
-  FieldLabel,
-  Hint,
-  PickerHead,
-  SearchField,
-} from "./picker-bits";
-
-type View = "menu" | "link" | "page" | "other";
+import { IconBtn, PanelBtn, PanelInput } from "../popup-ui";
+import { Caption, Hint, PickerHead } from "./picker-bits";
 
 const ROW =
-  "flex w-full items-center gap-3 rounded-[8px] border-0 bg-transparent p-2 text-left text-foreground hover:bg-state-hover-strong";
-const OPTION =
-  "flex min-h-9 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong";
+  "flex h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:h-9";
 
-function MenuRow({
-  icon,
-  title,
-  hint,
-  onClick,
-}: {
-  icon: ReactNode;
-  title: string;
-  hint: string;
-  onClick: () => void;
-}) {
+/** A pasted or typed address: it has a scheme, or a dotted host with no spaces. */
+function asUrl(text: string): URL | null {
+  const value = text.trim();
+  if (!value || /\s/.test(value)) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value)
+    ? value
+    : /^[^./]+\.[^./]+/.test(value)
+      ? `https://${value}`
+      : null;
+  if (!withScheme) return null;
+  try {
+    return new URL(withScheme);
+  } catch {
+    return null;
+  }
+}
+
+/** The files being sent to the card, with their progress, failures and "Thử lại". */
+function Uploads() {
+  const { data, callbacks, copy } = useCardPopup();
+  const t = copy.pickers.attach;
+  const pageCopy = useItemPageCopy();
+  const list = (data.uploads ?? []).filter((u) => u.status !== "done");
+  if (list.length === 0) return null;
   return (
-    <button type="button" role="menuitem" onClick={onClick} className={ROW}>
-      <span className="grid size-[38px] shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
-        {icon}
-      </span>
-      <span>
-        <b className="block text-[14px] leading-[1.3] font-semibold">{title}</b>
-        <small className="block text-[12.5px] leading-[1.35] font-normal text-meta-foreground">
-          {hint}
-        </small>
-      </span>
-    </button>
+    <div className="mb-2 flex flex-col gap-2">
+      {list.map((upload) => {
+        const failed = upload.status === "error";
+        return (
+          <div
+            key={upload.id}
+            className={cn(
+              "box-border rounded-[10px] border bg-popover px-3 py-2.5",
+              failed ? "border-danger" : "border-line-strong",
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <b className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+                {upload.name}
+              </b>
+              {failed && upload.retryable ? (
+                <PanelBtn small onClick={() => callbacks.onRetryUpload?.(upload.id)}>
+                  {t.retry}
+                </PanelBtn>
+              ) : null}
+              {failed ? (
+                <IconBtn
+                  small
+                  aria-label={fillPopupCopy(t.dismiss, { name: upload.name })}
+                  onClick={() => callbacks.onDismissUpload?.(upload.id)}
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </IconBtn>
+              ) : (
+                <Loader2
+                  aria-hidden="true"
+                  className="size-4 animate-spin text-meta-foreground"
+                />
+              )}
+            </div>
+            {failed ? (
+              <p
+                role="alert"
+                className="m-0 mt-1 flex items-start gap-1.5 text-[12.5px] font-medium text-danger-text"
+              >
+                <AlertCircle aria-hidden="true" className="mt-px size-3.5 shrink-0" />
+                {(pageCopy.files[upload.error ?? "failed"] ?? t.failed).replace(
+                  "{{limit}}",
+                  upload.limit ?? "",
+                )}
+              </p>
+            ) : (
+              <>
+                <div
+                  role="progressbar"
+                  aria-label={upload.name}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={
+                    upload.progress == null ? undefined : Math.round(upload.progress)
+                  }
+                  className="mt-2 h-1 overflow-hidden rounded-full bg-state-hover-strong"
+                >
+                  <div
+                    className="h-full bg-primary transition-[width]"
+                    style={{ width: `${Math.round(upload.progress ?? 0)}%` }}
+                  />
+                </div>
+                <p className="m-0 mt-1 text-[12.5px] text-meta-foreground">
+                  {upload.progress == null
+                    ? t.uploadingPlain
+                    : fillPopupCopy(t.uploading, {
+                        percent: Math.round(upload.progress),
+                      })}
+                </p>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
-function LinkForm({
-  onBack,
-  onClose,
-}: {
-  onBack: () => void;
-  onClose: () => void;
-}) {
+/** The address row: where it goes, a name to show, and "Gắn". */
+function LinkRow({ url, onClose }: { url: URL; onClose: () => void }) {
   const { copy, actions } = useCardPopup();
   const t = copy.pickers.attach;
-  const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "invalid" | "failed">(
     "idle",
   );
+  const path = url.pathname === "/" ? "" : url.pathname + url.search;
   const submit = async () => {
-    let parsed: URL | null = null;
-    try {
-      parsed = new URL(url.trim());
-    } catch {
-      parsed = null;
-    }
-    if (!parsed || !/^https?:$/.test(parsed.protocol))
-      return setState("invalid");
+    if (!/^https?:$/.test(url.protocol)) return setState("invalid");
     setState("busy");
-    const label =
-      name.trim() ||
-      parsed.host + (parsed.pathname === "/" ? "" : parsed.pathname);
-    const ok = await (actions.addWebLink?.(parsed.href, label.slice(0, 256)) ??
+    const label = name.trim() || url.host + path;
+    const ok = await (actions.addWebLink?.(url.href, label.slice(0, 256)) ??
       Promise.resolve(false));
     if (ok) onClose();
     else setState("failed");
   };
   return (
     <form
+      className="mt-2.5"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
       }}
     >
-      <PickerHead title={t.linkTitle} onBack={onBack} onClose={onClose} />
-      <FieldLabel htmlFor="popup-attach-url">{t.linkUrl}</FieldLabel>
-      <PanelInput
-        id="popup-attach-url"
-        type="url"
-        autoFocus
-        value={url}
-        invalid={state === "invalid"}
-        onChange={(event) => {
-          setUrl(event.target.value);
-          setState("idle");
-        }}
-      />
-      <FieldLabel htmlFor="popup-attach-name" className="mt-3">
-        {t.linkName}{" "}
-        <span className="font-normal text-meta-foreground">{t.optional}</span>
-      </FieldLabel>
-      <PanelInput
-        id="popup-attach-name"
-        value={name}
-        maxLength={256}
-        onChange={(event) => setName(event.target.value)}
-      />
+      <p className="m-0 flex items-center gap-2 px-1 text-[13.5px]">
+        <Link2 aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        <b className="font-semibold">{url.host}</b>
+        <span className="min-w-0 truncate text-muted-foreground">{path}</span>
+      </p>
+      <label
+        htmlFor="popup-attach-name"
+        className="mt-3 mb-1.5 block text-[12px] font-semibold text-muted-foreground"
+      >
+        {t.linkName}
+      </label>
+      <div className="flex gap-2">
+        <PanelInput
+          id="popup-attach-name"
+          value={name}
+          maxLength={256}
+          placeholder={url.host + path}
+          onChange={(event) => setName(event.target.value)}
+          className="min-w-0 flex-1"
+        />
+        <PanelBtn
+          type="submit"
+          variant="primary"
+          disabled={state === "busy" || !actions.addWebLink}
+        >
+          {t.linkAction}
+        </PanelBtn>
+      </div>
       {state === "invalid" ? (
         <Hint error className="mt-2">
           {t.urlInvalid}
@@ -128,105 +190,40 @@ function LinkForm({
           {t.failed}
         </Hint>
       ) : null}
-      <PanelBtn
-        type="submit"
-        variant="primary"
-        className="mt-3.5 w-full"
-        disabled={!url.trim() || state === "busy" || !actions.addWebLink}
-      >
-        {t.linkAction}
-      </PanelBtn>
     </form>
   );
 }
 
-function PageSearch({
-  onBack,
-  onClose,
-}: {
-  onBack: () => void;
-  onClose: () => void;
-}) {
-  const { card, copy, actions } = useCardPopup();
-  const t = copy.pickers.attach;
-  const [query, setQuery] = useState("");
-  const [failed, setFailed] = useState(false);
-  const pages = useLinkablePages(card.workspaceId, true);
-  const needle = foldForSearch(query);
-  const matches = pages.pages.filter(
-    (page) => !needle || foldForSearch(page.title).includes(needle),
-  );
-  const link = async (pageId: string) => {
-    const ok = await (actions.linkPage?.(pageId) ?? Promise.resolve(false));
-    if (ok) onClose();
-    else setFailed(true);
-  };
-  return (
-    <div>
-      <PickerHead title={t.pageTitle} onBack={onBack} onClose={onClose} />
-      <SearchField
-        value={query}
-        onChange={setQuery}
-        label={t.pageSearch}
-        placeholder={t.pageSearch}
-      />
-      <Caption>
-        {fillPopupCopy(t.pageResults, { count: matches.length })}
-      </Caption>
-      {pages.isLoading ? <Hint className="px-1">{t.pageLoading}</Hint> : null}
-      {pages.isError ? (
-        <Hint error className="px-1">
-          {t.pageError}{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => void pages.refetch()}
-          >
-            {t.retry}
-          </button>
-        </Hint>
-      ) : null}
-      <div className="max-h-[260px] overflow-y-auto">
-        {matches.slice(0, 30).map((page) => (
-          <button
-            key={page.id}
-            type="button"
-            className={ROW}
-            onClick={() => void link(page.id)}
-          >
-            <span className="grid size-[38px] shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
-              <FileText aria-hidden="true" className="size-4" />
-            </span>
-            <b className="min-w-0 truncate text-[14px] font-semibold">
-              {page.title || t.pageUntitled}
-            </b>
-          </button>
-        ))}
-      </div>
-      {!pages.isLoading && !pages.isError && matches.length === 0 ? (
-        <Hint className="px-1">{fillPopupCopy(t.pageEmpty, { query })}</Hint>
-      ) : null}
-      {failed ? (
-        <Hint error className="mt-2">
-          {t.failed}
-        </Hint>
-      ) : null}
-    </div>
-  );
+interface Hit {
+  readonly id: string;
+  readonly kind: "page" | "task";
+  readonly key?: string | null;
+  readonly title: string;
+  readonly meta?: string;
+  readonly done?: boolean;
 }
 
-function OtherSearch({
-  onBack,
+/**
+ * The single attach panel: choose a file (25 MB each; dropping or pasting files anywhere on the card
+ * does the same), and one smart field below it. A web address becomes a link row to name and attach;
+ * words search the Documents pages and the cards of the board; before anything is typed the field
+ * offers recent ones. A card is attached as a "Liên quan" link.
+ */
+export function AttachPanel({
   onClose,
+  onBack,
 }: {
-  onBack: () => void;
   onClose: () => void;
+  onBack?: () => void;
 }) {
-  const { card, board, data, copy, callbacks } = useCardPopup();
+  const { card, copy, callbacks, actions, data } = useCardPopup();
   const t = copy.pickers.attach;
+  const file = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [failed, setFailed] = useState(false);
+  const pages = useLinkablePages(card.workspaceId, Boolean(actions.linkPage));
   const { groups } = useFullBoard(card.boardId, card.workspaceId);
-  const candidates = useMemo(
+  const tasks = useMemo(
     () =>
       data.linkCandidates ??
       groups
@@ -240,85 +237,71 @@ function OtherSearch({
         })),
     [data.linkCandidates, groups],
   );
+  const url = asUrl(query);
   const needle = foldForSearch(query);
-  const matches = candidates
-    .filter((item) => item.id !== card.id)
-    .filter(
-      (item) =>
-        !needle ||
-        foldForSearch(`${item.key ?? ""} ${item.title}`).includes(needle),
-    )
-    .slice(0, 8);
-  return (
-    <div>
-      <PickerHead title={t.otherTitle} onBack={onBack} onClose={onClose} />
-      <SearchField
-        value={query}
-        onChange={setQuery}
-        label={t.otherSearch}
-        placeholder={t.otherSearch}
-      />
-      <Caption>{fillPopupCopy(t.otherHeading, { board: board.title })}</Caption>
-      {matches.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          className={OPTION}
-          onClick={() => {
-            callbacks.onAddLink?.(item.id, "related");
-            onClose();
-          }}
-        >
-          <span className="font-mono text-[12px] text-meta-foreground">
-            {item.key}
-          </span>
-          <span className="min-w-0 flex-1 truncate">{item.title}</span>
-          <span
-            aria-hidden="true"
-            className={cn(
-              "size-[9px] shrink-0 rounded-full",
-              item.statusCategory
-                ? STATUS_DOT_CLASS[item.statusCategory]
-                : "bg-meta-foreground",
-            )}
-          />
-        </button>
-      ))}
-      {matches.length === 0 ? (
-        <Hint className="px-1">{fillPopupCopy(t.otherEmpty, { query })}</Hint>
-      ) : null}
-      <Hint className="mt-2 mr-2 mb-0.5 ml-2">
-        {t.otherNoteBefore} <b>{t.otherNoteKind}</b>
-        {t.otherNoteAfter}
-      </Hint>
-    </div>
-  );
-}
 
-/**
- * The attach menu: a file, a web link, a Documents page, or another card of the
- * board. Each of the last three opens a small form in place with a back arrow.
- */
-export function AttachPanel({
-  onClose,
-  onBack,
-}: {
-  onClose: () => void;
-  /** Where the arrow of the menu goes (the "Thêm" menu); absent: no arrow. */
-  onBack?: () => void;
-}) {
-  const { copy, callbacks, actions, slots } = useCardPopup();
-  const t = copy.pickers.attach;
-  const [view, setView] = useState<View>("menu");
-  const file = useRef<HTMLInputElement>(null);
-  const back = () => setView("menu");
-  if (view === "link") return <LinkForm onBack={back} onClose={onClose} />;
-  if (view === "page") return <PageSearch onBack={back} onClose={onClose} />;
-  if (view === "other") return <OtherSearch onBack={back} onClose={onClose} />;
-  const ic = "size-4";
+  const pageHits: Hit[] = actions.linkPage
+    ? pages.pages
+        .filter((p) => !needle || foldForSearch(p.title).includes(needle))
+        .map((p) => ({ id: p.id, kind: "page" as const, title: p.title || t.pageUntitled }))
+    : [];
+  const taskHits: Hit[] = callbacks.onAddLink
+    ? tasks
+        .filter((x) => x.id !== card.id)
+        .filter(
+          (x) => !needle || foldForSearch(`${x.key ?? ""} ${x.title}`).includes(needle),
+        )
+        .map((x) => ({
+          id: x.id,
+          kind: "task" as const,
+          key: x.key,
+          title: x.title,
+          done: x.statusCategory === "done",
+        }))
+    : [];
+
+  const pick = async (hit: Hit) => {
+    if (hit.kind === "task") {
+      callbacks.onAddLink?.(hit.id, "related");
+      return onClose();
+    }
+    const ok = await (actions.linkPage?.(hit.id) ?? Promise.resolve(false));
+    if (ok) onClose();
+    else setFailed(true);
+  };
+  const icon = (hit: Hit): ReactNode =>
+    hit.kind === "page" ? (
+      <FileText aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+    ) : hit.done ? (
+      <Check aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+    ) : (
+      <SquareCheck aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+    );
+  const row = (hit: Hit) => (
+    <button
+      key={`${hit.kind}:${hit.id}`}
+      type="button"
+      className={ROW}
+      onClick={() => void pick(hit)}
+    >
+      {icon(hit)}
+      {hit.key ? (
+        <span className="font-mono text-[12.5px] text-meta-foreground">{hit.key}</span>
+      ) : null}
+      <span className="min-w-0 flex-1 truncate">{hit.title}</span>
+    </button>
+  );
+  // Before typing: a few of each kind, pages and cards alternating.
+  const recent: Hit[] = [];
+  for (let i = 0; i < 3; i++) {
+    if (pageHits[i]) recent.push(pageHits[i]!);
+    if (taskHits[i]) recent.push(taskHits[i]!);
+  }
+
   return (
     <div>
       <PickerHead title={t.title} onBack={onBack} onClose={onClose} />
+      <Uploads />
       <input
         ref={file}
         type="file"
@@ -329,45 +312,84 @@ export function AttachPanel({
           for (const picked of Array.from(event.target.files ?? []))
             callbacks.onAddFile?.(picked);
           event.target.value = "";
-          onClose();
         }}
       />
-      <div role="menu" className="flex flex-col">
-        {callbacks.onAddFile ? (
-          <MenuRow
-            icon={<Paperclip aria-hidden="true" className={ic} />}
-            title={t.file}
-            hint={t.fileHint}
-            onClick={() => file.current?.click()}
-          />
-        ) : null}
-        {actions.addWebLink ? (
-          <MenuRow
-            icon={<Link2 aria-hidden="true" className={ic} />}
-            title={t.link}
-            hint={t.linkHint}
-            onClick={() => setView("link")}
-          />
-        ) : null}
-        {actions.linkPage ? (
-          <MenuRow
-            icon={<FileText aria-hidden="true" className={ic} />}
-            title={t.page}
-            hint={t.pageHint}
-            onClick={() => setView("page")}
-          />
-        ) : null}
-        {callbacks.onAddLink ? (
-          <MenuRow
-            icon={<SquareArrowOutUpRight aria-hidden="true" className={ic} />}
-            title={t.other}
-            hint={t.otherHint}
-            onClick={() => setView("other")}
-          />
-        ) : null}
-      </div>
-      {slots.cover ? (
-        <Hint className="mt-2 mr-2 mb-0.5 ml-2">{t.coverHint}</Hint>
+      {callbacks.onAddFile ? (
+        <div className="box-border rounded-[10px] border border-dashed border-line-strong p-3">
+          <div className="flex items-center gap-3">
+            <PanelBtn onClick={() => file.current?.click()}>
+              <Paperclip aria-hidden="true" className="size-4" />
+              {t.chooseFile}
+            </PanelBtn>
+            <span className="text-[13px] text-muted-foreground">{t.limit}</span>
+          </div>
+          <p className="m-0 mt-2.5 text-[12.5px] text-meta-foreground">{t.dropHint}</p>
+        </div>
+      ) : null}
+      <label className="mt-3 box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
+        <span className="sr-only">{t.smartLabel}</span>
+        {url ? (
+          <Link2 aria-hidden="true" className="size-4 shrink-0 text-primary" />
+        ) : (
+          <Search aria-hidden="true" className="size-4 shrink-0 text-meta-foreground" />
+        )}
+        <input
+          type="text"
+          autoFocus
+          data-picker-search=""
+          value={query}
+          placeholder={t.smartPlaceholder}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setFailed(false);
+          }}
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] text-foreground outline-none placeholder:text-meta-foreground"
+        />
+      </label>
+      {url ? (
+        <LinkRow key={url.href} url={url} onClose={onClose} />
+      ) : needle === "" ? (
+        recent.length > 0 ? (
+          <>
+            <Caption>{t.recent}</Caption>
+            {recent.map(row)}
+          </>
+        ) : null
+      ) : (
+        <>
+          {pageHits.length > 0 ? (
+            <>
+              <Caption>{t.pages}</Caption>
+              {pageHits.slice(0, 4).map(row)}
+            </>
+          ) : null}
+          {taskHits.length > 0 ? (
+            <>
+              <Caption>{t.tasks}</Caption>
+              {taskHits.slice(0, 4).map(row)}
+              <Hint className="mt-1 px-2.5">{t.related}</Hint>
+            </>
+          ) : null}
+          {pageHits.length === 0 && taskHits.length === 0 ? (
+            <p className="m-0 mt-3 flex items-center gap-2 px-1 text-[13.5px] text-muted-foreground">
+              <Search aria-hidden="true" className="size-4 shrink-0" />
+              {fillPopupCopy(t.noResults, { query: query.trim() })}
+            </p>
+          ) : null}
+        </>
+      )}
+      {pages.isError ? (
+        <Hint error className="mt-2 px-1">
+          {t.pageError}{" "}
+          <button type="button" className="underline" onClick={() => void pages.refetch()}>
+            {t.retry}
+          </button>
+        </Hint>
+      ) : null}
+      {failed ? (
+        <Hint error className="mt-2 px-1">
+          {t.failed}
+        </Hint>
       ) : null}
     </div>
   );

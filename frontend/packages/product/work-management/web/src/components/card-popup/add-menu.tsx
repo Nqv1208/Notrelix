@@ -399,7 +399,7 @@ export function AddMenu() {
       onOpenChange={(next) =>
         openPicker(next ? "add" : null, next ? null : undefined)
       }
-      width={picker === "link" ? 380 : picker === "add" ? 300 : 344}
+      width={picker === "add" ? 300 : picker === "subitem" ? 344 : 380}
       className={picker === "add" ? "p-0" : undefined}
       trigger={
         <PopoverTrigger asChild>

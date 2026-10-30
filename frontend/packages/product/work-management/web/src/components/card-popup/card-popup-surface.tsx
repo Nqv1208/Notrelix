@@ -59,6 +59,13 @@ export function CardPopupSurface({
   const fallbackCopy = useCardPopupCopy();
   const t = (model?.copy ?? fallbackCopy).shell;
   const ready = status === "ready" && model;
+  const canAttach = Boolean(
+    ready &&
+      model.mode === "view" &&
+      model.readOnly === null &&
+      model.capabilities.canEditFields &&
+      model.callbacks.onAddFile,
+  );
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -72,6 +79,23 @@ export function CardPopupSurface({
             (event.target as HTMLElement | null)?.closest?.("[data-popup-esc]")
           )
             event.preventDefault();
+        }}
+        // Files dropped or pasted anywhere on the card are attached, like "Chọn tệp" in the attach panel.
+        onDragOver={(event) => {
+          if (canAttach && event.dataTransfer.types.includes("Files"))
+            event.preventDefault();
+        }}
+        onDrop={(event) => {
+          if (!canAttach || event.dataTransfer.files.length === 0) return;
+          event.preventDefault();
+          for (const dropped of Array.from(event.dataTransfer.files))
+            model?.callbacks.onAddFile?.(dropped);
+        }}
+        onPaste={(event) => {
+          if (!canAttach || event.clipboardData.files.length === 0) return;
+          event.preventDefault();
+          for (const pasted of Array.from(event.clipboardData.files))
+            model?.callbacks.onAddFile?.(pasted);
         }}
         overlayClassName="bg-black/40 backdrop-blur-none"
         className={cn(
