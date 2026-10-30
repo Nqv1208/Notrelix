@@ -3854,6 +3854,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/checklist-items/{itemId}/assignee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Give a checklist item to a person, or to nobody */
+        put: operations["WorkManagement.Checklists.SetItemAssignee"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/checklist-items/{itemId}/due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set or clear the due time of a checklist item */
+        put: operations["WorkManagement.Checklists.SetItemDue"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/forms": {
         parameters: {
             query?: never;
@@ -6252,6 +6286,18 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemAssigneeRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            assigneeUserId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemDueRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: date-time */
+            dueAt?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistItemRequest": {
             /** Format: int64 */
@@ -17865,6 +17911,96 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.SetItemAssignee": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemAssigneeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.SetItemDue": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemDueRequest"];
             };
         };
         responses: {
