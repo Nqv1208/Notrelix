@@ -422,8 +422,10 @@ export type DocOverlay =
 /** A member's edit a stored change replaced, kept until they use or drop it. */
 export interface DocRecoveryView {
   readonly id: string;
-  /** The text the member had in the block (empty when they removed it). */
+  /** The text the member had in the block (empty when they removed it); a table lists its cells. */
   readonly text: string;
+  /** The block is a table: one block holds every cell, so edits to different cells conflict. */
+  readonly table?: boolean;
 }
 
 export interface DocPageCallbacks {

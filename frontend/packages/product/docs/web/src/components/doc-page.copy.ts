@@ -756,6 +756,8 @@ export const vi = {
   recovery: {
     title: "Khối này vừa được người khác sửa",
     body: "Tài liệu đang hiển thị bản mới nhất. Chỉnh sửa chưa lưu của bạn được giữ ở đây.",
+    bodyTable:
+      "Một bảng là một khối, nên hai người sửa ô khác nhau vẫn xung đột. Bảng đang hiển thị bản mới nhất; các ô bạn đã sửa được giữ ở đây.",
     yourEdit: "Chỉnh sửa chưa lưu của bạn",
     removed:
       "Bạn đã xoá khối này nhưng người khác vừa sửa nó, nên khối được giữ lại.",
@@ -1526,6 +1528,8 @@ export const en: DocPageCopy = {
   recovery: {
     title: "Someone else just changed this block",
     body: "The document shows the latest version. Your unsaved edit is kept here.",
+    bodyTable:
+      "A table is one block, so two people editing different cells still conflict. The table shows the latest version; your edited cells are kept here.",
     yourEdit: "Your unsaved edit",
     removed:
       "You removed this block, but someone else just changed it, so it was kept.",

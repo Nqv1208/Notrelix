@@ -96,7 +96,7 @@ import {
   useShowCommentAnchors,
 } from "../editor/use-comment-anchors";
 import { useDocRichEditor } from "../editor/use-doc-rich-editor";
-import { taskToken } from "./doc-page-text";
+import { draftRecoveryText, taskToken } from "./doc-page-text";
 
 interface CreateDocPageScreenDeps {
   api: DocsApiClient & DocsFileClient;
@@ -802,7 +802,8 @@ export function createDocPageScreen({
 
     const recoveryViews = recoveries.map((entry) => ({
       id: entry.id,
-      text: entry.draft ? plainTextOf(entry.draft.content) : "",
+      text: entry.draft ? draftRecoveryText(entry.draft) : "",
+      table: entry.draft?.type === "table",
     }));
     const dropRecovery = (id: string) =>
       setRecoveries((current) => current.filter((entry) => entry.id !== id));
@@ -1366,7 +1367,7 @@ export function createDocPageScreen({
         const text = recoveries.find((entry) => entry.id === id)?.draft;
         if (!text) return;
         void navigator.clipboard
-          ?.writeText(plainTextOf(text.content))
+          ?.writeText(draftRecoveryText(text))
           .then(() => setCopiedRecoveryId(id))
           .catch(() => undefined);
       },
