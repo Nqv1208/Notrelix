@@ -165,7 +165,7 @@ Products compared and what was taken:
 | UC-WSP-F10 | Provision members from an identity directory (SCIM) | F | System principal of Accounts | no | no | none | none | BLOCKED | Decision: system principal for provisioning and its permission. |
 | UC-WSP-G01 | Invite a person to the workspace by email | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Stable duplicate code; idempotency key; real e2e with a mail sink; design diff. |
 | UC-WSP-G02 | Invite with initial Team and Space entries | G | Owner, Admin | yes | no | Final-Members | none | IMPLEMENTING | No frontend field for entries. |
-| UC-WSP-G03 | List workspace invitations | G | Owner, Admin, Member | yes | yes | Final-Members | none | INTEGRATING | Raise the permission; pagination; real e2e. |
+| UC-WSP-G03 | List workspace invitations | G | Owner, Admin, Member | yes | yes | Final-Members | none | INTEGRATING | Permission fixed (`ViewMembers`). Pagination; real e2e; Member email visibility. |
 | UC-WSP-G04 | Change a pending invitation's role | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Expected version; real e2e. |
 | UC-WSP-G05 | Resend an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Cool-down; real e2e. |
 | UC-WSP-G06 | Revoke an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Real e2e. |
@@ -667,17 +667,17 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 
 ### UC-WSP-G03 List workspace invitations
 - Capability: G Invitation create
-- Actors and permission: Owner, Admin, Member (`ViewWorkspace`)
+- Actors and permission: Owner, Admin, Member (`ViewMembers`; a Guest gets 403)
 - Preconditions: Active membership.
 - Input: `workspaceId`.
 - Output: Rows: email, role, status (Pending, Accepted, Revoked, Expired, Declined), issuer, expiry, version. No token.
 - Main flow: 1. `GET /api/v1/workspaces/{id}/invitations`. 2. Handler lists.
-- No-op / rejection / concurrency / retry: Defect: `ViewWorkspace` lets a Guest list every invited email, while the product calls invitations sensitive (section 82); it needs `ViewMembers`. The read is unbounded.
+- No-op / rejection / concurrency / retry: Guest: 403 (`ViewMembers`, fixed; section 82 calls invitations sensitive). A Member still sees invited emails, because the member list's email masking is a handler role check the architecture tests forbid; hiding them needs a pipeline-level rule. The read is unbounded.
 - UI states: Loading, empty, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 25, 82; WGREQ025, WGREQ032.
 - Acceptance: Given a Guest, When they list invitations, Then 403. Given an Admin, Then rows without tokens.
-- Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests` · Real e2e none
-- State: INTEGRATING — Raise the permission; pagination; real e2e.
+- Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (Guest 403, Admin and Member list) · FE gated by `enabled: admin` in `members.tsx` · Real e2e none
+- State: INTEGRATING — Permission fixed. Pagination; real e2e; decide whether Members see invited emails.
 
 ### UC-WSP-G04 Change a pending invitation's role
 - Capability: G Invitation create
