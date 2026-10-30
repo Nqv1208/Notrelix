@@ -3164,6 +3164,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/boards/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the archived boards of a workspace that the caller may see */
+        get: operations["WorkManagement.Boards.ListArchived"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/boards/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the boards deleted in the last 30 days that the caller can restore */
+        get: operations["WorkManagement.Boards.ListDeleted"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}": {
         parameters: {
             query?: never;
@@ -3228,6 +3262,23 @@ export interface paths {
          * @description Entries (people and Teams, level, how it is held) are returned only to a board manager or a board member; any other reader of the board gets the counts only. The log and the Private impact are for board managers. An entry id is the person's user id or the Team's id. Email is shown only to a workspace Owner or Admin and only for non-Guest people.
          */
         get: operations["WorkManagement.Boards.GetSharing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/lifecycle-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count what archiving or deleting a board touches */
+        get: operations["WorkManagement.Boards.GetLifecycleImpact"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5940,6 +5991,10 @@ export interface components {
             userId?: string;
             role?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.CreateBoardInWorkspaceRequest": {
             title?: string | null;
             description?: string | null;
@@ -5959,6 +6014,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardMemberRoleRequest": {
             role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardRequest": {
             /** Format: int64 */
@@ -5971,6 +6028,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardVisibilityRequest": {
             visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistItemRequest": {
             title?: string | null;
@@ -7465,6 +7524,21 @@ export interface components {
             /** Format: int32 */
             openBlockerCount?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto": {
+            /** Format: uuid */
+            boardId?: string;
+            isArchived?: boolean;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            openItemCount?: number;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            /** Format: int32 */
+            viewCount?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto": {
             /** Format: uuid */
             userId?: string;
@@ -7518,6 +7592,8 @@ export interface components {
             entries?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto"][] | null;
             log?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingLogEntryDto"][] | null;
             privateImpact?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto"];
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto": {
             /** Format: uuid */
@@ -7615,6 +7691,25 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
             itemKeyPrefix?: string | null;
+            isArchived?: boolean;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            title?: string | null;
+            background?: string | null;
+            visibility?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+            itemKeyPrefix?: string | null;
+            /** Format: date-time */
+            retiredAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto": {
             /** Format: uuid */
@@ -15629,6 +15724,50 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Boards.ListArchived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.ListDeleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto"][];
+                };
+            };
+        };
+    };
     "WorkManagement.Boards.Get": {
         parameters: {
             query?: never;
@@ -15653,7 +15792,9 @@ export interface operations {
     };
     "WorkManagement.Boards.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -15803,6 +15944,28 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Boards.GetLifecycleImpact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.Boards.MakePrivate": {
         parameters: {
             query?: never;
@@ -15860,7 +16023,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15901,7 +16068,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15942,7 +16113,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16130,7 +16305,9 @@ export interface operations {
     };
     "WorkManagement.Boards.RemoveMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
