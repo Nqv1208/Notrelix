@@ -21,6 +21,13 @@ public static class MapChecklistEndpoints
         itemGroup.MapCreateChecklist();
         itemGroup.MapCopyChecklist();
 
+        var boardGroup = app
+            .MapGroup("/api/v1/boards/{boardId:guid}/checklists")
+            .WithTags("WorkManagement.Checklists")
+            .WithOpenApi();
+
+        boardGroup.MapListBoardChecklists();
+
         var clGroup = app
             .MapGroup("/api/v1/checklists/{checklistId:guid}")
             .WithTags("WorkManagement.Checklists")

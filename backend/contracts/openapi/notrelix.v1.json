@@ -15390,6 +15390,47 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/checklists": {
+      "get": {
+        "tags": [
+          "WorkManagement.Checklists",
+          "WorkManagement.Checklists"
+        ],
+        "summary": "List the checklists of a board's items, to copy one",
+        "operationId": "WorkManagement.Checklists.ListForBoard",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/checklists/{checklistId}": {
       "patch": {
         "tags": [
