@@ -38,6 +38,11 @@ export async function signIn(
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Email").fill(user.email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  // The password step replaces the email step once the address is identified;
+  // typing before then lands in the step being replaced.
+  await expect(
+    page.getByRole("heading", { name: "Enter your password" }),
+  ).toBeVisible();
   await page.locator('input[name="password"]').fill(user.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+/);

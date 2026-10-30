@@ -315,7 +315,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         foreach (var reader in new[] { admin, member })
         {
             using var provider = As(stack, reader);
-            (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Should().HaveCount(4);
+            ((await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Items).Should().HaveCount(4);
         }
     }
 

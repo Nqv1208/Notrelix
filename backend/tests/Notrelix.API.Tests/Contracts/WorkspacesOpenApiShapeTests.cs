@@ -21,7 +21,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Workspaces.GetAccountWorkspaces", "200", "WorkspaceDto[]")]
     [InlineData("Workspaces.Workspaces.ResolveSlug", "200", "WorkspaceDto")]
     [InlineData("Workspaces.Workspaces.CreateWorkspace", "201", "uuid")]
-    [InlineData("Workspaces.Members.ListMembers", "200", "WorkspaceMemberDto[]")]
+    [InlineData("Workspaces.Members.ListMembers", "200", "CursorPageOfWorkspaceMemberDto")]
     [InlineData("Workspaces.Members.GetMyMembership", "200", "WorkspaceMemberDto")]
     [InlineData("Workspaces.Settings.GetWorkspaceSecurityExt", "200", "WorkspaceSecurityExtDto")]
     [InlineData("Workspaces.Teams.GetWorkspaceTeamsExt", "200", "WorkspaceTeamsExtDto")]

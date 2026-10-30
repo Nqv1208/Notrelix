@@ -4472,7 +4472,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workspace members */
+        /**
+         * Get workspace members
+         * @description Cursor-paginated (default 50, max 200), oldest member first. Removed members are never listed. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Members.ListMembers"];
         put?: never;
         /** Invite a member to workspace */
@@ -6388,6 +6391,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkspaceMemberDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -19156,7 +19164,10 @@ export interface operations {
     };
     "Workspaces.Members.ListMembers": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19171,7 +19182,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkspaceMemberDto"];
                 };
             };
         };

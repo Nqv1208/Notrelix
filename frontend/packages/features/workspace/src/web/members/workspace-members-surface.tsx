@@ -125,7 +125,8 @@ function SectionError({
 }: {
   message: string;
   retry: string;
-  onRetry: () => void;
+  /** Absent when trying again cannot help (the read was refused). */
+  onRetry?: () => void;
 }) {
   return (
     <div
@@ -133,9 +134,11 @@ function SectionError({
       className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-panel px-4 py-3"
     >
       <p className="text-body text-muted-foreground">{message}</p>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        {retry}
-      </Button>
+      {onRetry ? (
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          {retry}
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -212,6 +215,11 @@ function MemberRow({
                 </Badge>
               ) : null}
             </span>
+            {member.jobTitle ? (
+              <span className="truncate text-metadata text-muted-foreground">
+                {member.jobTitle}
+              </span>
+            ) : null}
             {blockedReason ? (
               <span
                 id={reasonId}
@@ -570,16 +578,24 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
       {!admin && members.status === "ready" ? (
         <p className="flex items-center gap-2 rounded-md bg-info-subtle px-3 py-2 text-metadata text-info-subtle-foreground">
           <Info aria-hidden="true" className="size-4 shrink-0" />
-          {copy.readOnly}
+          {viewer.role === "guest" ? copy.guestOwnRowOnly : copy.readOnly}
         </p>
       ) : null}
       {members.status === "loading" ? (
         <RowsSkeleton label={copy.tabs.members} />
       ) : members.status === "error" ? (
         <SectionError
-          message={copy.error.members}
+          message={
+            members.reason === "forbidden"
+              ? copy.error.membersForbidden
+              : members.reason === "offline"
+                ? copy.error.membersOffline
+                : copy.error.members
+          }
           retry={copy.error.retry}
-          onRetry={props.onRetryMembers}
+          onRetry={
+            members.reason === "forbidden" ? undefined : props.onRetryMembers
+          }
         />
       ) : (
         <>
@@ -657,6 +673,11 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
               </table>
             </div>
           )}
+          {memberList.length <= 1 && !needle && viewer.role !== "guest" ? (
+            <p className="px-1 text-body text-muted-foreground">
+              {admin ? copy.onlyYouAdmin : copy.onlyYou}
+            </p>
+          ) : null}
         </>
       )}
     </div>

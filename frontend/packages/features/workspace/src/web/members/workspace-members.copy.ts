@@ -27,6 +27,10 @@ export const en = {
   },
   readOnly:
     "Only workspace admins and owners can change roles, suspend or remove members.",
+  guestOwnRowOnly:
+    "The member list is closed to guests. You see your own membership only.",
+  onlyYou: "You're the only member so far.",
+  onlyYouAdmin: "You're the only member so far. Invite people to work with.",
   filter: {
     label: "Filter members by name",
     placeholder: "Filter members…",
@@ -110,6 +114,10 @@ export const en = {
   },
   error: {
     members: "Members couldn't load. Your access is unchanged.",
+    membersForbidden:
+      "You can no longer see the member list. Ask a workspace admin if you need it.",
+    membersOffline:
+      "You're offline, so members couldn't load. Reconnect and try again.",
     invitations: "Invitations couldn't load.",
     retry: "Try again",
   },
@@ -170,6 +178,10 @@ export const vi: WorkspaceMembersCopy = {
   },
   readOnly:
     "Chỉ quản trị viên và chủ sở hữu mới đổi vai trò, tạm ngưng hoặc xóa thành viên được.",
+  guestOwnRowOnly:
+    "Danh sách thành viên không mở cho khách. Bạn chỉ thấy tư cách thành viên của mình.",
+  onlyYou: "Hiện chỉ có mình bạn.",
+  onlyYouAdmin: "Hiện chỉ có mình bạn. Hãy mời thêm người cùng làm việc.",
   filter: {
     label: "Lọc thành viên theo tên",
     placeholder: "Lọc thành viên…",
@@ -255,6 +267,10 @@ export const vi: WorkspaceMembersCopy = {
   error: {
     members:
       "Không tải được danh sách thành viên. Quyền truy cập của bạn không đổi.",
+    membersForbidden:
+      "Bạn không còn xem được danh sách thành viên. Hãy hỏi quản trị viên nếu bạn cần.",
+    membersOffline:
+      "Bạn đang ngoại tuyến nên chưa tải được thành viên. Hãy kết nối lại rồi thử lại.",
     invitations: "Không tải được lời mời.",
     retry: "Thử lại",
   },

@@ -401,8 +401,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<UpdateWorkspaceProfileCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ArchiveWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreWorkspaceCommand, Result>(services, Result.Success());
-            MockWorkspaceHandler<GetWorkspaceMembersQuery, Result<List<WorkspaceMemberDto>>>(services,
-                Result<List<WorkspaceMemberDto>>.Success(new List<WorkspaceMemberDto>()));
+            MockWorkspaceHandler<GetWorkspaceMembersQuery, Result<CursorPage<WorkspaceMemberDto>>>(services,
+                Result<CursorPage<WorkspaceMemberDto>>.Success(new CursorPage<WorkspaceMemberDto>([], null)));
             MockWorkspaceHandler<InviteMemberCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<UpdateMemberRoleCommand, Result>(services, Result.Success());

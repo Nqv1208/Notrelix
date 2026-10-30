@@ -53,12 +53,12 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
         var result = await new GetWorkspaceMembersQueryHandler(DbContextMock.Object, _actors.Object, _phones.Object, RequestContextMock.Object)
             .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None);
 
-        result.Data!.Select(m => (m.UserId, m.Status)).Should().BeEquivalentTo(new[]
+        result.Data!.Items.Select(m => (m.UserId, m.Status)).Should().BeEquivalentTo(new[]
         {
             (active.UserId, "Active"),
             (suspended.UserId, "Suspended"),
         });
-        result.Data.Should().NotContain(m => m.UserId == removed.UserId);
+        result.Data.Items.Should().NotContain(m => m.UserId == removed.UserId);
     }
 
     [Fact]

@@ -45,7 +45,28 @@ describe("ViewMembers is denied to a Guest (WG-DEBT-002), the own row stays read
 
   it("still lists members for a Member", async () => {
     const client = clientFor("member");
-    const list = await client.api.get<unknown[]>(base);
-    expect(list.length).toBeGreaterThan(1);
+    const page = await client.api.get<{
+      items: unknown[];
+      nextCursor: string | null;
+    }>(base);
+    expect(page.items.length).toBeGreaterThan(1);
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it("pages the member list by cursor, a limit at a time, each person once", async () => {
+    const client = clientFor("member");
+    const first = await client.api.get<{
+      items: { userId: string }[];
+      nextCursor: string | null;
+    }>(`${base}?limit=1`);
+    expect(first.items).toHaveLength(1);
+    expect(first.nextCursor).not.toBeNull();
+
+    const second = await client.api.get<{
+      items: { userId: string }[];
+      nextCursor: string | null;
+    }>(`${base}?limit=1&cursor=${first.nextCursor}`);
+    expect(second.items).toHaveLength(1);
+    expect(second.items[0]!.userId).not.toBe(first.items[0]!.userId);
   });
 });

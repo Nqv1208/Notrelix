@@ -389,6 +389,68 @@ describe("Producer adapters", () => {
     expect(members[0]!.membership).toBeUndefined();
   });
 
+  it("reads the member list a page at a time and joins the pages in order", async () => {
+    const api = {
+      get: vi
+        .fn()
+        .mockResolvedValueOnce({
+          items: [
+            { userId: "u1", name: "Ada", role: "Owner", jobTitle: "Founder" },
+            { userId: "u2", name: "Alan", role: "Member", jobTitle: "  " },
+          ],
+          nextCursor: "c1",
+        })
+        .mockResolvedValueOnce({
+          items: [{ userId: "u3", name: "Grace", role: "Guest" }],
+          nextCursor: null,
+        }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    const list = await createMembersService(api).getList("ws");
+
+    expect(api.get.mock.calls.map(([url]) => url)).toEqual([
+      "/workspaces/ws/members?limit=200",
+      "/workspaces/ws/members?limit=200&cursor=c1",
+    ]);
+    expect(list.map((member) => member.userId)).toEqual(["u1", "u2", "u3"]);
+    expect(list[0]!.jobTitle).toBe("Founder");
+    expect(list[1]!.jobTitle).toBeUndefined();
+  });
+
+  it("stops reading pages when a cursor never ends", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({
+        items: [{ userId: "u1", name: "Ada", role: "Owner" }],
+        nextCursor: "again",
+      }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    const list = await createMembersService(api).getList("ws");
+
+    expect(api.get).toHaveBeenCalledTimes(100);
+    expect(list).toHaveLength(1);
+  });
+
+  it("reads a list that has no rows as empty", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({ items: null, nextCursor: null }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    expect(await createMembersService(api).getList("ws")).toEqual([]);
+  });
+
   it("changes a role with PATCH and the producer enum value", async () => {
     const api = {
       get: vi.fn(),

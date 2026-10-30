@@ -92,6 +92,9 @@ function memberWire(store: MockStore, m: MockMembershipRecord) {
   };
 }
 
+const MEMBERS_DEFAULT_LIMIT = 50;
+const MEMBERS_MAX_LIMIT = 200;
+
 /** `ManageMembers` is held by owners and admins. */
 function canManageMembers(store: MockStore, workspaceId: string): boolean {
   const role = store.getCurrentMemberRole(workspaceId);
@@ -416,8 +419,9 @@ export const workspaceOperations = [
 
   // ─── Members (Workspaces.Members.*, WX-MEM-001) ────────────────────────────
   // Shapes mirror the producer: `WorkspaceMemberDto` (userId, name, avatar,
-  // role and status as enum names, joinedAt; removed members are not listed)
-  // and ProblemDetails failures.
+  // role and status as enum names, joinedAt; removed members are not listed),
+  // the list as a cursor page (`items`, `nextCursor`), and ProblemDetails
+  // failures.
 
   defineMockOperation<{ id: string }, never, unknown>({
     id: "workspace.members.list",
@@ -427,14 +431,30 @@ export const workspaceOperations = [
     },
     method: "GET",
     route: "/workspaces/:id/members",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!store.isCurrentMemberOf(params.id)) return notFound();
       // `ViewMembers` is denied to a Guest (WG-DEBT-002): the Guest reads only
       // their own row through `members/me`.
       if (store.getCurrentMemberRole(params.id) === "guest") return forbidden();
-      return ok(
-        store.getWorkspaceMembers(params.id).map((m) => memberWire(store, m)),
+      // A cursor page like the producer's (LD-06): default 50, at most 200.
+      const requested = Number(
+        request.searchParams.get("limit") ?? MEMBERS_DEFAULT_LIMIT,
       );
+      const limit = Number.isFinite(requested)
+        ? Math.min(MEMBERS_MAX_LIMIT, Math.max(1, Math.floor(requested)))
+        : MEMBERS_DEFAULT_LIMIT;
+      const cursor = request.searchParams.get("cursor");
+      const start = cursor ? Math.max(0, Number(cursor) || 0) : 0;
+      const all = store.getWorkspaceMembers(params.id);
+      const items = all
+        .slice(start, start + limit)
+        .map((m) => memberWire(store, m));
+      const next = start + items.length;
+      return ok({
+        items,
+        nextCursor: next < all.length ? String(next) : null,
+        hasNextPage: next < all.length,
+      });
     },
   }),
 

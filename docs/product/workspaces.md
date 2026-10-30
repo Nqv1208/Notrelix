@@ -172,6 +172,11 @@ optimistic concurrency, an unchanged title is a no-op, a removed member's profil
 title is never visible outside the Workspace. It does not change role, status or any permission. The member
 list and the Team member list expose it.
 
+The member list (`GET /workspaces/{workspaceId}/members`) pages by cursor: oldest member first, the user id
+breaking a tie, 50 people a page by default and at most 200. A removed member is never listed and never counts
+toward a page. A caller who is not an active member, and a Guest (section 82, `ViewMembers`), is refused; a Guest
+reads only their own row through `GET /workspaces/{workspaceId}/members/me`, which every active member may read.
+
 # 12. WSP-005 — Workspace membership is a security boundary
 
 A principal must not read/write a Workspace-scoped resource merely because:

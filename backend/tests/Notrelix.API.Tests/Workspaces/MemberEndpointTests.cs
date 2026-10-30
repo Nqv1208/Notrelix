@@ -32,6 +32,16 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
+    [Theory]
+    [InlineData("limit=0")]
+    [InlineData("limit=201")]
+    [InlineData("cursor=not-a-cursor")]
+    public async Task ListMembers_WithAPageThatIsNotValid_ReturnsBadRequest(string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/members?{query}");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Fact]
     public async Task InviteMember_WithValidData_ReturnsSuccess()
     {

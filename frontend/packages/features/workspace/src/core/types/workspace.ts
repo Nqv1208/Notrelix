@@ -29,6 +29,8 @@ export interface WorkspaceMember {
   avatarUrl?: string;
   /** ISO date-time the member joined. */
   joinedAt?: string;
+  /** The person's title in this workspace, when they or an admin set one. */
+  jobTitle?: string;
   membership?: WorkspaceMembershipStatus;
   /**
    * @deprecated Presence fields of the retired mock shape; read only by the

@@ -1,6 +1,7 @@
 import {
   resolveApiAssetUrl,
   type OperationRequestBody,
+  type OperationResponse,
 } from "@notrelix/contracts";
 import { initialsFor } from "../model/navigation";
 import { parseWorkspaceRole, roleWireValue } from "../model/members";
@@ -12,10 +13,10 @@ import type {
 import type { WorkspaceApiClient } from "./workspace.service";
 
 /**
- * `Workspaces.Members.ListMembers` returns `WorkspaceMemberDto[]` (`userId`,
- * `name`, `avatar`, `role` and `status` as enum names, `joinedAt`). Removed
- * members are not listed by the producer; the adapter still drops rows without
- * an id or a known role, and any row marked removed.
+ * `Workspaces.Members.ListMembers` returns a cursor page of `WorkspaceMemberDto`
+ * (`userId`, `name`, `avatar`, `role` and `status` as enum names, `joinedAt`,
+ * `jobTitle`). Removed members are not listed by the producer; the adapter still
+ * drops rows without an id or a known role, and any row marked removed.
  */
 interface MemberWire {
   readonly userId?: unknown;
@@ -26,6 +27,7 @@ interface MemberWire {
   readonly role?: unknown;
   readonly joinedAt?: unknown;
   readonly status?: unknown;
+  readonly jobTitle?: unknown;
 }
 
 function parseMembership(
@@ -72,6 +74,10 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
       role,
       avatarUrl: resolveApiAssetUrl(avatar) ?? undefined,
       joinedAt: typeof raw.joinedAt === "string" ? raw.joinedAt : undefined,
+      jobTitle:
+        typeof raw.jobTitle === "string" && raw.jobTitle.trim()
+          ? raw.jobTitle
+          : undefined,
       membership: parseMembership(raw.status),
       initials: initialsFor(name),
     });
@@ -82,6 +88,9 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
 type UpdateRoleBody =
   OperationRequestBody<"Workspaces.Members.UpdateMemberRole">;
 
+/** `Workspaces.Members.ListMembers`: `items` and `nextCursor`. */
+type MembersPageDto = OperationResponse<"Workspaces.Members.ListMembers", 200>;
+
 /**
  * `Workspaces.Members.GetMyMembership` returns one `WorkspaceMemberDto`: the
  * caller's own row, readable by every member including a Guest.
@@ -90,12 +99,49 @@ export function parseMyMembership(payload: unknown): WorkspaceMember | null {
   return parseMembers([payload])[0] ?? null;
 }
 
+/** The most the producer returns per page. */
+const MEMBERS_PAGE_SIZE = 200;
+/** A guard against a cursor that never ends: 100 pages is 20,000 people. */
+const MAX_MEMBER_PAGES = 100;
+
+/** One page of `Workspaces.Members.ListMembers`: the rows and where the next page starts. */
+function parseMembersPage(payload: unknown): {
+  readonly items: readonly unknown[];
+  readonly nextCursor: string | null;
+} {
+  const page = (payload ?? {}) as Partial<MembersPageDto>;
+  return {
+    items: Array.isArray(page.items) ? page.items : [],
+    nextCursor:
+      typeof page.nextCursor === "string" && page.nextCursor
+        ? page.nextCursor
+        : null,
+  };
+}
+
 /** Adapter for `Workspaces.Members.*` (paths follow the producer). */
 export function createMembersService(api: WorkspaceApiClient) {
   const base = (workspaceId: string) => `/workspaces/${workspaceId}/members`;
   return {
+    /**
+     * Everyone in the workspace, read a page at a time: the shell, the Board
+     * share dialog and the Space and Team pages resolve names from the whole
+     * roster, so the pages are joined here and each request stays bounded.
+     */
     async getList(workspaceId: string): Promise<WorkspaceMember[]> {
-      return parseMembers(await api.get<unknown>(base(workspaceId)));
+      const rows: unknown[] = [];
+      let cursor: string | null = null;
+      for (let pages = 0; pages < MAX_MEMBER_PAGES; pages += 1) {
+        const query = new URLSearchParams({ limit: String(MEMBERS_PAGE_SIZE) });
+        if (cursor) query.set("cursor", cursor);
+        const page = parseMembersPage(
+          await api.get<unknown>(`${base(workspaceId)}?${query}`),
+        );
+        rows.push(...page.items);
+        cursor = page.nextCursor;
+        if (!cursor) break;
+      }
+      return parseMembers(rows);
     },
 
     /** GET …/members/me: the caller's own row; the only member read a Guest may make. */
