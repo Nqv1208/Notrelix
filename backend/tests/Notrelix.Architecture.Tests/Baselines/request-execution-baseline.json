@@ -4090,7 +4090,7 @@
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
     "requiresFeature": false,
-    "expectedVersion": false,
+    "expectedVersion": true,
     "idempotent": true,
     "realtime": false,
     "authorizedCache": false,

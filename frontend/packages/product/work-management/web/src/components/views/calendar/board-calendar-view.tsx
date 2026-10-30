@@ -504,7 +504,6 @@ export function BoardCalendarView({
           onMoveToGroup={sheet.onMoveToGroup}
           onUpdateFieldValue={sheet.onUpdateFieldValue}
           onDuplicate={sheet.onDuplicate}
-          onArchive={sheet.onArchive}
         />
       ) : null}
     </div>

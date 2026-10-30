@@ -122,7 +122,7 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
                     break;
 
                 case BulkBoardItemOperations.Archive:
-                    Require(await _archive.Handle(new ArchiveBoardItemCommand(id), ct));
+                    Require(await _archive.Handle(new ArchiveBoardItemCommand(id, 0), ct));
                     break;
 
                 case BulkBoardItemOperations.SetPriority:

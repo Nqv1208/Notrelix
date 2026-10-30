@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Notrelix.API.Tests.Contracts;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup;
 using Notrelix.Domain.SharedKernel;
 
@@ -60,6 +61,30 @@ public class WorkMutationTransportRegressionTests : IClassFixture<NotrelixApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         recorder.Received.Should().ContainSingle().Which.ExpectedVersion.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task ArchiveBoardItem_CarriesTheCallersExpectedVersion()
+    {
+        var recorder = new Recorder<ArchiveBoardItemCommand>();
+        var client = CreateClient(recorder);
+
+        var response = await client.PostAsync($"/api/v1/board-items/{Guid.NewGuid()}/archive", Json(new { ExpectedVersion = 6 }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        recorder.Received.Should().ContainSingle().Which.ExpectedVersion.Should().Be(6);
+    }
+
+    [Fact]
+    public async Task ArchiveBoardItem_WithoutExpectedVersion_IsRejectedBeforeTheHandler()
+    {
+        var recorder = new Recorder<ArchiveBoardItemCommand>();
+        var client = CreateClient(recorder);
+
+        var response = await client.PostAsync($"/api/v1/board-items/{Guid.NewGuid()}/archive", Json(new { }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        recorder.Received.Should().BeEmpty();
     }
 
     [Fact]

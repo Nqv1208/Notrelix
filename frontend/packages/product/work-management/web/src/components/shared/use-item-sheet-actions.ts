@@ -1,6 +1,5 @@
 import { toast } from "sonner";
 import {
-  useArchiveCard,
   useBoardKanban,
   useDuplicateCard,
 } from "@notrelix/work-management-state";
@@ -31,7 +30,6 @@ export function useItemSheetActions({
 }) {
   const laneCopy = useKanbanLaneCopy();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
-  const archiveCard = useArchiveCard(boardId, workspaceId);
 
   const onUpdateFieldValue = (payload: UpdateFieldValueInput) => {
     if (
@@ -78,6 +76,5 @@ export function useItemSheetActions({
     onMoveToGroup,
     onCopyLink,
     onDuplicate: (cardId: string) => duplicateCard.mutate(cardId),
-    onArchive: (cardId: string) => archiveCard.mutate(cardId),
   };
 }

@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 
@@ -17,10 +18,11 @@ public static class ArchiveBoardItemEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid itemId,
+        ArchiveBoardItemRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ArchiveBoardItemCommand(itemId), cancellationToken);
+        var result = await sender.Send(new ArchiveBoardItemCommand(itemId, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

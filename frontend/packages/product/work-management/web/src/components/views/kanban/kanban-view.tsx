@@ -30,7 +30,6 @@ import {
   useItemLinks,
   usePeopleDirectory,
   useAddFieldOption,
-  useArchiveCard,
   useCreateCardUpdate,
   useDeleteCardUpdate,
   useToggleCommentReaction,
@@ -294,15 +293,6 @@ export function KanbanView({
     },
   });
   const updateCardDetails = useUpdateCard(boardId, workspaceId);
-  const archiveCard = useArchiveCard(boardId, workspaceId, {
-    onError: (_error, cardId) =>
-      toast.error(
-        fillCopy(laneCopyRef.current.archiveFailed, {
-          title: writeOrigins.current.get(cardId)?.title ?? "",
-        }),
-        { id: `kanban-write-${cardId}` },
-      ),
-  });
   // Adding a lane and renaming or recolouring one write an option of the field
   // the board is grouped by; a failure puts the lane back and says so.
   const addOption = useAddFieldOption(boardId, workspaceId, {
@@ -701,12 +691,7 @@ export function KanbanView({
         onDuplicate: capabilities.canCreateCard
           ? removal.requestDuplicate
           : undefined,
-        onArchive: capabilities.canDelete
-          ? (cardId) => {
-              noteOrigin(cardId);
-              archiveCard.mutate(cardId);
-            }
-          : undefined,
+        onArchive: capabilities.canDelete ? removal.requestArchive : undefined,
         onDelete: capabilities.canDelete ? removal.requestDelete : undefined,
         onMoveToBoard: capabilities.canMoveCard
           ? removal.requestMove
@@ -980,10 +965,6 @@ export function KanbanView({
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
           onDuplicate={removal.requestDuplicate}
-          onArchive={(cardId) => {
-            noteOrigin(cardId);
-            archiveCard.mutate(cardId);
-          }}
         />
       ) : null}
       {removal.dialogs}
@@ -1008,7 +989,6 @@ export interface SelectedItemProps {
   onMoveToGroup: (cardId: string, groupId: string) => void;
   onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
   onDuplicate: (cardId: string) => void;
-  onArchive: (cardId: string) => void;
 }
 
 /**
@@ -1073,7 +1053,6 @@ function KanbanSelectedItemReady({
   onOpenFullPage,
   onMoveToGroup,
   onUpdateFieldValue,
-  onArchive,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
@@ -1182,10 +1161,7 @@ function KanbanSelectedItemReady({
               ),
           ...extras.callbacks,
           onDuplicate: removal.requestDuplicate,
-          onArchive: (cardId) => {
-            onArchive(cardId);
-            onClose();
-          },
+          onArchive: removal.requestArchive,
           onUnarchive: removal.unarchiveItem,
           onComplete: removal.completeItem,
           onReopen: removal.reopenItem,

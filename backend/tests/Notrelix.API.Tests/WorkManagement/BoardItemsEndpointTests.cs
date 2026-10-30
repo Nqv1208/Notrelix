@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Notrelix.API.Tests.Contracts;
@@ -54,7 +55,7 @@ public class BoardItemsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveItem_ReturnsNoContent()
     {
-        var response = await _client.PostAsync($"/api/v1/board-items/{ItemId}/archive", null);
+        var response = await _client.PostAsJsonAsync($"/api/v1/board-items/{ItemId}/archive", new { ExpectedVersion = 1 });
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

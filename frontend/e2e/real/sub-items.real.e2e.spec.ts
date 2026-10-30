@@ -119,8 +119,16 @@ test("a member adds sub-items on the item page, a sub-item has none of its own, 
   ).not.toContain(first.id);
 
   // Archiving the parent archives its sub-items; restoring brings them back.
+  const parentRead = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${parentId}`,
+  );
   expect(
-    (await apiWrite(page, "POST", `/board-items/${parentId}/archive`)).status,
+    (
+      await apiWrite(page, "POST", `/board-items/${parentId}/archive`, {
+        expectedVersion: parentRead.version,
+      })
+    ).status,
   ).toBeLessThan(300);
   children = await apiRead<Children>(
     page,
