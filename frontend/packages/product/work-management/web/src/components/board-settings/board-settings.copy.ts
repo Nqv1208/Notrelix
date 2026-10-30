@@ -368,7 +368,8 @@ export const en = {
     makeDefault: "Make default",
     copyName: "{{name}} (copy)",
     deleteConfirm: "Delete the view “{{name}}”? No item is deleted.",
-    deleteDefault: "The default view cannot be deleted",
+    deleteDefault: "The only shared view cannot be deleted",
+    nextDefault: "The default view becomes",
     brokenTitle: "This view is empty because its date field was archived.",
     brokenBody:
       "“{{field}}” was archived on {{date}} by {{name}}. Whoever opens the tab {{view}} sees this notice instead of an empty calendar.",
@@ -965,7 +966,8 @@ export const vi: BoardSettingsCopy = {
     makeDefault: "Đặt làm mặc định",
     copyName: "{{name}} (bản sao)",
     deleteConfirm: 'Xoá chế độ xem "{{name}}"? Không việc nào bị xoá.',
-    deleteDefault: "Không xoá được chế độ xem mặc định",
+    deleteDefault: "Không xoá được chế độ xem chung duy nhất",
+    nextDefault: "Chế độ xem mặc định sẽ là",
     brokenTitle:
       "Chế độ xem này đang trống vì trường ngày của nó đã bị lưu trữ.",
     brokenBody:

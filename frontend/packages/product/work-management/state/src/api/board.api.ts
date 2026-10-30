@@ -111,24 +111,29 @@ export function createBoardApi(client: NotrelixClient) {
       return mapSavedView(view);
     },
 
+    /** Every write on a saved view names the version the caller saw; a stale one changes nothing (409). */
     async updateSavedViewConfig(
       boardId: string,
       viewId: string,
       viewConfig: ViewConfig,
-    ): Promise<void> {
-      await api.patch<unknown>(endpoints.boardViews.view(boardId, viewId), {
-        configJson: JSON.stringify(viewConfig),
-      });
+      expectedVersion: number,
+    ): Promise<{ version: number }> {
+      const view = await api.patch<BoardViewDtoApi>(
+        endpoints.boardViews.view(boardId, viewId),
+        { configJson: JSON.stringify(viewConfig), expectedVersion },
+      );
+      return { version: view?.version ?? expectedVersion };
     },
 
     async renameSavedView(
       boardId: string,
       viewId: string,
       name: string,
+      expectedVersion: number,
     ): Promise<void> {
       await api.patch<void>(
         `${endpoints.boardViews.view(boardId, viewId)}/rename`,
-        { name },
+        { name, expectedVersion },
       );
     },
 
@@ -136,22 +141,42 @@ export function createBoardApi(client: NotrelixClient) {
       boardId: string,
       viewId: string,
       visibility: "board" | "me",
+      expectedVersion: number,
     ): Promise<void> {
       await api.patch<void>(
         `${endpoints.boardViews.view(boardId, viewId)}/visibility`,
-        { visibility: visibility === "me" ? "Private" : "Board" },
+        {
+          visibility: visibility === "me" ? "Private" : "Board",
+          expectedVersion,
+        },
       );
     },
 
-    async setDefaultSavedView(boardId: string, viewId: string): Promise<void> {
+    async setDefaultSavedView(
+      boardId: string,
+      viewId: string,
+      expectedVersion: number,
+    ): Promise<void> {
       await api.post<void>(
         `${endpoints.boardViews.view(boardId, viewId)}/set-default`,
-        {},
+        { expectedVersion },
       );
     },
 
-    async deleteSavedView(boardId: string, viewId: string): Promise<void> {
-      await api.delete<void>(endpoints.boardViews.view(boardId, viewId));
+    /** Deleting the default view hands the default to `newDefaultViewId` (else the oldest shared view). */
+    async deleteSavedView(
+      boardId: string,
+      viewId: string,
+      expectedVersion: number,
+      newDefaultViewId?: string,
+    ): Promise<void> {
+      const query = new URLSearchParams({
+        expectedVersion: String(expectedVersion),
+      });
+      if (newDefaultViewId) query.set("newDefaultViewId", newDefaultViewId);
+      await api.delete<void>(
+        `${endpoints.boardViews.view(boardId, viewId)}?${query.toString()}`,
+      );
     },
   };
 }

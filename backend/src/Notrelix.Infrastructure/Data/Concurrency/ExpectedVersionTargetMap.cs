@@ -24,6 +24,15 @@ using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Approvals;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RenameBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetBoardViewVisibility;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDefaultView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.ArchiveBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UnarchiveBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RestoreBoardView;
+using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Forms;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest;
@@ -142,6 +151,7 @@ public sealed class ExpectedVersionTargetMap
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string BoardGroupKind = "work-management.board-group";
+    private const string BoardViewKind = "work-management.board-view";
     private const string BoardItemKind = "work-management.board-item";
     private const string ChecklistKind = "work-management.checklist";
     private const string ChecklistItemKind = "work-management.checklist-item";
@@ -193,6 +203,14 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(ArchiveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(UnarchiveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(RenameBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(UpdateBoardViewConfigCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(SetBoardViewVisibilityCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(SetDefaultViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(DeleteBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(ArchiveBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(UnarchiveBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(RestoreBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
         [typeof(UpdateBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ArchiveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(MoveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),

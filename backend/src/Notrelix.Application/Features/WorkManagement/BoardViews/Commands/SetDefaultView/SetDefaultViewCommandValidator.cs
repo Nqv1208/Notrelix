@@ -4,6 +4,7 @@ public class SetDefaultViewCommandValidator : AbstractValidator<SetDefaultViewCo
 {
     public SetDefaultViewCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.ViewId).NotEmpty();
     }

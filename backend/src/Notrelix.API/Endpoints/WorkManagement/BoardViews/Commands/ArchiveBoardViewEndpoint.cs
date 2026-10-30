@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.BoardViews.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.ArchiveBoardView;
 
@@ -18,10 +19,11 @@ public static class ArchiveBoardViewEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
+        ArchiveBoardViewRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ArchiveBoardViewCommand(boardId, viewId), cancellationToken);
+        var result = await sender.Send(new ArchiveBoardViewCommand(boardId, viewId, body.ExpectedVersion, body.NewDefaultViewId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

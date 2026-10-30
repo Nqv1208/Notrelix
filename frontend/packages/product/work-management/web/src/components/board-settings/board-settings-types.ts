@@ -143,7 +143,11 @@ export interface BoardSettingsActions {
   duplicateView(viewId: string): Promise<BoardSettingsWriteResult>;
   /** The tab a board opens on. */
   setDefaultView(viewId: string): Promise<BoardSettingsWriteResult>;
-  deleteView(viewId: string): Promise<BoardSettingsWriteResult>;
+  /** Deleting the default view names the view that becomes the default. */
+  deleteView(
+    viewId: string,
+    newDefaultViewId?: string,
+  ): Promise<BoardSettingsWriteResult>;
   createGroup(name: string): Promise<BoardSettingsWriteResult>;
   reorderGroups(ids: readonly string[]): Promise<BoardSettingsWriteResult>;
   updateGroup(

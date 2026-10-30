@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.ArchiveBoardView;
 
 [IdempotencyOperation("work-management.board-views.archive-board-view.v1")]
-public record ArchiveBoardViewCommand(Guid BoardId, Guid ViewId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ArchiveBoardViewCommand(Guid BoardId, Guid ViewId, long ExpectedVersion, Guid? NewDefaultViewId = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
@@ -33,7 +33,10 @@ public class ArchiveBoardViewCommandHandler : IRequestHandler<ArchiveBoardViewCo
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
         BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
-        view.Archive(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        var now = _dateTimeProvider.UtcNow;
+        if (!view.IsArchived)
+            await BoardViewDefaults.HandOverAsync(_context, view, request.NewDefaultViewId, _currentUser.UserId, now, ct);
+        view.Archive(_currentUser.UserId, now);
         return Result.Success();
     }
 }

@@ -4,8 +4,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDefaultView;
 
 [IdempotencyOperation("work-management.board-views.set-default-view.v1")]
-public record SetDefaultViewCommand(Guid BoardId, Guid ViewId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record SetDefaultViewCommand(Guid BoardId, Guid ViewId, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     // Choosing the default view is a view change (Editor), not Board management.
     public PermissionAction Action => PermissionAction.UpdateBoardView;

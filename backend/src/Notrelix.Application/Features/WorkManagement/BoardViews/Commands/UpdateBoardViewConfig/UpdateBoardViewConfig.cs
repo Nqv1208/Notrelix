@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.Updat
 public record UpdateBoardViewConfigCommand(
     Guid BoardId,
     Guid ViewId,
-    string ConfigJson) : ICommand<BoardViewDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    string ConfigJson,
+    long ExpectedVersion) : ICommand<BoardViewDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);

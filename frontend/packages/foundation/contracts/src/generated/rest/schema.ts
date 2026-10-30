@@ -5961,6 +5961,7 @@ export interface components {
             filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
             sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
             group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
+            criteria?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest": {
             filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
@@ -5970,6 +5971,16 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceSortsRequest": {
             sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.ArchiveBoardViewRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            newDefaultViewId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.CreateBoardViewRequest": {
             name?: string | null;
@@ -5981,6 +5992,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.RenameBoardViewRequest": {
             name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.SaveBoardViewRequest": {
             viewMode?: string | null;
@@ -5989,9 +6002,13 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.SetBoardViewVisibilityRequest": {
             visibility?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.UpdateBoardViewConfigRequest": {
             configJson?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.AddBoardMemberRequest": {
             /** Format: uuid */
@@ -16550,7 +16567,10 @@ export interface operations {
     };
     "WorkManagement.BoardViews.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+                newDefaultViewId?: string;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -16649,7 +16669,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.ArchiveBoardViewRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16691,7 +16715,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16733,7 +16761,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16821,7 +16853,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

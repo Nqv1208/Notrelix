@@ -219,6 +219,7 @@ export function mapSettingsView(
   const sort = config.sortBy[0];
   return {
     id: view.id,
+    version: view.version,
     name: view.name,
     kind: view.viewMode,
     summary: [
@@ -328,6 +329,19 @@ function movedId(
     return null;
   }
   return null;
+}
+
+function viewOf(s: BoardSettingsDto, viewId: string) {
+  const view = s.views.find((entry) => entry.id === viewId);
+  if (!view) throw new Error(`Unknown view ${viewId}`);
+  return view;
+}
+
+/** The version of the view the page read; every write on a view names it. */
+function viewVersion(s: BoardSettingsDto, viewId: string): number {
+  const version = viewOf(s, viewId).version;
+  if (!version) throw new Error(`The version of view ${viewId} is unknown`);
+  return version;
 }
 
 export function createBoardSettingsApi(client: NotrelixClient) {
@@ -584,19 +598,39 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       viewId: string,
       changes: BoardSettingsViewPatch,
     ) => {
-      if (changes.name !== undefined)
-        await boardApi.renameSavedView(s.boardId, viewId, changes.name);
+      // A write bumps the view's version: the second one names the next.
+      let version = viewVersion(s, viewId);
+      if (changes.name !== undefined) {
+        await boardApi.renameSavedView(
+          s.boardId,
+          viewId,
+          changes.name,
+          version,
+        );
+        if (changes.name.trim() !== viewOf(s, viewId).name) version += 1;
+      }
       if (changes.visibility !== undefined)
         await boardApi.setSavedViewVisibility(
           s.boardId,
           viewId,
           changes.visibility,
+          version,
         );
     },
     setDefaultView: (s: BoardSettingsDto, viewId: string) =>
-      boardApi.setDefaultSavedView(s.boardId, viewId),
-    deleteView: (s: BoardSettingsDto, viewId: string) =>
-      boardApi.deleteSavedView(s.boardId, viewId),
+      boardApi.setDefaultSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    /** The default view cannot leave without a next one: the server takes `newDefaultViewId`, else the oldest shared view. */
+    deleteView: (
+      s: BoardSettingsDto,
+      viewId: string,
+      newDefaultViewId?: string,
+    ) =>
+      boardApi.deleteSavedView(
+        s.boardId,
+        viewId,
+        viewVersion(s, viewId),
+        newDefaultViewId,
+      ),
 
     createGroup: (s: BoardSettingsDto, name: string) =>
       api.post<unknown>(

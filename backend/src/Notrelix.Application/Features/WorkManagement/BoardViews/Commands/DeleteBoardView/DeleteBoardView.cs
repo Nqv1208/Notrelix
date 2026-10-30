@@ -4,8 +4,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
 
 [IdempotencyOperation("work-management.board-views.delete-board-view.v1")]
-public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId, long ExpectedVersion, Guid? NewDefaultViewId = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
@@ -37,6 +37,7 @@ public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewComm
 
         BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         var now = _dateTimeProvider.UtcNow;
+        await BoardViewDefaults.HandOverAsync(_context, view, request.NewDefaultViewId, _currentUser.UserId, now, ct);
         view.Delete(_currentUser.UserId, now);
         return Result.Success();
     }

@@ -122,6 +122,8 @@ export interface BoardSettingsArchivedFieldDto {
 
 export interface BoardSettingsViewDto {
   readonly id: string;
+  /** Version of the view, sent back by a write on it. */
+  readonly version?: number;
   readonly name: string;
   readonly kind: "table" | "kanban" | "calendar" | "timeline";
   readonly summary: string;

@@ -16,6 +16,11 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
     public IReadOnlyCollection<SortRule> SortRules => _sortRules.AsReadOnly();
     public GroupRule? GroupRule { get; private set; }
 
+    /// <summary>The personal view state as opaque versioned JSON (compound filter, sort, group, swimlane); null = none.</summary>
+    public string? Criteria { get; private set; }
+
+    public const int MaxCriteriaLength = 8192;
+
     private BoardViewUserPreference() : base() { }
 
     public static BoardViewUserPreference Create(
@@ -69,6 +74,27 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
         var pending = PrepareAuditUpdate(UserId, updatedAt);
         _filterRules.Clear();
         _filterRules.AddRange(normalizedRules);
+        ApplyAuditUpdate(pending);
+
+        RaiseDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
+            AccountId,
+            WorkspaceId,
+            BoardId,
+            ViewId,
+            UserId,
+            Id,
+            updatedAt));
+    }
+
+    /// <summary>Replaces the opaque criteria; null or blank clears it. Size and JSON shape are validated by the Application boundary (MaxCriteriaLength).</summary>
+    public void ApplyCriteria(string? criteria, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        var normalized = string.IsNullOrWhiteSpace(criteria) ? null : criteria;
+        if (normalized == Criteria) return;
+
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
+        Criteria = normalized;
         ApplyAuditUpdate(pending);
 
         RaiseDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(

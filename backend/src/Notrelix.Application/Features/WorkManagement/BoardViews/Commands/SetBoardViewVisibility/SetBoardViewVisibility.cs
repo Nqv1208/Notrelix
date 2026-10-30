@@ -8,8 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetBo
 /// sees a view, so another member's private view is not found and a Board view someone else made is refused.
 /// </summary>
 [IdempotencyOperation("work-management.board-views.set-board-view-visibility.v1")]
-public record SetBoardViewVisibilityCommand(Guid BoardId, Guid ViewId, string Visibility)
-    : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+public record SetBoardViewVisibilityCommand(Guid BoardId, Guid ViewId, string Visibility, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
