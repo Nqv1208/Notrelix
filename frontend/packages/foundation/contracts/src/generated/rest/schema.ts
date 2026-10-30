@@ -1377,7 +1377,7 @@ export interface paths {
         };
         /**
          * Complete OAuth login callback
-         * @description Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.
+         * @description Handles the OAuth provider callback, validates state, exchanges code, checks the provider ID token, and sets auth cookies. Every failure redirects to the sign-in page with one normalized error code: identity.oauth.failed, state-invalid, denied, email-unverified, email-in-use, mfa-required or provider-unavailable.
          */
         get: operations["Identity.Auth.OAuth.Callback"];
         put?: never;

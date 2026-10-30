@@ -18,7 +18,7 @@ public sealed class StartOAuthLoginCommandHandler
     : IRequestHandler<StartOAuthLoginCommand, Result<OAuthLoginStartResult>>
 {
     /// <summary>The provider is unknown, disabled or not configured: no redirect to it is made.</summary>
-    public const string ProviderUnavailableCode = "identity.oauth.provider-unavailable";
+    public const string ProviderUnavailableCode = OAuthLoginErrorCodes.ProviderUnavailable;
 
     private readonly IOAuthOptionsProvider _optionsProvider;
     private readonly IOAuthProviderClient _providerClient;

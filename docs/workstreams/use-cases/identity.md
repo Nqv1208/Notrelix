@@ -139,8 +139,8 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | no caller, no revocation |
 | UC-IDN-D05 | Bound the absolute session lifetime | D | System | no | n/a | n/a | no | DEFINED | sliding forever |
 | UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
-| UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | no real e2e |
-| UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | partial | none | no | IMPLEMENTING | FE error states |
+| UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
+| UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | yes | none | no | INTEGRATING | tests, owner check and an artboard |
 | UC-IDN-G01 | Link a provider to my account | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
 | UC-IDN-G02 | Unlink a provider | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
 | UC-IDN-H01 | Start second-factor enrollment | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
@@ -523,12 +523,12 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Input: provider, code, state.
 - Output: a session (or the second-step challenge when MFA is on), then a redirect to `/auth/callback?returnTo=`; a "sign-in succeeded" line.
 - Main flow: 1. The provider redirects to `GET /api/v1/auth/oauth/{provider}/callback`. 2. The server validates the state, exchanges the code and reads the provider subject. 3. It finds the User by provider and subject, or creates one when no account holds that email. 4. It sets cookies and redirects.
-- No-op / rejection / concurrency / retry: the state is single use; every failure redirects to sign-in with a normalized error code; the provider tokens are never stored in a readable form.
-- UI states: pending, provider error, second step.
+- No-op / rejection / concurrency / retry: the state is single use and is read and removed in one atomic step, so two callbacks racing with it cannot both pass; the provider's ID token is checked (issuer, audience and authorized party, expiry, issue time, and the nonce held with the state) before any claim is believed, and a provider that sends none fails the sign-in; every failure redirects to sign-in with one normalized error code; the provider tokens are never stored in a readable form.
+- UI states: pending, provider error (a plain sentence per code), second step.
 - Rules: ID-008, ID-014; section 28; IAREQ042, IAREQ043, IAREQ046, IAREQ047.
 - Acceptance: Given a new provider subject with a free email, when the callback completes, then one User and one session exist. Given a returning subject, then the same User signs in.
-- Evidence: BE `OAuth/Commands/CompleteOAuthLogin/CompleteOAuthLoginCommand.cs`; API `Auth/Commands/CompleteOAuthLoginEndpoint.cs` (`GET /api/v1/auth/oauth/{provider}/callback`) · FE `apps/web/src/routes/auth-callback.tsx` · Design Final-Auth · Tests API `OAuthCallbackMfaTests`, Integration `CompletedOAuthLoginCommandHandlerTests`, Domain `OAuthProfileSnapshotTests`, `OAuthEventPayloadTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec, 1 px diff, owner check.
+- Evidence: BE `OAuth/Commands/CompleteOAuthLogin/CompleteOAuthLoginCommand.cs`, `OAuth/OAuthLoginErrorCodes.cs`; Infrastructure `Identity/OAuth/OidcIdTokenValidator.cs`, `OAuthProviderClient.cs`, `OAuthStateStore.cs`; API `Auth/Commands/CompleteOAuthLoginEndpoint.cs` (`GET /api/v1/auth/oauth/{provider}/callback`) · FE `apps/web/src/routes/auth-callback.tsx` · Design Final-Auth · Tests API `OAuthCallbackMfaTests`, Integration `CompletedOAuthLoginCommandHandlerTests`, Domain `OAuthProfileSnapshotTests`, `OAuthEventPayloadTests` · Real e2e none
+- State: INTEGRATING. Built: the ID token check (the Google token was decoded with no issuer, audience, expiry or nonce check, and a payload with URL-safe characters failed to decode); the same check for Microsoft, whose UserInfo answer must name the same subject; an enabled provider must ask for the `openid` scope and have a known issuer; the atomic state; the failure redirect now carries a code. Missing: tests and owner check, real spec (needs a provider test double), 1 px diff. The ID token signature is not verified (the token comes straight from the token endpoint over TLS, OIDC Core 3.1.3.7); verify it against the JWKS if a token ever arrives another way. Microsoft sends no verified-email claim, so a Microsoft identity can sign in only when already linked, never create an account: an owner decision is needed before that changes.
 
 ### UC-IDN-F02 Refuse a stale, replayed or colliding callback
 - Capability: F OAuth callback
@@ -538,11 +538,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Output: no session; a redirect to sign-in with a normalized error.
 - Main flow: 1. The callback arrives. 2. State fails, or the provider subject is bound to another User, or the email belongs to a password account. 3. The server refuses and records nothing about the secret values.
 - No-op / rejection / concurrency / retry: an email match alone never links or merges (ID-008, ID-018); the existing account's owner must sign in and link from the security page (UC-IDN-G01); a replay of a good callback does not open a second session.
-- UI states: provider error with a plain reason, offer to sign in with the password.
+- UI states: provider error with a plain reason (expired or used, stopped at the provider, email unverified, email already has an account, anything else), offer to sign in with the password.
 - Rules: ID-008, ID-018; sections 27, 28, 64; IAREQ044, IAREQ047.
 - Acceptance: Given a used state, when it is replayed, then no session. Given a matching email on a password account, then no merge.
-- Evidence: BE `OAuth/Commands/CompleteOAuthLogin/CompleteOAuthLoginCommand.cs` · FE `packages/features/auth/src/core/utils/parse-auth-error.ts` · Design none · Tests Domain `UserOAuthFailureAtomicityTests`, `UserUnlinkOAuthInvariantTests`, `OAuthAccountTests`; Integration `CompletedOAuthLoginCommandHandlerTests` · Real e2e none
-- State: IMPLEMENTING. Missing: the sign-in page copy for each error code, an artboard, API test for state replay.
+- Evidence: BE `OAuth/Commands/CompleteOAuthLogin/CompleteOAuthLoginCommand.cs`, `OAuth/OAuthLoginErrorCodes.cs` · FE `packages/features/auth/src/web/containers/sign-in-flow.tsx` (code to sentence), `web/components/auth-sign-in-surface.tsx`, `web/copy/auth.copy.ts` · Design none · Tests Domain `UserOAuthFailureAtomicityTests`, `UserUnlinkOAuthInvariantTests`, `OAuthAccountTests`; Integration `CompletedOAuthLoginCommandHandlerTests` · Real e2e none
+- State: INTEGRATING. Built: the codes `identity.oauth.failed`, `state-invalid`, `denied`, `email-unverified`, `email-in-use`, `mfa-required`, `provider-unavailable` and one sentence for each on the sign-in page (vi, en); an inactive account, a failed exchange and an untrusted ID token all read as `failed`; the state is used up before the provider's own error is read. Missing: tests and owner check (API test for state replay), an artboard (none draws the error sentences). The link and step-up callbacks still redirect to the failure URL without a code (UC-IDN-G01, K06).
 
 ## Capability G: Provider linking and unlinking
 

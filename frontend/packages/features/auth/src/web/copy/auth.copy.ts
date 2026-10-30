@@ -38,6 +38,14 @@ export const en = {
       "Signing in with the provider did not work. Try again, or use your email and password.",
     providerUnavailable:
       "Signing in with that provider isn't available right now. Use your email and password.",
+    providerExpired:
+      "That sign-in took too long or was already used. Start again, or use your email and password.",
+    providerDenied:
+      "You stopped signing in at the provider. Start again, or use your email and password.",
+    providerEmailInUse:
+      "An account with that email already exists. Sign in with your email and password, then link the provider from your account's Security page.",
+    providerEmailUnverified:
+      "The provider hasn't verified that email yet, so it can't create an account. Verify it there, or use your email and password.",
     redirecting: "Taking you to {{provider}}…",
   },
   password: {
@@ -229,6 +237,14 @@ export const vi: AuthCopy = {
       "Đăng nhập bằng nhà cung cấp chưa được. Thử lại, hoặc dùng email và mật khẩu.",
     providerUnavailable:
       "Hiện chưa đăng nhập được bằng nhà cung cấp này. Hãy dùng email và mật khẩu.",
+    providerExpired:
+      "Lần đăng nhập đó đã quá lâu hoặc đã được dùng. Hãy bắt đầu lại, hoặc dùng email và mật khẩu.",
+    providerDenied:
+      "Bạn đã dừng việc đăng nhập tại nhà cung cấp. Hãy bắt đầu lại, hoặc dùng email và mật khẩu.",
+    providerEmailInUse:
+      "Đã có tài khoản dùng email này. Hãy đăng nhập bằng email và mật khẩu, rồi liên kết nhà cung cấp trong trang Bảo mật của tài khoản.",
+    providerEmailUnverified:
+      "Nhà cung cấp chưa xác minh email đó nên chưa tạo được tài khoản. Hãy xác minh ở đó, hoặc dùng email và mật khẩu.",
     redirecting: "Đang chuyển đến {{provider}}…",
   },
   password: {

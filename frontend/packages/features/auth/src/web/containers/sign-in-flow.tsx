@@ -42,7 +42,21 @@ type EmailError =
   | "unreachable"
   | "mfa-required"
   | "provider-failed"
-  | "provider-unavailable";
+  | "provider-unavailable"
+  | "provider-expired"
+  | "provider-denied"
+  | "provider-email-in-use"
+  | "provider-email-unverified";
+
+/** What the sign-in page says for each code the backend puts on `?error=`; any other code reads as a plain failure. */
+const PROVIDER_ERROR: Readonly<Record<string, EmailError>> = {
+  [IDENTITY_ERROR.oauthMfaRequired]: "mfa-required",
+  [IDENTITY_ERROR.oauthProviderUnavailable]: "provider-unavailable",
+  [IDENTITY_ERROR.oauthStateInvalid]: "provider-expired",
+  [IDENTITY_ERROR.oauthDenied]: "provider-denied",
+  [IDENTITY_ERROR.oauthEmailInUse]: "provider-email-in-use",
+  [IDENTITY_ERROR.oauthEmailUnverified]: "provider-email-unverified",
+};
 
 type Phase =
   | { kind: "email"; error: EmailError | null }
@@ -113,11 +127,7 @@ export function SignInFlow({
       : {
           kind: "email",
           error: providerError
-            ? providerError === IDENTITY_ERROR.oauthMfaRequired
-              ? "mfa-required"
-              : providerError === IDENTITY_ERROR.oauthProviderUnavailable
-                ? "provider-unavailable"
-                : "provider-failed"
+            ? (PROVIDER_ERROR[providerError] ?? "provider-failed")
             : null,
         },
   );

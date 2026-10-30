@@ -38,6 +38,13 @@ export type AuthSignInStep =
         | "provider-failed"
         /** The provider is not available (switched off or not set up): no redirect was made. */
         | "provider-unavailable"
+        /** The sign-in took too long or was already used. */
+        | "provider-expired"
+        /** The person stopped at the provider. */
+        | "provider-denied"
+        /** The provider's verified email belongs to an account that is not linked to it: sign in with the password. */
+        | "provider-email-in-use"
+        | "provider-email-unverified"
         | null;
     }
   | {
@@ -87,6 +94,17 @@ export interface AuthSignInSurfaceProps {
   readonly onToggleBackup: () => void;
   readonly onBack: () => void;
 }
+
+/** The sentence for each way a provider sign-in can end on this page. */
+const PROVIDER_ERROR_COPY = {
+  "provider-failed": "providerFailed",
+  "provider-unavailable": "providerUnavailable",
+  "provider-expired": "providerExpired",
+  "provider-denied": "providerDenied",
+  "provider-email-in-use": "providerEmailInUse",
+  "provider-email-unverified": "providerEmailUnverified",
+} as const;
+type ProviderErrorKind = keyof typeof PROVIDER_ERROR_COPY;
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
@@ -259,11 +277,10 @@ function CredentialsStep({
           {emailError === "mfa-required" ? (
             <FieldError>{te.mfaRequired}</FieldError>
           ) : null}
-          {emailError === "provider-failed" ? (
-            <FieldError>{te.providerFailed}</FieldError>
-          ) : null}
-          {emailError === "provider-unavailable" ? (
-            <FieldError>{te.providerUnavailable}</FieldError>
+          {emailError && emailError in PROVIDER_ERROR_COPY ? (
+            <FieldError>
+              {te[PROVIDER_ERROR_COPY[emailError as ProviderErrorKind]]}
+            </FieldError>
           ) : null}
         </div>
 
