@@ -318,7 +318,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | INTEGRATING | tests and owner check. |
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
-| UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | Roadmap 02 (D76.18); no auto-reschedule test; cycle check |
+| UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | Cross-tenant/Private negative test; real e2e |
 | UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | API tests; real e2e |
 | UC-WM-N02 | Map form questions to fields | N | Editor | partial | yes | complete | none | INTEGRATING | AddFormQuestion, UpdateFormQuestion and RemoveFormQuestion carry no expected version and UpdateFormQuestion has no test (defects B-07, B-14). |
@@ -2343,8 +2343,8 @@ Team capability WM-012.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 53, 68.1; WMREQ021; views pack section 8; D76.9, D76.18; LD5
 - Acceptance: Given due before start, then the write is rejected (pattern).
-- Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE BoardTimelineView (96 tests); raw plan-items · Design Final-Timeline, WM-TL-Interactions · Tests `CreateBoardItemLinkTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
-- State: INTEGRATING — Roadmap 02 (D76.18); no auto-reschedule test; cycle check
+- Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE `board-timeline-view.tsx` with the view bar in `timeline-toolbar.tsx`; raw plan-items · Design Final-Timeline, WM-TL-Interactions · Tests `CreateBoardItemLinkTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
+- State: INTEGRATING — tests and owner check. Built: the Timeline filters with the member's own view state (phases and milestones hide under a filter), and a due day moved before the start day from the keyboard is refused with a visible error (the pointer drag was already clamped). Not built: grouping and bar span choices (shown as unavailable).
 
 ## M. Dashboard projection
 
