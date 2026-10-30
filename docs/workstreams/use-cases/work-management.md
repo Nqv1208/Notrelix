@@ -310,13 +310,13 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | DEFINED | label operators are in open PR #201, not on develop; no server-side label filter. |
 | UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; virtualization (UC-WM-T01) |
 | UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | INTEGRATING | tests and owner check |
-| UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | Kanban selection is missing; proof of the 200 cap. |
-| UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | partial | complete | none | INTEGRATING | Canonical Kanban artboard; multi-select; WIP; real e2e |
-| UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | INTEGRATING | WIP warning (D37); undo proof; real e2e |
-| UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | no (open PR #201) | complete | none | IMPLEMENTING | the central code is in open PR #201 (kanban-swimlane-board.tsx), not on develop; Q13 multi-assignee proof; real e2e. |
-| UC-WM-J04 | Use swimlanes | J | Any role | partial (open PR #201) | no (open PR #201) | complete | none | DEFINED | the central code is in open PR #201, not on develop; Q13 multi-assignee proof; 320 snap-scroll design |
-| UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; proof |
-| UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | partial | no | complete | none | DEFINED | no WIP limit in the Kanban view configuration or UI. |
+| UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | tests and owner check; proof of the 200 cap; no selection across windows. |
+| UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; the checkbox on the card face is not on an artboard; the bar archives at once (no undo window as in the Table). |
+| UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | INTEGRATING | tests and owner check |
+| UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof. |
+| UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
+| UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
+| UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | INTEGRATING | tests and owner check. |
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | Detail is roadmap 02 (D76.18); multi-day bars, undated aside redraw (D72) |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | Roadmap 02 (D76.18); no auto-reschedule test; cycle check |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | Cross-tenant/Private negative test; real e2e |
@@ -2237,8 +2237,8 @@ Team capability WM-010.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 51, 40-41; WM-015; views pack section 6
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given a quick add failing, when the write errors, then the typed name stays in the input with an inline error and "Thử lại". (3) Given Kanban, when a Member selects cards (Space, Shift+click, checkbox), then the same bulk bar as the Table appears (owner Q8).
-- Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -]; BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE KanbanView (186 tests); no swimlanes (PR #201), multi-select, WIP · Design BC-Kanban (Final-Board; Kanban-Board proposal, canonical unrecorded) · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Canonical Kanban artboard; multi-select; WIP; real e2e
+- Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -]; BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-view.tsx`, `kanban-selection.ts`, `kanban-bulk-bar.tsx` (the Table's bar over the picked cards), `kanban-card.tsx` (checkbox, Space, Shift+click) · Design BC-Kanban (Final-Board; Kanban-Board proposal, canonical unrecorded) · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
+- State: INTEGRATING — tests and owner check. Built: an editor picks cards with the checkbox, Space or Shift+click (range), Escape clears; the Table's bulk bar shows for the picked cards (status, assign, due date, priority, move to board, archive, delete; one request, all or none). Not built: an undo window for the bar's archive; the card checkbox is not on an artboard.
 
 ### UC-WM-J02 Move an item between Kanban lanes
 - Capability: J Kanban view (WM-010)
@@ -2252,7 +2252,7 @@ Team capability WM-010.
 - Rules: product sections 40-41, 51; WM-015; D36-D40; WMREQ018, WMREQ044, WMREQ131
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given B is dragging a card, when A moves another card, then B's drag completes unaffected and the board re-reads after the drop. (3) Given a lane at its WIP limit, when a card is dropped in, then a warning shows and the drop is allowed; the server does not block (D37).
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts` + keyboard DnD (186 kanban tests) · Design BC-Kanban, Kanban-Card-States, WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — WIP warning (D37); undo proof; real e2e
+- State: INTEGRATING — tests and owner check; the WIP warning (D37) shows on the lane and on the drop target.
 
 ### UC-WM-J03 Move an item across swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2265,8 +2265,8 @@ Team capability WM-010.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 40-41; WM-015; D71; Q13
 - Acceptance: Given an item in lane A and swimlane X, when dropped in lane B and swimlane Y, then both fields hold the new values. Given a multi-assignee item, then other assignees are unchanged.
-- Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE in open PR #201: kanban-swimlane-board.tsx · Design WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201 (kanban-swimlane-board.tsx), not on develop; Q13 multi-assignee proof; real e2e.
+- Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-swimlane-board.tsx` (a drop on a cell writes the column and the lane value that changed) · Design WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
+- State: INTEGRATING — tests and owner check; Q13 multi-assignee proof.
 
 ### UC-WM-J04 Use swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2279,8 +2279,8 @@ Team capability WM-010.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 51; D71, D38
 - Acceptance: Given swimlanes by Assignee, then each swimlane header is sticky and collapses per person.
-- Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE in open PR #201: kanban-swimlane-board.tsx · Design WM-Swimlanes · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: DEFINED — the central code is in open PR #201, not on develop; Q13 multi-assignee proof; 320 snap-scroll design
+- Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE `kanban-swimlane-board.tsx`, the swimlane field in the view bar (personal state, kept on the preference) · Design WM-Swimlanes · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: INTEGRATING — tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design.
 
 ### UC-WM-J05 Choose fields shown on the card
 - Capability: J Kanban view (WM-010)
@@ -2307,8 +2307,8 @@ Team capability WM-010.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 51; D37
 - Acceptance: Given a lane limit of 3 holding 3 cards, when a fourth is dropped, then the drop succeeds and the lane shows the warning.
-- Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE none; no WIP limits in FE · Design Kanban-Card-States (WIP warning) · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: DEFINED — no WIP limit in the Kanban view configuration or UI.
+- Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE the lane menu sets the limit (`kanban-column.tsx`, `kanban-view.tsx` writes `wipLimits` to the view config); the lane and the drop target warn · Design Kanban-Card-States (WIP warning) · Tests `NotrelixApiFactory.cs` · Real e2e none
+- State: INTEGRATING — tests and owner check; the limit is kept in the Kanban view configuration and only warns.
 
 ## K. Calendar view
 
