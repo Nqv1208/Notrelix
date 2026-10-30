@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
@@ -88,16 +89,9 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
             var parts = token.Split('.');
             if (parts.Length != 3) return;
 
-            var payload = parts[1];
-            var remainder = payload.Length % 4;
-            var padded = remainder switch
-            {
-                2 => payload + "==",
-                3 => payload + "=",
-                _ => payload
-            };
+            // A JWT payload is base64url: '-' and '_' and no padding.
+            var json = Base64Url.DecodeFromChars(parts[1]);
 
-            var json = Convert.FromBase64String(padded);
             var claims = JsonSerializer.Deserialize<JsonElement>(json);
 
             var jti = claims.GetProperty("jti").GetString();
