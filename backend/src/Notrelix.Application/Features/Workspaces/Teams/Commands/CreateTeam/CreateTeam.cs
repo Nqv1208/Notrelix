@@ -3,11 +3,16 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
 
+/// <summary>
+/// Creates a Team. A retry under the same Idempotency-Key returns the Team the first attempt created; a different
+/// body under that key is refused.
+/// </summary>
+[IdempotencyOperation("workspaces.team.create-team.v1")]
 public record CreateTeamCommand(
     Guid WorkspaceId,
     string Name,
     string? Description
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail, IIdempotentRequest
 {
     // GOV-028: Team composition is managed by workspace Owners/Admins.
     public PermissionAction Action => PermissionAction.ManageTeams;

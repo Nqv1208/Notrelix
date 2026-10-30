@@ -5137,7 +5137,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all teams in a workspace */
+        /**
+         * Get the teams of a workspace
+         * @description Cursor-paginated (default 50, max 200), ordered by name; archived teams are included. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Teams.GetWorkspaceTeams"];
         put?: never;
         /** Create a new team in the workspace */
@@ -6436,6 +6439,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfSpaceTreeNodeDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfTeamDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -20466,7 +20474,10 @@ export interface operations {
     };
     "Workspaces.Teams.GetWorkspaceTeams": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -20481,7 +20492,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfTeamDto"];
                 };
             };
         };
@@ -20489,7 +20500,10 @@ export interface operations {
     "Workspaces.Teams.CreateTeam": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -20504,11 +20518,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

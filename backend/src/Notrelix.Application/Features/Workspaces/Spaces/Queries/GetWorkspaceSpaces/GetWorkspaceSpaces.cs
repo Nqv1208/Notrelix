@@ -1,10 +1,7 @@
-using System.Buffers.Text;
-using System.Text;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace;
-using Notrelix.Application.Features.Workspaces.Spaces.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Spaces.Queries.GetWorkspaceSpaces;
 
@@ -41,14 +38,14 @@ public class GetWorkspaceSpacesQueryHandler : IRequestHandler<GetWorkspaceSpaces
         var visible = await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
         if (visible.Count == 0) return Result<CursorPage<SpaceDto>>.Success(new CursorPage<SpaceDto>([], null));
 
-        var limit = request.Limit ?? SpaceIdCursor.DefaultLimit;
+        var limit = request.Limit ?? NameCursor.DefaultLimit;
         var query = _context.Spaces
             .AsNoTracking()
             .Where(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null)
             .Where(s => visible.Contains(s.Id));
 
         // Keyset on (name, id): the next page starts after the last row the previous one ended on.
-        if (SpaceNameCursor.TryDecode(request.Cursor, out var cursor))
+        if (NameCursor.TryDecode(request.Cursor, out var cursor))
         {
             var (name, id) = cursor;
             query = query.Where(s => string.Compare(s.Name, name) > 0 || (s.Name == name && s.Id.CompareTo(id) > 0));
@@ -74,7 +71,7 @@ public class GetWorkspaceSpacesQueryHandler : IRequestHandler<GetWorkspaceSpaces
             s.Version)).ToList();
 
         return Result<CursorPage<SpaceDto>>.Success(
-            new CursorPage<SpaceDto>(result, hasMore ? SpaceNameCursor.Encode(page[^1].Name, page[^1].Id) : null));
+            new CursorPage<SpaceDto>(result, hasMore ? NameCursor.Encode(page[^1].Name, page[^1].Id) : null));
     }
 }
 
@@ -84,41 +81,11 @@ public class GetWorkspaceSpacesQueryValidator : AbstractValidator<GetWorkspaceSp
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.Limit)
-            .InclusiveBetween(1, SpaceIdCursor.MaxLimit)
+            .InclusiveBetween(1, NameCursor.MaxLimit)
             .When(x => x.Limit.HasValue);
         RuleFor(x => x.Cursor)
-            .Must(c => SpaceNameCursor.TryDecode(c, out _))
+            .Must(c => NameCursor.TryDecode(c, out _))
             .When(x => !string.IsNullOrEmpty(x.Cursor))
             .WithMessage("Cursor is not a valid space list cursor.");
-    }
-}
-
-/// <summary>Opaque keyset cursor over (name, id): base64url of <c>"&lt;id-N&gt;:&lt;name&gt;"</c>.</summary>
-internal static class SpaceNameCursor
-{
-    public static string Encode(string name, Guid id) =>
-        Base64Url.EncodeToString(Encoding.UTF8.GetBytes($"{id:N}:{name}"));
-
-    public static bool TryDecode(string? value, out (string Name, Guid Id) cursor)
-    {
-        cursor = default;
-        if (string.IsNullOrEmpty(value) || value.Length > 512)
-            return false;
-
-        string raw;
-        try
-        {
-            raw = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(value));
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
-
-        if (raw.Length < 33 || raw[32] != ':' || !Guid.TryParseExact(raw[..32], "N", out var id))
-            return false;
-
-        cursor = (raw[33..], id);
-        return true;
     }
 }

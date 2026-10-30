@@ -21105,7 +21105,8 @@
           "Workspaces.Teams",
           "Workspaces.Teams"
         ],
-        "summary": "Get all teams in a workspace",
+        "summary": "Get the teams of a workspace",
+        "description": "Cursor-paginated (default 50, max 200), ordered by name; archived teams are included. Pass nextCursor back as cursor for the next page.",
         "operationId": "Workspaces.Teams.GetWorkspaceTeams",
         "parameters": [
           {
@@ -21116,6 +21117,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -21124,10 +21140,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfTeamDto"
                 }
               }
             }
@@ -21158,6 +21171,17 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -21173,6 +21197,14 @@
         "responses": {
           "201": {
             "description": "Created",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -21181,6 +21213,12 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Idempotency key reused with a different payload"
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
           }
         },
         "security": [
@@ -25297,6 +25335,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Models.CursorPageOfTeamDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"
             },
             "nullable": true
           },
