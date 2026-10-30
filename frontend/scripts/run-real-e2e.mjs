@@ -45,7 +45,10 @@ try {
     { env: webEnv },
   );
   await waitForUrl(realBackend.appUrl, 120_000);
-  await runFrontend("pnpm", ["e2e:real:test"], { env: webEnv });
+  // Anything after the script name (spec paths, --grep) goes to Playwright.
+  await runFrontend("pnpm", ["e2e:real:test", ...process.argv.slice(2)], {
+    env: webEnv,
+  });
 } catch (error) {
   failed = true;
   console.error(error);
