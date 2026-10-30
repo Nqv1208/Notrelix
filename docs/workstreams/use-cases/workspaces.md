@@ -949,7 +949,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 48.2, 48.4; WGREQ010.
 - Acceptance: Given a member, Then the values return with the version.
 - Evidence: BE `GET /api/v1/workspaces/{id}/settings`, `GetWorkspaceSettingsQueryHandler` · FE `workspace.service.ts`, `use-workspace-settings.ts` · Design `Final-Settings` · Tests `WorkspaceSettingsEndpointTests`, `WorkspaceSettingsTests` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff.
+- State: INTEGRATING — Tests and owner check: real e2e; design diff (no artboard for the settings form was found; built by eye).
 
 ### UC-WSP-J02 Change workspace settings
 - Capability: J Workspace settings
@@ -963,7 +963,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 40, 48.4; WSP-012; WGREQ010; WX-SET-001.
 - Acceptance: Given version 5, When an Admin saves, Then version is 6 and a second save carries 6.
 - Evidence: BE `PUT /api/v1/workspaces/{id}/settings`, `UpdateWorkspaceSettingsCommandHandler` · FE `use-workspace-settings-mutations.ts`, settings surface · Design `Final-Settings` · Tests `UpdateWorkspaceSettingsCommandHandlerTests`, `WorkspaceSettingsEndpointTests`, `workspace-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff; audit of the change (Governance).
+- State: INTEGRATING — Tests and owner check. Built: the invitation expiry setting is applied when inviting and when resending (it was stored but ignored, a fixed seven days), and a change that takes effect is audited (warning when it opens public sharing or drops the MFA requirement). Tests to update: `UpdateWorkspaceSettingsCommandHandlerTests` (new `IAuditService` argument), invitation expiry tests. Real e2e; design diff.
 
 ### UC-WSP-J03 Read sharing and security extras
 - Capability: J Workspace settings
@@ -977,7 +977,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 48.2; GOV-031, GOV-032; see [governance](governance.md).
 - Acceptance: Given links turned off on a date, Then that date returns.
 - Evidence: BE `GET /api/v1/workspaces/{id}/security-ext`, `GetWorkspaceSecurityExtQueryHandler` · FE `use-teams-ext.ts`, security route · Design `Final-Settings`, `Final-Teams` · Tests `WorkspaceSecurityExtIntegrationTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check: real e2e.
 
 ### UC-WSP-J04 Keep Account-wide policy out of workspace settings
 - Capability: J Workspace settings
