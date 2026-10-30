@@ -580,6 +580,10 @@ Current source includes Team and TeamMember concepts.
 
 Team membership is distinct from Workspace membership.
 
+Creating a Team takes an `Idempotency-Key`: a retry returns the Team the first attempt made, and a different body under
+the same key is refused. The Team list (`GET .../teams`) pages by cursor in name order (id on ties), 50 a page by default
+and at most 200, and includes archived Teams.
+
 # 46. WSP-014 — Team membership requires Workspace membership compatibility
 
 A Team belongs to a Workspace.

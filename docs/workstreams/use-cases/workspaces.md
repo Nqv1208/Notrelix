@@ -1214,12 +1214,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name`, `description`.
 - Output: A Team (Active) inside the workspace.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/teams`. 2. Domain creates.
-- No-op / rejection / concurrency / retry: Duplicate name rule is not stated in the product (see Part 5). No idempotency key.
+- No-op / rejection / concurrency / retry: Duplicate name rule is not stated in the product (see Part 5; owner decision, not changed). A retry under the same Idempotency-Key returns the Team the first attempt made; a different body under that key is refused.
 - UI states: Loading, success, validation error, permission denied, conflict, pending, offline, destructive confirmation.
 - Rules: [workspaces](../../product/workspaces.md) sections 45, 78; WSP-014, WSP-025; WGREQ034; WX-TEAM-001.
 - Acceptance: Given an Admin, When they create `Design`, Then the Team exists with no members.
 - Evidence: BE `POST /api/v1/workspaces/{id}/teams`, `CreateTeamCommandHandler` · FE `create-team-dialog.tsx`, `use-team-mutations.ts` · Design `Final-Teams` · Tests `TeamTests`, `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Name rule; real e2e; design diff.
+- State: INTEGRATING — Tests and owner check. Built: the create takes an Idempotency-Key (endpoint, dialog hook keeps one key per input, mock replays by key). Open owner decision: whether Team names are unique in a workspace. Tests to update: `TeamEndpointTests` (key). Real e2e; design diff.
 
 ### UC-WSP-L02 List and read Teams
 - Capability: L Teams (added by this catalog)
@@ -1228,12 +1228,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`, optional `teamId`.
 - Output: Team rows and one Team with its status and version.
 - Main flow: 1. `GET .../teams`. 2. `GET .../teams/{teamId}`.
-- No-op / rejection / concurrency / retry: Unbounded list. Other workspace's Team: NotFound.
+- No-op / rejection / concurrency / retry: The list is a cursor page (LD-06): ordered by name, id on ties, 50 a page by default, at most 200; archived Teams are included. Other workspace's Team: NotFound.
 - UI states: Loading, empty, success, search.
 - Rules: [workspaces](../../product/workspaces.md) sections 45, 46; WGREQ034.
 - Acceptance: Given four Teams, Then four rows.
 - Evidence: BE `GET .../teams`, `GET .../teams/{teamId}`, `GetWorkspaceTeamsQueryHandler`, `GetTeamQueryHandler` · FE `workspace-teams-surface.tsx`, `use-teams.ts` · Design `Final-Teams` · Tests `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Pagination (LD-06); real e2e.
+- State: INTEGRATING — Tests and owner check. Built: cursor page on the list (shared name cursor with the Space list), the Team service reads every page, the mock pages. Tests to update: `TeamEndpointTests`, `TeamAdministrationReadIntegrationTests` (the list now returns a page), OpenAPI shape tests. Real e2e.
 
 ### UC-WSP-L03 List Team members
 - Capability: L Teams (added by this catalog)
