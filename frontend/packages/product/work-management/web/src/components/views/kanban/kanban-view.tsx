@@ -821,6 +821,10 @@ export function KanbanView({
       key: entry.itemKey ?? null,
       title: entry.title,
       statusCategory: entry.statusCategory ?? null,
+      statusName:
+        kanban.statusField?.options.find(
+          (option) => option.id === entry.fieldValues?.[kanban.statusField!.id],
+        )?.label ?? null,
     }));
   const sheetGroups: ItemSheetGroup[] = [...kanban.groups]
     .sort((a, b) => a.position - b.position)

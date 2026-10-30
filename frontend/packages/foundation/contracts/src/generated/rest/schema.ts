@@ -6986,6 +6986,7 @@ export interface components {
             icon?: string | null;
             /** Format: uuid */
             spaceId?: string | null;
+            parentTitle?: string | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageBacklinksDto": {
             docs?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto"][] | null;
@@ -7014,6 +7015,7 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            parentTitle?: string | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
             /** Format: uuid */
@@ -7057,6 +7059,7 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            parentTitle?: string | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageVersionBlockDto": {
             /** Format: uuid */

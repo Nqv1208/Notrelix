@@ -554,15 +554,26 @@ export function createItemExtrasApi(
      */
     async listWorkspacePages(
       workspaceId: string,
-    ): Promise<{ id: string; title: string }[]> {
+    ): Promise<{ id: string; title: string; parentTitle?: string }[]> {
       const rows = await api.get<
-        { id?: string; title?: string | null }[] | null
+        | { id?: string; title?: string | null; parentTitle?: string | null }[]
+        | null
       >(endpoints.pages.list(workspaceId), quiet);
       return (rows ?? [])
-        .filter((row): row is { id: string; title?: string | null } =>
-          Boolean(row.id),
+        .filter(
+          (
+            row,
+          ): row is {
+            id: string;
+            title?: string | null;
+            parentTitle?: string | null;
+          } => Boolean(row.id),
         )
-        .map((row) => ({ id: row.id, title: row.title?.trim() || "" }));
+        .map((row) => ({
+          id: row.id,
+          title: row.title?.trim() || "",
+          ...(row.parentTitle ? { parentTitle: row.parentTitle } : {}),
+        }));
     },
     /** `WorkManagement.BoardItems.LinkPage`: linking a page twice changes nothing. */
     async linkPage(itemId: string, pageId: string): Promise<void> {

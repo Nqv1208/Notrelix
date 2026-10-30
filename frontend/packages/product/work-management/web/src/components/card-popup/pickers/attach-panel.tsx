@@ -18,6 +18,7 @@ import {
 import { cn } from "@notrelix/ui-web";
 import { foldForSearch } from "../../item-page/item-pickers";
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
+import { STATUS_DOT_CLASS } from "../../card-detail/item-field-editors";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup } from "../card-popup-context";
 import { IconBtn, PanelBtn, PanelInput } from "../popup-ui";
@@ -224,6 +225,7 @@ interface Hit {
   readonly key?: string | null;
   readonly title: string;
   readonly meta?: string;
+  readonly category?: "todo" | "in_progress" | "review" | "done" | null;
   readonly done?: boolean;
 }
 
@@ -271,6 +273,7 @@ export function AttachPanel({
           id: p.id,
           kind: "page" as const,
           title: p.title || t.pageUntitled,
+          meta: p.parentTitle,
         }))
     : [];
   const taskHits: Hit[] = callbacks.onAddLink
@@ -286,6 +289,8 @@ export function AttachPanel({
           kind: "task" as const,
           key: x.key,
           title: x.title,
+          meta: "statusName" in x ? (x.statusName ?? undefined) : undefined,
+          category: x.statusCategory ?? null,
           done: x.statusCategory === "done",
         }))
     : [];
@@ -330,6 +335,20 @@ export function AttachPanel({
         </span>
       ) : null}
       <span className="min-w-0 flex-1 truncate">{hit.title}</span>
+      {hit.meta ? (
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px] text-meta-foreground">
+          {hit.category ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-[9px] rounded-full",
+                STATUS_DOT_CLASS[hit.category],
+              )}
+            />
+          ) : null}
+          {hit.meta}
+        </span>
+      ) : null}
     </button>
   );
   // Before typing: a few of each kind, pages and cards alternating.

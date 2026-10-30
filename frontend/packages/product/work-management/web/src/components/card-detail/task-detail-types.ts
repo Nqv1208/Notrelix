@@ -94,6 +94,8 @@ export interface ItemSheetLinkCandidate {
   readonly key: string | null;
   readonly title: string;
   readonly statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
+  /** The column the card sits in (its status on a status-grouped board). */
+  readonly statusName?: string | null;
 }
 
 /** A person who follows the item. */
