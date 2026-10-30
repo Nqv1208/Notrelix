@@ -163,12 +163,12 @@ Products compared and what was taken:
 | UC-WSP-F08 | Set another member's job title | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | No frontend caller; artboard. |
 | UC-WSP-F09 | Clean a person's Space and Team entries when they leave (enterprise baseline) | F | System | no | no | none | none | DEFINED | Transaction step, event, 'needs a lead' state. |
 | UC-WSP-F10 | Provision members from an identity directory (SCIM) | F | System principal of Accounts | no | no | none | none | BLOCKED | Decision: system principal for provisioning and its permission. |
-| UC-WSP-G01 | Invite a person to the workspace by email | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Stable duplicate code; idempotency key; real e2e with a mail sink; design diff. |
+| UC-WSP-G01 | Invite a person to the workspace by email | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: duplicate 409, retry under one key, real e2e with a mail sink; design diff. |
 | UC-WSP-G02 | Invite with initial Team and Space entries | G | Owner, Admin | yes | no | Final-Members | none | IMPLEMENTING | No frontend field for entries. |
-| UC-WSP-G03 | List workspace invitations | G | Owner, Admin, Member | yes | yes | Final-Members | none | INTEGRATING | Permission fixed (`ViewMembers`). Pagination; real e2e; Member email visibility. |
-| UC-WSP-G04 | Change a pending invitation's role | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Expected version; real e2e. |
-| UC-WSP-G05 | Resend an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Cool-down; real e2e. |
-| UC-WSP-G06 | Revoke an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Real e2e. |
+| UC-WSP-G03 | List workspace invitations | G | Owner, Admin, Member | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: paging, expired read, real e2e. Owner question: may Members see invited emails. |
+| UC-WSP-G04 | Change a pending invitation's role | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, stale 412, real e2e. |
+| UC-WSP-G05 | Resend an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: cool-down, real e2e. |
+| UC-WSP-G06 | Revoke an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: real e2e. Nothing found to build. |
 | UC-WSP-G07 | Invite a guest to one Board or Page | G | Holder of `ManageBoardPermission` or `ManagePagePermission` on the resource | yes | no | Final-Share, Final-M-Share | none | IMPLEMENTING | Email invitation in the Share dialog (owner decision); real e2e; `AllowGuestInvites` proof. |
 | UC-WSP-G08 | Resend or revoke a resource invitation | G | The issuer with the permission on that resource | yes | no | Final-Share | none | IMPLEMENTING | No frontend caller. |
 | UC-WSP-G09 | Invite many people at once (enterprise baseline) | G | Owner, Admin | no | partial | Final-Onboarding | none | DEFINED | Batch contract; result UI. |
@@ -644,12 +644,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `email`, `role` (member or guest; never admin), optional entries (G02).
 - Output: A Pending invitation (expiry from settings, default 7 days), only a token hash stored, and an email sent through the outbox.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/members`. 2. Role and actor rules. 3. Domain creates the invitation with a hashed token. 4. Outbox sends the email with the raw token once.
-- No-op / rejection / concurrency / retry: Admin role: `Workspaces_Invitation_CannotInviteAsAdmin`. A pending invitation for the same email is refused with a plain text failure, not a stable code (LD-04). Existing member: refused. The raw token is never stored or logged. No Billing seat check at invite time (checked at accept).
+- No-op / rejection / concurrency / retry: Admin role: `Workspaces_Invitation_CannotInviteAsAdmin`. A pending invitation for the same email answers 409 with the stable code `workspaces.invitation.pending-exists` (LD-04). A retry under the same `Idempotency-Key` returns the first invitation and sends no second email (LD-01). The raw token is never stored or logged. An invitation to the address of someone who already belongs is not refused at creation (acceptance handles an existing member); the product docs do not say it must be. No Billing seat check at invite time (checked at accept).
 - UI states: Invite dialog (emails, role), validation error, conflict, pending, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 22.1 (WSP-026), 23, 25, 26; WSP-006; WGREQ024 to WGREQ028, WGREQ033; WX-MEM-001.
 - Acceptance: Given an Admin, When they invite `a@x.com` as member, Then one Pending invitation exists and one email is queued. Given role admin, Then 400 with the rule code. Given a pending one for the same email, Then no second row.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members`, `InviteMemberCommandHandler` · FE `invitations.service.ts`, `use-create-invitation.ts`, Members surface, `seat-invite.tsx` · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `WorkspaceInvitationRulesTests`, `InvitationEndpointTests`, `NewInvitationEndpointTests`, `WorkspaceInvitationSecretTelemetryTests`, `SendInvitationEmailConsumerTests`, `workspace-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Stable duplicate code; idempotency key; real e2e with a mail sink; design diff.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members`, `InviteMemberCommandHandler`, now an `IIdempotentRequest` (`workspaces.invitation.invite-member.v1`, key required on the endpoint) and a `ConflictException` with the stable duplicate code · FE `invitations.service.ts`, `use-create-invitation.ts` (one key per address and role, reused on retry, cleared on success), Members surface (a duplicate raised by someone else shows the same message as the check before sending), `seat-invite.tsx`; mock backend keys and refuses the same way · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `WorkspaceInvitationRulesTests`, `InvitationEndpointTests`, `NewInvitationEndpointTests`, `WorkspaceInvitationSecretTelemetryTests`, `SendInvitationEmailConsumerTests`, `workspace-pages.mock.e2e.spec.ts`; existing tests that send the invite without a key, or assert the old plain duplicate text, need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: duplicate 409 code, a retry under one key sends one email, real e2e with a mail sink; design diff.
 
 ### UC-WSP-G02 Invite with initial Team and Space entries
 - Capability: G Invitation create
@@ -672,12 +672,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`.
 - Output: Rows: email, role, status (Pending, Accepted, Revoked, Expired, Declined), issuer, expiry, version. No token.
 - Main flow: 1. `GET /api/v1/workspaces/{id}/invitations`. 2. Handler lists.
-- No-op / rejection / concurrency / retry: Guest: 403 (`ViewMembers`, fixed; section 82 calls invitations sensitive). A Member still sees invited emails, because the member list's email masking is a handler role check the architecture tests forbid; hiding them needs a pipeline-level rule. The read is unbounded.
+- No-op / rejection / concurrency / retry: Guest: 403 (`ViewMembers`, fixed; section 82 calls invitations sensitive). A Member still sees invited emails, because the member list's email masking is a handler role check the architecture tests forbid; hiding them needs a pipeline-level rule. The read is a cursor page (LD-06): default 50, at most 200, newest first; `limit` outside 1 to 200 or a cursor the list did not issue answers 400. A Pending invitation past its expiry is reported as Expired (LD-04); the sweep that writes the status is not built.
 - UI states: Loading, empty, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 25, 82; WGREQ025, WGREQ032.
 - Acceptance: Given a Guest, When they list invitations, Then 403. Given an Admin, Then rows without tokens.
-- Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (Guest 403, Admin and Member list) · FE gated by `enabled: admin` in `members.tsx` · Real e2e none
-- State: INTEGRATING — Permission fixed. Pagination; real e2e; decide whether Members see invited emails.
+- Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (Guest 403, Admin and Member list) · FE gated by `enabled: admin` in `members.tsx` · Built: `GetWorkspaceInvitationsQuery(Cursor, Limit)` returns a `CursorPage`, rows carry `version`, expired read; `invitations.service.ts` joins the pages; mock backend pages the same way. Existing tests that read the list as an array (`WorkspaceAdministrationReadHandlerTests`, `WorkspaceAdministrationReadIntegrationTests`, `WorkspaceRoleBaselineIntegrationTests`) need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: paging, expired read, real e2e. Owner question, not changed: may Members see invited emails (they can through the API today). The issuer is not in the row yet.
 
 ### UC-WSP-G04 Change a pending invitation's role
 - Capability: G Invitation create
@@ -686,12 +686,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `invitationId`, `newRole` (member or guest).
 - Output: New role stored.
 - Main flow: 1. `PATCH /api/v1/workspaces/{id}/invitations/{invitationId}/role`. 2. Domain changes the role.
-- No-op / rejection / concurrency / retry: Admin or raise to admin: `Workspaces_Invitation_CannotInviteAsAdmin` (an old Admin invitation may be lowered, never kept or raised). Not pending: refused. No expected version: an accept can race the change.
+- No-op / rejection / concurrency / retry: Admin or raise to admin: `Workspaces_Invitation_CannotInviteAsAdmin` (an old Admin invitation may be lowered, never kept or raised). Not pending: refused. Expected version required (LD-07): the body carries the invitation's `version`, and a version that moved (resent, changed, answered) answers 412 and changes nothing.
 - UI states: Role menu in the pending row, conflict, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 22.1; WGREQ027, WGREQ031.
 - Acceptance: Given a Pending admin invitation, When changed to member, Then it shows member.
-- Evidence: BE `PATCH .../invitations/{invitationId}/role`, `ChangeInvitationRoleCommandHandler` · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationRulesTests` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- Evidence: BE `PATCH .../invitations/{invitationId}/role`, `ChangeInvitationRoleCommand` is an `IExpectedVersionRequest` mapped to `WorkspaceInvitation` in `ExpectedVersionTargetMap` · FE `invitations.service.ts` and the Members surface send the version (an invitation with no known version is never written); mock backend checks it · Design `Final-Members` · Tests `WorkspaceInvitationRulesTests`; tests that build the command without a version need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: stale 412, same-role no-op, real e2e.
 
 ### UC-WSP-G05 Resend an invitation
 - Capability: G Invitation create
@@ -700,12 +700,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `invitationId`.
 - Output: A new token and expiry; the old link stops working; one email.
 - Main flow: 1. `POST .../invitations/{invitationId}/resend`. 2. Domain replaces the token. 3. Outbox sends.
-- No-op / rejection / concurrency / retry: Accepted, Revoked, Declined: `Workspaces_Invitation_CannotResendNonPendingExpired`. Each rapid repeat replaces the token again (add a cool-down, LD-04).
+- No-op / rejection / concurrency / retry: Accepted, Revoked, Declined: `Workspaces_Invitation_CannotResendNonPendingExpired`. A resend is held for a minute after the invitation was last sent (`Workspaces_Invitation_ResendTooSoon`, LD-04), so rapid repeats no longer replace the token and send an email each time. The last send is read from the invitation's last change, so a role change also holds a resend for a minute.
 - UI states: Row action, toast, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 25, 26; WGREQ028, WGREQ030.
 - Acceptance: Given a Pending invitation, When resent, Then the old token fails and the new one works.
-- Evidence: BE `POST .../invitations/{invitationId}/resend`, `ResendInvitationCommandHandler` · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `InvitationTokenFlowHttpTests` · Real e2e none
-- State: INTEGRATING — Cool-down; real e2e.
+- Evidence: BE `POST .../invitations/{invitationId}/resend`, `ResendInvitationCommandHandler`, `WorkspaceInvitation.Resend` with `ResendCooldown`; the refusal shows as the producer's rule message in the Members toast · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `InvitationTokenFlowHttpTests`; tests that resend right after creating now meet the cool-down and need a later time; the rule-code snapshot has the new code · Real e2e none
+- State: INTEGRATING — Tests and owner check: cool-down refused then allowed, real e2e. A resend still uses a fixed 7-day expiry, not the workspace setting (a J question).
 
 ### UC-WSP-G06 Revoke an invitation
 - Capability: G Invitation create
@@ -719,7 +719,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 66; WSP-006, WSP-019; WGREQ029, WGREQ031, WGREQ146.
 - Acceptance: Given a Pending invitation, When revoked, Then accepting its token gives the generic invalid answer.
 - Evidence: BE `DELETE .../invitations/{invitationId}`, `CancelInvitationCommandHandler` · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationConcurrencyEvidenceTests`, `AcceptInvitationTransactionEvidenceTests` · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check: real e2e. Nothing found to build.
 
 ### UC-WSP-G07 Invite a guest to one Board or Page
 - Capability: G Invitation create
