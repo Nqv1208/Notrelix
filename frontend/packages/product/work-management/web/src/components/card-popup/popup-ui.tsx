@@ -262,18 +262,19 @@ function PanelPopoverDesktop({
         sideOffset={4}
         style={{ width }}
         collisionPadding={12}
+        tabIndex={-1}
         onOpenAutoFocus={(event) => {
           // A panel with a search or a name field puts the cursor there.
           const field = (
             event.currentTarget as HTMLElement
           ).querySelector<HTMLElement>("[data-picker-search],[data-autofocus]");
-          if (!field) return;
           event.preventDefault();
-          field.focus();
+          // Without one the panel itself takes focus: no ring on the first item.
+          (field ?? (event.currentTarget as HTMLElement)).focus();
         }}
         onCloseAutoFocus={restoreFocus ? undefined : (e) => e.preventDefault()}
         className={cn(
-          "z-modal gap-0 rounded-xl border border-line-strong bg-popover p-3 text-[14px] text-popover-foreground shadow-popover ring-0",
+          "z-modal gap-0 rounded-[12px] border border-line-strong bg-popover p-3 text-[14px] text-popover-foreground shadow-popover ring-0 outline-none",
           className,
         )}
       >
@@ -304,12 +305,21 @@ export function PanelPopover(
           side="bottom"
           showCloseButton={false}
           aria-describedby={undefined}
-          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] bg-popover px-4 pt-2 pb-6 text-[14px] text-popover-foreground"
+          onOpenAutoFocus={(event) => {
+            const sheet = event.currentTarget as HTMLElement;
+            event.preventDefault();
+            (
+              sheet.querySelector<HTMLElement>(
+                "[data-picker-search],[data-autofocus]",
+              ) ?? sheet
+            ).focus();
+          }}
+          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 pt-2 pb-6 text-[14px] text-popover-foreground"
         >
           <SheetTitle className="sr-only" />
           <div
             aria-hidden="true"
-            className="mx-auto mb-2 h-1 w-10 rounded-sm bg-line-strong"
+            className="mx-auto mb-2 h-1 w-10 rounded-[2px] bg-line-strong"
           />
           {children}
         </SheetContent>
@@ -335,13 +345,13 @@ export function PanelHead({
   icons: { back: ReactNode; close: ReactNode };
 }) {
   return (
-    <div className="relative mb-2 flex h-8 items-center justify-center">
+    <div className="relative mb-2 flex h-11 items-center justify-center md:h-8">
       {onBack ? (
         <IconBtn
           small
           aria-label={backLabel}
           onClick={onBack}
-          className="absolute top-0 -left-1"
+          className="absolute top-0 -left-1 size-11 md:size-8"
         >
           {icons.back}
         </IconBtn>
@@ -352,7 +362,7 @@ export function PanelHead({
           small
           aria-label={closeLabel}
           onClick={onClose}
-          className="absolute top-0 -right-1"
+          className="absolute top-0 -right-1 size-11 md:size-8"
         >
           {icons.close}
         </IconBtn>

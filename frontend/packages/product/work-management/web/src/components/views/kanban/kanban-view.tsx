@@ -1134,7 +1134,6 @@ export function KanbanView({
             board={board}
             cardId={selectedItemId}
             capabilities={capabilities}
-            departmentMark={departmentMark}
             groups={sheetGroups}
             linkCandidates={linkCandidates}
             onClose={handleClosePanel}

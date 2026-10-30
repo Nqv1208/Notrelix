@@ -17,6 +17,7 @@ import { DatesPanel } from "./pickers/dates-panel";
 import { PeoplePanel } from "./pickers/people-panel";
 import { ChecklistPanel } from "./pickers/checklist-panel";
 import { AttachPanel } from "./pickers/attach-panel";
+import { PickerHead } from "./pickers/picker-bits";
 
 const ADD_ENTRIES: ReadonlyArray<{
   key: "labels" | "dates" | "checklist" | "assignees" | "attach" | "fields";
@@ -48,7 +49,7 @@ function AddMenu() {
       width={344}
       trigger={
         <PopoverTrigger asChild>
-          <QuickBtn on={isOpen} title={t.addTitle} aria-haspopup="menu">
+          <QuickBtn on={isOpen} title={t.addTitle} aria-haspopup="dialog">
             <Plus aria-hidden="true" className="size-4" />
             {t.add}
           </QuickBtn>
@@ -62,32 +63,27 @@ function AddMenu() {
         />
       ) : (
         <>
-          <div className="mb-2 flex h-8 items-center justify-center">
-            <b className="text-[14px] font-[650]">{t.addTitle}</b>
-          </div>
-          <div role="menu" className="flex flex-col">
-            {ADD_ENTRIES.map(({ key, icon }) => (
-              <button
-                key={key}
-                type="button"
-                role="menuitem"
-                onClick={() => openPicker(key)}
-                className="flex w-full items-center gap-3 rounded-[8px] border-0 bg-transparent p-2 text-left text-foreground hover:bg-state-hover-strong"
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
-                  {icon}
-                </span>
-                <span>
-                  <b className="block text-[14px] leading-[1.3] font-semibold">
-                    {t.addMenu[key].title}
-                  </b>
-                  <small className="block text-[12.5px] leading-[1.35] font-normal text-meta-foreground">
-                    {t.addMenu[key].hint}
-                  </small>
-                </span>
-              </button>
-            ))}
-          </div>
+          <PickerHead title={t.addTitle} onClose={() => openPicker(null)} />
+          {ADD_ENTRIES.map(({ key, icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => openPicker(key)}
+              className="flex w-full items-center gap-3 rounded-[8px] border-0 bg-transparent px-2 py-2.5 text-left md:py-2 text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <span className="grid size-[38px] shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
+                {icon}
+              </span>
+              <span>
+                <b className="block text-[14px] leading-[1.3] font-semibold">
+                  {t.addMenu[key].title}
+                </b>
+                <small className="block text-[12.5px] leading-[1.35] font-normal text-meta-foreground">
+                  {t.addMenu[key].hint}
+                </small>
+              </span>
+            </button>
+          ))}
         </>
       )}
     </PanelPopover>
