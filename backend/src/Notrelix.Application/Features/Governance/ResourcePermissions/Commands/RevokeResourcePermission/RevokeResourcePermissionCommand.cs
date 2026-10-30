@@ -90,7 +90,12 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             ResourceRef.Create(kind, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken,
+            change: new AuditChange(
+                permission.SubjectType.ToString(),
+                permission.SubjectId,
+                new { level = AccessLevels.OfRank((int)permission.Level) },
+                null));
 
         return Result.Success();
     }

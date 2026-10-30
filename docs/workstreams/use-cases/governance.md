@@ -151,9 +151,9 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-E10 | Export, search and analytics keep source authorization | E | Any reader | Part | No | No | No | DEFINED | Export audit not built; owned per context, Governance supplies the rule. |
 | UC-GOV-E11 | Entitlement and permission stay separate | E | Server | Yes | No | No | No | IMPLEMENTING | Billing is not built; the port always allows. |
 | UC-GOV-E12 | Show permission state in the UI as a projection of the server | E | Any user | Yes | Yes | Part | No | INTEGRATING | No real e2e; no axe proof for the forbidden state. |
-| UC-GOV-F01 | Declare the resource and action on every request | F | Developer | Yes | No | No | No | HARDENING | Release SHA evidence is recorded as partially verified in the certification. |
+| UC-GOV-F01 | Declare the resource and action on every request | F | Developer | Yes | No | No | No | HARDENING | tests and owner check |
 | UC-GOV-F02 | Authorize background and system actions explicitly | F | System, Automation, Integration principal | Yes | No | No | No | IMPLEMENTING | Automation execution identity decided per context; no cross-context end-to-end proof. |
-| UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | Audit row has null subject, before and after; IP and user agent are taken from request metadata only; no read path (UC-GOV-H02). |
+| UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | tests and owner check |
 | UC-GOV-F04 | Audit every high-impact governance and administration change | F | System | Part | No | No | No | DEFINED | Missing audit on role change, member lifecycle, API tokens, share links, sharing policy. |
 | UC-GOV-F05 | Audit denied attempts on security-sensitive actions | F | System | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-G01 | Create a share link for a Board or Page | G | Board or Page sharer | Part | No | Part | No | IMPLEMENTING | Defects: access mode is hard-coded `WorkspaceOnly`; request `Level` is ignored; the DTO returns `TokenHash`; no audit; no policy check; ... |
@@ -798,7 +798,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §5-§7, §107](../../product/governance.md) GOV-001, GOV-002, GOV-005; WGREQ087-WGREQ090, WGREQ185; certification P2B-CERT-006.
 - Acceptance: Given a request with no marker, When tests run, Then the architecture suite fails.
 - Evidence: BE `AccessControlBehavior`, `IRequirePermission` · Tests `AuthPipelineArchitectureTests`, `HandlerAuthorizationBypassArchitectureTests`, `UseCaseSecurityClassificationTests` · Real e2e none · Design none
-- State: HARDENING - Release SHA evidence is recorded as partially verified in the certification.
+- State: HARDENING. Nothing left to build: the pipeline markers and the architecture tests exist. Missing: tests and owner check (release SHA evidence is recorded as partially verified in the certification).
 
 ### UC-GOV-F02 Authorize background and system actions explicitly
 - Capability: F Protected operation integration (team spec, Governance list)
@@ -825,8 +825,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; server-only use case
 - Rules: [Governance §65-§70](../../product/governance.md) GOV-020, GOV-021; WGREQ105-WGREQ110.
 - Acceptance: Given a revoke, When committed, Then an audit row with action `RevokeResourcePermission` exists.
-- Evidence: BE `Notrelix.Infrastructure/Auditing/AuditService.cs`, `GrantResourcePermissionCommandHandler` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e none · Design none
-- State: INTEGRATING - Audit row has null subject, before and after; IP and user agent are taken from request metadata only; no read path (UC-GOV-H02).
+- Evidence: BE `Notrelix.Infrastructure/Auditing/AuditService.cs`, `GrantResourcePermissionCommandHandler` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e none · Design none · BE (this unit) `Application/Common/Auditing/IAuditService.cs` (`AuditChange`), `RevokeResourcePermissionCommand.cs`
+- State: INTEGRATING. Built: the audit row now carries the subject (type and id), the level before and after (a level word, no secret), the correlation and causation ids, and the client address and user agent read from the request; a grant at the level the subject already holds records nothing (a semantic no-op); a failed change leaves no row. Missing: tests and owner check (the audit service is shared with Workspaces and Work Management callers, which now also get the correlation id and the client address), the read path (UC-GOV-H02).
 
 ### UC-GOV-F04 Audit every high-impact governance and administration change
 - Capability: F Protected operation integration (team spec, Governance list)

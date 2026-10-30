@@ -102,16 +102,19 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                                       p.SubjectId == request.SubjectId, cancellationToken);
 
         ResourcePermission permission;
+        string? previousLevel = null;
         var isBoard = kind.Value == BoardResourceKind;
         if (existingPermission != null)
         {
             if (existingPermission.Level == level)
             {
-                permission = existingPermission;
+                // Same subject, same level: nothing changed, so nothing is recorded.
+                return Result<ResourcePermissionDto>.Success(ToDto(existingPermission));
             }
             else
             {
                 var previous = existingPermission.Level;
+                previousLevel = AccessLevels.OfRank((int)previous);
                 existingPermission.ChangeLevel(level, actorId, now);
                 permission = existingPermission;
                 if (isBoard)
@@ -151,22 +154,27 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             ResourceRef.Create(kind, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken,
+            change: new AuditChange(
+                subjectType.ToString(),
+                request.SubjectId,
+                previousLevel is null ? null : new { level = previousLevel },
+                new { level = LevelToken(level) }));
 
-        var dto = new ResourcePermissionDto(
-            permission.Id,
-            permission.WorkspaceId,
-            permission.ResourceKind.Value,
-            permission.ResourceId,
-            permission.SubjectType.ToString(),
-            permission.SubjectId,
-            permission.Level.ToString(),
-            permission.CreatedBy,
-            permission.IsDeleted,
-            permission.DeletedAt);
-
-        return Result<ResourcePermissionDto>.Success(dto);
+        return Result<ResourcePermissionDto>.Success(ToDto(permission));
     }
+
+    private static ResourcePermissionDto ToDto(ResourcePermission permission) => new(
+        permission.Id,
+        permission.WorkspaceId,
+        permission.ResourceKind.Value,
+        permission.ResourceId,
+        permission.SubjectType.ToString(),
+        permission.SubjectId,
+        permission.Level.ToString(),
+        permission.CreatedBy,
+        permission.IsDeleted,
+        permission.DeletedAt);
 
     private const string BoardResourceKind = "work-management.board";
 
