@@ -4,6 +4,7 @@ import { Button, cn } from "@notrelix/ui-web";
 import {
   isPendingChecklistId,
   listProgress,
+  personInitials,
   type Checklist,
 } from "@notrelix/work-management-core";
 import type { ItemChecklistsModel } from "../../checklists/item-checklists";
@@ -12,7 +13,13 @@ import { fillSheetCopy } from "../../card-detail/item-sheet.copy";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup } from "../card-popup-context";
 import {
+  ItemAssignButton,
+  ItemDueButton,
+  itemDueText,
+} from "./checklist-item-controls";
+import {
   IconBtn,
+  PersonMark,
   PopSection,
   SECTION_ICONS,
   SectionHead,
@@ -164,8 +171,17 @@ function ChecklistBlock({
   model: ItemChecklistsModel;
   writable: boolean;
 }) {
-  const { copy } = useCardPopup();
+  const { copy, board, card, data, timeZone } = useCardPopup();
   const t = copy.related.checklists;
+  const people = [
+    ...board.members,
+    ...card.members,
+    ...(data.people?.people ?? []),
+  ].map((person) => ({
+    userId: person.userId,
+    name: person.name,
+    initials: personInitials(person.name),
+  }));
   const sheet = useChecklistCopy();
   const [hideDone, setHideDone] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -230,6 +246,13 @@ function ChecklistBlock({
         {shown.map((item) => {
           const pending = isPendingChecklistId(item.id) || listPending;
           const writableItem = writable && !pending;
+          const assignee = item.assigneeId
+            ? (people.find((person) => person.userId === item.assigneeId) ?? {
+                userId: item.assigneeId,
+                name: "",
+                initials: "?",
+              })
+            : null;
           return (
             <div
               key={item.id}
@@ -283,8 +306,30 @@ function ChecklistBlock({
                   {item.title}
                 </span>
               )}
+              {item.dueAt && editing !== item.id ? (
+                <span className="shrink-0 text-[12.5px] text-meta-foreground tabular-nums">
+                  {itemDueText(t.duePrefix, item.dueAt, timeZone)}
+                </span>
+              ) : null}
+              {assignee && editing !== item.id ? (
+                <PersonMark member={assignee} size={20} />
+              ) : null}
               {writableItem && editing !== item.id ? (
                 <span className="hidden gap-0.5 group-focus-within/cli:flex group-hover/cli:flex pointer-coarse:flex">
+                  {model.setItemAssignee ? (
+                    <ItemAssignButton
+                      item={item}
+                      onAssign={(id) =>
+                        model.setItemAssignee?.(list.id, item.id, id)
+                      }
+                    />
+                  ) : null}
+                  {model.setItemDue ? (
+                    <ItemDueButton
+                      item={item}
+                      onDue={(due) => model.setItemDue?.(list.id, item.id, due)}
+                    />
+                  ) : null}
                   {model.canConvert ? (
                     <IconBtn
                       small
