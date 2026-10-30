@@ -66,7 +66,7 @@ No use case is DONE: none has a recorded owner check or a 1 px design diff yet. 
 2. **API token scopes are never enforced.** Tokens are issued with `scopes: null` and the authentication handler builds a principal for the issuing user with the workspace claim; no code reads `ApiTokenScopes.Allows`. ID-010 says a token is never "full user access" (UC-IDN-L05).
 3. **No API token UI.** Three endpoints exist, no screen (UC-IDN-L01 to L03).
 4. **Company single sign-on is a stub.** `IdentifySignIn` always answers "password"; the mock backend invents an SSO path that the real backend cannot serve (UC-IDN-B08).
-5. **Refresh has no replay detection and no absolute lifetime.** A replayed rotated credential simply fails; the family stays valid, and each refresh creates a new 30-day session, so a stolen chain lives forever (UC-IDN-D03, D05).
+5. **Refresh had no replay detection and no absolute lifetime.** Built: a replayed credential outside the 10-second window ends the session, and a session ends 90 days after sign-in however often it is used (UC-IDN-D03, D05). Tests and owner check pending.
 6. **Disabling a person does not end their access.** Domain `Deactivate` and `Suspend` exist; no use case calls them; sessions and access tokens are not revoked, only a refresh is blocked (UC-IDN-D04, L08).
 7. **Revoke-other-sessions has no step-up** although owner decision 48 requires one (UC-IDN-C04). Built; tests pending.
 8. **Changing the sign-in email needs no proof.** No step-up, no notice to the old address, no session revocation, and no web screen (UC-IDN-K09).
@@ -133,11 +133,11 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-C03 | Sign out one other device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 | UC-IDN-C04 | Sign out all other devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
-| UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | no | INTEGRATING | session id changes each refresh |
-| UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-States | no | INTEGRATING | no real e2e |
-| UC-IDN-D03 | Reject a replayed refresh credential | D | System | no | n/a | n/a | no | DEFINED | no reuse detection |
+| UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | no | INTEGRATING | tests and owner check |
+| UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-States | no | INTEGRATING | tests and owner check |
+| UC-IDN-D03 | Reject a replayed refresh credential | D | System | yes | n/a | n/a | no | INTEGRATING | tests and owner check |
 | UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | no caller, no revocation |
-| UC-IDN-D05 | Bound the absolute session lifetime | D | System | no | n/a | n/a | no | DEFINED | sliding forever |
+| UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | INTEGRATING | tests and owner check |
 | UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | yes | none | no | INTEGRATING | tests, owner check and an artboard |
@@ -433,14 +433,14 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Actors and permission: holder of a refresh credential; public endpoint, `AuthRefreshByIp`.
 - Preconditions: an Active, unexpired session for the refresh credential.
 - Input: refresh cookie (web) or body (mobile, UC-IDN-A04).
-- Output: a new access credential (1 hour) and a rotated refresh credential; the old session is revoked and a new one is created.
+- Output: a new access credential (1 hour) and a rotated refresh credential; the session keeps its id, so a step-up proof and the "this device" mark survive a refresh.
 - Main flow: 1. The client sees a 401 or an expiring access credential. 2. It posts `POST /api/v1/auth/refresh`. 3. It retries the failed call once.
-- No-op / rejection / concurrency / retry: an invalid, revoked or expired credential answers 401 `identity.auth.invalid-refresh-token`; an Inactive or suspended user has the session revoked and gets the same 401; the answer never names the reason; two parallel refreshes with one credential let one win.
+- No-op / rejection / concurrency / retry: an invalid, revoked or expired credential answers 401 `identity.auth.invalid-refresh-token`; an Inactive or suspended user has the session revoked and gets the same 401; the answer never names the reason; two parallel refreshes with one credential rotate once and both receive the same new credential (UC-IDN-D03).
 - UI states: invisible on success; session expired on failure (UC-IDN-D02).
 - Rules: ID-005; section 18; IAREQ017, IAREQ019.
 - Acceptance: Given a valid credential, when the client refreshes, then the old credential fails afterwards. Given a suspended user, then 401 and the session ends.
-- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs`; API `Auth/Commands/RefreshTokenEndpoint.cs` (`POST /api/v1/auth/refresh`) · FE `packages/foundation/contracts/src/client/api-client.ts` · Design n/a · Tests Application `RefreshTokenTests` (4), Domain `RefreshTokenHashTests` · Real e2e none
-- State: INTEGRATING. Missing: the session id changes at each refresh (step-up and the "this device" flag must survive it), real spec.
+- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs`, `Auth/Services/IRefreshRotationLedger.cs`, Infrastructure `Identity/Auth/RefreshRotationLedger.cs`, Domain `Identity/Sessions/UserSession.cs` (`Rotate`), `SessionLifetimePolicy.cs`, migration `AddSessionRefreshRotation`, RLS `014_anonymous_scopes.sql` (refresh-token scope matches the current and the just-replaced digest); API `Auth/Commands/RefreshTokenEndpoint.cs` (`POST /api/v1/auth/refresh`) · FE `packages/foundation/contracts/src/client/api-client.ts` · Design n/a · Tests Application `RefreshTokenTests` (4: they build the handler without the ledger, the blacklist and the activity recorder and expect a second session row), Domain `RefreshTokenHashTests`, Domain tests calling `UpdateRefreshToken` (replaced by `Rotate`) · Real e2e none
+- State: INTEGRATING. Built: one session row for the life of a sign-in (it used to be revoked and replaced at every refresh, which also filled the session list with ended rows); the refresh digest and the previous digest are indexed. Missing: tests and owner check, real spec. A refresh that fails for any reason, a network drop included, signs the person out (`api-client.ts` publishes the session-expired event for every non-ok answer): a transient failure should not, owner check.
 
 ### UC-IDN-D02 Session expired or revoked
 - Capability: D Session expiration
@@ -450,11 +450,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Output: protected actions stop; the person is asked to sign in again and returns to the page they were on.
 - Main flow: 1. A call answers 401 and refresh fails. 2. The client clears account-scoped server state. 3. It opens sign-in with `returnTo` (internal paths only, `safeReturnPath`). 4. After sign-in the person lands back.
 - No-op / rejection / concurrency / retry: a late response of the old session must not write into the new session's state; an external `returnTo` is ignored.
-- UI states: session expired, return after sign-in.
+- UI states: session expired (the sign-in page opens with a calm line saying the session ended), return after sign-in.
 - Rules: ID sections 58 and 59; IAREQ019.
 - Acceptance: Given a revoked session, when the next call fails, then no protected UI stays interactive. Given `returnTo=https://x`, then the person lands on the home page.
-- Evidence: FE `packages/features/auth/src/core/utils/safe-return-path.ts`, `apps/web/src/routes/auth-callback.tsx` · Design Final-States · Tests FE `safe-return-path.unit.test.ts`, Application `SafeReturnPathTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec for a revoked session, account-scoped state reset proof.
+- Evidence: FE `packages/features/auth/src/core/utils/safe-return-path.ts`, `apps/web/src/routes/auth-callback.tsx`, `apps/web/src/main.tsx` (`navigateToSignedOut` adds `reason=session-ended`), `apps/web/src/routes/sign-in.tsx`, `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` (`session-ended` line) · Design Final-States · Tests FE `safe-return-path.unit.test.ts`, Application `SafeReturnPathTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING. Built: the notice on the sign-in page (en and vi); the mock e2e that follows the sign-out redirect expects the address without `reason`. Missing: tests and owner check, real spec for a revoked session, account-scoped state reset proof, a 1 px check of the notice against Final-States.
 
 ### UC-IDN-D03 Reject a replayed refresh credential
 - Capability: D Session expiration
@@ -462,13 +462,13 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Preconditions: a refresh credential already rotated.
 - Input: that credential presented again.
 - Output: 401 and, after a grace window, the whole session family revoked.
-- Main flow: 1. The server keeps the previous credential of each session for 10 seconds. 2. A second use inside the window returns the same new pair (a retry of a lost response). 3. A use after the window revokes every session of that chain and records "other sessions revoked".
-- No-op / rejection / concurrency / retry: the window covers two tabs refreshing together; outside it the replay is treated as theft.
+- Main flow: 1. The server keeps the digest of the previous credential of each session and the new credential itself for the grace window (Redis, 15 seconds). 2. A second use inside 10 seconds returns the same new refresh credential (a retry of a lost response) with a fresh access credential. 3. A use after the window revokes the session, cuts off its access credentials and records "session revoked".
+- No-op / rejection / concurrency / retry: the window covers two tabs refreshing together (the first request rotates, the other waits up to two seconds for that rotation to commit, then receives the same credential); outside it the replay is treated as theft. A session is one row, so "the chain" is that session. Only the credential the last rotation replaced is recognised: an older one is just unknown (401, no revocation). When the held credential is gone (cache flush) a retry gets 401 without ending the session.
 - UI states: session expired.
 - Rules: ID section 18; ID-005; enterprise baseline (Auth0, Okta).
 - Acceptance: Given a rotated credential, when it is replayed after the window, then the chain ends and the next refresh fails.
-- Evidence: BE none · FE none · Design n/a · Tests none · Real e2e none
-- State: DEFINED. Missing: all. Lead decision (2026-10-30): window 10 seconds, then revoke the chain.
+- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs` (`HandleReplacedCredentialAsync`, `ServeGraceAsync`, `ServeRacedRotationAsync`), `Auth/Services/IRefreshRotationLedger.cs`, Infrastructure `Identity/Auth/RefreshRotationLedger.cs`, Domain `UserSession.cs` (`IsWithinRotationGrace`), `SessionRevocationReasons.RefreshTokenReuse` · FE none (the client already ends the session on a 401 from refresh) · Design n/a · Tests none · Real e2e none
+- State: INTEGRATING. Built. Missing: tests and owner check. Lead decision (2026-10-30): window 10 seconds, then revoke the chain. Security note: the new refresh credential sits in Redis for 15 seconds so a retry can be answered with it; a thief who replays inside the window gets it too, which is the cost of the window the lead chose.
 
 ### UC-IDN-D04 End access when a person is disabled
 - Capability: D Session expiration
@@ -482,7 +482,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 8, 55; ID-003, ID-006, ID-016; IAREQ003, IAREQ004.
 - Acceptance: Given an active person with two sessions and one token, when they are disabled, then all three stop working at once.
 - Evidence: Domain `backend/src/Notrelix.Domain/Identity/Users/User.cs` (`Activate`, `Deactivate`, `Suspend`); BE refresh blocks a non-Active user (`RefreshToken.cs`) and login refuses it; no Application command calls them · FE none · Design none · Tests Domain `UserTests`, Application `RefreshTokenTests` · Real e2e none
-- State: IMPLEMENTING. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
+- State: IMPLEMENTING. Not built in this pass: nothing in the product can disable a person yet, so an Identity command would have no caller; it needs the Accounts caller (who may disable whom, SCIM deprovisioning) first. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
 
 ### UC-IDN-D05 Bound the absolute session lifetime
 - Capability: D Session expiration
@@ -490,13 +490,13 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Preconditions: a session chain.
 - Input: the age of the chain.
 - Output: the chain ends after an absolute limit even when used daily.
-- Main flow: 1. Each rotated session keeps the start time of its chain. 2. Refresh fails when the chain is older than 90 days or idle for 30 days. 3. The person signs in again.
+- Main flow: 1. A session keeps its creation time through every rotation. 2. Each refresh sets the expiry to 30 days from now, never later than 90 days after the session was created; refresh fails after that. 3. The person signs in again.
 - No-op / rejection / concurrency / retry: limits are platform values; an Account policy may shorten them later (Accounts).
 - UI states: session expired.
 - Rules: ID-005; IAREQ019; enterprise baseline (Auth0, Notion).
 - Acceptance: Given a chain of 91 days, when it refreshes, then 401.
-- Evidence: BE none (`RefreshToken.cs` adds 30 days at each rotation) · FE none · Design n/a · Tests none · Real e2e none
-- State: DEFINED. Missing: all. Lead decision (2026-10-30): absolute 90 days, idle 30 days.
+- Evidence: BE Domain `Identity/Sessions/SessionLifetimePolicy.cs` (`IdleLifetime`, `AbsoluteLifetime`, `ExpiryAfterRefresh`), `UserSession.Rotate`, `Auth/Sessions/AuthSessionIssuer.cs` · FE none · Design n/a · Tests none · Real e2e none
+- State: INTEGRATING. Built. Missing: tests and owner check. Lead decision (2026-10-30): absolute 90 days, idle 30 days. The web refresh cookie lives 7 days (`JwtSettings:RefreshTokenExpireDays`), shorter than the idle limit, so a browser left alone for 8 days signs in again; left as is, owner check.
 
 ## Capability E: OAuth start
 
