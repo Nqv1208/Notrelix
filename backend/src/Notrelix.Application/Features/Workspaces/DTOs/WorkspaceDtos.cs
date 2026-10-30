@@ -46,7 +46,8 @@ public record WorkspaceMemberProfileDto(Guid UserId, string? JobTitle, long Vers
 /// <param name="ResourceId">The one resource a resource invitation shares.</param>
 /// <param name="ResourceLevel">The explicit entry level created on acceptance: <c>Viewer</c>, <c>Commenter</c> or <c>Editor</c> (capped, GOV-030).</param>
 /// <param name="InitialEntries">The Team/Space entries applied atomically on acceptance (Workspace invitation only).</param>
-/// <param name="Status">The invitation status enum name (<c>Pending</c>, <c>Accepted</c>, <c>Revoked</c>, <c>Expired</c> or <c>Declined</c>), as stored. A <c>Pending</c> invitation whose <c>ExpiresAt</c> has passed can no longer be accepted.</param>
+/// <param name="Status">The invitation status enum name (<c>Pending</c>, <c>Accepted</c>, <c>Revoked</c>, <c>Expired</c> or <c>Declined</c>). A stored <c>Pending</c> invitation whose <c>ExpiresAt</c> has passed is reported as <c>Expired</c>.</param>
+/// <param name="Version">The invitation aggregate version, sent back as <c>expectedVersion</c> when its role is changed.</param>
 public record WorkspaceInvitationDto(
     Guid Id,
     string Email,
@@ -58,7 +59,8 @@ public record WorkspaceInvitationDto(
     string? ResourceKind = null,
     Guid? ResourceId = null,
     string? ResourceLevel = null,
-    IReadOnlyList<WorkspaceInvitationEntryDto>? InitialEntries = null
+    IReadOnlyList<WorkspaceInvitationEntryDto>? InitialEntries = null,
+    long Version = 0
 );
 
 /// <param name="Kind"><c>Team</c> or <c>Space</c>.</param>

@@ -22,6 +22,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Invitation_PendingAlreadyExists = "Workspaces_Invitation_PendingAlreadyExists";
     public const string Workspaces_Invitation_CannotInviteAsOwner = "Workspaces_Invitation_CannotInviteAsOwner";
     public const string Workspaces_Invitation_CannotInviteAsAdmin = "Workspaces_Invitation_CannotInviteAsAdmin";
+    public const string Workspaces_Invitation_ResendTooSoon = "Workspaces_Invitation_ResendTooSoon";
     public const string Workspaces_Invitation_CannotResendNonPendingExpired = "Workspaces_Invitation_CannotResendNonPendingExpired";
     public const string Workspaces_Invitation_InitialEntriesRequireMemberOrGuest = "Workspaces_Invitation_InitialEntriesRequireMemberOrGuest";
     public const string Workspaces_Invitation_InitialEntryInvalid = "Workspaces_Invitation_InitialEntryInvalid";

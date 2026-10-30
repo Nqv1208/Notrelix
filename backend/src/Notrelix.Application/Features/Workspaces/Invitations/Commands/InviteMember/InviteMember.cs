@@ -16,12 +16,13 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 /// Team composition and Space members are managed by Workspace Owner/Admin
 /// (GOV-028); there is no handler role check.
 /// </summary>
+[IdempotencyOperation("workspaces.invitation.invite-member.v1")]
 public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role,
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest
 {
     private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
         InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;
@@ -43,6 +44,9 @@ public record InviteMemberCommand(
 
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
 {
+    /// <summary>The stable public code of the refusal when a pending invitation already exists for the address.</summary>
+    public const string PendingInvitationExistsErrorCode = "workspaces.invitation.pending-exists";
+
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IActorLookupService _actorLookup;
     private readonly ICurrentRequestContext _requestContext;
@@ -99,7 +103,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
                            && i.ExpiresAt > now, ct);
 
         if (hasActiveInvitation)
-            return Result<Guid>.Failure("A pending invitation already exists for this email address.");
+            throw new ConflictException(
+                "A pending invitation already exists for this email address.", PendingInvitationExistsErrorCode);
 
         var issuedToken = _oneTimeTokenService.Generate(TokenPurpose.WorkspaceInvitation);
         var invitationTokenHash = InvitationTokenHash.Create(issuedToken.TokenHash);

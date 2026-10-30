@@ -68,8 +68,10 @@ using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.RemoveTeamMember;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.ChangeTeamMemberRole;
 using Notrelix.Domain.Workspaces.Teams;
+using Notrelix.Domain.Workspaces.Invitations;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberJobTitle;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.ChangeInvitationRole;
 using Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
@@ -149,6 +151,7 @@ public sealed class ExpectedVersionTargetMap
     private const string SpaceKind = "workspaces.space";
     private const string TeamKind = "workspaces.team";
     private const string WorkspaceMemberKind = "workspaces.workspace-member";
+    private const string WorkspaceInvitationKind = "workspaces.workspace-invitation";
 
     // The member write loads exactly one WorkspaceMember: another member is addressed by user id,
     // the caller's own by its Workspace id (the caller's user id is not part of the request).
@@ -234,6 +237,9 @@ public sealed class ExpectedVersionTargetMap
         [typeof(SuspendMemberCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
         [typeof(ActivateMemberCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
         [typeof(RemoveMemberCommand)] = new(WorkspaceMemberKind, typeof(WorkspaceMember), IsMemberOfUser),
+
+        // Workspaces — invitation writes (LD-07): changing the offered role quotes the invitation's version
+        [typeof(ChangeInvitationRoleCommand)] = new(WorkspaceInvitationKind, typeof(WorkspaceInvitation)),
 
         // Workspaces — Team writes (RestoreTeam addresses a deleted Team and stays version-less)
         [typeof(RenameTeamCommand)] = new(TeamKind, typeof(Team)),

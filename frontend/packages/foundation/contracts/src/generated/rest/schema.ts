@@ -4242,7 +4242,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workspace invitations */
+        /**
+         * Get workspace invitations
+         * @description Cursor-paginated (default 50, max 200), newest invitation first. A pending invitation past its expiry is reported as Expired. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Invitations.ListWorkspaceInvitations"];
         put?: never;
         post?: never;
@@ -4478,7 +4481,10 @@ export interface paths {
          */
         get: operations["Workspaces.Members.ListMembers"];
         put?: never;
-        /** Invite a member to workspace */
+        /**
+         * Invite a member to workspace
+         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists.
+         */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
         options?: never;
@@ -6116,6 +6122,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.ChangeInvitationRoleRequest": {
             newRole?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest": {
             email?: string | null;
@@ -6400,6 +6408,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -7705,6 +7718,8 @@ export interface components {
             resourceId?: string | null;
             resourceLevel?: string | null;
             initialEntries?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"][] | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
             kind?: string | null;
@@ -18778,7 +18793,10 @@ export interface operations {
     };
     "Workspaces.Invitations.ListWorkspaceInvitations": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -18793,7 +18811,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto"];
                 };
             };
         };
@@ -19200,7 +19218,10 @@ export interface operations {
     "Workspaces.Members.InviteMember": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -19215,11 +19236,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
