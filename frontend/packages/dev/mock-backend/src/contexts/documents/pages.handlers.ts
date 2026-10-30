@@ -10,6 +10,7 @@
  *   pages.restore    — POST /pages/:id/restore
  *   pages.trash      — GET /workspaces/:workspaceId/pages/trash
  *   pages.delete     — DELETE /pages/:id (a trashed page only)
+ *   pages.move       — POST /pages/:pageId/move (Documents.Pages.Move)
  *   pages.moveToSpace — POST /pages/:pageId/move-to-space (Documents.Pages.MoveToSpace)
  *   pages.breadcrumb — GET /pages/:id/breadcrumb
  *   pages.blocks     — GET /pages/:id/blocks
@@ -329,6 +330,50 @@ export const pagesOperations = [
         };
       store.deletePage(params.id);
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /pages/:pageId/move ─────────────────────────────────────────────
+
+  defineMockOperation<
+    { pageId: string },
+    { parentId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "pages.move",
+    contract: { kind: "openapi", operationId: "Documents.Pages.Move" },
+    method: "POST",
+    route: "/pages/:pageId/move",
+    async handle({ params, body, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page || !store.isCurrentMemberOf(page.workspaceId))
+        return notFound("Page not found");
+      // UpdatePage on the page (guests never move pages here).
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return notFound("Page not found");
+      switch (
+        store.movePage(page.id, body?.parentId ?? null, body?.expectedVersion)
+      ) {
+        case "ok":
+          return noContent();
+        case "not-found":
+          return notFound("Page not found");
+        case "stale":
+          return preconditionFailed();
+        case "invalid":
+          // The producer's Documents_PageTree_* rules (cycle, nesting limit).
+          return {
+            status: 400,
+            body: {
+              type: "https://docs.notrelix.com/problems/business_rule-violation",
+              title: "Business rule violation",
+              status: 400,
+              detail:
+                "A page cannot go inside itself or nest deeper than 10 levels.",
+              errorCode: "business_rule.violation",
+            },
+          };
+      }
     },
   }),
 

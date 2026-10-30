@@ -166,6 +166,7 @@ export const vi = {
     saveVersion: "Lưu phiên bản…",
     saveTemplate: "Lưu thành mẫu…",
     rename: "Đổi tên",
+    move: "Chuyển đến…",
     copyTitle: "{{title}} (bản sao)",
     makeCopyDone: "Đã tạo bản sao.",
     makeCopyDropped:
@@ -429,6 +430,20 @@ export const vi = {
     moveConfirm: "Chuyển vào thùng rác",
     subtreeRefused:
       "Bạn không có quyền với một số trang bên dưới, nên chưa có gì thay đổi.",
+  },
+  movePage: {
+    title: "Chuyển trang đến",
+    close: "Đóng",
+    search: "Tìm trang theo tên",
+    topLevel: "Cấp cao nhất của khu vực",
+    none: "Không có trang nào khớp.",
+    untitled: "Tài liệu chưa đặt tên",
+    moved: "Đã chuyển “{{title}}”.",
+    conflict: "Trang vừa được người khác thay đổi. Đã tải lại, hãy thử lại.",
+    subtree:
+      "Bạn không có quyền với một số trang bên dưới, nên chưa di chuyển gì cả.",
+    rule: "Không thể đặt trang vào đó (trang không thể nằm trong chính nó, và cây trang chỉ sâu tối đa 10 cấp).",
+    failed: "Không chuyển được trang. Thử lại.",
   },
   picker: {
     title: "Liên kết tới trang",
@@ -916,6 +931,7 @@ export const en: DocPageCopy = {
     saveVersion: "Save version…",
     saveTemplate: "Save as template…",
     rename: "Rename",
+    move: "Move to…",
     copyTitle: "{{title}} (copy)",
     makeCopyDone: "Copy created.",
     makeCopyDropped:
@@ -1180,6 +1196,21 @@ export const en: DocPageCopy = {
     moveConfirm: "Move to the trash",
     subtreeRefused:
       "You cannot change some of the pages under this page, so nothing was changed.",
+  },
+  movePage: {
+    title: "Move page to",
+    close: "Close",
+    search: "Search pages by name",
+    topLevel: "Top level of the space",
+    none: "No page matches.",
+    untitled: "Untitled document",
+    moved: "Moved “{{title}}”.",
+    conflict:
+      "The page was changed by someone else. It was reloaded, try again.",
+    subtree:
+      "You cannot change some of the pages under this page, so nothing was moved.",
+    rule: "The page cannot go there (it cannot sit inside itself, and pages nest at most 10 levels).",
+    failed: "The page could not be moved. Try again.",
   },
   picker: {
     title: "Link to a page",

@@ -14,6 +14,7 @@ import type {
   DocConvertView,
   DocPageCallbacks,
   DocPickerBoardView,
+  DocMovePageView,
   DocPickerPageView,
   DocTrashConfirmView,
   DocTrashView,
@@ -327,6 +328,107 @@ export function DocPagePickerDialogSurface({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
                     {page.title || p.untitled}
+                  </span>
+                  {page.detail ? (
+                    <small className="block text-metadata leading-[1.4] tracking-normal text-meta-foreground">
+                      {page.detail}
+                    </small>
+                  ) : null}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </DialogFrame>
+  );
+}
+
+export interface DocMovePageDialogSurfaceProps {
+  readonly copy: DocPageCopy;
+  readonly move: DocMovePageView;
+  readonly callbacks?: DocPageCallbacks;
+}
+
+/** Puts the open page, with the pages under it, under another page or at the top of its Space. */
+export function DocMovePageDialogSurface({
+  copy,
+  move,
+  callbacks,
+}: DocMovePageDialogSurfaceProps) {
+  const m = copy.movePage;
+  const [query, setQuery] = useState("");
+  const needle = foldText(query.trim());
+  const matches = move.pages.filter(
+    (page) => needle === "" || foldText(page.title).includes(needle),
+  );
+  const OPTION =
+    "flex min-h-11 items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2 py-1 text-left text-nav leading-[1.4] text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-60";
+  return (
+    <DialogFrame
+      title={m.title}
+      closeLabel={m.close}
+      width={480}
+      onClose={callbacks?.onCloseOverlay}
+    >
+      <div className="flex flex-col gap-2 px-5 pt-2 pb-5">
+        {move.failure ? (
+          <p
+            role="alert"
+            className="m-0 text-crumb font-semibold text-danger-text"
+          >
+            {m[move.failure]}
+          </p>
+        ) : null}
+        <input
+          type="search"
+          value={query}
+          aria-label={m.search}
+          placeholder={m.search}
+          onChange={(event) => setQuery(event.target.value)}
+          className={FIELD}
+        />
+        <div
+          role="listbox"
+          aria-label={m.title}
+          aria-busy={move.busy}
+          className="flex max-h-[320px] flex-col gap-0.5 overflow-auto"
+        >
+          {move.canTopLevel ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected="false"
+              disabled={move.busy}
+              onClick={() => callbacks?.onMovePageTo?.(null)}
+              className={OPTION}
+            >
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {m.topLevel}
+              </span>
+            </button>
+          ) : null}
+          {matches.length === 0 ? (
+            <span className="px-1 py-2 text-compact text-meta-foreground">
+              {m.none}
+            </span>
+          ) : (
+            matches.map((page) => (
+              <button
+                key={page.id}
+                type="button"
+                role="option"
+                aria-selected="false"
+                disabled={move.busy}
+                onClick={() => callbacks?.onMovePageTo?.(page.id)}
+                className={OPTION}
+              >
+                <span aria-hidden="true" className="w-5 text-center">
+                  {page.icon ?? ""}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    {page.title || m.untitled}
                   </span>
                   {page.detail ? (
                     <small className="block text-metadata leading-[1.4] tracking-normal text-meta-foreground">

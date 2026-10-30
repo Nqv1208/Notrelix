@@ -1,6 +1,7 @@
 import type {
   Page,
   CreatePagePayload,
+  MovePagePayload,
   MovePageToSpacePayload,
   UpdatePagePayload,
   PageDetail,
@@ -64,6 +65,7 @@ export interface PageApiEndpoints {
     comments: (pageId: string) => string;
     history: (pageId: string) => string;
     search: (workspaceId: string) => string;
+    move: (pageId: string) => string;
     moveToSpace: (pageId: string) => string;
     archive: (pageId: string) => string;
     restore: (pageId: string) => string;
@@ -186,6 +188,22 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
     /** `Documents.Pages.DeletePage`: removes a trashed page for good. */
     async delete(pageId: string): Promise<void> {
       await api.delete<void>(endpoints.pages.detail(pageId));
+    },
+
+    /**
+     * `Documents.Pages.Move`: the page and its subtree go under another page
+     * (or to the top of the Space); a stale `expectedVersion` is a 412 and
+     * moves nothing, a cycle or a nesting beyond 10 levels is a 400.
+     */
+    async move(payload: MovePagePayload): Promise<void> {
+      await api.post<void>(
+        endpoints.pages.move(payload.pageId),
+        {
+          parentId: payload.parentId,
+          expectedVersion: payload.expectedVersion,
+        },
+        { skipGlobalErrorToast: true },
+      );
     },
 
     /**

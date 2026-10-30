@@ -24,6 +24,7 @@ import {
   createUsePage,
   createUsePageBlocks,
   createUseArchivePage,
+  createUseMovePage,
   createUseConvertTodo,
   createUseDeletePage,
   createUsePageBacklinks,
@@ -115,6 +116,19 @@ const REPEATING: ReadonlySet<BlockType> = new Set([
   "todo",
 ]);
 
+/** Why a move was refused, as the dialog words it. */
+function moveFailure(
+  error: unknown,
+): "conflict" | "subtree" | "rule" | "failed" {
+  const { status, code } = (error ?? {}) as {
+    status?: unknown;
+    code?: unknown;
+  };
+  if (status === 412) return "conflict";
+  if (code === "documents.page.subtree-not-permitted") return "subtree";
+  return status === 400 ? "rule" : "failed";
+}
+
 /** The producer refused a trash, restore or delete because some page under the page is not the caller's to change. */
 function isSubtreeRefusal(error: unknown): boolean {
   return (
@@ -123,11 +137,11 @@ function isSubtreeRefusal(error: unknown): boolean {
   );
 }
 
-/** How many pages the list holds below `rootId`, at any depth. */
-function pagesBelow(
+/** The ids of the pages the list holds below `rootId`, at any depth. */
+function pageIdsBelow(
   pages: readonly { id: string; parentId: string | null }[],
   rootId: string,
-): number {
+): ReadonlySet<string> {
   const below = new Set<string>();
   let frontier = [rootId];
   while (frontier.length > 0) {
@@ -142,7 +156,7 @@ function pagesBelow(
       .map((entry) => entry.id);
     for (const id of frontier) below.add(id);
   }
-  return below.size;
+  return below;
 }
 
 function saveBlob(name: string, blob: Blob): void {
@@ -211,6 +225,7 @@ export function createDocPageScreen({
   const useImportPage = createUseImportPage(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
+  const useMovePage = createUseMovePage(api, endpoints);
   const useRestorePage = createUseRestorePage(api, endpoints);
   const useDeletePage = createUseDeletePage(api, endpoints);
   const useTrashedPages = createUseTrashedPages(api, endpoints);
@@ -241,6 +256,7 @@ export function createDocPageScreen({
     const convertTodo = useConvertTodo(workspaceId, pageId);
     const pageListQuery = usePageList(workspaceId);
     const archivePage = useArchivePage(workspaceId);
+    const movePageMutation = useMovePage(workspaceId);
     const restorePage = useRestorePage(workspaceId);
     const deletePage = useDeletePage(workspaceId);
     const createVersion = useCreateVersion(workspaceId, pageId);
@@ -895,6 +911,11 @@ export function createDocPageScreen({
       });
     const blockById = (id: string) => blocks.find((block) => block.id === id);
 
+    // Where the page may go: not into the pages under it, and not where it already is.
+    const pagesUnder = pageIdsBelow(pageListQuery.data ?? [], pageId);
+    const movePageDestinations = (pickerPages ?? []).filter(
+      (entry) => !pagesUnder.has(entry.id) && entry.id !== page.parentId,
+    );
     // The page and the pages under it go to the trash together; the toast offers the way back.
     const trashOpenPage = (below: number) =>
       archivePage.mutate(pageId, {
@@ -969,7 +990,7 @@ export function createDocPageScreen({
       onTrashPage: host.canEdit
         ? () => {
             setOverlay(NONE);
-            const below = pagesBelow(pageListQuery.data ?? [], pageId);
+            const below = pageIdsBelow(pageListQuery.data ?? [], pageId).size;
             if (below > 0) setOverlay({ kind: "trashPage", below });
             else trashOpenPage(0);
           }
@@ -978,6 +999,29 @@ export function createDocPageScreen({
         ? () => trashOpenPage(overlay.kind === "trashPage" ? overlay.below : 0)
         : undefined,
       onOpenTrash: () => setOverlay({ kind: "trash" }),
+      onMovePage: host.canEdit
+        ? () => {
+            movePageMutation.reset();
+            setOverlay({ kind: "movePage" });
+          }
+        : undefined,
+      onMovePageTo: host.canEdit
+        ? (parentId) =>
+            movePageMutation.mutate(
+              {
+                pageId,
+                parentId,
+                // The producer rejects 0 (no version read) instead of guessing.
+                expectedVersion: page.version ?? 0,
+              },
+              {
+                onSuccess: () => {
+                  setOverlay(NONE);
+                  host.notify?.(fillDocCopy(copy.movePage.moved, { title }));
+                },
+              },
+            )
+        : undefined,
       onLoadMoreTrash: () => void trashQuery.fetchNextPage(),
       onRetryTrash: () => void trashQuery.refetch(),
       onRestorePage: (id) => restorePage.mutate(id),
@@ -1580,6 +1624,18 @@ export function createDocPageScreen({
                       })
                     : host.share.space.name,
                 },
+              }
+            : undefined
+        }
+        movePage={
+          overlay.kind === "movePage"
+            ? {
+                pages: movePageDestinations,
+                canTopLevel: page.parentId !== null,
+                busy: movePageMutation.isPending,
+                failure: movePageMutation.isError
+                  ? moveFailure(movePageMutation.error)
+                  : null,
               }
             : undefined
         }

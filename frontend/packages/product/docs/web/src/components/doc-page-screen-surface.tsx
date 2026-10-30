@@ -24,6 +24,7 @@ import type {
   DocMarkTargets,
   DocPerson,
   DocPickerPageView,
+  DocMovePageView,
   DocTrashConfirmView,
   DocTrashView,
   DocHeaderView,
@@ -46,6 +47,7 @@ import type {
 import {
   DocBoardPickerDialogSurface,
   DocConvertTaskDialogSurface,
+  DocMovePageDialogSurface,
   DocPagePickerDialogSurface,
   DocTrashConfirmDialogSurface,
   DocTrashDialogSurface,
@@ -118,6 +120,8 @@ export interface DocPageScreenSurfaceProps {
   readonly trash?: DocTrashView;
   /** The confirmation before the open page and the pages under it go to the trash. */
   readonly trashConfirm?: DocTrashConfirmView;
+  /** The "Move to" dialog's destinations and write state. */
+  readonly movePage?: DocMovePageView;
   /** The pages the page picker offers. */
   readonly pickerPages?: readonly DocPickerPageView[];
   /** The boards the board picker offers. */
@@ -219,6 +223,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     share,
     trash,
     trashConfirm,
+    movePage,
     pickerPages,
     pickerBoards,
     convert,
@@ -264,6 +269,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     shareOpen ||
     (overlay.kind === "trash" && trash !== undefined) ||
     (overlay.kind === "trashPage" && trashConfirm !== undefined) ||
+    (overlay.kind === "movePage" && movePage !== undefined) ||
     (overlay.kind === "saveVersion" && history !== undefined) ||
     (overlay.kind === "restoreVersion" && history !== undefined) ||
     (overlay.kind === "saveTemplate" && templateAction !== undefined) ||
@@ -395,6 +401,13 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         <DocTrashDialogSurface
           copy={copy}
           trash={trash}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "movePage" && movePage ? (
+        <DocMovePageDialogSurface
+          copy={copy}
+          move={movePage}
           callbacks={callbacks}
         />
       ) : null}

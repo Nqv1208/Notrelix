@@ -304,6 +304,17 @@ export interface DocTrashView {
   readonly loadingMore: boolean;
 }
 
+/** The "Move to" dialog: where the open page and the pages under it can go. */
+export interface DocMovePageView {
+  /** Pages the open page may be put under (not itself, its own pages or its current parent). */
+  readonly pages: readonly DocPickerPageView[];
+  /** The page is nested, so it can also go to the top of its Space. */
+  readonly canTopLevel: boolean;
+  readonly busy: boolean;
+  /** Why the last move failed. */
+  readonly failure: "conflict" | "subtree" | "rule" | "failed" | null;
+}
+
 /** The confirmation before a page with pages under it goes to the trash. */
 export interface DocTrashConfirmView {
   /** Pages under the open page that go with it. */
@@ -370,6 +381,7 @@ export type DocOverlay =
   | { readonly kind: "share" }
   | { readonly kind: "trash" }
   | { readonly kind: "trashPage"; readonly below: number }
+  | { readonly kind: "movePage" }
   | { readonly kind: "saveVersion" }
   | { readonly kind: "restoreVersion" }
   | { readonly kind: "saveTemplate" }
@@ -439,6 +451,10 @@ export interface DocPageCallbacks {
   /** The person confirmed moving the open page and the pages under it. */
   readonly onConfirmTrashPage?: () => void;
   readonly onOpenTrash?: () => void;
+  /** Opens the "Move to" dialog for the open page. */
+  readonly onMovePage?: () => void;
+  /** Moves the open page under a page (`null` = the top of its Space). */
+  readonly onMovePageTo?: (parentId: string | null) => void;
   readonly onLoadMoreTrash?: () => void;
   readonly onRetryTrash?: () => void;
   readonly onRestorePage?: (pageId: string) => void;

@@ -3452,6 +3452,51 @@ export class MockStore {
     return "ok";
   }
 
+  /**
+   * Puts a page and its subtree under another page, or at the top of its Space
+   * (`Documents.Pages.Move`): a stale version changes nothing, the same parent is a
+   * no-op, a page cannot go under itself or its own pages, nesting stops at 10 levels,
+   * and the subtree follows the Space of the new parent.
+   */
+  movePage(
+    pageId: string,
+    parentId: string | null,
+    expectedVersion: unknown,
+  ): MockVersionedWrite | "invalid" {
+    const page = this.pagesById.get(pageId);
+    if (!page || page.trashedAt) return "not-found";
+    if (expectedVersion !== (page.version ?? 1)) return "stale";
+    if ((page.parentId ?? null) === parentId) return "ok";
+    const below = this.pagesBelow(pageId);
+    const parent = parentId ? this.pagesById.get(parentId) : undefined;
+    if (parentId && (!parent || parent.trashedAt)) return "not-found";
+    if (parentId === pageId || below.some((entry) => entry.id === parentId))
+      return "invalid";
+    const levelsAbove = (id: string | undefined): number =>
+      id ? 1 + levelsAbove(this.pagesById.get(id)?.parentId) : 0;
+    const levelsBelow = (id: string): number =>
+      1 +
+      Math.max(
+        0,
+        ...Array.from(this.pagesById.values())
+          .filter((entry) => entry.parentId === id)
+          .map((entry) => levelsBelow(entry.id)),
+      );
+    if (levelsAbove(parentId ?? undefined) + levelsBelow(pageId) > 10)
+      return "invalid";
+    const spaceId = parent ? (parent.spaceId ?? null) : (page.spaceId ?? null);
+    for (const entry of below)
+      this.pagesById.set(entry.id, { ...entry, spaceId });
+    this.pagesById.set(pageId, {
+      ...page,
+      parentId: parentId ?? undefined,
+      spaceId,
+      version: (page.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    return "ok";
+  }
+
   getPageVersion(pageId: string): number {
     return this.pagesById.get(pageId)?.version ?? 1;
   }

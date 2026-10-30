@@ -66,6 +66,14 @@ export interface MovePageToSpacePayload {
   expectedVersion: number;
 }
 
+/** `Documents.Pages.Move`: a page moves with its subtree under another page, or to the top of its Space. */
+export interface MovePagePayload {
+  pageId: ID;
+  /** `null` makes the page a root page of its Space. */
+  parentId: ID | null;
+  expectedVersion: number;
+}
+
 export interface BreadcrumbItem {
   id: ID;
   title: string;
