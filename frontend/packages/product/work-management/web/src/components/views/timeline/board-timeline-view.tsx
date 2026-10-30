@@ -280,6 +280,18 @@ export function BoardTimelineView({
     const card = cardsById.get(item.id);
     const due = card ? cardDue(card) : undefined;
     if (!card || !due || !canEdit || change.days === 0) return;
+    // A due day cannot go before the start day: the keyboard is refused here as
+    // the pointer drag is clamped in the surface.
+    if (change.mode === "resize" && card.startDate) {
+      const startDay = dayOf(card.startDate, timeZone)?.day;
+      const nextDay = dayOf(shiftInstant(due, change.days), timeZone)?.day;
+      if (startDay && nextDay && nextDay < startDay) {
+        toast.error(fill(copy.reschedule.beforeStart, { title: card.title }), {
+          id: `timeline-write-${card.id}`,
+        });
+        return;
+      }
+    }
     // A move keeps the span's length (start and due shift together); a
     // resize changes only the due day.
     updateCard.mutate(
