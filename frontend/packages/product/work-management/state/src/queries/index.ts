@@ -20,3 +20,4 @@ export * from "./use-retired-boards";
 export * from "./use-workspace-automations";
 export * from "./use-offline-writes";
 export * from "./use-board-preference";
+export * from "./use-item-capabilities";

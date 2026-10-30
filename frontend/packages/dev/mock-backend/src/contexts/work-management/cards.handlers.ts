@@ -58,6 +58,10 @@ import {
   ok,
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
+import {
+  projectCardSettings,
+  projectVoteValues,
+} from "./item-capabilities.handlers";
 import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
@@ -241,13 +245,20 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     startDate: c.startedAt ?? null,
     completedAt,
     cover: null,
+    ...projectCardSettings(store, c.id),
     position: c.position,
     members: projectItemMembers(c, store),
     labels,
     checklists,
     commentCount: comments.length,
     attachmentCount: 0,
-    fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
+    fieldValues: (() => {
+      const merged = {
+        ...fieldValues,
+        ...projectVoteValues(store, c.id, c.boardId),
+      };
+      return Object.keys(merged).length > 0 ? merged : null;
+    })(),
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
     ...{

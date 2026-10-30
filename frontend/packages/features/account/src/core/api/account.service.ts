@@ -177,6 +177,7 @@ interface PreferencesWire {
   readonly theme?: string | null;
   readonly phone?: string | null;
   readonly phoneVisibleToWorkspaceMembers?: boolean;
+  readonly colourBlindLabels?: boolean;
   readonly version?: number;
 }
 
@@ -191,6 +192,7 @@ export function toPreferences(wire: PreferencesWire): AccountPreferences {
     phone: wire.phone ?? "",
     phoneVisibleToWorkspaceMembers:
       wire.phoneVisibleToWorkspaceMembers ?? false,
+    colourBlindLabels: wire.colourBlindLabels ?? false,
     version: wire.version ?? 0,
   };
 }

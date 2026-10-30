@@ -181,6 +181,12 @@ const computed = (
   parseDraft: readOnlyDraft,
 });
 
+/** The count of a Vote value (`{ count, voted }`); anything else counts as no votes. */
+function voteCount(value: unknown): number {
+  const count = (value as { count?: unknown } | null | undefined)?.count;
+  return typeof count === "number" && Number.isFinite(count) ? count : 0;
+}
+
 /** One entry per field type; the single place that knows what a type may do. */
 export const fieldTypeRegistry: Readonly<Record<FieldType, FieldTypeSpec>> = {
   text,
@@ -273,6 +279,17 @@ export const fieldTypeRegistry: Readonly<Record<FieldType, FieldTypeSpec>> = {
   },
   formula: computed("formula", [...NUMERIC_OPERATORS, "contains"]),
   rollup: computed("rollup", NUMERIC_OPERATORS),
+  // A vote count: cast from the item's vote chip, never typed; sorts and filters by the count.
+  vote: {
+    ...base,
+    type: "vote",
+    editable: false,
+    operators: NUMERIC_OPERATORS,
+    isEmpty: (value) => voteCount(value) === 0,
+    compare: (a, b) => voteCount(a) - voteCount(b),
+    text: (value) => String(voteCount(value)),
+    parseDraft: readOnlyDraft,
+  },
   // Types the board still carries but this contract does not edit inline.
   timeline: {
     ...text,

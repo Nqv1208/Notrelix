@@ -243,7 +243,7 @@ export function mapSettingsView(
     sort: sort
       ? { fieldName: fieldName(sort.fieldId), text: sort.direction }
       : null,
-    cardFieldIds: [],
+    cardFieldIds: config.cardFieldIds ?? [],
     cardFieldChoices: [],
     lastEditedBy: "",
     createdBy: "",

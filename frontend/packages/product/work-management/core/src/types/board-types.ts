@@ -56,6 +56,10 @@ export interface ViewConfig {
   keyboardMove?: boolean;
   /** Kanban: lane value id to its WIP limit (1..999); a warning, never a write rule. */
   wipLimits?: Record<string, number>;
+  /** Kanban: field ids shown on the card face, in order; absent or empty: none. */
+  cardFieldIds?: string[];
+  /** Kanban: field ids that are hidden on the card face while the card has no value. */
+  cardHideEmpty?: string[];
 }
 
 export interface FilterConfig {

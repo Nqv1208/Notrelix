@@ -7,6 +7,24 @@
 import { workspaceQueryKey } from "@notrelix/query";
 
 export const wmQueryKeys = {
+  boardChecklists: (workspaceId: string, boardId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "boards",
+      "checklists",
+      boardId,
+    ),
+  itemVotes: (workspaceId: string, itemId: string, fieldId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "item-votes",
+      itemId,
+      fieldId,
+    ),
+  itemViewers: (workspaceId: string, itemId: string) =>
+    workspaceQueryKey(workspaceId, "work-management", "item-viewers", itemId),
   all: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "work-management"),
   list: (workspaceId: string) =>

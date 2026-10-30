@@ -11,6 +11,50 @@ export interface CardMember {
   color: string;
 }
 
+/** The ten cover colours (design tokens `--cover-<id>`). */
+export const CARD_COVER_COLORS = [
+  "blue",
+  "teal",
+  "violet",
+  "amber",
+  "rose",
+  "gray",
+  "orange",
+  "green",
+  "indigo",
+  "red",
+] as const;
+export type CardCoverColor = (typeof CARD_COVER_COLORS)[number];
+export type CardCoverStyle = "strip" | "full";
+
+/** An item cover: a colour or an image attachment of the item, as a top strip or over the whole card. */
+export interface CardCover {
+  color: CardCoverColor | null;
+  attachmentId: string | null;
+  style: CardCoverStyle;
+}
+
+export const CARD_REPEAT_RULES = [
+  "daily",
+  "weekdays",
+  "weekly",
+  "biweekly",
+  "monthly",
+] as const;
+export type CardRepeatRule = (typeof CARD_REPEAT_RULES)[number];
+
+/** Minutes before the due time: -1 off, 0 at the due time, 1440 the default. */
+export const CARD_REMINDER_OFFSETS = [
+  -1, 0, 15, 60, 1440, 2880, 10080,
+] as const;
+export const CARD_REMINDER_DEFAULT = 1440;
+
+/** The value of a Vote field on an item: how many voted and whether the viewer did. */
+export interface CardVoteValue {
+  count: number;
+  voted: boolean;
+}
+
 export interface Card {
   id: string;
   listId: string;
@@ -59,6 +103,12 @@ export interface Card {
   openBlockerCount?: number;
   /** Child item progress; a card shows it only when `total > 0`. */
   childProgress?: { done: number; total: number } | null;
+  /** The item cover; null or absent when it has none. */
+  cover?: CardCover | null;
+  /** How the item repeats; null or absent when it does not. */
+  repeatRule?: CardRepeatRule | null;
+  /** Minutes before the due time for the reminder (default 1440, -1 off). */
+  reminderOffsetMinutes?: number;
 }
 
 export type CardDetailTab =

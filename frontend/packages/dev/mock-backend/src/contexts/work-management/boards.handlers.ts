@@ -43,6 +43,10 @@ import {
   validationError,
 } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
+import {
+  projectCardSettings,
+  projectVoteValues,
+} from "./item-capabilities.handlers";
 import { savedViewTypeName } from "../../state/mock-board-saved-views";
 import type { MockBoardRecord, MockCardRecord } from "../../state/records";
 import {
@@ -243,7 +247,11 @@ function projectItemSummary(
     version: card.version ?? 1,
     ...projectItemReadValues(card, store),
     // The stored custom values and the Formula results, evaluated on each read.
-    fieldValues: store.getFieldValues(card.id),
+    ...projectCardSettings(store, card.id),
+    fieldValues: {
+      ...store.getFieldValues(card.id),
+      ...projectVoteValues(store, card.id, card.boardId),
+    },
     computedValues: projectComputedValues(
       store.getColumns(card.boardId),
       store.getFieldValues(card.id),

@@ -19,10 +19,13 @@ import type {
   CardDetail,
   CardDtoApi,
   CardFile,
+  CardCover,
+  CardCoverColor,
   CardLabelDtoApi,
   CardMember,
   CardMemberDtoApi,
   CardSummaryDtoApi,
+  CardRepeatRule,
   CardUpdate,
   Checklist,
   CommentDtoApi,
@@ -35,6 +38,9 @@ import type {
   WorkStatusCategory,
 } from "@notrelix/work-management-core";
 import {
+  CARD_COVER_COLORS,
+  CARD_REMINDER_DEFAULT,
+  CARD_REPEAT_RULES,
   checklistProgressOf,
   personInitials,
 } from "@notrelix/work-management-core";
@@ -189,6 +195,46 @@ export function mapFullBoardDto(
   };
 }
 
+/** The cover, repeat rule and reminder of an item, as the item reads carry them (all optional). */
+function readCardSettings(
+  dto: unknown,
+): Pick<Card, "cover" | "repeatRule" | "reminderOffsetMinutes"> {
+  const raw = dto as {
+    coverColor?: string | null;
+    coverAttachmentId?: string | null;
+    coverStyle?: string | null;
+    repeatRule?: string | null;
+    reminderOffsetMinutes?: number | null;
+  };
+  const color = (CARD_COVER_COLORS as readonly string[]).includes(
+    raw.coverColor ?? "",
+  )
+    ? (raw.coverColor as CardCoverColor)
+    : null;
+  const attachmentId = raw.coverAttachmentId ?? null;
+  const cover: CardCover | null =
+    color || attachmentId
+      ? {
+          color,
+          attachmentId: color ? null : attachmentId,
+          style: raw.coverStyle === "full" ? "full" : "strip",
+        }
+      : null;
+  const repeatRule = (CARD_REPEAT_RULES as readonly string[]).includes(
+    raw.repeatRule ?? "",
+  )
+    ? (raw.repeatRule as CardRepeatRule)
+    : null;
+  return {
+    cover,
+    repeatRule,
+    reminderOffsetMinutes:
+      typeof raw.reminderOffsetMinutes === "number"
+        ? raw.reminderOffsetMinutes
+        : CARD_REMINDER_DEFAULT,
+  };
+}
+
 export function mapCardDto(dto: BoardItemReadDto): CardDetail {
   const members = (dto.members ?? []).map(mapCardMember);
   const values = readItemValues(dto);
@@ -249,6 +295,7 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     statusOptionId: status || null,
     dueAt: dueDate ?? null,
     childProgress: values.childProgress,
+    ...readCardSettings(dto),
     boardTitle: "",
     watchers: members,
     isWatched: false,
@@ -585,6 +632,7 @@ function mapCardSummaryDto(
     openBlockerCount: legacy
       ? 0
       : ((dto as GeneratedItemSummary).openBlockerCount ?? 0),
+    ...readCardSettings(dto),
   };
 }
 
@@ -928,7 +976,8 @@ function normalizeFieldType(value: string): FieldDefinition["fieldType"] {
   if (normalized === "status") return "select";
   if (normalized === "multiselect") return "multi_select";
   if (normalized === "longtext") return "long_text";
-  if (normalized === "link" || normalized === "rollup") return normalized;
+  if (normalized === "link" || normalized === "rollup" || normalized === "vote")
+    return normalized;
   if (
     normalized === "text" ||
     normalized === "number" ||

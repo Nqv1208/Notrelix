@@ -37,3 +37,4 @@ export * from "./use-move-item-to-board";
 export * from "./use-create-item-with-details";
 export * from "./checklist-queue";
 export * from "./use-checklist-writes";
+export * from "./use-item-capabilities";

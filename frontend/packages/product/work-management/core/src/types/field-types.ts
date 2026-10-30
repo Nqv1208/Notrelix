@@ -13,7 +13,8 @@ export type FieldType =
   | "progress"
   | "relation"
   | "formula"
-  | "rollup";
+  | "rollup"
+  | "vote";
 
 /** Work status category of a Status option (board read contract). */
 export type WorkStatusCategory = "todo" | "in_progress" | "review" | "done";

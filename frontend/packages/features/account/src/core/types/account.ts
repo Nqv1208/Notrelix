@@ -21,6 +21,8 @@ export interface AccountPreferences {
   /** E.164, or `""` when none. */
   readonly phone: string;
   readonly phoneVisibleToWorkspaceMembers: boolean;
+  /** Label colours are shown with a small shape beside each (colour-blind mode). */
+  readonly colourBlindLabels: boolean;
   readonly version: number;
 }
 
