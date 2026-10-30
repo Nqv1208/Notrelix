@@ -36,7 +36,7 @@ public class CompleteBoardItemCommandHandler : IRequestHandler<CompleteBoardItem
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var completedAt = request.CompletedAt ?? _dateTimeProvider.UtcNow;
-        item.Complete(completedAt, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        item.CompleteOccurrence(completedAt, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

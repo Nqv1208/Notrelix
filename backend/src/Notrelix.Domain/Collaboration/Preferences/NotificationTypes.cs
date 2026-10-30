@@ -49,6 +49,9 @@ public static class NotificationTypes
     /// <summary>An Item assigned to the person became overdue (daily job); maps to <see cref="Overdue"/>.</summary>
     public const string ItemOverdueProducedType = "work.item.overdue";
 
+    /// <summary>The reminder the Item's own setting asked for, a set time before its due time; maps to <see cref="Overdue"/>.</summary>
+    public const string ItemDueReminderProducedType = "work.item.due-reminder";
+
     /// <summary>Someone who waits on the person's work on an Item asked for an update; maps to <see cref="Assigned"/>.</summary>
     public const string ItemReminderProducedType = "work.item.reminder";
 
@@ -69,7 +72,7 @@ public static class NotificationTypes
     {
         MentionProducedType => Mention,
         ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType => Assigned,
-        ItemDueTomorrowProducedType or ItemOverdueProducedType => Overdue,
+        ItemDueTomorrowProducedType or ItemOverdueProducedType or ItemDueReminderProducedType => Overdue,
         ApprovalRequestedProducedType or ApprovalApprovedProducedType or ApprovalRejectedProducedType => Approval,
         ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,
         _ => null,

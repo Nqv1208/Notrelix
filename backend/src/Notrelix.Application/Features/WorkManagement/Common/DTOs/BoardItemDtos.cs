@@ -32,7 +32,15 @@ public record BoardItemSummaryDto(
     // Formula and Rollup results by field id, evaluated on this read and never stored.
     Dictionary<string, ComputedValueDto>? ComputedValues = null,
     // Derived: live, not-completed Items this Item is blocked by (Dependency links where it is the source).
-    int OpenBlockerCount = 0
+    int OpenBlockerCount = 0,
+    // Cover: a colour token or an image attachment id, shown as a "strip" or over the "full" card; all null when none.
+    string? CoverColor = null,
+    Guid? CoverAttachmentId = null,
+    string? CoverStyle = null,
+    // How the Item repeats ("daily", "weekdays", "weekly", "biweekly", "monthly"); null when it does not.
+    string? RepeatRule = null,
+    // Minutes before the due time for the reminder: -1 off, 0, 15, 60, 1440 (default), 2880, 10080.
+    int ReminderOffsetMinutes = 1440
 );
 
 /// <summary>
@@ -81,7 +89,15 @@ public record BoardItemDto(
     // The item's Markdown description; null when it has none.
     string? DescriptionMd = null,
     Dictionary<string, JsonElement>? FieldValues = null,
-    Dictionary<string, ComputedValueDto>? ComputedValues = null
+    Dictionary<string, ComputedValueDto>? ComputedValues = null,
+    // Cover: a colour token or an image attachment id, shown as a "strip" or over the "full" card; all null when none.
+    string? CoverColor = null,
+    Guid? CoverAttachmentId = null,
+    string? CoverStyle = null,
+    // How the Item repeats ("daily", "weekdays", "weekly", "biweekly", "monthly"); null when it does not.
+    string? RepeatRule = null,
+    // Minutes before the due time for the reminder: -1 off, 0, 15, 60, 1440 (default), 2880, 10080.
+    int ReminderOffsetMinutes = 1440
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);

@@ -173,7 +173,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .GroupBy(id => id)
             .ToDictionary(group => group.Key, group => group.Count());
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
-        var fieldProjection = await BoardItemFieldProjection.LoadAsync(_context, fields, cardIds, cancellationToken);
+        var fieldProjection = await BoardItemFieldProjection.LoadAsync(_context, fields, cardIds, cancellationToken, _requestContext.UserId);
 
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
@@ -226,7 +226,12 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         values.ChildProgress,
                         projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
                         projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
-                        openBlockerCountByCardId.GetValueOrDefault(card.Id)
+                        openBlockerCountByCardId.GetValueOrDefault(card.Id),
+                        card.CoverColor,
+                        card.CoverAttachmentId,
+                        card.CoverStyle,
+                        card.RepeatRule,
+                        card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes
                     );
                 })
                 .ToList());

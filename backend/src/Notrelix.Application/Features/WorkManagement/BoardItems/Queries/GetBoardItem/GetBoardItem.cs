@@ -17,8 +17,10 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
     private readonly IWorkManagementDbContext _context;
     private readonly IActorLookupService _actorLookup;
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
-    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort)
+    private readonly ICurrentRequestContext _requestContext;
+    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort, ICurrentRequestContext requestContext)
     {
+        _requestContext = requestContext;
         _context = context;
         _actorLookup = actorLookup;
         _collabReadPort = collabReadPort;
@@ -87,7 +89,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .Where(field => field.BoardId == listContext.BoardId)
             .ToListAsync(ct);
         var values = (await BoardItemReadValues.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
-        var projected = (await BoardItemFieldProjection.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
+        var projected = (await BoardItemFieldProjection.LoadAsync(_context, fields, [card.Id], ct, _requestContext.UserId))[card.Id];
 
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
@@ -112,7 +114,12 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             NameOf(card.ArchivedBy),
             card.DescriptionMd,
             projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
-            projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value)
+            projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
+            card.CoverColor,
+            card.CoverAttachmentId,
+            card.CoverStyle,
+            card.RepeatRule,
+            card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes
         ));
     }
 }
