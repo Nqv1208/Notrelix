@@ -616,6 +616,20 @@ export function createBoardSettingsApi(client: NotrelixClient) {
           changes.visibility,
           version,
         );
+      if (changes.cardFieldIds !== undefined) {
+        // The card face fields live in the view's config, written whole like the card popover writes it. The
+        // view is read again so the write names the version the earlier writes left.
+        const current = (await boardApi.listSavedViews(s.boardId)).find(
+          (view) => view.id === viewId,
+        );
+        if (!current) throw new Error(`View ${viewId} is gone`);
+        await boardApi.updateSavedViewConfig(
+          s.boardId,
+          viewId,
+          { ...current.viewConfig, cardFieldIds: [...changes.cardFieldIds] },
+          current.version,
+        );
+      }
     },
     setDefaultView: (s: BoardSettingsDto, viewId: string) =>
       boardApi.setDefaultSavedView(s.boardId, viewId, viewVersion(s, viewId)),
