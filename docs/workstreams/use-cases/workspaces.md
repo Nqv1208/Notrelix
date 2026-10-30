@@ -1361,7 +1361,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 48.4; NRX-003.
 - Acceptance: Given a draft saved yesterday, Then a read returns it. Given 31 days later, Then absent.
 - Evidence: BE `GET`, `PUT`, `DELETE /api/v1/workspaces/onboarding-draft`, `SaveOnboardingDraftCommandHandler`, `GetOnboardingDraftQueryHandler`, `ClearOnboardingDraftCommandHandler` · FE `onboarding-api.ts`, `onboarding-page.tsx` · Design `Final-Onboarding` · Tests `OnboardingDraftTests`, `OnboardingIntegrationTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; the onboarding API sits in the web app route folder, not the feature package (move it).
+- State: INTEGRATING — Tests and owner check. Built: the onboarding API moved from the web app route folder into the workspace feature package (`web/onboarding/onboarding-api.ts`, exported as `createOnboardingApi`); the app keeps only the hook that hands it the runtime client. Test to update: `onboarding-api.unit.test.ts` now imports from the package. Real e2e.
 
 ### UC-WSP-M02 Sweep expired onboarding drafts
 - Capability: M Getting started and onboarding (added by this catalog)
@@ -1403,7 +1403,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 48.4, 74; DESIGN.md sections 65, 66.
 - Acceptance: Given all four steps, Then a workspace, its departments and invitations exist and Home opens.
 - Evidence: BE commands of A01, K01, G01 · FE `onboarding-surface.tsx`, `onboarding-steps.tsx`, `onboarding-page.tsx` · Design `Final-Onboarding` · Tests `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e of the full run; retry of a step (A04).
+- State: INTEGRATING — Tests and owner check. Built: every create step (workspace, each department, each invitation, the first Board) keeps one Idempotency-Key while the same request is retried and forgets it once it succeeded or was refused for good, so a retry after a lost answer returns what the first attempt made. Real e2e of the full run.
 
 ### UC-WSP-M05 Join through an invitation and set my look and notifications
 - Capability: M Getting started and onboarding (added by this catalog)
