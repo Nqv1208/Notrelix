@@ -3123,7 +3123,7 @@
           "Documents.Blocks",
           "Documents.Blocks"
         ],
-        "summary": "Reorder blocks",
+        "summary": "Move blocks of a page against the versions read",
         "operationId": "Documents.Blocks.ReorderBlocks",
         "requestBody": {
           "content": {
@@ -3141,7 +3141,40 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -22826,13 +22859,27 @@
             "type": "string",
             "format": "uuid"
           },
-          "position": {
-            "type": "number",
-            "format": "double"
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           },
           "parentId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "afterBlockId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "beforeBlockId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "position": {
+            "type": "string",
             "nullable": true
           }
         },
