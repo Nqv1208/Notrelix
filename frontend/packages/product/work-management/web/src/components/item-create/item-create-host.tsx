@@ -181,10 +181,13 @@ export function ItemCreateHost({
                 itemId && onOpenItem ? () => onOpenItem(itemId) : undefined,
               onUndo: itemId
                 ? () =>
-                    archive.mutate(itemId, {
-                      onSuccess: () => toast.success(copy.undone),
-                      onError: () => toast.error(copy.undoFailed),
-                    })
+                    archive.mutate(
+                      { cardId: itemId },
+                      {
+                        onSuccess: () => toast.success(copy.undone),
+                        onError: () => toast.error(copy.undoFailed),
+                      },
+                    )
                 : undefined,
             });
           } else {

@@ -155,13 +155,10 @@ export function createCardApi(client: NotrelixClient) {
      */
     async archiveCard(
       cardId: string,
-      expectedVersion: number | undefined,
+      expectedVersion: number,
       options?: ApiRequestOptions,
     ): Promise<void> {
-      const body: ArchiveItemBody = {
-        expectedVersion:
-          expectedVersion ?? (await this.getCard(cardId)).version ?? undefined,
-      };
+      const body: ArchiveItemBody = { expectedVersion };
       await api.post<void>(
         endpoints.boardItems.archive(cardId),
         body,

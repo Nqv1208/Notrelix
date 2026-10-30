@@ -6,6 +6,7 @@ import {
   classifyRemindError,
   useBoardLabels,
   useArchiveCard,
+  useSeenItemVersion,
   useBoardTrash,
   useDeleteCard,
   useDuplicateCard,
@@ -47,6 +48,11 @@ import { useItemLifecycleCopy } from "./use-item-lifecycle-copy";
 interface Pending {
   readonly id: string;
   readonly title: string;
+}
+
+/** An archive waiting for its answer, with the item version the dialog opened on. */
+interface ArchivePending extends Pending {
+  readonly version?: number;
 }
 
 function findCard(
@@ -111,7 +117,7 @@ export function useItemRemoval({
   const actions = useItemActionsCopy();
   const { itemExtras } = useWorkManagementServices();
   const viewerId = useBoardViewerId();
-  const [archiving, setArchiving] = useState<Pending | null>(null);
+  const [archiving, setArchiving] = useState<ArchivePending | null>(null);
   const [archiveStatus, setArchiveStatus] =
     useState<ArchiveDialogStatus>("idle");
   const [deleting, setDeleting] = useState<Pending | null>(null);
@@ -123,6 +129,7 @@ export function useItemRemoval({
   const [remindState, setRemindState] = useState<RemindDialogState>("confirm");
   const [remindWhen, setRemindWhen] = useState<string | null>(null);
   const archiveCard = useArchiveCard(boardId, workspaceId);
+  const seenVersion = useSeenItemVersion(boardId, workspaceId);
   const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
@@ -213,30 +220,40 @@ export function useItemRemoval({
 
   const confirmArchive = () => {
     if (!archiving) return;
-    const { id, title } = archiving;
+    const { id, title, version } = archiving;
     setArchiveStatus("busy");
-    archiveCard.mutate(id, {
-      onSuccess: () => {
-        setArchiving(null);
-        setArchiveStatus("idle");
-        toast.success(fillLifecycleCopy(copy.archived, { title }), {
-          action: {
-            label: copy.archivedUndo,
-            onClick: () =>
-              quick(
-                id,
-                () => itemExtras.restoreItem(id),
-                actions.unarchived,
-                actions.archiveFailed,
-              ),
-          },
-        });
-        onGone?.(id);
+    archiveCard.mutate(
+      { cardId: id, expectedVersion: version },
+      {
+        onSuccess: () => {
+          setArchiving(null);
+          setArchiveStatus("idle");
+          toast.success(fillLifecycleCopy(copy.archived, { title }), {
+            action: {
+              label: copy.archivedUndo,
+              onClick: () =>
+                quick(
+                  id,
+                  () => itemExtras.restoreItem(id),
+                  actions.unarchived,
+                  actions.archiveFailed,
+                ),
+            },
+          });
+          onGone?.(id);
+        },
+        onError: (error) => {
+          const failure = classifyArchiveError(error);
+          // The reads are fetched again when the write ends, so after a conflict
+          // a try carries the newer version the person is told to review.
+          if (failure === "conflict")
+            setArchiving((current) =>
+              current ? { ...current, version: undefined } : current,
+            );
+          setArchiveStatus(failure);
+        },
       },
-      // The board read is fetched again when the write ends, so a try after a
-      // conflict carries the newer version.
-      onError: (error) => setArchiveStatus(classifyArchiveError(error)),
-    });
+    );
   };
 
   const confirmDelete = () => {
@@ -463,7 +480,11 @@ export function useItemRemoval({
   return {
     requestArchive: (itemId) => {
       setArchiveStatus("idle");
-      setArchiving({ id: itemId, title: titleOf(itemId) });
+      setArchiving({
+        id: itemId,
+        title: titleOf(itemId),
+        version: seenVersion(itemId),
+      });
     },
     requestDelete: (itemId) =>
       setDeleting({ id: itemId, title: titleOf(itemId) }),

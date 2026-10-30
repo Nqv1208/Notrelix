@@ -103,6 +103,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useMoveFieldOption: mutation,
     useRemoveFieldOption: mutation,
     useArchiveCard: mutation,
+    useSeenItemVersion: () => () => 7,
     useItemLinks: () => ({ data: undefined, isLoading: false }),
   };
 });

@@ -45,8 +45,11 @@ const cardQuery = vi.hoisted(() => ({
     error: null as unknown,
   },
   useCard: vi.fn(),
-  deleteMutate: vi.fn((_id: string, options?: { onSuccess?: () => void }) =>
-    options?.onSuccess?.(),
+  deleteMutate: vi.fn(
+    (
+      _input: { cardId: string; expectedVersion?: number },
+      options?: { onSuccess?: () => void },
+    ) => options?.onSuccess?.(),
   ),
 }));
 
@@ -174,6 +177,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useMoveFieldOption: mutation,
     useRemoveFieldOption: mutation,
     useArchiveCard: () => ({ mutate: cardQuery.deleteMutate }),
+    useSeenItemVersion: () => () => 7,
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,
@@ -374,8 +378,9 @@ describe("KanbanView item detail through selectedItemId", () => {
     // Archiving asks first; nothing is sent until it is confirmed.
     expect(cardQuery.deleteMutate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Archive item" }));
+    // It names the version the dialog opened with.
     expect(cardQuery.deleteMutate).toHaveBeenCalledWith(
-      "card-item",
+      { cardId: "card-item", expectedVersion: 7 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);

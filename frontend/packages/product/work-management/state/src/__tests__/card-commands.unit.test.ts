@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
+import type { NotrelixClient } from "@notrelix/contracts";
 import type {
   Card,
   FieldDefinition,
   FullBoardResponse,
 } from "@notrelix/work-management-core";
+import { createCardApi } from "../api/item.api";
 import { wmQueryKeys } from "../queries/keys";
 import { runItemStatusCommand } from "../mutations/use-update-item-status";
 import { runMoveCardCommand } from "../mutations/use-move-card";
@@ -304,9 +306,8 @@ describe("runArchiveCardCommand", () => {
     await pending;
   });
 
-  it("leaves the version to the client when the board read does not carry it", async () => {
+  it("refuses to send an archive for an item whose version is not known", async () => {
     const queryClient = seeded();
-    const archiveCard = vi.fn(async () => undefined);
     queryClient.setQueryData<FullBoardResponse>(boardKey, (current) => ({
       ...current!,
       groups: current!.groups.map((group) => ({
@@ -314,12 +315,63 @@ describe("runArchiveCardCommand", () => {
         cards: group.cards.map((item) => ({ ...item, version: null })),
       })),
     }));
+    const archiveCard = vi.fn(async () => undefined);
+    await expect(
+      runArchiveCardCommand(
+        queryClient,
+        { archiveCard },
+        { workspaceId: "ws-1", boardId: "b-1", cardId: "b" },
+      ),
+    ).rejects.toThrow(/version/);
+    expect(archiveCard).not.toHaveBeenCalled();
+    expect(order(queryClient, "g-1")).toEqual(["a", "b", "c"]);
+  });
+
+  it("sends the version the dialog opened with, not a newer one the cache holds now", async () => {
+    const queryClient = seeded();
+    const archiveCard = vi.fn(async () => undefined);
     await runArchiveCardCommand(
       queryClient,
       { archiveCard },
-      { workspaceId: "ws-1", boardId: "b-1", cardId: "b" },
+      { workspaceId: "ws-1", boardId: "b-1", cardId: "b", expectedVersion: 2 },
     );
-    expect(archiveCard).toHaveBeenCalledWith("b", undefined, expect.anything());
+    expect(archiveCard).toHaveBeenCalledWith("b", 2, expect.anything());
+  });
+
+  it("takes a sub-item's version from the item read, as it is not in the board read", async () => {
+    const queryClient = seeded();
+    queryClient.setQueryData(wmQueryKeys.cardDetail("ws-1", "sub"), {
+      ...card("sub", "g-1", 9),
+      version: 7,
+    });
+    const archiveCard = vi.fn(async () => undefined);
+    await runArchiveCardCommand(
+      queryClient,
+      { archiveCard },
+      { workspaceId: "ws-1", boardId: "b-1", cardId: "sub" },
+    );
+    expect(archiveCard).toHaveBeenCalledWith("sub", 7, expect.anything());
+  });
+
+  it("puts a stale version on the wire unchanged and never reads the item", async () => {
+    const queryClient = seeded();
+    // The server has moved on (v5); the person saw v3 and must be refused, not silently re-based.
+    const get = vi.fn(async () => ({ id: "b", version: 5 }));
+    const post = vi.fn(async (..._args: unknown[]) => undefined);
+    const cards = createCardApi({
+      api: { get, post },
+    } as unknown as NotrelixClient);
+    await runArchiveCardCommand(queryClient, cards, {
+      workspaceId: "ws-1",
+      boardId: "b-1",
+      cardId: "b",
+    });
+    expect(get).not.toHaveBeenCalled();
+    expect(post).toHaveBeenCalledWith(
+      "/board-items/b/archive",
+      { expectedVersion: 3 },
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
+    );
   });
 
   it("puts the card back when archiving fails", async () => {
