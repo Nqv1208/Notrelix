@@ -102,11 +102,23 @@ export function useBoardFormsPanel(
   };
 }
 
-/** The manager reads the access level of the board; the builder and the inbox are theirs only. */
+/** The manager reads the access level of the board; the builder is theirs only. */
 function useIsManager(boardId: string, workspaceId: string) {
   const { access, isLoading, error } = useBoardAccess(boardId, workspaceId);
   return {
     manager: access?.myLevel === "manager",
+    pending: isLoading && !error,
+  };
+}
+
+/**
+ * Handling the responses (read, process, reject, mark as spam, delete) needs edit rights on the board
+ * (UpdateItem), which an editor has as well as a manager; the builder stays the manager's.
+ */
+function useCanHandleResponses(boardId: string, workspaceId: string) {
+  const { access, isLoading, error } = useBoardAccess(boardId, workspaceId);
+  return {
+    allowed: access?.myLevel === "manager" || access?.myLevel === "editor",
     pending: isLoading && !error,
   };
 }
@@ -290,7 +302,7 @@ export function FormInboxPage({
     boardId,
     workspaceId,
   );
-  const { manager, pending } = useIsManager(boardId, workspaceId);
+  const { allowed, pending } = useCanHandleResponses(boardId, workspaceId);
   const fields = useMemo(
     () => boardFormFields(fieldDefinitions),
     [fieldDefinitions],
@@ -324,7 +336,7 @@ export function FormInboxPage({
 
   const status =
     [403, 404].includes(readStatus(formQuery.error) ?? 0) ||
-    (!pending && !manager)
+    (!pending && !allowed)
       ? "missing"
       : formQuery.isError
         ? "error"

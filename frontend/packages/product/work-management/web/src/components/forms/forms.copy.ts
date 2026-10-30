@@ -61,7 +61,7 @@ export const vi = {
       "Xoá là xoá mềm; hoàn tác khôi phục câu hỏi và phản hồi chưa xử lý.",
     restoreFailed: "Chưa khôi phục được biểu mẫu {{name}}.",
     footnote:
-      "Phản hồi vào hộp thư của biểu mẫu; người quản lý board xử lý thành việc. Không có điền nặc danh: người điền phải đăng nhập.",
+      "Phản hồi vào hộp thư của biểu mẫu; người chỉnh sửa board xử lý thành việc. Không có điền nặc danh: người điền phải đăng nhập.",
     loadError:
       "Chưa tải được danh sách biểu mẫu. Các thiết lập khác của board vẫn dùng được.",
     closeFailed: "Chưa đóng được biểu mẫu. Trạng thái vẫn là Đang nhận.",
@@ -201,8 +201,8 @@ export const vi = {
     unsupported: "Câu hỏi này chưa hỗ trợ trên trang điền.",
     thanks: "Đã gửi yêu cầu",
     thanksBody:
-      'Quản lý board sẽ xem "{{title}}" và xử lý thành việc trên board {{board}}. Bạn sẽ nhận thông báo khi có người nhận.',
-    thanksShort: "Quản lý board sẽ xử lý thành việc trên board {{board}}.",
+      'Người chỉnh sửa board sẽ xem "{{title}}" và xử lý thành việc trên board {{board}}. Bạn sẽ nhận thông báo khi có người nhận.',
+    thanksShort: "Người chỉnh sửa board sẽ xử lý thành việc trên board {{board}}.",
     another: "Gửi yêu cầu khác",
     toBoard: "Về board",
     toHome: "Về trang chủ",
@@ -287,7 +287,7 @@ export const vi = {
     rejectTitle: "Từ chối phản hồi này?",
     reasonLabel: "Lý do (không bắt buộc)",
     reasonHint:
-      "Lưu cùng phản hồi, người quản lý board xem lại được · tối đa {{max}} ký tự",
+      "Lưu cùng phản hồi, người chỉnh sửa board xem lại được · tối đa {{max}} ký tự",
     rejectConfirm: "Từ chối",
     removeAsk: "Xoá phản hồi của {{name}}? Việc đã tạo (nếu có) vẫn giữ.",
     removeConfirm: "Xoá",
@@ -368,7 +368,7 @@ export const en: FormsCopy = {
       "Deleting is soft; undo restores the questions and the unprocessed responses.",
     restoreFailed: "The form {{name}} could not be restored.",
     footnote:
-      "Responses go to the form's inbox; board managers turn them into items. There are no anonymous responses: people must sign in to fill a form.",
+      "Responses go to the form's inbox; people who can edit the board turn them into items. There are no anonymous responses: people must sign in to fill a form.",
     loadError:
       "The forms could not be loaded. The other board settings still work.",
     closeFailed: "The form could not be closed. It is still Accepting.",
@@ -510,9 +510,9 @@ export const en: FormsCopy = {
     unsupported: "This question type is not supported on the fill page yet.",
     thanks: "Request sent",
     thanksBody:
-      'A board manager will review "{{title}}" and turn it into an item on the {{board}} board. You get a notification when someone picks it up.',
+      'Someone who can edit the board will review "{{title}}" and turn it into an item on the {{board}} board. You get a notification when someone picks it up.',
     thanksShort:
-      "A board manager will turn it into an item on the {{board}} board.",
+      "Someone who can edit the board will turn it into an item on the {{board}} board.",
     another: "Send another request",
     toBoard: "Back to the board",
     toHome: "Back to home",
@@ -600,7 +600,7 @@ export const en: FormsCopy = {
     rejectTitle: "Reject this response?",
     reasonLabel: "Reason (optional)",
     reasonHint:
-      "Saved with the response so board managers can review it · up to {{max}} characters",
+      "Saved with the response so people who can edit the board can review it · up to {{max}} characters",
     rejectConfirm: "Reject",
     removeAsk:
       "Delete the response of {{name}}? An item already created stays.",

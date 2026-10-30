@@ -127,7 +127,7 @@ export function whenLong(
 /**
  * The response inbox of a form: four tabs with their counts, the list of the
  * open tab and the detail of the chosen response with the board field each
- * answer goes into. A manager creates an item from a response, rejects it
+ * answer goes into. Someone who can edit the board creates an item from a response, rejects it
  * (with an optional reason), marks it spam or deletes it. Pure: every decision
  * is a callback; "create item" hands the response to the host's dialog.
  */
