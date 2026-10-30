@@ -50,7 +50,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | A | Page lifecycle | 17 | 0 | 2 | 6 | 6 | 0 | 3 |
 | B | Page hierarchy | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
 | C | Page move / reparent | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
-| D | Block lifecycle | 6 | 0 | 1 | 3 | 2 | 0 | 0 |
+| D | Block lifecycle | 6 | 0 | 0 | 4 | 2 | 0 | 0 |
 | E | Block types and content contract | 9 | 1 | 0 | 6 | 2 | 0 | 0 |
 | F | Block ordering | 4 | 0 | 1 | 3 | 0 | 0 | 0 |
 | G | Document query and loading | 7 | 2 | 0 | 3 | 2 | 0 | 0 |
@@ -59,7 +59,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | J | Document events and activity | 8 | 2 | 1 | 5 | 0 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 2 | 0 | 0 | 1 |
 | L | Recovery and conflict hardening | 5 | 1 | 0 | 3 | 0 | 0 | 1 |
-| | Total | 82 | 10 | 5 | 47 | 15 | 0 | 5 |
+| | Total | 82 | 10 | 4 | 48 | 15 | 0 | 5 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing) and `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink). Everything else that has both backend and frontend code is INTEGRATING.
 
@@ -68,7 +68,7 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 1. Real end-to-end proof covers 15 of 82 use cases. Versions, restore, templates, import, export, move to space, search, stale-write rebase and mobile have only unit, component and mock e2e proof.
 2. Trashing a page leaves its child pages active; the tree then shows them as roots. Subtree trash, restore and delete are undefined in code (UC-DCT-A08).
 3. Moving a page under another parent cannot be done: the handler throws `NotImplementedException` and there is no route (UC-DCT-C02). The cycle rule is therefore unreachable (UC-DCT-B04).
-4. Competing writes without an expected version: page rename, block reorder and single block delete (UC-DCT-A02, F02, D04). Reorder also accepts client-made sort keys, which breaks "ordering is server-authoritative", and announces no page save, so reorders create no automatic version and no live refresh.
+4. Competing writes without an expected version: block reorder (UC-DCT-F02); page rename and single block delete are fixed (UC-DCT-A02, D04). Reorder also accepts client-made sort keys, which breaks "ordering is server-authoritative", and announces no page save, so reorders create no automatic version and no live refresh.
 5. Rename is authorized with `ManageBoard`, a Work Management action, and three stubs do the same (UC-DCT-I02).
 6. No bounds: block count per page, page count per list and tree, version list, trash list and backlinks are all unbounded reads (UC-DCT-G02, G06, J05).
 7. No idempotency for creates (page, template, version, page from template) (UC-DCT-L04).
@@ -84,9 +84,9 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 | 2 | Dead handlers that throw `NotImplementedException` (the move handler is now built, UC-DCT-C02) | `.../PublishPage/PublishPage.cs`, `.../SetPageDeadline/SetPageDeadline.cs` (under `backend/src/Notrelix.Application/Features/Documents/`) |
 | 3 | `GET /pages/{pageId}/history` always returns an empty list; the frontend still calls it | `.../Pages/Queries/GetPageHistory/GetPageHistory.cs`, `frontend/packages/product/docs/state/src/api/history.api.ts` |
 | 4 | Reorder takes client sort keys, has no expected version, loads no page and announces no save | `.../Blocks/Commands/ReorderBlocks/ReorderBlocks.cs` |
-| 5 | Single block delete has no expected version and does not delete child blocks (batch delete does) | `.../Blocks/Commands/DeleteBlock/DeleteBlock.cs` |
+| 5 | Fixed: single block delete takes the expected version and deletes the blocks under it, like the batch (UC-DCT-D04) | `.../Blocks/Commands/DeleteBlock/DeleteBlock.cs` |
 | 6 | Fixed: trash, restore and permanent delete work on the subtree (UC-DCT-A08) | `.../Pages/Commands/ArchivePage/ArchivePage.cs`, `.../Pages/Queries/GetPageTree/GetPageTree.cs` |
-| 7 | Block writes have no handler guard for a trashed page (only authorization hides it) | `.../Blocks/Commands/*` |
+| 7 | Fixed for create, edit, delete and batch: the handler refuses a trashed page (UC-DCT-D05); reorder follows with UC-DCT-F02 | `.../Blocks/Commands/*` |
 | 8 | Unbounded reads | `.../Pages/Queries/GetWorkspacePages`, `GetPageTree`, `GetTrashedPages`, `GetPageBacklinks`, `.../Versions/Queries/ListPageVersions`, `.../Blocks/Queries/GetPageBlocks` |
 | 9 | No idempotency on creates | `CreatePage`, `CreatePageFromTemplate`, `CreatePageTemplate`, `CreatePageVersion` handlers |
 | 10 | `ResourceLink` aggregate, table and events have no command, query or route | `backend/src/Notrelix.Domain/Documents/ResourceLinks/`, `backend/src/Notrelix.Infrastructure/Data/Configurations/Documents/ResourceLinkConfiguration.cs` |
@@ -144,12 +144,12 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
-| UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | No page block limit |
-| UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | No stale-write real e2e |
-| UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
-| UC-DCT-D04 | Delete a block | D | Editor | partial | yes | Final-Docs-2 | none | INTEGRATING | Single delete has no version and leaves children |
-| UC-DCT-D05 | Refuse edits to a trashed page | D | System | partial | partial | none | none | IMPLEMENTING | Only authorization hides it; no handler guard or test |
-| UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | Three separate writes |
+| UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Rejection path not in real e2e |
 | UC-DCT-E02 | Change a block's type | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
 | UC-DCT-E03 | Use structured blocks | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Per-type e2e missing |
@@ -618,8 +618,8 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: pending, validation error, read-only, permission denied, offline, conflict.
 - Rules: product doc sections 18, 19, 25 (product rules DCT-006, DCT-009); `DCREQ011`, `DCREQ012`, `DCREQ118`.
 - Acceptance: Given an Editor, When a block is created, Then it is listed with version 1 after the named sibling. Given a parent block of another page, Then `404`.
-- Evidence: BE `POST /api/v1/pages/{pageId}/blocks`, `CreateBlockCommandHandler` · FE `useCreateBlock`, `DocEditorSurface` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTests`, `BlockCreateChildScopeTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — block-count limit (LD14), cross-tenant negative test, idempotent replay.
+- Evidence: BE `POST /api/v1/pages/{pageId}/blocks`, `CreateBlockCommandHandler` (refuses a trashed page, refuses a page past 5 000 live blocks with `Documents_Page_BlockLimitReached` through `PageRules.EnsureBlockCountWithinLimit`, answers the stored block when the id repeats with the same type, content and properties through `Block.IsRetryOfCreate`, else `409 documents.block.id-taken`) · FE `useCreateBlock`, `DocEditorSurface` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTests`, `BlockCreateChildScopeTests` · Real e2e `documents.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (limit refusal, replay and conflicting replay, cross-tenant negative test).
 
 ### UC-DCT-D02 Edit a block
 - Capability: D Block lifecycle
@@ -633,7 +633,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc sections 31, 32, 78, 79 (product rules DCT-011, DCT-025); `DCREQ028` to `DCREQ030`, `DCREQ137`.
 - Acceptance: Given version 3, When a write carries 3, Then version 4. When another write still carries 3, Then `412`, block unchanged.
 - Evidence: BE `PATCH /api/v1/pages/{pageId}/blocks/{blockId}`, `UpdateBlockCommandHandler`, `PageBlockSet.EnsureVersion` · FE `useUpdateBlock`, `doc-block-saver.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockEditTests`, `doc-block-saver.unit.test.ts` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — real e2e for the 412 and rebase.
+- State: HARDENING — tests and owner check (real e2e for the 412 and rebase; the handler now also refuses a trashed page before the version check).
 
 ### UC-DCT-D03 Save several blocks as one change
 - Capability: D Block lifecycle
@@ -646,8 +646,8 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: saving, conflict, validation error, offline.
 - Rules: product doc section 21A ("a batch applies completely or not at all"); `DCREQ028`.
 - Acceptance: Given a batch whose third operation is stale, When sent, Then the first two are not stored and the answer is `412`.
-- Evidence: BE `POST /api/v1/pages/{pageId}/blocks/batch`, `BatchUpdateBlocksCommandHandler` · FE `batch-block-writer.ts`, `useDocSaver` · Design Final-Docs-2 · Tests `BatchUpdateBlocksHandlerTests`, `doc-block-saver.unit.test.ts` · Real e2e none
-- State: INTEGRATING — real e2e with a mid-batch failure.
+- Evidence: BE `POST /api/v1/pages/{pageId}/blocks/batch`, `BatchUpdateBlocksCommandHandler` (refuses a trashed page and a result past 5 000 live blocks; an upsert with a type and no version for an id the page already holds answers the stored block when type, content and properties match, so a retried save does not fail, and is `409` otherwise; delete goes through `PageBlockSet.Delete`) · FE `batch-block-writer.ts`, `useDocSaver` · Design Final-Docs-2 · Tests `BatchUpdateBlocksHandlerTests`, `doc-block-saver.unit.test.ts` · Real e2e none
+- State: INTEGRATING — tests and owner check (retry of a whole batch, limit, real e2e with a mid-batch failure).
 
 ### UC-DCT-D04 Delete a block
 - Capability: D Block lifecycle
@@ -660,8 +660,8 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: pending, undo toast, conflict, read-only.
 - Rules: product doc sections 91, 92, 93 (product rule DCT-029); `DCREQ013`, `DCREQ121`.
 - Acceptance: Given a toggle with two children, When it is deleted, Then no live block remains under it.
-- Evidence: BE `DELETE /api/v1/pages/{pageId}/blocks/{blockId}`, `DeleteBlockCommandHandler`; batch delete in `BatchUpdateBlocksCommandHandler` · FE `useDeleteBlock` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `docs-blocks-trash.unit.test.ts` · Real e2e none
-- State: INTEGRATING — single route to cascade and take `expectedVersion`, real e2e.
+- Evidence: BE `DELETE /api/v1/pages/{pageId}/blocks/{blockId}?expectedVersion=` (`DeleteBlockCommandHandler`: version checked, `412` with the current block when stale, trashed page refused, the blocks under it deleted through `PageBlockSet.Delete`, one page save announced); batch delete in `BatchUpdateBlocksCommandHandler` uses the same cascade · FE `useDocEditor.deleteBlock` sends the cached version and treats `404` and `412` as "show what is stored" (no failed save), `useDeleteBlock` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `docs-blocks-trash.unit.test.ts` · Real e2e none
+- State: INTEGRATING — tests and owner check (cascade and `412` on the single route, real e2e; the editor only deletes an empty line, a block menu with an undo toast is not built).
 
 ### UC-DCT-D05 Refuse edits to a trashed page
 - Capability: D Block lifecycle
@@ -674,22 +674,22 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: read-only banner "This page is in the trash".
 - Rules: product doc section 77; `DCREQ003`, `DCREQ004`.
 - Acceptance: Given a trashed page, When a block is created, Then refused and no block exists.
-- Evidence: BE `PostgresPageAuthorizationFacts` (`IsActive`, `IsTrashed`), `CreatePageVersionCommandHandler` (checks) · FE none · Design none · Tests none · Real e2e none
-- State: IMPLEMENTING — handler-level guard, integration test.
+- Evidence: BE `PageRules.EnsureCanEdit` called by `CreateBlockCommandHandler`, `UpdateBlockCommandHandler`, `DeleteBlockCommandHandler` and `BatchUpdateBlocksCommandHandler` before anything changes, and by `Page.RecordBlocksSaved`; `PostgresPageAuthorizationFacts` still hides a trashed page first; `CreatePageVersionCommandHandler` (checks) · FE none · Design none · Tests none · Real e2e none
+- State: INTEGRATING — tests and owner check (reorder joins the guard with UC-DCT-F02; the read-only banner for a page trashed under an open editor belongs to UC-DCT-I06).
 
 ### UC-DCT-D06 Convert a checklist line to a task
 - Capability: D Block lifecycle
 - Actors and permission: Editor of the page and the right to create an item on the chosen board (Work Management).
 - Preconditions: the line is a checklist line with text; the person can see at least one board with a group.
 - Input: board and group; the line text becomes the item name.
-- Output: a board item, a link from the item to the page, and the line marked with a `[[task:<id>]]` chip. Each write is separate (product doc section 20); a failure after the item exists leaves the line unlinked and a retry creates another item.
+- Output: a board item, a link from the item to the page, and the line marked with a `[[task:<id>]]` chip. Each write is separate (product doc section 20); a failure after the item exists leaves the line unlinked, and asking again finishes the conversion without creating another item (the item and the link are sent under keys derived from one attempt key, and a line that already holds the chip counts as done).
 - Main flow: 1. "Convert to task" on a line. 2. Pick board and group. 3. The line becomes a chip of the task.
-- No-op / rejection / concurrency / retry: board without rights is not offered; stale line version is `412` and the item stays (the toast names it).
+- No-op / rejection / concurrency / retry: board without rights is not offered; a stale line version is `412` and the item stays; the dialog names the step that failed (item, link or line) and says no second task is made on retry.
 - UI states: pending, error naming the step that failed, permission denied.
 - Rules: product doc section 20 (editor orchestration), product rule DCT-020; `DCREQ122`. Work Management owns the item: [work-management.md](work-management.md).
 - Acceptance: Given a checklist line, When converted, Then the item exists on the board and the line shows its chip.
-- Evidence: BE `POST /api/v1/boards/{boardId}/items` and `POST /api/v1/board-items/{itemId}/pages` (Work Management), `PATCH` block · FE `useConvertTodo`, `convertTodo` in `page-extras.api.ts` · Design Final-Docs-2 · Tests `ItemPageLinkTests` · Real e2e none
-- State: INTEGRATING — real e2e, partial-failure proof.
+- Evidence: BE `POST /api/v1/boards/{boardId}/items` and `POST /api/v1/board-items/{itemId}/pages` (Work Management), `PATCH` block · FE `useConvertTodo` (keeps the attempt key of a failed conversion until it succeeds), `convertTodo` in `page-extras.api.ts` (`ConvertTodoFailed` names the step), `DocConvertView.failedStep` and the `convert.failedLink` / `failedLine` copy in the dialog · Design Final-Docs-2 · Tests `ItemPageLinkTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (partial-failure proof for the link and line steps, real e2e; a single server call for the three writes needs a Work Management and Documents decision and is not built).
 
 ## Capability E: Block types and content contract
 

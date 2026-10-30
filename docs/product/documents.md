@@ -299,7 +299,7 @@ migration/evolution
 
 # 21A. Block content schema (rich text v1)
 
-A text-like Block (paragraph, headings, lists, task line, toggle, quote, callout, code) stores its authored text as `{"v":1,"runs":[{"text","marks":[]}]}`. Marks are a closed set: `bold`, `italic`, `underline`, `strike`, `code`, `link` (`http`, `https` or `mailto` only), `color` and `highlight` (design tokens), `mention` (user id) and `pageRef` (page id). Content is normalised by the server (empty runs dropped, adjacent runs with the same marks merged, marks ordered by type, `code` excludes every mark but `link`), limited to 20 000 characters per block, and anything unknown is rejected. Every other Block type has an empty content object and keeps its meaning in typed, closed-set properties (alignment, `checked`, code `language`, callout `tone`/`icon`, toggle `collapsed`, image/file `attachmentId`, table rows of rich-text cells, board `boardId`/`viewId`, page `pageId`). A Block write names the version the editor read; a stale version is refused with the current Block so the editor can rebase, and a batch of Block writes applies completely or not at all.
+A text-like Block (paragraph, headings, lists, task line, toggle, quote, callout, code) stores its authored text as `{"v":1,"runs":[{"text","marks":[]}]}`. Marks are a closed set: `bold`, `italic`, `underline`, `strike`, `code`, `link` (`http`, `https` or `mailto` only), `color` and `highlight` (design tokens), `mention` (user id) and `pageRef` (page id). Content is normalised by the server (empty runs dropped, adjacent runs with the same marks merged, marks ordered by type, `code` excludes every mark but `link`), limited to 20 000 characters per block, and anything unknown is rejected. Every other Block type has an empty content object and keeps its meaning in typed, closed-set properties (alignment, `checked`, code `language`, callout `tone`/`icon`, toggle `collapsed`, image/file `attachmentId`, table rows of rich-text cells, board `boardId`/`viewId`, page `pageId`). A Block write names the version the editor read; a stale version is refused with the current Block so the editor can rebase, and a batch of Block writes applies completely or not at all. A Page holds at most 5 000 live Blocks; a write that would pass the limit is refused and nothing is stored.
 
 # 22. Block Content
 
@@ -322,6 +322,8 @@ Flexible serialization is allowed only behind a defined Block-Type contract.
 Parent Block must be in the same Account, Workspace, and Page.
 
 Self/descendant cycles are invalid.
+
+A Block create that repeats an id the page already holds is a retry when its type, content and properties match the stored Block (the stored Block is answered and nothing changes), and a conflict (`409`) otherwise.
 
 # 26. DCT-009 — Block-tree validation uses supplied ancestry facts
 
@@ -617,7 +619,7 @@ Realtime/document editing must converge to revoked access and safe client state.
 
 # 77. Archived/read-only behavior
 
-Archived/deleted/inaccessible Pages do not silently accept edits.
+Archived/deleted/inaccessible Pages do not silently accept edits. Every Block write (create, edit, delete, reorder, batch) on a trashed Page is refused by the handler with `Documents_Page_CannotEditArchived`, even when the caller could still see the Page.
 
 # 78. Semantic no-op
 
@@ -684,6 +686,8 @@ Deleting a Block affects child Blocks, anchors, links, history, and search.
 # 92. DCT-029 — Block deletion defines child behavior
 
 Choose deterministic policy: recursive subtree delete, promote children, or reject until children handled.
+
+The policy is recursive subtree delete in every route: deleting a Block deletes the Blocks under it, in one change, whether it is deleted alone (`DELETE /pages/{pageId}/blocks/{blockId}?expectedVersion=`) or inside a batch. Both name the version the editor read; a stale version is `412` with the current Block, and a Block that is already deleted is `404`.
 
 # 93. Historical references
 
