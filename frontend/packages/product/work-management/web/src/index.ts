@@ -172,3 +172,6 @@ export {
   FormInboxPage,
   formLink,
 } from "./components/forms/forms-containers";
+
+// Card popup capabilities (cover, repeat, reminder, vote, viewers, colour-blind labels, checklist copy, links, face fields)
+export * from "./components/card-popup/capabilities";

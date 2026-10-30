@@ -1,3 +1,7 @@
+import {
+  FaceFieldsPopover,
+  KanbanFaceProvider,
+} from "../../card-popup/capabilities";
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { ItemCreateHost } from "../../item-create/item-create-host";
 import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
@@ -539,6 +543,13 @@ export function KanbanView({
 
   // Swimlanes: rows of a second field under the columns. The lane field can
   // never be the column field.
+  const faceFieldDefinitions = useMemo(
+    () =>
+      kanban.filterFields
+        .filter((entry) => !entry.builtin)
+        .map((entry) => entry.field),
+    [kanban.filterFields],
+  );
   const columnFields = groupableFields(kanban.filterFields).filter((field) =>
     kanban.groupByFields.some((candidate) => candidate.id === field.id),
   );
@@ -861,303 +872,324 @@ export function KanbanView({
     .map((group) => ({ id: group.id, title: group.title }));
 
   return (
-    <div
-      ref={boardRef}
-      data-kanban-board=""
-      tabIndex={-1}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && picking.selectedIds.size > 0)
-          picking.clear();
-      }}
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
+    <KanbanFaceProvider
+      fields={faceFieldDefinitions}
+      cardFieldIds={kanbanSettings.cardFieldIds ?? []}
+      cardHideEmpty={kanbanSettings.cardHideEmpty ?? []}
     >
       <div
-        className="px-4 sm:px-6"
-        inert={boardCovered || undefined}
-        aria-hidden={boardCovered || undefined}
-      >
-        <KanbanToolbar
-          copy={toolbarCopy}
-          searchQuery={kanban.search.query}
-          onSearchChange={kanban.search.setQuery}
-          onClearFilter={() =>
-            view.setFilter({ ...view.state.filter, conditions: [] })
-          }
-          viewBar={
-            <ViewStateBar
-              canSave={capabilities.canEditFields}
-              copy={filtersCopy}
-              view={view}
-              fields={kanban.filterFields}
-              memberName={kanban.memberName}
-              people={kanban.filterChoices.assignees}
-              counts={{
-                shown: kanban.visibleCount,
-                total: kanban.totalCount,
-              }}
-              now={now}
-              groupFields={columnFields}
-              groupFallback={
-                kanban.groupByField
-                  ? { fieldId: kanban.groupByField.id }
-                  : undefined
-              }
-              laneFields={groupableFields(kanban.filterFields)}
-              blockedLaneFieldId={kanban.groupByField?.id}
-              savedFilters={(save) => (
-                <SavedFiltersControl
-                  workspaceId={workspaceId}
-                  boardId={boardId}
-                  filter={serializeCompoundFilter(view.applied.filter)}
-                  groupBy={view.state.group?.fieldId ?? null}
-                  canEdit={capabilities.canEditFields}
-                  onApply={view.applyCriteria}
-                  {...save}
-                />
-              )}
-            />
-          }
-          canAdd={capabilities.canCreateCard}
-          onAddItem={() => setCreate({ kind: "toolbar" })}
-          noResults={
-            kanban.filterActive && kanban.visibleCount === 0
-              ? { hiddenCount: kanban.totalCount }
-              : null
-          }
-        />
-      </div>
-
-      <div
-        className="relative min-h-0 flex-1"
-        inert={boardCovered || undefined}
-        aria-hidden={boardCovered || undefined}
+        ref={boardRef}
+        data-kanban-board=""
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && picking.selectedIds.size > 0)
+            picking.clear();
+        }}
+        className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
       >
         <div
-          ref={scrollerRef}
-          data-kanban-scroller=""
-          onScroll={measureEdges}
-          className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
+          className="px-4 sm:px-6"
+          inert={boardCovered || undefined}
+          aria-hidden={boardCovered || undefined}
         >
-          {laneField ? (
-            <>
-              {capabilities.canMoveCard ? null : (
-                <p className="mb-2 text-compact text-muted-foreground">
-                  {filtersCopy.lane.viewerNote}
-                </p>
-              )}
-              <KanbanSwimlaneBoard
+          <KanbanToolbar
+            copy={toolbarCopy}
+            endActions={
+              <FaceFieldsPopover
+                fields={faceFieldDefinitions}
+                value={{
+                  cardFieldIds: kanbanSettings.cardFieldIds ?? [],
+                  cardHideEmpty: kanbanSettings.cardHideEmpty ?? [],
+                }}
+                canEdit={capabilities.canEditFields}
+                onChange={(next) => updateViewConfig(next)}
+              />
+            }
+            searchQuery={kanban.search.query}
+            onSearchChange={kanban.search.setQuery}
+            onClearFilter={() =>
+              view.setFilter({ ...view.state.filter, conditions: [] })
+            }
+            viewBar={
+              <ViewStateBar
+                canSave={capabilities.canEditFields}
                 copy={filtersCopy}
+                view={view}
+                fields={kanban.filterFields}
+                memberName={kanban.memberName}
+                people={kanban.filterChoices.assignees}
+                counts={{
+                  shown: kanban.visibleCount,
+                  total: kanban.totalCount,
+                }}
+                now={now}
+                groupFields={columnFields}
+                groupFallback={
+                  kanban.groupByField
+                    ? { fieldId: kanban.groupByField.id }
+                    : undefined
+                }
+                laneFields={groupableFields(kanban.filterFields)}
+                blockedLaneFieldId={kanban.groupByField?.id}
+                savedFilters={(save) => (
+                  <SavedFiltersControl
+                    workspaceId={workspaceId}
+                    boardId={boardId}
+                    filter={serializeCompoundFilter(view.applied.filter)}
+                    groupBy={view.state.group?.fieldId ?? null}
+                    canEdit={capabilities.canEditFields}
+                    onApply={view.applyCriteria}
+                    {...save}
+                  />
+                )}
+              />
+            }
+            canAdd={capabilities.canCreateCard}
+            onAddItem={() => setCreate({ kind: "toolbar" })}
+            noResults={
+              kanban.filterActive && kanban.visibleCount === 0
+                ? { hiddenCount: kanban.totalCount }
+                : null
+            }
+          />
+        </div>
+
+        <div
+          className="relative min-h-0 flex-1"
+          inert={boardCovered || undefined}
+          aria-hidden={boardCovered || undefined}
+        >
+          <div
+            ref={scrollerRef}
+            data-kanban-scroller=""
+            onScroll={measureEdges}
+            className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
+          >
+            {laneField ? (
+              <>
+                {capabilities.canMoveCard ? null : (
+                  <p className="mb-2 text-compact text-muted-foreground">
+                    {filtersCopy.lane.viewerNote}
+                  </p>
+                )}
+                <KanbanSwimlaneBoard
+                  copy={filtersCopy}
+                  cardCopy={cardCopy}
+                  now={now}
+                  columns={kanban.lanes}
+                  swimlanes={swimlanes}
+                  laneField={laneField}
+                  columnName={(column) =>
+                    laneName(column, laneCopy, isStatusGrouping)
+                  }
+                  laneName={swimlaneLabel}
+                  wipLimits={kanbanSettings.wipLimits}
+                  selectedItemId={selectedItemId}
+                  canDrag={capabilities.canMoveCard}
+                  cardActions={cardActions}
+                  cardSelection={cardSelection}
+                  onOpenDetails={handleOpenDetail}
+                  onDrop={handleSwimlaneDrop}
+                  onRefused={handleSwimlaneRefused}
+                />
+              </>
+            ) : (
+              <KanbanBoard
+                lanes={kanban.lanes}
+                groupOrder={kanban.groups}
+                copy={laneCopy}
                 cardCopy={cardCopy}
                 now={now}
-                columns={kanban.lanes}
-                swimlanes={swimlanes}
-                laneField={laneField}
-                columnName={(column) =>
-                  laneName(column, laneCopy, isStatusGrouping)
-                }
-                laneName={swimlaneLabel}
-                wipLimits={kanbanSettings.wipLimits}
                 selectedItemId={selectedItemId}
+                filterActive={kanban.filterActive}
+                canAdd={
+                  capabilities.canCreateCard &&
+                  !(kanban.filterActive && kanban.visibleCount === 0)
+                }
                 canDrag={capabilities.canMoveCard}
+                groupKind={isStatusGrouping ? "status" : "select"}
+                addRequest={addRequest}
+                onOpenDetails={handleOpenDetail}
+                onDropCard={handleDrop}
+                onCreateItem={handleCreateItem}
+                formCopy={
+                  showStatusControls && kanban.groupByField
+                    ? statusFormCopy
+                    : undefined
+                }
+                onCreateLane={handleCreateLane}
+                onUpdateLane={handleUpdateLane}
+                lanePending={addOption.isPending}
+                onMoveLane={handleMoveLane}
+                onDeleteLane={handleDeleteLane}
+                laneWritePending={
+                  moveOption.isPending || removeOption.isPending
+                }
+                onCreateGroup={
+                  capabilities.canCreateCard
+                    ? (draft) => addGroup(draft)
+                    : undefined
+                }
+                groupTitles={kanban.groups.map((group) => group.title)}
+                groupPending={addingGroup}
+                laneCardLimit={kanbanSettings.laneCardLimit}
+                keyboardMove={kanbanSettings.keyboardMove}
                 cardActions={cardActions}
                 cardSelection={cardSelection}
-                onOpenDetails={handleOpenDetail}
-                onDrop={handleSwimlaneDrop}
-                onRefused={handleSwimlaneRefused}
+                wipLimits={kanbanSettings.wipLimits}
+                onWipLimitChange={
+                  showStatusControls ? handleWipLimitChange : undefined
+                }
+                onRequestCreate={
+                  capabilities.canCreateCard
+                    ? (lane) => setCreate({ kind: "lane", lane, title: "" })
+                    : undefined
+                }
+                onExpandCreate={
+                  capabilities.canCreateCard
+                    ? (lane, title) => setCreate({ kind: "quick", lane, title })
+                    : undefined
+                }
+                initialCollapsed={collapsedLanes.initial}
+                onCollapsedChange={collapsedLanes.onChange}
               />
-            </>
-          ) : (
-            <KanbanBoard
-              lanes={kanban.lanes}
-              groupOrder={kanban.groups}
-              copy={laneCopy}
-              cardCopy={cardCopy}
-              now={now}
-              selectedItemId={selectedItemId}
-              filterActive={kanban.filterActive}
-              canAdd={
-                capabilities.canCreateCard &&
-                !(kanban.filterActive && kanban.visibleCount === 0)
-              }
-              canDrag={capabilities.canMoveCard}
-              groupKind={isStatusGrouping ? "status" : "select"}
-              addRequest={addRequest}
-              onOpenDetails={handleOpenDetail}
-              onDropCard={handleDrop}
-              onCreateItem={handleCreateItem}
-              formCopy={
-                showStatusControls && kanban.groupByField
-                  ? statusFormCopy
-                  : undefined
-              }
-              onCreateLane={handleCreateLane}
-              onUpdateLane={handleUpdateLane}
-              lanePending={addOption.isPending}
-              onMoveLane={handleMoveLane}
-              onDeleteLane={handleDeleteLane}
-              laneWritePending={moveOption.isPending || removeOption.isPending}
-              onCreateGroup={
-                capabilities.canCreateCard
-                  ? (draft) => addGroup(draft)
-                  : undefined
-              }
-              groupTitles={kanban.groups.map((group) => group.title)}
-              groupPending={addingGroup}
-              laneCardLimit={kanbanSettings.laneCardLimit}
-              keyboardMove={kanbanSettings.keyboardMove}
-              cardActions={cardActions}
-              cardSelection={cardSelection}
-              wipLimits={kanbanSettings.wipLimits}
-              onWipLimitChange={
-                showStatusControls ? handleWipLimitChange : undefined
-              }
-              onRequestCreate={
-                capabilities.canCreateCard
-                  ? (lane) => setCreate({ kind: "lane", lane, title: "" })
-                  : undefined
-              }
-              onExpandCreate={
-                capabilities.canCreateCard
-                  ? (lane, title) => setCreate({ kind: "quick", lane, title })
-                  : undefined
-              }
-              initialCollapsed={collapsedLanes.initial}
-              onCollapsedChange={collapsedLanes.onChange}
-            />
+            )}
+          </div>
+          {(["left", "right"] as const).map((side) =>
+            edges[side] ? (
+              <div
+                key={side}
+                data-scroll-edge={side}
+                className={cn(
+                  "pointer-events-none absolute inset-y-0 z-10 flex w-14 items-center",
+                  side === "right"
+                    ? "right-0 justify-end bg-gradient-to-l from-background via-background/70 to-transparent pr-2"
+                    : "left-0 justify-start bg-gradient-to-r from-background via-background/70 to-transparent pl-2",
+                )}
+              >
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={
+                    side === "right"
+                      ? laneCopy.scrollRight
+                      : laneCopy.scrollLeft
+                  }
+                  onClick={() =>
+                    scrollerRef.current?.scrollBy({
+                      left:
+                        (side === "right" ? 1 : -1) *
+                        Math.max(
+                          280,
+                          Math.round(
+                            (scrollerRef.current?.clientWidth ?? 600) * 0.7,
+                          ),
+                        ),
+                      behavior: prefersReducedMotion() ? "auto" : "smooth",
+                    })
+                  }
+                  className="pointer-events-auto flex size-8 items-center justify-center rounded-full border border-line-strong bg-popover text-muted-foreground shadow-card-hover hover:text-foreground"
+                >
+                  {side === "right" ? (
+                    <ChevronRight aria-hidden="true" className="size-4" />
+                  ) : (
+                    <ChevronLeft aria-hidden="true" className="size-4" />
+                  )}
+                </button>
+              </div>
+            ) : null,
           )}
         </div>
-        {(["left", "right"] as const).map((side) =>
-          edges[side] ? (
-            <div
-              key={side}
-              data-scroll-edge={side}
-              className={cn(
-                "pointer-events-none absolute inset-y-0 z-10 flex w-14 items-center",
-                side === "right"
-                  ? "right-0 justify-end bg-gradient-to-l from-background via-background/70 to-transparent pr-2"
-                  : "left-0 justify-start bg-gradient-to-r from-background via-background/70 to-transparent pl-2",
-              )}
-            >
-              <button
-                type="button"
-                tabIndex={-1}
-                aria-label={
-                  side === "right" ? laneCopy.scrollRight : laneCopy.scrollLeft
-                }
-                onClick={() =>
-                  scrollerRef.current?.scrollBy({
-                    left:
-                      (side === "right" ? 1 : -1) *
-                      Math.max(
-                        280,
-                        Math.round(
-                          (scrollerRef.current?.clientWidth ?? 600) * 0.7,
-                        ),
-                      ),
-                    behavior: prefersReducedMotion() ? "auto" : "smooth",
-                  })
-                }
-                className="pointer-events-auto flex size-8 items-center justify-center rounded-full border border-line-strong bg-popover text-muted-foreground shadow-card-hover hover:text-foreground"
-              >
-                {side === "right" ? (
-                  <ChevronRight aria-hidden="true" className="size-4" />
-                ) : (
-                  <ChevronLeft aria-hidden="true" className="size-4" />
-                )}
-              </button>
-            </div>
-          ) : null,
-        )}
+
+        {board && cardSelection && picking.selectedIds.size > 0 ? (
+          <KanbanBulkBar
+            boardId={boardId}
+            workspaceId={workspaceId}
+            board={board}
+            capabilities={capabilities}
+            selectedIds={picking.selectedIds}
+            onClear={picking.clear}
+          />
+        ) : null}
+
+        {board && capabilities.canCreateCard ? (
+          <ItemCreateHost
+            open={createOpen}
+            onOpenChange={(next) => {
+              if (!next) setCreate(null);
+            }}
+            workspaceId={workspaceId}
+            board={board}
+            currentUserId={currentUserId}
+            groups={kanban.groups}
+            defaultGroupId={
+              create && create.kind !== "toolbar"
+                ? (groupForNewItem(create.lane, kanban.groups) ??
+                  kanban.groups[0]?.id ??
+                  "")
+                : (kanban.groups[0]?.id ?? "")
+            }
+            hideGroup={isStatusGrouping}
+            defaultStatusId={
+              create && create.kind !== "toolbar" && isStatusGrouping
+                ? create.lane.optionId
+                : null
+            }
+            defaultTitle={
+              create && create.kind !== "toolbar" ? create.title : undefined
+            }
+            laneValue={
+              create &&
+              create.kind !== "toolbar" &&
+              !isStatusGrouping &&
+              kanban.groupByField &&
+              create.lane.optionId
+                ? {
+                    fieldDefinitionId: kanban.groupByField.id,
+                    value: create.lane.optionId,
+                  }
+                : null
+            }
+            focusDescription={create?.kind === "quick"}
+            context={
+              create && create.kind !== "toolbar"
+                ? {
+                    kind: create.kind,
+                    name:
+                      create.lane.name ||
+                      (isStatusGrouping ? laneCopy.noStatus : laneCopy.noValue),
+                    ...laneDot(create.lane),
+                  }
+                : undefined
+            }
+            onOpenItem={(itemId) => {
+              setCreate(null);
+              onSelectedItemChange?.(itemId);
+            }}
+          />
+        ) : null}
+        {selectedItemId ? (
+          <KanbanSelectedItem
+            board={board}
+            cardId={selectedItemId}
+            capabilities={capabilities}
+            departmentMark={departmentMark}
+            groups={sheetGroups}
+            linkCandidates={linkCandidates}
+            onClose={handleClosePanel}
+            onRestoreFocus={restoreFocus}
+            onPrevious={step(previousId)}
+            onNext={step(nextId)}
+            onCopyLink={handleCopyLink}
+            onOpenFullPage={onOpenItemPage}
+            onMoveToGroup={handleMoveToGroup}
+            onUpdateFieldValue={handleSheetFieldValue}
+            onDuplicate={removal.requestDuplicate}
+          />
+        ) : null}
+        {removal.dialogs}
       </div>
-
-      {board && cardSelection && picking.selectedIds.size > 0 ? (
-        <KanbanBulkBar
-          boardId={boardId}
-          workspaceId={workspaceId}
-          board={board}
-          capabilities={capabilities}
-          selectedIds={picking.selectedIds}
-          onClear={picking.clear}
-        />
-      ) : null}
-
-      {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
-          open={createOpen}
-          onOpenChange={(next) => {
-            if (!next) setCreate(null);
-          }}
-          workspaceId={workspaceId}
-          board={board}
-          currentUserId={currentUserId}
-          groups={kanban.groups}
-          defaultGroupId={
-            create && create.kind !== "toolbar"
-              ? (groupForNewItem(create.lane, kanban.groups) ??
-                kanban.groups[0]?.id ??
-                "")
-              : (kanban.groups[0]?.id ?? "")
-          }
-          hideGroup={isStatusGrouping}
-          defaultStatusId={
-            create && create.kind !== "toolbar" && isStatusGrouping
-              ? create.lane.optionId
-              : null
-          }
-          defaultTitle={
-            create && create.kind !== "toolbar" ? create.title : undefined
-          }
-          laneValue={
-            create &&
-            create.kind !== "toolbar" &&
-            !isStatusGrouping &&
-            kanban.groupByField &&
-            create.lane.optionId
-              ? {
-                  fieldDefinitionId: kanban.groupByField.id,
-                  value: create.lane.optionId,
-                }
-              : null
-          }
-          focusDescription={create?.kind === "quick"}
-          context={
-            create && create.kind !== "toolbar"
-              ? {
-                  kind: create.kind,
-                  name:
-                    create.lane.name ||
-                    (isStatusGrouping ? laneCopy.noStatus : laneCopy.noValue),
-                  ...laneDot(create.lane),
-                }
-              : undefined
-          }
-          onOpenItem={(itemId) => {
-            setCreate(null);
-            onSelectedItemChange?.(itemId);
-          }}
-        />
-      ) : null}
-      {selectedItemId ? (
-        <KanbanSelectedItem
-          board={board}
-          cardId={selectedItemId}
-          capabilities={capabilities}
-          departmentMark={departmentMark}
-          groups={sheetGroups}
-          linkCandidates={linkCandidates}
-          onClose={handleClosePanel}
-          onRestoreFocus={restoreFocus}
-          onPrevious={step(previousId)}
-          onNext={step(nextId)}
-          onCopyLink={handleCopyLink}
-          onOpenFullPage={onOpenItemPage}
-          onMoveToGroup={handleMoveToGroup}
-          onUpdateFieldValue={handleSheetFieldValue}
-          onDuplicate={removal.requestDuplicate}
-        />
-      ) : null}
-      {removal.dialogs}
-    </div>
+    </KanbanFaceProvider>
   );
 }
 

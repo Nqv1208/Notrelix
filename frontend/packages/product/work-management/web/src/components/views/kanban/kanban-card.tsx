@@ -10,6 +10,10 @@ import {
   SquareCheck,
 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import { CardCover } from "../../card-popup/capabilities/card-cover";
+import { ColourBlindLabelMark } from "../../card-popup/capabilities/colour-blind-label-mark";
+import { useKanbanFace } from "../../card-popup/capabilities/face-context";
+import { faceFieldsOf } from "../../card-popup/capabilities/face-fields";
 import type { Card, CardMember } from "@notrelix/work-management-core";
 import {
   fillCopy,
@@ -236,8 +240,32 @@ function KanbanCardContent({
     hasMeta,
   } = parts;
   const compactBlocked = crowded || due?.kind === "overdue";
+  const face = useKanbanFace();
+  const faceFields = faceFieldsOf(
+    card,
+    face.fields,
+    face.cardFieldIds,
+    face.cardHideEmpty,
+  );
+  const cover = card.cover ?? null;
+  const fullCover = cover?.style === "full";
   return (
     <>
+      {cover ? (
+        fullCover ? (
+          <CardCover
+            cover={cover}
+            cardId={card.id}
+            className="absolute inset-0 -z-10 rounded-[11px]"
+          />
+        ) : (
+          <CardCover
+            cover={cover}
+            cardId={card.id}
+            className="-mx-3 -mt-[11px] h-8 rounded-t-[11px]"
+          />
+        )
+      ) : null}
       {hasTop ? (
         <div
           id={`${idPrefix}-top`}
@@ -259,6 +287,7 @@ function KanbanCardContent({
                       : "bg-state-hover-strong text-muted-foreground",
                   )}
                 >
+                  <ColourBlindLabelMark color={label.color} className="mr-1" />
                   {label.name}
                 </span>
               </span>
@@ -302,11 +331,37 @@ function KanbanCardContent({
       <h3
         className={cn(
           "line-clamp-3 break-words text-nav leading-[1.4]",
-          isDone ? "text-muted-foreground" : "text-foreground",
+          fullCover
+            ? "relative text-primary-foreground"
+            : isDone
+              ? "text-muted-foreground"
+              : "text-foreground",
         )}
       >
         {card.title}
       </h3>
+
+      {faceFields.length > 0 ? (
+        <div
+          data-face-fields=""
+          className={cn(
+            "flex min-w-0 flex-wrap gap-1",
+            fullCover && "relative",
+          )}
+        >
+          {faceFields.map(({ field, text }) => (
+            <span
+              key={field.id}
+              data-face-field={field.id}
+              title={field.name}
+              className="inline-flex h-5 max-w-full items-center truncate rounded-[5px] bg-state-hover-strong px-1.5 text-micro font-medium text-muted-foreground"
+            >
+              <span className="sr-only">{field.name}: </span>
+              {text}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {progress ? (
         <div
@@ -485,6 +540,7 @@ export function KanbanCardOverlay({
       data-card-id={card.id}
       className={cn(
         CARD_CLASS,
+        card.cover?.style === "full" && "isolate",
         "h-full cursor-grabbing shadow-popover ring-1 ring-primary/30",
         reducedMotion
           ? "scale-[1.02]"
@@ -589,6 +645,7 @@ export function KanbanCard({
       data-dragging={isDragging ? "" : undefined}
       className={cn(
         CARD_CLASS,
+        card.cover?.style === "full" && "isolate",
         "group cursor-pointer shadow-card transition-shadow hover:shadow-card-hover",
         !dragDisabled && "touch-manipulation",
         selected && "shadow-card-hover ring-2 ring-inset ring-primary",

@@ -20,6 +20,8 @@ export interface KanbanToolbarProps {
   onSearchChange: (query: string) => void;
   /** The view controls: filter, sort, group, swimlane, personal-state chip and saved filters. */
   viewBar: ReactNode;
+  /** Extra controls before the add button (the face fields popover). */
+  endActions?: ReactNode;
   /** False for a viewer who cannot add items: the add button is not shown. */
   canAdd: boolean;
   onAddItem: () => void;
@@ -50,6 +52,7 @@ export function KanbanToolbar({
   searchQuery,
   onSearchChange,
   viewBar,
+  endActions,
   canAdd,
   onAddItem,
   noResults,
@@ -73,6 +76,8 @@ export function KanbanToolbar({
         {viewBar}
 
         <span className="flex-1" />
+
+        {endActions}
 
         {canAdd ? (
           <Button
