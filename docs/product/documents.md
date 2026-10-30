@@ -234,6 +234,8 @@ valid lifecycle
 authorized move
 ```
 
+Pages nest at most 10 levels; a create or move beyond it is refused. Sibling pages sort by title, case and marks ignored; there is no manual order.
+
 # 15. DCT-005 — Page hierarchy is tenant-safe and acyclic
 
 A Page cannot become its own parent, descendant of itself, or child of another Workspace's Page.
@@ -246,7 +248,7 @@ Derived breadcrumb/path state reconciles after move.
 
 # 17. Page path
 
-A path is derived from current hierarchy and names.
+A path is derived from current hierarchy and names. An ancestor the viewer may not see is shown as one unavailable crumb with no title, icon or id; a run of hidden ancestors is one crumb.
 
 It is not competing durable ownership.
 

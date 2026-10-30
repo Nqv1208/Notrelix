@@ -48,7 +48,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | Page lifecycle | 17 | 0 | 2 | 6 | 6 | 0 | 3 |
-| B | Page hierarchy | 5 | 1 | 1 | 3 | 0 | 0 | 0 |
+| B | Page hierarchy | 5 | 0 | 2 | 3 | 0 | 0 | 0 |
 | C | Page move / reparent | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
 | D | Block lifecycle | 6 | 0 | 1 | 3 | 2 | 0 | 0 |
 | E | Block types and content contract | 9 | 1 | 0 | 6 | 2 | 0 | 0 |
@@ -59,7 +59,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | J | Document events and activity | 8 | 2 | 1 | 5 | 0 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 2 | 0 | 0 | 1 |
 | L | Recovery and conflict hardening | 5 | 1 | 0 | 3 | 0 | 0 | 1 |
-| | Total | 82 | 11 | 7 | 44 | 15 | 0 | 5 |
+| | Total | 82 | 10 | 8 | 44 | 15 | 0 | 5 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing) and `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink). Everything else that has both backend and frontend code is INTEGRATING.
 
@@ -136,11 +136,11 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A15 | Set page visibility | A | Manager | partial | none | none | none | BLOCKED | Public needs the anonymous principal decision |
 | UC-DCT-A16 | Favorite a page | A | Any viewer | none | partial | none | none | BLOCKED | Owner context unknown; FE call is a no-op |
 | UC-DCT-A17 | Retain and purge deleted pages | A | System | none | none | none | none | BLOCKED | Retention window not decided |
-| UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Unbounded; no real e2e |
-| UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e; no depth limit |
-| UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | Hidden ancestors not proven |
+| UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | partial | none | none | none | IMPLEMENTING | Rule exists but no endpoint reaches Move |
-| UC-DCT-B05 | Limit nesting depth | B | System | none | none | none | none | DEFINED | No limit in code |
+| UC-DCT-B05 | Limit nesting depth | B | System | partial | none | none | none | IMPLEMENTING | Create is limited; move is not (UC-DCT-C02) |
 | UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | No real e2e |
 | UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | partial | none | none | none | IMPLEMENTING | Handler throws NotImplementedException; no route |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
@@ -497,8 +497,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: loading, empty ("No pages yet" with New page), permission denied, error with retry, realtime refresh.
 - Rules: product doc sections 14, 16, 17 (product rule DCT-005); `DCREQ006`, `DCREQ025`; GOV-029.
 - Acceptance: Given a private child under a visible parent, When a person without access lists, Then the child is absent and the parent shows no child marker for it.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/tree`, `GetPageTreeQueryHandler` · FE `docs-sidebar-tree.ts`, `usePageList` · Design Final-Docs-2 (sidebar) · Tests `PageViewAccessTests`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — real e2e, paging for large workspaces, hidden-parent test over the API.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/tree?parentId`, `GetPageTreeQueryHandler` (sorted by `PageTitleOrder`, case and marks ignored; whole tree up to 2 000 visible pages, beyond that root pages only, and `parentId` answers the visible children of that page, a hidden or missing parent is `404`; `hasChildren` counts visible children only) · FE `docs-sidebar-tree.ts`, `usePageList` (the sidebar builds its tree from the page list, not from this endpoint, so no client reads the one-level mode yet) · Design Final-Docs-2 (sidebar) · Tests `PageViewAccessTests`, `PageHierarchyTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (sort order, the 2 000 switch, `parentId` of a hidden page, hidden-parent test over the API, real e2e; the sidebar still reads the unpaged page list, see UC-DCT-G02).
 
 ### UC-DCT-B02 Create a child page
 - Capability: B Page hierarchy
@@ -511,8 +511,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: as UC-DCT-A01.
 - Rules: product doc section 14; `DCREQ006`.
 - Acceptance: Given a parent page, When a child is created, Then the child's `parentId` is the parent and its Space equals the parent's.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages` · FE `useCreatePage` · Design Final-Docs-2 · Tests `CreatePageTargetPolicyMatrixTests`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — real e2e, depth limit.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages` and the from-template route refuse a parent that would put the page deeper than 10 levels (`PageTreeRules.EnsureCanNestUnder`, `IPageSubtreeStore.DepthOfAsync`, `400` `Documents_PageTree_MaxDepthExceeded`) · FE `useCreatePage` (no client creates a page under a chosen parent yet: the File menu makes a sibling) · Design Final-Docs-2 · Tests `CreatePageTargetPolicyMatrixTests`, `PageHierarchyTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (depth 10 refused, depth 9 accepted, real e2e; the handler tests construct the two create handlers without `IPageSubtreeStore`).
 
 ### UC-DCT-B03 Show the breadcrumb
 - Capability: B Page hierarchy
@@ -525,8 +525,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: loading, error.
 - Rules: product doc sections 16, 17; `DCREQ025`.
 - Acceptance: Given a page two levels deep, When opened, Then the crumb shows root, parent, page.
-- Evidence: BE `GET /api/v1/pages/{pageId}/breadcrumb`, `GetPageBreadcrumbQueryHandler` · FE `usePageBreadcrumb` · Design Final-Docs-2 · Tests `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — hidden-ancestor proof, real e2e.
+- Evidence: BE `GET /api/v1/pages/{pageId}/breadcrumb`, `GetPageBreadcrumbQueryHandler` climbs one parent at a time inside the workspace (it read every page of the tenant before), evaluates `ViewPage` for each ancestor through `IPageViewAccess`, and answers one `unavailable` crumb without id, title or icon for a run of hidden or missing ancestors · FE `usePageBreadcrumb`, `mapBreadcrumb`, crumb text `crumbUnavailable` · Design Final-Docs-2 · Tests `PageHierarchyTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (hidden-ancestor proof over the API, run of hidden ancestors collapses to one crumb, real e2e; one access check per ancestor, at most 9 with the depth limit).
 
 ### UC-DCT-B04 Refuse a cycle or a foreign parent
 - Capability: B Page hierarchy
@@ -553,8 +553,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: validation error.
 - Rules: new rule in Part 5; team spec section 7 "maximum nesting if product-defined".
 - Acceptance: Given a page at depth 10, When a child is created, Then refused.
-- Evidence: BE none · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — rule, code, tests.
+- Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` (the move check takes the deepest descendant), applied on create and create from template · FE none · Design none · Tests none · Real e2e none
+- State: IMPLEMENTING — the move check waits for UC-DCT-C02; tests.
 
 ## Capability C: Page move / reparent
 
