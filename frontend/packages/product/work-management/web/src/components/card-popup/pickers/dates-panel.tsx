@@ -38,6 +38,7 @@ const MONTHS = [
   "dec",
 ] as const;
 const DEFAULT_TIME = "17:00";
+const DEFAULT_START_TIME = "09:00";
 const TIMES = Array.from(
   { length: 48 },
   (_, i) =>
@@ -84,11 +85,14 @@ function TimeSelect({
   value,
   label,
   disabled,
+  placeholder,
   onChange,
 }: {
   value: string;
   label: string;
   disabled: boolean;
+  /** Shown instead of the time while the date is off. */
+  placeholder?: string;
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -124,7 +128,11 @@ function TimeSelect({
           aria-hidden="true"
           className="size-4 shrink-0 text-meta-foreground"
         />
-        {value}
+        {disabled && placeholder ? (
+          <span className="text-meta-foreground">{placeholder}</span>
+        ) : (
+          value
+        )}
         <ChevronDown
           aria-hidden="true"
           className="ml-auto size-4 text-meta-foreground"
@@ -173,14 +181,14 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
   const today = dayOf(now.toISOString(), timeZone) as Day;
   const dueInit = dayOf(card.dueAt ?? card.dueDate, timeZone);
   const startInit = dayOf(card.startDate, timeZone);
-  const timeInit = (() => {
-    const value = card.dueAt ?? card.dueDate;
-    if (!value) return DEFAULT_TIME;
+  const timeOf = (value: string | null | undefined, fallback: string) => {
+    if (!value) return fallback;
     const p = calendarParts(new Date(value), timeZone);
     return p.hour === 0 && p.minute === 0
-      ? DEFAULT_TIME
+      ? fallback
       : `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
-  })();
+  };
+  const timeInit = timeOf(card.dueAt ?? card.dueDate, DEFAULT_TIME);
 
   const [startOn, setStartOn] = useState(startInit !== null);
   const [dueOn, setDueOn] = useState(dueInit !== null || startInit === null);
@@ -191,6 +199,9 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
     dueInit ? format(dueInit) : format(today),
   );
   const [time, setTime] = useState(timeInit);
+  const [startTime, setStartTime] = useState(
+    timeOf(card.startDate, DEFAULT_START_TIME),
+  );
   const [target, setTarget] = useState<"start" | "due">("due");
   const [shown, setShown] = useState({
     year: (dueInit ?? startInit ?? today).year,
@@ -211,7 +222,16 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
   const due = dueOn ? parse(dueText) : null;
   const startBad = startOn && start === null;
   const dueBad = dueOn && due === null;
-  const orderBad = start !== null && due !== null && num(due) < num(start);
+  const minutes = (value: string) => {
+    const [h, m] = value.split(":").map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  // The due moment must come after the start moment: the day first, the time on the same day.
+  const orderBad =
+    start !== null &&
+    due !== null &&
+    (num(due) < num(start) ||
+      (num(due) === num(start) && minutes(time) <= minutes(startTime)));
   const blocked = startBad || dueBad || orderBad;
 
   const setTargetDay = (day: Day) => {
@@ -242,8 +262,11 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
   const save = () => {
     if (blocked) return;
     const [h, m] = time.split(":").map(Number);
+    const [sh, sm] = startTime.split(":").map(Number);
     write(
-      start ? zonedInstant(start, 0, 0, timeZone).toISOString() : null,
+      start
+        ? zonedInstant(start, sh ?? 0, sm ?? 0, timeZone).toISOString()
+        : null,
       due ? zonedInstant(due, h ?? 0, m ?? 0, timeZone).toISOString() : null,
     );
   };
@@ -403,6 +426,14 @@ export function DatesPanel({ onClose }: { onClose: () => void }) {
               (startBad || orderBad) &&
                 "border-danger ring-[3px] ring-danger-subtle",
             )}
+            style={{ flex: "1.2 1 0%" }}
+          />
+          <TimeSelect
+            value={startTime}
+            label={t.startTime}
+            placeholder={t.timePlaceholder}
+            disabled={!startOn}
+            onChange={setStartTime}
           />
         </div>
         {orderBad ? (
