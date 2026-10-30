@@ -25,6 +25,7 @@ interface FormWire {
   questionCount?: number;
   newSubmissionCount?: number;
   updatedAt?: string | null;
+  version?: number;
 }
 interface QuestionWire {
   id?: string;
@@ -97,6 +98,7 @@ function mapForm(row: FormWire, boardId: string): Form | null {
       ? {}
       : { newSubmissionCount: row.newSubmissionCount }),
     ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
+    ...(row.version ? { version: row.version } : {}),
   };
 }
 

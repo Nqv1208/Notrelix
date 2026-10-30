@@ -98,6 +98,8 @@ export interface Form {
   readonly questionCount?: number;
   readonly newSubmissionCount?: number;
   readonly updatedAt?: string | null;
+  /** The version the read carried: a write on the form names it. */
+  readonly version?: number;
 }
 
 export interface FormDetail extends Form {

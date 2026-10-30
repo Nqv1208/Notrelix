@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
+  Form,
   FormDetail,
   FormQuestionChanges,
   FormWriteResult,
@@ -9,7 +10,18 @@ import type {
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 
+/** Thrown before sending when the screen holds no version of the form it is changing. */
+export class UnknownFormVersionError extends Error {
+  constructor(formId: string) {
+    super(`The version of form ${formId} is unknown; reload the form first.`);
+    this.name = "UnknownFormVersionError";
+  }
+}
+
 function failure(error: unknown): FormWriteResult {
+  // Nothing was sent: the form is read again and the change can be repeated.
+  if (error instanceof UnknownFormVersionError)
+    return { ok: false, reason: "conflict" };
   const caught = (error ?? {}) as {
     status?: number;
     validationErrors?: Record<string, string[]>;
@@ -40,22 +52,22 @@ export function useFormWrites(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient();
   const { forms } = useWorkManagementServices();
 
-  // The version of the form the screen last read. A form that is not open (the
-  // list) has none in the cache, so it is read first.
+  // The version the person saw: the form open in the builder, else the row of
+  // the list they acted on. It is never read at send time (that would skip the
+  // stale check); without one the write is refused before it is sent.
   const versionOf = useCallback(
-    async (formId: string): Promise<number> => {
-      const key = wmQueryKeys.form(workspaceId, formId);
-      const cached = queryClient.getQueryData<FormDetail>(key);
-      if (cached) return cached.version;
-      return (
-        await queryClient.fetchQuery({
-          queryKey: key,
-          queryFn: () => forms.get(formId),
-          staleTime: 0,
-        })
-      ).version;
+    (formId: string): number => {
+      const opened = queryClient.getQueryData<FormDetail>(
+        wmQueryKeys.form(workspaceId, formId),
+      );
+      const listed = queryClient
+        .getQueryData<Form[]>(wmQueryKeys.boardForms(workspaceId, boardId))
+        ?.find((form) => form.id === formId);
+      const version = opened?.version ?? listed?.version;
+      if (!version || version <= 0) throw new UnknownFormVersionError(formId);
+      return version;
     },
-    [forms, queryClient, workspaceId],
+    [boardId, queryClient, workspaceId],
   );
 
   const refresh = useCallback(
@@ -109,31 +121,19 @@ export function useFormWrites(boardId: string, workspaceId: string) {
       updateDetails: (formId: string, title: string, description: string) =>
         write(
           async () =>
-            forms.updateDetails(
-              formId,
-              title,
-              description,
-              await versionOf(formId),
-            ),
+            forms.updateDetails(formId, title, description, versionOf(formId)),
           formId,
         ),
       publish: (formId: string) =>
-        write(
-          async () => forms.publish(formId, await versionOf(formId)),
-          formId,
-        ),
+        write(async () => forms.publish(formId, versionOf(formId)), formId),
       close: (formId: string) =>
-        write(async () => forms.close(formId, await versionOf(formId)), formId),
+        write(async () => forms.close(formId, versionOf(formId)), formId),
       remove: (formId: string) =>
-        write(
-          async () => forms.remove(formId, await versionOf(formId)),
-          formId,
-        ),
+        write(async () => forms.remove(formId, versionOf(formId)), formId),
       restore: (formId: string) => write(() => forms.restore(formId), formId),
       addQuestion: (formId: string, question: NewFormQuestion) =>
         write(
-          async () =>
-            forms.addQuestion(formId, question, await versionOf(formId)),
+          async () => forms.addQuestion(formId, question, versionOf(formId)),
           formId,
         ),
       updateQuestion: (
@@ -147,14 +147,14 @@ export function useFormWrites(boardId: string, workspaceId: string) {
               formId,
               questionId,
               changes,
-              await versionOf(formId),
+              versionOf(formId),
             ),
           formId,
         ),
       removeQuestion: (formId: string, questionId: string) =>
         write(
           async () =>
-            forms.removeQuestion(formId, questionId, await versionOf(formId)),
+            forms.removeQuestion(formId, questionId, versionOf(formId)),
           formId,
         ),
       process: (formId: string, submissionId: string, itemId: string) =>
