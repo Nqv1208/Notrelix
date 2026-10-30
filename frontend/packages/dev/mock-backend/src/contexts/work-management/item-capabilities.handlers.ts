@@ -13,6 +13,12 @@ import {
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
+import { erpItemId } from "../../state/mock-erp-board";
+import {
+  ERP_VIEWERS,
+  ERP_VOTE_COLUMN_ID,
+  ERP_VOTES,
+} from "../../state/mock-item-detail";
 import { canReadBoard, canWriteBoardItems } from "./boards.handlers";
 
 interface CardSettings {
@@ -37,6 +43,16 @@ function stateOf(store: MockStore): CapabilityState {
   let state = states.get(store);
   if (!state) {
     state = { settings: new Map(), votes: new Map(), views: new Map() };
+    for (const [key, userIds] of Object.entries(ERP_VOTES))
+      state.votes.set(
+        `${erpItemId(key)}:${ERP_VOTE_COLUMN_ID}`,
+        new Map(userIds.map((id) => [id, "2026-10-10T03:00:00.000Z"])),
+      );
+    for (const [key, userIds] of Object.entries(ERP_VIEWERS))
+      state.views.set(
+        erpItemId(key),
+        new Map(userIds.map((id) => [id, "2026-10-11T09:12:00.000Z"])),
+      );
     states.set(store, state);
   }
   return state;

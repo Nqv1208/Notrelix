@@ -130,6 +130,7 @@ const FIELD_TYPE_NAMES: Record<string, string> = {
   date: "Date",
   number: "Number",
   checkbox: "Checkbox",
+  vote: "Vote",
   text: "Text",
 };
 

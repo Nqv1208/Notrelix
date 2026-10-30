@@ -97,8 +97,13 @@ import {
   ERP_DESCRIPTIONS,
 } from "./mock-erp-detail";
 import {
+  ERP_ACCEPT_COLUMN_ID,
+  ERP_CHECKLISTS,
   ERP_CUSTOM_VALUES,
+  ERP_EMPTY_FIELDS,
   ERP_ESTIMATE_COLUMN_ID,
+  ERP_READY_COLUMN_ID,
+  ERP_VOTE_COLUMN_ID,
   ERP_FILES,
   ERP_FOLLOWERS,
   ERP_EXTRA_COMMENTS,
@@ -1244,6 +1249,44 @@ export class MockStore {
       settings: JSON.stringify({ expression: "[Điểm] * 2" }),
       position: 10,
     });
+    this.insertColumn({
+      id: ERP_READY_COLUMN_ID,
+      boardId,
+      name: "Sẵn sàng bàn giao",
+      fieldType: "checkbox",
+      position: 11,
+    });
+    this.insertColumn({
+      id: ERP_ACCEPT_COLUMN_ID,
+      boardId,
+      name: "Ngày nghiệm thu",
+      fieldType: "date",
+      position: 12,
+    });
+    this.insertColumn({
+      id: ERP_VOTE_COLUMN_ID,
+      boardId,
+      name: "Bình chọn",
+      fieldType: "vote",
+      position: 13,
+    });
+    ERP_EMPTY_FIELDS.forEach((field, index) =>
+      this.insertColumn({
+        id: field.id,
+        boardId,
+        name: field.name,
+        fieldType: field.fieldType,
+        position: 14 + index,
+      }),
+    );
+    this.boardViewsByBoardId.set(boardId, {
+      boardId,
+      viewMode: "kanban",
+      viewConfig: JSON.stringify({
+        cardFieldIds: [ERP_READY_COLUMN_ID, ERP_ACCEPT_COLUMN_ID, ERP_VOTE_COLUMN_ID],
+        cardHideEmpty: [ERP_READY_COLUMN_ID, ERP_ACCEPT_COLUMN_ID, ERP_VOTE_COLUMN_ID],
+      }),
+    });
     this.settings.set(
       boardId,
       erpSettingsRegistry({
@@ -1456,6 +1499,15 @@ export class MockStore {
     for (const [key, values] of Object.entries(ERP_CUSTOM_VALUES)) {
       for (const [columnId, value] of Object.entries(values))
         this.updateFieldValue(erpItemId(key), columnId, value);
+    }
+    for (const list of ERP_CHECKLISTS) {
+      const cardId = erpItemId(list.itemKey);
+      if (!this.cardsById.has(cardId)) continue;
+      const checklist = this.createChecklist(cardId, list.title);
+      list.items.forEach((title, index) => {
+        const item = this.createChecklistItem(checklist.id, title);
+        if (index < list.done) this.updateChecklistItem(item.id, { isChecked: true });
+      });
     }
     for (const [key, userIds] of Object.entries(ERP_FOLLOWERS))
       this.followersByCardId.set(erpItemId(key), [...userIds]);

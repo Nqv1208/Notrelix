@@ -33,6 +33,24 @@ const XLSX =
 
 export const ERP_FILES: readonly ErpMockFile[] = [
   {
+    id: "mock-erp-file-ledger",
+    itemKey: "ERP-144",
+    filename: "Bang-doi-chieu-cong-no-T9.xlsx",
+    sizeBytes: 2_516_582,
+    contentType: XLSX,
+    userId: ERP_PEOPLE.HP.id,
+    createdAt: "2026-10-10T08:20:00.000Z",
+  },
+  {
+    id: "mock-erp-file-chart",
+    itemKey: "ERP-144",
+    filename: "So-do-doi-chieu.png",
+    sizeBytes: 348_160,
+    contentType: "image/png",
+    userId: ERP_COMMENTER.id,
+    createdAt: "2026-10-09T02:00:00.000Z",
+  },
+  {
     id: "mock-erp-file-merged",
     itemKey: "ERP-142",
     filename: "khach-hang-da-gop.xlsx",
@@ -88,6 +106,7 @@ export const ERP_FOLLOWERS: Readonly<Record<string, readonly string[]>> = {
 /** A link that is not a dependency: shown as "Liên quan". */
 export const ERP_RELATED_LINKS: readonly { from: string; to: string }[] = [
   { from: "ERP-142", to: "ERP-151" },
+  { from: "ERP-144", to: "ERP-131" },
 ];
 
 /**
@@ -305,6 +324,89 @@ export const ERP_NOTE_COLUMN_ID = "mock-erp-col-note";
 export const ERP_LINK_COLUMN_ID = "mock-erp-col-link";
 export const ERP_POINTS_COLUMN_ID = "mock-erp-col-points";
 export const ERP_DOUBLE_COLUMN_ID = "mock-erp-col-double";
+/** Fields the card popup artboards pin on the card face: a checkbox, a date and a vote. */
+export const ERP_READY_COLUMN_ID = "mock-erp-col-ready";
+export const ERP_ACCEPT_COLUMN_ID = "mock-erp-col-accept";
+export const ERP_VOTE_COLUMN_ID = "mock-erp-col-vote";
+/** Board fields no card fills: they make "Xem tất cả" appear in the add menu (ERP-144 has nine empty ones). */
+export const ERP_EMPTY_FIELDS = [
+  { id: "mock-erp-col-task", name: "Task", fieldType: "text" },
+  { id: "mock-erp-col-customer", name: "Khách hàng", fieldType: "text" },
+  { id: "mock-erp-col-contract", name: "Mã hợp đồng", fieldType: "text" },
+  { id: "mock-erp-col-golive", name: "Ngày go-live", fieldType: "date" },
+  { id: "mock-erp-col-budget", name: "Ngân sách", fieldType: "number" },
+  { id: "mock-erp-col-actual", name: "Số giờ thực tế", fieldType: "number" },
+] as const;
+
+/** Checklists of ERP cards (the card popup artboards): `done` marks the first n items as checked. */
+export const ERP_CHECKLISTS: readonly {
+  readonly itemKey: string;
+  readonly title: string;
+  readonly done: number;
+  readonly items: readonly string[];
+}[] = [
+  {
+    itemKey: "ERP-144",
+    title: "Chuẩn bị dữ liệu tháng 9",
+    done: 4,
+    items: [
+      "Xuất công nợ phải thu tháng 9",
+      "Xuất công nợ phải trả tháng 9",
+      "Chốt danh sách khách hàng nhóm A",
+      "Nạp dữ liệu vào môi trường thử",
+      "Đối chiếu số dư đầu kỳ với kế toán",
+    ],
+  },
+  {
+    itemKey: "ERP-144",
+    title: "Nghiệm thu với kế toán",
+    done: 2,
+    items: [
+      "Gửi bảng đối chiếu cho kế toán trưởng",
+      "Kế toán trưởng xác nhận số liệu",
+      "Ghi nhận các khoản lệch",
+      "Ký biên bản nghiệm thu",
+    ],
+  },
+  {
+    itemKey: "ERP-140",
+    title: "Danh sách go-live",
+    done: 3,
+    items: [
+      "Khoá dữ liệu cũ",
+      "Sao lưu cơ sở dữ liệu",
+      "Nạp số dư đầu kỳ",
+      "Kiểm tra phân quyền",
+      "Chạy thử hoá đơn",
+      "Thông báo người dùng",
+      "Mở hệ thống mới",
+      "Theo dõi ngày đầu",
+    ],
+  },
+  {
+    itemKey: "ERP-131",
+    title: "Mẫu bàn giao",
+    done: 6,
+    items: [
+      "Tài liệu cấu hình",
+      "Quy trình vận hành",
+      "Danh sách tài khoản",
+      "Lịch sao lưu",
+      "Đầu mối hỗ trợ",
+      "Biên bản bàn giao",
+    ],
+  },
+];
+
+/** Who opened a card before the member did: with the member, ERP-144 reads "Đã xem 3". */
+export const ERP_VIEWERS: Readonly<Record<string, readonly string[]>> = {
+  "ERP-144": [ERP_PEOPLE.HP.id, ERP_PEOPLE.MQ.id],
+};
+
+/** Who voted on a card's Vote field: ERP-144 starts with three votes, none of them the member's. */
+export const ERP_VOTES: Readonly<Record<string, readonly string[]>> = {
+  "ERP-144": [ERP_PEOPLE.HP.id, ERP_PEOPLE.MQ.id, ERP_PEOPLE.NA.id],
+};
 
 export const ERP_MODULE_OPTIONS = [
   { id: "mock-erp-module-accounting", name: "Kế toán" },
@@ -335,6 +437,8 @@ export const ERP_CUSTOM_VALUES: Readonly<
     [ERP_NOTE_COLUMN_ID]: "Cần xuất bản Excel cho kế toán trưởng",
     [ERP_LINK_COLUMN_ID]: "https://erp.minhan.vn/t/144",
     [ERP_POINTS_COLUMN_ID]: 13,
+    [ERP_READY_COLUMN_ID]: true,
+    [ERP_ACCEPT_COLUMN_ID]: "2026-10-23T00:00:00.000Z",
   },
   "ERP-147": {
     [ERP_POINTS_COLUMN_ID]: 5,

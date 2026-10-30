@@ -127,6 +127,9 @@ function badRequest(errors: Record<string, string[]>) {
   };
 }
 
+const MOCK_IMAGE_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice"><rect width="320" height="120" fill="#DCE9FA"/><g fill="#8DBBF3"><rect x="40" y="50" width="34" height="70"/><rect x="92" y="34" width="34" height="86"/><rect x="144" y="62" width="34" height="58"/><rect x="196" y="22" width="34" height="98"/><rect x="248" y="46" width="34" height="74"/></g><path d="M20 44 L110 28 L160 56 L212 14 L300 34" fill="none" stroke="#1E5FB5" stroke-width="3"/></svg>';
+
 /** The limits and blocked types of `POST .../attachments/files`. */
 export const MOCK_MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 export const MOCK_MAX_ATTACHMENTS = 50;
@@ -1183,15 +1186,19 @@ export const cardsOperations = [
         return notFound("Attachment not found");
       const file = store.getAttachment(params.id, params.attachmentId);
       if (!file) return notFound("Attachment not found");
+      // An image stub is a small drawing, so a cover made from it has something to show.
+      const isImage = file.contentType.startsWith("image/");
       return {
         status: 200,
         headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Content-Disposition": "attachment",
+          "Content-Type": isImage
+            ? "image/svg+xml"
+            : "text/plain; charset=utf-8",
+          "Content-Disposition": isImage ? "inline" : "attachment",
           "X-Content-Type-Options": "nosniff",
           "Cache-Control": "private, no-store",
         },
-        rawBody: `Tệp mẫu của mock: ${file.filename}`,
+        rawBody: isImage ? MOCK_IMAGE_SVG : `Tệp mẫu của mock: ${file.filename}`,
       };
     },
   }),
