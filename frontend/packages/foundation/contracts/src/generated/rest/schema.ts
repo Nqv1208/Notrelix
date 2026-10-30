@@ -7777,7 +7777,6 @@ export interface components {
             inviterName?: string | null;
             email?: string | null;
             role?: string | null;
-            token?: string | null;
             /** Format: date-time */
             expiresAt?: string;
         };

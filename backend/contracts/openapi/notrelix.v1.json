@@ -29194,10 +29194,6 @@
             "type": "string",
             "nullable": true
           },
-          "token": {
-            "type": "string",
-            "nullable": true
-          },
           "expiresAt": {
             "type": "string",
             "format": "date-time"

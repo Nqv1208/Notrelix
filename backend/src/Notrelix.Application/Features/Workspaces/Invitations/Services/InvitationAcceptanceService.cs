@@ -98,21 +98,27 @@ public sealed class InvitationAcceptanceService
         // WSP-009 / WSP-026: every check that can reject runs BEFORE the first
         // mutation. A Failure result is still committed by the data session, so
         // only an exception (or an earlier return) leaves state unchanged.
-        if (hasExtras && existingMember is not null && existingMember.Status != WorkspaceMemberStatus.Active)
+        // An invitation never overrides an admin's suspension. A removed member returns only through a
+        // plain invitation: one that carries entries or a resource entry is refused for them as before.
+        if (existingMember is { Status: WorkspaceMemberStatus.Suspended }
+            || (hasExtras && existingMember is { Status: not WorkspaceMemberStatus.Active }))
             return Result<AcceptInvitationResultDto>.Failure(
                 "Your membership in this workspace is not active.");
 
-        // Billing owns the seat decision: a new membership takes a Member or Guest seat of the
-        // account's plan unless the person already holds that seat in another workspace. The gate is
-        // required, never optional: an acceptance that cannot ask Billing must not admit (LD-08).
-        if (existingMember is null
+        // Billing owns the seat decision: a new membership, or a removed member returning, takes a Member or
+        // Guest seat of the account's plan unless the person already holds that seat in another workspace.
+        // The gate is required, never optional: an acceptance that cannot ask Billing must not admit (LD-08).
+        if ((existingMember is null || existingMember.Status == WorkspaceMemberStatus.Removed)
             && !await _seatGate.CanAdmitAsync(
                 workspace.AccountId, invitation.WorkspaceId, userId, invitation.Role == WorkspaceRole.Guest, ct))
         {
-            return Result<AcceptInvitationResultDto>.Failure(
-                invitation.Role == WorkspaceRole.Guest
-                    ? "The guest limit of this account's plan has been reached. Ask an account owner to upgrade the plan."
-                    : "The member limit of this account's plan has been reached. Ask an account owner to upgrade the plan.");
+            var message = invitation.Role == WorkspaceRole.Guest
+                ? "The guest limit of this account's plan has been reached. Ask an account owner to upgrade the plan."
+                : "The member limit of this account's plan has been reached. Ask an account owner to upgrade the plan.";
+            if (existingMember is not null)
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Member_SeatUnavailable, message);
+            return Result<AcceptInvitationResultDto>.Failure(message);
         }
 
         if (invitation.InitialEntries.Count > 0
@@ -150,6 +156,21 @@ public sealed class InvitationAcceptanceService
                 AuditMetadata.Create(),
                 AuditSeverity.Info,
                 cancellationToken: ct);
+        }
+
+        if (existingMember is { Status: WorkspaceMemberStatus.Removed })
+        {
+            // The removed member returns with the invited role, like a direct add of a returning member.
+            await _accountMembershipActions.EnsureAccountMembershipAsync(
+                workspace.AccountId, userId, invitation.InvitedBy, now, ct);
+
+            invitation.Accept(userId, now);
+            existingMember.Rejoin(invitation.Role, invitation.InvitedBy, now);
+
+            await _grantProjection.SyncWorkspaceMemberGrantAsync(
+                workspace.AccountId, invitation.WorkspaceId, userId, invitation.Role, now, ct);
+
+            return Result<AcceptInvitationResultDto>.Success(ResultFor(workspace, invitation));
         }
 
         if (existingMember is not null)

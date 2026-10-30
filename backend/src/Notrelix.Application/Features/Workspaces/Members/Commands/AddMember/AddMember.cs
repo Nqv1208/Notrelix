@@ -73,8 +73,16 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
             // Re-adding a returning member also acts on that member's existing row.
             WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, existingMember.Role);
 
-            existingMember.Activate(_requestContext.UserId, _dateTimeProvider.UtcNow);
-            existingMember.ChangeRole(request.Role, _requestContext.UserId, 1, _dateTimeProvider.UtcNow);
+            // A removed member rejoins (their row is not activated); a suspended one is activated first.
+            if (existingMember.Status == WorkspaceMemberStatus.Removed)
+            {
+                existingMember.Rejoin(request.Role, _requestContext.UserId, _dateTimeProvider.UtcNow);
+            }
+            else
+            {
+                existingMember.Activate(_requestContext.UserId, _dateTimeProvider.UtcNow);
+                existingMember.ChangeRole(request.Role, _requestContext.UserId, 1, _dateTimeProvider.UtcNow);
+            }
         }
         else
         {
