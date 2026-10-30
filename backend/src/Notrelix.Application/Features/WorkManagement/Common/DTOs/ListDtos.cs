@@ -43,7 +43,8 @@ public record FormDto(
     DateTimeOffset CreatedAt,
     int QuestionCount = 0,
     int NewSubmissionCount = 0,
-    DateTimeOffset? UpdatedAt = null
+    DateTimeOffset? UpdatedAt = null,
+    long Version = 0
 );
 
 public record FormSubmissionDto(
