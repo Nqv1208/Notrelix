@@ -10,6 +10,7 @@
 import { boardsOperations } from "./boards.handlers";
 import { boardViewsOperations } from "./board-views.handlers";
 import { savedFiltersOperations } from "./saved-filters.handlers";
+import { boardPreferencesOperations } from "./board-preferences.handlers";
 import { formsOperations } from "./forms.handlers";
 import { boardSharingOperations } from "./board-sharing.handlers";
 import { listsOperations } from "./lists.handlers";
@@ -36,6 +37,7 @@ export const workManagementOperations = [
   ...boardsOperations,
   ...boardSharingOperations,
   ...boardViewsOperations,
+  ...boardPreferencesOperations,
   ...savedFiltersOperations,
   ...formsOperations,
   ...listsOperations,

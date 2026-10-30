@@ -333,6 +333,11 @@ export const endpoints = {
       `/form-submissions/${submissionId}/reject`,
     spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
   },
+  // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
+  boardPreferences: {
+    forView: (boardId: string, viewId: string) =>
+      `/boards/${boardId}/preferences/${viewId}`,
+  },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
     saved: (boardId: string) => `/boards/${boardId}/views/saved`,

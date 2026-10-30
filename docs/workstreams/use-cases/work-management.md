@@ -1936,7 +1936,7 @@ Team capability WM-008.
 - Rules: product sections 47-49, 150; WM-017, WM-018; WMREQ110-113; views pack section 11
 - Acceptance: (1) Given an Editor, when they change the shared sort, group or columns, then every other member sees the new defaults (unless their personal state overrides) without reload. (2) Given the Cột menu, when any person (including a Viewer) hides, reorders (Alt+Arrow) or resizes a column, then it is saved as their own BoardPreference, persists across reload, and other members' columns are unchanged; an Editor's "Lưu vào view chung" writes it as the shared default; a Viewer's "Lưu vào view chung" is disabled with the reason (owner Q5).
 - Evidence: BE BoardViews.Save = PUT /boards/{boardId:guid}/views -> SaveBoardViewCommand (`BoardViews/Commands/SaveBoardView/SaveBoardView.cs`) [- / Idem]; BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem]; BoardViews.Rename = PATCH /boards/{boardId:guid}/views/{viewId:guid}/rename -> RenameBoardViewCommand (`BoardViews/Commands/RenameBoardView/RenameBoardView.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design BC-Toolbar (Lưu vào view chung), BC-View-Personal · Tests `BoardAuthorizationHardeningIntegrationTests.cs`, `BoardViewVisibilityTests.cs`, `NotrelixApiFactory.cs` · Real e2e `saved-views.real.e2e.spec.ts` (rename)
-- State: HARDENING — PUT and PATCH carry no expected version (defect B-06).
+- State: HARDENING — tests and owner check. Built: rename, config change and visibility of a saved view carry the view version (a stale one changes nothing, 409); the web client names the version it last read and takes the new one from the config response. Not built: the PUT upsert of the default view (legacy path, no version), design for the conflict state.
 
 ### UC-WM-H03 Delete or archive a view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1950,7 +1950,7 @@ Team capability WM-008.
 - Rules: product sections 62, 125; WM-004, WM-017; D76.9
 - Acceptance: Given the default view deleted, then another becomes default deterministically and no item is deleted.
 - Evidence: BE BoardViews.Delete = DELETE /boards/{boardId:guid}/views/{viewId:guid} -> DeleteBoardViewCommand (`BoardViews/Commands/DeleteBoardView/DeleteBoardView.cs`) [- / Idem]; BoardViews.Archive = POST /boards/{boardId:guid}/views/{viewId:guid}/archive -> ArchiveBoardViewCommand (`BoardViews/Commands/ArchiveBoardView/ArchiveBoardView.cs`) [- / Idem]; BoardViews.Unarchive = POST /boards/{boardId:guid}/views/{viewId:guid}/unarchive -> UnarchiveBoardViewCommand (`BoardViews/Commands/UnarchiveBoardView/UnarchiveBoardView.cs`) [- / Idem]; BoardViews.Restore = POST /boards/{boardId:guid}/views/{viewId:guid}/restore -> RestoreBoardViewCommand (`BoardViews/Commands/RestoreBoardView/RestoreBoardView.cs`) [- / Idem] · FE delete; archive/restore unused · Design none; needs delete view, default-fallback, archive · Tests `DeleteBoardViewTests.cs` · Real e2e none
-- State: INTEGRATING — delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design.
+- State: INTEGRATING — tests and owner check. Built: delete, archive, unarchive and restore of a view carry the view version; deleting or archiving the default view hands the default to the view the person picks, else to the oldest shared view, in the same commit; board settings ask for the next default before deleting it and keep the only shared view undeletable. Not built: archive and restore in the web UI, design.
 
 ### UC-WM-H04 Set the default view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1964,7 +1964,7 @@ Team capability WM-008.
 - Rules: product sections 154; D76.9
 - Acceptance: Given a new default set, then exactly one view is default.
 - Evidence: BE BoardViews.SetDefault = POST /boards/{boardId:guid}/views/{viewId:guid}/set-default -> SetDefaultViewCommand (`BoardViews/Commands/SetDefaultView/SetDefaultView.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design none; needs pick next default when deleting default view · Tests `BoardManagementLevelTests.cs` · Real e2e `saved-views.real.e2e.spec.ts`
-- State: HARDENING — Exactly-one default invariant and delete flow (D76.9); design
+- State: HARDENING — tests and owner check. Built: set-default carries the view version and clears the old default in the same commit; the delete flow above keeps exactly one default. Not built: design for the next-default picker.
 
 ### UC-WM-H05 Create and use a private view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1978,7 +1978,7 @@ Team capability WM-008.
 - Rules: product sections 61, 153; D77.4; D71
 - Acceptance: Given user A's private view, when B lists views or listens to realtime, then it is absent.
 - Evidence: BE BoardViews.SetVisibility = PATCH /boards/{boardId:guid}/views/{viewId:guid}/visibility -> SetBoardViewVisibilityCommand (`BoardViews/Commands/SetBoardViewVisibility/SetBoardViewVisibility.cs`) [- / Idem] · FE private visibility in `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design none; needs private badge, visibility switch · Tests `BoardViewVisibilityTests.cs` · Real e2e `saved-views.real.e2e.spec.ts` (keeps view private)
-- State: HARDENING — Design states; prove absent from others' list and realtime (D77.4)
+- State: HARDENING — tests and owner check. Built: the visibility write carries the view version; a private view cannot be the default (rule code already present). Not built: private badge and switch design, realtime absence proof.
 
 ### UC-WM-H06 Filter the view (personal state)
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1992,7 +1992,7 @@ Team capability WM-008.
 - Rules: product sections 150, 153; D68, D71; views pack section 4, 11
 - Acceptance: (1) Given an incomplete condition row, when the view shows results, then the row stays visible and is not applied. (2) Given two Members, when A sets a personal filter, then B's view is unchanged and the shared BoardView is not written. (3) Given saving personal state fails, when the failure returns, then the state stays applied for the session and an alert with "Thử lại" shows.
 - Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -]; BoardPreferences.UpdateFilters = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/filters -> UpdateBoardPreferenceFiltersCommand (`BoardPreferences/Commands/UpdateBoardPreferenceFilters/UpdateBoardPreferenceFilters.cs`) [- / -] · FE in open PR #201: filter-builder.tsx, use-view-state.ts, view-state-bar.tsx · Design WM-Filter-Builder, -States, -320, BC-View-Personal, BC-Filter-Gaps · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201, not on develop; real e2e; server-side filter on paged boards (Q9)
+- State: IMPLEMENTING — tests and owner check. Built: the compound filter model, the member's personal view state (filter, three sort levels, group, swimlane field) kept as versioned criteria on the board preference (server stores an opaque JSON object up to 8 KB), the preference read and write in the web client, the filter builder, sort and group menus and the view state bar as components with a state hook and mock handlers. Not built: wiring of the bar into the Table, Kanban and Calendar toolbars (with each view unit), server-side filter on paged boards (Q9).
 
 ### UC-WM-H07 Sort the view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2006,7 +2006,7 @@ Team capability WM-008.
 - Rules: product sections 151; WM-016; views pack section 4
 - Acceptance: Given a sort on a Number field ascending, then empty values come last. Given 3 levels, then ties on level 1 order by level 2.
 - Evidence: BE BoardPreferences.UpdateSorts = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/sorts -> UpdateBoardPreferenceSortsCommand (`BoardPreferences/Commands/UpdateBoardPreferenceSorts/UpdateBoardPreferenceSorts.cs`) [- / -] · FE in open PR #201: sort-menu.tsx (3 levels) · Design WM-Filter-SortGroup · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201, not on develop; server-side sort is missing; real e2e.
+- State: IMPLEMENTING — tests and owner check. Built: up to three sort levels in the personal view state and the sort menu component. Not built: wiring into the view toolbars, server-side sort.
 
 ### UC-WM-H08 Group the view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2020,7 +2020,7 @@ Team capability WM-008.
 - Rules: product sections 152; D71, Q13; views pack section 4
 - Acceptance: Given Group by Assignee on a multi-assignee item, then it shows in each lane and the board total counts it once (Q13).
 - Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE in open PR #201: group menu, use-view-state.ts · Design WM-Filter-SortGroup, BC-Kanban (No value) · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201, not on develop; 'No value' group proof; real e2e.
+- State: IMPLEMENTING — tests and owner check. Built: group and swimlane field in the personal view state with date buckets, and the group menu component. Not built: wiring into the view toolbars.
 
 ### UC-WM-H09 Save, share, edit and delete a saved filter
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2062,7 +2062,7 @@ Team capability WM-008.
 - Rules: product sections 153; D71
 - Acceptance: Given personal filter and sort, when 'Về view chung' is pressed, then both clear and the shared view's own sort shows.
 - Evidence: BE BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE in open PR #201: view-state-bar.tsx (Về view chung) · Design BC-View-Personal (icon + dot), BC-Toolbar · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — personal state lives in open PR #201; owner confirms the icon button with a dot; real e2e.
+- State: IMPLEMENTING — tests and owner check. Built: the view state bar clears the whole personal state including the saved criteria. Not built: wiring into the view toolbars.
 
 ### UC-WM-H12 Repair stale view references
 - Capability: H Query, filter and sort foundation (WM-008)

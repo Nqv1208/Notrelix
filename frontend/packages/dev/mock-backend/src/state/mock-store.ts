@@ -127,6 +127,7 @@ import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { MockBoardSavedFilters } from "./mock-board-saved-filters";
+import { MockBoardPreferences } from "./mock-board-preferences";
 import { MockBoardForms } from "./mock-board-forms";
 import { seedErpForms } from "./mock-erp-forms";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
@@ -332,6 +333,7 @@ export class MockStore {
   readonly savedViews = new MockBoardSavedViews(() => this);
   /** The saved filters of the boards (personal or shared with the board). */
   readonly savedFilters = new MockBoardSavedFilters(() => this);
+  readonly boardPreferences = new MockBoardPreferences();
   /** The forms of the boards with their responses. */
   readonly forms = new MockBoardForms(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
@@ -1802,6 +1804,7 @@ export class MockStore {
     this.boardViewsByBoardId.clear();
     this.savedViews.clear();
     this.savedFilters.clear();
+    this.boardPreferences.clear();
     this.forms.clear();
     this.columnsById.clear();
     this.labelsById.clear();

@@ -87,6 +87,15 @@ export const wmQueryKeys = {
       "view",
       boardId,
     ),
+  boardPreference: (workspaceId: string, boardId: string, viewId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "boards",
+      "preference",
+      boardId,
+      viewId,
+    ),
   groups: (workspaceId: string, boardId: string) =>
     workspaceQueryKey(
       workspaceId,

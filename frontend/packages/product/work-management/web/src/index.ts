@@ -73,6 +73,12 @@ export * from "./components/views/kanban/kanban-skeleton";
 export * from "./components/views/kanban/kanban-toolbar";
 export { kanbanToolbarCatalog } from "./components/views/kanban/kanban-toolbar.catalog";
 export { savedFiltersCatalog } from "./components/saved-filters/saved-filters.catalog";
+export { viewStateCatalog } from "./components/filters/filters.catalog";
+export * from "./components/filters/view-state-bar";
+export * from "./components/filters/view-state-control";
+export * from "./components/filters/use-view-state";
+export * from "./components/filters/use-board-view-state";
+export * from "./components/filters/use-filters-copy";
 export {
   kanbanToolbarCopy,
   type KanbanToolbarCopy,

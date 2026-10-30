@@ -2382,6 +2382,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "WorkManagement.BoardPreferences.Get",
+    consumerSymbol: "createBoardPreferenceApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-preference.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardPreferences.Get",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.BoardPreferences.CreateOrUpdate",
+    consumerSymbol: "createBoardPreferenceApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-preference.api.ts",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.BoardPreferences.CreateOrUpdate",
+    mutation: true,
+  },
+  {
+    context: "Work Management",
     capability: "WorkManagement.Forms.List",
     consumerSymbol: "createFormApi",
     consumerFile:

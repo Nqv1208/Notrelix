@@ -36,3 +36,4 @@ export * from "./field-types";
 
 // Kanban types
 export * from "./types/kanban-types";
+export * from "./filters";

@@ -34,6 +34,8 @@ export * from "./mutations";
 // State hooks
 export * from "./hooks";
 
+export * from "./api/board-preference.api";
+
 // Cache helpers
 export * from "./cache";
 

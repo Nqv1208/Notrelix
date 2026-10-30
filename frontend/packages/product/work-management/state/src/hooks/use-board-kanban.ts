@@ -1,11 +1,18 @@
 import { useMemo, useState } from "react";
 import {
+  buildFilterFields,
+  filterLanesByCompound,
   findStatusField,
+  groupableFields,
+  groupCardsByField,
   groupCardsByStatus,
   type BoardGroup,
   type Card,
+  type DateBucket,
   type FieldDefinition,
+  type FilterFieldInput,
   type KanbanStatusLane,
+  type ViewState,
 } from "@notrelix/work-management-core";
 import { useFullBoard } from "../queries/use-full-board";
 import { useDebounce } from "./use-debounce";
@@ -30,7 +37,20 @@ export interface KanbanGroupByField {
   readonly kind: "status" | "select";
 }
 
+/** The member's own view state and what the hook needs to name things (copy stays with the view). */
+export interface UseBoardKanbanView {
+  readonly state: ViewState;
+  readonly names: FilterFieldInput["names"];
+  /** The label of a date bucket key ("Tuần 12/10 – 18/10/2026"). */
+  readonly bucketLabel: (key: string, bucket: DateBucket) => string;
+  readonly timeZone?: string;
+  /** False for the Kanban: its lanes are columns of a Status or Select field, never a person or date split. */
+  readonly flatGroups?: boolean;
+}
+
 export interface UseBoardKanbanOptions {
+  /** The compound filter, grouping by person or date and the sort levels; absent: only the legacy `filter`. */
+  readonly view?: UseBoardKanbanView;
   /** Field id from the route `groupBy` parameter; unknown ids fall back to Status. */
   readonly groupBy?: string;
   readonly filter: KanbanLaneFilter;
@@ -136,7 +156,7 @@ export function kanbanGroupByFields(
 export function useBoardKanban(
   boardId: string,
   workspaceId: string,
-  { groupBy, filter, isOverdue, onWriteError }: UseBoardKanbanOptions,
+  { groupBy, filter, isOverdue, onWriteError, view }: UseBoardKanbanOptions,
 ) {
   const { board, groups, isLoading, error, refetch } = useFullBoard(
     boardId,
@@ -154,6 +174,43 @@ export function useBoardKanban(
     () => (fields ? kanbanGroupByFields(fields) : []),
     [fields],
   );
+  const labelChoices = useMemo(
+    () => (board ? kanbanFilterChoices(board, groups).labels : []),
+    [board, groups],
+  );
+  const filterFields = useMemo(
+    () =>
+      board && view
+        ? buildFilterFields({
+            fieldDefinitions: board.fieldDefinitions,
+            members: board.members,
+            labels: labelChoices,
+            names: view.names,
+            isOverdue,
+          })
+        : [],
+    [board, view, labelChoices, isOverdue],
+  );
+  const memberName = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const member of board?.members ?? [])
+      names.set(member.userId, member.name);
+    for (const group of groups)
+      for (const card of group.cards)
+        for (const member of card.members)
+          if (!names.has(member.userId)) names.set(member.userId, member.name);
+    return (userId: string) => names.get(userId) ?? userId;
+  }, [board, groups]);
+  /** The field a view can group by besides the Status and Select fields: a person or a date field. */
+  const flatGroupField = useMemo(
+    () =>
+      groupBy &&
+      view?.flatGroups !== false &&
+      !groupByFields.some((field) => field.id === groupBy)
+        ? groupableFields(filterFields).find((field) => field.id === groupBy)
+        : undefined,
+    [filterFields, groupBy, groupByFields, view?.flatGroups],
+  );
   const groupByField = useMemo(() => {
     const named = groupBy
       ? groupByFields.find((field) => field.id === groupBy)
@@ -165,6 +222,25 @@ export function useBoardKanban(
   const allLanes = useMemo(() => {
     if (!board) return [];
     const sortedGroups = [...groups].sort((a, b) => a.position - b.position);
+    if (flatGroupField && view) {
+      const topLevel = sortedGroups.flatMap((group) =>
+        group.cards.filter(
+          (card) => !card.parentItemId && !card.isArchived && !card.isDeleted,
+        ),
+      );
+      return groupCardsByField(
+        topLevel,
+        flatGroupField,
+        view.state.group?.fieldId === flatGroupField.id
+          ? view.state.group.bucket
+          : undefined,
+        {
+          person: memberName,
+          bucket: view.bucketLabel,
+          ...(view.timeZone ? { timeZone: view.timeZone } : {}),
+        },
+      );
+    }
     if (!groupByField || groupByField.id === statusField?.id) {
       return groupCardsByStatus({
         fieldDefinitions: board.fieldDefinitions,
@@ -172,7 +248,15 @@ export function useBoardKanban(
       });
     }
     return groupCardsBySelectField(groupByField, sortedGroups);
-  }, [board, groups, groupByField, statusField]);
+  }, [
+    board,
+    groups,
+    groupByField,
+    statusField,
+    flatGroupField,
+    view,
+    memberName,
+  ]);
 
   const filterChoices = useMemo(
     () =>
@@ -187,10 +271,26 @@ export function useBoardKanban(
     [board, filter, filterChoices],
   );
 
-  const filtered = useKanbanFilters(allLanes, appliedFilter, {
+  const legacyFiltered = useKanbanFilters(allLanes, appliedFilter, {
     query: debouncedQuery,
     isOverdue,
   });
+  const compound = view?.state.filter;
+  const filtered = useMemo(() => {
+    if (!compound || compound.conditions.length === 0) return legacyFiltered;
+    const lanes = filterLanesByCompound(
+      legacyFiltered.lanes,
+      compound,
+      filterFields,
+      memberName,
+    );
+    return {
+      ...legacyFiltered,
+      lanes,
+      visibleCount: lanes.reduce((sum, lane) => sum + lane.cards.length, 0),
+      active: true,
+    };
+  }, [compound, filterFields, legacyFiltered, memberName]);
 
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>
@@ -225,7 +325,12 @@ export function useBoardKanban(
     refetch,
     statusField,
     groupByField,
+    /** The person or date field the view is grouped by, when it is one (lanes are then built from card values). */
+    flatGroupField,
     groupByFields,
+    /** The fields a filter, sort, group or swimlane can name (empty without `view`). */
+    filterFields,
+    memberName,
     /** Lanes before the filter (lane totals, K/J order without a filter). */
     allLanes,
     /** Lanes with the filter and search applied; `total` is the lane total. */
