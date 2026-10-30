@@ -82,7 +82,7 @@ export function Caption({
     <div
       id={id}
       className={cn(
-        "mt-3 mb-1.5 text-[12px] font-semibold text-muted-foreground",
+        "mt-3 mb-1.5 text-[12px] leading-[1.45] font-semibold text-muted-foreground",
         className,
       )}
     >

@@ -1,12 +1,6 @@
 import { useRef, useState } from "react";
 import { Check, ImagePlus, Image as ImageIcon } from "lucide-react";
-import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  cn,
-} from "@notrelix/ui-web";
+import { Button, PopoverTrigger, cn } from "@notrelix/ui-web";
 import {
   CARD_COVER_COLORS,
   type CardCover,
@@ -18,6 +12,8 @@ import {
   useItemSettingsWrites,
   useWorkManagementServices,
 } from "@notrelix/work-management-state";
+import { PanelBtn, PanelPopover } from "../popup-ui";
+import { Caption, Hint, PickerHead } from "../pickers/picker-bits";
 import { COVER_COLOR_CLASS, useCoverImageUrl } from "./card-cover";
 import { fillCapabilityCopy } from "./capabilities.copy";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
@@ -46,8 +42,8 @@ function ImageChoice({
       title={name}
       onClick={onPick}
       className={cn(
-        "grid h-16 w-24 place-items-center overflow-hidden rounded-md border border-border bg-accent-subtle",
-        selected && "ring-2 ring-primary ring-offset-2 ring-offset-popover",
+        "grid h-16 w-24 place-items-center overflow-hidden rounded-[6px] border border-line-strong bg-brand-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        selected && "border-primary shadow-[0_0_0_3px_var(--brand-subtle)]",
       )}
     >
       {url ? (
@@ -88,6 +84,7 @@ export function CoverPicker({
   );
   const [message, setMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [open, setOpen] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const cover = card.cover ?? null;
   const images = (files.data ?? []).filter(
@@ -125,146 +122,148 @@ export function CoverPicker({
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          disabled={disabled}
-          aria-label={copy.cover.open}
-          title={copy.cover.open}
-        >
-          <ImageIcon aria-hidden="true" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="flex w-82 flex-col gap-2 p-3">
-        <h2 className="text-nav font-semibold">{copy.cover.title}</h2>
-        <p className="text-micro font-semibold text-meta-foreground">
-          {copy.cover.showAs}
-        </p>
-        <div className="flex gap-2">
-          {(["strip", "full"] as const).map((option) => (
+    <PanelPopover
+      open={open}
+      onOpenChange={setOpen}
+      width={328}
+      align="end"
+      trigger={
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
+            aria-label={copy.cover.open}
+            title={copy.cover.open}
+          >
+            <ImageIcon aria-hidden="true" />
+          </Button>
+        </PopoverTrigger>
+      }
+    >
+      <PickerHead title={copy.cover.title} onClose={() => setOpen(false)} />
+      <Caption className="mt-0">{copy.cover.showAs}</Caption>
+      <div className="flex gap-2">
+        {(["strip", "full"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={style === option}
+            onClick={() => pickStyle(option)}
+            className={cn(
+              "box-border flex min-w-0 flex-1 flex-col gap-1.5 rounded-[8px] border border-line-strong bg-popover p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+              style === option &&
+                "border-primary shadow-[0_0_0_3px_var(--brand-subtle)]",
+            )}
+          >
+            <span className="block overflow-hidden rounded-[6px] bg-background">
+              {option === "strip" ? (
+                <>
+                  <span className="block h-[38px] rounded-t-[5px] bg-line-strong" />
+                  <span className="flex h-[34px] flex-col gap-[5px] p-1.5">
+                    <span className="block h-1.5 w-[70%] rounded-[6px] bg-state-hover-strong" />
+                    <span className="block h-1.5 w-[40%] rounded-[6px] bg-state-hover-strong" />
+                  </span>
+                </>
+              ) : (
+                <span className="flex h-[72px] flex-col justify-end gap-1 rounded-[5px] bg-line-strong p-2 pb-1.5">
+                  <span className="block h-1.5 w-[80%] rounded-[6px] bg-popover" />
+                  <span className="block h-1.5 w-[45%] rounded-[6px] bg-popover" />
+                </span>
+              )}
+            </span>
+            <span className="text-center text-[12.5px] leading-[1.45] font-semibold">
+              {copy.cover[option]}
+            </span>
+          </button>
+        ))}
+      </div>
+      <Caption id={`${card.id}-cover-colors`}>{copy.cover.colors}</Caption>
+      <div
+        role="group"
+        aria-labelledby={`${card.id}-cover-colors`}
+        className="grid grid-cols-5 gap-1.5"
+      >
+        {CARD_COVER_COLORS.map((color) => {
+          const selected = cover?.color === color;
+          return (
             <button
-              key={option}
+              key={color}
               type="button"
-              aria-pressed={style === option}
-              onClick={() => pickStyle(option)}
+              aria-label={copy.cover.colorNames[color]}
+              aria-pressed={selected}
+              onClick={() => void save({ color, attachmentId: null, style })}
               className={cn(
-                "flex flex-1 flex-col gap-1.5 rounded-lg border border-border bg-popover p-1.5",
-                style === option && "border-primary ring-2 ring-primary/20",
+                "grid h-8 place-items-center rounded-[6px] border-0 p-0 text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                COVER_COLOR_CLASS[color],
+                selected &&
+                  "shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--primary)]",
               )}
             >
-              <span className="block rounded-md bg-background">
-                {option === "strip" ? (
-                  <>
-                    <span className="block h-9.5 rounded-t-[5px] bg-border" />
-                    <span className="block h-8.5" />
-                  </>
-                ) : (
-                  <span className="block h-18 rounded-[5px] bg-border" />
-                )}
-              </span>
-              <span className="text-center text-micro font-semibold">
-                {copy.cover[option]}
-              </span>
+              {selected ? (
+                <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+              ) : null}
             </button>
+          );
+        })}
+      </div>
+      <Caption>{copy.cover.images}</Caption>
+      {images.length === 0 ? (
+        <Hint>{copy.cover.noImages}</Hint>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {images.map((file) => (
+            <ImageChoice
+              key={file.id}
+              cardId={card.id}
+              attachmentId={file.id}
+              name={file.name}
+              selected={cover?.attachmentId === file.id}
+              label={fillCapabilityCopy(copy.cover.useImage, {
+                name: file.name,
+              })}
+              onPick={() =>
+                void save({ color: null, attachmentId: file.id, style })
+              }
+            />
           ))}
         </div>
-        <p
-          id={`${card.id}-cover-colors`}
-          className="text-micro font-semibold text-meta-foreground"
+      )}
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void upload(file);
+        }}
+      />
+      <PanelBtn
+        className="mt-3 w-full"
+        disabled={uploading}
+        onClick={() => input.current?.click()}
+      >
+        <ImagePlus aria-hidden="true" className="size-4" />
+        {uploading ? copy.cover.uploading : copy.cover.upload}
+      </PanelBtn>
+      <Hint className="mt-2 px-0.5">{copy.cover.uploadNote}</Hint>
+      {cover ? (
+        <PanelBtn
+          variant="danger"
+          className="mt-3 w-full"
+          onClick={() => void save(null)}
         >
-          {copy.cover.colors}
-        </p>
-        <div
-          role="group"
-          aria-labelledby={`${card.id}-cover-colors`}
-          className="grid grid-cols-5 gap-1.5"
-        >
-          {CARD_COVER_COLORS.map((color) => {
-            const selected = cover?.color === color;
-            return (
-              <button
-                key={color}
-                type="button"
-                aria-label={copy.cover.colorNames[color]}
-                aria-pressed={selected}
-                onClick={() => void save({ color, attachmentId: null, style })}
-                className={cn(
-                  "grid h-8 place-items-center rounded-md text-primary-foreground",
-                  COVER_COLOR_CLASS[color],
-                  selected &&
-                    "ring-2 ring-primary ring-offset-2 ring-offset-popover",
-                )}
-              >
-                {selected ? (
-                  <Check className="size-4" aria-hidden="true" />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-micro font-semibold text-meta-foreground">
-          {copy.cover.images}
-        </p>
-        {images.length === 0 ? (
-          <p className="text-micro text-meta-foreground">
-            {copy.cover.noImages}
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {images.map((file) => (
-              <ImageChoice
-                key={file.id}
-                cardId={card.id}
-                attachmentId={file.id}
-                name={file.name}
-                selected={cover?.attachmentId === file.id}
-                label={fillCapabilityCopy(copy.cover.useImage, {
-                  name: file.name,
-                })}
-                onPick={() =>
-                  void save({ color: null, attachmentId: file.id, style })
-                }
-              />
-            ))}
-          </div>
-        )}
-        <input
-          ref={input}
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void upload(file);
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          disabled={uploading}
-          onClick={() => input.current?.click()}
-        >
-          <ImagePlus aria-hidden="true" />
-          {uploading ? copy.cover.uploading : copy.cover.upload}
-        </Button>
-        <p className="text-micro text-meta-foreground">
-          {copy.cover.uploadNote}
-        </p>
-        {cover ? (
-          <Button type="button" variant="ghost" onClick={() => void save(null)}>
-            {copy.cover.remove}
-          </Button>
-        ) : null}
-        {message ? (
-          <p role="alert" className="text-micro text-danger-subtle-foreground">
-            {message}
-          </p>
-        ) : null}
-      </PopoverContent>
-    </Popover>
+          {copy.cover.remove}
+        </PanelBtn>
+      ) : null}
+      {message ? (
+        <Hint error className="mt-2">
+          {message}
+        </Hint>
+      ) : null}
+    </PanelPopover>
   );
 }
