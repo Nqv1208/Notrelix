@@ -5,6 +5,7 @@ import type {
 import { parseWorkspaceRole, roleWireValue } from "../model/members";
 import type {
   CreateWorkspaceInvitationInput,
+  PendingInvitation,
   WorkspaceInvitation,
 } from "../types/workspace";
 import type { WorkspaceApiClient } from "./workspace.service";
@@ -12,9 +13,45 @@ import type { WorkspaceApiClient } from "./workspace.service";
 export interface InvitationsEndpoints {
   workspaces: {
     invitationByToken: (token: string) => string;
-    acceptInvitation: (token: string) => string;
+    /** `Workspaces.Invitations.GetUserPendingInvitations` (GET). */
     pendingInvitations: string;
+    /** `Workspaces.Invitations.AcceptInvitationById` (POST). */
+    acceptInvitationById: (invitationId: string) => string;
+    /** `Workspaces.Invitations.DeclineInvitation` (POST). */
+    declineInvitation: (invitationId: string) => string;
   };
+}
+
+/** Where accepting an invitation leads (`AcceptInvitationResultDto`). */
+export interface AcceptedInvitation {
+  workspaceId: string;
+  workspaceSlug: string;
+}
+
+/** `UserPendingInvitationDto`; rows that cannot be shown whole are dropped. */
+export function parsePendingInvitations(payload: unknown): PendingInvitation[] {
+  if (!Array.isArray(payload)) return [];
+  const out: PendingInvitation[] = [];
+  for (const raw of payload as Record<string, unknown>[]) {
+    const role = parseWorkspaceRole(raw?.role);
+    if (
+      typeof raw?.id !== "string" ||
+      typeof raw.workspaceName !== "string" ||
+      typeof raw.expiresAt !== "string" ||
+      !role
+    )
+      continue;
+    out.push({
+      id: raw.id,
+      workspaceName: raw.workspaceName,
+      workspaceSlug:
+        typeof raw.workspaceSlug === "string" ? raw.workspaceSlug : "",
+      inviterName: typeof raw.inviterName === "string" ? raw.inviterName : "",
+      role,
+      expiresAt: raw.expiresAt,
+    });
+  }
+  return out;
 }
 
 /** Workspace-scoped invitation endpoints (WX-MEM-001). */
@@ -117,13 +154,42 @@ export function createInvitationsService(
       );
     },
 
-    async accept(token: string): Promise<void> {
-      return api.post<void>(endpoints.workspaces.acceptInvitation(token), {});
+    /** The invitations waiting for the signed-in person, newest first. */
+    async getPending(): Promise<PendingInvitation[]> {
+      return parsePendingInvitations(
+        await api.get<unknown>(endpoints.workspaces.pendingInvitations, {
+          skipGlobalErrorToast: true,
+        }),
+      );
     },
 
-    async getPending(): Promise<WorkspaceInvitation[]> {
-      return api.get<WorkspaceInvitation[]>(
-        endpoints.workspaces.pendingInvitations,
+    /**
+     * Accepts one of the person's own invitations (the same rules as accepting by link). A gone, used
+     * or foreign invitation answers 404; a full plan answers 400 with the producer's reason.
+     */
+    async acceptById(invitationId: string): Promise<AcceptedInvitation> {
+      const wire = await api.post<{
+        workspaceId?: unknown;
+        workspaceSlug?: unknown;
+      } | null>(
+        endpoints.workspaces.acceptInvitationById(invitationId),
+        {},
+        { skipGlobalErrorToast: true },
+      );
+      return {
+        workspaceId:
+          typeof wire?.workspaceId === "string" ? wire.workspaceId : "",
+        workspaceSlug:
+          typeof wire?.workspaceSlug === "string" ? wire.workspaceSlug : "",
+      };
+    },
+
+    /** Declines one of the person's own invitations; a gone or foreign one answers 404. */
+    async declineById(invitationId: string): Promise<void> {
+      await api.post<void>(
+        endpoints.workspaces.declineInvitation(invitationId),
+        {},
+        { skipGlobalErrorToast: true },
       );
     },
   };

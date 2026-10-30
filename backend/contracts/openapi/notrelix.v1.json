@@ -18206,13 +18206,56 @@
         ]
       }
     },
+    "/api/v1/invitations/{invitationId}/accept": {
+      "post": {
+        "tags": [
+          "Workspaces.Invitations",
+          "Workspaces.Invitations"
+        ],
+        "summary": "Accept a pending workspace invitation from the signed-in person's own list",
+        "description": "Same rules as accepting by link: the invitation must be pending and addressed to the person's confirmed email, a plan seat must be free for a new membership, a suspended member stays suspended. An invitation that is unknown, not pending or addressed to another email answers NotFound.",
+        "operationId": "Workspaces.Invitations.AcceptInvitationById",
+        "parameters": [
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/invitations/{invitationId}/decline": {
       "post": {
         "tags": [
           "Workspaces.Invitations",
           "Workspaces.Invitations"
         ],
-        "summary": "Decline a workspace invitation",
+        "summary": "Decline a pending workspace invitation from the signed-in person's own list",
+        "description": "The invitation must be pending and addressed to the person's confirmed email; an unknown id, another email, a repeat and an unconfirmed email all answer NotFound.",
         "operationId": "Workspaces.Invitations.DeclineInvitation",
         "parameters": [
           {

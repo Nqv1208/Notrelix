@@ -876,6 +876,78 @@ export const workspaceOperations = [
     },
   }),
 
+  // ─── The signed-in person's own invitations ─────────────────────────────
+  defineMockOperation<Record<string, never>, never, unknown>({
+    id: "workspace.invitations.mine",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.GetUserPendingInvitations",
+    },
+    method: "GET",
+    route: "/invitations/pending",
+    async handle({ store }) {
+      const user = store.getCurrentUser();
+      // Newest first, like the producer; the address is the person's own, so none is sent.
+      return ok(
+        store.inviteeInvitations
+          .pendingOf(user.id)
+          .map((invitation) => ({
+            id: invitation.id,
+            workspaceName: invitation.workspaceName,
+            workspaceSlug: invitation.workspaceSlug,
+            inviterName: invitation.inviterName,
+            email: user.email,
+            role: invitation.role,
+            expiresAt: store.getClock().offsetDays(invitation.expiresInDays),
+          }))
+          .reverse(),
+      );
+    },
+  }),
+
+  defineMockOperation<{ invitationId: string }, never, unknown>({
+    id: "workspace.invitations.acceptById",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.AcceptInvitationById",
+    },
+    method: "POST",
+    route: "/invitations/:invitationId/accept",
+    async handle({ params, store }) {
+      const user = store.getCurrentUser();
+      // An unknown, answered or foreign invitation answers the same 404.
+      const invitation = store.inviteeInvitations.findPending(
+        user.id,
+        params.invitationId,
+      );
+      if (!invitation) return notFound();
+      const { workspace } = store.joinWorkspaceForCurrentUser({
+        name: invitation.workspaceName,
+        slug: invitation.workspaceSlug,
+        role: invitation.role === "Guest" ? "guest" : "member",
+      });
+      store.inviteeInvitations.answer(user.id, invitation.id, "accepted");
+      return ok({ workspaceSlug: workspace.slug, workspaceId: workspace.id });
+    },
+  }),
+
+  defineMockOperation<{ invitationId: string }, never, void>({
+    id: "workspace.invitations.decline",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.DeclineInvitation",
+    },
+    method: "POST",
+    route: "/invitations/:invitationId/decline",
+    async handle({ params, store }) {
+      const user = store.getCurrentUser();
+      if (!store.inviteeInvitations.findPending(user.id, params.invitationId))
+        return notFound();
+      store.inviteeInvitations.answer(user.id, params.invitationId, "declined");
+      return noContent();
+    },
+  }),
+
   defineMockOperation<
     { workspaceId: string; invitationId: string },
     never,

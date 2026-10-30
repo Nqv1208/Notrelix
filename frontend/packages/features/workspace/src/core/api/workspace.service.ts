@@ -12,11 +12,11 @@ import type {
 } from "../types/workspace";
 
 export interface WorkspaceApiClient {
-  get<T>(url: string): Promise<T>;
+  get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
   post<T>(
     url: string,
     body: unknown,
-    options?: { idempotencyKey?: string },
+    options?: { idempotencyKey?: string; skipGlobalErrorToast?: boolean },
   ): Promise<T>;
   put<T>(url: string, body: unknown): Promise<T>;
   patch<T>(url: string, body: unknown): Promise<T>;

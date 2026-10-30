@@ -1329,6 +1329,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Invitations.GetUserPendingInvitations",
+    operationId: "Workspaces.Invitations.GetUserPendingInvitations",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Invitations.AcceptInvitationById",
+    operationId: "Workspaces.Invitations.AcceptInvitationById",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Invitations.DeclineInvitation",
+    operationId: "Workspaces.Invitations.DeclineInvitation",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createOnboardingApi",
     consumerFile: "frontend/apps/web/src/routes/onboarding/onboarding-api.ts",
     capability: "Check that a workspace address is free and suggest another",

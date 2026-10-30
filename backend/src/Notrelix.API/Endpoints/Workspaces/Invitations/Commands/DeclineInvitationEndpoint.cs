@@ -10,7 +10,8 @@ public static class DeclineInvitationEndpoint
         group.MapAuthenticatedPost("/{invitationId:guid}/decline", HandleAsync)
             .WithName("Workspaces.Invitations.DeclineInvitation")
             .WithTags("Workspaces.Invitations")
-            .WithSummary("Decline a workspace invitation");
+            .WithSummary("Decline a pending workspace invitation from the signed-in person's own list")
+            .WithDescription("The invitation must be pending and addressed to the person's confirmed email; an unknown id, another email, a repeat and an unconfirmed email all answer NotFound.");
         return group;
     }
 

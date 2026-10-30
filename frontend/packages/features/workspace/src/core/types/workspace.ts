@@ -72,6 +72,20 @@ export interface WorkspaceInvitation {
   inviterName?: string;
 }
 
+/**
+ * An invitation waiting for the signed-in person (`GetUserPendingInvitations`): addressed to their own
+ * confirmed address, so it holds no email and no token; answering it quotes only its id.
+ */
+export interface PendingInvitation {
+  id: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  /** The inviter's display name; empty when the producer has none to show. */
+  inviterName: string;
+  role: WorkspaceRole;
+  expiresAt: string;
+}
+
 export interface WorkspaceSummary {
   id: string;
   /**

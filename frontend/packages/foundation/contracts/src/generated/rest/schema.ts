@@ -4340,6 +4340,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invitations/{invitationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a pending workspace invitation from the signed-in person's own list
+         * @description Same rules as accepting by link: the invitation must be pending and addressed to the person's confirmed email, a plan seat must be free for a new membership, a suspended member stays suspended. An invitation that is unknown, not pending or addressed to another email answers NotFound.
+         */
+        post: operations["Workspaces.Invitations.AcceptInvitationById"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invitations/{invitationId}/decline": {
         parameters: {
             query?: never;
@@ -4349,7 +4369,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decline a workspace invitation */
+        /**
+         * Decline a pending workspace invitation from the signed-in person's own list
+         * @description The invitation must be pending and addressed to the person's confirmed email; an unknown id, another email, a repeat and an unconfirmed email all answer NotFound.
+         */
         post: operations["Workspaces.Invitations.DeclineInvitation"];
         delete?: never;
         options?: never;
@@ -18958,6 +18981,28 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Identity.OneTimeTokenRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto"];
+                };
+            };
+        };
+    };
+    "Workspaces.Invitations.AcceptInvitationById": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

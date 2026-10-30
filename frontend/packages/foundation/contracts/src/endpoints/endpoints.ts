@@ -44,9 +44,13 @@ export const endpoints = {
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
     invitationByToken: (token: string) =>
       `/workspaces/invitations/by-token/${token}`,
-    acceptInvitation: (token: string) =>
-      `/workspaces/invitations/accept/${token}`,
-    pendingInvitations: "/workspaces/invitations/pending",
+    // The signed-in person's own invitations (Workspaces.Invitations.GetUserPendingInvitations,
+    // AcceptInvitationById, DeclineInvitation).
+    pendingInvitations: "/invitations/pending",
+    acceptInvitationById: (invitationId: string) =>
+      `/invitations/${encodeURIComponent(invitationId)}/accept`,
+    declineInvitation: (invitationId: string) =>
+      `/invitations/${encodeURIComponent(invitationId)}/decline`,
     // Per-member navigation state (WX-BE-001/002): references only.
     recents: (workspaceId: string) => `/workspaces/${workspaceId}/recents`,
     pins: (workspaceId: string) => `/workspaces/${workspaceId}/pins`,

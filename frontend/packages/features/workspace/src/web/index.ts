@@ -15,6 +15,7 @@ export {
 } from "./hooks/mutations/use-create-invitation";
 export { createUseWorkspaceSettingsMutations } from "./hooks/mutations/use-workspace-settings-mutations";
 export { createUseAcceptInvitation } from "./hooks/mutations/use-accept-invitation";
+export { createUseDeclineInvitation } from "./hooks/mutations/use-decline-invitation";
 export { createUseWorkspaceList } from "./query/hooks/use-workspace-list";
 export { createUseWorkspace } from "./query/hooks/use-workspace";
 export {
@@ -107,6 +108,7 @@ export {
 
 // ── Notrelix system rail (Final-Space nav=hien-de / hien-day) ─────
 export { notrelixSystemRailCatalog } from "./shell/notrelix-system-rail.catalog";
+export { pendingInvitationsCatalog } from "./components/pending-invitations.catalog";
 export {
   notrelixSystemRailCopy,
   type NotrelixSystemRailCopy,

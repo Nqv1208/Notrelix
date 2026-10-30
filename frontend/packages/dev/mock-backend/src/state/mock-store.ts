@@ -114,6 +114,7 @@ import {
 } from "./mock-item-detail";
 import { MockAuthDirectory } from "./mock-auth-directory";
 import { MockAccountPages } from "./mock-account-pages";
+import { MockInviteeInvitations } from "./mock-invitee-invitations";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
@@ -245,6 +246,7 @@ export class MockStore {
   /** Setup drafts, getting-started lists and welcome profiles (gap `CTR-GAP-ONBOARD-FLOW`). */
   readonly onboarding = new MockOnboarding();
   readonly accountPages = new MockAccountPages();
+  readonly inviteeInvitations = new MockInviteeInvitations();
   readonly reports = new MockReports();
   readonly billing = new MockBilling();
   readonly integrations = new MockIntegrations();
@@ -1816,6 +1818,7 @@ export class MockStore {
     this.auth.reset();
     this.onboarding.reset();
     this.accountPages.reset();
+    this.inviteeInvitations.reset();
     this.reports.reset();
     this.billing.reset();
     this.integrations.reset();
@@ -2090,6 +2093,35 @@ export class MockStore {
       joinedAt: this.clock.isoNow(),
     };
 
+    this.insertMembership(membership);
+    return { workspace, membership };
+  }
+
+  /** The current user joins a workspace they were invited to: a new workspace and a membership with the invited role. */
+  joinWorkspaceForCurrentUser(input: {
+    name: string;
+    slug: string;
+    role: MockMembershipRecord["role"];
+  }): { workspace: MockWorkspaceRecord; membership: MockMembershipRecord } {
+    const workspace: MockWorkspaceRecord = {
+      id: this.nextId("ws"),
+      name: input.name,
+      slug: input.slug,
+      plan: "free",
+      icon: "Layout",
+      isPersonal: false,
+    };
+    this.insertWorkspace(workspace);
+    const membership: MockMembershipRecord = {
+      id: this.nextId("mem"),
+      workspaceId: workspace.id,
+      userId: this.getCurrentUser().id,
+      role: input.role,
+      status: "active",
+      workload: 0,
+      color: "#1E90FF",
+      joinedAt: this.clock.isoNow(),
+    };
     this.insertMembership(membership);
     return { workspace, membership };
   }

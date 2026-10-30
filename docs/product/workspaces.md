@@ -209,6 +209,8 @@ Acceptance creates/resolves membership through explicit workflow.
 
 Revoked/expired invitations must not authorize access.
 
+A signed-in person sees the pending invitations addressed to their own confirmed email, and may accept or decline them by id; accepting follows the same rules as accepting from the link (email, seat, Suspended and Removed members). An invitation that is unknown, not pending or addressed to another email answers the same NotFound (confirmed 2026-10-30).
+
 # 15. Membership role
 
 Workspace role expresses Workspace-level participation/administration where product-approved.

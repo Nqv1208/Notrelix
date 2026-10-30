@@ -782,6 +782,15 @@ How they work together:
   inside the invited account/workspace for that request (`ops.has_workspace_access`/`has_account_access`
   honour `ops.has_invitee_scope`, never as admin), so the acceptance can read what it validates and every
   grant-derived policy applies unchanged.
+- A signed-in person's own list of pending invitations and their answer by id (a Global request in the user
+  scope) read the invitation row through ONE policy, `p_app_select_invitee_pending`
+  (`019_invitee_invitations.sql`): the invitation is `Pending` and addressed to the confirmed address of the
+  person the user scope names (`ops.is_invited_caller`). It is a read only; nothing else is opened. The invited
+  workspace's name and the inviter's display name are read inside that one invitation's token scope, entered
+  from the digest of the row the person was allowed to read (`InviteeInvitations`), and an answer (decline or
+  accept by id) runs in the token and invitee scopes above, so the events of the answer and the acceptance
+  writes use the policies they already have. Deploy: run `--rls-apply`; the script is additive and the policy is
+  unused by the previous runtime, so it can go before the API that reads through it. No schema migration.
 - `enter_registration_scope(user)` is refused for an id that already exists. A registration may insert exactly
   that user (and, when it carries an invitation binding, only with the invited address) and exactly the one
   account named by its first grant. Whether an address is already registered is answered by

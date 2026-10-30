@@ -40,6 +40,7 @@ import {
   useWorkspaceShellCopy,
   useWorkspaceSpacesCopy,
   NotrelixSystemRailSurface,
+  PendingInvitationsMenu,
   useNotrelixSystemRailCopy,
   WorkspaceCommandPaletteSurface,
   WorkspaceShortcutSheetSurface,
@@ -633,6 +634,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         if (rail.presentation === "overlay") rail.close();
         setCreateOpen(true);
       }}
+      invitationsEntry={
+        <PendingInvitationsMenu
+          api={runtimeClient.api}
+          endpoints={runtimeClient.endpoints}
+          onAccepted={(accepted) => {
+            if (accepted.workspaceId) switchWorkspace(accepted.workspaceId);
+          }}
+        />
+      }
       onOpenAllInbox={() => goTo({ section: "inbox" })}
       // No cross-workspace search producer yet: omitting the handler disables
       // "Search" with its reason (current-workspace search stays on ⌘K).
