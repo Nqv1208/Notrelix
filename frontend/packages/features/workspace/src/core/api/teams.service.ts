@@ -1,4 +1,7 @@
-import type { OperationRequestBody } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import {
   parseTeam,
   parseTeamMember,
@@ -9,6 +12,7 @@ import {
 import type { SpacesApiClient } from "./spaces.service";
 
 type CreateTeamBody = OperationRequestBody<"Workspaces.Teams.CreateTeam">;
+type TeamPage = OperationResponse<"Workspaces.Teams.GetWorkspaceTeams", 200>;
 type RenameTeamBody = OperationRequestBody<"Workspaces.Teams.RenameTeam">;
 type DescribeTeamBody =
   OperationRequestBody<"Workspaces.Teams.UpdateTeamDescription">;
@@ -37,7 +41,10 @@ export interface TeamsEndpoints {
 }
 
 /** Archived Teams are kept (the management list shows them); id-less rows are dropped. */
-export function parseTeamList(items: unknown): Team[] {
+export function parseTeamList(page: unknown): Team[] {
+  const items = Array.isArray(page)
+    ? page
+    : (page as { items?: unknown } | null)?.items;
   if (!Array.isArray(items)) return [];
   return items
     .filter((raw) => Boolean((raw as { id?: string } | null)?.id))
@@ -63,9 +70,19 @@ export function createTeamsService(
 ) {
   const e = endpoints.workspaces;
   return {
-    /** Active and archived Teams. */
+    /** Active and archived Teams; reads every page, 200 Teams per request. */
     async list(workspaceId: string): Promise<Team[]> {
-      return parseTeamList(await api.get<unknown>(e.teams(workspaceId)));
+      const teams: Team[] = [];
+      let cursor: string | null = null;
+      do {
+        const query: string = `limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+        const page: TeamPage = await api.get<TeamPage>(
+          `${e.teams(workspaceId)}?${query}`,
+        );
+        teams.push(...parseTeamList(page));
+        cursor = page?.nextCursor ?? null;
+      } while (cursor);
+      return teams;
     },
 
     async get(workspaceId: string, teamId: string): Promise<Team> {
@@ -78,16 +95,24 @@ export function createTeamsService(
       );
     },
 
-    /** Returns the new Team id (201 with the id). */
+    /**
+     * Returns the new Team id (201 with the id). A retry under the same
+     * `idempotencyKey` returns the Team the first attempt made.
+     */
     async create(
       workspaceId: string,
       input: { name: string; description: string | null },
+      idempotencyKey?: string,
     ): Promise<string> {
       const body: CreateTeamBody = {
         name: input.name,
         description: input.description,
       };
-      return api.post<string>(e.teams(workspaceId), body);
+      return api.post<string>(
+        e.teams(workspaceId),
+        body,
+        idempotencyKey ? { idempotencyKey } : undefined,
+      );
     },
 
     async rename(

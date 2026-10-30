@@ -118,7 +118,7 @@ function decodeCursor(value: string | null): string | null | false {
   }
 }
 
-/** What each store made for an `Idempotency-Key`: a retry answers with the same Space. */
+/** What each store made for an `Idempotency-Key`: a retry answers with the same Space or Team. */
 const createdUnderKey = new WeakMap<MockStore, Map<string, string>>();
 
 function guard(
@@ -642,11 +642,29 @@ export const spacesOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/teams",
-    async handle({ params, store }) {
-      return (
-        guard(store, params.workspaceId) ??
-        ok(store.spaces.teamsOf(params.workspaceId).map(teamDto))
-      );
+    async handle({ params, request, store }) {
+      const denied = guard(store, params.workspaceId);
+      if (denied) return denied;
+      // Pages run in name order (id on ties), 50 by default and 200 at most.
+      const limit = Number(request.searchParams.get("limit") ?? 50);
+      const after = decodeCursor(request.searchParams.get("cursor"));
+      if (!Number.isInteger(limit) || limit < 1 || limit > 200)
+        return validationError({ Limit: ["Use a page size from 1 to 200."] });
+      if (after === false)
+        return validationError({ Cursor: ["Cursor is not valid."] });
+      const key = (team: { name: string; id: string }) =>
+        `${team.name}\u0000${team.id}`;
+      const rows = store.spaces
+        .teamsOf(params.workspaceId)
+        .map(teamDto)
+        .sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0))
+        .filter((row) => after === null || key(row) > after);
+      const items = rows.slice(0, limit);
+      const nextCursor =
+        rows.length > limit
+          ? encodeCursor(key(items[items.length - 1]!))
+          : null;
+      return ok({ items, nextCursor, hasNextPage: nextCursor !== null });
     },
   }),
 
@@ -701,9 +719,16 @@ export const spacesOperations = [
     contract: { kind: "openapi", operationId: "Workspaces.Teams.CreateTeam" },
     method: "POST",
     route: "/workspaces/:workspaceId/teams",
-    async handle({ params, body, store }) {
+    async handle({ params, body, request, store }) {
       const denied = guard(store, params.workspaceId);
       if (denied) return denied;
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      const replay = createdUnderKey.get(store)?.get(key);
+      if (replay) return created(replay);
       const name = (body?.name ?? "").trim();
       if (!name) return validationError({ Name: ["Name must not be empty."] });
       if (name.length > 160)
@@ -721,7 +746,11 @@ export const spacesOperations = [
         store.spaceViewer(params.workspaceId),
         { id, name, description, now: store.getClock().isoNow() },
       );
-      return write.kind === "ok" ? created(id) : writeResult(write);
+      if (write.kind !== "ok") return writeResult(write);
+      const made = createdUnderKey.get(store) ?? new Map<string, string>();
+      made.set(key, id);
+      createdUnderKey.set(store, made);
+      return created(id);
     },
   }),
 
