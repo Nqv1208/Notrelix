@@ -172,11 +172,11 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-L06 | Cap token lifetime (enterprise baseline) | L | System | no | no | none | no | DEFINED | rule not coded |
 | UC-IDN-L07 | Show when a token was last used (enterprise baseline) | L | Workspace Owner or Admin | no | no | none | no | DEFINED | no column |
 | UC-IDN-L08 | Stop tokens of a person who leaves | L | System | no | n/a | n/a | no | DEFINED | no rule |
-| UC-IDN-M01 | Change my display name | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-M02 | Read and save my preferences | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-M03 | Upload my profile photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-M04 | Remove my profile photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
-| UC-IDN-M05 | Read a person's photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | no real e2e |
+| UC-IDN-M01 | Change my display name | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-M02 | Read and save my preferences | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-M03 | Upload my profile photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-M04 | Remove my profile photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-M05 | Read a person's photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
 
 # 3. Use cases
 
@@ -998,15 +998,15 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Capability: M Identity profile read and update
 - Actors and permission: signed-in person; own profile only (IAREQ011).
 - Preconditions: none.
-- Input: name (required, at most 200); optional external avatar address.
+- Input: name (required, at most 200, the one limit sign-up shares); optional external avatar address (an absolute https address without credentials, at most 500 characters).
 - Output: the updated user; the sign-in email and credentials are not touched.
 - Main flow: 1. The person edits the name on the Profile page. 2. The save bar appears after a change. 3. The client sends `PATCH /api/v1/profile`.
 - No-op / rejection / concurrency / retry: an unchanged name is a no-op; an empty name is a validation error; the write carries no expected version (single owner, last write wins; decision below).
-- UI states: pristine, dirty with save bar, pending, success, validation error.
+- UI states: pristine, dirty with save bar, pending, success, validation error (empty, or longer than 200 characters).
 - Rules: ID section 7 (display change never changes security identity); IAREQ010, IAREQ011.
 - Acceptance: Given a new name, when saved, then it shows in `/auth/me`. Given a blank name, then a validation error.
 - Evidence: BE `Profiles/Commands/UpdateProfile/UpdateProfile.cs`; API `Profile/Commands/UpdateProfileEndpoint.cs` (`PATCH /api/v1/profile`) · FE `.../account/profile.tsx`, `use-update-profile.ts` · Design Final-Account, Final-M-Account · Tests Application `UpdateProfileTests`, Domain `UserNameTests`, API `ProfileEndpointTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec; the endpoint also accepts an external avatar string, which duplicates M03.
+- State: INTEGRATING. Built: the display name limit was 100 in the user and 200 in the validators (a name of 101 to 200 characters passed validation and failed as a rule error), now one constant `User.MaxNameLength` = 200 used by the user and both validators; the page refuses a longer name; the external photo address must be an absolute https address without credentials (it was any string, shown in other members' browsers); a signed-in person who no longer exists answers 401 like the session read (this holds for every handler that acts for the signed-in person). Missing: tests and owner check (the Domain test that refuses 101 characters, `UserNameTests`, and any 404 assertion for a missing person need updating), real spec. The external address still duplicates M03; the web never sends it.
 
 ### UC-IDN-M02 Read and save my preferences
 - Capability: M Identity profile read and update
@@ -1016,11 +1016,11 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Output: the saved preferences with a new version.
 - Main flow: 1. The page reads `GET /api/v1/profile/preferences`. 2. The person edits and saves with `PATCH /api/v1/profile/preferences`. 3. The phone is normalized to E.164 (`+` and 8 to 15 digits); a blank clears it.
 - No-op / rejection / concurrency / retry: no change bumps no version; a stale version answers 412 and the page offers reload; a missing version is a validation error; an invalid phone is refused; the phone shows to others only under the rule of ID section 7.
-- UI states: loading, pristine, dirty, pending, validation error, conflict, success.
+- UI states: loading, pristine, dirty, pending, validation error, conflict (nothing was saved; the page says so and shows what is stored), success.
 - Rules: ID section 7 (D15); ID-015.
 - Acceptance: Given two devices, when both save from version 3, then one succeeds and one gets 412 and changes nothing.
-- Evidence: BE `Profiles/Queries/GetAccountPreferences`, `Profiles/Commands/UpdateAccountPreferences/UpdateAccountPreferences.cs`; API `Profile/Commands/AccountPreferencesEndpoints.cs` (`GET`, `PATCH /api/v1/profile/preferences`) · FE `.../account/profile.tsx`, `appearance.tsx`, `packages/features/account/src/core/phone.ts` · Design Final-Account, Final-M-Account · Tests Domain `UserProfileAccountPreferencesTests`, `UserPreferencesTests`, Application `UpdateAccountPreferencesTests`, `GetAccountPreferencesTests`, API `AccountPreferencesEndpointTests`, FE `phone.unit.test.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec.
+- Evidence: BE `Profiles/Queries/GetAccountPreferences`, `Profiles/Commands/UpdateAccountPreferences/UpdateAccountPreferences.cs`; API `Profile/Commands/AccountPreferencesEndpoints.cs` (`GET`, `PATCH /api/v1/profile/preferences`) · FE `.../account/profile.tsx`, `appearance.tsx`, `packages/features/account/src/core/phone.ts`, `web/profile/account-profile-surface.tsx` · Design Final-Account, Final-M-Account · Tests Domain `UserProfileAccountPreferencesTests`, `UserPreferencesTests`, Application `UpdateAccountPreferencesTests`, `GetAccountPreferencesTests`, API `AccountPreferencesEndpointTests`, FE `phone.unit.test.ts` · Real e2e none
+- State: INTEGRATING. Built: the page shows a conflict sentence on a 412 instead of the generic error. Missing: tests and owner check, real spec. The profile page saves the name, the preferences and the job title in three calls; a failure after the first leaves it saved (the page refetches and says nothing was saved only for a preferences conflict).
 
 ### UC-IDN-M03 Upload my profile photo
 - Capability: M Identity profile read and update
@@ -1030,11 +1030,11 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Output: the photo stored; the previous object is left for the background sweep.
 - Main flow: 1. The person picks a file. 2. The client sends `PUT /api/v1/profile/avatar`. 3. The page shows the new photo.
 - No-op / rejection / concurrency / retry: SVG, GIF or any other type answers 415 `identity.avatar.unsupported-format`; too large answers 413 `identity.avatar.too-large`; changing the name never touches the photo.
-- UI states: pending, success, unsupported, too large.
+- UI states: pending (the photo buttons wait and a status line says the photo is updating), success, unsupported, too large (the web refuses above 1,500,000 bytes before sending, the producer above 2,000,000).
 - Rules: ID section 7 (photo).
 - Acceptance: Given a PNG renamed `.jpg`, when uploaded, then it is accepted by its bytes; given an SVG, then 415.
 - Evidence: BE `Profiles/Commands/UploadAvatar/UploadAvatar.cs`; API `Profile/Commands/AvatarEndpoints.cs` (`PUT /api/v1/profile/avatar`) · FE `.../account/profile.tsx` · Design Final-Account · Tests Application `AvatarCommandsTests`, API `AvatarEndpointTests`, Domain `UserAvatarTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec.
+- State: INTEGRATING. Built: the pending state. Missing: tests and owner check, real spec.
 
 ### UC-IDN-M04 Remove my profile photo
 - Capability: M Identity profile read and update
@@ -1044,15 +1044,15 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Output: no photo; the object is swept later.
 - Main flow: 1. The person chooses Remove. 2. The client sends `DELETE /api/v1/profile/avatar`.
 - No-op / rejection / concurrency / retry: removing when none exists is a no-op.
-- UI states: destructive confirmation, success.
+- UI states: destructive confirmation (in place, the safe answer is focused and focus returns to the button), pending, success.
 - Rules: ID section 7.
 - Acceptance: Given a photo, when removed, then a read of it answers 404.
 - Evidence: BE `Profiles/Commands/RemoveAvatar/RemoveAvatar.cs`; API `Profile/Commands/AvatarEndpoints.cs` (`DELETE /api/v1/profile/avatar`) · FE `.../account/profile.tsx` · Design Final-Account · Tests Application `AvatarCommandsTests`, API `AvatarEndpointTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec; proof that the sweep removes only unreferenced objects.
+- State: INTEGRATING. Built: the confirmation and the pending state. Missing: tests and owner check, real spec; proof that the sweep removes only unreferenced objects.
 
 ### UC-IDN-M05 Read a person's photo
 - Capability: M Identity profile read and update
-- Actors and permission: the person, or an active non-guest member of a Workspace they share.
+- Actors and permission: the person, or an active member of a Workspace they share (the product text names no guest exclusion; the stricter non-guest rule is the phone's, ID section 7).
 - Preconditions: an uploaded photo.
 - Input: user id; version in `v`.
 - Output: the image streamed with `nosniff`, a locked-down CSP and private immutable cache.
@@ -1062,7 +1062,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Rules: ID section 7; ID-012.
 - Acceptance: Given a reader who shares no workspace, when they read it, then 404 identical to "no photo".
 - Evidence: BE `Profiles/Queries/GetUserAvatar`; API `Users/MapUserAvatarEndpoints.cs` (`GET /api/v1/users/{userId}/avatar`) · FE `packages/features/account/src/web/profile/account-profile-surface.tsx` · Design Final-Account · Tests Application `GetUserAvatarTests`, API `AvatarEndpointTests` · Real e2e none
-- State: INTEGRATING. Missing: real spec, cross-workspace negative at the HTTP level.
+- State: INTEGRATING. Nothing changed in this build; the read already answers one 404 for a stranger, for a person without a photo and for a person who does not exist. Missing: tests and owner check, real spec, cross-workspace negative at the HTTP level.
 
 # 4. Product decisions applied
 
