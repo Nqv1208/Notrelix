@@ -95,7 +95,7 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 |---|---|---|---|---|
 | B-01 | Item lifecycle and assignment writes carry no expected version; last writer wins silently | UpdateBoardItemStatus, SetBoardItemDueDate, CompleteBoardItem, ReopenBoardItem, MoveBoardItemToBoard, AssignBoardItemMember, UnassignBoardItemMember | UC-WM-B05 UC-WM-D04 UC-WM-D05 UC-WM-B06 UC-WM-B08 UC-WM-B33 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/<each>/<each>.cs; backend/src/Notrelix.Infrastructure/Data/Concurrency/ExpectedVersionTargetMap.cs |
 | B-02 | Bulk update has no per-item expected version (D32), which acceptance section 1 does not allow for competing writes | BulkUpdateBoardItems | UC-WM-B14 UC-WM-B36 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/BulkUpdateBoardItems/BulkUpdateBoardItems.cs |
-| B-03 | Board member role change has no expected version | UpdateBoardMemberRole | UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
+| B-03 | Fixed in code, tests pending: board member role change and removal now carry the board version | UpdateBoardMemberRole | UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
 | B-04 | Label update and delete have no expected version | UpdateLabel, DeleteLabel | UC-WM-C22 | backend/src/Notrelix.Application/Features/WorkManagement/Labels/Commands/UpdateLabel/UpdateLabel.cs; backend/src/Notrelix.Application/Features/WorkManagement/Labels/Commands/DeleteLabel/DeleteLabel.cs |
 | B-05 | Field delete has no expected version, is a hard delete, and no restore endpoint exists although the domain event does (D76.5 wants 30-day soft delete) | DeleteBoardField | UC-WM-C04 UC-WM-C05 | backend/src/Notrelix.Application/Features/WorkManagement/BoardFields/Commands/DeleteBoardField/DeleteBoardField.cs |
 | B-06 | View config writes are last-writer-wins: PUT upsert and PATCH config carry no expected version | SaveBoardView, UpdateBoardViewConfig | UC-WM-H02 UC-WM-J05 | backend/src/Notrelix.Application/Features/WorkManagement/BoardViews/Commands/SaveBoardView/SaveBoardView.cs; backend/src/Notrelix.Application/Features/WorkManagement/BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs |
@@ -114,8 +114,8 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 | B-19 | No purge job: deleted boards (D76.1), fields (D76.5) and trashed items (D51) are never removed after 30 days | none exists | UC-WM-A06 UC-WM-A07 UC-WM-C05 UC-WM-B17 | n/a (missing job) |
 | B-23 | Template create copies structure only; no include-items option, no 500-item refusal (66, D76.13) | CreateBoardTemplate | UC-WM-A12 | backend/src/Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardTemplate/CreateBoardTemplate.cs |
 | B-24 | Saved filters and preferences are stored but never applied server-side; no q, filter, sort or count on item reads | GetBoardItems, SavedFilters.*, BoardPreferences.* | UC-WM-H06 UC-WM-H07 UC-WM-H08 UC-WM-H15 UC-WM-H17 UC-WM-T01 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs |
-| B-25 | Board restore has no retention check; a board deleted long ago restores, and no purge job exists | RestoreBoard, Board.Restore | UC-WM-A07 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RestoreBoard/RestoreBoard.cs; backend/src/Notrelix.Domain/WorkManagement/Boards/Board.cs |
-| B-26 | The last Manager of a board can be removed or demoted; no guard in either handler | RemoveBoardMember, UpdateBoardMemberRole | UC-WM-A26 UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RemoveBoardMember/RemoveBoardMember.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
+| B-25 | Fixed in code, tests pending (the purge job is still missing): board restore now refuses after 30 days. Was: board restore has no retention check; a board deleted long ago restores, and no purge job exists | RestoreBoard, Board.Restore | UC-WM-A07 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RestoreBoard/RestoreBoard.cs; backend/src/Notrelix.Domain/WorkManagement/Boards/Board.cs |
+| B-26 | Fixed in code, tests pending: the last Manager of a board can no longer be removed or demoted. Was: the last Manager of a board can be removed or demoted; no guard in either handler | RemoveBoardMember, UpdateBoardMemberRole | UC-WM-A26 UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RemoveBoardMember/RemoveBoardMember.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
 | B-27 | A moved item gets a new key but the old key is not stored as an alias, so it no longer resolves | MoveBoardItemToBoard | UC-WM-A10 UC-WM-B08 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/MoveBoardItemToBoard/MoveBoardItemToBoard.cs |
 | F-01 | Item extras bypass the typed client: raw path strings for links, approvals, following, linked pages, trash, child items, remind, complete, reopen, unarchive, restore, move-to-board | item-extras.api.ts | UC-WM-B03 UC-WM-B06 UC-WM-B08 UC-WM-B10 UC-WM-B13 UC-WM-B20 UC-WM-B21 UC-WM-R05 UC-WM-R06 UC-WM-B24 UC-WM-B25 UC-WM-B26 | frontend/packages/product/work-management/state/src/api/item-extras.api.ts |
 | F-02 | Board archive and delete use raw paths | archiveBoard, deleteBoard | UC-WM-A04 UC-WM-A06 | frontend/packages/product/work-management/state/src/api/board-settings.api.ts:367,373 |
@@ -396,7 +396,7 @@ Team capability WM-001.
 - Rules: product sections 9, 14; WM-043; WMREQ005, WMREQ010, WMREQ095-097
 - Acceptance: Given a Manager renames the board, when saved, then URL id and item keys are unchanged and members see the new name without reload. Given an Editor opens Settings, then fields are read-only with reason. Given items PRJ-1..3 and a prefix changed to NEW, when saved, then PRJ-1..3 keep their keys and the next item is NEW-4.
 - Evidence: BE Boards.Rename = PATCH /boards/{boardId:guid} -> UpdateBoardCommand (`Boards/Commands/UpdateBoard/UpdateBoard.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-general.tsx` (icon unchangeable) · Design Final-Settings `chung`; Er-on-save, 320, 768 missing · Tests `BoardManagementLevelTests.cs` · Real e2e `board-settings.real.e2e.spec.ts`, `work-board-management.real.e2e.spec.ts` (key prefix)
-- State: HARDENING — Test prefix change affects new items only; design Er/320/768; icon change
+- State: HARDENING — tests and owner check; a board name is 1 to 120 characters on create and rename (D78.3); not built: icon change, design Er/320/768.
 
 ### UC-WM-A03 Place a board in a Space or move it between Spaces
 - Capability: A Board lifecycle (WM-001)
@@ -424,7 +424,7 @@ Team capability WM-001.
 - Rules: product sections 10-11; D76.1; WMREQ004-005, WMREQ110-113
 - Acceptance: . Given an archived board, when a Member tries any write via API, then it is refused with the archived reason and no version/event changes. Given a board with enabled automation rules, when it is archived, then its rules and integration sync pause; when unarchived they resume.
 - Evidence: BE Boards.Archive = POST /boards/{boardId:guid}/archive -> ArchiveBoardCommand (`Boards/Commands/ArchiveBoard/ArchiveBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/state/src/api/board-settings.api.ts`:367 raw path; archived banner · Design Final-Settings `luu-tru`, BC-Shell archived banner · Tests `ArchiveBoardCommandHandlerTests.cs` · Real e2e none
-- State: INTEGRATING — automation and integration sync are not paused (D76.1; defect B-18); archive uses a raw path, not the typed client (defect F-02); no real e2e; peers see the banner live only with open PR #193.
+- State: INTEGRATING — tests and owner check. Built: archive carries the board version (`BoardVersionRequest`), the typed client, a confirmation that names the effect with item, open-item and member counts (`GET /boards/{id}/lifecycle-impact`), an archived board opens read-only with a banner (`GET /boards/{id}/full` no longer refuses it), and the archived list at `/workspaces/{id}/archived-boards`. Not built: pausing automation rules and integration sync (D76.1; defect B-18), refusing every write handler on an archived board (only item key allocation, group create, view save and move-to-board refuse today) and the matching read-only controls, live banner for peers (open PR #193).
 
 ### UC-WM-A05 Unarchive a board
 - Capability: A Board lifecycle (WM-001)
@@ -438,7 +438,7 @@ Team capability WM-001.
 - Rules: product sections 10-11; D76.1; WMREQ004-005
 - Acceptance: Given an archived board, when a Manager unarchives it, then all controls re-enable for Editors without reload.
 - Evidence: BE Boards.Unarchive = POST /boards/{boardId:guid}/unarchive -> UnarchiveBoardCommand (`Boards/Commands/UnarchiveBoard/UnarchiveBoard.cs`) [- / Idem] · FE none; operation unused, no UI · Design none; needs unarchive action on archived banner/settings · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: IMPLEMENTING — Unarchive UI; design; resume automation/sync; real e2e
+- State: IMPLEMENTING — tests and owner check. Built: unarchive carries the board version; the archived banner and the General settings danger zone offer Unarchive to a Manager; the archived list at `/workspaces/{id}/archived-boards` unarchives from a row. Not built: resuming automation and integration sync (D76.1), design.
 
 ### UC-WM-A06 Delete a board
 - Capability: A Board lifecycle (WM-001)
@@ -452,7 +452,7 @@ Team capability WM-001.
 - Rules: product sections 121-122; WM-033; D76.1; WMREQ004-005, WMREQ113
 - Acceptance: Given a Manager deletes a board, when a member reloads, then the generic no-access state shows and Collaboration comments of its items are retained (not hard-deleted). Given a board deleted 29 days ago, when a Manager restores it, then it returns; given 31 days (after purge), then restore is refused.
 - Evidence: BE Boards.Delete = DELETE /boards/{boardId:guid} -> DeleteBoardCommand (`Boards/Commands/DeleteBoard/DeleteBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/state/src/api/board-settings.api.ts`:373 raw DELETE, typed-name confirm · Design none; needs delete confirm naming impact, deleted state · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — 30-day soft delete and purge (D76.1); impact counts in confirm; typed client; design
+- State: INTEGRATING — tests and owner check. Built: delete carries the board version (`?expectedVersion=n`), the typed client, a confirmation that names the 30-day window and the item count, and a redirect to the deleted list. Not built: the purge job after 30 days (see UC-WM-B17), design.
 
 ### UC-WM-A07 Restore a deleted board
 - Capability: A Board lifecycle (WM-001)
@@ -466,7 +466,7 @@ Team capability WM-001.
 - Rules: product sections 121-122; WM-033; D76.1; WMREQ004
 - Acceptance: Given a deleted board, when a Manager restores it within retention, then items, fields, views return unchanged.
 - Evidence: BE Boards.Restore = POST /boards/{boardId:guid}/restore -> RestoreBoardCommand (`Boards/Commands/RestoreBoard/RestoreBoard.cs`) [- / Idem] · FE none; no UI · Design none; needs deleted-boards list, restore, restore-refused · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: IMPLEMENTING — no 30-day window check in Board.Restore, no deleted-boards list or UI, no purge job (see UC-WM-B17); verified in source.
+- State: IMPLEMENTING — tests and owner check. Built: `Board.Restore` refuses after 30 days with rule code `WorkManagement_Board_RestoreWindowElapsed`; restore carries the board version; `GET /workspaces/{id}/boards/deleted` lists the boards the caller deleted or holds Owner or Admin on, and the page at `/workspaces/{id}/archived-boards?tab=deleted` restores with the conflict, window, denied and gone states. Not built: listing for Space and workspace managers who are neither the deleter nor a board Owner or Admin (needs a Governance listing), the purge job (UC-WM-B17).
 
 ### UC-WM-A08 List boards the person may see
 - Capability: A Board lifecycle (WM-001)
@@ -536,7 +536,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005, WM-028; D66; D76.13
 - Acceptance: Given a board with 600 items and "include items", then the action states the 500 cap. Given a board with 501 items and include items ticked, then the action is refused with the reason and nothing is truncated.
 - Evidence: BE Templates.Create = POST /boards/{boardId:guid}/templates -> CreateBoardTemplateCommand (`Templates/Commands/CreateBoardTemplate/CreateBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx` · Design WM-Template-Save; Er missing · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — Include-items option and 500 refusal (D76.13, 66); design Er
+- State: INTEGRATING — tests and owner check. Built: more than 500 top-level items with include-items is refused with rule code `WorkManagement_BoardTemplate_TooManyItems` instead of being cut short, and the form names the cap and disables Save. Not built: design Er.
 
 ### UC-WM-A13 Publish a template
 - Capability: A Board lifecycle (WM-001)
@@ -606,7 +606,7 @@ Team capability WM-001.
 - Rules: product sections 103-105; WM-030; WMREQ007, WMREQ105-108
 - Acceptance: Given a Manager adds a person as Member, when that person opens the board, then they can create items. Given an Admin-level actor, when they try to assign a role above their own, then it is refused.
 - Evidence: BE Boards.GetMembers = GET /boards/{boardId:guid}/members -> GetBoardMembersQuery (`Boards/Queries/GetBoardMembers/GetBoardMembers.cs`) [- / -]; Boards.AddMember = POST /boards/{boardId:guid}/members -> AddBoardMemberCommand (`Boards/Commands/AddBoardMember/AddBoardMember.cs`) [- / Idem]; Boards.RemoveMember = DELETE /boards/{boardId:guid}/members/{userId:guid} -> RemoveBoardMemberCommand (`Boards/Commands/RemoveBoardMember/RemoveBoardMember.cs`) [- / Idem]; Boards.UpdateMemberRole = PATCH /boards/{boardId:guid}/members/{userId:guid}/role -> UpdateBoardMemberRoleCommand (`Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs`) [- / Idem] · FE BoardShareDialogSurface; AddMember op unused · Design Final-Share, Final-Members · Tests `AddBoardMemberTests.cs`, `BoardAuthorizationHardeningIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e `board-sharing.real.e2e.spec.ts`
-- State: HARDENING — Expected version on role change; last-manager guard (UC-WM-A26)
+- State: HARDENING — tests and owner check. Built: role change and removal carry the board version (the sharing read returns it; a member add, role change or removal advances it), a stale write changes nothing and the dialog says so; the last manager cannot be lowered or removed (UC-WM-A26).
 
 ### UC-WM-A18 Grant explicit access to a user or team
 - Capability: A Board lifecycle (WM-001)
@@ -662,7 +662,7 @@ Team capability WM-001.
 - Rules: product sections 103-106; WM-030, WM-040; D76.4; WMREQ006
 - Acceptance: Given a board made Private, when a non-member Workspace Member opens it, then NotFound.
 - Evidence: BE Boards.UpdateVisibility = PATCH /boards/{boardId:guid}/visibility -> UpdateBoardVisibilityCommand (`Boards/Commands/UpdateBoardVisibility/UpdateBoardVisibility.cs`) [- / Idem] · FE contract op unused; header offers Make private only · Design Final-Share (private) · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility
+- State: INTEGRATING — tests and owner check. Built: PublicLink is refused on create and on every visibility change (rule code `WorkManagement_Board_PublicLinkNotSupported`); the visibility write carries the board version. Not built: affected-assignee warning (UC-WM-A25), UI for Workspace visibility.
 
 ### UC-WM-A22 Make a board private with impact preview and bulk add
 - Capability: A Board lifecycle (WM-001)
@@ -732,7 +732,7 @@ Team capability WM-001.
 - Rules: product sections 103; WM-030; D78.9; WMREQ007
 - Acceptance: Given one Manager, when that person is demoted or removed, then it is refused and the role is unchanged.
 - Evidence: BE domain rule unverified on RemoveMember/UpdateMemberRole · FE none · Design none; needs last-manager blocked message · Tests none found · Real e2e none
-- State: DEFINED — no last-manager guard in UpdateBoardMemberRole or RemoveBoardMember (verified in source); no design for the message.
+- State: DEFINED — tests and owner check. Built: `BoardManagerGuard` refuses lowering or removing the last person or Team at Manager level on the board (rule code `WorkManagement_Board_LastManager`, nothing changes); the dialog toast shows the server's reason. Not built: design for the message, disabling the control up front.
 
 ## B. BoardItem lifecycle
 
