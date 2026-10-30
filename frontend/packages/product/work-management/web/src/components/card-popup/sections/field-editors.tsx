@@ -21,10 +21,15 @@ import {
   priorityFromOptionName,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
-import {
-  PRIORITY_TONE_CLASS,
-  PriorityGlyph,
-} from "../../shared/priority-glyph";
+import { PriorityGlyph } from "../../shared/priority-glyph";
+
+/** The popup's priority shapes, coloured as the artboard has them (medium in the "doing" blue). */
+const LEVEL_TONE = {
+  urgent: "text-danger-text",
+  high: "text-priority-high-text",
+  medium: "text-work-status-doing",
+  low: "text-meta-foreground",
+} as const;
 import { describeComputed } from "../../card-detail/item-field-extra-editors";
 import {
   isFieldValueEmpty,
@@ -271,7 +276,7 @@ const optionDot = (color?: string) => (
 );
 
 const PRIORITY_OPT =
-  "flex h-9 w-full items-center gap-2 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "flex h-9 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 const OPT =
   "flex min-h-9 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong";
@@ -534,13 +539,10 @@ export function FieldControl({
       return level ? (
         <PriorityGlyph
           level={level}
-          className={cn("size-4", PRIORITY_TONE_CLASS[level])}
+          className={cn("size-4", LEVEL_TONE[level])}
         />
       ) : (
-        <Minus
-          aria-hidden="true"
-          className="size-4 text-meta-foreground"
-        />
+        <Minus aria-hidden="true" className="size-4 text-meta-foreground" />
       );
     };
     const current = field.options.find((o) => o.id === raw);
@@ -576,12 +578,12 @@ export function FieldControl({
               {o.id === raw ? (
                 <Check
                   aria-hidden="true"
-                  className="ml-auto size-[13px] text-primary"
+                  className="ml-auto size-[13px] text-brand-ink"
                 />
               ) : null}
             </button>
           ))}
-          <div className="-mx-1.5 my-1 h-px bg-line" />
+          <div className="-mx-1.5 my-1.5 h-px bg-line" />
           <button
             type="button"
             role="option"
@@ -597,7 +599,7 @@ export function FieldControl({
             {!current ? (
               <Check
                 aria-hidden="true"
-                className="ml-auto size-[13px] text-primary"
+                className="ml-auto size-[13px] text-brand-ink"
               />
             ) : null}
           </button>

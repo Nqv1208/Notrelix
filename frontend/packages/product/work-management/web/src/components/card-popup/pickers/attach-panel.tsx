@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   Check,
   FileText,
   Link2,
@@ -17,10 +18,19 @@ import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup } from "../card-popup-context";
 import { IconBtn, PanelBtn, PanelInput } from "../popup-ui";
-import { Caption, Hint, PickerHead } from "./picker-bits";
+import { Hint } from "./picker-bits";
+
+/** `.cap`: the small heading of a list inside the panel. */
+function ListCaption({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex h-7 items-center px-2 text-[12px] font-medium text-meta-foreground">
+      {children}
+    </div>
+  );
+}
 
 const ROW =
-  "flex h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:h-9";
+  "flex h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2 text-left text-[13.5px] text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:h-9";
 
 /** A pasted or typed address: it has a scheme, or a dotted host with no spaces. */
 function asUrl(text: string): URL | null {
@@ -286,21 +296,34 @@ export function AttachPanel({
     >
       {icon(hit)}
       {hit.key ? (
-        <span className="font-mono text-[12.5px] text-meta-foreground">{hit.key}</span>
+        <span className="font-mono text-[12px] text-meta-foreground">{hit.key}</span>
       ) : null}
       <span className="min-w-0 flex-1 truncate">{hit.title}</span>
     </button>
   );
   // Before typing: a few of each kind, pages and cards alternating.
   const recent: Hit[] = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 3 && recent.length < 5; i++) {
     if (pageHits[i]) recent.push(pageHits[i]!);
-    if (taskHits[i]) recent.push(taskHits[i]!);
+    if (taskHits[i] && recent.length < 5) recent.push(taskHits[i]!);
   }
 
   return (
-    <div>
-      <PickerHead title={t.title} onBack={onBack} onClose={onClose} />
+    <>
+      <div className="flex h-12 items-center pr-3 pl-2">
+        {onBack ? (
+          <IconBtn small aria-label={copy.pickers.back} onClick={onBack}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+          </IconBtn>
+        ) : (
+          <span className="size-8" />
+        )}
+        <b className="ml-1 flex-1 text-center text-[14px] font-[650]">{t.title}</b>
+        <IconBtn small aria-label={copy.pickers.close} onClick={onClose}>
+          <X aria-hidden="true" className="size-4" />
+        </IconBtn>
+      </div>
+      <div className="px-3 pb-3">
       <Uploads />
       <input
         ref={file}
@@ -316,22 +339,22 @@ export function AttachPanel({
       />
       {callbacks.onAddFile ? (
         <div className="box-border rounded-[10px] border border-dashed border-line-strong p-3">
-          <div className="flex items-center gap-3">
-            <PanelBtn onClick={() => file.current?.click()}>
+          <div className="flex items-center gap-2.5">
+            <PanelBtn small onClick={() => file.current?.click()}>
               <Paperclip aria-hidden="true" className="size-4" />
               {t.chooseFile}
             </PanelBtn>
-            <span className="text-[13px] text-muted-foreground">{t.limit}</span>
+            <span className="text-[12.5px] text-muted-foreground">{t.limit}</span>
           </div>
-          <p className="m-0 mt-2.5 text-[12.5px] text-meta-foreground">{t.dropHint}</p>
+          <span className="mt-2 block text-[12px] text-meta-foreground">{t.dropHint}</span>
         </div>
       ) : null}
-      <label className="mt-3 box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
+      <label className="mt-3 box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-2.5 text-[14px] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
         <span className="sr-only">{t.smartLabel}</span>
         {url ? (
-          <Link2 aria-hidden="true" className="size-4 shrink-0 text-primary" />
+          <Link2 aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
         ) : (
-          <Search aria-hidden="true" className="size-4 shrink-0 text-meta-foreground" />
+          <Search aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
         )}
         <input
           type="text"
@@ -343,32 +366,32 @@ export function AttachPanel({
             setQuery(event.target.value);
             setFailed(false);
           }}
-          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] text-foreground outline-none placeholder:text-meta-foreground"
+          className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] text-foreground outline-none placeholder:text-meta-foreground"
         />
       </label>
       {url ? (
         <LinkRow key={url.href} url={url} onClose={onClose} />
       ) : needle === "" ? (
         recent.length > 0 ? (
-          <>
-            <Caption>{t.recent}</Caption>
+          <div className="-mx-1 mt-1.5 pt-1">
+            <ListCaption>{t.recent}</ListCaption>
             {recent.map(row)}
-          </>
+          </div>
         ) : null
       ) : (
         <>
           {pageHits.length > 0 ? (
-            <>
-              <Caption>{t.pages}</Caption>
+            <div className="-mx-1 mt-1.5 pt-1">
+              <ListCaption>{t.pages}</ListCaption>
               {pageHits.slice(0, 4).map(row)}
-            </>
+            </div>
           ) : null}
           {taskHits.length > 0 ? (
-            <>
-              <Caption>{t.tasks}</Caption>
+            <div className="-mx-1 pt-1">
+              <ListCaption>{t.tasks}</ListCaption>
               {taskHits.slice(0, 4).map(row)}
-              <Hint className="mt-1 px-2.5">{t.related}</Hint>
-            </>
+              <Hint className="mt-1 px-2">{t.related}</Hint>
+            </div>
           ) : null}
           {pageHits.length === 0 && taskHits.length === 0 ? (
             <p className="m-0 mt-3 flex items-center gap-2 px-1 text-[13.5px] text-muted-foreground">
@@ -391,6 +414,7 @@ export function AttachPanel({
           {t.failed}
         </Hint>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }

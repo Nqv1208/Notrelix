@@ -136,6 +136,8 @@ function MenuBody({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [all, setAll] = useState(false);
   const [active, setActive] = useState(0);
+  // The highlighted row shows once the keys or the pointer have moved it, or a search narrowed the list.
+  const [moved, setMoved] = useState(false);
   const needle = foldForSearch(query);
 
   const empty = useMemo(() => {
@@ -273,11 +275,16 @@ function MenuBody({ onClose }: { onClose: () => void }) {
       "aria-selected": rows[current]?.id === entry.id,
       tabIndex: -1,
       onClick: entry.wrap ? undefined : entry.run,
-      onMouseMove: () => setActive(rows.findIndex((r) => r.id === entry.id)),
+      onMouseMove: () => {
+        setMoved(true);
+        setActive(rows.findIndex((r) => r.id === entry.id));
+      },
       className: cn(
         "flex h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2 text-left text-[13.5px] text-foreground md:h-9",
         entry.strong && "font-medium text-brand-ink",
-        rows[current]?.id === entry.id && "bg-state-hover-strong",
+        (moved || needle !== "") &&
+          rows[current]?.id === entry.id &&
+          "bg-state-hover-strong",
       ),
     };
     const body = (
@@ -305,8 +312,8 @@ function MenuBody({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div>
-      <div className="flex h-11 items-center gap-2 border-b-2 border-primary pr-1.5 pl-3">
+    <>
+      <div className="flex h-11 items-center gap-2 border-b-2 border-meta-foreground pr-1.5 pl-3 text-meta-foreground focus-within:border-primary">
         <Search aria-hidden="true" className="size-4 shrink-0 text-meta-foreground" />
         <input
           data-picker-search=""
@@ -325,6 +332,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
           onKeyDown={(event) => {
             if (event.key === "ArrowDown" || event.key === "ArrowUp") {
               event.preventDefault();
+              setMoved(true);
               const step = event.key === "ArrowDown" ? 1 : -1;
               setActive((current + step + rows.length) % Math.max(rows.length, 1));
             } else if (event.key === "Enter") {
@@ -334,16 +342,14 @@ function MenuBody({ onClose }: { onClose: () => void }) {
           }}
           className="h-8 min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] text-foreground outline-none placeholder:text-meta-foreground"
         />
-        {query ? (
-          <button
-            type="button"
-            aria-label={t.clear}
-            onClick={() => setQuery("")}
-            className="grid size-8 place-items-center rounded-[8px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          aria-label={query ? t.clear : copy.pickers.close}
+          onClick={() => (query ? setQuery("") : onClose())}
+          className="grid size-8 place-items-center rounded-[8px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong"
+        >
+          <X aria-hidden="true" className="size-4" />
+        </button>
       </div>
       <div
         id="add-menu-list"
@@ -362,8 +368,8 @@ function MenuBody({ onClose }: { onClose: () => void }) {
         ) : (
           groups.map((group) =>
             group.entries.length === 0 && !(group.id === "fields" && emptyBoard) ? null : (
-              <div key={group.id} role="group" aria-label={group.title}>
-                <div className="flex h-7 items-center px-2 text-[12px] font-medium text-muted-foreground">
+              <div key={group.id} role="group" aria-label={group.title} className="contents">
+                <div className="mt-1 flex h-7 items-center px-2 text-[12px] font-medium text-meta-foreground">
                   {group.title}
                 </div>
                 {group.id === "fields" && emptyBoard ? (
@@ -377,7 +383,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
           )
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -400,7 +406,11 @@ export function AddMenu() {
         openPicker(next ? "add" : null, next ? null : undefined)
       }
       width={picker === "add" ? 300 : picker === "subitem" ? 344 : 380}
-      className={picker === "add" ? "p-0" : undefined}
+      className={
+        picker === "add" || picker === "attach"
+          ? "p-0 text-[13.5px]"
+          : undefined
+      }
       trigger={
         <PopoverTrigger asChild>
           <QuickBtn on={isOpen} title={t.addTitle} aria-haspopup="dialog">
