@@ -113,11 +113,11 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-A02 | Resolve a resource's kind, workspace and owner from its id | A | Application pipeline (system) | Yes | No | No | Part | HARDENING | Locator has no per-kind cross-tenant negative test for every kind (Page, share-link). |
 | UC-GOV-A03 | Classify every permission action in the role baseline | A | Developer | Yes | No | No | No | IMPLEMENTING | Stored-rule migration on rename is specified (§85) but has no test. |
 | UC-GOV-A04 | Field-level permission (deferred) | A | Workspace Owner, Admin | Part | No | No | No | DEFINED | Lead decision L11: deferred behind Work Management field work. Domain type exists and is unused. |
-| UC-GOV-B01 | Decide a workspace action from the built-in role baseline | B | Server (every protected request) | Yes | Part | Part | Part | HARDENING | No real e2e for Admin and Member denials; cell-by-cell proof is unit-level only. |
+| UC-GOV-B01 | Decide a workspace action from the built-in role baseline | B | Server (every protected request) | Yes | Part | Part | Part | HARDENING | tests and owner check |
 | UC-GOV-B02 | Decide an account-scoped action from the account role | B | Server | Yes | No | No | No | IMPLEMENTING | No frontend check of denial; no API-level test of the Account cell. |
-| UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | INTEGRATING | No real e2e of the denied path; escalation tests are Application-level. |
-| UC-GOV-B04 | A Guest does not enumerate the workspace | B | Guest | Yes | Yes | Yes | Yes | HARDENING | Real spec covers boards only; the member-list 403 and Members page read-only state have no real e2e; no 1-px diff for the Guest view. |
-| UC-GOV-B05 | A Guest's resource level is capped at Editor | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | No real e2e; a Manager entry for a Guest is not refused at grant time (accepted by GOV-030). |
+| UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | INTEGRATING | tests and owner check |
+| UC-GOV-B04 | A Guest does not enumerate the workspace | B | Guest | Yes | Yes | Yes | Yes | HARDENING | tests and owner check |
+| UC-GOV-B05 | A Guest's resource level is capped at Editor | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
 | UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
 | UC-GOV-C02 | Change a custom role's name or actions | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
 | UC-GOV-C03 | Archive a custom role that has assignments | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
@@ -258,7 +258,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §44, §44.1](../../product/governance.md) GOV-013, GOV-015; WGREQ063-WGREQ065, WGREQ081-WGREQ085, WGREQ181.
 - Acceptance: Given a Member, When they call `ManageWorkspaceSettings`, Then 403. Given an Admin, Then 200. Given a removed member, Then NotFound.
 - Evidence: BE `WorkspaceRoleBaseline`, `AccessPolicyEngine` · FE `frontend/apps/web/src/router/guards/require-permission.ts` · Tests `WorkspaceRoleBaselineTests`, `GovernanceResourcePermissionFlowTests` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` (Guest only) · Design `Final-Members`
-- State: HARDENING - No real e2e for Admin and Member denials; cell-by-cell proof is unit-level only.
+- State: HARDENING. Built end to end: the baseline cells in `WorkspaceRoleBaseline`, the route guard `require-permission.ts`; nothing left to build. Missing: tests and owner check (real e2e of an Admin and a Member denial; the cell-by-cell proof is unit-level).
 
 ### UC-GOV-B02 Decide an account-scoped action from the account role
 - Capability: B Built-in roles (team spec, Governance list)
@@ -286,7 +286,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §45, §44.2](../../product/governance.md) GOV-013; WGREQ154. Role caps and guards: see [Workspaces use cases](workspaces.md).
 - Acceptance: Given an Admin, When they delete the workspace or change a role, Then denied and nothing changes. Given an Admin, When they remove an Owner, Then refused.
 - Evidence: BE baseline; Workspaces member commands · Tests `WorkspaceRoleBaselineTests`, `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e none · Design `Final-Members`
-- State: INTEGRATING - No real e2e of the denied path; escalation tests are Application-level.
+- State: INTEGRATING. Built: the baseline denies the Admin cell and Workspaces guards refuse role minting and acting on an Owner or Admin; the Members surface receives the viewer's role (the member guards and surface are Workspaces'). Nothing left to build here. Missing: tests and owner check (real e2e of the denied path).
 
 ### UC-GOV-B04 A Guest does not enumerate the workspace
 - Capability: B Built-in roles (team spec, Governance list)
@@ -300,7 +300,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §29-§30, §44.3, §95](../../product/governance.md) GOV-009, GOV-029; WGREQ155.
 - Acceptance: Given a Guest, When they list boards, Then only shared boards appear. When they read an unshared board, Then 403 or 404. When they list members, Then 403.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/members/me` (Workspaces.Members.GetMyMembership) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/members.tsx`, `use-workspace-viewer.ts` · Tests `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` · Design `Final-Members`, `Final-M-Members`
-- State: HARDENING - Real spec covers boards only; the member-list 403 and Members page read-only state have no real e2e; no 1-px diff for the Guest view.
+- State: HARDENING. Built: `members/me`, a 403 on the member list for a Guest, and the Members page reads only the Guest's own row (`members.tsx` uses `viewer.mine` for a Guest). Nothing left to build here. Missing: tests and owner check (real e2e for the member-list 403 and the read-only Members page; a 1 px check of the Guest view).
 
 ### UC-GOV-B05 A Guest's resource level is capped at Editor
 - Capability: B Built-in roles (team spec, Governance list)
@@ -314,7 +314,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §30.1](../../product/governance.md) GOV-030; WGREQ154.
 - Acceptance: Given a Guest with a Manager entry, When they change board settings, Then denied. When the manager opens sharing, Then the entry shows Editor with `levelCapped`.
 - Evidence: BE `AccessPolicyEngine`, `ResourceAccessSummaryService.Sharing.cs` · FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx` · Tests `EffectiveBoardAccessTests`, `ResourceAccessSummaryServiceTests` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING - No real e2e; a Manager entry for a Guest is not refused at grant time (accepted by GOV-030).
+- State: INTEGRATING. Built end to end (the engine caps a Guest at Editor, the sharing read marks the entry `levelCapped`, the Share dialog shows Manager disabled with the reason); nothing left to build. Missing: tests and owner check (real e2e). Accepted by GOV-030 and left as is: a Manager entry for a Guest is stored at grant time and never effective.
 
 ## Capability C: Custom roles
 
