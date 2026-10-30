@@ -69,9 +69,9 @@ function AddMenu() {
                 type="button"
                 role="menuitem"
                 onClick={() => openPicker(key)}
-                className="flex w-full items-center gap-3 rounded-lg border-0 bg-transparent p-2 text-left text-foreground hover:bg-state-hover-strong"
+                className="flex w-full items-center gap-3 rounded-[8px] border-0 bg-transparent p-2 text-left text-foreground hover:bg-state-hover-strong"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-line-strong bg-popover text-muted-foreground">
+                <span className="grid size-9 shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
                   {icon}
                 </span>
                 <span>
@@ -134,7 +134,7 @@ export function PopupQuickRow() {
   if (!canEdit) return null;
   const close = () => openPicker(null);
   return (
-    <div className="box-border flex h-11 gap-2 pt-2 pr-6 pl-[60px]">
+    <div className="box-border flex flex-wrap gap-2 pt-2 pr-4 pl-4 md:h-11 md:flex-nowrap md:pr-6 md:pl-[60px]">
       <AddMenu />
       <PickerButton
         id="labels"

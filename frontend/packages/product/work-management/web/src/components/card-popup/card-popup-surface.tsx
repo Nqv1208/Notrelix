@@ -68,7 +68,7 @@ export function CardPopupSurface({
         aria-describedby={undefined}
         overlayClassName="bg-black/40 backdrop-blur-none"
         className={cn(
-          "fixed top-0 left-0 flex h-dvh max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-popover p-0 text-[14px] text-foreground ring-0",
+          "fixed top-3 left-0 flex h-[calc(100dvh-12px)] max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none bg-popover p-0 text-[14px] text-foreground ring-0",
           "md:top-1/2 md:left-1/2 md:h-auto md:max-h-[calc(100dvh-48px)] md:w-[1120px] md:max-w-[calc(100vw-48px)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:shadow-popover",
           "sm:max-w-none",
         )}
@@ -88,7 +88,7 @@ export function CardPopupSurface({
                 <PopupBanners conflict={conflict} onReload={onReloadConflict} />
                 <PopupTitleRow />
                 <PopupQuickRow />
-                <div className="box-border flex flex-col gap-3.5 pt-5 pr-6 pl-[60px]">
+                <div className="box-border flex flex-col gap-3.5 pt-4 pr-4 pl-4 md:pt-5 md:pr-6 md:pl-[60px]">
                   <ChipsRow />
                 </div>
                 <DescriptionSection />

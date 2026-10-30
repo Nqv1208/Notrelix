@@ -36,7 +36,7 @@ export function PopupTitleRow() {
   const save = saves.title;
 
   return (
-    <div className="box-border flex h-[60px] items-start gap-3 pt-4 pr-6 pl-6">
+    <div className="box-border flex h-[60px] items-start gap-3 pt-3 pr-4 pl-4 md:pt-4 md:pr-6 md:pl-6">
       {mode === "view" ? (
         <button
           type="button"
@@ -93,7 +93,7 @@ export function PopupTitleRow() {
           }
         }}
         className={cn(
-          "-ml-2 box-border h-11 min-w-0 flex-1 rounded-lg border-0 bg-transparent px-2 text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none",
+          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-11 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none",
           invalid && "bg-popover ring-2 ring-danger",
         )}
       />

@@ -14,7 +14,7 @@ import { useCardPopup } from "./card-popup-context";
 import { IconBtn, PanelPopover } from "./popup-ui";
 
 const GROUP_BTN =
-  "relative inline-flex h-9 items-center gap-2 rounded-lg border-0 bg-state-hover-strong py-0 pr-2.5 pl-3 text-[14px] font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "relative inline-flex h-9 items-center gap-2 rounded-[8px] border-0 bg-state-hover-strong py-0 pr-2.5 pl-3 text-[14px] font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 /** The column of the card: shows where it is, and moving it is one pick. */
 function GroupPicker() {
@@ -103,7 +103,7 @@ function GroupPicker() {
               aria-selected={selected}
               onClick={() => move(group.id)}
               className={cn(
-                "flex min-h-9 w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong",
+                "flex min-h-9 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong",
                 selected &&
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
@@ -131,7 +131,7 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
   const t = copy.shell;
   const frozen = readOnly !== null;
   return (
-    <div className="relative z-[6] flex h-14 flex-none items-center gap-1.5 border-b border-line bg-popover pr-3 pl-4">
+    <div className="relative z-[6] flex h-14 flex-none items-center gap-1.5 border-b border-line bg-popover pr-1 pl-3 md:pr-3 md:pl-4">
       {mode === "create" ? (
         <span className="mr-1 text-[13.5px] text-muted-foreground">
           {t.groupPickerCreate}

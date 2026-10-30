@@ -34,8 +34,8 @@ export const IconBtn = forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "inline-grid shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
-        small ? "size-8" : "size-9",
+        "inline-grid shrink-0 place-items-center rounded-[8px] border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        small ? "size-8" : "size-11 md:size-9",
         FOCUS,
         className,
       )}
@@ -45,7 +45,7 @@ export const IconBtn = forwardRef<
 });
 
 const FIELD_BTN =
-  "inline-flex h-9 items-center gap-[7px] rounded-lg border border-line-strong bg-popover px-3 text-[13.5px] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex h-11 items-center gap-[7px] rounded-[8px] border border-line-strong bg-popover px-3 text-[13.5px] md:h-9 font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50";
 
 /** `.qb`: a button of the quick row. */
 export const QuickBtn = forwardRef<
@@ -95,7 +95,7 @@ export function ChipReadOnly({ className, ...props }: ComponentProps<"span">) {
   return (
     <span
       className={cn(
-        "inline-flex h-9 items-center gap-[7px] rounded-lg border border-dashed border-line-strong bg-background px-3 text-[13.5px] font-medium whitespace-nowrap text-muted-foreground",
+        "inline-flex h-9 items-center gap-[7px] rounded-[8px] border border-dashed border-line-strong bg-background px-3 text-[13.5px] font-medium whitespace-nowrap text-muted-foreground",
         className,
       )}
       {...props}
@@ -113,7 +113,7 @@ export const SmallBtn = forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-popover px-3 text-[13px] font-medium text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-popover px-3 text-[13px] font-medium text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50",
         on && "bg-state-hover-strong ring-2 ring-primary",
         FOCUS,
         className,
@@ -139,7 +139,7 @@ export const PanelBtn = forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-[7px] rounded-lg border text-center font-medium disabled:cursor-not-allowed disabled:opacity-55",
+        "inline-flex items-center justify-center gap-[7px] rounded-[8px] border text-center font-medium disabled:cursor-not-allowed disabled:opacity-55",
         small ? "h-8 px-3 text-[13px]" : "h-9 px-3.5 text-[13.5px]",
         variant === "default" &&
           "border-line-strong bg-popover text-foreground hover:bg-state-hover-strong",
@@ -192,11 +192,11 @@ export function PopSection({
   return (
     <section
       aria-label={label}
-      className={cn("relative pt-7 pr-6 pl-[60px]", className)}
+      className={cn("relative pt-7 pr-4 pl-4 md:pr-6 md:pl-[60px]", className)}
     >
       <span
         aria-hidden="true"
-        className="absolute top-[31px] left-6 text-muted-foreground"
+        className="absolute top-[31px] left-6 hidden text-muted-foreground md:block"
       >
         {icon}
       </span>
@@ -318,7 +318,7 @@ export const PanelInput = forwardRef<
     <input
       ref={ref}
       className={cn(
-        "box-border h-9 w-full rounded-lg border border-line-strong bg-popover px-3 text-[14px] text-foreground placeholder:text-meta-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none",
+        "box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground placeholder:text-meta-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none",
         invalid && "border-danger ring-[3px] ring-danger-subtle",
         className,
       )}
