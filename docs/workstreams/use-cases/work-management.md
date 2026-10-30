@@ -215,7 +215,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B06 | Complete, reopen, remind | B | Editor and above | partial | partial | partial | work-board-management | HARDENING | expected version on complete and reopen (D77.3; defect B-01); the Nhắc dialog calls a raw path and is not on the typed client (defect F-01); the real e2e proves only reopen. |
 | UC-WM-B07 | Duplicate an item | B | Editor and above (CreateItem) | partial | yes | partial | none | INTEGRATING | Prove copy set (incl. sub-items option) and exclusions; design Er/busy |
 | UC-WM-B08 | Move an item to another board | B | UpdateItem source + CreateItem target | partial | yes | partial | none | INTEGRATING | Old-key alias (D76.3); mapping notice proof (D50, D54); EV |
-| UC-WM-B09 | Archive an item | B | Editor and above | yes | yes | complete | sub-items, item-lifecycle | HARDENING | dialog names the sub-item count; peers see the archive live only with open PR #193. |
+| UC-WM-B09 | Archive an item | B | Editor and above | yes | yes | complete | sub-items, item-lifecycle | HARDENING | owner check |
 | UC-WM-B10 | Browse archived items and unarchive | B | Editor and above (UpdateItem) | partial | no | complete | item-lifecycle | IMPLEMENTING | BE paged archived list; FE panel; unarchive restores sub-items |
 | UC-WM-B11 | Delete an item (to Trash) | B | Editor and above | yes | yes | complete | none | INTEGRATING | Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e |
 | UC-WM-B12 | Restore an item from Trash | B | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; >30 days refusal proof |
@@ -861,8 +861,8 @@ Team capability WM-002.
 - UI states: destructive confirm (names the impact)
 - Rules: product sections 26, 123; WM-033; WMREQ014
 - Acceptance: Given an item with 2 sub-items, when archived, then all three leave the lists. Given an archived item, when a description edit is sent, then it is refused with the reason.
-- Evidence: BE BoardItems.Archive = POST /board-items/{itemId:guid}/archive -> ArchiveBoardItemCommand (`BoardItems/Commands/ArchiveBoardItem/ArchiveBoardItem.cs`) [- / Idem] · FE useArchiveCard, ItemPageArchivedBanner · Design BC-Actions (confirm archive) · Tests `ArchiveBoardItemTests.cs` · Real e2e `sub-items.real.e2e.spec.ts`, `item-lifecycle.real.e2e.spec.ts`
-- State: HARDENING — dialog names the sub-item count; peers see the archive live only with open PR #193.
+- Evidence: BE BoardItems.Archive = POST /board-items/{itemId:guid}/archive -> ArchiveBoardItemCommand (`BoardItems/Commands/ArchiveBoardItem/ArchiveBoardItem.cs`) [EV / Idem] · FE useArchiveCard, `ArchiveItemDialog` (`item-lifecycle/archive-item-dialog.tsx`), ItemPageArchivedBanner · Design BC-Actions (confirm archive) · Tests `ArchiveBoardItemTests.cs`, `WorkMutationTransportRegressionTests.cs`, `archive-item-dialog` component tests, `card-commands.unit.test.ts` · Real e2e `item-lifecycle.real.e2e.spec.ts`, `sub-items.real.e2e.spec.ts`
+- State: HARDENING — owner check
 
 ### UC-WM-B10 Browse archived items and unarchive
 - Capability: B BoardItem lifecycle (WM-002)
