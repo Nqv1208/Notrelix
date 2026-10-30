@@ -74,7 +74,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         if (session.RefreshTokenHash.Hash != presentedHash)
         {
-            return await HandleReplacedCredentialAsync(session, presentedHash, now, cancellationToken);
+            return await HandleReplacedCredentialAsync(session, request.RefreshToken, presentedHash, now, cancellationToken);
         }
 
         if (session.Status != SessionStatus.Active || session.ExpiresAt <= now)
@@ -100,19 +100,19 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         // the new credential once that rotation is committed.
         if (!await _ledger.TryClaimAsync(presentedHash, cancellationToken))
         {
-            return await ServeRacedRotationAsync(presentedHash, cancellationToken);
+            return await ServeRacedRotationAsync(request.RefreshToken, presentedHash, cancellationToken);
         }
 
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         session.Rotate(RefreshTokenHash.Create(newRefreshToken), now);
-        await _ledger.RecordSuccessorAsync(presentedHash, newRefreshToken, cancellationToken);
+        await _ledger.RecordSuccessorAsync(request.RefreshToken, newRefreshToken, cancellationToken);
 
         return Result<AuthResult>.Success(BuildResult(user, session.Id, newRefreshToken));
     }
 
     /// <summary>The presented credential is the one the session's last rotation replaced.</summary>
     private async Task<Result<AuthResult>> HandleReplacedCredentialAsync(
-        UserSession session, string presentedHash, DateTimeOffset now, CancellationToken cancellationToken)
+        UserSession session, string presentedToken, string presentedHash, DateTimeOffset now, CancellationToken cancellationToken)
     {
         // A session that already ended has nothing left to protect.
         if (session.Status != SessionStatus.Active)
@@ -123,7 +123,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         if (session.IsWithinRotationGrace(presentedHash, now))
         {
             return await ServeGraceAsync(
-                session.UserId, session.Id, session.RefreshTokenHash.Hash, presentedHash, cancellationToken);
+                session.UserId, session.Id, session.RefreshTokenHash.Hash, presentedToken, cancellationToken);
         }
 
         // Outside the window a replaced credential can only be a copy someone kept: the person and the
@@ -135,7 +135,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         return Result<AuthResult>.Failure(InvalidRefreshTokenError);
     }
 
-    private async Task<Result<AuthResult>> ServeRacedRotationAsync(string presentedHash, CancellationToken cancellationToken)
+    private async Task<Result<AuthResult>> ServeRacedRotationAsync(string presentedToken, string presentedHash, CancellationToken cancellationToken)
     {
         for (var attempt = 0; attempt < RacePolls; attempt++)
         {
@@ -150,7 +150,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
             if (rotated is not null)
             {
-                return await ServeGraceAsync(rotated.UserId, rotated.Id, rotated.CurrentHash, presentedHash, cancellationToken);
+                return await ServeGraceAsync(rotated.UserId, rotated.Id, rotated.CurrentHash, presentedToken, cancellationToken);
             }
         }
 
@@ -159,9 +159,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
     /// <summary>Answers a retry with the credential that replaced the presented one, if it is still the current one.</summary>
     private async Task<Result<AuthResult>> ServeGraceAsync(
-        Guid userId, Guid sessionId, string currentHash, string presentedHash, CancellationToken cancellationToken)
+        Guid userId, Guid sessionId, string currentHash, string presentedToken, CancellationToken cancellationToken)
     {
-        var successor = await _ledger.RecallSuccessorAsync(presentedHash, cancellationToken);
+        var successor = await _ledger.RecallSuccessorAsync(presentedToken, cancellationToken);
         if (successor is null || RefreshTokenHash.Create(successor).Hash != currentHash)
         {
             return Result<AuthResult>.Failure(InvalidRefreshTokenError);
