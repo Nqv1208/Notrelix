@@ -6,15 +6,17 @@ namespace Notrelix.Infrastructure.BackgroundJobs;
 /// <summary>
 /// The sweep of the Board access-change log. Every row carries its own <c>retention_until</c> (90 days
 /// after the change; reads already hide a row past it), so this only removes rows that are already
-/// invisible. Bound from <c>Governance:AccessChanges:Retention</c> and validated on start. See
+/// invisible. It deletes history for good, and no owner rule for retention and deletion exists yet
+/// (owner decision 3), so it is off by default and no environment turns it on. Bound from
+/// <c>Governance:AccessChanges:Retention</c> and validated on start. See
 /// <c>backend/docs/operations/configuration-and-runtime.md</c>.
 /// </summary>
 public sealed class ResourceAccessChangeRetentionOptions
 {
     public const string SectionName = "Governance:AccessChanges:Retention";
 
-    /// <summary>When false the sweep deletes nothing. Default true.</summary>
-    public bool Enabled { get; init; } = true;
+    /// <summary>When false the sweep deletes nothing. Default false until the owner sets the retention rule.</summary>
+    public bool Enabled { get; init; } = false;
 
     /// <summary>Time between sweeps. Default 1 hour.</summary>
     public TimeSpan Interval { get; init; } = TimeSpan.FromHours(1);

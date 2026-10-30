@@ -134,7 +134,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-D08 | A Guest reaches only what was shared with them | D | Guest | Yes | Part | Part | Part | HARDENING | tests and owner check |
 | UC-GOV-D09 | Make a Board Private and see who loses it | D | Board manager | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
 | UC-GOV-D10 | Read the sharing and access summary of a Board | D | Anyone who can read the Board | Yes | Yes | Yes | Part | INTEGRATING | tests and owner check |
-| UC-GOV-D11 | Keep a 90-day log of Board access changes | D | Board manager reads; system writes | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-D11 | Keep a 90-day log of Board access changes | D | Board manager reads; system writes | Yes | Yes | Yes | No | BLOCKED | owner decision 3 (retention and deletion) |
 | UC-GOV-D12 | End an explicit entry on a date (expiry) | D | Board or Page manager | No | No | No | No | BLOCKED | Owner must decide whether GOV-031 (and the Guest default expiry pre-fill, `guestDefaultExpiryDays`) is built now or removed from the ... |
 | UC-GOV-D13 | Explicit permission rules with priority and time window | D | Workspace Owner (future API) | Part | No | No | No | DEFINED | Engine evaluates rules; no command, endpoint or UI creates them. Lead decision L15: not built until a product need exists. |
 | UC-GOV-D14 | Apply a permission template | D | Workspace Owner (future) | Part | No | No | No | DEFINED | Domain only; no handler or endpoint. Not part of the owner's next scope. |
@@ -556,7 +556,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §44.3, §65-§72](../../product/governance.md) GOV-020, GOV-021.
 - Acceptance: Given a revoke, When committed, Then a `Removed` row exists; When the request rolls back, Then none.
 - Evidence: BE `ResourceAccessChangeRecorder`, `EfResourceAccessChangeReader` · FE `buildSharingLog` in work-management web · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ResourceAccessChangeTests.cs` · Real e2e none · Design `Final-Share` (Nhật ký) · BE (retention) `Infrastructure/BackgroundJobs/ResourceAccessChangeRetention.cs`, `Governance:AccessChanges:Retention` in `configuration-and-runtime.md`
-- State: INTEGRATING. Built: a hosted sweep deletes rows past their own `retention_until` in bounded `SKIP LOCKED` batches under the worker scope (reads already hid them). Page-level changes are still not recorded: the log is for Boards, as this use case says. Missing: tests and owner check (a sweep test, a real e2e).
+- State: BLOCKED on owner decision 3 (deletion and retention). Built: a hosted sweep that deletes rows past their own `retention_until` in bounded `SKIP LOCKED` batches under the worker scope (reads already hide them). It permanently deletes history and `docs/product/governance.md` sets no retention for these rows, so it is off by default (`Governance:AccessChanges:Retention:Enabled` is false and no environment config sets it) until the owner sets the rule. Page-level changes are still not recorded: the log is for Boards, as this use case says. Missing: the owner rule, then tests and owner check.
 
 ### UC-GOV-D12 End an explicit entry on a date (expiry)
 - Capability: D Permission assignment (team spec, Governance list)
