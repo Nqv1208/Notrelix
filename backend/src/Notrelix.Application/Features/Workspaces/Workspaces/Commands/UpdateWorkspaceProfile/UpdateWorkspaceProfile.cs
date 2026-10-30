@@ -40,14 +40,7 @@ public class UpdateWorkspaceProfileCommandHandler : IRequestHandler<UpdateWorksp
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        var now = _dateTimeProvider.UtcNow;
-        var userId = _requestContext.UserId;
-
-        if (request.Name is not null)
-            workspace.Rename(request.Name, userId, now);
-
-        if (request.Description is not null)
-            workspace.UpdateDescription(request.Description, userId, now);
+        workspace.UpdateProfile(request.Name, request.Description, _requestContext.UserId, _dateTimeProvider.UtcNow);
 
         return Result.Success();
     }

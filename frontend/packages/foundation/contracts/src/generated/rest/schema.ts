@@ -5360,7 +5360,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update workspace name and description */
+        /**
+         * Update workspace name and description
+         * @description Owner or Admin. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. An omitted field is left alone; an empty description clears it. A value that does not change bumps no version and raises no event; a name and a description that both change advance the version once. An archived workspace refuses the edit.
+         */
         patch: operations["Workspaces.Workspaces.UpdateWorkspaceProfile"];
         trace?: never;
     };
