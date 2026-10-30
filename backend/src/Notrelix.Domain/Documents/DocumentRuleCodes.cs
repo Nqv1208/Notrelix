@@ -20,6 +20,7 @@ public static class DocumentRuleCodes
     // ── PageTree ──────────────────────────────────────────────────────────
     public const string Documents_PageTree_CannotBeOwnParent = "Documents_PageTree_CannotBeOwnParent";
     public const string Documents_PageTree_MoveWouldCreateCycle = "Documents_PageTree_MoveWouldCreateCycle";
+    public const string Documents_PageTree_MaxDepthExceeded = "Documents_PageTree_MaxDepthExceeded";
 
     // ── Block ─────────────────────────────────────────────────────────────
     public const string Documents_Block_ContentCannotBeNull = "Documents_Block_ContentCannotBeNull";

@@ -3246,13 +3246,21 @@
           "Documents.Pages",
           "Documents.Pages"
         ],
-        "summary": "Get page tree for a workspace",
+        "summary": "Get the page tree for a workspace; a very large workspace answers one level at a time (root pages, or the children of parentId)",
         "operationId": "Documents.Pages.GetPageTree",
         "parameters": [
           {
             "name": "workspaceId",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "parentId",
+            "in": "query",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -26029,7 +26037,8 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "title": {
             "type": "string",
@@ -26038,6 +26047,9 @@
           "icon": {
             "type": "string",
             "nullable": true
+          },
+          "unavailable": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

@@ -807,7 +807,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get page tree for a workspace */
+        /** Get the page tree for a workspace; a very large workspace answers one level at a time (root pages, or the children of parentId) */
         get: operations["Documents.Pages.GetPageTree"];
         put?: never;
         post?: never;
@@ -6694,9 +6694,10 @@ export interface components {
         };
         "Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto": {
             /** Format: uuid */
-            id?: string;
+            id?: string | null;
             title?: string | null;
             icon?: string | null;
+            unavailable?: boolean;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageDto": {
             /** Format: uuid */
@@ -9964,7 +9965,9 @@ export interface operations {
     };
     "Documents.Pages.GetPageTree": {
         parameters: {
-            query?: never;
+            query?: {
+                parentId?: string;
+            };
             header?: never;
             path: {
                 workspaceId: string;

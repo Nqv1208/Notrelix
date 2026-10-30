@@ -11,4 +11,10 @@ public interface IPageSubtreeStore
 
     /// <summary>Every non-deleted descendant (children, grandchildren, …) of the page.</summary>
     Task<IReadOnlyList<Page>> LoadDescendantsAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The page's level in the tree (a root page is 1), walking up at most one level past
+    /// <see cref="Notrelix.Domain.Documents.Rules.PageTreeRules.MaxDepth"/>: a deeper answer is only "too deep".
+    /// </summary>
+    Task<int> DepthOfAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
 }

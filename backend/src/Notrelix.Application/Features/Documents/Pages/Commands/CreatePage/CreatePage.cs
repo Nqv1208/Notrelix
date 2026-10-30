@@ -2,6 +2,7 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Services;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Domain.Documents.Rules;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 
@@ -12,7 +13,8 @@ namespace Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 /// caller cannot reach); in a Space, <c>CreatePage</c> on the Space (Editor
 /// level); otherwise the Workspace-level usage right. A nested page follows its
 /// parent's Space (docs/product/workspaces.md §79), so <c>SpaceId</c> must not
-/// be combined with <c>ParentId</c>. The create is idempotent: a retry with the same key returns the same page.
+/// be combined with <c>ParentId</c>. Pages nest at most <see cref="PageTreeRules.MaxDepth"/> levels. The create is
+/// idempotent: a retry with the same key returns the same page.
 /// </summary>
 [IdempotencyOperation("documents.pages.create-page.v1")]
 public record CreatePageCommand(
@@ -34,6 +36,7 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
 {
     private readonly IDocumentDbContext _context;
     private readonly IPageSpacePlacement _placement;
+    private readonly IPageSubtreeStore _tree;
     private readonly IResourceCreatorGrant _creatorGrant;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -41,12 +44,14 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
     public CreatePageCommandHandler(
         IDocumentDbContext context,
         IPageSpacePlacement placement,
+        IPageSubtreeStore tree,
         IResourceCreatorGrant creatorGrant,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _placement = placement;
+        _tree = tree;
         _creatorGrant = creatorGrant;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -64,6 +69,7 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException(nameof(Page), parentId);
             spaceId = parent.SpaceId;
+            PageTreeRules.EnsureCanNestUnder(await _tree.DepthOfAsync(request.WorkspaceId, parentId, ct));
         }
         else if (spaceId is { } target)
         {

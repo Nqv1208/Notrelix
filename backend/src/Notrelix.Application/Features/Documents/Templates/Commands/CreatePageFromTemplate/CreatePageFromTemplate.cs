@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Documents.Pages.Services;
 using Notrelix.Application.Features.Documents.Versions.Services;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Domain.Documents.Templates;
+using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.Documents.Templates.Commands.CreatePageFromTemplate;
@@ -33,6 +34,7 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
 
     private readonly IDocumentDbContext _context;
     private readonly IPageSpacePlacement _placement;
+    private readonly IPageSubtreeStore _tree;
     private readonly IResourceCreatorGrant _creatorGrant;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -40,12 +42,14 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
     public CreatePageFromTemplateCommandHandler(
         IDocumentDbContext context,
         IPageSpacePlacement placement,
+        IPageSubtreeStore tree,
         IResourceCreatorGrant creatorGrant,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _placement = placement;
+        _tree = tree;
         _creatorGrant = creatorGrant;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -66,6 +70,7 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException(nameof(Page), parentId);
             spaceId = parent.SpaceId;
+            PageTreeRules.EnsureCanNestUnder(await _tree.DepthOfAsync(request.WorkspaceId, parentId, ct));
         }
         else if (spaceId is { } target)
         {

@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Services;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Rules;
 
 namespace Notrelix.Infrastructure.Documents.Pages;
 
@@ -20,6 +21,24 @@ public sealed class PageSubtreeStore : IPageSubtreeStore
 
     public Task<Page?> FindAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken) =>
         _context.Pages.FirstOrDefaultAsync(p => p.Id == pageId && p.WorkspaceId == workspaceId, cancellationToken);
+
+    public async Task<int> DepthOfAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
+    {
+        var depth = 0;
+        Guid? current = pageId;
+        while (current is { } id && depth <= PageTreeRules.MaxDepth)
+        {
+            var row = await _context.Pages.AsNoTracking()
+                .Where(p => p.Id == id && p.WorkspaceId == workspaceId)
+                .Select(p => new { p.ParentId })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (row is null) break;
+            depth++;
+            current = row.ParentId;
+        }
+
+        return depth;
+    }
 
     public async Task<IReadOnlyList<Page>> LoadDescendantsAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
     {
