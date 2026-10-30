@@ -25,6 +25,7 @@ export function ChecklistPanel({ onClose }: { onClose: () => void }) {
       <FieldLabel htmlFor="popup-checklist-title">{t.titleLabel}</FieldLabel>
       <PanelInput
         ref={ref}
+        data-autofocus=""
         id="popup-checklist-title"
         value={title}
         maxLength={200}

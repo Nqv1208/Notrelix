@@ -43,7 +43,7 @@ function MenuRow({
 }) {
   return (
     <button type="button" role="menuitem" onClick={onClick} className={ROW}>
-      <span className="grid size-9 shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
+      <span className="grid size-[38px] shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
         {icon}
       </span>
       <span>
@@ -194,7 +194,7 @@ function PageSearch({
             className={ROW}
             onClick={() => void link(page.id)}
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
+            <span className="grid size-[38px] shrink-0 place-items-center rounded-[8px] border border-line-strong bg-popover text-muted-foreground">
               <FileText aria-hidden="true" className="size-4" />
             </span>
             <b className="min-w-0 truncate text-[14px] font-semibold">
@@ -299,7 +299,14 @@ function OtherSearch({
  * The attach menu: a file, a web link, a Documents page, or another card of the
  * board. Each of the last three opens a small form in place with a back arrow.
  */
-export function AttachPanel({ onClose }: { onClose: () => void }) {
+export function AttachPanel({
+  onClose,
+  onBack,
+}: {
+  onClose: () => void;
+  /** Where the arrow of the menu goes (the "Thêm" menu); absent: no arrow. */
+  onBack?: () => void;
+}) {
   const { copy, callbacks, actions, slots } = useCardPopup();
   const t = copy.pickers.attach;
   const [view, setView] = useState<View>("menu");
@@ -311,7 +318,7 @@ export function AttachPanel({ onClose }: { onClose: () => void }) {
   const ic = "size-4";
   return (
     <div>
-      <PickerHead title={t.title} onClose={onClose} />
+      <PickerHead title={t.title} onBack={onBack} onClose={onClose} />
       <input
         ref={file}
         type="file"

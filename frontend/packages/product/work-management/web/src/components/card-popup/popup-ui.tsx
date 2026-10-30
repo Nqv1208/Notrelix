@@ -262,6 +262,15 @@ function PanelPopoverDesktop({
         sideOffset={4}
         style={{ width }}
         collisionPadding={12}
+        onOpenAutoFocus={(event) => {
+          // A panel with a search or a name field puts the cursor there.
+          const field = (
+            event.currentTarget as HTMLElement
+          ).querySelector<HTMLElement>("[data-picker-search],[data-autofocus]");
+          if (!field) return;
+          event.preventDefault();
+          field.focus();
+        }}
         onCloseAutoFocus={restoreFocus ? undefined : (e) => e.preventDefault()}
         className={cn(
           "z-modal gap-0 rounded-xl border border-line-strong bg-popover p-3 text-[14px] text-popover-foreground shadow-popover ring-0",

@@ -101,7 +101,7 @@ function TimeSelect({
   }, [open]);
   const options = TIMES.includes(value) ? TIMES : [value, ...TIMES].sort();
   return (
-    <div className="relative min-w-0 flex-1">
+    <div className="relative min-w-0 flex-1 px-3">
       <button
         type="button"
         disabled={disabled}
@@ -117,7 +117,7 @@ function TimeSelect({
         }}
         className={cn(
           INPUT,
-          "flex items-center gap-2 pr-2.5 text-left disabled:opacity-60",
+          "-mx-3 flex w-[calc(100%+24px)] items-center gap-2 pr-2.5 text-left disabled:opacity-60",
         )}
       >
         <Clock

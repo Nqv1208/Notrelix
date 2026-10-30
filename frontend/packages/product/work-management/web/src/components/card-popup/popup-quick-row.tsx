@@ -45,7 +45,7 @@ function AddMenu() {
     <PanelPopover
       open={isOpen}
       onOpenChange={(next) => openPicker(next ? "add" : null)}
-      width={340}
+      width={344}
       trigger={
         <PopoverTrigger asChild>
           <QuickBtn on={isOpen} title={t.addTitle} aria-haspopup="menu">
@@ -56,7 +56,10 @@ function AddMenu() {
       }
     >
       {picker === "attach" ? (
-        <AttachPanel onClose={() => openPicker(null)} />
+        <AttachPanel
+          onClose={() => openPicker(null)}
+          onBack={() => openPicker("add")}
+        />
       ) : (
         <>
           <div className="mb-2 flex h-8 items-center justify-center">
@@ -140,7 +143,7 @@ export function PopupQuickRow() {
         id="labels"
         icon={<Tag aria-hidden="true" className="size-4" />}
         label={t.labels}
-        width={320}
+        width={328}
       >
         {() => <LabelsPanel onClose={close} />}
       </PickerButton>
@@ -148,7 +151,7 @@ export function PopupQuickRow() {
         id="dates"
         icon={<Clock aria-hidden="true" className="size-4" />}
         label={t.dates}
-        width={340}
+        width={344}
       >
         {() => <DatesPanel onClose={close} />}
       </PickerButton>
@@ -156,7 +159,7 @@ export function PopupQuickRow() {
         id="checklist"
         icon={<ListChecks aria-hidden="true" className="size-4" />}
         label={t.checklist}
-        width={320}
+        width={328}
       >
         {() => <ChecklistPanel onClose={close} />}
       </PickerButton>
@@ -164,7 +167,7 @@ export function PopupQuickRow() {
         id="assignees"
         icon={<UserPlus aria-hidden="true" className="size-4" />}
         label={t.assignees}
-        width={320}
+        width={336}
       >
         {() => <PeoplePanel onClose={close} />}
       </PickerButton>
