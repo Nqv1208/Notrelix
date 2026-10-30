@@ -36,7 +36,7 @@ export function PopupTitleRow() {
   const save = saves.title;
 
   return (
-    <div className="box-border flex h-[60px] items-start gap-3 pt-3 pr-4 pl-4 md:pt-4 md:pr-6 md:pl-6">
+    <div className="box-border flex h-[60px] items-start gap-3 pt-3 pr-4 pl-4 md:h-[52px] md:pt-2.5 md:pr-6 md:pl-6">
       {mode === "view" ? (
         <button
           type="button"
@@ -53,7 +53,7 @@ export function PopupTitleRow() {
               : callbacks.onComplete?.(card.id)
           }
           className={cn(
-            "mt-2.5 box-border grid size-6 shrink-0 place-items-center rounded-full border-2 border-line-strong bg-transparent p-0 text-primary-foreground hover:border-work-status-done focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default",
+            "mt-2.5 md:mt-2 box-border grid size-6 shrink-0 place-items-center rounded-full border-2 border-line-strong bg-transparent p-0 text-primary-foreground hover:border-work-status-done focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default",
             done && "border-work-status-done bg-work-status-done",
           )}
         >
@@ -64,7 +64,7 @@ export function PopupTitleRow() {
       ) : (
         <span
           aria-hidden="true"
-          className="mt-2.5 box-border size-6 shrink-0 rounded-full border-2 border-line-strong"
+          className="mt-2.5 md:mt-2 box-border size-6 shrink-0 rounded-full border-2 border-line-strong"
         />
       )}
       <input
@@ -93,7 +93,7 @@ export function PopupTitleRow() {
           }
         }}
         className={cn(
-          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-11 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none",
+          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-10 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none",
           invalid && "bg-popover ring-2 ring-danger",
         )}
       />

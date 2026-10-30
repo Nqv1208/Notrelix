@@ -7,7 +7,9 @@ import { foldForSearch } from "../../item-page/item-pickers";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup, useCanEdit } from "../card-popup-context";
 import {
+  EmptySection,
   IconBtn,
+  LinkBtn,
   PanelBtn,
   PanelHead,
   PanelPopover,
@@ -288,12 +290,35 @@ function AddLinkPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** The "+ Thêm liên kết" button with the panel that links another card; `quiet` is the link-coloured one of a collapsed section. */
+function AddLinkButton({ quiet }: { quiet?: boolean }) {
+  const { copy } = useCardPopup();
+  const [open, setOpen] = useState(false);
+  const Btn = quiet ? LinkBtn : SmallBtn;
+  return (
+    <PanelPopover
+      open={open}
+      onOpenChange={setOpen}
+      width={380}
+      trigger={
+        <PopoverTrigger asChild>
+          <Btn className="max-md:h-11" aria-haspopup="dialog">
+            <Plus aria-hidden="true" className="size-[13px]" />
+            {copy.related.links.add}
+          </Btn>
+        </PopoverTrigger>
+      }
+    >
+      <AddLinkPanel onClose={() => setOpen(false)} />
+    </PanelPopover>
+  );
+}
+
 /** Blocks, blocked by, related, parent and sub-items of the card. */
 export function LinksSection() {
   const { card, data, callbacks, copy, slots, mode } = useCardPopup();
   const t = copy.related.links;
   const canEdit = useCanEdit() && Boolean(callbacks.onAddLink);
-  const [open, setOpen] = useState(false);
   const links = data.links ?? [];
   const kids = data.childItems ?? [];
   const groups: ReadonlyArray<
@@ -305,15 +330,22 @@ export function LinksSection() {
   ];
   if (mode === "create" && links.length === 0) return null;
   const empty = links.length === 0 && kids.length === 0 && !card.parentItemId;
+  if (empty)
+    return (
+      <EmptySection
+        label={t.title}
+        icon={SECTION_ICONS.links}
+        none={copy.shell.noneYet}
+      >
+        {canEdit ? <AddLinkButton quiet /> : null}
+      </EmptySection>
+    );
 
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.links}>
       <SectionHead title={t.title}>
         {canEdit ? slots.linksExtras : null}
       </SectionHead>
-      {empty ? (
-        <p className="m-0 mt-2 text-[13.5px] text-meta-foreground">{t.none}</p>
-      ) : null}
       {groups.map(([relation, title, hint]) => {
         const rows = links.filter((l) => l.relation === relation);
         if (rows.length === 0) return null;
@@ -357,21 +389,7 @@ export function LinksSection() {
       ) : null}
       {canEdit ? (
         <div className="mt-3">
-          <PanelPopover
-            open={open}
-            onOpenChange={setOpen}
-            width={380}
-            trigger={
-              <PopoverTrigger asChild>
-                <SmallBtn className="max-md:h-11" aria-haspopup="dialog">
-                  <Plus aria-hidden="true" className="size-[13px]" />
-                  {t.add}
-                </SmallBtn>
-              </PopoverTrigger>
-            }
-          >
-            <AddLinkPanel onClose={() => setOpen(false)} />
-          </PanelPopover>
+          <AddLinkButton />
         </div>
       ) : null}
     </PopSection>

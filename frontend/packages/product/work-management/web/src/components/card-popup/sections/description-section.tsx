@@ -24,6 +24,7 @@ import {
   PanelBtn,
   PanelPopover,
   PopSection,
+  EmptySection,
   SECTION_ICONS,
   SectionHead,
   SmallBtn,
@@ -505,6 +506,26 @@ export function DescriptionSection() {
   const text = card.descriptionMd?.trim() ?? "";
   const close = () => setEditing(false);
 
+  // Nothing written: one line, the invitation to write (a reader sees the folded section).
+  if (text === "" && !editing)
+    return canEdit ? (
+      <PopSection label={t.title} icon={SECTION_ICONS.description}>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="box-border flex h-9 w-full items-center rounded-lg border border-line-strong bg-popover px-3 text-left text-[14px] text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          {t.emptyHint}
+        </button>
+      </PopSection>
+    ) : (
+      <EmptySection
+        label={t.title}
+        icon={SECTION_ICONS.description}
+        none={copy.shell.noneYet}
+      />
+    );
+
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.description}>
       <SectionHead title={t.title}>
@@ -521,7 +542,7 @@ export function DescriptionSection() {
       ) : text !== "" ? (
         <div
           className={cn(
-            "mt-2 rounded-lg bg-background px-3 py-2.5 text-[14px] leading-[1.55]",
+            "mt-1.5 rounded-lg bg-background px-3 py-2 text-[14px] leading-[1.55]",
             canEdit && "cursor-text",
           )}
           onClick={
@@ -535,19 +556,7 @@ export function DescriptionSection() {
         >
           <Markdown text={text} workspaceId={card.workspaceId} />
         </div>
-      ) : canEdit ? (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="mt-2 box-border flex min-h-[60px] w-full items-start rounded-lg border border-line-strong bg-popover px-3 py-2.5 text-left text-[14px] leading-[1.55] text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          {t.emptyHint}
-        </button>
-      ) : (
-        <div className="mt-2 box-border min-h-[60px] rounded-lg border border-line-strong px-3 py-2.5 text-[14px] text-meta-foreground">
-          —
-        </div>
-      )}
+      ) : null}
     </PopSection>
   );
 }

@@ -41,6 +41,8 @@ import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import {
   IconBtn,
   PopSection,
+  EmptySection,
+  LinkBtn,
   SECTION_ICONS,
   SectionHead,
   SmallBtn,
@@ -256,6 +258,32 @@ export function AttachmentsSection() {
   const date = (value: string) =>
     formatDateTime(value, timeZone)?.replace(",", "") ?? "";
 
+  if (
+    !data.filesLoading &&
+    files.length === 0 &&
+    uploads.length === 0 &&
+    !data.fileNotice
+  )
+    return (
+      <EmptySection
+        label={t.title}
+        icon={SECTION_ICONS.attachments}
+        none={copy.shell.noneYet}
+      >
+        {canEdit ? (
+          <LinkBtn
+            className="max-md:h-11"
+            aria-haspopup="dialog"
+            aria-label={t.addLabel}
+            onClick={(event) => openPicker("attach", event.currentTarget)}
+          >
+            <Plus aria-hidden="true" className="size-[13px]" />
+            {t.add}
+          </LinkBtn>
+        ) : null}
+      </EmptySection>
+    );
+
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.attachments}>
       <SectionHead title={t.title}>
@@ -422,9 +450,6 @@ export function AttachmentsSection() {
               setConfirm(c);
             }}
           />
-        ) : null}
-        {!data.filesLoading && files.length === 0 && uploads.length === 0 ? (
-          <p className="m-0 text-[13.5px] text-meta-foreground">{t.empty}</p>
         ) : null}
       </div>
       <AlertDialog
