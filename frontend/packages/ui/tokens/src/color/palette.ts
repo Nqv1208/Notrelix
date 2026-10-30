@@ -615,6 +615,40 @@ export const statusChipTones: Record<ThemeAppearance, StatusChipTones> = {
   "high-contrast": statusChipLight,
 };
 
+// ─── Cover colours ───────────────────────────────────────────────────────
+
+/**
+ * The ten solid colours an Item cover can take (Kanban-CardPopup-Cover
+ * `.sw-*`). A cover is a decorative band behind the card, never the only
+ * carrier of meaning, so one fill serves every appearance.
+ */
+export const COVER_COLOR_IDS = [
+  "blue",
+  "teal",
+  "violet",
+  "amber",
+  "rose",
+  "gray",
+  "orange",
+  "green",
+  "indigo",
+  "red",
+] as const;
+export type CoverColorId = (typeof COVER_COLOR_IDS)[number];
+
+export const coverFills: Record<CoverColorId, Oklch> = {
+  blue: fromHex("#2F6FD0"),
+  teal: fromHex("#1F8A76"),
+  violet: fromHex("#7B4BD1"),
+  amber: fromHex("#C48A00"),
+  rose: fromHex("#D13A5B"),
+  gray: fromHex("#6B7482"),
+  orange: fromHex("#D9660E"),
+  green: fromHex("#2E9A5E"),
+  indigo: fromHex("#4650C8"),
+  red: fromHex("#D12F2F"),
+};
+
 // ─── Label tones ─────────────────────────────────────────────────────────
 
 /**
