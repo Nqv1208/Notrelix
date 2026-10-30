@@ -5066,7 +5066,7 @@
           "Identity.Auth"
         ],
         "summary": "Start OAuth login flow",
-        "description": "Redirects user to the OAuth provider's authorization endpoint.",
+        "description": "Redirects the browser to the OAuth provider's authorization endpoint. An unknown, disabled or unconfigured provider redirects to the sign-in page with error=identity.oauth.provider-unavailable instead; no redirect to a provider is made.",
         "operationId": "Identity.Auth.OAuth.Start",
         "parameters": [
           {
@@ -5094,16 +5094,6 @@
           },
           "302": {
             "description": "Found"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
-                }
-              }
-            }
           },
           "429": {
             "description": "Too Many Requests",

@@ -1357,7 +1357,7 @@ export interface paths {
         };
         /**
          * Start OAuth login flow
-         * @description Redirects user to the OAuth provider's authorization endpoint.
+         * @description Redirects the browser to the OAuth provider's authorization endpoint. An unknown, disabled or unconfigured provider redirects to the sign-in page with error=identity.oauth.provider-unavailable instead; no redirect to a provider is made.
          */
         get: operations["Identity.Auth.OAuth.Start"];
         put?: never;
@@ -11081,15 +11081,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
-                };
             };
             /** @description Too Many Requests */
             429: {

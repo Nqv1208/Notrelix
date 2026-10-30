@@ -1058,6 +1058,8 @@ FrontendFailureUrl   where a failed OAuth sign-in lands (/sign-in)
 FrontendMfaUrl       where an OAuth sign-in that needs a second factor lands (/sign-in?step=mfa)
 ```
 
+A start for an unknown, disabled or unconfigured provider redirects to `FrontendFailureUrl` with `error=identity.oauth.provider-unavailable`; the browser never lands on a JSON answer for it.
+
 The only client-influenced part is the person's return path. `returnUrl` on `GET /auth/oauth/{provider}/start`
 is validated (an internal root-relative path: one leading slash, no backslash, no control character,
 no percent-encoded variant of those, at most 512 characters) and stored in the OAuth state. The callback

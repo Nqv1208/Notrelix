@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Notrelix.Application.Features.Identity.OAuth;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Domain.Identity.OAuth;
@@ -38,11 +39,9 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             ["state"] = request.State,
         };
 
-        if (provider == OAuthProvider.Google)
+        if (OAuthPkce.IsUsedBy(provider))
         {
             queryParams["response_type"] = "code";
-            queryParams["access_type"] = "offline";
-            queryParams["prompt"] = "consent";
 
             if (!string.IsNullOrWhiteSpace(request.Nonce))
                 queryParams["nonce"] = request.Nonce;
@@ -52,6 +51,12 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
                 queryParams["code_challenge"] = request.CodeChallenge;
                 queryParams["code_challenge_method"] = request.CodeChallengeMethod ?? "S256";
             }
+        }
+
+        if (provider == OAuthProvider.Google)
+        {
+            queryParams["access_type"] = "offline";
+            queryParams["prompt"] = "consent";
         }
 
         if (provider == OAuthProvider.GitHub)
@@ -82,7 +87,7 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             new("redirect_uri", request.RedirectUri),
         };
 
-        if (provider == OAuthProvider.Google && !string.IsNullOrWhiteSpace(request.CodeVerifier))
+        if (OAuthPkce.IsUsedBy(provider) && !string.IsNullOrWhiteSpace(request.CodeVerifier))
         {
             formFields.Add(new("code_verifier", request.CodeVerifier));
         }

@@ -17,6 +17,9 @@ public sealed record StartOAuthLoginCommand
 public sealed class StartOAuthLoginCommandHandler
     : IRequestHandler<StartOAuthLoginCommand, Result<OAuthLoginStartResult>>
 {
+    /// <summary>The provider is unknown, disabled or not configured: no redirect to it is made.</summary>
+    public const string ProviderUnavailableCode = "identity.oauth.provider-unavailable";
+
     private readonly IOAuthOptionsProvider _optionsProvider;
     private readonly IOAuthProviderClient _providerClient;
     private readonly IOAuthStateStore _stateStore;
@@ -40,7 +43,10 @@ public sealed class StartOAuthLoginCommandHandler
     {
         if (!_optionsProvider.IsProviderEnabled(request.Provider))
         {
-            return Result<OAuthLoginStartResult>.Failure($"OAuth provider {request.Provider} is not enabled");
+            return Result<OAuthLoginStartResult>.Failure(new ApplicationError(
+                ProviderUnavailableCode,
+                $"OAuth provider {request.Provider} is not enabled.",
+                ApplicationErrorType.NotFound));
         }
 
         var state = GenerateCryptographicValue();
@@ -49,7 +55,7 @@ public sealed class StartOAuthLoginCommandHandler
         string? codeVerifier = null;
         string? codeChallenge = null;
 
-        if (request.Provider == OAuthProvider.Google)
+        if (OAuthPkce.IsUsedBy(request.Provider))
         {
             codeVerifier = GenerateCryptographicValue();
             codeChallenge = ComputeCodeChallenge(codeVerifier);
