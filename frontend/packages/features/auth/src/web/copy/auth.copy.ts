@@ -46,6 +46,8 @@ export const en = {
       "An account with that email already exists. Sign in with your email and password, then link the provider from your account's Security page.",
     providerEmailUnverified:
       "The provider hasn't verified that email yet, so it can't create an account. Verify it there, or use your email and password.",
+    sessionEnded:
+      "Your session ended, so you were signed out. Sign in again to pick up where you left off.",
     redirecting: "Taking you to {{provider}}…",
   },
   password: {
@@ -246,6 +248,8 @@ export const vi: AuthCopy = {
       "Đã có tài khoản dùng email này. Hãy đăng nhập bằng email và mật khẩu, rồi liên kết nhà cung cấp trong trang Bảo mật của tài khoản.",
     providerEmailUnverified:
       "Nhà cung cấp chưa xác minh email đó nên chưa tạo được tài khoản. Hãy xác minh ở đó, hoặc dùng email và mật khẩu.",
+    sessionEnded:
+      "Phiên của bạn đã kết thúc nên bạn đã bị đăng xuất. Hãy đăng nhập lại để tiếp tục.",
     redirecting: "Đang chuyển đến {{provider}}…",
   },
   password: {

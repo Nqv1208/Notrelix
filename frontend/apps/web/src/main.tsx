@@ -72,7 +72,7 @@ async function init(): Promise<void> {
       const redirectPath = sanitizeInternalReturnUrl(currentUrl);
       void router.navigate({
         to: "/sign-in",
-        search: { redirect: redirectPath },
+        search: { redirect: redirectPath, reason: "session-ended" },
         replace: true,
       });
     },

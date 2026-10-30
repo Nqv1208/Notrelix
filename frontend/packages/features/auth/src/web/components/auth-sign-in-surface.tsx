@@ -45,6 +45,8 @@ export type AuthSignInStep =
         /** The provider's verified email belongs to an account that is not linked to it: sign in with the password. */
         | "provider-email-in-use"
         | "provider-email-unverified"
+        /** The session the person was using ended: this page opened by itself. */
+        | "session-ended"
         | null;
     }
   | {
@@ -276,6 +278,14 @@ function CredentialsStep({
           ) : null}
           {emailError === "mfa-required" ? (
             <FieldError>{te.mfaRequired}</FieldError>
+          ) : null}
+          {emailError === "session-ended" ? (
+            <p
+              role="status"
+              className="m-0 text-item-small text-muted-foreground"
+            >
+              {te.sessionEnded}
+            </p>
           ) : null}
           {emailError && emailError in PROVIDER_ERROR_COPY ? (
             <FieldError>
