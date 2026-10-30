@@ -135,11 +135,6 @@ export interface KanbanViewProps {
   /** The route `groupBy` parameter: a field id (Status by default). */
   groupBy?: string;
   onGroupByChange?: (fieldId: string) => void;
-  /**
-   * Opens the selected item's own page (the sheet's "Mở toàn trang"). Without
-   * it the sheet shows that button disabled with the reason.
-   */
-  onOpenItemPage?: (itemId: string) => void;
 }
 
 function laneName(
@@ -186,7 +181,6 @@ export function KanbanView({
   onFilterChange,
   groupBy: groupByParam,
   onGroupByChange,
-  onOpenItemPage,
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
@@ -430,12 +424,6 @@ export function KanbanView({
     () => kanban.allLanes.flatMap((lane) => lane.cards),
     [kanban.allLanes],
   );
-  // K/J follow the lanes as shown: lane order, then card order.
-  const laneOrder = useMemo(
-    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
-    [kanban.lanes],
-  );
-
   const lanesReady = !kanban.isLoading && Boolean(board);
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -825,13 +813,6 @@ export function KanbanView({
       }
     : undefined;
 
-  const selectedIndex = selectedItemId ? laneOrder.indexOf(selectedItemId) : -1;
-  const previousId =
-    selectedIndex > 0 ? laneOrder[selectedIndex - 1] : undefined;
-  const nextId = selectedIndex >= 0 ? laneOrder[selectedIndex + 1] : undefined;
-  const step = (id: string | undefined) =>
-    id ? () => onSelectedItemChange?.(id, { replace: true }) : undefined;
-
   const linkCandidates: ItemSheetLinkCandidate[] = kanban.groups
     .flatMap((group) => group.cards)
     .filter((entry) => entry.id !== selectedItemId && !entry.parentItemId)
@@ -1138,10 +1119,7 @@ export function KanbanView({
             linkCandidates={linkCandidates}
             onClose={handleClosePanel}
             onRestoreFocus={restoreFocus}
-            onPrevious={step(previousId)}
-            onNext={step(nextId)}
             onCopyLink={handleCopyLink}
-            onOpenFullPage={onOpenItemPage}
             onMoveToGroup={handleMoveToGroup}
             onUpdateFieldValue={handleSheetFieldValue}
             onDuplicate={removal.requestDuplicate}
@@ -1162,10 +1140,7 @@ export interface SelectedItemProps {
   linkCandidates?: readonly ItemSheetLinkCandidate[];
   onClose: () => void;
   onRestoreFocus: (cardId: string) => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
   onCopyLink: (cardId: string) => void;
-  onOpenFullPage?: (cardId: string) => void;
   onMoveToGroup: (cardId: string, groupId: string) => void;
   onUpdateFieldValue: (
     payload: UpdateFieldValueInput,
@@ -1243,10 +1218,7 @@ function KanbanSelectedItemReady({
   linkCandidates,
   onClose,
   onCloseAutoFocus,
-  onPrevious,
-  onNext,
   onCopyLink,
-  onOpenFullPage,
   onMoveToGroup,
   onUpdateFieldValue,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
@@ -1384,10 +1356,7 @@ function KanbanSelectedItemReady({
             updateUpdate.mutate({ updateId, body }),
           onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
           onSelectTab: () => undefined,
-          onPrevious,
-          onNext,
           onCopyLink,
-          onOpenFullPage,
           onMoveToGroup,
           onDelete: removal.requestDelete,
           onMoveToBoard: removal.requestMove,

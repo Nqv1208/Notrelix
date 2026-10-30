@@ -755,12 +755,6 @@ export function MainTableView({
       );
   };
 
-  const order = groups.flatMap((group) => group.rows.map((row) => row.id));
-  const selectedIndex = selectedItemId ? order.indexOf(selectedItemId) : -1;
-  const previousId = selectedIndex > 0 ? order[selectedIndex - 1] : undefined;
-  const nextId = selectedIndex >= 0 ? order[selectedIndex + 1] : undefined;
-  const step = (id: string | undefined) =>
-    id ? () => onSelectedItemChange?.(id, { replace: true }) : undefined;
   const sheetGroups: ItemSheetGroup[] = orderedGroupIds;
 
   return (
@@ -1054,8 +1048,6 @@ export function MainTableView({
           groups={sheetGroups}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}
-          onPrevious={step(previousId)}
-          onNext={step(nextId)}
           onCopyLink={handleCopyLink}
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}

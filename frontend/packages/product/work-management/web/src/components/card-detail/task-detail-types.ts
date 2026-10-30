@@ -276,14 +276,8 @@ export interface TaskDetailCallbacks {
   readonly onUpdateUpdate: (updateId: string, body: string) => void;
   readonly onDeleteUpdate: (updateId: string) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
-  /** Previous item in lane order ("K"); omitted at the first item. */
-  readonly onPrevious?: () => void;
-  /** Next item in lane order ("J"); omitted at the last item. */
-  readonly onNext?: () => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;
-  /** Opens the item's own page ("Mở toàn trang"); the button is disabled without it. */
-  readonly onOpenFullPage?: (cardId: string) => void;
   /** Moves the item to another board group ("Chuyển nhóm"). */
   readonly onMoveToGroup?: (cardId: string, groupId: string) => void;
 }

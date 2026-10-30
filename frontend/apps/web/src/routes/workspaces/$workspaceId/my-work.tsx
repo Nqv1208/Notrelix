@@ -381,12 +381,6 @@ export function MyWorkPage() {
           .querySelector<HTMLElement>(`[data-item-id="${itemId}"] a`)
           ?.focus()
       }
-      onOpenFullPage={(itemId) =>
-        void navigate({
-          to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
-          params: { workspaceId, boardId: openItem.boardId, itemId },
-        } as never)
-      }
     />
   ) : undefined;
 

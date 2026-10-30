@@ -16,7 +16,6 @@ export interface BoardItemSheetHostProps {
   readonly onClose: () => void;
   /** Gives focus back to the opener as the sheet closes. */
   readonly onRestoreFocus: (itemId: string) => void;
-  readonly onOpenFullPage?: (itemId: string) => void;
   /** The signed-in member, for the approval buttons of the sheet. */
   readonly viewerUserId?: string | null;
 }
@@ -33,7 +32,6 @@ export function BoardItemSheetHost({
   itemId,
   onClose,
   onRestoreFocus,
-  onOpenFullPage,
   viewerUserId,
 }: BoardItemSheetHostProps) {
   const filter = useMemo(() => emptyKanbanFilter(), []);
@@ -63,7 +61,6 @@ export function BoardItemSheetHost({
         onClose={onClose}
         onRestoreFocus={onRestoreFocus}
         onCopyLink={sheet.onCopyLink}
-        onOpenFullPage={onOpenFullPage}
         onMoveToGroup={sheet.onMoveToGroup}
         onUpdateFieldValue={sheet.onUpdateFieldValue}
         onDuplicate={sheet.onDuplicate}

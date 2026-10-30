@@ -167,14 +167,6 @@ export function BoardPage() {
               groupBy={search.groupBy}
               onGroupByChange={handleGroupByChange}
               onViewChange={handleViewChange}
-              onOpenItemPage={(itemId) =>
-                itemId.startsWith(OPTIMISTIC_ITEM_ID_PREFIX)
-                  ? undefined
-                  : navigate({
-                      to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
-                      params: { workspaceId, boardId, itemId },
-                    })
-              }
             />
           </BoardViewSelectionProvider>
         </BoardLayoutShell>
