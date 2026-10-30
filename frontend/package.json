@@ -80,9 +80,9 @@
   "packageManager": "pnpm@10.0.0",
   "pnpm": {
     "overrides": {
-      "react": "^19.2.7",
-      "react-dom": "^19.2.7",
-      "react-native": "~0.81.5",
+      "react": "19.3.0",
+      "react-dom": "19.3.0",
+      "react-native": "0.88.1",
       "nanoid@3": "^3.3.18",
       "brace-expansion@1": "^1.1.20",
       "brace-expansion@2": "^2.1.6",
