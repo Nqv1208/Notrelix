@@ -6039,6 +6039,7 @@
           "Identity.Mfa"
         ],
         "summary": "Start MFA authenticator app enrollment",
+        "description": "Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409.",
         "operationId": "Identity.Mfa.StartEnrollment",
         "responses": {
           "200": {
@@ -6047,16 +6048,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -6071,8 +6062,28 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6099,6 +6110,7 @@
           "Identity.Mfa"
         ],
         "summary": "Verify MFA enrollment code and activate the authenticator",
+        "description": "A wrong code leaves the method pending. The recovery codes in the answer are shown once and never readable again.",
         "operationId": "Identity.Mfa.VerifyEnrollment",
         "requestBody": {
           "content": {
@@ -6169,6 +6181,7 @@
           "Identity.Mfa"
         ],
         "summary": "Get MFA status for the authenticated user",
+        "description": "The caller's own status only: whether a factor is on, its method and how many recovery codes are left. Never a secret or a code.",
         "operationId": "Identity.Mfa.Status",
         "responses": {
           "200": {
@@ -6183,6 +6196,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {

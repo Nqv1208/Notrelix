@@ -15,14 +15,18 @@ public static class VerifyMfaEnrollmentEndpoint
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Mfa")
             .WithSummary("Verify MFA enrollment code and activate the authenticator")
+            .WithDescription("A wrong code leaves the method pending. The recovery codes in the answer are shown once and never readable again.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
         return group;
     }
 
     private static async Task<IResult> HandleAsync(
         VerifyMfaEnrollmentRequest request,
+        HttpContext httpContext,
         ISender sender)
     {
+        // The answer holds recovery codes that are shown once: nothing may keep a copy.
+        httpContext.Response.Headers.CacheControl = "no-store";
         var command = new VerifyMfaEnrollmentCommand
         {
             MfaMethodId = request.MfaMethodId,

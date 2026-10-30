@@ -1636,7 +1636,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start MFA authenticator app enrollment */
+        /**
+         * Start MFA authenticator app enrollment
+         * @description Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409.
+         */
         post: operations["Identity.Mfa.StartEnrollment"];
         delete?: never;
         options?: never;
@@ -1653,7 +1656,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify MFA enrollment code and activate the authenticator */
+        /**
+         * Verify MFA enrollment code and activate the authenticator
+         * @description A wrong code leaves the method pending. The recovery codes in the answer are shown once and never readable again.
+         */
         post: operations["Identity.Mfa.VerifyEnrollment"];
         delete?: never;
         options?: never;
@@ -1668,7 +1674,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get MFA status for the authenticated user */
+        /**
+         * Get MFA status for the authenticated user
+         * @description The caller's own status only: whether a factor is on, its method and how many recovery codes are left. Never a secret or a code.
+         */
         get: operations["Identity.Mfa.Status"];
         put?: never;
         post?: never;
@@ -11784,15 +11793,6 @@ export interface operations {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"];
                 };
             };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
-                };
-            };
             /** @description Unauthorized */
             401: {
                 headers: {
@@ -11802,8 +11802,26 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11884,6 +11902,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
