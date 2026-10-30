@@ -376,19 +376,6 @@ export function createCardApi(client: NotrelixClient) {
       );
     },
 
-    /** Attaches a web link: `POST /board-items/{id}/attachments` with its URL. */
-    async addWebLink(
-      cardId: string,
-      link: { readonly url: string; readonly name: string },
-      options?: ApiRequestOptions,
-    ): Promise<void> {
-      await api.post<unknown>(
-        endpoints.boardItems.attachments(cardId),
-        { filename: link.name, url: link.url, source: "link" },
-        options ?? { headers: { "Idempotency-Key": crypto.randomUUID() } },
-      );
-    },
-
     /** The bytes of a stored file, read with the session (never a URL token). */
     downloadCardFile(
       cardId: string,

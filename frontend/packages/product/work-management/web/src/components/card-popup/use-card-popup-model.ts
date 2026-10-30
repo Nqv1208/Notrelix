@@ -10,6 +10,7 @@ import type {
 import {
   type CardPopupActions,
   type CardPopupMode,
+  type CardPopupReadOnly,
   type CardPopupModel,
   type CardPopupPicker,
   type CardPopupSlots,
@@ -29,6 +30,8 @@ export interface CardPopupModelInput {
   readonly now: Date;
   readonly timeZone?: string;
   readonly slots?: CardPopupSlots;
+  /** Forces the read-only reason (create mode while the request is out). */
+  readonly readOnly?: CardPopupReadOnly;
 }
 
 const NO_ACTIONS: CardPopupActions = {};
@@ -67,11 +70,11 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     attempt();
   }, []);
 
-  const readOnly = input.capabilities.frozen
+  const readOnly = input.readOnly ?? (input.capabilities.frozen
     ? "archived"
     : input.capabilities.canEditFields
       ? null
-      : "permission";
+      : "permission");
   const fields = useMemo(() => findItemFields(input.board), [input.board]);
 
   return {
