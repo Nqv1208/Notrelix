@@ -579,7 +579,7 @@ Board membership roles carry a level: Owner and Admin → Manager, Member → Ed
 
 Saved filters are Board children too (they resolve to their Board): a personal filter is its creator's alone, so another principal gets NotFound for it; a shared filter is visible to everyone who can view the Board and is changed by whoever holds the view-edit right (UpdateBoardView), while only its creator changes who sees it.
 
-Forms and form submissions are Board children too (they resolve to their Board): managing a form (questions, publish, close, delete, restore) and handling its submissions (process, reject, mark spam, delete) is Board management and needs Manager; creating a form is an Editor schema change; submitting to a published form needs the right to create Items on its Board, so a principal without Board access gets NotFound. Public (anonymous) submission is not wired (owner decision pending).
+Forms and form submissions are Board children too (they resolve to their Board): managing a form (questions, publish, close, delete, restore) is Board management and needs Manager; handling its submissions (list, process, reject, mark spam, delete) needs edit rights on the Board (UpdateItem, so an Editor), because a response can hold respondent data (D78.4, decided 2026-10-30); creating a form is an Editor schema change; submitting to a published form needs the right to create Items on its Board, so a principal without Board access gets NotFound. Public (anonymous) submission is not wired (owner decision pending).
 
 Not yet wired (their requests are unreachable today): Board relations.
 ---

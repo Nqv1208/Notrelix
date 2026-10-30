@@ -911,6 +911,8 @@ authoritative Item state
 
 Do not let the two silently diverge.
 
+**Handling submissions (decided 2026-10-30, D78.4).** Listing the submissions of a form, processing, rejecting, marking as spam and deleting one need edit rights on the Board (`UpdateItem`: an Editor, a Manager, a Workspace Owner), not `ViewBoard` and not `ManageBoard`, because a response can hold respondent data; a Viewer, a Commenter and an Observer are refused. Managing the form itself (questions, details, publish, close, delete, restore) stays Board management and needs Manager. Submitting still needs the right to create Items (`CreateItem`).
+
 ---
 
 # 59. Public forms
