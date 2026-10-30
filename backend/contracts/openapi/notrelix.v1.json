@@ -4172,6 +4172,7 @@
           "Governance.ResourcePermissions"
         ],
         "summary": "Grant a permission to a resource",
+        "description": "Grants a level to a subject. A subject that already holds the level is a no-op; changing the level of an existing grant must name its version (ExpectedVersion), and a stale or missing version answers 412.",
         "operationId": "Governance.ResourcePermissions.Grant",
         "parameters": [
           {
@@ -4209,6 +4210,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -22963,6 +22974,11 @@
             "type": "string",
             "nullable": true
           },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
           "expiresAt": {
             "type": "string",
             "format": "date-time",
@@ -26375,6 +26391,10 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -28518,6 +28538,11 @@
           "permissionId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "permissionVersion": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           },
           "memberRole": {

@@ -69,6 +69,20 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
 
         if (permission == null)
         {
+            // Revoked already (a retry, or two managers removing the same entry): nothing left to do.
+            // An id that never belonged to this resource in this workspace is still NotFound.
+            var alreadyRevoked = await _context.ResourcePermissions
+                .IgnoreQueryFilters()
+                .AnyAsync(p => p.Id == request.PermissionId &&
+                               p.WorkspaceId == workspaceId &&
+                               p.ResourceKind == kind &&
+                               p.ResourceId == request.ResourceId &&
+                               p.DeletedAt != null, cancellationToken);
+            if (alreadyRevoked)
+            {
+                return Result.Success();
+            }
+
             throw new NotFoundException(nameof(ResourcePermission), request.PermissionId);
         }
 

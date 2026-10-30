@@ -1069,7 +1069,10 @@ export interface paths {
         /** Get permissions for a resource */
         get: operations["Governance.ResourcePermissions.Get"];
         put?: never;
-        /** Grant a permission to a resource */
+        /**
+         * Grant a permission to a resource
+         * @description Grants a level to a subject. A subject that already holds the level is a no-op; changing the level of an existing grant must name its version (ExpectedVersion), and a stale or missing version answers 412.
+         */
         post: operations["Governance.ResourcePermissions.Grant"];
         delete?: never;
         options?: never;
@@ -5678,6 +5681,8 @@ export interface components {
             /** Format: uuid */
             subjectId?: string;
             level?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
             /** Format: date-time */
             expiresAt?: string | null;
         };
@@ -6821,6 +6826,8 @@ export interface components {
             isRevoked?: boolean;
             /** Format: date-time */
             revokedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -7552,6 +7559,8 @@ export interface components {
             source?: string | null;
             /** Format: uuid */
             permissionId?: string | null;
+            /** Format: int64 */
+            permissionVersion?: number | null;
             memberRole?: string | null;
             spaceRole?: string | null;
             outsideSpace?: boolean;
@@ -10470,6 +10479,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

@@ -10,5 +10,6 @@ public record ResourcePermissionDto(
     string Level,
     Guid? GrantedBy,
     bool IsRevoked,
-    DateTimeOffset? RevokedAt
+    DateTimeOffset? RevokedAt,
+    long Version
 );

@@ -49,6 +49,7 @@ public sealed record BoardSharing(
 /// <param name="LevelCapped">The stored level is higher than <paramref name="Level"/> because a Guest is capped (GOV-030).</param>
 /// <param name="Source"><c>grant</c>, <c>member</c> or <c>both</c>.</param>
 /// <param name="PermissionId">The explicit grant to revoke, when there is one.</param>
+/// <param name="PermissionVersion">The version of that grant, which a change of its level must name.</param>
 /// <param name="MemberRole">The Board role name, when the person is a Board member.</param>
 /// <param name="Owner">The person holds the Owner role of the Board.</param>
 /// <param name="SpaceRole"><c>Admin</c>, <c>Member</c> or <c>Viewer</c> when the Space reaches the person.</param>
@@ -62,6 +63,7 @@ public sealed record BoardSharingEntry(
     bool LevelCapped,
     string Source,
     Guid? PermissionId,
+    long? PermissionVersion,
     string? MemberRole,
     bool Owner,
     bool You,

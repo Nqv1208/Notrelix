@@ -11,7 +11,8 @@ public record GrantResourcePermissionCommand(
     string SubjectType,
     Guid SubjectId,
     string Level,
-    DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequireGrantPermission, IRequirePermissionTarget, IWriteRequest
+    DateTime? ExpiresAt = null,
+    long? ExpectedVersion = null) : ICommand<Result<ResourcePermissionDto>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequireGrantPermission, IRequirePermissionTarget, IWriteRequest
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 
@@ -113,6 +114,16 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             }
             else
             {
+                // Two managers changing one grant at once: the second names a version that is gone.
+                if (request.ExpectedVersion != existingPermission.Version)
+                {
+                    throw new PreconditionFailedException(
+                        "The access entry changed since it was read. Reload and try again.",
+                        "governance.permission.version-conflict",
+                        request.ExpectedVersion,
+                        existingPermission.Version);
+                }
+
                 var previous = existingPermission.Level;
                 previousLevel = AccessLevels.OfRank((int)previous);
                 existingPermission.ChangeLevel(level, actorId, now);
@@ -174,7 +185,8 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         permission.Level.ToString(),
         permission.CreatedBy,
         permission.IsDeleted,
-        permission.DeletedAt);
+        permission.DeletedAt,
+        permission.Version);
 
     private const string BoardResourceKind = "work-management.board";
 
