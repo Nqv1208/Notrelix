@@ -180,8 +180,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-H12 | Read one outbox message | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Detail fields not reviewed for payload or secret exposure; no test of the 404. |
 | UC-GOV-H13 | Workspace administration console | H | Workspace Owner, Admin | Part | Part | Part | No | BLOCKED | Owner decisions 1-9 of the admin plane (roadmap AD-1) are pending. Needed: what the console contains, who may open each area, whether ... |
 | UC-GOV-H14 | Account administration console | H | Account Owner, Admin | Part | Part | Part | No | BLOCKED | Same pending owner decisions as UC-GOV-H13; Accounts owns the content, Governance only the access rule. |
-| UC-GOV-I01 | Every endpoint declares its authorization | I | Developer, CI | Yes | No | No | No | HARDENING | None known beyond UC-GOV-G02's wrong action. |
-| UC-GOV-I02 | Tenant isolation holds for governance data | I | Developer, CI | Yes | No | No | Part | HARDENING | Share-link and access-change tables have no named cross-tenant negative test in the Governance folder. |
+| UC-GOV-I01 | Every endpoint declares its authorization | I | Developer, CI | Yes | No | No | No | HARDENING | tests and owner check |
+| UC-GOV-I02 | Tenant isolation holds for governance data | I | Developer, CI | Yes | No | No | Part | HARDENING | tests and owner check |
 | UC-GOV-I03 | Migrate the action and resource vocabulary safely | I | Developer | Part | No | No | No | DEFINED | No rehearsal test of a vocabulary migration. |
 
 # 3. Use cases
@@ -1210,7 +1210,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §5, §107](../../product/governance.md) GOV-001; WGREQ090, WGREQ135, WGREQ188.
 - Acceptance: Given an endpoint mapped with plain `MapGet`, When tests run, Then the architecture suite fails.
 - Evidence: BE `backend/src/Notrelix.API/Endpoints/EndpointMappingExtensions.cs` · Tests `backend/tests/Notrelix.Architecture.Tests/EndpointContracts/ApiArchitectureTests.cs` · Real e2e none · Design none
-- State: HARDENING - None known beyond UC-GOV-G02's wrong action.
+- State: HARDENING. Nothing left to build in source: every Governance route uses a mapping helper (`MapResourceGet`, `MapResourcePost`, `MapResourceDelete`, and `MapAdminGet` for the outbox routes). Missing: tests and owner check (the architecture inventory is the proof). The wrong action on share-link disable (`ManageWorkspace` on a `governance.share-link` resource) belongs to UC-GOV-G02; changing it would let a Board manager disable links, which widens who may act, so it waits for an owner decision.
 
 ### UC-GOV-I02 Tenant isolation holds for governance data
 - Capability: I Architecture coverage for resource kinds and actions (team spec, Governance list)
@@ -1224,7 +1224,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §61, §100](../../product/governance.md); WGREQ129-WGREQ130, WGREQ152, WGREQ187; certification P2B-CERT-009.
 - Acceptance: Given workspace W1 context, When W2 permission rows are queried, Then none returned.
 - Evidence: BE `Notrelix.Infrastructure/Data/Configurations/Governance` · Tests `backend/tests/Notrelix.Architecture.Tests/Authorization/RlsArchitectureTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/ApiTokenScopeTests.cs` · Real e2e `frontend/e2e/real/workspace-isolation.real.e2e.spec.ts` · Design none
-- State: HARDENING - Share-link and access-change tables have no named cross-tenant negative test in the Governance folder.
+- State: HARDENING. Nothing left to build in source: `007_policies_platform.sql` applies the scoped business policies to `share_links` and `resource_access_changes`, as it does to the permission tables. Missing: tests and owner check (named cross-tenant negative tests for share links and access changes in the Governance folder).
 
 ### UC-GOV-I03 Migrate the action and resource vocabulary safely
 - Capability: I Architecture coverage for resource kinds and actions (team spec, Governance list)
