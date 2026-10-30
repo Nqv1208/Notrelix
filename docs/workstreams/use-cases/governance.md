@@ -166,7 +166,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-G08 | Copy the resource address (a locator, not a share link) | G | Any viewer | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
 | UC-GOV-G09 | Sharing is never transitive | G | Server | Part | No | No | No | DEFINED | No test pins non-transitivity. |
 | UC-GOV-G10 | Allow or stop guest invitations for the workspace (enterprise baseline) | G | Workspace Owner, Admin | No | Part | Part | No | DEFINED | New workspace setting, new check in UC-GOV-D07. |
-| UC-GOV-H01 | View Sharing and security of the workspace | H | Workspace Owner, Admin | Yes | Yes | Yes | No | INTEGRATING | No real e2e; no 1-px diff; endpoint owned by Workspaces. |
+| UC-GOV-H01 | View Sharing and security of the workspace | H | Workspace Owner, Admin | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
 | UC-GOV-H02 | View the audit log of a workspace | H | Workspace Owner, Admin | No | Part | No | No | DEFINED | No endpoint, screen or artboard. Frontend service is dead code. |
 | UC-GOV-H03 | Export the audit log | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H04 | Audit reads of the audit log | H | System | No | No | No | No | DEFINED | Depends on UC-GOV-H02. |
@@ -1012,7 +1012,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §94-§95, §44.3](../../product/governance.md) GOV-009, GOV-032.
 - Acceptance: Given an Admin, When opening, Then the numbers match the data. Given a Member, Then 403.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/security-ext` (Workspaces.Settings.GetWorkspaceSecurityExt) · FE `.../routes/workspaces/$workspaceId/security.tsx`, `use-teams-ext.ts` · Tests `frontend/e2e/mock/workspace-teams.mock.e2e.spec.ts` · Real e2e none · Design `Final-Teams`, `Final-Settings`
-- State: INTEGRATING - No real e2e; no 1-px diff; endpoint owned by Workspaces.
+- State: INTEGRATING. Built end to end (the Sharing and security page reads `security-ext`, shows links on or off with the date, guests and the company domain; the endpoint is Workspaces'); nothing left to build here. Missing: tests and owner check (a real e2e, a 1 px check against Final-Teams and Final-Settings, the page only runs against the mock backend in e2e).
 
 ### UC-GOV-H02 View the audit log of a workspace
 - Capability: H Governance administration UI (team spec, Governance list)
