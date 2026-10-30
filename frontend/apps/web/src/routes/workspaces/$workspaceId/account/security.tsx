@@ -202,6 +202,7 @@ export function AccountSecurityPage() {
     async (purpose: "disable" | "renew" | "others") => {
       setActionError(false);
       setStepError(null);
+      setBusy(true);
       try {
         const requirement = await service.getStepUpRequirement(
           PURPOSE[purpose],
@@ -214,6 +215,8 @@ export function AccountSecurityPage() {
         });
       } catch {
         setActionError(true);
+      } finally {
+        setBusy(false);
       }
     },
     [service],
@@ -227,11 +230,15 @@ export function AccountSecurityPage() {
       }
       setActionError(false);
       setStepError(null);
+      // One start at a time: a second one would replace the secret the first one shows.
+      setBusy(true);
       try {
         const enrollment = await service.startTwoFactor();
         setStep({ kind: "enroll", ...enrollment });
       } catch {
         setActionError(true);
+      } finally {
+        setBusy(false);
       }
     },
     [beginStepUp, service],
@@ -309,7 +316,11 @@ export function AccountSecurityPage() {
         setBusy(true);
         setStepError(null);
         try {
-          const codes = await service.verifyTwoFactor(step.methodId, code);
+          // Authenticator apps group the digits ("123 456"); the producer wants six.
+          const codes = await service.verifyTwoFactor(
+            step.methodId,
+            code.replace(/\s+/g, ""),
+          );
           setStep({ kind: "codes", codes });
           await invalidate();
           showNotice(copy.twoFactor.turnedOn);

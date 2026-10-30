@@ -264,7 +264,17 @@ function FlowPanel({
 }) {
   const [value, setValue] = React.useState("");
   const inputId = React.useId();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const doneRef = React.useRef<HTMLButtonElement>(null);
   const t = copy.flow;
+  // The step opens in place: focus lands on what the person does next (the code field, or the
+  // button that confirms the backup codes were saved).
+  const focusKey =
+    flow.kind === "stepUp" ? `stepUp-${flow.purpose}` : flow.kind;
+  const confirmsCodes = flow.kind === "codes";
+  React.useEffect(() => {
+    (confirmsCodes ? doneRef : inputRef).current?.focus();
+  }, [focusKey, confirmsCodes]);
   if (flow.kind === "codes")
     return (
       <section
@@ -283,6 +293,7 @@ function FlowPanel({
           ))}
         </ul>
         <button
+          ref={doneRef}
           type="button"
           onClick={onClose}
           className={cn(BTN_SM, FOCUS, "mt-3")}
@@ -359,6 +370,7 @@ function FlowPanel({
             {usesPassword ? t.passwordLabel : t.codeLabel}
           </label>
           <input
+            ref={inputRef}
             id={inputId}
             type={usesPassword ? "password" : "text"}
             autoComplete={usesPassword ? "current-password" : "one-time-code"}

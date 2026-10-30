@@ -20,6 +20,8 @@ import { notFound, ok } from "../../transport/create-response";
 import { identityProblem } from "../identity/auth-flow.handlers";
 
 const PAGE = 20;
+/** The producer's `MfaPolicy.RecoveryCodeCount`. */
+const RECOVERY_CODE_COUNT = 8;
 const MAX_STEP_UP_FAILURES = 5;
 const STEP_UP_LOCK_SECONDS = 60;
 const PURPOSES = [
@@ -37,7 +39,7 @@ function securityOf(store: MockStore): SecurityDetails {
 
 const recoveryCodes = () =>
   Array.from(
-    { length: 10 },
+    { length: RECOVERY_CODE_COUNT },
     (_, index) =>
       `RC${String(index + 1).padStart(2, "0")}-MOCK-${1000 + index}`,
   );
@@ -203,6 +205,12 @@ export const accountSecurityOperations = [
     route: "/auth/mfa/enrollment/start",
     async handle({ store }) {
       const security = securityOf(store);
+      if (security.twoFactorEnabled)
+        return identityProblem(
+          409,
+          "identity.mfa.already-enabled",
+          "MFA is already enabled for this account. Disable it before re-enrolling.",
+        );
       security.pendingEnrollment = "mock-method-1";
       return ok({
         mfaMethodId: security.pendingEnrollment,
@@ -228,18 +236,19 @@ export const accountSecurityOperations = [
       )
         return identityProblem(
           400,
-          "identity.mfa.challenge-invalid",
-          "Start the enrollment again.",
+          "identity.mfa.enrollment-not-found",
+          "MFA enrollment not found or already completed.",
         );
-      if ((body?.code ?? "").replace(/\s/g, "") !== MOCK_AUTH.otpCode)
+      // The producer takes exactly six digits; a wrong code leaves the method pending.
+      if (body?.code !== MOCK_AUTH.otpCode)
         return identityProblem(
           400,
-          "identity.mfa.invalid-code",
-          "The code is not right.",
+          "identity.mfa.invalid-verification-code",
+          "Invalid verification code.",
         );
       security.pendingEnrollment = null;
       security.twoFactorEnabled = true;
-      security.recoveryCodesLeft = 10;
+      security.recoveryCodesLeft = RECOVERY_CODE_COUNT;
       security.activity.unshift({
         id: `activity-${security.activity.length + 1}`,
         type: "MfaEnabled",
@@ -462,7 +471,7 @@ export const accountSecurityOperations = [
           "Confirm first.",
         );
       security.proofs.delete(body?.stepUpToken ?? "");
-      security.recoveryCodesLeft = 10;
+      security.recoveryCodesLeft = RECOVERY_CODE_COUNT;
       return ok({
         mfaMethodId: "mock-method-1",
         recoveryCodes: recoveryCodes(),
