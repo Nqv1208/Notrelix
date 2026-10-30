@@ -43,6 +43,35 @@ export interface ConvertedTaskDto {
   readonly title: string;
 }
 
+/** The write of a conversion that failed; the work item exists once it is past `item`. */
+export type ConvertTodoStep = "item" | "link" | "line";
+
+class ConvertTodoFailed extends Error {
+  constructor(
+    readonly step: ConvertTodoStep,
+    readonly cause: unknown,
+  ) {
+    super(`Converting the line failed at the ${step} step.`);
+    this.name = "ConvertTodoFailed";
+  }
+}
+
+/** The step a conversion failed at, or `null` when the error is not one of its steps. */
+export function convertTodoFailedStep(error: unknown): ConvertTodoStep | null {
+  return error instanceof ConvertTodoFailed ? error.step : null;
+}
+
+async function step<T>(
+  name: ConvertTodoStep,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    throw new ConvertTodoFailed(name, error);
+  }
+}
+
 export type PagePermissionLevel =
   PagePermissionsDto["members"][number]["level"];
 
@@ -140,33 +169,51 @@ export function createPageExtrasApi(
      * Turns a checklist line into a work item: creates the item in the chosen
      * board group (`WorkManagement.BoardItems.Create`), attaches the page to it
      * (`LinkPage`) and marks the line with the item (`UpdateBlock`). Each step is
-     * its own write; a failure after the item exists leaves the line unlinked, and
-     * a retry creates another item.
+     * its own write and a failure names its step (`ConvertTodoFailed`). The
+     * caller keeps `attempt` for a retry of the same conversion: the item and the
+     * link are sent under keys derived from it, so a retry answers the item that
+     * already exists instead of creating another, and a line that already holds
+     * the chip counts as done.
      */
     async convertTodo(
       pageId: string,
       block: Block,
       target: ConvertTodoTarget,
+      attempt: string,
     ): Promise<ConvertedTaskDto> {
       const title = (block.properties.text ?? "").trim();
-      const created = await api.post<{ id: string }>(
-        endpoints.boardItems.create(target.boardId),
-        { groupId: target.groupId, title },
-        QUIET,
+      const created = await step("item", () =>
+        api.post<{ id: string }>(
+          endpoints.boardItems.create(target.boardId),
+          { groupId: target.groupId, title },
+          { ...QUIET, idempotencyKey: `${attempt}:item` },
+        ),
       );
-      await api.post<unknown>(
-        endpoints.boardItems.linkPage(created.id),
-        { pageId },
-        QUIET,
+      await step("link", () =>
+        api.post<unknown>(
+          endpoints.boardItems.linkPage(created.id),
+          { pageId },
+          { ...QUIET, idempotencyKey: `${attempt}:link` },
+        ),
       );
       // The line becomes a chip of the task: a `[[task:id]]` run, which the
       // producer stores as plain text of the block.
-      await api.patch<unknown>(endpoints.blocks.detail(pageId, block.id), {
-        expectedVersion: block.version,
-        content: {
-          v: 1,
-          runs: [{ text: `[[task:${created.id}]]`, marks: [] }],
-        },
+      const chip = `[[task:${created.id}]]`;
+      await step("line", async () => {
+        try {
+          await api.patch<unknown>(endpoints.blocks.detail(pageId, block.id), {
+            expectedVersion: block.version,
+            content: { v: 1, runs: [{ text: chip, marks: [] }] },
+          });
+        } catch (error) {
+          if ((error as { status?: unknown }).status !== 412) throw error;
+          // A retry after the line was already marked: the stored line has the chip.
+          const stored = await api.get<{ id: string }[]>(
+            endpoints.pages.blocks(pageId),
+          );
+          const line = stored.find((candidate) => candidate.id === block.id);
+          if (!line || !JSON.stringify(line).includes(chip)) throw error;
+        }
       });
       return { id: created.id, title };
     },

@@ -757,7 +757,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a block */
+        /** Delete a block and the blocks under it against the version read */
         delete: operations["Documents.Blocks.DeleteBlock"];
         options?: never;
         head?: never;
@@ -9820,7 +9820,9 @@ export interface operations {
     };
     "Documents.Blocks.DeleteBlock": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -9836,7 +9838,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

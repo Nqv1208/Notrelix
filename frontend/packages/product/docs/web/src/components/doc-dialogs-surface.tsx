@@ -598,7 +598,11 @@ export function DocConvertTaskDialogSurface({
             role="alert"
             className="m-0 text-crumb font-semibold text-danger-text"
           >
-            {c.failed}
+            {convert.failedStep === "link"
+              ? c.failedLink
+              : convert.failedStep === "line"
+                ? c.failedLine
+                : c.failed}
           </p>
         ) : null}
         <div className="flex items-center justify-end gap-2">

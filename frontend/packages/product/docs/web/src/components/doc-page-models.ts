@@ -344,6 +344,11 @@ export interface DocConvertView {
   readonly lineText: string;
   readonly busy: boolean;
   readonly failed: boolean;
+  /**
+   * The step a failed conversion stopped at; past `item` the task exists and
+   * asking again finishes the conversion instead of making another task.
+   */
+  readonly failedStep?: "item" | "link" | "line" | null;
 }
 
 /** What the history dialogs show while a write runs or after it failed. */

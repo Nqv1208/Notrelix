@@ -79,8 +79,18 @@ export function createBlockApi(
       return mapBlock(dto, 0);
     },
 
-    async delete(pageId: string, blockId: string): Promise<void> {
-      await api.delete<void>(endpoints.blocks.detail(pageId, blockId));
+    /**
+     * `Documents.Blocks.DeleteBlock` deletes the block and every block under
+     * it, against the version the caller read (a stale one answers 412).
+     */
+    async delete(
+      pageId: string,
+      blockId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.blocks.detail(pageId, blockId)}?expectedVersion=${expectedVersion}`,
+      );
     },
 
     /**

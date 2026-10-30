@@ -390,12 +390,25 @@ export const blocksOperations = [
     } as any,
     method: "DELETE",
     route: "/pages/:pageId/blocks/:blockId",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const existing = store
         .getPageBlocks(params.pageId)
         .find((b) => b.id === params.blockId);
       if (!existing) return notFound("Block not found");
-      store.deleteBlock(params.blockId);
+      // Like the producer: against the version read, and the blocks under it go too.
+      const expected = Number(query.expectedVersion);
+      if (!(expected > 0)) {
+        return invalid("expectedVersion is required.") as MockHttpResult<void>;
+      }
+      if (expected !== existing.version) {
+        return versionConflict(existing) as MockHttpResult<void>;
+      }
+      for (const id of subtree(
+        store.getPageBlocks(params.pageId),
+        existing.id,
+      )) {
+        store.deleteBlock(id);
+      }
       return ok<void>(undefined);
     },
   }),

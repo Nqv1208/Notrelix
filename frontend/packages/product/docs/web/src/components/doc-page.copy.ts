@@ -472,6 +472,10 @@ export const vi = {
     busy: "Đang tạo…",
     cancel: "Huỷ",
     failed: "Chưa tạo được việc. Thử lại.",
+    failedLink:
+      "Đã tạo việc nhưng chưa gắn được trang vào việc. Thử lại, sẽ không tạo thêm việc.",
+    failedLine:
+      "Đã tạo việc và gắn trang nhưng chưa đổi được dòng. Thử lại, sẽ không tạo thêm việc.",
   },
   slash: {
     label: "Chèn khối",
@@ -1239,6 +1243,10 @@ export const en: DocPageCopy = {
     busy: "Creating…",
     cancel: "Cancel",
     failed: "The task was not created. Try again.",
+    failedLink:
+      "The task was created, but the page was not linked to it. Try again; no second task is made.",
+    failedLine:
+      "The task was created and linked, but the line was not updated. Try again; no second task is made.",
   },
   slash: {
     label: "Insert block",

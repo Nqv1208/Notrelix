@@ -25,6 +25,7 @@ import {
   createUsePageBlocks,
   createUseArchivePage,
   createUseMovePage,
+  convertTodoFailedStep,
   createUseConvertTodo,
   createUseDeletePage,
   createUsePageBacklinks,
@@ -1682,6 +1683,9 @@ export function createDocPageScreen({
               : "",
           busy: convertTodo.isPending,
           failed: convertTodo.isError,
+          failedStep: convertTodo.isError
+            ? convertTodoFailedStep(convertTodo.error)
+            : null,
         }}
         readOnly={!host.canEdit}
         canComment

@@ -90,8 +90,24 @@ export function createUseDocEditor(
         void refreshBlocks();
       },
     });
+    // The block goes with the blocks under it, against the version this page
+    // last read. A block that is already gone, or changed meanwhile, is not a
+    // failed save: the page shows what is stored (409/412 here would only
+    // repeat the same stale request).
     const remove = useMutation({
-      mutationFn: (blockId: string) => blockApi.delete(pageId, blockId),
+      mutationFn: async (blockId: string) => {
+        const version =
+          cachedVersion(blockId) ??
+          (await blockApi.getList(pageId)).find((block) => block.id === blockId)
+            ?.version;
+        if (version === undefined) return;
+        try {
+          await blockApi.delete(pageId, blockId, version);
+        } catch (error) {
+          const status = (error as { status?: unknown }).status;
+          if (status !== 404 && status !== 412) throw error;
+        }
+      },
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
