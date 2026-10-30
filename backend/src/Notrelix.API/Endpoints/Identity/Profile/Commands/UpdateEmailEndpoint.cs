@@ -10,9 +10,10 @@ public static class UpdateEmailEndpoint
         group.MapAuthenticatedPost("/email", HandleAsync)
             .WithName("Identity.Profile.UpdateEmail")
             .Produces<UpdateEmailResultDto>(StatusCodes.Status200OK, "application/json")
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status409Conflict)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed)
             .WithTags("Identity.Profile")
-            .WithSummary("Update the current user's email address");
+            .WithSummary("Update the current user's email address")
+            .WithDescription("Requires a single-use step-up proof for the ChangeSecurityIdentity purpose when the address changes.");
         return group;
     }
 

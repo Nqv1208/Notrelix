@@ -2,11 +2,17 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Registration.Ports;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail;
 
-public sealed record UpdateEmailCommand(string Email)
+/// <summary>
+/// <paramref name="StepUpToken"/> is the single-use proof of purpose ChangeSecurityIdentity: the sign-in
+/// email is a recovery identifier, so a session alone may not change it.
+/// </summary>
+public sealed record UpdateEmailCommand(string Email, string StepUpToken = "")
     : ICommand<Result<UpdateEmailResultDto>>,
       IAuthenticatedRequest,
       IWriteRequest,
@@ -23,6 +29,7 @@ public sealed class UpdateEmailCommandHandler
     private readonly ICurrentRequestContext _requestContext;
     private readonly IEmailVerificationTokenIssuer _tokenIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ISecurityStepUpService _stepUpService;
     private readonly IEmailRegistrationProbe? _registrationProbe;
 
     public UpdateEmailCommandHandler(
@@ -30,8 +37,10 @@ public sealed class UpdateEmailCommandHandler
         ICurrentRequestContext requestContext,
         IEmailVerificationTokenIssuer tokenIssuer,
         IDateTimeProvider dateTimeProvider,
+        ISecurityStepUpService stepUpService,
         IEmailRegistrationProbe? registrationProbe = null)
     {
+        _stepUpService = stepUpService;
         _registrationProbe = registrationProbe;
         _identityContext = identityContext;
         _requestContext = requestContext;
@@ -52,6 +61,15 @@ public sealed class UpdateEmailCommandHandler
             return Result<UpdateEmailResultDto>.Failure(SessionErrors.SessionUserMissing);
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+        // Proof first: a session without it learns nothing, not even whether an address is taken.
+        if (normalizedEmail != user.NormalizedEmail)
+        {
+            var stepUp = await ConsumeStepUpAsync(user.Id, request.StepUpToken, cancellationToken);
+            if (!stepUp.Succeeded)
+                return Result<UpdateEmailResultDto>.Failure(stepUp.TypedErrors);
+        }
+
         // Another person's row is not visible to this user's own-row access: the boolean probe answers for
         // every address. The caller's own current address never blocks (it is not "in use by someone else").
         var emailInUse = normalizedEmail != user.NormalizedEmail
@@ -73,5 +91,19 @@ public sealed class UpdateEmailCommandHandler
             new UpdateEmailResultDto(
                 EmailConfirmed: false,
                 SessionRefreshRequired: true));
+    }
+
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(stepUpToken) || _requestContext.SessionId is not { } sessionId)
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        return await _stepUpService.ConsumeAsync(
+            stepUpToken, userId, sessionId, StepUpPurpose.ChangeSecurityIdentity, cancellationToken);
     }
 }

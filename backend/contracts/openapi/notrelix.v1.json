@@ -6427,6 +6427,7 @@
           "Identity.Profile"
         ],
         "summary": "Update the current user's email address",
+        "description": "Requires a single-use step-up proof for the ChangeSecurityIdentity purpose when the address changes.",
         "operationId": "Identity.Profile.UpdateEmail",
         "requestBody": {
           "content": {
@@ -6471,6 +6472,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -26616,6 +26627,10 @@
         "type": "object",
         "properties": {
           "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "stepUpToken": {
             "type": "string",
             "nullable": true
           }

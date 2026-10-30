@@ -1753,7 +1753,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Update the current user's email address */
+        /**
+         * Update the current user's email address
+         * @description Requires a single-use step-up proof for the ChangeSecurityIdentity purpose when the address changes.
+         */
         post: operations["Identity.Profile.UpdateEmail"];
         delete?: never;
         options?: never;
@@ -6903,6 +6906,7 @@ export interface components {
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
             email?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
             emailConfirmed?: boolean;
@@ -12104,6 +12108,15 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
