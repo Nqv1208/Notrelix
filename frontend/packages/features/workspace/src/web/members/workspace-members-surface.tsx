@@ -552,10 +552,10 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
   const confirmText = (() => {
     if (!confirmation) return null;
     if (confirmation.type === "revoke") {
-      const values = { email: confirmation.invitation.email };
+      const values = { email: confirmation.invitation.email, workspace };
       return {
         title: formatCopy(copy.confirm.revokeTitle, values),
-        description: copy.confirm.revokeDescription,
+        description: formatCopy(copy.confirm.revokeDescription, values),
         action: copy.confirm.revokeAction,
       };
     }

@@ -77,7 +77,7 @@ export const en = {
     suspendAction: "Suspend access",
     revokeTitle: "Revoke the invitation to {{email}}?",
     revokeDescription:
-      "The invitation link stops working. You can send a new invitation later.",
+      "The invitation link to {{workspace}} stops working. You can send a new invitation later.",
     revokeAction: "Revoke invitation",
     cancel: "Cancel",
   },
@@ -229,7 +229,7 @@ export const vi: WorkspaceMembersCopy = {
     suspendAction: "Tạm ngưng truy cập",
     revokeTitle: "Thu hồi lời mời gửi {{email}}?",
     revokeDescription:
-      "Liên kết mời sẽ ngừng hoạt động. Bạn có thể gửi lời mời mới sau.",
+      "Liên kết mời vào {{workspace}} sẽ ngừng hoạt động. Bạn có thể gửi lời mời mới sau.",
     revokeAction: "Thu hồi lời mời",
     cancel: "Hủy",
   },
