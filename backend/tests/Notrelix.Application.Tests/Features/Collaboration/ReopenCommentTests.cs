@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
+using Notrelix.Application.Features.Collaboration.Comments.Services;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Collaboration.Comments.Events;
 
@@ -19,11 +20,13 @@ public class ReopenCommentTests
     private readonly Mock<ICollaborationDbContext> _context = new();
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Mock<ICommentTargetAccess> _access = new();
 
     public ReopenCommentTests()
     {
         _user.Setup(u => u.UserId).Returns(_me);
         _clock.Setup(c => c.UtcNow).Returns(Now);
+        _access.Setup(a => a.HasAsync(It.IsAny<ResourceRef>(), It.IsAny<CommentTargetRight>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _context.Setup(c => c.Comments).Returns(TestDbSet.Create(_rows).Object);
     }
 
@@ -36,7 +39,7 @@ public class ReopenCommentTests
     }
 
     private Task<Result> Reopen(Guid id) =>
-        new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object)
+        new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object)
             .Handle(new ReopenCommentCommand(id), CancellationToken.None);
 
     [Fact]

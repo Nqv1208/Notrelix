@@ -1165,6 +1165,15 @@
         "operationId": "Collaboration.Attachments.Delete",
         "parameters": [
           {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "attachmentId",
             "in": "path",
             "required": true,

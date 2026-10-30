@@ -30,7 +30,10 @@ import type {
   TaskDetailCapabilities,
   TaskDetailData,
 } from "../card-detail/task-detail-types";
-import { canWriteComment } from "../card-detail/task-detail-types";
+import {
+  canChangeOwnComment,
+  canWriteComment,
+} from "../card-detail/task-detail-types";
 import type { ItemPageCopy } from "./item-page.copy";
 import { describeActivityEvent } from "../card-detail/activity-words";
 import { MentionList, useMentionField } from "./item-page-mention";
@@ -281,6 +284,7 @@ export function ItemPageActivity({
                     files={data.files}
                     now={now}
                     capabilities={capabilities}
+                    viewerUserId={viewer?.userId ?? data.viewerUserId}
                     callbacks={callbacks}
                     copy={copy}
                     timeZone={timeZone}
@@ -528,6 +532,7 @@ function CommentEntry({
   files,
   now,
   capabilities,
+  viewerUserId,
   callbacks,
   copy,
   timeZone,
@@ -538,6 +543,7 @@ function CommentEntry({
   files: readonly CardFile[];
   now: Date;
   capabilities: TaskDetailCapabilities;
+  viewerUserId?: string | null;
   callbacks: TaskDetailCallbacks;
   copy: ItemPageCopy;
   timeZone?: string;
@@ -555,6 +561,7 @@ function CommentEntry({
       files={files}
       now={now}
       capabilities={capabilities}
+      viewerUserId={viewerUserId}
       callbacks={callbacks}
       copy={copy}
       timeZone={timeZone}
@@ -607,6 +614,7 @@ function CommentCard({
   files,
   now,
   capabilities,
+  viewerUserId,
   callbacks,
   copy,
   timeZone,
@@ -617,6 +625,7 @@ function CommentCard({
   files: readonly CardFile[];
   now: Date;
   capabilities: TaskDetailCapabilities;
+  viewerUserId?: string | null;
   callbacks: TaskDetailCallbacks;
   copy: ItemPageCopy;
   timeZone?: string;
@@ -628,8 +637,12 @@ function CommentCard({
   const edit = useCommentEdit(update.body, (body) =>
     callbacks.onUpdateUpdate(update.id, body),
   );
-  const canEdit = capabilities.canEditFields;
-  const canDelete = capabilities.canDelete;
+  const canEdit = canChangeOwnComment(
+    capabilities,
+    update.author.userId,
+    viewerUserId,
+  );
+  const canDelete = canEdit;
   const attached = update.attachmentIds.flatMap((id) => {
     const file = files.find((candidate) => candidate.id === id);
     return file ? [file] : [];

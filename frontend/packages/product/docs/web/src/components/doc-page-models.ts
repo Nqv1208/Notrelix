@@ -227,6 +227,8 @@ export interface DocCommentView {
   readonly resolved?: boolean;
   /** The viewer wrote it (only the author is offered Delete). */
   readonly mine?: boolean;
+  /** The viewer started the thread or may edit the page: only they resolve or reopen it. */
+  readonly canResolve?: boolean;
 }
 
 export interface DocVersionView {

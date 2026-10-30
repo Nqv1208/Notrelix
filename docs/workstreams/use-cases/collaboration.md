@@ -54,7 +54,7 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 |---|---|---|---|---|---|---|---|---|
 | A | COL-001 Comment lifecycle | 11 | 1 | 0 | 8 | 2 | 0 | 0 |
 | B | COL-002 Comment target contract | 18 | 2 | 0 | 10 | 6 | 0 | 0 |
-| C | COL-003 Comment authorization | 6 | 0 | 1 | 4 | 0 | 0 | 1 |
+| C | COL-003 Comment authorization | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
 | D | COL-004 Comment activity/events | 14 | 5 | 1 | 5 | 3 | 0 | 0 |
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 1 | 2 | 1 | 0 | 0 | 3 |
@@ -66,7 +66,7 @@ Collaboration has no dedicated capability for inbox, preferences, attachments, w
 
 ### 1.2 The ten most important gaps
 
-1. Edit, delete, resolve and reopen of a comment, and delete of an item attachment, have no author or moderator rule and are authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve to a board or page. By reading the policy engine only the workspace Owner passes (UC-COL-A05 to A08, B11, C01, C02).
+1. Fixed: edit, delete, resolve and reopen of a comment, and delete of an attachment, were authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve, so only the workspace Owner passed. They now pass a membership gate and the handler decides from the target: author for edit and delete, thread starter or editor for resolve and reopen, editor of the target for attachment delete. Still open: expected version, moderator delete (UC-COL-C02), a real e2e.
 2. No Collaboration fact is published to realtime: comments, reactions, Inbox counts and presence all need a manual refetch (UC-COL-E01 to E03).
 3. Competing writes: comment create has no idempotency key, and edit, delete, resolve have no expected version (UC-COL-H01, H02). Reactions and watchers have no unique index (UC-COL-H03).
 4. Pages are second-class: no page reactions, no page followers, no page notifications, no page activity (UC-COL-A11, B17, D09, D12).
@@ -81,7 +81,7 @@ Collaboration has no dedicated capability for inbox, preferences, attachments, w
 
 | Defect | Where |
 |---|---|
-| Authorization of comment edit, delete, resolve, reopen and board-item attachment delete uses the wrong resource kinds; no author check anywhere. The delete route also ignores `{boardItemId}`. | `backend/src/Notrelix.Application/Features/Collaboration/Comments/Commands/*`, `.../Attachments/Commands/DeleteAttachment/DeleteAttachment.cs`, `backend/src/Notrelix.Infrastructure/CrossContext/Governance/WorkManagement/BoardChildAuthorizationFactsAdapter.cs` (lists Work Management kinds only), `backend/src/Notrelix.Application/Features/Governance/Authorization/WorkspaceRoleBaseline.cs` |
+| Authorization of comment edit, delete, resolve, reopen and attachment delete (fixed): decided in the handler from the target, no longer Owner-only. The item attachment delete now matches the route's `{boardItemId}`. A comment or attachment on a deleted board item is NotFound, decided through the Work Management item fact. | `backend/src/Notrelix.Application/Features/Collaboration/Comments/Services/`, `.../Attachments/Services/AttachmentAccessRules.cs`, `.../Comments/Commands/*`, `.../Attachments/Commands/DeleteAttachment/DeleteAttachment.cs` |
 | No expected version on competing comment writes; comment create has no idempotency key. | `.../Comments/Commands/UpdateComment/UpdateComment.cs`, `backend/src/Notrelix.API/Endpoints/Collaboration/Comments/Commands/CreateCommentEndpoint.cs` |
 | Check-then-insert races: no unique index on reactions (target, user, emoji) or watchers (target, user). | `backend/src/Notrelix.Infrastructure/Data/Configurations/Collaboration/ReactionConfiguration.cs`, `ResourceWatcherConfiguration.cs`, `.../Reactions/Commands/AddReaction/AddReaction.cs`, `.../Watchers/Commands/FollowBoardItem/FollowBoardItem.cs` |
 | Unbounded read: all comments, reactions and actor names for a target in one call. | `.../Comments/Queries/GetComments/GetComments.cs` |
@@ -109,7 +109,7 @@ Products compared and what they show:
 
 | Table stake | Notrelix today | Use case |
 |---|---|---|
-| Edit and delete own comment | Built but authorization is wrong | UC-COL-A05, A06, C01 |
+| Edit and delete own comment | Built; author-only rule enforced | UC-COL-A05, A06, C01 |
 | Resolve and reopen threads | Built (pages) | UC-COL-A07, A08 |
 | Reactions on comments | Items only | UC-COL-A09 to A11 |
 | Mention notifies only people who can open the source | Items: yes; pages: no | UC-COL-B01, B02 |
@@ -137,9 +137,9 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-A02 | Comment on a Documents page | A | Workspace Owner, Admin, Member with Commenter level on the page | yes | yes | yes | partial | HARDENING | Same gaps as UC-COL-A01; no real e2e for the docs panel itself. |
 | UC-COL-A03 | Reply in a thread | A | Same as UC-COL-A01 or UC-COL-A02 | yes | yes | yes | no | INTEGRATING | No real e2e; behaviour when the parent is deleted is undefined (UC-COL-A06). |
 | UC-COL-A04 | Anchor a page comment to text | A | Same as UC-COL-A02 | yes | yes | yes | no | INTEGRATING | No real e2e; no Application test for foreign-Block rejection found. |
-| UC-COL-A05 | Edit a comment | A | The comment's author (Lead decision L1) | yes | yes | yes | no | INTEGRATING | Authorized as UpdateItem on kind collaboration.comment, with no author rule and no expected version; by reading Governance only the workspac |
-| UC-COL-A06 | Delete a comment | A | The author (Lead decision L1) | yes | yes | yes | no | INTEGRATING | Same authorization defect as UC-COL-A05; list query drops the deleted comment and leaves replies with an orphan ParentId. |
-| UC-COL-A07 | Resolve a thread | A | The thread starter, or a person with edit right on the target (Product | yes | partial | yes | no | INTEGRATING | Authorized as UpdateItem on collaboration.comment (Owner-only by reading); no real e2e; item UI for resolve not found. |
+| UC-COL-A05 | Edit a comment | A | The comment's author (Lead decision L1) | yes | yes | yes | no | INTEGRATING | Author-only rule and UI in place; no expected version; real e2e written, not run. |
+| UC-COL-A06 | Delete a comment | A | The author (Lead decision L1) | yes | yes | yes | no | INTEGRATING | Author-only rule in place; no expected version, no real e2e; list query drops the deleted comment and leaves replies with an orphan ParentId. |
+| UC-COL-A07 | Resolve a thread | A | The thread starter, or a person with edit right on the target (Product | yes | partial | yes | no | INTEGRATING | Thread-starter-or-editor rule and page UI in place; no real e2e; item UI for resolve not found. |
 | UC-COL-A08 | Reopen a thread | A | Same rule as UC-COL-A07 (decision 24) | yes | partial | yes | no | INTEGRATING | As UC-COL-A07. |
 | UC-COL-A09 | React to a comment on a board item | A | Anyone with CreateComment on the item | yes | yes | yes | no | INTEGRATING | Check-then-insert with no unique index: concurrent requests can store two rows; no real e2e. |
 | UC-COL-A10 | Withdraw a reaction | A | The person who reacted (only their own reaction) | yes | yes | yes | no | INTEGRATING | No real e2e. |
@@ -154,15 +154,15 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | INTEGRATING | No real e2e (documents.real e2e has no upload). |
 | UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | INTEGRATING | As UC-COL-B07. |
 | UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | INTEGRATING | No real e2e. |
-| UC-COL-B11 | Delete an attachment from an item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | INTEGRATING | Defect: authorized as UpdateItem on kind collaboration.attachment, ignoring the route's boardItemId, so only the Owner can pass (by reading) |
-| UC-COL-B12 | Delete an attachment from a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | INTEGRATING | No real e2e. |
+| UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
+| UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
 | UC-COL-B13 | Follow a board item | B | Anyone who can view the item's board (ViewBoard) | yes | yes | yes | yes | HARDENING | No unique index on (user, target): concurrent calls can store two watchers. |
 | UC-COL-B14 | Unfollow a board item | B | The follower | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B15 | See whether I follow an item | B | Anyone who can view the item | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B16 | Follow automatically after creating, being assigned or commenting | B | System, acting for the person | yes | partial | no | yes | HARDENING | No unit test of the follow consumers found; reason for following is not shown. |
 | UC-COL-B17 | Follow a page (enterprise baseline) | B | Anyone who can view the page | no | no | no | no | DEFINED | Add page watcher routes, auto-follow for page commenters and the docs UI. |
 | UC-COL-B18 | Add a new collaboration target kind | B | A team that owns a resource kind (system change, not an end-user flow) | yes | no | no | no | INTEGRATING | Two kinds only (board item, page); no registry document. |
-| UC-COL-C01 | Author-only edit and delete of a comment | C | The comment's author (Lead decision L1) | partial | partial | yes | no | IMPLEMENTING | Backend rule missing; today only the workspace Owner passes the pipeline. |
+| UC-COL-C01 | Author-only edit and delete of a comment | C | The comment's author (Lead decision L1) | yes | partial | yes | no | INTEGRATING | Backend rule, Application tests and author-only UI exist; real e2e written, not run; no expected version. |
 | UC-COL-C02 | Moderator removes another person's comment | C | A person Governance names as moderator of the target (not yet decided) | no | no | no | no | BLOCKED | Decide in Governance which permission (for example a new Moderate action held by Board Manager, Page Manager and workspace Admin and Owner)  |
 | UC-COL-C03 | Viewer reads comments but cannot write | C | Viewer level on the target (ViewBoard or ViewPage only) | yes | yes | yes | no | INTEGRATING | Viewer write refusal not proven in a real e2e. |
 | UC-COL-C04 | Guest collaborates only where explicitly shared | C | A Guest with explicit access to the item or page | yes | no | no | partial | INTEGRATING | The guest real e2e does not post a comment. |
@@ -281,7 +281,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 
 ### UC-COL-A05 Edit a comment
 - Capability: A, COL-001 Comment lifecycle
-- Actors and permission: The comment's author (Lead decision L1). Today: whoever passes UpdateItem on the comment resource.
+- Actors and permission: The comment's author (Lead decision L1), while the author can still view the target.
 - Preconditions: The comment is live and its target is readable by the caller.
 - Input: ContentMd (same limits); optional MentionedUserIds for newly added people (Lead decision L2); ExpectedVersion (Lead decision L2).
 - Output: Content replaced; version +1; comment-updated domain event; the list shows an edited mark. Same text after trim is a semantic no-op: no version, no event.
@@ -290,8 +290,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: loading, success, validation error, permission denied, conflict, pending, edited mark.
 - Rules: Product COL-006 area, Comment edit, Edited-comment mentions; spec DCREQ045, DCREQ155.
 - Acceptance: Given the author, when they edit, then everyone sees the new text and an edited mark. Given another Member, then 403. Given a stale version, then 412 and the text is unchanged.
-- Evidence: BE PATCH /api/v1/comments/{commentId} (Collaboration.Comments.Update), UpdateCommentCommandHandler · FE frontend/packages/product/work-management/state/src/ (item-comments.api.ts, use-card-comments.ts, mutations) (use-update-card-update.ts) · Design WM-Comments · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Comments/CommentTests.cs (UpdateContent); frontend mock handler cards.handlers.ts · Real e2e none
-- State: INTEGRATING — Authorized as UpdateItem on kind collaboration.comment, with no author rule and no expected version; by reading Governance only the workspace Owner passes. Add the author/moderator rule (UC-COL-C01, UC-COL-C02) before this can be DONE.
+- Evidence: BE PATCH /api/v1/comments/{commentId} (Collaboration.Comments.Update), UpdateCommentCommandHandler · FE frontend/packages/product/work-management/state/src/ (item-comments.api.ts, use-card-comments.ts, mutations) (use-update-card-update.ts); frontend/packages/product/work-management/web/src/components/item-page/item-page-activity.tsx and card-detail/task-updates-tab.tsx (canChangeOwnComment: Edit and Delete only to the author, from the viewer's user id); item-page/collaboration-refusal.ts maps the 403 codes and 404 to words (en, vi); the update and delete hooks read the list again after a refusal (no optimistic write) · Design WM-Comments · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Comments/CommentTests.cs (UpdateContent); frontend mock handler cards.handlers.ts ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs (author edit, other member 403, no view access NotFound); backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs (UpdateComment_On*); frontend/packages/product/work-management/web/src/components/comment-thread/__tests__/comment-thread.component.test.tsx (editor sees actions on own comment only); item-page/__tests__/collaboration-refusal.unit.test.ts · Real e2e frontend/e2e/real/comment-author-actions.real.e2e.spec.ts (written, not run)
+- State: INTEGRATING — Author-only rule implemented (author and view access decided in the handler from the comment's target); no expected version (Lead decision L2) and no real e2e before this can be DONE. Moderator delete stays UC-COL-C02.
 
 ### UC-COL-A06 Delete a comment
 - Capability: A, COL-001 Comment lifecycle
@@ -304,8 +304,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: destructive confirmation, success, permission denied, conflict, pending, placeholder thread.
 - Rules: Product COL-006, Comment delete, Thread deletion; spec DCREQ037, DCREQ045, DCREQ214.
 - Acceptance: Given the author, when they confirm delete, then the text is gone for all readers and replies stay under a placeholder. Given another Member, then 403.
-- Evidence: BE DELETE /api/v1/comments/{commentId} (Collaboration.Comments.Delete), DeleteCommentCommandHandler · FE frontend/packages/product/work-management/state/src/ (item-comments.api.ts, use-card-comments.ts, mutations) (use-delete-card-update.ts); frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-delete-comment.ts) · Design WM-Comments, Final-Docs-2 · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Comments/CommentDeletionAtomicityTests.cs · Real e2e none
-- State: INTEGRATING — Same authorization defect as UC-COL-A05; list query drops the deleted comment and leaves replies with an orphan ParentId. Add the author/moderator rule (UC-COL-C01, UC-COL-C02) before this can be DONE.
+- Evidence: BE DELETE /api/v1/comments/{commentId} (Collaboration.Comments.Delete), DeleteCommentCommandHandler · FE frontend/packages/product/work-management/state/src/ (item-comments.api.ts, use-card-comments.ts, mutations) (use-delete-card-update.ts); frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-delete-comment.ts; the panel offers Delete to the author only); frontend/packages/product/work-management/web/src/components/item-page/item-page-activity.tsx and card-detail/task-updates-tab.tsx (canChangeOwnComment: Edit and Delete only to the author, from the viewer's user id); item-page/collaboration-refusal.ts maps the 403 codes and 404 to words (en, vi); the update and delete hooks read the list again after a refusal (no optimistic write) · Design WM-Comments, Final-Docs-2 · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Comments/CommentDeletionAtomicityTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs (author delete, other member 403, no view access NotFound); frontend/packages/product/work-management/web/src/components/comment-thread/__tests__/comment-thread.component.test.tsx (editor sees actions on own comment only); item-page/__tests__/collaboration-refusal.unit.test.ts; frontend/packages/product/docs/web/src/components/__tests__/doc-comment-threads.interaction.component.test.tsx · Real e2e frontend/e2e/real/comment-author-actions.real.e2e.spec.ts (written, not run)
+- State: INTEGRATING — Author-only rule implemented; no expected version, no real e2e; list query drops the deleted comment and leaves replies with an orphan ParentId.
 
 ### UC-COL-A07 Resolve a thread
 - Capability: A, COL-001 Comment lifecycle
@@ -318,8 +318,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: success, permission denied, pending, resolved filter, highlight dimmed in the editor.
 - Rules: Product Comment status (CommentStatus is local); decision 20; spec DCREQ045.
 - Acceptance: Given a thread, when an allowed person resolves it, then it leaves the default list and shows under resolved. Given a repeat, then nothing changes.
-- Evidence: BE POST /api/v1/comments/{commentId}/resolve (Collaboration.Comments.Resolve), ResolveCommentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-resolve-comment.ts); frontend/packages/dev/mock-backend/src/contexts/documents/comments.handlers.ts · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/GetCommentsResolvedTests.cs; frontend/packages/product/docs/state/src/__tests__/page-comment-resolve.unit.test.ts · Real e2e none
-- State: INTEGRATING — Authorized as UpdateItem on collaboration.comment (Owner-only by reading); no real e2e; item UI for resolve not found. Add the author/moderator rule (UC-COL-C01, UC-COL-C02) before this can be DONE.
+- Evidence: BE POST /api/v1/comments/{commentId}/resolve (Collaboration.Comments.Resolve), ResolveCommentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-resolve-comment.ts); docs side panel (doc-side-panel-surface.tsx) offers Resolve only when the view carries canResolve (viewer is the starter, or host.canEdit; doc-page-mapping.ts); frontend/packages/dev/mock-backend/src/contexts/documents/comments.handlers.ts · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/GetCommentsResolvedTests.cs; frontend/packages/product/docs/state/src/__tests__/page-comment-resolve.unit.test.ts ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs (thread starter, editor of the target, plain commenter 403); frontend/packages/product/docs/web/src/components/__tests__/doc-comment-threads.interaction.component.test.tsx and doc-page-mapping.unit.test.ts (starter, editor, neither) · Real e2e none
+- State: INTEGRATING — Thread-starter-or-editor rule implemented and the page UI offers it only to them; no real e2e; item UI for resolve not found. A refused resolve on the page shows no message yet.
 
 ### UC-COL-A08 Reopen a thread
 - Capability: A, COL-001 Comment lifecycle
@@ -332,8 +332,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: success, permission denied, pending.
 - Rules: Decisions 20 and 24; spec DCREQ045.
 - Acceptance: Given a resolved thread, when an allowed person reopens it, then it returns to the default list.
-- Evidence: BE POST /api/v1/comments/{commentId}/reopen (Collaboration.Comments.Reopen), ReopenCommentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-reopen-comment.ts) · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/ReopenCommentTests.cs · Real e2e none
-- State: INTEGRATING — As UC-COL-A07. Add the author/moderator rule (UC-COL-C01, UC-COL-C02) before this can be DONE.
+- Evidence: BE POST /api/v1/comments/{commentId}/reopen (Collaboration.Comments.Reopen), ReopenCommentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-reopen-comment.ts); docs side panel offers Reopen only with canResolve, as UC-COL-A07 · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/ReopenCommentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs (thread starter, editor of the target, plain commenter 403); docs comment-threads interaction test (neither sees Reopen) · Real e2e none
+- State: INTEGRATING — As UC-COL-A07; no real e2e.
 
 ### UC-COL-A09 React to a comment on a board item
 - Capability: A, COL-001 Comment lifecycle
@@ -451,7 +451,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 
 ### UC-COL-B06 Attach a file to a board item
 - Capability: B, COL-002 Comment target contract
-- Actors and permission: Anyone with UpdateItem on the item.
+- Actors and permission: A person with UpdateItem on the item, whoever uploaded the file. Others who can view the item get 403 `collaboration.attachment_editor_only`; no view access is NotFound.
 - Preconditions: The item exists; fewer than 50 live attachments.
 - Input: multipart/form-data file, streamed; Idempotency-Key header. Size cap 100 MB, blocked extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm), content type sniffed from the first 512 bytes.
 - Output: An Attachment (stored file) with sniffed type; object in storage; 201 with the content route. Image types inline only for png, jpeg, gif, webp; all others download.
@@ -479,7 +479,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 
 ### UC-COL-B08 Attach a file to a page
 - Capability: B, COL-002 Comment target contract
-- Actors and permission: Anyone with UpdatePage on the page.
+- Actors and permission: A person with UpdatePage on the page, whoever uploaded the file. Others who can view the page get 403 `collaboration.attachment_editor_only`; no view access is NotFound.
 - Preconditions: Fewer than 500 live attachments on the page.
 - Input: As UC-COL-B06.
 - Output: An Attachment on the page that an image or file block references by id.
@@ -530,8 +530,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: destructive confirmation, success, permission denied.
 - Rules: Product Attachment deletion; decision 10; spec DCREQ166.
 - Acceptance: Given an editor, when they delete, then it leaves the list; given a viewer, then 403.
-- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs · Real e2e none
-- State: INTEGRATING — Defect: authorized as UpdateItem on kind collaboration.attachment, ignoring the route's boardItemId, so only the Owner can pass (by reading); fix by authorizing on the item.
+- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts (reads the file list again after a refusal); item-page-sections.tsx shows Delete only when canEditFields; the page toasts the refusal (collaboration-refusal.ts) · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (editor including the Owner, read-only uploader 403, other member 403, no view access NotFound); frontend/packages/product/work-management/web/src/components/item-page/__tests__/item-page-files-upload.interaction.component.test.tsx (Delete for an editor, none for others) · Real e2e none
+- State: INTEGRATING — Editor-only rule implemented, decided from the attachment's own target; no real e2e. The route's boardItemId is matched; an attachment of another item is NotFound.
 
 ### UC-COL-B12 Delete an attachment from a page
 - Capability: B, COL-002 Comment target contract
@@ -544,7 +544,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: destructive confirmation, success, permission denied.
 - Rules: Decision 10; product section 90.
 - Acceptance: Given an editor, then the attachment is removed from the page list.
-- Evidence: BE DELETE /api/v1/pages/{pageId}/attachments/{attachmentId} (Collaboration.PageAttachments.Delete), DeletePageAttachmentCommandHandler · FE docs state hooks · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs · Real e2e none
+- Evidence: BE DELETE /api/v1/pages/{pageId}/attachments/{attachmentId} (Collaboration.PageAttachments.Delete), DeletePageAttachmentCommandHandler · FE docs state hooks; the page has no attachment delete control, so nothing is offered to a non-editor · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs · Real e2e none
 - State: INTEGRATING — No real e2e.
 
 ### UC-COL-B13 Follow a board item
@@ -644,8 +644,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: Edit and Delete actions shown only to the author; permission denied toast if raced.
 - Rules: Product Author versus moderator (section 72), COL-003 of the team spec; spec DCREQ045, DCREQ052; decision 20 (UI offers delete only to the author, the backend still authorizes).
 - Acceptance: Given Member A's comment, when Member B sends PATCH or DELETE, then 403 and the comment is unchanged. Given A, then both succeed.
-- Evidence: BE none: UpdateCommentCommand and DeleteCommentCommand authorize UpdateItem on kind collaboration.comment and the handlers never compare the author · FE frontend/packages/product/work-management/web (comment actions); docs panel shows delete to the author only · Design WM-Comments · Tests none: no test proves author-only behaviour · Real e2e none
-- State: IMPLEMENTING — Backend rule missing; today only the workspace Owner passes the pipeline. Add the author check, a Governance mapping for comment kinds, a negative test and a real e2e.
+- Evidence: BE UpdateCommentCommandHandler and DeleteCommentCommandHandler call CommentAccessRules.RequireAuthorAsync (CreatedBy against the caller; view access to the target through CommentTargetAccess); pipeline gate is ViewBoard on the comment · FE frontend/packages/product/work-management/web (comment actions: frontend/packages/product/work-management/web/src/components/item-page/item-page-activity.tsx and card-detail/task-updates-tab.tsx (canChangeOwnComment: Edit and Delete only to the author, from the viewer's user id); item-page/collaboration-refusal.ts maps the 403 codes and 404 to words (en, vi); the update and delete hooks read the list again after a refusal (no optimistic write)); docs panel shows delete to the author only · Design WM-Comments · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs; backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs (UpdateComment_On*); frontend/packages/product/work-management/web/src/components/comment-thread/__tests__/comment-thread.component.test.tsx (editor sees actions on own comment only); item-page/__tests__/collaboration-refusal.unit.test.ts · Real e2e frontend/e2e/real/comment-author-actions.real.e2e.spec.ts (written, not run)
+- State: INTEGRATING — Backend rule, Application tests and real-pipeline integration tests exist; hidden and missing comments give the same NotFound; the author-only UI exists; the real e2e is written but not yet run, so it stays below HARDENING.
 
 ### UC-COL-C02 Moderator removes another person's comment
 - Capability: C, COL-003 Comment authorization

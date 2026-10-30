@@ -25,7 +25,7 @@ import { ReactionBar } from "../comment-thread/reaction-bar";
 import { ReplyBox } from "../comment-thread/reply-box";
 import { VISIBLE_REPLIES, splitThreads } from "../comment-thread/thread-model";
 import { useCommentEdit } from "./use-comment-edit";
-import { canWriteComment } from "./task-detail-types";
+import { canChangeOwnComment, canWriteComment } from "./task-detail-types";
 import type {
   TaskDetailCallbacks,
   TaskDetailCapabilities,
@@ -38,6 +38,7 @@ export function TaskUpdatesTab({
   events = [],
   isLoading,
   capabilities,
+  viewerUserId,
   copy,
   now,
   timeZone,
@@ -52,6 +53,7 @@ export function TaskUpdatesTab({
   events?: readonly CardActivity[];
   isLoading: boolean;
   capabilities: TaskDetailCapabilities;
+  viewerUserId?: string | null;
   copy: ItemSheetCopy;
   now: Date;
   timeZone?: string;
@@ -98,6 +100,7 @@ export function TaskUpdatesTab({
                 update={entry.update}
                 replies={repliesOf(entry.update.id)}
                 capabilities={capabilities}
+                viewerUserId={viewerUserId}
                 copy={copy}
                 now={now}
                 timeZone={timeZone}
@@ -144,6 +147,7 @@ function CommentThread({
   update,
   replies,
   capabilities,
+  viewerUserId,
   copy,
   now,
   timeZone,
@@ -156,6 +160,7 @@ function CommentThread({
   update: CardUpdate;
   replies: readonly CardUpdate[];
   capabilities: TaskDetailCapabilities;
+  viewerUserId?: string | null;
   copy: ItemSheetCopy;
   now: Date;
   timeZone?: string;
@@ -169,25 +174,32 @@ function CommentThread({
   const shown = showAll ? replies : replies.slice(0, VISIBLE_REPLIES);
   const more = replies.length - shown.length;
   const canReply = canWriteComment(capabilities);
-  const item = (entry: CardUpdate) => (
-    <CommentItem
-      key={entry.id}
-      update={entry}
-      canEdit={capabilities.canEditFields}
-      canDelete={capabilities.canDelete}
-      canReply={canReply}
-      copy={copy}
-      time={describeSheetTime(entry.createdAt, now, copy, timeZone)}
-      onSave={(body) => onUpdateUpdate(entry.id, body)}
-      onDelete={() => onDeleteUpdate(entry.id)}
-      onReply={() => setReplying(true)}
-      onToggleReaction={
-        canReply && onToggleReaction
-          ? (emoji, on) => onToggleReaction(entry.id, emoji, on)
-          : undefined
-      }
-    />
-  );
+  const item = (entry: CardUpdate) => {
+    const own = canChangeOwnComment(
+      capabilities,
+      entry.author.userId,
+      viewerUserId,
+    );
+    return (
+      <CommentItem
+        key={entry.id}
+        update={entry}
+        canEdit={own}
+        canDelete={own}
+        canReply={canReply}
+        copy={copy}
+        time={describeSheetTime(entry.createdAt, now, copy, timeZone)}
+        onSave={(body) => onUpdateUpdate(entry.id, body)}
+        onDelete={() => onDeleteUpdate(entry.id)}
+        onReply={() => setReplying(true)}
+        onToggleReaction={
+          canReply && onToggleReaction
+            ? (emoji, on) => onToggleReaction(entry.id, emoji, on)
+            : undefined
+        }
+      />
+    );
+  };
   return (
     <>
       {item(update)}

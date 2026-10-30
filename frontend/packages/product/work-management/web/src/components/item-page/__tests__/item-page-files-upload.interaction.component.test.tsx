@@ -120,6 +120,7 @@ function Harness({
       }
       callbacks={{
         onAddFile: uploads.start,
+        onDeleteFile: async () => true,
         ...(onDownloadFile ? { onDownloadFile } : {}),
       }}
       copy={copy}
@@ -342,5 +343,25 @@ describe.each([
   it("offers no upload to someone who cannot edit", async () => {
     const { container } = setup(copy, { canEdit: false });
     expect(container.querySelector('input[type="file"]')).toBeNull();
+  });
+
+  it("offers Delete on a stored file to an editor and to nobody else", async () => {
+    for (const canEdit of [true, false]) {
+      const fake = fakeServices();
+      fake.cards.getCardFiles.mockResolvedValue([storedFile()]);
+      const { unmount } = renderPureUi(
+        <WorkManagementTestScope services={fake.services}>
+          <Harness copy={copy} canEdit={canEdit} />
+        </WorkManagementTestScope>,
+      );
+      await screen.findByRole("button", {
+        name: copy.files.download.replace("{{name}}", "ghi-chu.pdf"),
+      });
+      const del = screen.queryByRole("button", {
+        name: copy.files.delete.replace("{{name}}", "ghi-chu.pdf"),
+      });
+      expect(del !== null).toBe(canEdit);
+      unmount();
+    }
   });
 });
