@@ -1461,7 +1461,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 85, 33; WX-HOME-001, WX-HOME-002.
 - Acceptance: Given overdue items, Then the counts match My work.
 - Evidence: BE reads of N04, N05, M06 and Work Management feeds · FE `workspace-home-surface.tsx`, route `home.tsx` · Design `Final-Home`, `Final-M-Home` · Tests `home.mock.e2e.spec.ts`, `design-fidelity-home.mock.e2e.spec.ts`, `real-pages-guard.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff; sections without producers.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: the sections that fail show their own error, and the sections without a producer (approvals, mentions, schedule) stay hidden. Real e2e; design diff.
 
 ### UC-WSP-N02 Show workspace figures to Owner and Admin (enterprise baseline)
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1503,7 +1503,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 33 to 35; DESIGN.md section 27.
 - Acceptance: Given 31 opened resources, Then 30 remain.
 - Evidence: BE `POST` and `GET .../recents`, `RecordRecentResourceCommandHandler`, `GetRecentResourcesQueryHandler` · FE `navigation.service.ts`, `use-workspace-navigation.ts` · Design `Final-Home`, `Final-Command` · Tests `WorkspaceNavigationTests`, `WorkspaceNavigationHandlerTests`, `WorkspaceNavigationIntegrationTests`, `command-palette.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Readability filter proof; real e2e.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: `GetRecentResourcesQueryHandler` already drops references the caller can no longer read (Governance Board and Page visibility sets), the record is idempotent and checks the resource is in the workspace, and 30 are kept. Proof needed: a test that a revoked Board or Page leaves the list. Real e2e.
 
 ### UC-WSP-N05 Pin and unpin resources
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1517,7 +1517,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 83, 85.
 - Acceptance: Given 50 pins, When a 51st is added, Then refused.
 - Evidence: BE `PUT`, `DELETE`, `GET .../pins`, `PinResourceCommandHandler`, `UnpinResourceCommandHandler`, `GetPinnedResourcesQueryHandler` · FE `use-workspace-navigation-mutations.ts`, sidebar · Design `Final-Home`, `BC-Shell-1440` · Tests `WorkspaceNavigationTests`, `workspace-pages.mock.e2e.spec.ts` (WX-DIR-001) · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: the pin limit, the no-ops and the readability filter on the read are in place (`GetPinnedResourcesQueryHandler` uses the same visibility sets as recents). Real e2e.
 
 ### UC-WSP-N06 Search the workspace from the command palette
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1531,7 +1531,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 55; DESIGN.md section 26.
 - Acceptance: Given a Private Board outside the caller's reach, Then it is not found.
 - Evidence: BE `GET .../command-search`, `CommandSearchQueryHandler` · FE `command-palette-surface.tsx`, `use-command-search.ts` · Design `Final-Command`, `Final-M-Search` · Tests `CommandSearchQueryHandlerTests`, `command-palette.mock.e2e.spec.ts`, `design-fidelity-command.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; cross-tenant negative at HTTP; design diff.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: `CommandSearchQueryHandler` selects only through the Governance visibility sets and the producers' search facts, answers empty under two characters and stores nothing. Proof needed: the cross-tenant negative at HTTP. Real e2e; design diff.
 
 # 4. Product decisions applied
 
