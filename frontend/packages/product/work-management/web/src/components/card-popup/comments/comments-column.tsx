@@ -193,20 +193,20 @@ function Bubble({
             <Mentions body={update.body} names={names} />
           </div>
         )}
-        {(update.reactions?.length ?? 0) > 0 || react ? (
-          <div className="mt-1.5">
-            <ReactionBar
-              reactions={update.reactions ?? []}
-              copy={sheet.thread}
-              onToggle={
-                react ? (emoji, on) => react(update.id, emoji, on) : undefined
-              }
-            />
-          </div>
-        ) : null}
-        {!edit.editing && (own || canReply) ? (
-          <div className="mt-1.5 flex gap-3">
-            {own ? (
+        {(update.reactions?.length ?? 0) > 0 ||
+        react ||
+        (!edit.editing && (own || canReply)) ? (
+          <div className="mt-1.5 flex flex-wrap items-center gap-3">
+            {(update.reactions?.length ?? 0) > 0 || react ? (
+              <ReactionBar
+                reactions={update.reactions ?? []}
+                copy={sheet.thread}
+                onToggle={
+                  react ? (emoji, on) => react(update.id, emoji, on) : undefined
+                }
+              />
+            ) : null}
+            {!edit.editing && own ? (
               <button
                 type="button"
                 className={TEXT_ACTION}
@@ -215,7 +215,7 @@ function Bubble({
                 {t.edit}
               </button>
             ) : null}
-            {own ? (
+            {!edit.editing && own ? (
               <button
                 type="button"
                 className={TEXT_ACTION}
@@ -224,7 +224,7 @@ function Bubble({
                 {t.delete}
               </button>
             ) : null}
-            {canReply && !update.parentId ? (
+            {!edit.editing && canReply && !update.parentId ? (
               <button type="button" className={TEXT_ACTION} onClick={onReply}>
                 {t.reply}
               </button>

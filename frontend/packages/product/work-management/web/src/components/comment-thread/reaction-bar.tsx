@@ -86,7 +86,7 @@ export function ReactionBar({
               aria-label={copy.addReaction}
               className={cn(
                 CHIP_CLASS,
-                "border-transparent bg-transparent px-1.5 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
+                "h-5 border-transparent bg-transparent px-1.5 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
               )}
             >
               <SmilePlus aria-hidden="true" className="size-3.5" />
