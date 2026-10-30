@@ -3833,6 +3833,23 @@ export class MockStore {
     });
   }
 
+  /** Brings an archived workspace back; one that is already active stays as it is (no version step). */
+  unarchiveWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    if (!this.getWorkspace(workspaceId)) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    if (!this.archivedWorkspaceIds.has(workspaceId)) return "ok";
+    this.archivedWorkspaceIds.delete(workspaceId);
+    this.workspaceVersionById.set(
+      workspaceId,
+      this.getWorkspaceVersion(workspaceId) + 1,
+    );
+    return "ok";
+  }
+
   // ─── My work (WX-BE-005) ─────────────────────────────────────────────────
 
   /**

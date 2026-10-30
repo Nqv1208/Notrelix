@@ -278,7 +278,9 @@ The signed-in person has an account-level list of the Workspaces they take part 
 Workspaces, one row each with the person's own role, whether it is their default, and whether they may
 leave. The member count is shown to every role except Guest; the department count (active Department
 Spaces) is shown only to an Owner or Admin. A Workspace the person left, was removed or suspended from, or
-that is archived or deleted, never appears.
+that is deleted, never appears. An archived Workspace is read-only for every member and is listed, flagged
+`isArchived`, only to its Owners and Admins, in an "Archived" group where they can unarchive it; it is never
+the default and never offered to leave or open from there.
 
 The default Workspace is the person's choice of the Workspace that opens with the app. Workspaces validates
 that the person is an active member before the choice is stored; Identity stores only the Workspace id on

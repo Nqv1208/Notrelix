@@ -61,6 +61,8 @@ export const endpoints = {
       `/workspaces/${workspaceId}/members/me`,
     settings: (workspaceId: string) => `/workspaces/${workspaceId}/settings`,
     archive: (workspaceId: string) => `/workspaces/${workspaceId}/archive`,
+    unarchive: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/archive/unarchive`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,

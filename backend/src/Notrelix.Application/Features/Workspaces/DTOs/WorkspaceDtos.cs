@@ -71,6 +71,8 @@ public record WorkspaceInvitationEntryDto(string Kind, Guid TargetId, string Rol
 /// <see cref="DepartmentCount"/> is the number of active department Spaces and is null unless the
 /// caller is an Owner or Admin. <see cref="IsDefault"/> marks the Workspace that opens with the app.
 /// <see cref="CanLeave"/> is false only when the caller is the last active Owner.
+/// <see cref="IsArchived"/> marks an archived Workspace, which is listed only to its Owners and Admins; it is
+/// read-only for every member and is never the default.
 /// </summary>
 public record AccountWorkspaceDto(
     Guid Id,
@@ -80,5 +82,6 @@ public record AccountWorkspaceDto(
     int? MemberCount,
     int? DepartmentCount,
     bool IsDefault,
-    bool CanLeave
+    bool CanLeave,
+    bool IsArchived = false
 );

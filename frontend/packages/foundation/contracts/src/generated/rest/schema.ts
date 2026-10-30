@@ -4624,7 +4624,7 @@ export interface paths {
         };
         /**
          * List the workspaces you belong to, with your role and the default
-         * @description Only the caller's own active memberships of active workspaces, ordered by name. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.
+         * @description Only the caller's own active memberships of active workspaces, ordered by name; an archived workspace is listed (isArchived true) only to its Owners and Admins. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.
          */
         get: operations["Workspaces.Members.ListMyWorkspaces"];
         put?: never;
@@ -7659,6 +7659,7 @@ export interface components {
             departmentCount?: number | null;
             isDefault?: boolean;
             canLeave?: boolean;
+            isArchived?: boolean;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
             /** Format: uuid */

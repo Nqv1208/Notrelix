@@ -19131,7 +19131,7 @@
           "Workspaces.Members"
         ],
         "summary": "List the workspaces you belong to, with your role and the default",
-        "description": "Only the caller's own active memberships of active workspaces, ordered by name. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.",
+        "description": "Only the caller's own active memberships of active workspaces, ordered by name; an archived workspace is listed (isArchived true) only to its Owners and Admins. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.",
         "operationId": "Workspaces.Members.ListMyWorkspaces",
         "responses": {
           "200": {
@@ -28781,6 +28781,9 @@
             "type": "boolean"
           },
           "canLeave": {
+            "type": "boolean"
+          },
+          "isArchived": {
             "type": "boolean"
           }
         },

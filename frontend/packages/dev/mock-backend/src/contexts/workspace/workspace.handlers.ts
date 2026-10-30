@@ -175,7 +175,7 @@ function workspaceDto(store: MockStore, workspaceId: string) {
           space.type === "Department" && !space.parentId && !space.archived,
       ).length,
     isPersonal: w.isPersonal,
-    isArchived: false,
+    isArchived: store.isWorkspaceArchived(w.id),
     version: store.getWorkspaceVersion(w.id),
   };
 }
@@ -257,7 +257,11 @@ export const workspaceOperations = [
     route: "/workspaces/:id",
     async handle({ params, store }) {
       const w = store.getWorkspace(params.id);
-      if (!w || store.isWorkspaceArchived(w.id))
+      // An archived workspace is still read by its members (read-only); anyone else finds nothing.
+      if (
+        !w ||
+        (store.isWorkspaceArchived(w.id) && !store.isCurrentMemberOf(w.id))
+      )
         return notFound(`Workspace "${params.id}" not found`);
       return ok(workspaceDto(store, w.id) as WorkspaceSummary);
     },
@@ -413,6 +417,26 @@ export const workspaceOperations = [
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
       return versionedWriteResult(
         store.archiveWorkspace(params.workspaceId, body?.expectedVersion),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { expectedVersion?: number },
+    void
+  >({
+    id: "workspace.unarchive",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.UnarchiveWorkspace",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/archive/unarchive",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return versionedWriteResult(
+        store.unarchiveWorkspace(params.workspaceId, body?.expectedVersion),
       );
     },
   }),

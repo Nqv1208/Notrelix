@@ -23,6 +23,7 @@ function renderWorkspaces(scenario: WorkspacesScenario) {
   const props: AccountWorkspacesSurfaceProps = {
     ...scenario,
     onSetDefault: vi.fn(),
+    onUnarchive: vi.fn(),
     onLeave: vi.fn(),
     onRetry: vi.fn(),
   };

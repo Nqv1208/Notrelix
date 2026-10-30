@@ -19,7 +19,12 @@ export default meta;
 type Story = StoryObj;
 
 const noop = () => undefined;
-const callbacks = { onSetDefault: noop, onLeave: noop, onRetry: noop };
+const callbacks = {
+  onSetDefault: noop,
+  onUnarchive: noop,
+  onLeave: noop,
+  onRetry: noop,
+};
 
 export const Default: Story = {
   render: () => (
