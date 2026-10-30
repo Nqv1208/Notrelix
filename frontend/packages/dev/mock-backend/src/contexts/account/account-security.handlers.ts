@@ -5,7 +5,7 @@
  *   GET  /auth/security/summary                 summary of password, two-factor, sessions
  *   GET  /auth/sessions                         every sign-in (the page filters by status)
  *   POST /auth/sessions/:sessionId/revoke       200, no body; ending this device signs it out
- *   POST /auth/sessions/revoke-others           200, no body
+ *   POST /auth/sessions/revoke-others           200 { revokedCount }; needs a RevokeOtherSessions proof
  *   GET  /auth/security/activity                cursor paging, newest first
  *   POST /auth/mfa/enrollment/start|verify      add the authenticator, recovery codes once
  *   POST /auth/security/step-up/*               proof of presence; throttled with 429
@@ -22,7 +22,12 @@ import { identityProblem } from "../identity/auth-flow.handlers";
 const PAGE = 20;
 const MAX_STEP_UP_FAILURES = 5;
 const STEP_UP_LOCK_SECONDS = 60;
-const PURPOSES = ["DisableMfa", "RegenerateRecoveryCodes", "ChangePassword"];
+const PURPOSES = [
+  "DisableMfa",
+  "RegenerateRecoveryCodes",
+  "ChangePassword",
+  "RevokeOtherSessions",
+];
 
 function securityOf(store: MockStore): SecurityDetails {
   return store.accountPages.securityOf(store.getCurrentUser().id, (minutes) =>
@@ -116,10 +121,10 @@ export const accountSecurityOperations = [
     route: "/auth/sessions/:sessionId/revoke",
     async handle({ params, store }) {
       const security = securityOf(store);
-      const target = security.sessions.find(
-        (s) => s.id === params.sessionId && s.status === "Active",
-      );
+      const target = security.sessions.find((s) => s.id === params.sessionId);
       if (!target) return notFound();
+      // Already ended: success, nothing changes and no second activity line.
+      if (target.status !== "Active") return { status: 200 };
       target.status = "Revoked";
       target.revokedAt = store.getClock().isoNow();
       security.activity.unshift({
@@ -135,7 +140,7 @@ export const accountSecurityOperations = [
     },
   }),
 
-  defineMockOperation({
+  defineMockOperation<Record<string, never>, { stepUpToken?: string }>({
     id: "account.sessions.revokeOthers",
     contract: {
       kind: "openapi",
@@ -143,13 +148,26 @@ export const accountSecurityOperations = [
     },
     method: "POST",
     route: "/auth/sessions/revoke-others",
-    async handle({ store }) {
+    async handle({ body, store }) {
       const security = securityOf(store);
-      for (const session of security.sessions)
-        if (!session.isCurrent && session.status === "Active") {
-          session.status = "Revoked";
-          session.revokedAt = store.getClock().isoNow();
-        }
+      const others = security.sessions.filter(
+        (s) => !s.isCurrent && s.status === "Active",
+      );
+      // Nobody else is signed in: nothing changes and no proof is spent.
+      if (others.length === 0) return ok({ revokedCount: 0 });
+      if (
+        security.proofs.get(body?.stepUpToken ?? "") !== "RevokeOtherSessions"
+      )
+        return identityProblem(
+          412,
+          "identity.security.step-up-required",
+          "Confirm first.",
+        );
+      security.proofs.delete(body?.stepUpToken ?? "");
+      for (const session of others) {
+        session.status = "Revoked";
+        session.revokedAt = store.getClock().isoNow();
+      }
       security.activity.unshift({
         id: `activity-${security.activity.length + 1}`,
         type: "OtherSessionsRevoked",
@@ -157,7 +175,7 @@ export const accountSecurityOperations = [
         ipAddress: null,
         userAgent: null,
       });
-      return { status: 200 };
+      return ok({ revokedCount: others.length });
     },
   }),
 

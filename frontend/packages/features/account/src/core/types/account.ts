@@ -99,7 +99,10 @@ export interface TwoFactorEnrollment {
 export type StepUpFactor = "mfa" | "password" | "oauth";
 
 export type StepUpPurpose =
-  "DisableMfa" | "RegenerateRecoveryCodes" | "ChangePassword";
+  | "DisableMfa"
+  | "RegenerateRecoveryCodes"
+  | "ChangePassword"
+  | "RevokeOtherSessions";
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;

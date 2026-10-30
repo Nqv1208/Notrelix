@@ -448,8 +448,14 @@ export function createAccountService(
       await api.post<void>(endpoints.auth.sessionRevoke(sessionId), {}, QUIET);
     },
 
-    async revokeOtherSessions(): Promise<void> {
-      await api.post<void>(endpoints.auth.sessionsRevokeOthers, {}, QUIET);
+    /** Needs a `RevokeOtherSessions` proof; answers how many other devices were signed out. */
+    async revokeOtherSessions(stepUpToken: string): Promise<number> {
+      const wire = await api.post<{ revokedCount?: number } | null>(
+        endpoints.auth.sessionsRevokeOthers,
+        { stepUpToken },
+        QUIET,
+      );
+      return wire?.revokedCount ?? 0;
     },
 
     async startTwoFactor(): Promise<TwoFactorEnrollment> {

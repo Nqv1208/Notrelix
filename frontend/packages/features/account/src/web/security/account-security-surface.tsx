@@ -72,8 +72,8 @@ export type AccountSecurityFlow =
     }
   | {
       readonly kind: "stepUp";
-      /** What the proof is for: turning two-factor off, or fresh backup codes. */
-      readonly purpose: "disable" | "renew";
+      /** What the proof is for: two-factor off, fresh backup codes, or ending every other device. */
+      readonly purpose: "disable" | "renew" | "others";
       readonly factor: "code" | "password";
       readonly error: "wrong" | "wait" | "failed" | null;
       readonly wait?: number;
@@ -87,7 +87,9 @@ export type AccountSecurityFlow =
       readonly wait?: number;
     }
   /** The password changed and every session, this one too, was ended. */
-  | { readonly kind: "passwordChanged" };
+  | { readonly kind: "passwordChanged" }
+  /** Asking before this device is signed out. */
+  | { readonly kind: "signOutThis" };
 
 export interface AccountSecurityData {
   /** The single sign-on provider that owns the password; `null` = none. */
@@ -127,6 +129,8 @@ export interface AccountSecuritySurfaceProps {
   readonly onSubmitCode?: (code: string) => void;
   readonly onSubmitPassword?: (password: string) => void;
   readonly onCloseFlow?: () => void;
+  /** Signs this device out after the confirmation. */
+  readonly onConfirmSignOutThis?: () => void;
   readonly onLoadMoreActivity?: () => void;
   readonly onRenewBackupCodes: () => void;
   readonly onSignOut: (sessionId: string) => void;
@@ -251,7 +255,7 @@ function FlowPanel({
   copy: AccountSecurityCopy;
   flow: Exclude<
     AccountSecurityFlow,
-    { kind: "password" } | { kind: "passwordChanged" }
+    { kind: "password" } | { kind: "passwordChanged" } | { kind: "signOutThis" }
   >;
   busy: boolean;
   onSubmitCode?: (code: string) => void;
@@ -303,7 +307,9 @@ function FlowPanel({
       ? t.enrollTitle
       : flow.purpose === "disable"
         ? t.disableTitle
-        : t.renewTitle;
+        : flow.purpose === "others"
+          ? t.othersTitle
+          : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -383,6 +389,56 @@ function FlowPanel({
   );
 }
 
+/** Signing out of the device in hand ends the session at once: ask first, with the safe answer focused. */
+function SignOutThisPanel({
+  copy,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  copy: AccountSecurityCopy;
+  busy: boolean;
+  onConfirm?: () => void;
+  onClose?: () => void;
+}) {
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+  const t = copy.flow;
+  return (
+    <section
+      aria-label={t.signOutThisTitle}
+      className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+    >
+      <b className="block text-body font-semibold text-foreground">
+        {t.signOutThisTitle}
+      </b>
+      <p className="m-0 mt-1 text-crumb text-muted-foreground">
+        {t.signOutThisText}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onConfirm}
+          className={cn(BTN_DANGER, FOCUS)}
+        >
+          {t.signOutThisConfirm}
+        </button>
+        <button
+          ref={cancelRef}
+          type="button"
+          onClick={onClose}
+          className={cn(BTN_SM, FOCUS)}
+        >
+          {t.cancel}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function SecurityBody({
   copy,
   data,
@@ -397,6 +453,7 @@ function SecurityBody({
   onSubmitCode,
   onSubmitPassword,
   onCloseFlow,
+  onConfirmSignOutThis,
   onLoadMoreActivity,
   onRenewBackupCodes,
   onSignOut,
@@ -558,6 +615,13 @@ function SecurityBody({
         <AccountPasswordChangedPanel
           copy={copy}
           onContinue={onPasswordChangedContinue}
+        />
+      ) : flow?.kind === "signOutThis" ? (
+        <SignOutThisPanel
+          copy={copy}
+          busy={busy}
+          onConfirm={onConfirmSignOutThis}
+          onClose={onCloseFlow}
         />
       ) : flow ? (
         <FlowPanel

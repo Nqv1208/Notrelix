@@ -52,6 +52,11 @@ export const en = {
     secretLabel: "Can't scan it? Enter this key in the app instead:",
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
+    othersTitle: "Confirm to sign out of all other devices",
+    signOutThisTitle: "Sign out of this device?",
+    signOutThisText:
+      "You will have to sign in again on this device to use Notrelix.",
+    signOutThisConfirm: "Sign out",
     codeText:
       "Enter a 6-digit code from your authenticator app or a backup code.",
     passwordText: "Enter your current password.",
@@ -123,6 +128,7 @@ export const en = {
     signOutLabel: "Sign out {{device}}",
     signOutThisLabel: "Sign out {{device}} (this device)",
     signedOut: "Signed out.",
+    gone: "That device was already signed out.",
   },
   others: {
     title: "Sign out of all other devices",
@@ -131,6 +137,8 @@ export const en = {
     action: "Sign out of all other devices",
     nobody: "No other device is signed in.",
     done: "Signed out of the other devices.",
+    doneCount_one: "Signed out of {{count}} other device.",
+    doneCount_other: "Signed out of {{count}} other devices.",
   },
   time: {
     now: "just now",
@@ -193,6 +201,11 @@ export const vi: AccountSecurityCopy = {
     secretLabel: "Không quét được? Hãy nhập khóa này vào ứng dụng:",
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
+    othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
+    signOutThisTitle: "Đăng xuất khỏi thiết bị này?",
+    signOutThisText:
+      "Bạn sẽ phải đăng nhập lại trên thiết bị này để dùng Notrelix.",
+    signOutThisConfirm: "Đăng xuất",
     codeText: "Nhập mã 6 số từ ứng dụng xác thực hoặc một mã dự phòng.",
     passwordText: "Nhập mật khẩu hiện tại của bạn.",
     codeLabel: "Mã",
@@ -261,6 +274,7 @@ export const vi: AccountSecurityCopy = {
     signOutLabel: "Đăng xuất {{device}}",
     signOutThisLabel: "Đăng xuất {{device}} (thiết bị này)",
     signedOut: "Đã đăng xuất.",
+    gone: "Thiết bị đó đã được đăng xuất từ trước.",
   },
   others: {
     title: "Đăng xuất mọi thiết bị khác",
@@ -269,6 +283,9 @@ export const vi: AccountSecurityCopy = {
     action: "Đăng xuất mọi thiết bị khác",
     nobody: "Không còn thiết bị nào khác đang đăng nhập.",
     done: "Đã đăng xuất các thiết bị khác.",
+    // Vietnamese has no singular/plural distinction; both forms stay complete.
+    doneCount_one: "Đã đăng xuất {{count}} thiết bị khác.",
+    doneCount_other: "Đã đăng xuất {{count}} thiết bị khác.",
   },
   time: {
     now: "vừa xong",

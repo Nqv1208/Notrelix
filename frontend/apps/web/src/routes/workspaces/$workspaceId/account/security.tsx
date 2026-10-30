@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AccountSecuritySurface,
   createUseProfile,
   createUseSecurity,
   passwordChangeFailureOf,
+  pluralCopy,
   useAccountSecurityCopy,
   type AccountSecurityData,
   type AccountPasswordSubmission,
@@ -13,6 +15,7 @@ import {
   type StepUpPurpose,
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { useRouteWorkspaceName, useToast } from "./use-account-pages";
 
 /** The seconds a throttled step must wait (429 `retryAfterSeconds`), or `null`. */
@@ -30,23 +33,26 @@ type Step =
   | { kind: "enroll"; methodId: string; secret: string; otpAuthUri: string }
   | {
       kind: "stepUp";
-      purpose: "disable" | "renew";
+      purpose: "disable" | "renew" | "others";
       factor: "code" | "password";
       challengeToken: string | null;
     }
   | { kind: "codes"; codes: readonly string[] }
   | { kind: "password" }
-  | { kind: "passwordChanged" };
+  | { kind: "passwordChanged" }
+  | { kind: "signOutThis" };
 
-const PURPOSE: Record<"disable" | "renew", StepUpPurpose> = {
+const PURPOSE: Record<"disable" | "renew" | "others", StepUpPurpose> = {
   disable: "DisableMfa",
   renew: "RegenerateRecoveryCodes",
+  others: "RevokeOtherSessions",
 };
 
 export function AccountSecurityPage() {
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountSecurityCopy();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const workspaceName = useRouteWorkspaceName();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
@@ -135,53 +141,65 @@ export function AccountSecurityPage() {
     ],
   );
 
-  const run = useCallback(
-    async (action: () => Promise<unknown>, message: string) => {
-      setBusy(true);
+  const signOutThisDevice = useCallback(async () => {
+    // The session is over: drop what it read, so the sign-in page is not sent back here.
+    clearApplicationCache(queryClient, { sessionEnded: true });
+    await navigate({ to: "/sign-in", replace: true });
+  }, [navigate, queryClient]);
+
+  const signOut = useCallback(
+    async (sessionId: string) => {
       setActionError(false);
+      // The device in hand ends the session at once: ask first.
+      if (activeSessions.find((s) => s.id === sessionId)?.isCurrent) {
+        setStep({ kind: "signOutThis" });
+        return;
+      }
+      setBusy(true);
       try {
-        await action();
+        await service.revokeSession(sessionId);
         await invalidate();
-        showNotice(message);
-      } catch {
-        setActionError(true);
+        showNotice(copy.sessions.signedOut);
+      } catch (error) {
+        // Not found: that device is already gone (ended elsewhere); show the list as it is.
+        if ((error as { status?: number }).status === 404) {
+          await invalidate();
+          showNotice(copy.sessions.gone);
+        } else setActionError(true);
       } finally {
         setBusy(false);
       }
     },
-    [invalidate, showNotice],
+    [
+      activeSessions,
+      copy.sessions.gone,
+      copy.sessions.signedOut,
+      invalidate,
+      service,
+      showNotice,
+    ],
   );
 
-  const signOutThisDevice = useCallback(async () => {
-    // The backend allows ending the current session: the device is signed out.
-    await navigate({ to: "/sign-in", replace: true });
-  }, [navigate]);
-
-  const signOut = useCallback(
-    async (sessionId: string) => {
-      const current = activeSessions.find((s) => s.id === sessionId)?.isCurrent;
-      if (current) {
-        setBusy(true);
-        try {
-          await service.revokeSession(sessionId);
-          await signOutThisDevice();
-        } catch {
-          setActionError(true);
-          setBusy(false);
-        }
-        return;
-      }
-      await run(
-        () => service.revokeSession(sessionId),
-        copy.sessions.signedOut,
-      );
-    },
-    [activeSessions, copy.sessions.signedOut, run, service, signOutThisDevice],
-  );
+  const confirmSignOutThis = useCallback(async () => {
+    const currentId = activeSessions.find((s) => s.isCurrent)?.id;
+    if (!currentId) {
+      setStep(null);
+      return;
+    }
+    setBusy(true);
+    setActionError(false);
+    try {
+      await service.revokeSession(currentId);
+      await signOutThisDevice();
+    } catch {
+      setActionError(true);
+      setBusy(false);
+    }
+  }, [activeSessions, service, signOutThisDevice]);
 
   // Turning two-factor on starts the enrollment; off asks for proof first.
   const beginStepUp = useCallback(
-    async (purpose: "disable" | "renew") => {
+    async (purpose: "disable" | "renew" | "others") => {
       setActionError(false);
       setStepError(null);
       try {
@@ -245,6 +263,21 @@ export function AccountSecurityPage() {
           setStep(null);
           await invalidate();
           showNotice(copy.twoFactor.turnedOff);
+        } else if (current.purpose === "others") {
+          const count = await service.revokeOtherSessions(token);
+          setStep(null);
+          await invalidate();
+          showNotice(
+            count > 0
+              ? pluralCopy(
+                  {
+                    one: copy.others.doneCount_one,
+                    other: copy.others.doneCount_other,
+                  },
+                  count,
+                )
+              : copy.others.nobody,
+          );
         } else {
           setStep({
             kind: "codes",
@@ -258,7 +291,15 @@ export function AccountSecurityPage() {
         setBusy(false);
       }
     },
-    [copy.twoFactor.turnedOff, invalidate, service, showNotice],
+    [
+      copy.others.doneCount_one,
+      copy.others.doneCount_other,
+      copy.others.nobody,
+      copy.twoFactor.turnedOff,
+      invalidate,
+      service,
+      showNotice,
+    ],
   );
 
   const submitCode = useCallback(
@@ -372,7 +413,12 @@ export function AccountSecurityPage() {
 
   const flow = useMemo<AccountSecurityFlow | null>(() => {
     if (!step) return null;
-    if (step.kind === "codes" || step.kind === "passwordChanged") return step;
+    if (
+      step.kind === "codes" ||
+      step.kind === "passwordChanged" ||
+      step.kind === "signOutThis"
+    )
+      return step;
     if (step.kind === "password")
       return {
         kind: "password",
@@ -433,9 +479,8 @@ export function AccountSecurityPage() {
       onLoadMoreActivity={() => void loadMoreActivity()}
       onRenewBackupCodes={() => void beginStepUp("renew")}
       onSignOut={(id) => void signOut(id)}
-      onSignOutOthers={() =>
-        void run(() => service.revokeOtherSessions(), copy.others.done)
-      }
+      onSignOutOthers={() => void beginStepUp("others")}
+      onConfirmSignOutThis={() => void confirmSignOutThis()}
       onRetry={() => {
         void summary.refetch();
         void sessions.refetch();
