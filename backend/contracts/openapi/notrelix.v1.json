@@ -6232,7 +6232,7 @@
           "Identity.Mfa"
         ],
         "summary": "Invalidate existing recovery codes and issue a fresh batch",
-        "description": "Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.",
+        "description": "Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose. The codes in the answer are shown once and never readable again; a retry makes another batch and voids this one.",
         "operationId": "Identity.Mfa.RegenerateRecoveryCodes",
         "requestBody": {
           "content": {
@@ -6275,8 +6275,28 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6303,7 +6323,7 @@
           "Identity.Mfa"
         ],
         "summary": "Disable MFA and revoke all active sessions",
-        "description": "Requires a single-use step-up proof for the DisableMfa purpose.",
+        "description": "Requires a single-use step-up proof for the DisableMfa purpose. Disabling an already-off factor answers 200 and changes nothing.",
         "operationId": "Identity.Mfa.Disable",
         "requestBody": {
           "content": {
@@ -6341,6 +6361,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {

@@ -1698,7 +1698,7 @@ export interface paths {
         put?: never;
         /**
          * Invalidate existing recovery codes and issue a fresh batch
-         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.
+         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose. The codes in the answer are shown once and never readable again; a retry makes another batch and voids this one.
          */
         post: operations["Identity.Mfa.RegenerateRecoveryCodes"];
         delete?: never;
@@ -1718,7 +1718,7 @@ export interface paths {
         put?: never;
         /**
          * Disable MFA and revoke all active sessions
-         * @description Requires a single-use step-up proof for the DisableMfa purpose.
+         * @description Requires a single-use step-up proof for the DisableMfa purpose. Disabling an already-off factor answers 200 and changes nothing.
          */
         post: operations["Identity.Mfa.Disable"];
         delete?: never;
@@ -11964,8 +11964,26 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12015,6 +12033,15 @@ export interface operations {
             };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
