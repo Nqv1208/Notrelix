@@ -354,6 +354,41 @@ export function createCardApi(client: NotrelixClient) {
       return mapAttachmentDtoToCardFile(dto, cardId);
     },
 
+    /**
+     * Attaches a web link: `POST /board-items/{id}/attachments` with the URL
+     * (`CreateBoardItemAttachment`). One key per user action.
+     */
+    async createCardLink(
+      cardId: string,
+      link: { url: string; name: string },
+      options: { idempotencyKey: string },
+    ): Promise<void> {
+      await api.post<void>(
+        endpoints.boardItems.attachments(cardId),
+        {
+          filename: link.name,
+          url: link.url,
+          sizeBytes: 0,
+          contentType: "text/uri-list",
+          source: "link",
+        },
+        { idempotencyKey: options.idempotencyKey },
+      );
+    },
+
+    /** Attaches a web link: `POST /board-items/{id}/attachments` with its URL. */
+    async addWebLink(
+      cardId: string,
+      link: { readonly url: string; readonly name: string },
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      await api.post<unknown>(
+        endpoints.boardItems.attachments(cardId),
+        { filename: link.name, url: link.url, source: "link" },
+        options ?? { headers: { "Idempotency-Key": crypto.randomUUID() } },
+      );
+    },
+
     /** The bytes of a stored file, read with the session (never a URL token). */
     downloadCardFile(
       cardId: string,
