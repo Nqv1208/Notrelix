@@ -161,9 +161,9 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-G03 | A visitor opens a resource through a share link | G | Anonymous or signed-in visitor | No | No | No | No | BLOCKED | Owner must decide the execution principal of an anonymous visitor, abuse controls and whether Board links are in scope at all (76.4 says ... |
 | UC-GOV-G04 | List the share links of a resource | G | Board or Page sharer | No | No | Part | No | DEFINED | No endpoint. Enterprise baseline. |
 | UC-GOV-G05 | Link expiry, password and rotation | G | Link sharer | Part | No | No | No | BLOCKED | Depends on UC-GOV-G03 (no consumer). Domain rules exist and are tested. |
-| UC-GOV-G06 | Turn share links off for the whole workspace | G | Workspace Owner, Admin | Part | Yes | Yes | No | INTEGRATING | Defect: `CreateShareLinkCommandHandler` never reads `AllowPublicSharing`, so the policy is stored and displayed but not enforced; no ... |
-| UC-GOV-G07 | Show the sharing policy inside the resource Share dialog | G | Board or Page sharer | Yes | Yes | Yes | No | INTEGRATING | Mock-only path; page-level Share has no equivalent. |
-| UC-GOV-G08 | Copy the resource address (a locator, not a share link) | G | Any viewer | Yes | Yes | Yes | No | INTEGRATING | No real e2e of the non-member open. |
+| UC-GOV-G06 | Turn share links off for the whole workspace | G | Workspace Owner, Admin | Part | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-G07 | Show the sharing policy inside the resource Share dialog | G | Board or Page sharer | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-G08 | Copy the resource address (a locator, not a share link) | G | Any viewer | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
 | UC-GOV-G09 | Sharing is never transitive | G | Server | Part | No | No | No | DEFINED | No test pins non-transitivity. |
 | UC-GOV-G10 | Allow or stop guest invitations for the workspace (enterprise baseline) | G | Workspace Owner, Admin | No | Part | Part | No | DEFINED | New workspace setting, new check in UC-GOV-D07. |
 | UC-GOV-H01 | View Sharing and security of the workspace | H | Workspace Owner, Admin | Yes | Yes | Yes | No | INTEGRATING | No real e2e; no 1-px diff; endpoint owned by Workspaces. |
@@ -939,8 +939,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, error, conflict, pending, permission denied
 - Rules: [Governance §39.1](../../product/governance.md) GOV-032, GOV-011, GOV-018; WGREQ074, WGREQ148.
 - Acceptance: Given policy off, When an Editor creates a link, Then refused. Given policy off then on, Then a valid link works again.
-- Evidence: BE `PUT /api/v1/workspaces/{workspaceId}/settings` (Workspaces.Settings.UpdateWorkspaceSettings), `GET .../settings` (GetWorkspaceSettings), `WorkspaceSettings.AllowPublicSharing` · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/security.tsx` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Policies/WorkspacePolicyTests.cs`; Workspaces settings tests · Real e2e none (`frontend/e2e/mock/workspace-teams.mock.e2e.spec.ts` only) · Design `Final-Teams`, `Final-Settings`
-- State: INTEGRATING - Defect: `CreateShareLinkCommandHandler` never reads `AllowPublicSharing`, so the policy is stored and displayed but not enforced; no audit of the change. Setting is owned by Workspaces ([Workspaces use cases](workspaces.md)).
+- Evidence: BE `PUT /api/v1/workspaces/{workspaceId}/settings` (Workspaces.Settings.UpdateWorkspaceSettings), `GET .../settings` (GetWorkspaceSettings), `WorkspaceSettings.AllowPublicSharing` · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/security.tsx` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Policies/WorkspacePolicyTests.cs`; Workspaces settings tests · Real e2e none (`frontend/e2e/mock/workspace-teams.mock.e2e.spec.ts` only) · Design `Final-Teams`, `Final-Settings` · BE (enforcement) `Governance/Abstractions/IWorkspaceSharingPolicy.cs`, `Infrastructure/Services/WorkspaceSharingPolicy.cs`, `CreateShareLinkCommandHandler`
+- State: INTEGRATING. Built: creating a share link is refused with the rule `ShareLinksTurnedOff` while the workspace setting `AllowPublicSharing` is off (it only refuses; nothing was widened), and a workspace that never turned the setting on does not allow links. No visitor path exists to serve a link (UC-GOV-G03 waits on the owner decision on the anonymous principal), so "no link authorizes access" holds trivially. Not built: the audit entry of the setting change (UC-GOV-F04, DEFINED). Missing: tests and owner check (an Application test of the refusal, a real e2e of the toggle). Setting is owned by Workspaces ([Workspaces use cases](workspaces.md)).
 
 ### UC-GOV-G07 Show the sharing policy inside the resource Share dialog
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -954,7 +954,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §39.1, §94](../../product/governance.md) GOV-032.
 - Acceptance: Given links off, When a sharer opens Share, Then the link control is replaced by the policy note.
 - Evidence: FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx` (`createUseWorkspaceSettings`) · Tests `frontend/apps/web/src/shell/workspace/__tests__/use-board-sharing.component.test.tsx` · Real e2e none · Design `Final-Share`, `Final-M-Share`
-- State: INTEGRATING - Mock-only path; page-level Share has no equivalent.
+- State: INTEGRATING. Built for a Board: the dialog reads the settings and shows the policy state. Not built: a page-level Share equivalent (Page share is UC-GOV-D15, IMPLEMENTING). Missing: tests and owner check (the path only runs against the mock backend in e2e).
 
 ### UC-GOV-G08 Copy the resource address (a locator, not a share link)
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -968,7 +968,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §39.1](../../product/governance.md) GOV-010, GOV-032.
 - Acceptance: Given a non-member, When they open a copied address, Then NotFound.
 - Evidence: FE `board-share-dialog.tsx` · Tests `use-board-sharing.component.test.tsx` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING - No real e2e of the non-member open.
+- State: INTEGRATING. Built end to end (the app address is copied; a person without access gets NotFound on opening it); nothing left to build. Missing: tests and owner check (a real e2e of the non-member open).
 
 ### UC-GOV-G09 Sharing is never transitive
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)

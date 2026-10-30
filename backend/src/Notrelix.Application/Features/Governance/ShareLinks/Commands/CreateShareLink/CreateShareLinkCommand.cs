@@ -37,23 +37,34 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
     private readonly IGovernanceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IWorkspaceSharingPolicy _sharingPolicy;
 
     public CreateShareLinkCommandHandler(
         IGovernanceDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IWorkspaceSharingPolicy sharingPolicy)
     {
+        _sharingPolicy = sharingPolicy;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public Task<Result<CreateShareLinkResponse>> Handle(
+    public async Task<Result<CreateShareLinkResponse>> Handle(
         CreateShareLinkCommand request,
         CancellationToken cancellationToken)
     {
         var actorId = _requestContext.UserId;
         var workspaceId = _requestContext.RequireWorkspaceId();
+
+        // The workspace owner and admins may turn links off for the whole workspace; while off none is made.
+        if (!await _sharingPolicy.AllowsShareLinksAsync(workspaceId, cancellationToken))
+        {
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                "ShareLinksTurnedOff",
+                "Share links are turned off for this workspace.");
+        }
 
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
         var tokenHash = ShareLinkTokenHash.Create(rawToken);
@@ -82,9 +93,8 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
             shareLink.Status == ShareLinkStatus.Active,
             shareLink.ExpiresAt);
 
-        return Task.FromResult(
-            Result<CreateShareLinkResponse>.Success(
-                new CreateShareLinkResponse(dto, rawToken)));
+        return Result<CreateShareLinkResponse>.Success(
+            new CreateShareLinkResponse(dto, rawToken));
     }
 
 }
