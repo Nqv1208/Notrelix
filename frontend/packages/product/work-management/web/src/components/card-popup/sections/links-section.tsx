@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { AlertCircle, ChevronDown, Plus, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  Plus,
+  Search,
+  Unlink,
+  X,
+} from "lucide-react";
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
 import { useCard } from "@notrelix/work-management-state";
 import type { ItemSheetLink } from "../../card-detail/task-detail-types";
@@ -61,7 +68,7 @@ function LinkRow({
   onUnlink?: () => void;
 }) {
   return (
-    <div className="mb-1.5 box-border flex min-h-11 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
+    <div className="mb-1.5 box-border flex min-h-12 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
       {itemKey ? (
         <span className="font-mono text-[12px] text-meta-foreground">
           {itemKey}
@@ -74,8 +81,13 @@ function LinkRow({
       </span>
       {person ? <PersonMark member={person} size={20} /> : null}
       {onUnlink ? (
-        <IconBtn small aria-label={unlinkLabel} onClick={onUnlink}>
-          <X aria-hidden="true" className="size-4" />
+        <IconBtn
+          small
+          aria-label={unlinkLabel}
+          onClick={onUnlink}
+          className="size-11 md:size-8"
+        >
+          <Unlink aria-hidden="true" className="size-4" />
         </IconBtn>
       ) : null}
     </div>

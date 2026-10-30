@@ -78,7 +78,7 @@ const dayOf = (value: string | null | undefined, tz?: string): Day | null => {
 };
 
 const INPUT =
-  "box-border h-9 w-full min-w-0 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none disabled:bg-background disabled:text-meta-foreground";
+  "box-border h-11 w-full min-w-0 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] md:h-9 text-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none disabled:bg-background disabled:text-meta-foreground";
 
 /** The time of the due date: a list of half hours. */
 function TimeSelect({
@@ -126,7 +126,7 @@ function TimeSelect({
       >
         <Clock
           aria-hidden="true"
-          className="size-4 shrink-0 text-meta-foreground"
+          className="hidden size-4 shrink-0 text-meta-foreground md:block"
         />
         {disabled && placeholder ? (
           <span className="text-meta-foreground">{placeholder}</span>
@@ -135,7 +135,7 @@ function TimeSelect({
         )}
         <ChevronDown
           aria-hidden="true"
-          className="ml-auto size-4 text-meta-foreground"
+          className="ml-auto size-[13px] text-meta-foreground md:size-4"
         />
       </button>
       {open ? (

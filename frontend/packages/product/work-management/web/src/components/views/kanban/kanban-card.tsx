@@ -424,7 +424,7 @@ function KanbanCardContent({
                 "inline-flex h-5 shrink-0 items-center gap-0.75 rounded-[5px] font-semibold tabular-nums",
                 crowded
                   ? "px-0.5"
-                  : "bg-state-hover-strong px-1 text-muted-foreground",
+                  : "bg-state-hover-strong px-0.5 text-muted-foreground",
               )}
             >
               <SquareCheck className="size-3.25" aria-hidden="true" />

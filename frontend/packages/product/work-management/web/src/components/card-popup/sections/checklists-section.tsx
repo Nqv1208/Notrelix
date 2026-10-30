@@ -220,7 +220,7 @@ function ChecklistBlock({
         ) : null}
       </SectionHead>
       {total > 0 ? (
-        <div className="mt-1 mb-0.5 flex items-center gap-2.5">
+        <div className="mt-1.5 mb-1 flex items-center gap-2.5 md:mt-1 md:mb-0.5">
           <span className="w-9 text-[12px] leading-[1.45] text-meta-foreground tabular-nums">
             {`${percent}%`}
           </span>

@@ -542,7 +542,7 @@ export function DescriptionSection() {
       ) : text !== "" ? (
         <div
           className={cn(
-            "mt-1.5 rounded-[8px] bg-background px-3 py-2 text-[14px] leading-[1.55]",
+            "mt-1.5 rounded-[8px] bg-background px-3 py-2.5 text-[14px] leading-[1.55] md:py-2",
             canEdit && "cursor-text",
           )}
           onClick={

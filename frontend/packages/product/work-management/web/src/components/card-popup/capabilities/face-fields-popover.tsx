@@ -176,7 +176,7 @@ export function FaceFieldsPopover({
               onDragOver={(event) => canEdit && event.preventDefault()}
               onDrop={(event) => onDrop(event, index)}
               className={cn(
-                "grid min-h-11 grid-cols-[18px_36px_minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] px-1 hover:bg-state-hover-strong",
+                "grid min-h-13 grid-cols-[18px_36px_minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] px-1 hover:bg-state-hover-strong md:min-h-11",
                 dragging === index && "opacity-60",
               )}
             >
@@ -228,7 +228,7 @@ export function FaceFieldsPopover({
             {rest.map((field) => (
               <li
                 key={field.id}
-                className="grid min-h-11 grid-cols-[18px_36px_minmax(0,1fr)] items-center gap-2 rounded-[8px] px-1 hover:bg-state-hover-strong"
+                className="grid min-h-13 grid-cols-[18px_36px_minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] px-1 hover:bg-state-hover-strong md:min-h-11"
               >
                 <span aria-hidden="true" />
                 <Switch
@@ -240,6 +240,7 @@ export function FaceFieldsPopover({
                   onToggle={() => set([...value.cardFieldIds, field.id])}
                 />
                 <FieldText name={field.name} type={nameOf(field)} />
+                <span aria-hidden="true" />
               </li>
             ))}
           </ul>

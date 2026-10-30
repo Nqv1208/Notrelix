@@ -169,21 +169,21 @@ export function FieldsSection() {
           <div
             key={field.id}
             data-field-row={field.id}
-            className="grid min-h-9 grid-cols-[140px_minmax(0,1fr)] items-center gap-x-3"
+            className="grid min-h-11 grid-cols-[116px_minmax(0,1fr)] items-center gap-x-3 md:min-h-9 md:grid-cols-[140px_minmax(0,1fr)]"
           >
-            <span className="truncate text-[13px] font-semibold text-muted-foreground">
+            <span className="text-[13px] leading-[1.25] font-semibold text-muted-foreground md:truncate md:leading-[1.45]">
               {field.name}
             </span>
             <FieldControl field={field} variant="ctl" />
           </div>
         ))}
-        <div className="grid min-h-9 grid-cols-[140px_minmax(0,1fr)] items-center gap-x-3">
-          <span className="truncate text-[13px] font-semibold text-muted-foreground">
+        <div className="grid min-h-11 grid-cols-[116px_minmax(0,1fr)] items-center gap-x-3 md:min-h-9 md:grid-cols-[140px_minmax(0,1fr)]">
+          <span className="text-[13px] leading-[1.25] font-semibold text-muted-foreground md:truncate md:leading-[1.45]">
             {t.createdAt}
           </span>
           <span
             title={copy.shell.createdHint}
-            className="box-border flex h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] px-2 text-[14px] text-muted-foreground"
+            className="box-border flex h-11 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] px-2 text-[14px] text-muted-foreground md:h-8"
           >
             <Clock aria-hidden="true" className="size-[13px]" />
             {mode === "create"

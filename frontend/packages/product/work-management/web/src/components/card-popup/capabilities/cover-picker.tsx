@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Check, ImagePlus, Image as ImageIcon } from "lucide-react";
-import { Button, PopoverTrigger, cn } from "@notrelix/ui-web";
+import { PopoverTrigger, cn } from "@notrelix/ui-web";
 import {
   CARD_COVER_COLORS,
   type CardCover,
@@ -12,7 +12,7 @@ import {
   useItemSettingsWrites,
   useWorkManagementServices,
 } from "@notrelix/work-management-state";
-import { PanelBtn, PanelPopover } from "../popup-ui";
+import { IconBtn, PanelBtn, PanelPopover } from "../popup-ui";
 import { Caption, Hint, PickerHead } from "../pickers/picker-bits";
 import { COVER_COLOR_CLASS, useCoverImageUrl } from "./card-cover";
 import { fillCapabilityCopy } from "./capabilities.copy";
@@ -129,17 +129,14 @@ export function CoverPicker({
       align="end"
       trigger={
         <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
+          <IconBtn
             disabled={disabled}
             data-popup-cover=""
             aria-label={copy.cover.open}
             title={copy.cover.open}
           >
-            <ImageIcon aria-hidden="true" />
-          </Button>
+            <ImageIcon aria-hidden="true" className="size-4" />
+          </IconBtn>
         </PopoverTrigger>
       }
     >

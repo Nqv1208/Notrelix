@@ -107,7 +107,7 @@ export function ChipsRow() {
     <>
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         <FieldGroup label={t.assignees}>
-          <div className="flex min-h-9 items-center">
+          <div className="flex min-h-11 items-center md:min-h-9">
             {canEdit || card.members.length > 0 ? (
               <button
                 type="button"
@@ -118,7 +118,7 @@ export function ChipsRow() {
                     : t.assignees
                 }
                 aria-haspopup="dialog"
-                className="box-border flex h-9 items-center rounded-[8px] border-0 bg-transparent px-1.5 hover:bg-state-hover-strong disabled:cursor-default disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="box-border flex h-11 items-center rounded-[8px] border-0 bg-transparent px-1.5 md:h-9 hover:bg-state-hover-strong disabled:cursor-default disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 onClick={(event) =>
                   openPicker("assignees", event.currentTarget)
                 }

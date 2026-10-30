@@ -27,7 +27,7 @@ export const CHECKLIST_COPY_NONE = "none";
 
 /** The select button of the add-checklist form: `.in` (36 px, 8 px radius) with its chevron. */
 const TRIGGER =
-  "box-border h-9 w-full justify-start gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground [&>svg:last-child]:ml-auto [&>svg:last-child]:size-[13px]";
+  "box-border h-11 w-full justify-start data-[size=default]:h-11 md:data-[size=default]:h-9 md:h-9 gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground [&>svg:last-child]:ml-auto [&>svg:last-child]:size-[13px]";
 
 /** `.ddl` and `.opt`: a 10 px radius list with 6 px around 44 px rows (the viewport keeps the trigger's width). */
 const LIST = "rounded-[10px] p-0.5 [&_[data-radix-select-viewport]]:min-w-0";

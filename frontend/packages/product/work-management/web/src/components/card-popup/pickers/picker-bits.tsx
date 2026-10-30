@@ -49,7 +49,7 @@ export function SearchField({
     if (autoFocus) ref.current?.focus();
   }, [autoFocus]);
   return (
-    <label className="box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
+    <label className="box-border flex h-11 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] md:h-9 focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
       <span className="sr-only">{label}</span>
       <Search
         aria-hidden="true"

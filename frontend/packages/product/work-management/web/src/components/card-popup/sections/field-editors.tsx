@@ -61,9 +61,9 @@ const CLOSE_ICONS = {
 
 /** `.frv`: the value of a field row, drawn as plain text until it is hovered or edited, 8 px wider than its column so the text lines up with the label's column. */
 const CTL =
-  "box-border flex h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] border border-transparent bg-transparent px-2 text-left text-[14px] text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed focus-within:border-primary focus-within:bg-popover focus-within:ring-[3px] focus-within:ring-brand-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "box-border flex h-11 md:h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] border border-transparent bg-transparent px-2 text-left text-[14px] text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed focus-within:border-primary focus-within:bg-popover focus-within:ring-[3px] focus-within:ring-brand-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 const CTL_RO =
-  "box-border flex h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] border border-transparent bg-transparent px-2 text-[14px] text-muted-foreground";
+  "box-border flex h-11 md:h-8 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] border border-transparent bg-transparent px-2 text-[14px] text-muted-foreground";
 
 /** `dd/mm/yyyy` of a `yyyy-mm-dd` value; "" when it is not a day. */
 export function dayText(value: unknown): string {

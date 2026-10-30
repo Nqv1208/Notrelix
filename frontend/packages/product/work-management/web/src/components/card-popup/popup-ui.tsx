@@ -44,7 +44,7 @@ export const IconBtn = forwardRef<
       type={type}
       className={cn(
         "inline-grid shrink-0 place-items-center rounded-[8px] border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover-strong hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
-        small ? "size-8" : "size-11 md:size-9",
+        small ? "size-11 md:size-8" : "size-11 md:size-9",
         FOCUS,
         className,
       )}
@@ -128,7 +128,7 @@ export const SmallBtn = forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex h-7 items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-popover px-2.5 text-[12.5px] font-medium text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-11 items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-popover px-3 text-[13px] font-medium text-foreground md:h-7 md:px-2.5 md:text-[12.5px] hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50",
         on && "bg-state-hover-strong ring-2 ring-primary",
         FOCUS,
         className,
@@ -155,7 +155,9 @@ export const PanelBtn = forwardRef<
       type={type}
       className={cn(
         "inline-flex items-center justify-center gap-[7px] rounded-[8px] border text-center font-medium disabled:cursor-not-allowed disabled:opacity-55",
-        small ? "h-8 px-3 text-[13px]" : "h-9 px-3.5 text-[13.5px]",
+        small
+          ? "h-11 px-3 text-[13px] md:h-8"
+          : "h-11 px-3.5 text-[13.5px] md:h-9",
         variant === "default" &&
           "border-line-strong bg-popover text-foreground hover:bg-state-hover-strong",
         variant === "primary" &&
@@ -229,8 +231,8 @@ export function SectionHead({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-8 items-center gap-2">
-      <h3 className="m-0 flex-1 text-[15px] leading-[1.45] font-[650] tracking-[-0.005em]">
+    <div className="flex min-h-11 items-center gap-2 md:min-h-8">
+      <h3 className="m-0 flex-1 text-[16px] leading-[1.45] md:text-[15px] font-[650] tracking-[-0.005em]">
         {title}
       </h3>
       {children}
@@ -248,7 +250,7 @@ export const LinkBtn = forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-[6px] border-0 bg-transparent px-2.5 text-[13px] font-semibold text-brand-ink hover:bg-state-hover-strong disabled:opacity-50",
+        "inline-flex h-11 items-center gap-1.5 rounded-[6px] border-0 bg-transparent px-2.5 text-[13px] font-semibold text-brand-ink md:h-7 hover:bg-state-hover-strong disabled:opacity-50",
         FOCUS,
         className,
       )}
@@ -281,7 +283,9 @@ export function EmptySection({
         {icon}
       </span>
       <b className="text-[14px] leading-[1.45] font-[650]">{label}</b>
-      <span className="text-[13.5px] leading-[1.45] text-meta-foreground">· {none}</span>
+      <span className="text-[13.5px] leading-[1.45] text-meta-foreground">
+        · {none}
+      </span>
       <span className="flex-1" />
       {children}
     </section>
@@ -320,7 +324,8 @@ function PanelPopoverDesktop({
       <PopoverContent
         align={
           // Under a control on the right half of the screen the panel grows leftward, over the card, not the comments.
-          anchor && anchor.getBoundingClientRect().left > window.innerWidth * 0.4
+          anchor &&
+          anchor.getBoundingClientRect().left > window.innerWidth * 0.4
             ? "end"
             : align
         }
@@ -455,7 +460,7 @@ export const PanelInput = forwardRef<
     <input
       ref={ref}
       className={cn(
-        "box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground placeholder:text-meta-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none",
+        "box-border h-11 w-full rounded-[8px] border border-line-strong bg-popover px-3 text-[14px] text-foreground md:h-9 placeholder:text-meta-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none",
         invalid && "border-danger ring-[3px] ring-danger-subtle",
         className,
       )}

@@ -11,7 +11,10 @@ import {
   SquareCheck,
   X,
 } from "lucide-react";
-import { useFullBoard, useLinkablePages } from "@notrelix/work-management-state";
+import {
+  useFullBoard,
+  useLinkablePages,
+} from "@notrelix/work-management-state";
 import { cn } from "@notrelix/ui-web";
 import { foldForSearch } from "../../item-page/item-pickers";
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
@@ -73,7 +76,10 @@ function Uploads() {
                 {upload.name}
               </b>
               {failed && upload.retryable ? (
-                <PanelBtn small onClick={() => callbacks.onRetryUpload?.(upload.id)}>
+                <PanelBtn
+                  small
+                  onClick={() => callbacks.onRetryUpload?.(upload.id)}
+                >
                   {t.retry}
                 </PanelBtn>
               ) : null}
@@ -97,7 +103,10 @@ function Uploads() {
                 role="alert"
                 className="m-0 mt-1 flex items-start gap-1.5 text-[12.5px] font-medium text-danger-text"
               >
-                <AlertCircle aria-hidden="true" className="mt-px size-3.5 shrink-0" />
+                <AlertCircle
+                  aria-hidden="true"
+                  className="mt-px size-3.5 shrink-0"
+                />
                 {(pageCopy.files[upload.error ?? "failed"] ?? t.failed).replace(
                   "{{limit}}",
                   upload.limit ?? "",
@@ -111,7 +120,9 @@ function Uploads() {
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={
-                    upload.progress == null ? undefined : Math.round(upload.progress)
+                    upload.progress == null
+                      ? undefined
+                      : Math.round(upload.progress)
                   }
                   className="mt-2 h-1 overflow-hidden rounded-full bg-state-hover-strong"
                 >
@@ -163,7 +174,10 @@ function LinkRow({ url, onClose }: { url: URL; onClose: () => void }) {
       }}
     >
       <p className="m-0 flex items-center gap-2 px-1 text-[13.5px]">
-        <Link2 aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        <Link2
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
         <b className="font-semibold">{url.host}</b>
         <span className="min-w-0 truncate text-muted-foreground">{path}</span>
       </p>
@@ -253,13 +267,19 @@ export function AttachPanel({
   const pageHits: Hit[] = actions.linkPage
     ? pages.pages
         .filter((p) => !needle || foldForSearch(p.title).includes(needle))
-        .map((p) => ({ id: p.id, kind: "page" as const, title: p.title || t.pageUntitled }))
+        .map((p) => ({
+          id: p.id,
+          kind: "page" as const,
+          title: p.title || t.pageUntitled,
+        }))
     : [];
   const taskHits: Hit[] = callbacks.onAddLink
     ? tasks
         .filter((x) => x.id !== card.id)
         .filter(
-          (x) => !needle || foldForSearch(`${x.key ?? ""} ${x.title}`).includes(needle),
+          (x) =>
+            !needle ||
+            foldForSearch(`${x.key ?? ""} ${x.title}`).includes(needle),
         )
         .map((x) => ({
           id: x.id,
@@ -281,11 +301,20 @@ export function AttachPanel({
   };
   const icon = (hit: Hit): ReactNode =>
     hit.kind === "page" ? (
-      <FileText aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <FileText
+        aria-hidden="true"
+        className="size-4 shrink-0 text-muted-foreground"
+      />
     ) : hit.done ? (
-      <Check aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <Check
+        aria-hidden="true"
+        className="size-4 shrink-0 text-muted-foreground"
+      />
     ) : (
-      <SquareCheck aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <SquareCheck
+        aria-hidden="true"
+        className="size-4 shrink-0 text-muted-foreground"
+      />
     );
   const row = (hit: Hit) => (
     <button
@@ -296,7 +325,9 @@ export function AttachPanel({
     >
       {icon(hit)}
       {hit.key ? (
-        <span className="font-mono text-[12px] text-meta-foreground">{hit.key}</span>
+        <span className="font-mono text-[12px] text-meta-foreground">
+          {hit.key}
+        </span>
       ) : null}
       <span className="min-w-0 flex-1 truncate">{hit.title}</span>
     </button>
@@ -310,110 +341,126 @@ export function AttachPanel({
 
   return (
     <>
-      <div className="flex h-12 items-center pr-3 pl-2">
+      <div className="flex h-13 items-center px-2 md:h-12 md:pr-3">
         {onBack ? (
           <IconBtn small aria-label={copy.pickers.back} onClick={onBack}>
             <ArrowLeft aria-hidden="true" className="size-4" />
           </IconBtn>
         ) : (
-          <span className="size-8" />
+          <span className="size-11 md:size-8" />
         )}
-        <b className="ml-1 flex-1 text-center text-[14px] font-[650]">{t.title}</b>
+        <b className="ml-1 flex-1 text-center text-[14px] font-[650]">
+          {t.title}
+        </b>
         <IconBtn small aria-label={copy.pickers.close} onClick={onClose}>
           <X aria-hidden="true" className="size-4" />
         </IconBtn>
       </div>
-      <div className="px-3 pb-3">
-      <Uploads />
-      <input
-        ref={file}
-        type="file"
-        multiple
-        hidden
-        tabIndex={-1}
-        onChange={(event) => {
-          for (const picked of Array.from(event.target.files ?? []))
-            callbacks.onAddFile?.(picked);
-          event.target.value = "";
-        }}
-      />
-      {callbacks.onAddFile ? (
-        <div className="box-border rounded-[10px] border border-dashed border-line-strong p-3">
-          <div className="flex items-center gap-2.5">
-            <PanelBtn small onClick={() => file.current?.click()}>
-              <Paperclip aria-hidden="true" className="size-4" />
-              {t.chooseFile}
-            </PanelBtn>
-            <span className="text-[12.5px] text-muted-foreground">{t.limit}</span>
-          </div>
-          <span className="mt-2 block text-[12px] text-meta-foreground">{t.dropHint}</span>
-        </div>
-      ) : null}
-      <label className="mt-3 box-border flex h-9 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-2.5 text-[14px] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
-        <span className="sr-only">{t.smartLabel}</span>
-        {url ? (
-          <Link2 aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
-        ) : (
-          <Search aria-hidden="true" className="size-4 shrink-0 text-brand-ink" />
-        )}
+      <div className="pb-3 md:px-3">
+        <Uploads />
         <input
-          type="text"
-          autoFocus
-          data-picker-search=""
-          value={query}
-          placeholder={t.smartPlaceholder}
+          ref={file}
+          type="file"
+          multiple
+          hidden
+          tabIndex={-1}
           onChange={(event) => {
-            setQuery(event.target.value);
-            setFailed(false);
+            for (const picked of Array.from(event.target.files ?? []))
+              callbacks.onAddFile?.(picked);
+            event.target.value = "";
           }}
-          className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] text-foreground outline-none placeholder:text-meta-foreground"
         />
-      </label>
-      {url ? (
-        <LinkRow key={url.href} url={url} onClose={onClose} />
-      ) : needle === "" ? (
-        recent.length > 0 ? (
-          <div className="-mx-1 mt-1.5 pt-1">
-            <ListCaption>{t.recent}</ListCaption>
-            {recent.map(row)}
+        {callbacks.onAddFile ? (
+          <div className="box-border rounded-[10px] border border-dashed border-line-strong p-3">
+            <div className="flex items-center gap-2.5">
+              <PanelBtn small onClick={() => file.current?.click()}>
+                <Paperclip aria-hidden="true" className="size-4" />
+                {t.chooseFile}
+              </PanelBtn>
+              <span className="text-[12.5px] text-muted-foreground">
+                {t.limit}
+              </span>
+            </div>
+            <span className="mt-2 hidden text-[12px] text-meta-foreground md:block">
+              {t.dropHint}
+            </span>
           </div>
-        ) : null
-      ) : (
-        <>
-          {pageHits.length > 0 ? (
+        ) : null}
+        <label className="mt-3 box-border flex h-11 w-full items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-2.5 md:h-9 text-[14px] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-brand-subtle">
+          <span className="sr-only">{t.smartLabel}</span>
+          {url ? (
+            <Link2
+              aria-hidden="true"
+              className="size-4 shrink-0 text-brand-ink"
+            />
+          ) : (
+            <Search
+              aria-hidden="true"
+              className="size-4 shrink-0 text-brand-ink"
+            />
+          )}
+          <input
+            type="text"
+            autoFocus
+            data-picker-search=""
+            value={query}
+            placeholder={t.smartPlaceholder}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setFailed(false);
+            }}
+            className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] text-foreground outline-none placeholder:text-meta-foreground"
+          />
+        </label>
+        {url ? (
+          <LinkRow key={url.href} url={url} onClose={onClose} />
+        ) : needle === "" ? (
+          recent.length > 0 ? (
             <div className="-mx-1 mt-1.5 pt-1">
-              <ListCaption>{t.pages}</ListCaption>
-              {pageHits.slice(0, 4).map(row)}
+              <ListCaption>{t.recent}</ListCaption>
+              {recent.map(row)}
             </div>
-          ) : null}
-          {taskHits.length > 0 ? (
-            <div className="-mx-1 pt-1">
-              <ListCaption>{t.tasks}</ListCaption>
-              {taskHits.slice(0, 4).map(row)}
-              <Hint className="mt-1 px-2">{t.related}</Hint>
-            </div>
-          ) : null}
-          {pageHits.length === 0 && taskHits.length === 0 ? (
-            <p className="m-0 mt-3 flex items-center gap-2 px-1 text-[13.5px] text-muted-foreground">
-              <Search aria-hidden="true" className="size-4 shrink-0" />
-              {fillPopupCopy(t.noResults, { query: query.trim() })}
-            </p>
-          ) : null}
-        </>
-      )}
-      {pages.isError ? (
-        <Hint error className="mt-2 px-1">
-          {t.pageError}{" "}
-          <button type="button" className="underline" onClick={() => void pages.refetch()}>
-            {t.retry}
-          </button>
-        </Hint>
-      ) : null}
-      {failed ? (
-        <Hint error className="mt-2 px-1">
-          {t.failed}
-        </Hint>
-      ) : null}
+          ) : null
+        ) : (
+          <>
+            {pageHits.length > 0 ? (
+              <div className="-mx-1 mt-1.5 pt-1">
+                <ListCaption>{t.pages}</ListCaption>
+                {pageHits.slice(0, 4).map(row)}
+              </div>
+            ) : null}
+            {taskHits.length > 0 ? (
+              <div className="-mx-1 pt-1">
+                <ListCaption>{t.tasks}</ListCaption>
+                {taskHits.slice(0, 4).map(row)}
+                <Hint className="mt-1 px-2">{t.related}</Hint>
+              </div>
+            ) : null}
+            {pageHits.length === 0 && taskHits.length === 0 ? (
+              <p className="m-0 mt-3 flex items-center gap-2 px-1 text-[13.5px] text-muted-foreground">
+                <Search aria-hidden="true" className="size-4 shrink-0" />
+                {fillPopupCopy(t.noResults, { query: query.trim() })}
+              </p>
+            ) : null}
+          </>
+        )}
+        {pages.isError ? (
+          <Hint error className="mt-2 px-1">
+            {t.pageError}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => void pages.refetch()}
+            >
+              {t.retry}
+            </button>
+          </Hint>
+        ) : null}
+        {failed ? (
+          <Hint error className="mt-2 px-1">
+            {t.failed}
+          </Hint>
+        ) : null}
       </div>
     </>
   );

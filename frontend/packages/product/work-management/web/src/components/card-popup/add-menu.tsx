@@ -313,7 +313,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
         setActive(rows.findIndex((r) => r.id === entry.id));
       },
       className: cn(
-        "flex h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2 text-left text-[13.5px] text-foreground md:h-9",
+        "flex h-11 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2 text-left text-[14px] text-foreground md:h-9 md:text-[13.5px]",
         entry.strong && "font-medium text-brand-ink",
         (moved || needle !== "") &&
           rows[current]?.id === entry.id &&
@@ -353,7 +353,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <div className="flex h-11 items-center gap-2 border-b-2 border-meta-foreground pr-1.5 pl-3 text-meta-foreground focus-within:border-primary">
+      <div className="flex h-13 items-center gap-2 border-b-2 border-meta-foreground pr-1.5 pl-3 md:h-11 text-meta-foreground focus-within:border-primary">
         <Search
           aria-hidden="true"
           className="size-4 shrink-0 text-meta-foreground"
@@ -391,7 +391,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
           type="button"
           aria-label={query ? t.clear : copy.pickers.close}
           onClick={() => (query ? setQuery("") : onClose())}
-          className="grid size-8 place-items-center rounded-[8px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong"
+          className="grid size-11 place-items-center rounded-[8px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong md:size-8"
         >
           <X aria-hidden="true" className="size-4" />
         </button>
@@ -400,7 +400,7 @@ function MenuBody({ onClose }: { onClose: () => void }) {
         id="add-menu-list"
         role="listbox"
         aria-label={copy.shell.addTitle}
-        className="px-1.5 pt-1 pb-1.5"
+        className="pt-1 pb-1.5 md:px-1.5"
       >
         {noMatch ? (
           <>
