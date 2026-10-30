@@ -47,7 +47,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Page lifecycle | 17 | 1 | 2 | 5 | 6 | 0 | 3 |
+| A | Page lifecycle | 17 | 0 | 2 | 6 | 6 | 0 | 3 |
 | B | Page hierarchy | 5 | 1 | 1 | 3 | 0 | 0 | 0 |
 | C | Page move / reparent | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
 | D | Block lifecycle | 6 | 0 | 1 | 3 | 2 | 0 | 0 |
@@ -59,7 +59,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | J | Document events and activity | 8 | 2 | 1 | 5 | 0 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 2 | 0 | 0 | 1 |
 | L | Recovery and conflict hardening | 5 | 1 | 0 | 3 | 0 | 0 | 1 |
-| | Total | 82 | 12 | 7 | 43 | 15 | 0 | 5 |
+| | Total | 82 | 11 | 7 | 44 | 15 | 0 | 5 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing) and `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink). Everything else that has both backend and frontend code is INTEGRATING.
 
@@ -80,12 +80,12 @@ No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases
 
 | # | Defect | Where |
 |---|---|---|
-| 1 | Rename uses `ManageBoard` and no expected version; the request carries `icon` and `cover` that are not forwarded | `backend/src/Notrelix.Application/Features/Documents/Pages/Commands/UpdatePage/UpdatePage.cs`, `backend/src/Notrelix.API/Endpoints/Documents/Pages/Commands/UpdatePageEndpoint.cs` |
+| 1 | Fixed for rename (`UpdatePage`, expected version, dead request fields removed); the page icon is still UC-DCT-A03 | `backend/src/Notrelix.Application/Features/Documents/Pages/Commands/UpdatePage/UpdatePage.cs`, `backend/src/Notrelix.API/Endpoints/Documents/Pages/Commands/UpdatePageEndpoint.cs` |
 | 2 | Dead handlers that throw `NotImplementedException` | `.../Pages/Commands/MovePage/MovePage.cs`, `.../PublishPage/PublishPage.cs`, `.../SetPageDeadline/SetPageDeadline.cs` (under `backend/src/Notrelix.Application/Features/Documents/`) |
 | 3 | `GET /pages/{pageId}/history` always returns an empty list; the frontend still calls it | `.../Pages/Queries/GetPageHistory/GetPageHistory.cs`, `frontend/packages/product/docs/state/src/api/history.api.ts` |
 | 4 | Reorder takes client sort keys, has no expected version, loads no page and announces no save | `.../Blocks/Commands/ReorderBlocks/ReorderBlocks.cs` |
 | 5 | Single block delete has no expected version and does not delete child blocks (batch delete does) | `.../Blocks/Commands/DeleteBlock/DeleteBlock.cs` |
-| 6 | Trash does not cascade to child pages; the tree promotes them to roots | `.../Pages/Commands/ArchivePage/ArchivePage.cs`, `.../Pages/Queries/GetPageTree/GetPageTree.cs` |
+| 6 | Fixed: trash, restore and permanent delete work on the subtree (UC-DCT-A08) | `.../Pages/Commands/ArchivePage/ArchivePage.cs`, `.../Pages/Queries/GetPageTree/GetPageTree.cs` |
 | 7 | Block writes have no handler guard for a trashed page (only authorization hides it) | `.../Blocks/Commands/*` |
 | 8 | Unbounded reads | `.../Pages/Queries/GetWorkspacePages`, `GetPageTree`, `GetTrashedPages`, `GetPageBacklinks`, `.../Versions/Queries/ListPageVersions`, `.../Blocks/Queries/GetPageBlocks` |
 | 9 | No idempotency on creates | `CreatePage`, `CreatePageFromTemplate`, `CreatePageTemplate`, `CreatePageVersion` handlers |
@@ -119,19 +119,19 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-DCT-A01 | Create a page | A | Editor of the parent or space, workspace member | yes | yes | Final-Docs-2 | real | HARDENING | No idempotency key; no cross-tenant negative test |
-| UC-DCT-A02 | Rename a page | A | Editor | partial | yes | Final-Docs-2 | real | HARDENING | Uses ManageBoard, no expected version |
+| UC-DCT-A01 | Create a page | A | Editor of the parent or space, workspace member | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-A02 | Rename a page | A | Editor | partial | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-A03 | Set a page icon | A | Editor | partial | partial | Final-Docs-2 | none | IMPLEMENTING | API drops icon; no endpoint field |
-| UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Children stay active |
-| UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | No subtree restore, no restore-time constraint check |
-| UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Rows kept, no purge, dependents not reviewed |
-| UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Unbounded list; no artboard |
-| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | none | none | none | none | DEFINED | Code leaves children behind |
-| UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Client-only copy, not atomic |
-| UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | No real e2e, no artboard |
-| UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | none | INTEGRATING | Media blocks dropped; no real e2e |
+| UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
+| UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Tests and owner check |
+| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-A12 | Rename, archive or delete a template (enterprise baseline) | A | Template creator, Workspace Admin | none | none | none | none | IMPLEMENTING | Domain archive only; no command or endpoint |
-| UC-DCT-A13 | Import a file as a new page | A | Editor of the target | partial | yes | none | none | INTEGRATING | Page then blocks, not atomic |
+| UC-DCT-A13 | Import a file as a new page | A | Editor of the target | partial | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-A14 | Export a page, a subtree or a workspace | A | Viewer; Admin for workspace | none | partial | none | none | INTEGRATING | Page export client-side only; subtree and workspace not built |
 | UC-DCT-A15 | Set page visibility | A | Manager | partial | none | none | none | BLOCKED | Public needs the anonymous principal decision |
 | UC-DCT-A16 | Favorite a page | A | Any viewer | none | partial | none | none | BLOCKED | Owner context unknown; FE call is a no-op |
@@ -255,8 +255,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading (creating), validation error (title), permission denied (hidden New page), pending, conflict not applicable, offline (create disabled with a notice).
 - Rules: product doc sections 7 to 9 (product rules DCT-001, DCT-002, DCT-005); GOV-028 placement authorization.
 - Acceptance: Given an Editor of a Space, When they create a page in it, Then the page exists in that Space and they are its Manager. Given a viewer of the Space, When they post a create, Then the answer is `404` and nothing is stored. Given a parent in another workspace, When posted, Then `404`.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `CreatePageCommandHandler` · FE `useCreatePage`, `DocPageScreen` · Design Final-Docs-2 · Tests `CreatePageTargetPolicyMatrixTests`, `PageTests`, `PageCreatedOutboxEvidenceTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — idempotency key, cross-tenant negative test, optimistic-create rollback proof.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages` (requires `Idempotency-Key`; `[IdempotencyOperation("documents.pages.create-page.v1")]` on `CreatePageCommand`, replay for 24 hours), `CreatePageCommandHandler` · FE `useCreatePage`, `DocPageScreen`, `useCreateResource` (one key per creation attempt, reset when the name changes) · Design Final-Docs-2 · Tests `CreatePageTargetPolicyMatrixTests`, `PageTests`, `PageCreatedOutboxEvidenceTests` · Real e2e `documents.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (replay with one key and a conflicting body, cross-tenant negative test; the real e2e helpers that post a page directly must send `Idempotency-Key`).
 
 ### UC-DCT-A02 Rename a page
 - Capability: A Page lifecycle
@@ -269,8 +269,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading, validation error, read-only, conflict, pending, permission denied, offline.
 - Rules: product doc section 9 and product rule DCT-025; `DCREQ113`, `DCREQ136`, `DCREQ137`.
 - Acceptance: Given a title change, When patched, Then version +1 and one `PageRenamed`. Given the same title, Then no version change. Given a stale version, Then `412` and the title is unchanged. Given a Viewer, Then `404`.
-- Evidence: BE `PATCH /api/v1/pages/{pageId}`, `UpdatePageCommandHandler` · FE `useUpdatePage`, title field of `DocPageScreen` · Design Final-Docs-2 · Tests `PageTests`, `PageRulesTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — authorize with `UpdatePage`, add `expectedVersion`, stale-write test, real e2e for the 412.
+- Evidence: BE `PATCH /api/v1/pages/{pageId}` (body `title`, `expectedVersion`; the dead `iconType`, `iconValue`, `coverUrl` fields are gone), `UpdatePageCommand` is `UpdatePage` plus `IExpectedVersionRequest` (registered in `ExpectedVersionTargetMap`), `UpdatePageCommandHandler` · FE `useDocEditor.updateTitle` (sends the cached page version; on 412 it reads the page, treats an already applied rename as success, otherwise shows the stored title and the notice `header.titleConflict`) · Design Final-Docs-2 · Tests `PageTests`, `PageRulesTests`, `ExpectedVersionArchitectureTests` · Real e2e `documents.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (stale-write test, no-op test, Viewer `404`, real e2e for the 412; the handler tests and `GovernanceResourcePermissionFlowTests` still build the old `UpdatePageCommand(pageId, title)`).
 
 ### UC-DCT-A03 Set a page icon
 - Capability: A Page lifecycle
@@ -297,8 +297,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: pending, permission denied, offline, destructive confirmation not required (reversible), undo toast with Restore.
 - Rules: product doc sections 10, 11 (product rule DCT-003); `DCREQ004`; decision LD1 for children.
 - Acceptance: Given an active page, When trashed, Then `GET /pages/{id}` is `404` and the trash list holds it. Given it is trashed again, Then no second event.
-- Evidence: BE `POST /api/v1/pages/{pageId}/archive`, `ArchivePageCommandHandler` · FE `useArchivePage`, File menu · Design Final-Docs-2 · Tests `ArchivePageCommandHandlerTests`, `PageTrashHandlerTests`, `PageArchivedOutboxEvidenceTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — undo toast proof, child pages (UC-DCT-A08), cross-tenant negative test.
+- Evidence: BE `POST /api/v1/pages/{pageId}/archive`, `ArchivePageCommandHandler` archives the page and every non-deleted descendant in one unit of work through `IPageSubtreeStore` (an already trashed page still sweeps its subtree) · FE `useArchivePage`, File menu, `pagesBelow` count, `DocTrashConfirmDialogSurface` when pages sit under the page, toast with Undo (`host.notify` action restores and reopens the page) · Design Final-Docs-2 (confirmation and toast not drawn) · Tests `ArchivePageCommandHandlerTests`, `PageTrashHandlerTests`, `PageArchivedOutboxEvidenceTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (subtree trash, no-op, cross-tenant negative test; the handler tests still construct the handler with `IDocumentDbContext`).
 
 ### UC-DCT-A05 Restore a page from the trash
 - Capability: A Page lifecycle
@@ -311,8 +311,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading, empty trash, pending, permission denied, offline.
 - Rules: product doc sections 94, 95 (product rule DCT-030: restore validates current constraints).
 - Acceptance: Given a trashed page, When restored, Then `GET /pages/{id}` is `200` and the trash list no longer holds it.
-- Evidence: BE `POST /api/v1/pages/{pageId}/restore`, `RestorePageCommandHandler` · FE `useRestorePage`, trash dialog · Design Final-Docs-2 (trash dialog not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — current-constraint check on restore (parent, Space, schema), trash dialog artboard.
+- Evidence: BE `POST /api/v1/pages/{pageId}/restore`, `RestorePageCommandHandler` restores the page and the archived pages under it in one unit of work; a parent that is trashed, deleted or missing brings the page back at the root of its Space (`Page.Unarchive(detachFromParent)`), an archived Space is refused with `409` `workspaces.space.inactive`; an active page is a no-op · FE `useRestorePage`, trash dialog · Design Final-Docs-2 (trash dialog not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (subtree restore, detach to root, archived Space, no-op; a page trashed on its own before its parent returns with the parent, since the unit is not marked; trash dialog artboard).
 
 ### UC-DCT-A06 Delete a trashed page permanently
 - Capability: A Page lifecycle
@@ -325,8 +325,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: destructive confirmation, pending, permission denied, offline.
 - Rules: product doc sections 11, 89, 90 (product rules DCT-003, DCT-028); `DCREQ004`.
 - Acceptance: Given a trashed page and a Manager, When deleted, Then `GET` is `404`. Given an active page, Then refused and unchanged. Given an Editor who is not Manager, Then `404`.
-- Evidence: BE `DELETE /api/v1/pages/{pageId}`, `DeletePageCommandHandler` · FE `useDeletePage`, trash dialog · Design Final-Docs-2 (confirm step not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — dependents (versions, links, comments, attachments, search) not reviewed; confirm artboard.
+- Evidence: BE `DELETE /api/v1/pages/{pageId}`, `DeletePageCommandHandler` deletes the page and the trashed pages under it in one unit of work (an active page below it is left alone) · FE `useDeletePage`, trash dialog (note names the subtree) · Design Final-Docs-2 (confirm step not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (dependents (versions, links, comments, attachments, search) still wait for the retention decision, UC-DCT-A17 and L05; confirm artboard).
 
 ### UC-DCT-A07 Browse the trash
 - Capability: A Page lifecycle
@@ -339,8 +339,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading, empty ("Trash is empty"), permission denied, offline, error with retry.
 - Rules: product doc section 10; `DCREQ025`.
 - Acceptance: Given two trashed pages and a person who can see one, When listing, Then one row.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/trash`, `GetTrashedPagesQueryHandler` · FE `useTrashedPages` · Design none · Tests `PageTrashHandlerTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — cursor paging, artboard.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/trash?cursor&limit` answers a `CursorPage<PageDto>` (default 50, at most 200, keyset over last change and id), `GetTrashedPagesQueryHandler` · FE `useTrashedPages` (infinite query), trash dialog with Load more and a list-failed state with retry · Design none · Tests `PageTrashHandlerTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — tests and owner check (paging, visibility filter with a cursor, invalid cursor `400`; artboard).
 
 ### UC-DCT-A08 Trash or delete a page that has children
 - Capability: A Page lifecycle
@@ -353,8 +353,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: destructive confirmation with count, pending, permission denied.
 - Rules: product doc sections 89, 90 (product rule DCT-028: lifecycle workflow, not ORM cascade); `DCREQ004`, `DCREQ006`. New rule in Part 5.
 - Acceptance: Given a page with two children, When trashed, Then neither child is in the tree or readable. When the parent is restored, Then both are back.
-- Evidence: BE none (shipped `ArchivePageCommandHandler` archives one page; children stay Active and the tree shows them as roots) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — behaviour, handler, subtree store use (`IPageSubtreeStore` exists), count in the confirmation, tests.
+- Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` · FE confirmation with the visible page count (`pagesBelow`), undo toast, trash note · Design none · Tests none · Real e2e none
+- State: INTEGRATING — tests and owner check (subtree trash, restore and delete; descendants the caller cannot see; confirmation artboard).
 
 ### UC-DCT-A09 Duplicate a page
 - Capability: A Page lifecycle
@@ -367,8 +367,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: pending, notice for dropped blocks, error, permission denied.
 - Rules: product doc section 85 (resource links in a copy), product rule DCT-018 analogue; `DCREQ145`; decisions 17.
 - Acceptance: Given a page with a table and an image, When duplicated, Then the copy has the table, no image, a notice, and different block ids.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `POST /api/v1/pages/{pageId}/blocks/batch` · FE `onDuplicatePage` in `DocPageScreen`, `useImportPage` · Design none · Tests `import-page.unit.test.ts` · Real e2e none
-- State: INTEGRATING — atomic server-side duplicate or cleanup, dropped-block notice, real e2e.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `POST /api/v1/pages/{pageId}/blocks/batch` · FE `onDuplicatePage` in `DocPageScreen` (leaves image and file blocks behind, toast `makeCopyDropped` names how many), `useImportPage` (trashes the half-made copy when a block write fails) · Design none · Tests `import-page.unit.test.ts` · Real e2e none
+- State: INTEGRATING — tests and owner check (the copy is still two client calls, cleaned up on failure; the client has no video block yet; real e2e).
 
 ### UC-DCT-A10 Save a page as a template
 - Capability: A Page lifecycle
@@ -381,8 +381,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: validation error, pending, permission denied, offline.
 - Rules: product doc sections 53 to 57; `DCREQ135`, `DCREQ138`, `DCREQ139`.
 - Acceptance: Given an Editor, When they save, Then the template is listed with the snapshot taken at that time.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/page-templates`, `CreatePageTemplateCommandHandler` · FE `useCreatePageTemplate` · Design none · Tests `PageTemplateHandlerTests`, `PageTemplateTests`, `PageHistoryAndTemplatesContractOpenApiTests` · Real e2e none
-- State: INTEGRATING — real e2e, artboard, visibility of a template whose source the viewer cannot read.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/page-templates` (requires `Idempotency-Key`, `documents.templates.create-page-template.v1`), `CreatePageTemplateCommandHandler` · FE `useCreatePageTemplate` · Design none · Tests `PageTemplateHandlerTests`, `PageTemplateTests`, `PageHistoryAndTemplatesContractOpenApiTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (replay, real e2e, artboard, visibility of a template whose source the viewer cannot read).
 
 ### UC-DCT-A11 Create a page from a template
 - Capability: A Page lifecycle
@@ -395,8 +395,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading (gallery), empty (no templates), notice, permission denied, error.
 - Rules: product doc section 54 (product rule DCT-018); `DCREQ135`; decisions 14, 17, 23.
 - Acceptance: Given a template with an image and a paragraph, When used, Then the page has the paragraph and the result reports 1 dropped block.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/page-templates`, `POST /api/v1/workspaces/{workspaceId}/page-templates/{templateId}/pages`, `CreatePageFromTemplateCommandHandler`, `ListPageTemplatesQueryHandler` · FE `useCreatePageFromTemplate`, `usePageTemplates` · Design none · Tests `PageTemplateHandlerTests` · Real e2e none
-- State: INTEGRATING — real e2e, gallery artboard, dropped-block notice proof.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/page-templates`, `POST /api/v1/workspaces/{workspaceId}/page-templates/{templateId}/pages` (requires `Idempotency-Key`, `documents.templates.create-page-from-template.v1`), `CreatePageFromTemplateCommandHandler`, `ListPageTemplatesQueryHandler` · FE `useCreatePageFromTemplate`, `usePageTemplates`, `useCreateResource` (one key per attempt, dropped-block toast) · Design none · Tests `PageTemplateHandlerTests` · Real e2e none
+- State: INTEGRATING — tests and owner check (replay, real e2e, gallery artboard, dropped-block notice proof).
 
 ### UC-DCT-A12 Rename, archive or delete a template (enterprise baseline)
 - Capability: A Page lifecycle
@@ -423,8 +423,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: validation error, progress, notice, permission denied, offline.
 - Rules: product doc sections 82, 84 (product rule DCT-026); `DCREQ142`; decisions 15, 18.
 - Acceptance: Given a Markdown file with a heading and a list, When imported, Then a page titled by the heading with a list block. Given a file with a script tag, Then it is not stored.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `POST /api/v1/pages/{pageId}/blocks/batch` · FE `useImportPage`, `read-import-file.ts`, `import-markdown.ts`, `sanitize-import.ts` · Design none · Tests `page-transfer.unit.test.ts`, `import-file.component.test.ts`, `import-page.unit.test.ts` · Real e2e none
-- State: INTEGRATING — atomic import or cleanup, size limit, real e2e, dialog artboard.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `POST /api/v1/pages/{pageId}/blocks/batch` · FE `useImportPage` (trashes the page when a block write fails), `read-import-file.ts` (10 MB limit, one constant shared with the dialog), `import-markdown.ts`, `sanitize-import.ts` · Design none · Tests `page-transfer.unit.test.ts`, `import-file.component.test.ts`, `import-page.unit.test.ts` · Real e2e none
+- State: INTEGRATING — tests and owner check (real e2e, dialog artboard; the 5 MB cases in the unit tests move to 10 MB).
 
 ### UC-DCT-A14 Export a page, a subtree or a workspace
 - Capability: A Page lifecycle

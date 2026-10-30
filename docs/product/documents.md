@@ -165,6 +165,8 @@ A Page is a durable Workspace-scoped content resource.
 
 It may own stable ID, title, parent relation, lifecycle, visibility intent, content-tree relation, and history/version metadata.
 
+A rename carries the page's expected version: a stale version is refused and changes nothing.
+
 # 8. DCT-002 — A Page belongs to one Workspace
 
 Parenting, Blocks, queries, links, events, search, and realtime preserve the Page's Workspace scope.
@@ -189,6 +191,8 @@ restored where allowed
 ```
 
 rather than reintroducing universal `SoftDeleted`.
+
+Trashing a page trashes its whole subtree as one unit; restoring the parent restores the subtree; permanent delete removes the subtree. A child page can be restored alone only when its parent is active; a page whose parent is gone is restored at the root of its Space. Restore checks today's constraints: a Space that is archived refuses the restore.
 
 # 11. DCT-003 — Archive and delete are different lifecycle operations
 
@@ -515,6 +519,8 @@ manage template
 
 Governance evaluates authorization.
 
+Rename, move to Space and save as template require `UpdatePage`; trash and restore require `ArchivePage`; permanent delete requires `DeletePage`.
+
 # 60. DCT-019 — Documents does not authorize by visibility alone
 
 Visibility is one input, not the final policy.
@@ -610,6 +616,8 @@ Archived/deleted/inaccessible Pages do not silently accept edits.
 # 78. Semantic no-op
 
 Identical title/content/properties/effective position should avoid fake mutation where possible.
+
+Creating a page, creating a page from a template and saving a page as a template require an idempotency key; a retry with the same key and request returns the same result for 24 hours.
 
 # 79. DCT-025 — No-op edit does not create false content history
 
