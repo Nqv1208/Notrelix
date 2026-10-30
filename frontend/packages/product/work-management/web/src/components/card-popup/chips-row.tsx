@@ -97,7 +97,11 @@ export function ChipsRow() {
       .filter((id) => !pinnedIds.includes(id) && id !== fields.priority?.id)
       .map((id) => everyField.find((field) => field.id === id)),
   ]
-    .filter((field): field is NonNullable<typeof field> => field !== undefined);
+    // A Vote field is drawn by its own chip in the slot below, not by a value editor.
+    .filter(
+      (field): field is NonNullable<typeof field> =>
+        field !== undefined && field.fieldType !== "vote",
+    );
 
   return (
     <>
@@ -140,7 +144,7 @@ export function ChipsRow() {
                   ITEM_LABEL_TONE_CLASS[itemLabelTone(l)],
                 )}
               >
-                <ColourBlindLabelMark color={l.color} className="mr-1" />
+                <ColourBlindLabelMark label={l} />
                 {l.name}
               </span>
             ))}

@@ -220,8 +220,8 @@ function ChecklistBlock({
         ) : null}
       </SectionHead>
       {total > 0 ? (
-        <div className="mt-1.5 mb-1 flex items-center gap-2.5">
-          <span className="w-9 text-[12px] text-meta-foreground tabular-nums">
+        <div className="mt-1 mb-0.5 flex items-center gap-2.5">
+          <span className="w-9 text-[12px] leading-[1.45] text-meta-foreground tabular-nums">
             {`${percent}%`}
           </span>
           <span
@@ -281,7 +281,7 @@ function ChecklistBlock({
                 {item.isDone ? (
                   <Check
                     aria-hidden="true"
-                    className="size-3"
+                    className="size-[13px]"
                     strokeWidth={3}
                   />
                 ) : null}
@@ -296,7 +296,7 @@ function ChecklistBlock({
               ) : (
                 <span
                   className={cn(
-                    "min-w-0 flex-1 text-[14px]",
+                    "min-w-0 flex-1 text-[14px] leading-[1.45]",
                     item.isDone && "text-meta-foreground line-through",
                   )}
                   onDoubleClick={

@@ -61,7 +61,7 @@ function LinkRow({
   onUnlink?: () => void;
 }) {
   return (
-    <div className="mb-1.5 box-border flex min-h-11 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3">
+    <div className="mb-1.5 box-border flex min-h-11 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
       {itemKey ? (
         <span className="font-mono text-[12px] text-meta-foreground">
           {itemKey}
@@ -92,8 +92,8 @@ function Group({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-3.5 first:mt-3.5">
-      <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground">
+    <div className="mt-1 first:mt-2.5">
+      <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] leading-[1.45] font-semibold text-muted-foreground">
         {title}
         {hint ? (
           <span className="font-normal text-meta-foreground"> · {hint}</span>
