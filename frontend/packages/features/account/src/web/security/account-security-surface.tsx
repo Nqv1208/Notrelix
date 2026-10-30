@@ -89,6 +89,8 @@ export type AccountSecurityFlow =
     }
   /** The password changed and every session, this one too, was ended. */
   | { readonly kind: "passwordChanged" }
+  /** Two-factor is off and every session, this one too, was ended. */
+  | { readonly kind: "twoFactorOff" }
   /** Asking before this device is signed out. */
   | { readonly kind: "signOutThis" };
 
@@ -124,7 +126,7 @@ export interface AccountSecuritySurfaceProps {
   readonly onSubmitNewPassword?: (
     submission: AccountPasswordSubmission,
   ) => void;
-  /** After a change of password: leaves for the sign-in page. */
+  /** After a change of password or turning two-factor off: leaves for the sign-in page. */
   readonly onPasswordChangedContinue?: () => void;
   /** Answers the open step: the authenticator's digits or a backup code. */
   readonly onSubmitCode?: (code: string) => void;
@@ -256,7 +258,10 @@ function FlowPanel({
   copy: AccountSecurityCopy;
   flow: Exclude<
     AccountSecurityFlow,
-    { kind: "password" } | { kind: "passwordChanged" } | { kind: "signOutThis" }
+    | { kind: "password" }
+    | { kind: "passwordChanged" }
+    | { kind: "twoFactorOff" }
+    | { kind: "signOutThis" }
   >;
   busy: boolean;
   onSubmitCode?: (code: string) => void;
@@ -354,6 +359,7 @@ function FlowPanel({
         </>
       ) : (
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
+          {flow.purpose === "disable" ? `${t.disableText} ` : null}
           {usesPassword ? t.passwordText : t.codeText}
         </p>
       )}
@@ -387,7 +393,12 @@ function FlowPanel({
         <button
           type="submit"
           disabled={busy || !value || flow.error === "wait"}
-          className={cn(BTN_PRIMARY, FOCUS)}
+          className={cn(
+            flow.kind === "stepUp" && flow.purpose === "disable"
+              ? BTN_DANGER
+              : BTN_PRIMARY,
+            FOCUS,
+          )}
         >
           {t.confirm}
         </button>
@@ -400,6 +411,42 @@ function FlowPanel({
           {failure}
         </p>
       ) : null}
+    </section>
+  );
+}
+
+/** Two-factor is off; the producer ended every session, this one too, so the next step is signing in again. */
+function TwoFactorOffPanel({
+  copy,
+  onContinue,
+}: {
+  copy: AccountSecurityCopy;
+  onContinue?: () => void;
+}) {
+  const t = copy.flow;
+  const continueRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    continueRef.current?.focus();
+  }, []);
+  return (
+    <section
+      aria-label={t.disabledTitle}
+      className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+    >
+      <b className="block text-body font-semibold text-foreground">
+        {t.disabledTitle}
+      </b>
+      <p role="status" className="m-0 mt-1 text-crumb text-muted-foreground">
+        {t.disabledText}
+      </p>
+      <button
+        ref={continueRef}
+        type="button"
+        onClick={onContinue}
+        className={cn(BTN_PRIMARY, FOCUS, "mt-3")}
+      >
+        {t.signInAgain}
+      </button>
     </section>
   );
 }
@@ -631,6 +678,8 @@ function SecurityBody({
           copy={copy}
           onContinue={onPasswordChangedContinue}
         />
+      ) : flow?.kind === "twoFactorOff" ? (
+        <TwoFactorOffPanel copy={copy} onContinue={onPasswordChangedContinue} />
       ) : flow?.kind === "signOutThis" ? (
         <SignOutThisPanel
           copy={copy}

@@ -40,6 +40,7 @@ type Step =
   | { kind: "codes"; codes: readonly string[] }
   | { kind: "password" }
   | { kind: "passwordChanged" }
+  | { kind: "twoFactorOff" }
   | { kind: "signOutThis" };
 
 const PURPOSE: Record<"disable" | "renew" | "others", StepUpPurpose> = {
@@ -263,13 +264,15 @@ export function AccountSecurityPage() {
     ) => {
       setBusy(true);
       setStepError(null);
+      // Once the proof is in hand a refusal is the action's, never "that code is wrong".
+      let proved = false;
       try {
         const token = await proof;
+        proved = true;
         if (current.purpose === "disable") {
           await service.disableTwoFactor(token);
-          setStep(null);
-          await invalidate();
-          showNotice(copy.twoFactor.turnedOff);
+          // The producer ended every session, this one too: nothing more can be read here.
+          setStep({ kind: "twoFactorOff" });
         } else if (current.purpose === "others") {
           const count = await service.revokeOtherSessions(token);
           setStep(null);
@@ -291,6 +294,7 @@ export function AccountSecurityPage() {
             codes: await service.regenerateRecoveryCodes(token),
           });
           await invalidate();
+          showNotice(copy.twoFactor.renewed);
         }
       } catch (error) {
         // The proof or the challenge is gone (out of tries, too old): open a fresh one for the same step.
@@ -300,7 +304,7 @@ export function AccountSecurityPage() {
         ) {
           await beginStepUp(current.purpose);
           setStepError({ error: "expired" });
-        } else fail(error, true);
+        } else fail(error, !proved);
       } finally {
         setBusy(false);
       }
@@ -310,7 +314,7 @@ export function AccountSecurityPage() {
       copy.others.doneCount_one,
       copy.others.doneCount_other,
       copy.others.nobody,
-      copy.twoFactor.turnedOff,
+      copy.twoFactor.renewed,
       invalidate,
       service,
       showNotice,
@@ -435,6 +439,7 @@ export function AccountSecurityPage() {
     if (
       step.kind === "codes" ||
       step.kind === "passwordChanged" ||
+      step.kind === "twoFactorOff" ||
       step.kind === "signOutThis"
     )
       return step;

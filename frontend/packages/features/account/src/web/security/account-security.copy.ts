@@ -42,7 +42,6 @@ export const en = {
     backupRenew: "Create new codes",
     renewed: "New backup codes created.",
     turnedOn: "Two-factor authentication is on.",
-    turnedOff: "Two-factor authentication is off.",
   },
   flow: {
     enrollTitle: "Set up the authenticator app",
@@ -53,6 +52,8 @@ export const en = {
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
     othersTitle: "Confirm to sign out of all other devices",
+    disableText:
+      "Turning it off voids your backup codes and signs you out of every device, this one included.",
     signOutThisTitle: "Sign out of this device?",
     signOutThisText:
       "You will have to sign in again on this device to use Notrelix.",
@@ -74,6 +75,10 @@ export const en = {
     codesText:
       "Each code works once when you don't have your phone. They are shown only now.",
     done: "I saved them",
+    disabledTitle: "Two-factor authentication is off",
+    disabledText:
+      "Your backup codes no longer work. You were signed out of every device, including this one. Sign in again.",
+    signInAgain: "Sign in",
   },
   passwordFlow: {
     title: "Change your password",
@@ -195,7 +200,6 @@ export const vi: AccountSecurityCopy = {
     backupRenew: "Tạo mã mới",
     renewed: "Đã tạo mã dự phòng mới.",
     turnedOn: "Đã bật xác thực hai yếu tố.",
-    turnedOff: "Đã tắt xác thực hai yếu tố.",
   },
   flow: {
     enrollTitle: "Thiết lập ứng dụng xác thực",
@@ -206,6 +210,8 @@ export const vi: AccountSecurityCopy = {
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
     othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
+    disableText:
+      "Tắt xác thực hai lớp sẽ vô hiệu các mã dự phòng và đăng xuất bạn khỏi mọi thiết bị, kể cả thiết bị này.",
     signOutThisTitle: "Đăng xuất khỏi thiết bị này?",
     signOutThisText:
       "Bạn sẽ phải đăng nhập lại trên thiết bị này để dùng Notrelix.",
@@ -225,6 +231,10 @@ export const vi: AccountSecurityCopy = {
     codesText:
       "Mỗi mã dùng được một lần khi bạn không có điện thoại. Mã chỉ hiện lúc này.",
     done: "Tôi đã lưu",
+    disabledTitle: "Đã tắt xác thực hai lớp",
+    disabledText:
+      "Các mã dự phòng không còn dùng được. Bạn đã bị đăng xuất khỏi mọi thiết bị, kể cả thiết bị này. Hãy đăng nhập lại.",
+    signInAgain: "Đăng nhập",
   },
   passwordFlow: {
     title: "Đổi mật khẩu",

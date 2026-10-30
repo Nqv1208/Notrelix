@@ -661,22 +661,22 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: code entry, wrong code, success.
 - Rules: ID-004; IAREQ051.
 - Acceptance: Given a recovery code, when it is used twice, then the second use fails.
-- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs` · FE `auth-sign-in-surface.tsx` · Design Final-Auth · Tests Domain `MfaRecoveryBatchTests`; Infrastructure `MfaRecoveryCodeGeneratorTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: real spec.
+- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`, `Mfa/Services/MfaCodeVerifier.cs` (recovery code claim, then `MfaRecoveryBatch.TryConsume`) · FE `auth-sign-in-surface.tsx` (`OtpStep`, backup mode) · Design Final-Auth · Tests Domain `MfaRecoveryBatchTests`; Infrastructure `MfaRecoveryCodeGeneratorTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING. Built end to end (nothing left to build; a code is matched without case, spaces or dashes). Missing: tests and owner check, real spec.
 
 ### UC-IDN-J02 Regenerate recovery codes
 - Capability: J MFA recovery
 - Actors and permission: signed-in person; step-up of purpose `RegenerateRecoveryCodes`.
 - Preconditions: an active second factor.
 - Input: step-up proof.
-- Output: ten new codes shown once; the old batch is void.
+- Output: eight new codes (`MfaPolicy.RecoveryCodeCount`) shown once; the old batch is void.
 - Main flow: 1. The person chooses "New backup codes". 2. They pass step-up. 3. The client posts `POST /api/v1/auth/mfa/recovery-codes/regenerate`.
 - No-op / rejection / concurrency / retry: a used proof fails; a retry after success makes another batch and voids the one just shown, so the page must not retry by itself; no active factor is refused.
 - UI states: step-up prompt, success with codes, error.
 - Rules: ID-004, ID-006; IAREQ051, IAREQ056.
 - Acceptance: Given step-up, when codes regenerate, then old codes fail and new codes work.
-- Evidence: BE `Mfa/Commands/RegenerateRecoveryCodes/RegenerateRecoveryCodes.cs`; API `Auth/Commands/RegenerateRecoveryCodesEndpoint.cs` (`POST /api/v1/auth/mfa/recovery-codes/regenerate`) · FE `packages/features/account/src/web/security/account-security-surface.tsx` · Design Final-Account · Tests Domain `MfaRecoveryBatchTests` · Real e2e none
-- State: INTEGRATING. Missing: Application and API tests, real spec, rate-limit attribute.
+- Evidence: BE `Mfa/Commands/RegenerateRecoveryCodes/RegenerateRecoveryCodes.cs`; API `Auth/Commands/RegenerateRecoveryCodesEndpoint.cs` (`POST /api/v1/auth/mfa/recovery-codes/regenerate`) · FE `packages/features/account/src/web/security/account-security-surface.tsx`, `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` (`finishStepUp`) · Design Final-Account · Tests Domain `MfaRecoveryBatchTests` · Real e2e none
+- State: INTEGRATING. Built: the endpoint carries the `AuthSensitiveByUser` limit and answers `Cache-Control: no-store` (the answer holds the codes); two regenerations at once meet the old batch's version and one answers 409; a refusal after the proof is in hand shows the generic error, not "that code is wrong"; the mock refuses with 412 when the factor is off. Missing: tests and owner check (Application and API tests, real spec). Not decided and left alone: no security-activity line is recorded for a regeneration (the product list of recorded facts has none).
 
 ### UC-IDN-J03 Turn the second factor off
 - Capability: J MFA recovery
@@ -689,8 +689,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: destructive confirmation, step-up prompt, blocked with reason, success.
 - Rules: ID-007; sections 22, 25; ID-015; IAREQ052, IAREQ054.
 - Acceptance: Given step-up, when MFA is disabled, then sign-in needs no second step and one activity line exists.
-- Evidence: BE `Mfa/Commands/DisableMfa/DisableMfa.cs`; API `Auth/Commands/DisableMfaEndpoint.cs` (`POST /api/v1/auth/mfa/disable`) · FE `account-security-surface.tsx` · Design Final-Account · Tests Domain `UserSecuritySettingsTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Missing: the policy-blocked case, Application test, real spec.
+- Evidence: BE `Mfa/Commands/DisableMfa/DisableMfa.cs`; API `Auth/Commands/DisableMfaEndpoint.cs` (`POST /api/v1/auth/mfa/disable`) · FE `account-security-surface.tsx` (`FlowPanel` disable step, `TwoFactorOffPanel`), `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` · Design Final-Account · Tests Domain `UserSecuritySettingsTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING. Built: the endpoint carries the `AuthSensitiveByUser` limit; the confirmation says what turning off does and its button is the danger one; the producer ends every session of the person, this one included (reason `mfa-disabled`, access cut off), so the page shows "Two-factor authentication is off" with a Sign in button instead of reading anything further; the mock does the same. Missing: tests and owner check, the policy-blocked case (waits on UC-IDN-J05: no policy fact exists), Application test, real spec. Not decided and left alone: the product text (ID-006) does not say which sessions survive turning the factor off; the producer ends all of them, which is the stricter reading. The mock e2e that expects the page to stay open after turning off must change.
 
 ### UC-IDN-J04 Recover an account that lost both factors
 - Capability: J MFA recovery

@@ -427,6 +427,8 @@ export const accountSecurityOperations = [
     route: "/auth/mfa/disable",
     async handle({ body, store }) {
       const security = securityOf(store);
+      // An off factor stays off: nothing changes and no session ends.
+      if (!security.twoFactorEnabled) return { status: 200 };
       if (security.proofs.get(body?.stepUpToken ?? "") !== "DisableMfa")
         return identityProblem(
           412,
@@ -436,17 +438,21 @@ export const accountSecurityOperations = [
       security.proofs.delete(body?.stepUpToken ?? "");
       security.twoFactorEnabled = false;
       security.recoveryCodesLeft = 0;
-      // Turning it off signs every other device out.
+      // Turning it off ends every session, this one included; the person signs in again.
+      const now = store.getClock().isoNow();
       for (const session of security.sessions)
-        if (!session.isCurrent && session.status === "Active")
+        if (session.status === "Active") {
           session.status = "Revoked";
+          session.revokedAt = now;
+        }
       security.activity.unshift({
         id: `activity-${security.activity.length + 1}`,
         type: "MfaDisabled",
-        occurredAt: store.getClock().isoNow(),
+        occurredAt: now,
         ipAddress: null,
         userAgent: null,
       });
+      store.logoutCurrentUser();
       return { status: 200 };
     },
   }),
@@ -461,6 +467,12 @@ export const accountSecurityOperations = [
     route: "/auth/mfa/recovery-codes/regenerate",
     async handle({ body, store }) {
       const security = securityOf(store);
+      if (!security.twoFactorEnabled)
+        return identityProblem(
+          412,
+          "identity.mfa.not-enabled",
+          "MFA is not enabled for this account.",
+        );
       if (
         security.proofs.get(body?.stepUpToken ?? "") !==
         "RegenerateRecoveryCodes"
