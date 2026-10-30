@@ -319,7 +319,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | INTEGRATING | tests and owner check. |
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
-| UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | Cross-tenant/Private negative test; real e2e |
+| UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
 | UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
 | UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | INTEGRATING | tests and owner check |
@@ -2362,7 +2362,7 @@ Team capability WM-013.
 - Rules: product sections 111; WM-030; WMREQ128
 - Acceptance: Given a Private board the caller cannot read, then it contributes to no figure.
 - Evidence: BE IBoardWorkSummaryFacts (port, not an endpoint) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/spaces/$spaceId.tsx` (space-page e2e 15) · Design Final-Space overview · Tests none found · Real e2e none
-- State: INTEGRATING — Cross-tenant/Private negative test; real e2e
+- State: INTEGRATING — tests and owner check. Read through, nothing to build: the port keeps to the Board ids it is given (every figure, the member count, the top assignees and the open work per person start from them, in one workspace, Private boards left out for the member lens), and the overview passes the Governance-visible set. Open for the owner: the product section on published figures defines waiting review as a pending request that targets the Board or one of its unfinished Items, while `BoardWorkSummaryFactsAdapter` counts only Items (its comment cites an acceptance of 2026-10-24); archived boards are left out of the figures, pending the archived-board decision.
 
 ## N. Form input
 
