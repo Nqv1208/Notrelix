@@ -167,6 +167,9 @@ const isRowRefusal = (failure: unknown): boolean =>
  */
 export function createOnboardingApi(api: OnboardingApiClient) {
   const key = () => crypto.randomUUID();
+  // The workspace create keeps its key while the same request is retried, so a retry after a lost
+  // answer returns the workspace the first attempt made instead of a second one.
+  let creating: { signature: string; key: string } | null = null;
   // The member's Account, read once from the bootstrap (a failure is not kept).
   let account: Promise<string> | null = null;
   const accountId = (): Promise<string> => {
@@ -234,11 +237,15 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         size: SIZE_BAND[input.size],
         language: input.locale,
       };
+      const signature = JSON.stringify(body);
+      if (creating?.signature !== signature)
+        creating = { signature, key: key() };
       const id = await api.post<string>(
         endpoints.accounts.workspaces(await accountId()),
         body,
-        { ...QUIET, idempotencyKey: key() },
+        { ...QUIET, idempotencyKey: creating.key },
       );
+      creating = null;
       return { id, slug: input.slug };
     },
     /**

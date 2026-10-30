@@ -3,7 +3,10 @@ import {
   createUseCreateWorkspace,
   type WorkspaceShellCopy,
 } from "@notrelix/features-workspace/web";
-import type { WorkspaceSummary } from "@notrelix/features-workspace/core";
+import {
+  describeWorkspaceFailure,
+  type WorkspaceSummary,
+} from "@notrelix/features-workspace/core";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   Button,
@@ -17,14 +20,18 @@ import {
   Label,
 } from "@notrelix/ui-web";
 
-function slugFor(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+/** The producer's rule on a workspace name (Workspaces domain). */
+const NAME_MAX = 160;
+
+/** The words the person sees for a refused create: what happened and what to do about it. */
+function failureText(error: unknown, copy: WorkspaceShellCopy): string {
+  const failure = describeWorkspaceFailure(error);
+  if (failure.reason === "email-not-confirmed")
+    return copy.createWorkspace.errorEmailNotConfirmed;
+  if (failure.kind === "forbidden") return copy.createWorkspace.errorForbidden;
+  if (failure.kind === "network") return copy.createWorkspace.errorOffline;
+  if (failure.kind === "validation") return copy.createWorkspace.nameTooLong;
+  return copy.createWorkspace.error;
 }
 
 /** The one create-workspace dialog (replaces the two switcher copies). */
@@ -58,11 +65,7 @@ export function CreateWorkspaceDialog({
     event.preventDefault();
     if (!trimmed || createWorkspace.isPending) return;
     createWorkspace.mutate(
-      {
-        name: trimmed,
-        slug: slugFor(trimmed) || "workspace",
-        isPersonal: false,
-      },
+      { name: trimmed, isPersonal: false },
       {
         onSuccess: (workspace) => {
           setName("");
@@ -97,11 +100,14 @@ export function CreateWorkspaceDialog({
               id={inputId}
               autoFocus
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (createWorkspace.isError) createWorkspace.reset();
+              }}
               placeholder={copy.createWorkspace.namePlaceholder}
               aria-invalid={createWorkspace.isError || undefined}
               aria-describedby={createWorkspace.isError ? errorId : undefined}
-              maxLength={100}
+              maxLength={NAME_MAX}
             />
             {createWorkspace.isError ? (
               <p
@@ -109,7 +115,7 @@ export function CreateWorkspaceDialog({
                 role="alert"
                 className="text-metadata text-danger-text"
               >
-                {copy.createWorkspace.error}
+                {failureText(createWorkspace.error, copy)}
               </p>
             ) : null}
           </div>

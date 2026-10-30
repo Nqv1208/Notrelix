@@ -168,7 +168,8 @@ export interface UpdateWorkspaceViewInput {
 
 export interface CreateWorkspaceInput {
   name: string;
-  slug: string;
+  /** The address the caller chose; when absent the producer derives a free one from the name. */
+  slug?: string;
   isPersonal: boolean;
 }
 
