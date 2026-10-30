@@ -1,5 +1,9 @@
 import { useItemRemoval } from "../../item-lifecycle/use-item-removal";
 import {
+  tableCollapsedGroupsKey,
+  useKanbanCollapsedLanes,
+} from "../kanban/use-kanban-collapsed-lanes";
+import {
   useCallback,
   useContext,
   useEffect,
@@ -161,8 +165,11 @@ export function MainTableView({
   const [selection, setSelection] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const collapsedGroups = useKanbanCollapsedLanes(
+    tableCollapsedGroupsKey(workspaceId, boardId),
+  );
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
-    () => new Set(),
+    () => collapsedGroups.initial,
   );
 
   const titles = useRef(new Map<string, string>());
@@ -787,14 +794,13 @@ export function MainTableView({
             setSelection(selectAll ? new Set(visibleIds) : new Set())
           }
           onClearSelection={() => setSelection(new Set())}
-          onGroupToggle={(groupId) =>
-            setCollapsed((current) => {
-              const next = new Set(current);
-              if (next.has(groupId)) next.delete(groupId);
-              else next.add(groupId);
-              return next;
-            })
-          }
+          onGroupToggle={(groupId) => {
+            const next = new Set(collapsed);
+            if (next.has(groupId)) next.delete(groupId);
+            else next.add(groupId);
+            setCollapsed(next);
+            collapsedGroups.onChange(next);
+          }}
           onOpenItem={(id) => onSelectedItemChange?.(id)}
           onStatusChange={writeStatus}
           onCreateItem={handleCreate}

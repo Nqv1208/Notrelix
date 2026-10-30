@@ -17,6 +17,14 @@ export function kanbanCollapsedLanesKey(
   return `notrelix.kanban.collapsed.${workspaceId}.${viewId}`;
 }
 
+/** The Table keeps its collapsed groups the same way, per workspace and board. */
+export function tableCollapsedGroupsKey(
+  workspaceId: string,
+  boardId: string,
+): string {
+  return `notrelix.table.collapsed.${workspaceId}.${boardId}`;
+}
+
 function defaultStorage(): CollapsedLanesStorage | null {
   try {
     return typeof window === "undefined" ? null : window.localStorage;
@@ -59,9 +67,10 @@ function write(
 }
 
 /**
- * The lanes a member keeps collapsed on a Kanban view: a personal,
+ * The lanes (or Table groups) a member keeps collapsed on a view: a personal,
  * per-workspace, per-view UI preference kept on this device (not server
- * state). The first value is read once when the view opens.
+ * state). The first value is read once when the view opens, so a refetch
+ * never re-expands what the member collapsed.
  */
 export function useKanbanCollapsedLanes(
   key: string,
