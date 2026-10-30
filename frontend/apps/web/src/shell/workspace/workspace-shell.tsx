@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useMatches, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { createUsePageList } from "@notrelix/docs-state";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
@@ -706,7 +707,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         onOpenSystemRail={openSystemRail}
         mobileSystemRail={railSurface("drawer")}
         onOpenShortcuts={() => setShortcutsOpen(true)}
-        onSignOut={() => logout.mutate()}
+        onSignOut={() =>
+          logout.mutate(undefined, {
+            // The server session is still alive: say so, never look signed out.
+            onError: () =>
+              toast.error(copy.user.signOutFailed, {
+                description: copy.user.signOutFailedHint,
+              }),
+          })
+        }
       />
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Desktop and tablet have no top bar: the workspace starts at the
