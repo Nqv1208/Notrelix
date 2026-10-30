@@ -295,7 +295,22 @@ export const vi = {
     rejected: "Đã từ chối",
     removed: "Đã xoá phản hồi",
     createdToast: "Đã tạo việc từ phản hồi",
-    gone: "Biểu mẫu này đã được xoá hoặc bạn không quản lý board này.",
+    gone: "Biểu mẫu này đã được xoá hoặc bạn không chỉnh sửa được board này.",
+    backToBoard: "Board",
+    archivedTitle: "Board đã lưu trữ.",
+    archivedBody:
+      "Xem được phản hồi nhưng chưa xử lý được cho đến khi bỏ lưu trữ board.",
+    archivedReason:
+      "Board đã lưu trữ nên chưa xử lý được phản hồi. Bỏ lưu trữ board để tiếp tục.",
+  },
+  responses: {
+    title: "Phản hồi biểu mẫu",
+    body: "Các biểu mẫu đang nhận hoặc đã đóng của board này và số phản hồi mới. Người chỉnh sửa board xử lý phản hồi; soạn biểu mẫu là việc của quản lý board.",
+    loading: "Đang tải biểu mẫu",
+    loadError: "Chưa tải được biểu mẫu. Hãy thử lại.",
+    empty: "Chưa có biểu mẫu nào nhận phản hồi",
+    open: "Xem phản hồi",
+    openAria: "Xem phản hồi của {{name}}",
   },
   createFromResponse: {
     title: "Tạo việc từ phản hồi",
@@ -609,7 +624,22 @@ export const en: FormsCopy = {
     rejected: "Rejected",
     removed: "Response deleted",
     createdToast: "Item created from the response",
-    gone: "This form was deleted or you do not manage this board.",
+    gone: "This form was deleted or you cannot edit this board.",
+    backToBoard: "Board",
+    archivedTitle: "This board is archived.",
+    archivedBody:
+      "You can read the responses, but not handle them until the board is unarchived.",
+    archivedReason:
+      "The board is archived, so responses cannot be handled. Unarchive it to continue.",
+  },
+  responses: {
+    title: "Form responses",
+    body: "This board's published and closed forms with their new responses. People who can edit the board handle responses; building a form is for the board manager.",
+    loading: "Loading the forms",
+    loadError: "The forms could not be loaded. Try again.",
+    empty: "No form is taking responses yet",
+    open: "View responses",
+    openAria: "View the responses of {{name}}",
   },
   createFromResponse: {
     title: "Create item from response",

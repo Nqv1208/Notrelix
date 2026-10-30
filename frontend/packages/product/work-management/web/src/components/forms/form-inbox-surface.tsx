@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState, type ReactElement } from "react";
 import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -30,6 +30,7 @@ import {
   ICON_BUTTON_CLASS,
   TEXTAREA_CLASS,
 } from "../board-settings/board-settings-parts";
+import { DisabledControl } from "../item-page/item-page-parts";
 import { Chip, FormAlert, FormStatusChip } from "./forms-parts";
 import { fillFormsCopy, type FormsCopy } from "./forms.copy";
 import { answerText, targetName, type FormBoardField } from "./form-model";
@@ -64,6 +65,8 @@ export interface FormInboxSurfaceProps {
   readonly conflict?: boolean;
   /** The last decision failed; the response stays where it was. */
   readonly failed?: { readonly retry: () => void } | null;
+  /** The board is archived: the responses stay readable, every decision on one is off. */
+  readonly archived?: boolean;
   readonly onCreateItem: (submission: FormSubmission) => void;
   readonly onReject: (
     submission: FormSubmission,
@@ -74,6 +77,8 @@ export interface FormInboxSurfaceProps {
   readonly onOpenItem?: (itemId: string) => void;
   readonly onReload: () => void;
   readonly onBack: () => void;
+  /** Names where Back goes when it is not the forms list (an editor returns to the board). */
+  readonly backLabel?: string;
 }
 
 /** "09:12" today, "Hôm qua" the day before, else "09/10". */
@@ -180,7 +185,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
             onClick={props.onBack}
             className={cn(BUTTON_CLASS.ghost, "h-7 px-1.5")}
           >
-            {copy.common.back}
+            {props.backLabel ?? copy.common.back}
           </button>
           <h1
             className="m-0 flex-1 truncate text-[14px] font-bold"
@@ -221,6 +226,15 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
             </button>
           ))}
         </div>
+
+        {props.archived ? (
+          <div
+            role="status"
+            className="border-b border-line bg-warning-subtle px-4 py-2.5 text-item-small"
+          >
+            <b>{t.archivedTitle}</b> {t.archivedBody}
+          </div>
+        ) : null}
 
         {props.conflict ? (
           <div
@@ -413,6 +427,13 @@ function ResponseDetail(
   const [reason, setReason] = useState("");
   const [confirmRemove, setConfirmRemove] = useState(false);
   const decider = props.deciderName ?? "";
+  // An archived board refuses every decision: the control stays, says why and never acts.
+  const gate = (control: ReactElement<{ onClick?: () => void }>) =>
+    props.archived ? (
+      <DisabledControl reason={t.archivedReason}>{control}</DisabledControl>
+    ) : (
+      control
+    );
   const by = personName(response, props);
   const sentAt = whenLong(response.submittedAt, props.locale, props.timeZone);
   const decidedAt = response.processedAt
@@ -524,47 +545,57 @@ function ResponseDetail(
 
       {response.status === "new" ? (
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => props.onCreateItem(response)}
-            className={BUTTON_CLASS.primary}
-          >
-            {t.createItem}
-          </button>
-          <button
-            type="button"
-            onClick={() => setRejecting(true)}
-            className={BUTTON_CLASS.outline}
-          >
-            {t.reject}
-          </button>
-          <button
-            type="button"
-            onClick={() => void props.onSpam(response)}
-            className={BUTTON_CLASS.outline}
-          >
-            {t.spamAction}
-          </button>
+          {gate(
+            <button
+              type="button"
+              onClick={() => props.onCreateItem(response)}
+              className={BUTTON_CLASS.primary}
+            >
+              {t.createItem}
+            </button>,
+          )}
+          {gate(
+            <button
+              type="button"
+              onClick={() => setRejecting(true)}
+              className={BUTTON_CLASS.outline}
+            >
+              {t.reject}
+            </button>,
+          )}
+          {gate(
+            <button
+              type="button"
+              onClick={() => void props.onSpam(response)}
+              className={BUTTON_CLASS.outline}
+            >
+              {t.spamAction}
+            </button>,
+          )}
           <span className="flex-1" />
-          <button
-            type="button"
-            aria-label={t.removeAria}
-            onClick={() => setConfirmRemove(true)}
-            className={ICON_BUTTON_CLASS}
-          >
-            <Trash2 aria-hidden="true" />
-          </button>
+          {gate(
+            <button
+              type="button"
+              aria-label={t.removeAria}
+              onClick={() => setConfirmRemove(true)}
+              className={ICON_BUTTON_CLASS}
+            >
+              <Trash2 aria-hidden="true" />
+            </button>,
+          )}
         </div>
       ) : (
         <div className="flex justify-end">
-          <button
-            type="button"
-            aria-label={t.removeAria}
-            onClick={() => setConfirmRemove(true)}
-            className={ICON_BUTTON_CLASS}
-          >
-            <Trash2 aria-hidden="true" />
-          </button>
+          {gate(
+            <button
+              type="button"
+              aria-label={t.removeAria}
+              onClick={() => setConfirmRemove(true)}
+              className={ICON_BUTTON_CLASS}
+            >
+              <Trash2 aria-hidden="true" />
+            </button>,
+          )}
         </div>
       )}
 

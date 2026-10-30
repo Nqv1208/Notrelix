@@ -5,7 +5,7 @@ import { FormInboxPage } from "@notrelix/work-management-web";
 const ROUTE =
   "/workspaces/$workspaceId/boards/$boardId/forms/$formId/responses";
 
-/** The response inbox of a form: the board manager's to read and decide. */
+/** The response inbox of a form: whoever can edit the board reads and decides. */
 export function BoardFormInboxRoutePage() {
   const { workspaceId, boardId, formId } = useParams({ from: ROUTE });
   const navigate = useNavigate({ from: ROUTE });
@@ -30,6 +30,12 @@ export function BoardFormInboxRoutePage() {
           to: "/workspaces/$workspaceId/boards/$boardId/settings",
           params: { workspaceId, boardId },
           search: { section: "forms" },
+        })
+      }
+      onBackToBoard={() =>
+        void navigate({
+          to: "/workspaces/$workspaceId/boards/$boardId",
+          params: { workspaceId, boardId },
         })
       }
     />

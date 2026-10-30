@@ -119,6 +119,7 @@ function useCanHandleResponses(boardId: string, workspaceId: string) {
   const { access, isLoading, error } = useBoardAccess(boardId, workspaceId);
   return {
     allowed: access?.myLevel === "manager" || access?.myLevel === "editor",
+    manager: access?.myLevel === "manager",
     pending: isLoading && !error,
   };
 }
@@ -283,6 +284,7 @@ export function FormInboxPage({
   now,
   onOpenItem,
   onBack,
+  onBackToBoard,
 }: {
   readonly workspaceId: string;
   readonly boardId: string;
@@ -291,7 +293,10 @@ export function FormInboxPage({
   readonly deciderName?: string;
   readonly now?: Date;
   readonly onOpenItem: (itemId: string) => void;
+  /** Back to the forms list in the board settings, where a manager came from. */
   readonly onBack: () => void;
+  /** Back to the board, for an editor who reaches the inbox from the board menu. */
+  readonly onBackToBoard: () => void;
 }) {
   const copy = useFormsCopy();
   const { locale } = useLocale();
@@ -302,7 +307,10 @@ export function FormInboxPage({
     boardId,
     workspaceId,
   );
-  const { allowed, pending } = useCanHandleResponses(boardId, workspaceId);
+  const { allowed, manager, pending } = useCanHandleResponses(
+    boardId,
+    workspaceId,
+  );
   const fields = useMemo(
     () => boardFormFields(fieldDefinitions),
     [fieldDefinitions],
@@ -387,6 +395,7 @@ export function FormInboxPage({
         onSelect={setSelectedId}
         conflict={conflict}
         failed={failed}
+        archived={board?.isArchived === true}
         onCreateItem={(response) => {
           setConflict(false);
           setFailed(null);
@@ -410,7 +419,8 @@ export function FormInboxPage({
           void formQuery.refetch();
           void submissions.refetch();
         }}
-        onBack={onBack}
+        onBack={manager ? onBack : onBackToBoard}
+        backLabel={manager ? undefined : copy.inbox.backToBoard}
       />
       {board && creating && form && prefill ? (
         <ItemCreateHost
