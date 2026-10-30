@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RecordBoardItemView;
 
@@ -18,6 +19,7 @@ public class RecordBoardItemViewCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IWorkspaceAccessResolver workspaceAccess,
+    IBoardItemViews views,
     IDateTimeProvider clock) : IRequestHandler<RecordBoardItemViewCommand, Result>
 {
     public async Task<Result> Handle(RecordBoardItemViewCommand request, CancellationToken ct)
@@ -26,16 +28,9 @@ public class RecordBoardItemViewCommandHandler(
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var userId = requestContext.UserId;
-        var now = clock.UtcNow;
-        var row = await context.BoardItemViews.FirstOrDefaultAsync(v => v.ItemId == item.Id && v.UserId == userId, ct);
-        if (row is not null)
-        {
-            row.Touch(now);
-            return Result.Success();
-        }
-
         if ((await workspaceAccess.ResolveAsync(item.WorkspaceId, userId, ct)).IsGuest) return Result.Success();
-        context.BoardItemViews.Add(BoardItemView.Create(item.AccountId, item.WorkspaceId, item.BoardId, item.Id, userId, now));
+
+        await views.RecordAsync(item.AccountId, item.WorkspaceId, item.BoardId, item.Id, userId, clock.UtcNow, ct);
         return Result.Success();
     }
 }
