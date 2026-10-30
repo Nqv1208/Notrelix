@@ -25,14 +25,24 @@ export function createUseAuthUser({ api, endpoints }: UseAuthUserDeps) {
       refetchOnMount: false,
     });
 
-    const isAuthenticated = profileQuery.isSuccess && !!profileQuery.data;
+    // Only a rejected session means "signed out". A network or server failure says
+    // nothing about the session: with a person already read they stay signed in, and
+    // with none to show the guard offers a retry instead of the sign-in page.
+    const sessionRejected =
+      profileQuery.isError &&
+      (profileQuery.error as { kind?: string } | null)?.kind === "auth";
+    const isAuthenticated = !!profileQuery.data && !sessionRejected;
     const isLoading = profileQuery.isLoading;
+    const isUnavailable =
+      profileQuery.isError && !profileQuery.data && !sessionRejected;
 
     return {
       user: profileQuery.data,
       isAuthenticated,
       isLoading,
       isReady: !profileQuery.isLoading,
+      isUnavailable,
+      retry: () => void profileQuery.refetch(),
     };
   };
 }
