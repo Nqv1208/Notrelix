@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.SetDefaultWo
 /// Chooses the Workspace that opens with the app for the caller. Any active member may choose any
 /// Workspace they belong to (<c>ViewWorkspace</c> on it); the pipeline answers not-found or forbidden
 /// for a Workspace the caller cannot open, and the choice itself is Identity's per-person fact. The
-/// subject is always the principal. Choosing the current default succeeds and changes nothing.
+/// subject is always the principal. An archived Workspace is read-only and not where the app should open,
+/// so choosing it is refused. Choosing the current default succeeds and changes nothing.
 /// </summary>
 public record SetDefaultWorkspaceCommand(Guid WorkspaceId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
@@ -54,6 +55,14 @@ public class SetDefaultWorkspaceCommandHandler : IRequestHandler<SetDefaultWorks
         if (!isActiveMember)
         {
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+        }
+
+        var archived = await _context.Workspaces
+            .AsNoTracking()
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Archived, ct);
+        if (archived)
+        {
+            throw new BusinessRuleException("An archived workspace cannot be the default workspace.");
         }
 
         await _defaultWorkspace.SetAsync(userId, request.WorkspaceId, ct);

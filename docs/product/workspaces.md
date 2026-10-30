@@ -284,8 +284,9 @@ the default and never offered to leave or open from there.
 
 The default Workspace is the person's choice of the Workspace that opens with the app. Workspaces validates
 that the person is an active member before the choice is stored; Identity stores only the Workspace id on
-the person's profile and a reader treats a default the person cannot open as absent. Choosing the current
-default changes nothing.
+the person's profile and a reader treats a default the person cannot open as absent. Choosing an archived
+Workspace as the default is refused with a business-rule failure, and an archived default that was chosen
+earlier reads as absent. Choosing the current default changes nothing.
 
 # 20. Remove Member
 

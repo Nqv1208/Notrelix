@@ -173,6 +173,12 @@ export const accountPagesOperations = [
             "workspaces.member.not-found",
             "You are not a member of this workspace.",
           );
+        if (store.isWorkspaceArchived(id))
+          return problem(
+            400,
+            "business_rule.violation",
+            "An archived workspace cannot be the default workspace.",
+          );
         store.accountPages.setDefaultWorkspace(store.getCurrentUser().id, id);
         return noContent();
       },

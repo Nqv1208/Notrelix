@@ -4645,7 +4645,7 @@ export interface paths {
         get?: never;
         /**
          * Choose the workspace that opens with the app
-         * @description The caller must be an active member of the workspace; a workspace the caller cannot open answers 404. Choosing the current default succeeds and changes nothing.
+         * @description The caller must be an active member of the workspace; a workspace the caller cannot open answers 404, and an archived workspace is refused with 400 (a business-rule failure). Choosing the current default succeeds and changes nothing.
          */
         put: operations["Workspaces.Members.SetDefaultWorkspace"];
         post?: never;
