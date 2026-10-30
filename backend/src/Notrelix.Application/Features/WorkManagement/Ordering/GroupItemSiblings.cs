@@ -13,6 +13,6 @@ internal static class GroupItemSiblings
         await context.BoardItems
             .AsNoTracking()
             .Where(item => item.GroupId == groupId && item.ParentItemId == null)
-            .Select(item => new OrderedSibling(item.Id, item.Position))
+            .Select(item => new OrderedSibling(item.Id, item.Position, item.IsArchived))
             .ToListAsync(cancellationToken);
 }

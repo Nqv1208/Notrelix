@@ -733,6 +733,8 @@ server-authoritative validation
 
 Floating-point midpoint hacks and client-only authority are forbidden.
 
+A client names the neighbours it sees. Siblings that no client sees, such as an archived group or item, still hold their keys: the server checks the named neighbours against the visible siblings only, and generates the new key in front of the hidden sibling that follows the previous neighbour, so the order of the visible siblings is exactly what the client asked for and a reload cures a stale drop.
+
 ---
 
 # 44. Reorder no-op
