@@ -71,6 +71,10 @@ export const en = {
     removeDescription:
       "{{name}} loses access to every Board and Doc in {{workspace}}. Their work stays. You can invite them again later.",
     removeAction: "Remove member",
+    demoteTitle: "Change {{name}} to {{role}}?",
+    demoteDescription:
+      "{{name}} will have fewer permissions in {{workspace}}. You can change the role back later.",
+    demoteAction: "Change role",
     suspendTitle: "Suspend {{name}}?",
     suspendDescription:
       "{{name}} can't open {{workspace}} until an admin reactivates access. Nothing is deleted.",
@@ -223,6 +227,10 @@ export const vi: WorkspaceMembersCopy = {
     removeDescription:
       "{{name}} sẽ mất quyền truy cập mọi Bảng và Tài liệu trong {{workspace}}. Công việc của họ vẫn được giữ. Bạn có thể mời lại sau.",
     removeAction: "Xóa thành viên",
+    demoteTitle: "Đổi {{name}} thành {{role}}?",
+    demoteDescription:
+      "{{name}} sẽ có ít quyền hơn trong {{workspace}}. Bạn có thể đổi lại vai trò sau.",
+    demoteAction: "Đổi vai trò",
     suspendTitle: "Tạm ngưng {{name}}?",
     suspendDescription:
       "{{name}} sẽ không mở được {{workspace}} cho đến khi quản trị viên kích hoạt lại. Không có gì bị xóa.",

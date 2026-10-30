@@ -32,6 +32,8 @@ export interface WorkspaceMember {
   /** The person's title in this workspace, when they or an admin set one. */
   jobTitle?: string;
   membership?: WorkspaceMembershipStatus;
+  /** The member's version; every role, suspend, activate and remove write quotes it. */
+  version?: number;
   /**
    * @deprecated Presence fields of the retired mock shape; read only by the
    * unmounted Phase 2 shell files (`apps/web/src/shell/sidebar/*`).

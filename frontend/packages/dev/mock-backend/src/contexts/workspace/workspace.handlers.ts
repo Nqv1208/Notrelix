@@ -95,6 +95,63 @@ function memberWire(store: MockStore, m: MockMembershipRecord) {
 const MEMBERS_DEFAULT_LIMIT = 50;
 const MEMBERS_MAX_LIMIT = 200;
 
+/**
+ * A member write quotes the member's version. `null` when it is current (or the member does not
+ * exist, which the write itself answers); a 412 when it moved.
+ */
+function staleMemberVersion(
+  store: MockStore,
+  workspaceId: string,
+  userId: string,
+  expected: unknown,
+): MockHttpResult<never> | null {
+  const member = store
+    .getWorkspaceMembers(workspaceId)
+    .find((m) => m.userId === userId);
+  if (!member) return null;
+  return expected ===
+    store.accountPages.memberProfileOf(workspaceId, userId).version
+    ? null
+    : preconditionFailed();
+}
+
+/** A write that changed the member moves its version (a no-op does not). */
+function bumpMemberVersion(
+  store: MockStore,
+  workspaceId: string,
+  userId: string,
+): void {
+  store.accountPages.memberProfileOf(workspaceId, userId).version += 1;
+}
+
+/** Suspend or activate: refused when the version moved, and the version moves only when the state flips. */
+function suspendedChange(
+  store: MockStore,
+  params: { workspaceId: string; userId: string },
+  expected: unknown,
+  suspended: boolean,
+): MockHttpResult<never> {
+  const stale = staleMemberVersion(
+    store,
+    params.workspaceId,
+    params.userId,
+    expected,
+  );
+  if (stale) return stale;
+  const member = store
+    .getWorkspaceMembers(params.workspaceId)
+    .find((m) => m.userId === params.userId);
+  const wasSuspended = member ? store.isMembershipSuspended(member.id) : false;
+  const change = store.setMemberSuspended(
+    params.workspaceId,
+    params.userId,
+    suspended,
+  );
+  if (change === "ok" && wasSuspended !== suspended)
+    bumpMemberVersion(store, params.workspaceId, params.userId);
+  return memberChangeResult(change);
+}
+
 /** `ManageMembers` is held by owners and admins. */
 function canManageMembers(store: MockStore, workspaceId: string): boolean {
   const role = store.getCurrentMemberRole(workspaceId);
@@ -557,8 +614,15 @@ export const workspaceOperations = [
     },
     method: "DELETE",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const stale = staleMemberVersion(
+        store,
+        params.workspaceId,
+        params.userId,
+        Number(request.searchParams.get("expectedVersion")),
+      );
+      if (stale) return stale;
       return memberChangeResult(
         store.removeMember(params.workspaceId, params.userId),
       );
@@ -567,7 +631,7 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string; userId: string },
-    { role?: unknown },
+    { role?: unknown; expectedVersion?: number },
     void
   >({
     id: "workspace.members.update",
@@ -581,13 +645,32 @@ export const workspaceOperations = [
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
       const role = parseRole(body?.role);
       if (!role) return validationError({ role: ["Unknown role."] });
-      return memberChangeResult(
-        store.changeMemberRole(params.workspaceId, params.userId, role),
+      const stale = staleMemberVersion(
+        store,
+        params.workspaceId,
+        params.userId,
+        body?.expectedVersion,
       );
+      if (stale) return stale;
+      const before = store
+        .getWorkspaceMembers(params.workspaceId)
+        .find((m) => m.userId === params.userId)?.role;
+      const change = store.changeMemberRole(
+        params.workspaceId,
+        params.userId,
+        role,
+      );
+      if (change === "ok" && before !== role)
+        bumpMemberVersion(store, params.workspaceId, params.userId);
+      return memberChangeResult(change);
     },
   }),
 
-  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+  defineMockOperation<
+    { workspaceId: string; userId: string },
+    { expectedVersion?: number },
+    void
+  >({
     id: "workspace.members.suspend",
     contract: {
       kind: "openapi",
@@ -595,15 +678,17 @@ export const workspaceOperations = [
     },
     method: "POST",
     route: "/workspaces/:workspaceId/members/:userId/suspend",
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
-      return memberChangeResult(
-        store.setMemberSuspended(params.workspaceId, params.userId, true),
-      );
+      return suspendedChange(store, params, body?.expectedVersion, true);
     },
   }),
 
-  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+  defineMockOperation<
+    { workspaceId: string; userId: string },
+    { expectedVersion?: number },
+    void
+  >({
     id: "workspace.members.activate",
     contract: {
       kind: "openapi",
@@ -611,11 +696,9 @@ export const workspaceOperations = [
     },
     method: "POST",
     route: "/workspaces/:workspaceId/members/:userId/activate",
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
-      return memberChangeResult(
-        store.setMemberSuspended(params.workspaceId, params.userId, false),
-      );
+      return suspendedChange(store, params, body?.expectedVersion, false);
     },
   }),
 

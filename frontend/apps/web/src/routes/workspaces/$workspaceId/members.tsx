@@ -20,6 +20,7 @@ import {
   formatCopy,
   useWorkspaceMembersCopy,
   WorkspaceMembersSurface,
+  type MemberWriteTarget,
   type MembersTab,
   type WorkspaceMembersCopy,
 } from "@notrelix/features-workspace/web";
@@ -99,11 +100,11 @@ export function MembersPage() {
   const run = useCallback(
     (
       member: WorkspaceMember,
-      action: (userId: string) => Promise<unknown>,
+      action: (target: MemberWriteTarget) => Promise<unknown>,
       messages: { success: string; failure: string },
     ) => {
       pendingMembers.add(member.userId);
-      action(member.userId)
+      action({ userId: member.userId, expectedVersion: member.version })
         .then(() =>
           toast.success(formatCopy(messages.success, { name: member.name })),
         )
@@ -123,7 +124,7 @@ export function MembersPage() {
     (member: WorkspaceMember, role: WorkspaceRole) =>
       run(
         member,
-        (userId) => mutations.updateRole.mutateAsync({ userId, role }),
+        (target) => mutations.updateRole.mutateAsync({ ...target, role }),
         {
           success: formatCopy(copy.toasts.roleChanged, {
             name: "{{name}}",
@@ -319,19 +320,19 @@ export function MembersPage() {
         inviteResetKey={inviteResetKey}
         onChangeRole={onChangeRole}
         onRemove={(member) =>
-          run(member, (userId) => mutations.remove.mutateAsync(userId), {
+          run(member, (target) => mutations.remove.mutateAsync(target), {
             success: copy.toasts.removed,
             failure: copy.toasts.removeFailed,
           })
         }
         onSuspend={(member) =>
-          run(member, (userId) => mutations.suspend.mutateAsync(userId), {
+          run(member, (target) => mutations.suspend.mutateAsync(target), {
             success: copy.toasts.suspended,
             failure: copy.toasts.suspendFailed,
           })
         }
         onActivate={(member) =>
-          run(member, (userId) => mutations.activate.mutateAsync(userId), {
+          run(member, (target) => mutations.activate.mutateAsync(target), {
             success: copy.toasts.activated,
             failure: copy.toasts.activateFailed,
           })

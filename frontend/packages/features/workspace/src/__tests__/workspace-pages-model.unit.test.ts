@@ -460,19 +460,19 @@ describe("Producer adapters", () => {
       delete: vi.fn(),
     };
     const service = createMembersService(api);
-    await service.updateRole("ws", "u2", "admin");
+    await service.updateRole("ws", "u2", "admin", 4);
     expect(api.patch).toHaveBeenCalledWith("/workspaces/ws/members/u2", {
       role: 2,
+      expectedVersion: 4,
     });
-    await service.suspend("ws", "u2");
-    expect(api.post).toHaveBeenCalledWith(
-      "/workspaces/ws/members/u2/suspend",
-      undefined,
-    );
-    await service.activate("ws", "u2");
+    await service.suspend("ws", "u2", 4);
+    expect(api.post).toHaveBeenCalledWith("/workspaces/ws/members/u2/suspend", {
+      expectedVersion: 4,
+    });
+    await service.activate("ws", "u2", 4);
     expect(api.post).toHaveBeenCalledWith(
       "/workspaces/ws/members/u2/activate",
-      undefined,
+      { expectedVersion: 4 },
     );
   });
 

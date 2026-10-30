@@ -28,6 +28,7 @@ interface MemberWire {
   readonly joinedAt?: unknown;
   readonly status?: unknown;
   readonly jobTitle?: unknown;
+  readonly version?: unknown;
 }
 
 function parseMembership(
@@ -79,6 +80,12 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
           ? raw.jobTitle
           : undefined,
       membership: parseMembership(raw.status),
+      version:
+        typeof raw.version === "number" &&
+        Number.isInteger(raw.version) &&
+        raw.version >= 0
+          ? raw.version
+          : undefined,
       initials: initialsFor(name),
     });
   }
@@ -87,6 +94,18 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
 
 type UpdateRoleBody =
   OperationRequestBody<"Workspaces.Members.UpdateMemberRole">;
+type MemberVersionBody =
+  OperationRequestBody<"Workspaces.Members.SuspendMember">;
+
+/**
+ * A member write quotes the version the member was read at. A member whose version is not known is
+ * never written: the write is refused here, before a request that could overwrite a newer change.
+ */
+function versionOf(expectedVersion: number | undefined): number {
+  if (expectedVersion === undefined)
+    throw new Error("The member version is not known");
+  return expectedVersion;
+}
 
 /** `Workspaces.Members.ListMembers`: `items` and `nextCursor`. */
 type MembersPageDto = OperationResponse<"Workspaces.Members.ListMembers", 200>;
@@ -151,31 +170,58 @@ export function createMembersService(api: WorkspaceApiClient) {
       );
     },
 
-    /** PATCH …/members/{userId} with the producer's role enum value. */
+    /**
+     * PATCH …/members/{userId} with the producer's role enum value and the member's version; a
+     * version that moved answers 412 and nothing changes.
+     */
     async updateRole(
       workspaceId: string,
       userId: string,
       role: WorkspaceRole,
+      expectedVersion: number | undefined,
     ): Promise<void> {
-      const body: UpdateRoleBody = { role: roleWireValue(role) };
+      const body: UpdateRoleBody = {
+        role: roleWireValue(role),
+        expectedVersion: versionOf(expectedVersion),
+      };
       await api.patch<void>(`${base(workspaceId)}/${userId}`, body);
     },
 
-    async removeMember(workspaceId: string, userId: string): Promise<void> {
-      await api.delete<void>(`${base(workspaceId)}/${userId}`);
-    },
-
-    /** Idempotent on the producer: suspending a suspended member is a no-op. */
-    async suspend(workspaceId: string, userId: string): Promise<void> {
-      await api.post<void>(`${base(workspaceId)}/${userId}/suspend`, undefined);
-    },
-
-    /** Idempotent on the producer: activating an active member is a no-op. */
-    async activate(workspaceId: string, userId: string): Promise<void> {
-      await api.post<void>(
-        `${base(workspaceId)}/${userId}/activate`,
-        undefined,
+    async removeMember(
+      workspaceId: string,
+      userId: string,
+      expectedVersion: number | undefined,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${base(workspaceId)}/${userId}?expectedVersion=${versionOf(expectedVersion)}`,
       );
+    },
+
+    /** Suspending a suspended member is a no-op on the producer; a stale version answers 412. */
+    async suspend(
+      workspaceId: string,
+      userId: string,
+      expectedVersion: number | undefined,
+    ): Promise<void> {
+      const body: MemberVersionBody = {
+        expectedVersion: versionOf(expectedVersion),
+      };
+      await api.post<void>(`${base(workspaceId)}/${userId}/suspend`, body);
+    },
+
+    /**
+     * Activating an active member is a no-op on the producer; a stale version answers 412 and an
+     * account with no free seat refuses with a business-rule failure.
+     */
+    async activate(
+      workspaceId: string,
+      userId: string,
+      expectedVersion: number | undefined,
+    ): Promise<void> {
+      const body: MemberVersionBody = {
+        expectedVersion: versionOf(expectedVersion),
+      };
+      await api.post<void>(`${base(workspaceId)}/${userId}/activate`, body);
     },
   };
 }

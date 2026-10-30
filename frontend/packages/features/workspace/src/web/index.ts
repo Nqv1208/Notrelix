@@ -4,6 +4,7 @@ export { createUseUpdateWorkspaceView } from "./hooks/mutations/use-update-works
 export { createUseReorderWorkspaceViews } from "./hooks/mutations/use-reorder-workspace-views";
 export {
   createUseMemberMutations,
+  type MemberWriteTarget,
   type UpdateMemberRoleInput,
 } from "./hooks/mutations/use-member-mutations";
 export {

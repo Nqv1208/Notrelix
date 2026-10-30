@@ -410,8 +410,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const viewerId = store.getCurrentUser().id;
     const others = listed.filter((m) => m.userId !== viewerId);
     expect(others.length).toBeGreaterThanOrEqual(2);
-    await members.suspend(workspaceId, others[0]!.userId);
-    await members.removeMember(workspaceId, others[1]!.userId);
+    await members.suspend(workspaceId, others[0]!.userId, others[0]!.version);
+    await members.removeMember(
+      workspaceId,
+      others[1]!.userId,
+      others[1]!.version,
+    );
     const relisted = await members.getList(workspaceId);
     expect(relisted.every((m) => m.membership !== undefined)).toBe(true);
     expect(
