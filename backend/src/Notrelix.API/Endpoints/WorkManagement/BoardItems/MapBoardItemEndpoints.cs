@@ -51,6 +51,7 @@ public static class MapBoardItemEndpoints
         itemGroup.MapListBoardItemLinks();
         itemGroup.MapCreateBoardItemLink();
         itemGroup.MapDeleteBoardItemLink();
+        itemGroup.MapClearBoardItemLinks();
         itemGroup.MapSetBoardItemCover();
         itemGroup.MapSetBoardItemRepeat();
         itemGroup.MapSetBoardItemReminder();

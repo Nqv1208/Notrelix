@@ -19,6 +19,7 @@ public static class MapChecklistEndpoints
 
         itemGroup.MapGetChecklists();
         itemGroup.MapCreateChecklist();
+        itemGroup.MapCopyChecklist();
 
         var clGroup = app
             .MapGroup("/api/v1/checklists/{checklistId:guid}")
