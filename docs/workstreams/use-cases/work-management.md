@@ -153,7 +153,7 @@ Table stakes (offered by at least 5 of 7 vendors) and where Notrelix stands on `
 | Item CRUD and sub-items (7) | UC-WM-B01 to B04, UC-WM-B07 to B14 | Built; expected version missing on most writes (gap 1) |
 | Rich custom field types (6) | UC-WM-C01 to C19, UC-WM-D01, UC-WM-F01, UC-WM-H15 | Eleven types built; Relation (UC-WM-C18) and required fields (UC-WM-C19) missing |
 | Groups and sections (6) | UC-WM-E01 to E05, UC-WM-F02 | Built; group delete needs a target group (D76.6) |
-| Table and Kanban (7) | UC-WM-I01, UC-WM-J01 | Built; custom Table columns in open PR #204; no WIP limit (UC-WM-J06) |
+| Table and Kanban (7) | UC-WM-I01, UC-WM-J01 | Built, with custom Table columns; no WIP limit (UC-WM-J06) |
 | Calendar (6) | UC-WM-K01 | Built; drag and day-prefill proof missing |
 | Saved, shared and personal views (6) | UC-WM-H01 to H05, UC-WM-H09 to H11, UC-WM-I02 | Shared and private views built; personal state in open PR #201 |
 | Filter, sort, group (7) | UC-WM-H06 to H08, UC-WM-H15 | Client-side only; server-side on paged boards missing (gap 3) |
@@ -251,7 +251,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | INTEGRATING | API test: delete/edit system field refused |
 | UC-WM-C07 | Manage Select / Status / Priority options | C | Editor (statusManageRoles on views) | yes | yes | partial | board-settings | HARDENING | design for the replacement picker; live refresh needs open PR #193. |
 | UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | INTEGRATING | API test 'last Done option'; e2e |
-| UC-WM-C09 | Define Text and Long text fields | C | Editor | yes | partial | complete | none | INTEGRATING | real e2e; Table cell editing is in open PR #204. |
+| UC-WM-C09 | Define Text and Long text fields | C | Editor | yes | partial | complete | none | INTEGRATING | tests and owner check; Table cell editing is built. |
 | UC-WM-C10 | Define a Number field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; normalized-value proof |
 | UC-WM-C11 | Define Date and DateTime fields | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; tz-independent day proof; DateTime deferred |
 | UC-WM-C12 | Define Select and Multi-select fields | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; +N display |
@@ -266,7 +266,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-C21 | Define a Rollup field | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e |
 | UC-WM-C22 | Create, rename, recolor and delete a label | C | Editor | partial | yes | complete | none | INTEGRATING | EV on update/delete; real e2e |
 | UC-WM-D01 | Validate a value against the current schema | D | System (every write path) | yes | partial | not applicable | none | INTEGRATING | Cross-board field-id rejection test |
-| UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | INTEGRATING | real e2e; conflict copy names no actor until the API carries one (Q12); custom-field cell editors are in open PR #204. |
+| UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | INTEGRATING | tests and owner check; conflict copy names no actor until the API carries one (Q12). |
 | UC-WM-D03 | Clear a value (explicit clear) | D | Editor | partial | partial | partial | none | INTEGRATING | Wire clear in UI; test omitted-date means unchanged |
 | UC-WM-D04 | Set start and due dates | D | Editor | partial | yes | complete | none | INTEGRATING | EV on due date; inverted-range proof; real e2e |
 | UC-WM-D05 | Change an item's status | D | Editor and above | partial | yes | complete | none | INTEGRATING | EV on status write; four-path completion-time test; real e2e |
@@ -283,7 +283,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-E04 | Move an item between groups (Table) | E | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; status-unchanged proof |
 | UC-WM-E05 | Collapse or expand a group (personal) | E | Any role (personal, client-side) | not applicable | partial | complete | none | INTEGRATING | proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence. |
 | UC-WM-E06 | Move an item between groups (Table) | E | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; two-user same-position test |
-| UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | INTEGRATING | concurrent reorder test; design; Table column order is in open PR #204. |
+| UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | INTEGRATING | tests and owner check; concurrent reorder test; design. Personal Table column order is built (Alt+Arrow in the Cột menu, kept on the board preference). |
 | UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | INTEGRATING | Design; deterministic-order test |
 | UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | INTEGRATING | No-op move proof; real e2e |
 | UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | INTEGRATING | test of ten concurrent inserts into one ordering scope. |
@@ -308,8 +308,8 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | IMPLEMENTING | BoardItems.List has no q parameter; search runs on the client. |
 | UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | INTEGRATING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
 | UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | DEFINED | label operators are in open PR #201, not on develop; no server-side label filter. |
-| UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | no (open PR #204) | complete | none | INTEGRATING | the central code is in open PR #204, not on develop; real e2e; virtualization (UC-WM-T01) |
-| UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | partial | partial | complete | none | INTEGRATING | prove personal hide/order/width and save-to-shared; real e2e |
+| UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; virtualization (UC-WM-T01) |
+| UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | Kanban selection is missing; proof of the 200 cap. |
 | UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | partial | complete | none | INTEGRATING | Canonical Kanban artboard; multi-select; WIP; real e2e |
 | UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | INTEGRATING | WIP warning (D37); undo proof; real e2e |
@@ -1370,7 +1370,7 @@ Team capability WM-003.
 - Rules: product sections 19, 31; WM-007; WMREQ027-028, WMREQ037
 - Acceptance: Given a Text field with a limit of 10, when someone saves 11 characters, then the cell shows an inline reason and nothing is stored. Given the same text saved twice, then the version does not change.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem]; BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE sheet/page on develop; Table cell editors in PR #204 · Design WM-Field-Editors(-Dem) · Tests `BulkUpdateBoardItemsTests.cs`, `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; Table cell editing is in open PR #204.
+- State: INTEGRATING — tests and owner check; Table cell editing is built.
 
 ### UC-WM-C10 Define a Number field
 - Capability: C BoardField definitions (WM-003)
@@ -1584,7 +1584,7 @@ Team capability WM-004.
 - Rules: product sections 29-32; WM-011; WMREQ024-025, WMREQ036-040
 - Acceptance: (1) Given a Viewer or Commenter, when they select any cell, then no editor opens and the header lock explains why. (2) Given B has an unsaved edit on field F and A changes F, when B saves, then the in-cell conflict choice appears; B's draft is never overwritten before that. (3) Given a Member on any editable cell, when Enter/double-click opens it, then the editor matches the field type and Enter saves, Escape restores, leaving saves.
 - Evidence: BE BoardItems.UpdateFieldValues = PATCH /board-items/{itemId:guid}/field-values -> UpdateBoardItemFieldValuesCommand (`BoardItems/Commands/UpdateBoardItemFieldValues/UpdateBoardItemFieldValues.cs`) [EV / Idem]; BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE sheet/page on develop; Table cell editors in PR #204 · Design WM-Field-Editors(-Dem), WM-Field-Sheet · Tests `BulkUpdateBoardItemsTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; conflict copy names no actor until the API carries one (Q12); custom-field cell editors are in open PR #204.
+- State: INTEGRATING — tests and owner check; conflict copy names no actor until the API carries one (Q12). Built: custom-field cell editors in the Table.
 
 ### UC-WM-D03 Clear a value (explicit clear)
 - Capability: D Field values (WM-004)
@@ -1829,7 +1829,7 @@ Team capability WM-006.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 42-45, 130; WM-016; WMREQ041-045, WMREQ114, WMREQ132, WMREQ141
 - Acceptance: Given two Editors reorder at once, then the final order is deterministic and no duplicate keys exist.
-- Evidence: BE BoardFields.Move = POST /boards/{boardId:guid}/fields/{fieldId:guid}/move -> MoveBoardFieldCommand (`BoardFields/Commands/MoveBoardField/MoveBoardField.cs`) [EV / Idem] · FE settings reorder; Alt+Arrow Cột menu in PR #204 · Design WM-Table-Columns; field reorder drag/Er missing · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
+- Evidence: BE BoardFields.Move = POST /boards/{boardId:guid}/fields/{fieldId:guid}/move -> MoveBoardFieldCommand (`BoardFields/Commands/MoveBoardField/MoveBoardField.cs`) [EV / Idem] · FE settings reorder; Alt+Arrow Cột menu (`table-toolbar.tsx`, personal order in `use-board-table.ts`) · Design WM-Table-Columns; field reorder drag/Er missing · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
 - State: INTEGRATING — tests and owner check. Built: the field list of board settings moves a field by drag or Alt+Arrow on its handle, names its neighbours in the server's whole field order (locked system fields included), puts the old order back when the write fails, and announces the new place. Not built: personal Table column order (BoardPreference, with the Table unit), design for the Alt+Arrow and conflict states, the conflict notice does not name the actor (the 409 carries none).
 
 ### UC-WM-F02 Reorder groups
@@ -2191,8 +2191,8 @@ Team capability WM-009.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 50, 152; views pack section 5; WM-017; WMREQ139
 - Acceptance: (1) Given a Viewer or Commenter, when they select any cell, then no editor opens and the header lock explains why. (2) Given a title cell, when or double-click or Enter is pressed, then the title edits in place; single click opens the item (D63). (3) Given a column header, when sorted, then the registry comparator and null rule apply (empty last ascending, first descending) for every field type.
-- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE in open PR #204: custom-field columns, in-cell editors; develop has fixed columns · Design Final-Table, BC-Table, WM-Toolbar-Table · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — the central code is in open PR #204, not on develop; real e2e; virtualization (UC-WM-T01)
+- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE `table-columns.ts`, `table-field-cell.tsx`, `table-field-editors.tsx` (custom-field columns, in-cell editors), `table-toolbar.tsx` · Design Final-Table, BC-Table, WM-Toolbar-Table · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
+- State: INTEGRATING — tests and owner check; virtualization (UC-WM-T01). Built: every visible custom field of a type the table can show is a column with its type's cell editor, a lock in the header for calculated or uneditable types and for a viewer, and sorting by the type's rules.
 
 ### UC-WM-I02 Arrange columns (personal) and save to the shared view
 - Capability: I Table view (WM-009)
@@ -2205,8 +2205,8 @@ Team capability WM-009.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 46, 153; Q5, D73
 - Acceptance: Given a hidden column, then only this person loses it. Given a Viewer, then 'Lưu vào view chung' is disabled with the reason.
-- Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE Cột menu Alt+Arrow in PR #204; personal persistence unproven · Design WM-Table-Columns, BC-View-Personal · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — prove personal hide/order/width and save-to-shared; real e2e
+- Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE Cột menu with Alt+Arrow, "Lưu vào view chung" and "Về cột của view chung" (`table-toolbar.tsx`), personal hide, order and width in `use-board-table.ts` over the preference `columns` (`board-preference.api.ts`) · Design WM-Table-Columns, BC-View-Personal · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: INTEGRATING — tests and owner check. Built: hidden columns, column order and widths are kept per member on the board preference (opaque JSON up to 4 KB, migration `AddBoardPreferenceColumns`) and replace the shared view's for that member alone; an editor's "Lưu vào view chung" writes them to the shared view (with its version) and drops the personal copy only once that write went through, a viewer sees it disabled with the reason; "Về cột của view chung" drops them; a failed save keeps them with "Thử lại".
 
 ### UC-WM-I03 Select items across views and windows
 - Capability: I Table view (WM-009)
