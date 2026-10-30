@@ -118,6 +118,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             issuedToken.HashVersion,
             _requestContext.UserId,
             now,
+            // The workspace setting decides how long an invitation waits.
+            expiry: TimeSpan.FromDays(workspace.Settings.InvitationExpiryDays),
             initialEntries: entries);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);
