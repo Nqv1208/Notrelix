@@ -374,6 +374,10 @@ External linking must validate stable provider/subject identity and collision ru
 
 An email string alone is not sufficient universal proof that two external identities should merge.
 
+# 27.1. A provider that gives no verified-email claim cannot create an account
+
+Signing in through a provider may create a new User only when the provider vouches that the email address is verified. A provider that sends no verified-email claim (Microsoft) therefore never creates an account: only an identity that is already linked to a User signs in through it, and a person without an account, or whose address belongs to another account, is refused with the provider-email-not-verified answer. Such a person registers with email and password, or links the provider from the security page, and signs in through it afterwards. The same rule holds for any provider added later (confirmed 2026-10-30).
+
 # 28. Account takeover prevention
 
 Link/unlink flows must defend against:
