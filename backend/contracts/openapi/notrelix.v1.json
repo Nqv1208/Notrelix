@@ -3791,6 +3791,57 @@
         ]
       }
     },
+    "/api/v1/pages/{pageId}/move": {
+      "post": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "Move a page and its subtree under another parent page, or make it a root page of its space",
+        "operationId": "Documents.Pages.Move",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/page-templates": {
       "get": {
         "tags": [
@@ -22806,6 +22857,21 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

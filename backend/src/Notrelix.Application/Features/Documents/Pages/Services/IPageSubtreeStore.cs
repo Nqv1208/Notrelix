@@ -17,4 +17,11 @@ public interface IPageSubtreeStore
     /// <see cref="Notrelix.Domain.Documents.Rules.PageTreeRules.MaxDepth"/>: a deeper answer is only "too deep".
     /// </summary>
     Task<int> DepthOfAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The page and every ancestor above it as id to parent id (a root maps to null): the ancestry facts a move
+    /// hands the Domain for its cycle check, and the page's level is the number of entries. Not tracked, and
+    /// bounded so damaged data (a cycle) ends the walk.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, Guid?>> LoadAncestryAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
 }

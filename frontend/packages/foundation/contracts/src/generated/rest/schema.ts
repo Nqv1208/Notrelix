@@ -972,6 +972,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pages/{pageId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a page and its subtree under another parent page, or make it a root page of its space */
+        post: operations["Documents.Pages.Move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/page-templates": {
         parameters: {
             query?: never;
@@ -5624,6 +5641,12 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
+            /** Format: uuid */
+            parentId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest": {
             /** Format: uuid */
             spaceId?: string | null;
@@ -10228,6 +10251,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Documents.Pages.Move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest"];
             };
         };
         responses: {

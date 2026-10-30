@@ -40,6 +40,25 @@ public sealed class PageSubtreeStore : IPageSubtreeStore
         return depth;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, Guid?>> LoadAncestryAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
+    {
+        const int WalkLimit = 64;
+        var ancestry = new Dictionary<Guid, Guid?>();
+        Guid? current = pageId;
+        while (current is { } id && ancestry.Count < WalkLimit && !ancestry.ContainsKey(id))
+        {
+            var row = await _context.Pages.AsNoTracking()
+                .Where(p => p.Id == id && p.WorkspaceId == workspaceId && p.DeletedAt == null)
+                .Select(p => new { p.ParentId })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (row is null) break;
+            ancestry[id] = row.ParentId;
+            current = row.ParentId;
+        }
+
+        return ancestry;
+    }
+
     public async Task<IReadOnlyList<Page>> LoadDescendantsAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
     {
         var descendants = new List<Page>();

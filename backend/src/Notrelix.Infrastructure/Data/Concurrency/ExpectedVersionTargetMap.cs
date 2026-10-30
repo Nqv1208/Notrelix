@@ -54,6 +54,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWork
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace;
+using Notrelix.Application.Features.Documents.Pages.Commands.MovePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
 using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 using Notrelix.Domain.Documents.Pages;
@@ -217,8 +218,9 @@ public sealed class ExpectedVersionTargetMap
 
         // Documents — Space placement of a root page (docs/product/workspaces.md §79)
         [typeof(MovePageToSpaceCommand)] = new("documents.page", typeof(Page)),
-        // Documents — page rename: the page version the editor read.
+        // Documents — page rename and move under another parent: the page version the editor read.
         [typeof(UpdatePageCommand)] = new("documents.page", typeof(Page)),
+        [typeof(MovePageCommand)] = new("documents.page", typeof(Page)),
 
         // Workspaces — Space hierarchy and membership (WSP-021, WSP-024)
         [typeof(MoveSpaceCommand)] = new(SpaceKind, typeof(Space)),

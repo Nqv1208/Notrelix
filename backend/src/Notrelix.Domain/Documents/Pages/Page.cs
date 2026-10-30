@@ -72,25 +72,39 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new PageRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
+    public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId) =>
+        Move(newParentId, SpaceId, updatedBy, updatedAt, getParentId);
+
+    /// <summary>
+    /// Puts the page under another parent (null = a root page). A nested page follows the Space of its root
+    /// page, so Application passes the Space the new parent is in (the page's own Space when it becomes a root);
+    /// the descendants follow through <see cref="FollowRootSpace"/>. One change, one version bump. The same
+    /// place is a semantic no-op.
+    /// </summary>
+    public void Move(Guid? newParentId, Guid? newSpaceId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (Status == PageStatus.Archived)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotMoveArchived, "Cannot move an archived page.");
-        if (ParentId == newParentId) return;
+        if (ParentId == newParentId && SpaceId == newSpaceId) return;
 
         if (newParentId.HasValue)
         {
             Rules.PageTreeRules.EnsureNoCycle(Id, newParentId.Value, getParentId);
         }
+        if (newSpaceId is { } space) Guard.NotEmpty(space);
 
         var oldParentId = ParentId;
+        var oldSpaceId = SpaceId;
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ParentId = newParentId;
+        SpaceId = newSpaceId;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageMovedDomainEvent(AccountId, WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
+        if (oldSpaceId != SpaceId)
+            RaiseDomainEvent(new PageSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
     }
 
     /// <summary>
