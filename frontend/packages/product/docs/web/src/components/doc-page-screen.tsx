@@ -105,12 +105,37 @@ interface CreateDocPageScreenDeps {
 
 const NONE: DocOverlay = { kind: "none" };
 
+/** Blocks that point at a page's own attachments: a copy leaves them behind (this client has no video block yet). */
+const ATTACHMENT_BLOCKS: ReadonlySet<BlockType> = new Set(["image", "file"]);
+
 /** Types whose Enter makes another block of the same kind. */
 const REPEATING: ReadonlySet<BlockType> = new Set([
   "numbered_list",
   "bulleted_list",
   "todo",
 ]);
+
+/** How many pages the list holds below `rootId`, at any depth. */
+function pagesBelow(
+  pages: readonly { id: string; parentId: string | null }[],
+  rootId: string,
+): number {
+  const below = new Set<string>();
+  let frontier = [rootId];
+  while (frontier.length > 0) {
+    const parents = new Set(frontier);
+    frontier = pages
+      .filter(
+        (entry) =>
+          entry.parentId !== null &&
+          parents.has(entry.parentId) &&
+          !below.has(entry.id),
+      )
+      .map((entry) => entry.id);
+    for (const id of frontier) below.add(id);
+  }
+  return below.size;
+}
 
 function saveBlob(name: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
@@ -494,6 +519,13 @@ export function createDocPageScreen({
     const rememberAttachment = useRememberPageAttachment(workspaceId, pageId);
     const mediaRef = useRef({ copy, notify: host.notify });
     mediaRef.current = { copy, notify: host.notify };
+    // Another editor renamed the page first: the stored title is back; say so once.
+    const { titleConflict, clearTitleConflict } = editor;
+    useEffect(() => {
+      if (!titleConflict) return;
+      mediaRef.current.notify?.(mediaRef.current.copy.header.titleConflict);
+      clearTitleConflict();
+    }, [titleConflict, clearTitleConflict]);
     const uploads = useMemo(
       () =>
         new AttachmentUploads({
@@ -853,6 +885,28 @@ export function createDocPageScreen({
       });
     const blockById = (id: string) => blocks.find((block) => block.id === id);
 
+    // The page and the pages under it go to the trash together; the toast offers the way back.
+    const trashOpenPage = (below: number) =>
+      archivePage.mutate(pageId, {
+        onSuccess: () => {
+          setOverlay(NONE);
+          host.leaveDoc?.();
+          host.notify?.(
+            fillDocCopy(
+              below > 0 ? copy.trash.movedWithPages : copy.trash.moved,
+              { title: title || copy.trash.untitled, count: below },
+            ),
+            {
+              label: copy.trash.undo,
+              run: () =>
+                void restorePage
+                  .mutateAsync(pageId)
+                  .then(() => host.openPage?.(pageId))
+                  .catch(() => host.notify?.(copy.trash.failed)),
+            },
+          );
+        },
+      });
     const callbacks: DocPageCallbacks = {
       onTitleCommit: host.canEdit ? editor.updateTitle : undefined,
       onBlockCommit: host.canEdit
@@ -896,10 +950,17 @@ export function createDocPageScreen({
       onTrashPage: host.canEdit
         ? () => {
             setOverlay(NONE);
-            archivePage.mutate(pageId, { onSuccess: () => host.leaveDoc?.() });
+            const below = pagesBelow(pageListQuery.data ?? [], pageId);
+            if (below > 0) setOverlay({ kind: "trashPage", below });
+            else trashOpenPage(0);
           }
         : undefined,
+      onConfirmTrashPage: host.canEdit
+        ? () => trashOpenPage(overlay.kind === "trashPage" ? overlay.below : 0)
+        : undefined,
       onOpenTrash: () => setOverlay({ kind: "trash" }),
+      onLoadMoreTrash: () => void trashQuery.fetchNextPage(),
+      onRetryTrash: () => void trashQuery.refetch(),
       onRestorePage: (id) => restorePage.mutate(id),
       onDeletePage: (id) => deletePage.mutate(id),
       onOpenPagePicker: host.canEdit
@@ -1325,15 +1386,15 @@ export function createDocPageScreen({
         ? () => {
             setOverlay(NONE);
             // Images and files belong to this page's attachments: they stay behind.
-            const copied = (richEditor.currentDrafts() ?? [])
-              .filter(
-                (draft) => draft.type !== "image" && draft.type !== "file",
-              )
+            const drafts = richEditor.currentDrafts() ?? [];
+            const copied = drafts
+              .filter((draft) => !ATTACHMENT_BLOCKS.has(draft.type))
               .map((draft) => ({
                 type: draft.type,
                 content: draft.content,
                 properties: draft.properties,
               }));
+            const dropped = drafts.length - copied.length;
             importPage.mutate(
               {
                 title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
@@ -1343,7 +1404,13 @@ export function createDocPageScreen({
               },
               {
                 onSuccess: (createdId) => {
-                  host.notify?.(copy.fileMenu.makeCopyDone);
+                  host.notify?.(
+                    dropped > 0
+                      ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
+                          count: dropped,
+                        })
+                      : copy.fileMenu.makeCopyDone,
+                  );
                   host.openPage?.(createdId);
                 },
                 onError: () => host.notify?.(copy.fileMenu.makeCopyFailed),
@@ -1497,12 +1564,26 @@ export function createDocPageScreen({
               }
             : undefined
         }
+        trashConfirm={
+          overlay.kind === "trashPage"
+            ? {
+                below: overlay.below,
+                busy: archivePage.isPending,
+                failed: archivePage.isError,
+              }
+            : undefined
+        }
         trash={{
-          pages: (trashQuery.data ?? []).map((entry) => ({
-            id: entry.id,
-            title: entry.title,
-            icon: entry.icon,
-          })),
+          pages: (trashQuery.data?.pages ?? [])
+            .flatMap((chunk) => chunk.pages)
+            .map((entry) => ({
+              id: entry.id,
+              title: entry.title,
+              icon: entry.icon,
+            })),
+          listFailed: trashQuery.isError,
+          hasMore: trashQuery.hasNextPage,
+          loadingMore: trashQuery.isFetchingNextPage,
           loading: trashQuery.isLoading,
           failed: restorePage.isError || deletePage.isError,
           busyId:

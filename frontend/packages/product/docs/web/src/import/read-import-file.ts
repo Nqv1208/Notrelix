@@ -8,8 +8,8 @@ import {
 } from "@notrelix/docs-core";
 import { htmlToImport } from "./html-to-blocks";
 
-/** The largest file the import reads. */
-export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+/** The largest file the import reads: 10 MB. */
+export const IMPORT_MAX_BYTES = 10 * 1024 * 1024;
 
 export type ImportFailure = "unsupported" | "tooLarge" | "empty" | "failed";
 

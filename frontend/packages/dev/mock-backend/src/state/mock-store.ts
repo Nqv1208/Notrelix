@@ -3427,9 +3427,19 @@ export class MockStore {
   updatePage(
     pageId: string,
     patch: { title?: string; icon?: string; parentId?: string },
-  ): boolean {
+    expectedVersion?: unknown,
+  ): MockVersionedWrite {
     const page = this.pagesById.get(pageId);
-    if (!page) return false;
+    if (!page) return "not-found";
+    // A rename carries the version it read (`Documents.Pages.UpdatePage`); the
+    // same title is a no-op that bumps nothing.
+    if (
+      expectedVersion !== undefined &&
+      expectedVersion !== (page.version ?? 1)
+    )
+      return "stale";
+    if (patch.title === undefined || patch.title.trim() === page.title)
+      return "ok";
     const updated: MockPageRecord = {
       ...page,
       title: patch.title ?? page.title,
@@ -3439,7 +3449,7 @@ export class MockStore {
       updatedAt: this.clock.isoNow(),
     };
     this.pagesById.set(pageId, updated);
-    return true;
+    return "ok";
   }
 
   getPageVersion(pageId: string): number {
@@ -3489,12 +3499,42 @@ export class MockStore {
     return "ok";
   }
 
+  /** Deletes a trashed page for good with the trashed pages under it. */
   deletePage(pageId: string): boolean {
     const page = this.pagesById.get(pageId);
     if (!page) return false;
-    this.removeIndex(this.pageIdsByWorkspaceId, page.workspaceId, page.id);
-    this.pagesById.delete(pageId);
+    for (const record of [page, ...this.pagesBelow(pageId)]) {
+      if (record.id !== pageId && !record.trashedAt) continue;
+      this.removeIndex(
+        this.pageIdsByWorkspaceId,
+        record.workspaceId,
+        record.id,
+      );
+      this.pagesById.delete(record.id);
+    }
     return true;
+  }
+
+  /** Every page below `pageId`, at any depth. */
+  private pagesBelow(pageId: string): MockPageRecord[] {
+    const found = new Set<string>([pageId]);
+    const below: MockPageRecord[] = [];
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const other of this.pagesById.values()) {
+        if (
+          other.parentId &&
+          found.has(other.parentId) &&
+          !found.has(other.id)
+        ) {
+          found.add(other.id);
+          below.push(other);
+          grew = true;
+        }
+      }
+    }
+    return below;
   }
 
   // ─── Query Accessors ──────────────────────────────────────────────────────
@@ -4436,15 +4476,32 @@ export class MockStore {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
-  /** Moves a page to the trash (`Documents.Pages.ArchivePage`) or brings it back. */
+  /**
+   * Moves a page and the pages under it to the trash (`Documents.Pages.ArchivePage`)
+   * or brings them back (`RestorePage`); a restored page whose parent is still in
+   * the trash returns at the root of its Space.
+   */
   setPageTrashed(pageId: string, trashed: boolean): boolean {
     const page = this.pagesById.get(pageId);
     if (!page) return false;
-    this.pagesById.set(pageId, {
-      ...page,
-      trashedAt: trashed ? this.clock.isoNow() : null,
-      version: (page.version ?? 1) + 1,
-    });
+    const stamp = trashed ? this.clock.isoNow() : null;
+    for (const record of [page, ...this.pagesBelow(pageId)]) {
+      if (Boolean(record.trashedAt) === trashed) continue;
+      const parent = record.parentId
+        ? this.pagesById.get(record.parentId)
+        : undefined;
+      const detach =
+        !trashed &&
+        record.id === pageId &&
+        record.parentId !== undefined &&
+        (!parent || Boolean(parent.trashedAt));
+      this.pagesById.set(record.id, {
+        ...record,
+        trashedAt: stamp,
+        ...(detach ? { parentId: undefined } : {}),
+        version: (record.version ?? 1) + 1,
+      });
+    }
     return true;
   }
 

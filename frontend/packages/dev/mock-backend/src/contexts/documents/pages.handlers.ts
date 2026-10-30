@@ -135,7 +135,11 @@ export const pagesOperations = [
 
   // ─── GET /workspaces/:workspaceId/pages/trash ─────────────────────────────
 
-  defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
+  defineMockOperation<
+    { workspaceId: string },
+    never,
+    { items: PageDtoApi[]; nextCursor: string | null }
+  >({
     id: "pages.trash",
     contract: {
       kind: "openapi",
@@ -143,14 +147,19 @@ export const pagesOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/pages/trash",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId))
         return notFound("Workspace not found");
-      return ok<PageDtoApi[]>(
-        store
-          .getTrashedPages(params.workspaceId)
+      // The producer's cursor is opaque; here it is the offset of the next row.
+      const limit = Math.min(Number(query.limit) || 50, 200);
+      const from = Number(query.cursor) || 0;
+      const rows = store.getTrashedPages(params.workspaceId);
+      return ok({
+        items: rows
+          .slice(from, from + limit)
           .map((page) => mapPageDto(page, store)),
-      );
+        nextCursor: from + limit < rows.length ? String(from + limit) : null,
+      });
     },
   }),
 
@@ -227,7 +236,7 @@ export const pagesOperations = [
 
   defineMockOperation<
     { id: string },
-    { title?: string; icon?: string; parentId?: string },
+    { title?: string; expectedVersion?: number },
     PageDtoApi
   >({
     id: "pages.update",
@@ -235,10 +244,30 @@ export const pagesOperations = [
     method: "PATCH",
     route: "/pages/:id",
     async handle({ params, body, store }) {
-      const updated = store.updatePage(params.id, body ?? {});
-      if (!updated) return notFound("Page not found");
-      const page = store.getPage(params.id)!;
-      return ok<PageDtoApi>(mapPageDto(page));
+      const page = store.getPage(params.id);
+      if (!page || page.trashedAt) return notFound("Page not found");
+      // UpdatePage needs an Editor: guests never rename here.
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return notFound("Page not found");
+      // The producer requires the version the editor read.
+      if (typeof body?.expectedVersion !== "number")
+        return {
+          status: 400,
+          body: {
+            message: "Validation failed",
+            code: "VALIDATION_ERROR",
+            errors: { ExpectedVersion: ["ExpectedVersion is required."] },
+          },
+        };
+      const { title } = body;
+      switch (store.updatePage(params.id, { title }, body.expectedVersion)) {
+        case "not-found":
+          return notFound("Page not found");
+        case "stale":
+          return preconditionFailed();
+        case "ok":
+          return ok<PageDtoApi>(mapPageDto(store.getPage(params.id)!));
+      }
     },
   }),
 

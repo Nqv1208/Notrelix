@@ -62,6 +62,7 @@ export type {
   DocsUploadOptions,
   DocsUploadProgress,
   PageApiEndpoints,
+  TrashPage,
 } from "./api/page.api";
 export { createBreadcrumbApi } from "./api/breadcrumb.api";
 export { createSearchApi } from "./api/search.api";

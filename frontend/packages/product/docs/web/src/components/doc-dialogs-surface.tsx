@@ -15,6 +15,7 @@ import type {
   DocPageCallbacks,
   DocPickerBoardView,
   DocPickerPageView,
+  DocTrashConfirmView,
   DocTrashView,
 } from "./doc-page-models";
 import { useModalFocus } from "./doc-share-dialog-surface";
@@ -118,6 +119,19 @@ export function DocTrashDialogSurface({
           <span role="status" className="text-compact text-meta-foreground">
             {t.loading}
           </span>
+        ) : trash.listFailed ? (
+          <div role="alert" className="flex items-center gap-2.5">
+            <span className="text-compact font-semibold text-danger-text">
+              {t.loadFailed}
+            </span>
+            <button
+              type="button"
+              onClick={() => callbacks?.onRetryTrash?.()}
+              className={OUTLINE}
+            >
+              {t.retry}
+            </button>
+          </div>
         ) : trash.pages.length === 0 ? (
           <span className="text-compact text-meta-foreground">{t.empty}</span>
         ) : (
@@ -182,6 +196,71 @@ export function DocTrashDialogSurface({
             })}
           </ul>
         )}
+        {trash.hasMore ? (
+          <button
+            type="button"
+            disabled={trash.loadingMore}
+            onClick={() => callbacks?.onLoadMoreTrash?.()}
+            className={cn(OUTLINE, "self-center")}
+          >
+            {trash.loadingMore ? t.loadingMore : t.loadMore}
+          </button>
+        ) : null}
+      </div>
+    </DialogFrame>
+  );
+}
+
+export interface DocTrashConfirmDialogSurfaceProps {
+  readonly copy: DocPageCopy;
+  readonly title: string;
+  readonly confirm: DocTrashConfirmView;
+  readonly callbacks?: DocPageCallbacks;
+}
+
+/** Asks before a page with pages under it goes to the trash: they all go with it. */
+export function DocTrashConfirmDialogSurface({
+  copy,
+  title,
+  confirm,
+  callbacks,
+}: DocTrashConfirmDialogSurfaceProps) {
+  const t = copy.trash;
+  const name = title || t.untitled;
+  return (
+    <DialogFrame
+      title={t.moveTitle}
+      closeLabel={t.close}
+      width={460}
+      onClose={callbacks?.onCloseOverlay}
+    >
+      <p className="m-0 px-5 pb-2 text-compact leading-[1.5] text-foreground">
+        {fillDocCopy(t.moveBody, { title: name, count: confirm.below })}
+      </p>
+      {confirm.failed ? (
+        <p
+          role="alert"
+          className="m-0 px-5 pb-2 text-crumb font-semibold text-danger-text"
+        >
+          {t.failed}
+        </p>
+      ) : null}
+      <div className="flex justify-end gap-2 px-5 pt-2 pb-5">
+        <button
+          type="button"
+          onClick={callbacks?.onCloseOverlay}
+          className={OUTLINE}
+        >
+          {t.cancel}
+        </button>
+        <button
+          type="button"
+          disabled={confirm.busy}
+          onClick={callbacks?.onConfirmTrashPage}
+          className={DANGER}
+        >
+          {t.moveConfirm}
+        </button>
       </div>
     </DialogFrame>
   );

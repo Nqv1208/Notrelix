@@ -5,13 +5,22 @@ import type {
   UpdatePagePayload,
   PageDetail,
 } from "@notrelix/docs-core";
-import type { PageDtoApi, BreadcrumbDtoApi } from "../dto";
+import type { PageDtoApi, BreadcrumbDtoApi, TrashPageDtoApi } from "../dto";
 import { mapPage, mapBreadcrumb } from "../model/page.mapper";
 
 /** Per-request options the Docs adapters use (a subset of the client's). */
 export interface DocsRequestOptions {
   /** The caller shows the failure itself (a dialog), not the global toast. */
   readonly skipGlobalErrorToast?: boolean;
+  /** One per user action; the same key only to retry that action. */
+  readonly idempotencyKey?: string;
+}
+
+/** One cursor page of the trash. */
+export interface TrashPage {
+  readonly pages: Page[];
+  /** Sent back to read the next page; `null` on the last one. */
+  readonly nextCursor: string | null;
 }
 
 /** What a multipart upload reports while it runs. */
@@ -126,17 +135,25 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
           parentId: payload.parentId,
           ...(payload.spaceId ? { spaceId: payload.spaceId } : {}),
         },
+        { idempotencyKey: payload.idempotencyKey },
       );
       return this.getDetail(id);
     },
 
+    /**
+     * `Documents.Pages.UpdatePage` renames, guarded by the page version the
+     * editor read: a stale `expectedVersion` answers 412 and changes nothing.
+     * The icon and cover are not stored yet.
+     */
     async update(
       pageId: string,
       payload: UpdatePagePayload,
     ): Promise<PageDetail> {
-      // `Documents.Pages.UpdatePage` renames; the icon and cover are not stored yet.
+      if (payload.title === undefined || !payload.expectedVersion)
+        throw new Error("A rename needs the new title and the page version.");
       await api.patch<void>(endpoints.pages.detail(pageId), {
         title: payload.title,
+        expectedVersion: payload.expectedVersion,
       });
       return this.getDetail(pageId);
     },
@@ -151,12 +168,19 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
       await api.post<void>(endpoints.pages.restore(pageId), {});
     },
 
-    /** `Documents.Pages.ListTrashedPages`: the pages the caller may restore or delete. */
-    async getTrash(workspaceId: string): Promise<Page[]> {
-      const pages = await api.get<PageDtoApi[]>(
-        endpoints.pages.trash(workspaceId),
+    /**
+     * `Documents.Pages.ListTrashedPages`: one cursor page of the pages the
+     * caller may restore or delete, newest change first.
+     */
+    async getTrash(workspaceId: string, cursor?: string): Promise<TrashPage> {
+      const url = endpoints.pages.trash(workspaceId);
+      const body = await api.get<TrashPageDtoApi>(
+        cursor ? `${url}?cursor=${encodeURIComponent(cursor)}` : url,
       );
-      return pages.map(mapPage);
+      return {
+        pages: (body.items ?? []).map(mapPage),
+        nextCursor: body.nextCursor ?? null,
+      };
     },
 
     /** `Documents.Pages.DeletePage`: removes a trashed page for good. */

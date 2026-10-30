@@ -99,10 +99,14 @@ export interface CreatePagePayload {
   templateId?: ID;
   /** Create a root page in this Space (a nested page follows its parent). */
   spaceId?: ID | null;
+  /** One per user action; the same key only to retry that action (the producer replays it for a day). */
+  idempotencyKey?: string;
 }
 
 export interface UpdatePagePayload {
   title?: string;
+  /** The page `version` the editor read; a rename sends it and a stale one answers 412. */
+  expectedVersion?: number | null;
   icon?: string | null;
   coverUrl?: string | null;
   coverColor?: string;

@@ -294,6 +294,20 @@ export interface DocTrashView {
   readonly failed: boolean;
   /** The page a write is running on. */
   readonly busyId: string | null;
+  /** The list itself could not be read. */
+  readonly listFailed: boolean;
+  /** More trashed pages can be read. */
+  readonly hasMore: boolean;
+  /** The next page of the list is being read. */
+  readonly loadingMore: boolean;
+}
+
+/** The confirmation before a page with pages under it goes to the trash. */
+export interface DocTrashConfirmView {
+  /** Pages under the open page that go with it. */
+  readonly below: number;
+  readonly busy: boolean;
+  readonly failed: boolean;
 }
 
 /** A page the picker offers for a page reference. */
@@ -351,6 +365,7 @@ export type DocOverlay =
   | { readonly kind: "fileMenu"; readonly downloadOpen?: boolean }
   | { readonly kind: "share" }
   | { readonly kind: "trash" }
+  | { readonly kind: "trashPage"; readonly below: number }
   | { readonly kind: "saveVersion" }
   | { readonly kind: "restoreVersion" }
   | { readonly kind: "saveTemplate" }
@@ -415,9 +430,13 @@ export interface DocPageCallbacks {
     blockId: string,
     target: { readonly boardId: string; readonly groupId: string },
   ) => void;
-  /** Moves the open page to the trash. */
+  /** Moves the open page to the trash (asks first when pages sit under it). */
   readonly onTrashPage?: () => void;
+  /** The person confirmed moving the open page and the pages under it. */
+  readonly onConfirmTrashPage?: () => void;
   readonly onOpenTrash?: () => void;
+  readonly onLoadMoreTrash?: () => void;
+  readonly onRetryTrash?: () => void;
   readonly onRestorePage?: (pageId: string) => void;
   readonly onDeletePage?: (pageId: string) => void;
   readonly onOpenPagePicker?: (blockId: string) => void;
