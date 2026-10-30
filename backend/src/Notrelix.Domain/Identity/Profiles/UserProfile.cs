@@ -24,6 +24,9 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
     /// </summary>
     public bool PhoneVisibleToWorkspaceMembers { get; private set; }
 
+    /// <summary>When true, label colours are shown with a small shape beside each colour (colour-blind mode).</summary>
+    public bool ColourBlindLabels { get; private set; }
+
     /// <summary>
     /// The Workspace that opens with the app for this person, or null when none is chosen (the
     /// product then opens the first Workspace it knows). A stable id only: whether the person is
@@ -62,7 +65,8 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
         string? theme,
         DateTimeOffset updatedAt,
         string? phone = null,
-        bool? phoneVisibleToWorkspaceMembers = null)
+        bool? phoneVisibleToWorkspaceMembers = null,
+        bool? colourBlindLabels = null)
     {
         EnsureNotDeleted();
 
@@ -102,12 +106,14 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
         // null leaves the phone alone; a blank value clears it; anything else must be E.164-ish.
         var nextPhone = phone is null ? Phone : UserPhone.Normalize(phone);
         var nextPhoneVisible = phoneVisibleToWorkspaceMembers ?? PhoneVisibleToWorkspaceMembers;
+        var nextColourBlind = colourBlindLabels ?? ColourBlindLabels;
 
         if (string.Equals(nextLocale, Locale, StringComparison.Ordinal)
             && string.Equals(nextTimezone, Timezone, StringComparison.Ordinal)
             && string.Equals(nextTheme, Theme, StringComparison.Ordinal)
             && string.Equals(nextPhone, Phone, StringComparison.Ordinal)
-            && nextPhoneVisible == PhoneVisibleToWorkspaceMembers)
+            && nextPhoneVisible == PhoneVisibleToWorkspaceMembers
+            && nextColourBlind == ColourBlindLabels)
         {
             return false;
         }
@@ -118,6 +124,7 @@ public sealed class UserProfile : SoftDeletableAggregateRoot
         Theme = nextTheme;
         Phone = nextPhone;
         PhoneVisibleToWorkspaceMembers = nextPhoneVisible;
+        ColourBlindLabels = nextColourBlind;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));

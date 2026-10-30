@@ -45,6 +45,21 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public const int DescriptionMaxLength = 20000;
 
+    /// <summary>Cover colour token (<see cref="ItemCover.Colors"/>); null when the cover is an image or there is none.</summary>
+    public string? CoverColor { get; private set; }
+
+    /// <summary>The image attachment shown as the cover; null when the cover is a colour or there is none.</summary>
+    public Guid? CoverAttachmentId { get; private set; }
+
+    /// <summary>"strip" or "full"; set exactly when there is a cover.</summary>
+    public string? CoverStyle { get; private set; }
+
+    /// <summary>The repeat rule (<see cref="ItemRepeat.Rules"/>); null means the Item does not repeat.</summary>
+    public string? RepeatRule { get; private set; }
+
+    /// <summary>Minutes before the due time for the reminder; null is the default (one day), -1 is off.</summary>
+    public int? ReminderOffsetMinutes { get; private set; }
+
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
 
@@ -364,6 +379,9 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem,
                 $"The system field '{field.Name}' is written through the Item's own path, not as a field value.");
 
+        if (field.Type == FieldType.Vote)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotWriteVote, "A vote is cast by the person voting, not written as a value.");
+
         if (field.Type is FieldType.Formula or FieldType.Rollup)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");
 
@@ -508,6 +526,101 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemParentChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, previousParentItemId, ParentItemId, previousLevel, ItemLevel, updatedBy, updatedAt));
+    }
+
+    /// <summary>
+    /// Sets the cover to a colour or an image attachment (exactly one), or clears it when both are null. The
+    /// same cover again changes nothing. That the attachment is an image of this Item is checked by Application.
+    /// </summary>
+    public void SetCover(string? color, Guid? attachmentId, string? style, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+
+        var clearing = color is null && attachmentId is null;
+        if (clearing) style = null;
+        else if ((color is not null && attachmentId is not null)
+                 || (color is not null && !ItemCover.IsColor(color))
+                 || (attachmentId == Guid.Empty)
+                 || !ItemCover.IsStyle(style))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_InvalidCover, "A cover is one colour or one image, shown as a strip or over the whole card.");
+
+        if (CoverColor == color && CoverAttachmentId == attachmentId && CoverStyle == style) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        CoverColor = color;
+        CoverAttachmentId = attachmentId;
+        CoverStyle = style;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>Sets or (null) clears the repeat rule. A repeating Item needs a due date to advance.</summary>
+    public void SetRepeat(string? rule, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+        if (rule is not null && !ItemRepeat.IsRule(rule))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_InvalidRepeat, "Unknown repeat rule.");
+        if (rule is not null && DueAt is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_RepeatNeedsDueDate, "Set a due date before the item repeats.");
+        if (RepeatRule == rule) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        RepeatRule = rule;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>Sets the reminder offset in minutes before the due time; the default (one day) is stored as null.</summary>
+    public void SetReminder(int offsetMinutes, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+        if (!ItemReminder.IsOffset(offsetMinutes))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_InvalidReminder, "Unknown reminder offset.");
+
+        int? next = offsetMinutes == ItemReminder.DefaultMinutes ? null : offsetMinutes;
+        if (ReminderOffsetMinutes == next) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ReminderOffsetMinutes = next;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>
+    /// Completes the Item. A repeating Item with a due date is not left completed: it stays open and its due
+    /// (and start) date moves to the next occurrence after the completion, in this one change. Completing an
+    /// already completed Item is a no-op; a retry under the same idempotency key replays the first result.
+    /// </summary>
+    public void CompleteOccurrence(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt, Guid? statusBeforeCompletionOptionId = null)
+    {
+        if (RepeatRule is null || DueAt is null)
+        {
+            Complete(completedAt, updatedBy, updatedAt, statusBeforeCompletionOptionId);
+            return;
+        }
+
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+        if (completedAt == default)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_CompletedAtRequired, "Completion timestamp must be provided.");
+
+        if (CompletedAt.HasValue) return;
+
+        var previousDue = DueAt.Value;
+        var nextDue = ItemRepeat.NextDue(previousDue, RepeatRule, completedAt);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        if (StartedAt is { } start) StartedAt = start + (nextDue - previousDue);
+        DueAt = nextDue;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemRepeatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, previousDue, nextDue, updatedBy, updatedAt));
     }
 
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)

@@ -95,6 +95,11 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Item_DescriptionTooLong = "WorkManagement_Item_DescriptionTooLong";
     public const string WorkManagement_Item_CannotModifyArchived = "WorkManagement_Item_CannotModifyArchived";
     public const string WorkManagement_Item_FieldValueMustBeNumber = "WorkManagement_Item_FieldValueMustBeNumber";
+    public const string WorkManagement_Item_InvalidCover = "WorkManagement_Item_InvalidCover";
+    public const string WorkManagement_Item_InvalidRepeat = "WorkManagement_Item_InvalidRepeat";
+    public const string WorkManagement_Item_InvalidReminder = "WorkManagement_Item_InvalidReminder";
+    public const string WorkManagement_Item_RepeatNeedsDueDate = "WorkManagement_Item_RepeatNeedsDueDate";
+    public const string WorkManagement_Field_CannotWriteVote = "WorkManagement_Field_CannotWriteVote";
 
     // ── Dependency ────────────────────────────────────────────────────────
     public const string WorkManagement_Dependency_CannotDependOnSelf = "WorkManagement_Dependency_CannotDependOnSelf";

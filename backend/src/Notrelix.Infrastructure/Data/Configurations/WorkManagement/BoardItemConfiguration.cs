@@ -21,6 +21,12 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(1024);
         builder.Property(x => x.DescriptionMd).HasColumnName("description_md").HasMaxLength(BoardItem.DescriptionMaxLength);
 
+        builder.Property(x => x.CoverColor).HasColumnName("cover_color").HasMaxLength(16);
+        builder.Property(x => x.CoverAttachmentId).HasColumnName("cover_attachment_id");
+        builder.Property(x => x.CoverStyle).HasColumnName("cover_style").HasMaxLength(8);
+        builder.Property(x => x.RepeatRule).HasColumnName("repeat_rule").HasMaxLength(16);
+        builder.Property(x => x.ReminderOffsetMinutes).HasColumnName("reminder_offset_minutes");
+
         builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.Ignore(x => x.IsDeleted);

@@ -831,6 +831,12 @@ work-management.board-item-renamed|1|Notrelix.Domain.WorkManagement.Items.Events
 work-management.board-item-reopened|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-reopened|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-reopened|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|Workspace|ReopenedBy|System.Guid|False
+work-management.board-item-repeated|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRepeatedDomainEvent|Workspace|BoardId|System.Guid|False
+work-management.board-item-repeated|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRepeatedDomainEvent|Workspace|CompletedAt|System.DateTimeOffset|False
+work-management.board-item-repeated|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRepeatedDomainEvent|Workspace|CompletedBy|System.Guid|False
+work-management.board-item-repeated|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRepeatedDomainEvent|Workspace|ItemId|System.Guid|False
+work-management.board-item-repeated|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRepeatedDomainEvent|Workspace|NextDueAt|System.DateTimeOffset|True
+work-management.board-item-repeated|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRepeatedDomainEvent|Workspace|PreviousDueAt|System.DateTimeOffset|True
 work-management.board-item-restored|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-restored|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-restored|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False
