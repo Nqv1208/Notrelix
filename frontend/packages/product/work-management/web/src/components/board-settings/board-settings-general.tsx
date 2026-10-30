@@ -65,6 +65,15 @@ export function GeneralSection({
   const [saving, setSaving] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [confirmName, setConfirmName] = useState("");
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const impact = settings.impact;
+  const effectCounts = impact
+    ? {
+        items: String(impact.itemCount),
+        open: String(impact.openItemCount),
+        members: String(impact.memberCount),
+      }
+    : null;
 
   useEffect(() => {
     setTitle(general.title);
@@ -122,12 +131,25 @@ export function GeneralSection({
   }
 
   async function archive() {
-    const result = await run(() => actions.archiveBoard());
+    setLifecycleBusy(true);
+    const result = await run(() => actions.archiveBoard(), "lifecycle");
+    setLifecycleBusy(false);
     if (result.ok) onLeave?.("archived");
   }
 
+  async function unarchive() {
+    setLifecycleBusy(true);
+    await run(() => actions.unarchiveBoard(), "lifecycle");
+    setLifecycleBusy(false);
+  }
+
   async function remove() {
-    const result = await run(() => actions.deleteBoard(confirmName));
+    setLifecycleBusy(true);
+    const result = await run(
+      () => actions.deleteBoard(confirmName),
+      "lifecycle",
+    );
+    setLifecycleBusy(false);
     if (result.ok) onLeave?.("deleted");
   }
 
@@ -351,27 +373,47 @@ export function GeneralSection({
           >
             {t.danger}
           </h3>
+          <div className="px-4 pt-1">
+            <WriteError scope="lifecycle" id="bs-lifecycle-error" />
+          </div>
           <div className="flex items-center gap-4 px-4 py-3">
             <span className="min-w-0 flex-1">
-              <b className="block text-item-ui font-semibold">{t.archive}</b>
+              <b className="block text-item-ui font-semibold">
+                {general.isArchived ? t.unarchive : t.archive}
+              </b>
               <small className="block text-crumb leading-normal text-muted-foreground">
-                {t.archiveBody}
+                {general.isArchived ? t.unarchiveBody : t.archiveBody}
               </small>
             </span>
-            <button
-              type="button"
-              onClick={() => setConfirmArchive(true)}
-              className={BUTTON_CLASS.dangerOutline}
-            >
-              {t.archive}
-            </button>
+            {general.isArchived ? (
+              <button
+                type="button"
+                disabled={lifecycleBusy}
+                onClick={() => void unarchive()}
+                className={BUTTON_CLASS.outline}
+              >
+                {t.unarchiveAction}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={lifecycleBusy}
+                onClick={() => setConfirmArchive(true)}
+                className={BUTTON_CLASS.dangerOutline}
+              >
+                {t.archive}
+              </button>
+            )}
           </div>
-          {confirmArchive ? (
+          {confirmArchive && !general.isArchived ? (
             <div className="px-4 pb-3">
               <Callout icon={TriangleAlert} tone="warning" role="alert">
                 <span className="flex flex-1 flex-col gap-2">
                   <span>
-                    {fillCopy(t.archiveConfirm, { name: general.title })}
+                    {fillCopy(t.archiveConfirm, { name: general.title })}{" "}
+                    {effectCounts
+                      ? fillCopy(t.archiveEffect, effectCounts)
+                      : t.archiveEffectPlain}
                   </span>
                   <span className="flex gap-2">
                     <button
@@ -383,6 +425,7 @@ export function GeneralSection({
                     </button>
                     <button
                       type="button"
+                      disabled={lifecycleBusy}
                       onClick={() => void archive()}
                       className={cn(BUTTON_CLASS.danger, "h-7")}
                     >
@@ -397,7 +440,10 @@ export function GeneralSection({
             <span className="min-w-0 flex-1">
               <b className="block text-item-ui font-semibold">{t.delete}</b>
               <small className="block text-crumb leading-normal text-muted-foreground">
-                {t.deleteBody}
+                {t.deleteBody}{" "}
+                {effectCounts
+                  ? fillCopy(t.deleteEffect, effectCounts)
+                  : t.deleteEffectPlain}
               </small>
             </span>
           </div>
@@ -420,7 +466,7 @@ export function GeneralSection({
               />
               <button
                 type="button"
-                disabled={confirmName !== general.title}
+                disabled={confirmName !== general.title || lifecycleBusy}
                 onClick={() => void remove()}
                 className={BUTTON_CLASS.danger}
               >

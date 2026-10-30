@@ -92,10 +92,12 @@ export function BoardSettingsRoutePage() {
       }
       onBack={() => goToBoard()}
       onOpenAccess={() => goToBoard({ share: true })}
-      onLeave={() =>
+      onLeave={(reason) =>
+        // The board left the working set: the page that lists it names the way back.
         void navigate({
-          to: "/workspaces/$workspaceId",
+          to: "/workspaces/$workspaceId/archived-boards",
           params: { workspaceId },
+          search: { tab: reason },
         })
       }
     />

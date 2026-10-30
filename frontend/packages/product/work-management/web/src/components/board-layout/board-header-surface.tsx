@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  Archive,
   Building2,
   Eye,
   Link2,
@@ -91,6 +92,15 @@ export interface BoardHeaderPerson {
  */
 export type BoardHeaderVisibility = "space" | "workspace" | "private";
 
+/**
+ * An archived board: it reads, nobody writes. A Manager may unarchive it (`onUnarchive` present);
+ * `state` tells the banner what the last attempt did.
+ */
+export interface BoardHeaderArchived {
+  readonly onUnarchive?: () => void;
+  readonly state?: "idle" | "pending" | "conflict" | "denied" | "failed";
+}
+
 /** The route-composed header data (see `BoardHeaderDataContext`). */
 export interface BoardHeaderData {
   /** The board's Space; `null` for a board at the workspace level. */
@@ -109,6 +119,8 @@ export interface BoardHeaderData {
   readonly onCopyLink?: () => void;
   /** Opens the board's deleted items; absent: no "Deleted items" entry. */
   readonly onOpenTrash?: () => void;
+  /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
+  readonly archived?: BoardHeaderArchived;
 }
 
 export interface BoardHeaderSurfaceProps extends BoardHeaderData {
@@ -358,6 +370,7 @@ export function BoardHeaderSurface({
   onOpenShare,
   onCopyLink,
   onOpenTrash,
+  archived,
 }: BoardHeaderSurfaceProps) {
   const shareReasonId = React.useId();
   const settingsReasonId = React.useId();
@@ -550,6 +563,39 @@ export function BoardHeaderSurface({
           </span>
         ) : null}
       </div>
+
+      {archived ? (
+        <div className="mx-4 mt-3 flex flex-wrap items-center gap-2.5 rounded-[9px] border border-line bg-state-hover px-3 py-[9px] text-compact leading-[1.45] font-medium text-foreground sm:mx-6">
+          <Archive aria-hidden="true" className="size-4 shrink-0" />
+          <span className="min-w-0 flex-1">
+            {archived.onUnarchive
+              ? h.archived.bannerManager
+              : h.archived.banner}
+          </span>
+          {archived.onUnarchive ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={archived.state === "pending"}
+              onClick={archived.onUnarchive}
+            >
+              {archived.state === "pending"
+                ? h.archived.unarchiving
+                : h.archived.unarchive}
+            </Button>
+          ) : null}
+          {archived.state &&
+          archived.state !== "idle" &&
+          archived.state !== "pending" ? (
+            <span
+              role="alert"
+              className="basis-full text-crumb text-danger-text"
+            >
+              {h.archived[archived.state]}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {banner ? (
         <div

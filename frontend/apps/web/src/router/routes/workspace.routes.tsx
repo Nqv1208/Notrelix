@@ -3,6 +3,7 @@ import { z } from "zod";
 import { workspaceRoute } from "./base.routes";
 import { HomePage } from "../../routes/workspaces/$workspaceId/home";
 import { LibraryPage } from "../../routes/workspaces/$workspaceId/library";
+import { ArchivedBoardsPage } from "../../routes/workspaces/$workspaceId/archived-boards";
 import { SettingsPage } from "../../routes/workspaces/$workspaceId/settings";
 import { MembersPage } from "../../routes/workspaces/$workspaceId/members";
 import { TeamsPage } from "../../routes/workspaces/$workspaceId/teams";
@@ -33,6 +34,21 @@ export const libraryRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/library",
   component: LibraryPage,
+});
+
+const archivedBoardsSearchSchema = z.object({
+  tab: z.enum(["archived", "deleted"]).optional(),
+});
+
+/** Archived boards (unarchive) and deleted boards inside their 30-day window (restore). */
+export const archivedBoardsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/archived-boards",
+  validateSearch: (search) => archivedBoardsSearchSchema.parse(search),
+  component: function ArchivedBoardsRouteComponent() {
+    const { tab } = archivedBoardsRoute.useSearch();
+    return <ArchivedBoardsPage tab={tab} />;
+  },
 });
 
 const membersSearchSchema = z.object({

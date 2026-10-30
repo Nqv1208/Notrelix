@@ -165,11 +165,12 @@ export function mapFullBoardDto(
     description: dto.description ?? undefined,
     background: { type: "color", value: dto.background || "var(--background)" },
     visibility: normalizeVisibility(dto.visibility),
-    isArchived: false,
+    isArchived: dto.isArchived === true,
     linkedPageId: undefined,
     fieldDefinitions,
     members,
     createdAt: EPOCH_ISO,
+    ...(typeof dto.version === "number" ? { version: dto.version } : {}),
   };
 
   const lists: AnyGroup[] = (dto.lists ?? []).filter(

@@ -14,7 +14,10 @@ import {
   type MarkToneId,
 } from "@notrelix/features-workspace/core";
 import type { Board } from "@notrelix/work-management-core";
-import { useBoardAccess } from "@notrelix/work-management-state";
+import {
+  useBoardAccess,
+  useUnarchiveBoard,
+} from "@notrelix/work-management-state";
 import {
   useKanbanLaneCopy,
   type BoardHeaderData,
@@ -49,6 +52,10 @@ export function useBoardHeaderData(
   const spaceHooks = useSpaceHooks();
   const tree = spaceHooks.useSpaceTree(workspaceId);
   const { access } = useBoardAccess(boardId, workspaceId);
+  const unarchiveBoard = useUnarchiveBoard(boardId, workspaceId);
+  const canUnarchive =
+    access?.myLevel === "manager" && typeof board?.version === "number";
+  const boardVersion = board?.version;
 
   const spaceId =
     placements.data?.find((placement) => placement.id === boardId)?.spaceId ??
@@ -102,6 +109,26 @@ export function useBoardHeaderData(
         initials: member.initials || initialsFor(member.name),
       })),
       onOpenShare,
+      // A Manager unarchives with the version the open board showed; a stale one changes nothing.
+      archived: board?.isArchived
+        ? {
+            onUnarchive:
+              canUnarchive && boardVersion !== undefined
+                ? () =>
+                    void unarchiveBoard
+                      .unarchive(boardVersion)
+                      .catch(() => undefined)
+                : undefined,
+            state: unarchiveBoard.pending
+              ? "pending"
+              : unarchiveBoard.failure === null
+                ? "idle"
+                : unarchiveBoard.failure === "conflict" ||
+                    unarchiveBoard.failure === "denied"
+                  ? unarchiveBoard.failure
+                  : "failed",
+          }
+        : undefined,
       onOpenSpace: spaceNode
         ? () =>
             void navigate({
@@ -122,6 +149,11 @@ export function useBoardHeaderData(
   }, [
     access,
     board,
+    boardVersion,
+    canUnarchive,
+    unarchiveBoard.failure,
+    unarchiveBoard.pending,
+    unarchiveBoard.unarchive,
     homeCopy,
     laneCopy,
     navigate,

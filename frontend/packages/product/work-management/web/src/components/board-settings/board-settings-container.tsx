@@ -107,6 +107,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       updateGeneral: (changes) =>
         write((api, s) => api.updateGeneral(s, changes)),
       archiveBoard: () => write((api, s) => api.archiveBoard(s)),
+      unarchiveBoard: () => write((api, s) => api.unarchiveBoard(s)),
       deleteBoard: () => write((api, s) => api.deleteBoard(s)),
       createField: (type, input) =>
         write((api, s) =>

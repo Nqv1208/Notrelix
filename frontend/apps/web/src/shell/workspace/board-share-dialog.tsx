@@ -259,7 +259,9 @@ export function BoardShareDialog({
   const write = useCallback(
     (run: () => Promise<void>) => {
       run().catch((error: unknown) =>
-        toastFailure(copy.footer.writeFailed, error, ""),
+        toastFailure(copy.footer.writeFailed, error, (failure) =>
+          failure.kind === "conflict" ? copy.footer.writeConflict : "",
+        ),
       );
     },
     [copy],

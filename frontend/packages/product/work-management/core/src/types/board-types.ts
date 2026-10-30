@@ -24,6 +24,8 @@ export interface Board {
   members: BoardMember[];
   createdAt: string;
   updatedAt?: string;
+  /** The board version of the read: a lifecycle write sends it back (a stale one changes nothing). */
+  version?: number;
   /**
    * Whether the caller may add items to this board (workspace board list only;
    * gap `CTR-GAP-WM-TABLE-BULK`). Absent = not known.
@@ -125,6 +127,9 @@ export interface FullBoardDtoApi {
   columns?: BoardColumnDtoApi[];
   lists: ListDtoApi[];
   members: BoardMemberDtoApi[];
+  /** The board is archived: it reads, every write is refused until a Manager unarchives it. */
+  isArchived?: boolean;
+  version?: number;
 }
 
 export interface BoardMemberDtoApi {

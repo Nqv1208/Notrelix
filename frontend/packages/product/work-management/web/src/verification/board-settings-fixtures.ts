@@ -426,6 +426,7 @@ export function noopSettingsActions(
   return {
     updateGeneral: ok,
     archiveBoard: ok,
+    unarchiveBoard: ok,
     deleteBoard: ok,
     createField: ok,
     reorderFields: ok,

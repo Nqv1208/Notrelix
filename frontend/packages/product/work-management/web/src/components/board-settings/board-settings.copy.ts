@@ -425,10 +425,23 @@ export const en = {
     danger: "Danger zone",
     archive: "Archive board",
     archiveBody:
-      "The board is hidden from the department's list. Items and history are kept, and it can be restored at any time.",
+      "The board becomes read-only and leaves the working lists. Items and history are kept, and a manager can unarchive it at any time.",
     archiveConfirm:
-      "Archive the board “{{name}}”? It can be restored at any time.",
+      "Archive the board “{{name}}”? It can be unarchived at any time.",
+    archiveEffect:
+      "It becomes read-only: nobody can add or change items until it is unarchived. Its {{items}} items ({{open}} not done), {{members}} members, fields and views stay. Its automation rules and integration sync pause.",
+    archiveEffectPlain:
+      "It becomes read-only: nobody can add or change items until it is unarchived. Items, fields and views stay. Its automation rules and integration sync pause.",
     archiveAction: "Archive board",
+    unarchive: "Unarchive board",
+    unarchiveBody:
+      "The board is archived and read-only. Unarchiving lets people write again and resumes its automation rules and integration sync.",
+    unarchiveAction: "Unarchive board",
+    unarchiveDone: "The board was unarchived.",
+    deleteEffect:
+      "The board and its {{items}} items leave every list and open as not found for people without the manage permission. A manager can restore it for 30 days, then it is deleted for good.",
+    deleteEffectPlain:
+      "The board and its items leave every list and open as not found for people without the manage permission. A manager can restore it for 30 days, then it is deleted for good.",
     delete: "Delete board",
     deleteBody:
       "Recoverable for 30 days, then deleted for good. Documents that mention the board are not deleted.",
@@ -520,6 +533,8 @@ export const en = {
     includeItemsCount_other: "Include the {{count}} items of this board",
     includeItemsHint:
       "Copies each top-level item with its name, description and field values. Comments, files and sub-items are never copied. At most 500 items.",
+    includeItemsOverCap:
+      "This board has {{count}} items. A template holds at most 500, and it is never cut short: save it without items, or archive some items first.",
     saveConfirm: "Save template",
     saved:
       "Saved the template “{{name}}” as a draft. Once a workspace admin publishes it, everyone can pick it when creating a board.",
@@ -992,9 +1007,22 @@ export const vi: BoardSettingsCopy = {
     danger: "Vùng nguy hiểm",
     archive: "Lưu trữ board",
     archiveBody:
-      "Board ẩn khỏi danh sách của phòng ban. Việc và lịch sử giữ nguyên, khôi phục được bất cứ lúc nào.",
-    archiveConfirm: 'Lưu trữ board "{{name}}"? Khôi phục được bất cứ lúc nào.',
+      "Board chuyển sang chỉ đọc và rời các danh sách đang làm việc. Việc và lịch sử giữ nguyên, quản lý bỏ lưu trữ được bất cứ lúc nào.",
+    archiveConfirm: 'Lưu trữ board "{{name}}"? Bỏ lưu trữ được bất cứ lúc nào.',
+    archiveEffect:
+      "Board chuyển sang chỉ đọc: không ai thêm hay sửa việc cho đến khi bỏ lưu trữ. {{items}} việc ({{open}} chưa xong), {{members}} thành viên, trường và chế độ xem giữ nguyên. Quy tắc tự động và đồng bộ tích hợp của board tạm dừng.",
+    archiveEffectPlain:
+      "Board chuyển sang chỉ đọc: không ai thêm hay sửa việc cho đến khi bỏ lưu trữ. Việc, trường và chế độ xem giữ nguyên. Quy tắc tự động và đồng bộ tích hợp của board tạm dừng.",
     archiveAction: "Lưu trữ board",
+    unarchive: "Bỏ lưu trữ board",
+    unarchiveBody:
+      "Board đang được lưu trữ và chỉ đọc. Bỏ lưu trữ cho phép ghi lại và chạy tiếp quy tắc tự động, đồng bộ tích hợp của board.",
+    unarchiveAction: "Bỏ lưu trữ board",
+    unarchiveDone: "Đã bỏ lưu trữ board.",
+    deleteEffect:
+      "Board và {{items}} việc của nó rời mọi danh sách, và người không có quyền quản lý sẽ thấy board không tồn tại. Quản lý khôi phục được trong 30 ngày, sau đó board bị xoá vĩnh viễn.",
+    deleteEffectPlain:
+      "Board và các việc của nó rời mọi danh sách, và người không có quyền quản lý sẽ thấy board không tồn tại. Quản lý khôi phục được trong 30 ngày, sau đó board bị xoá vĩnh viễn.",
     delete: "Xoá board",
     deleteBody:
       "Khôi phục được trong 30 ngày, sau đó xoá vĩnh viễn. Không xoá tài liệu đã nhắc tới board.",
@@ -1086,6 +1114,8 @@ export const vi: BoardSettingsCopy = {
     includeItemsCount_other: "Kèm {{count}} việc của board này",
     includeItemsHint:
       "Chép tên, mô tả và giá trị trường của từng việc cấp 1. Không chép bình luận, tệp hay việc con. Tối đa 500 việc.",
+    includeItemsOverCap:
+      "Board này có {{count}} việc. Mẫu chứa tối đa 500 việc và không bao giờ bị cắt bớt: hãy lưu mẫu không kèm việc, hoặc lưu trữ bớt việc rồi thử lại.",
     saveConfirm: "Lưu mẫu",
     saved:
       "Đã lưu mẫu “{{name}}” ở dạng bản nháp. Khi quản trị viên workspace xuất bản, mọi người chọn được mẫu này lúc tạo board.",

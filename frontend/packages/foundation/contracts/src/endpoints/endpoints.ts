@@ -185,7 +185,17 @@ export const endpoints = {
   boards: {
     listByWorkspaceId: (workspaceId: string) =>
       `/workspaces/${workspaceId}/boards`,
+    // WorkManagement.Boards.ListArchived / ListDeleted: boards that left the working set.
+    archivedByWorkspaceId: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/boards/archived`,
+    deletedByWorkspaceId: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/boards/deleted`,
     detail: (boardId: string) => `/boards/${boardId}`,
+    // WorkManagement.Boards.Archive / Unarchive / Restore carry the board version the person saw.
+    archive: (boardId: string) => `/boards/${boardId}/archive`,
+    unarchive: (boardId: string) => `/boards/${boardId}/unarchive`,
+    restore: (boardId: string) => `/boards/${boardId}/restore`,
+    lifecycleImpact: (boardId: string) => `/boards/${boardId}/lifecycle-impact`,
     full: (boardId: string) => `/boards/${boardId}/full`,
     access: (boardId: string) => `/boards/${boardId}/access`,
     schema: (boardId: string) => `/boards/${boardId}/schema`,

@@ -99,6 +99,7 @@ export interface BoardSettingsActions {
     changes: BoardSettingsGeneralPatch,
   ): Promise<BoardSettingsWriteResult>;
   archiveBoard(): Promise<BoardSettingsWriteResult>;
+  unarchiveBoard(): Promise<BoardSettingsWriteResult>;
   deleteBoard(confirmTitle: string): Promise<BoardSettingsWriteResult>;
   /** `input` names the field and carries a Formula's or Rollup's settings JSON. */
   createField(

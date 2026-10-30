@@ -1,4 +1,8 @@
-import type { NotrelixClient, OperationResponse } from "@notrelix/contracts";
+import type {
+  NotrelixClient,
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
@@ -19,6 +23,14 @@ import type {
 import { defaultTableViewConfig, createBoardApi } from "./board.api";
 
 type Overview = OperationResponse<"WorkManagement.Boards.GetOverview">;
+export type BoardLifecycleImpact = OperationResponse<
+  "WorkManagement.Boards.GetLifecycleImpact",
+  200
+>;
+export type RetiredBoard = OperationResponse<
+  "WorkManagement.Boards.ListArchived",
+  200
+>[number];
 type OverviewField = NonNullable<Overview["columns"]>[number];
 type OverviewGroup = NonNullable<Overview["lists"]>[number];
 
@@ -268,7 +280,7 @@ export function mapBoardSettings(
       // Time zone and first day of the week are the workspace's; the board inherits them.
       timeZone: inherited.timeZone,
       weekStart: inherited.weekStart,
-      isArchived: false,
+      isArchived: board.isArchived === true,
     },
     fields,
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
@@ -349,7 +361,24 @@ export function createBoardSettingsApi(client: NotrelixClient) {
             .catch(() => DEFAULT_LOCALE)
         : DEFAULT_LOCALE;
       const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
-      return mapBoardSettings(boardId, board, inherited, savedViews);
+      // Only a manager reads the impact; the settings page is a manager's page, and without it the
+      // confirmations name the effect without counts.
+      const impact = await api
+        .get<BoardLifecycleImpact>(
+          endpoints.boards.lifecycleImpact(boardId),
+          quiet,
+        )
+        .then((counts) => ({
+          itemCount: counts.itemCount ?? 0,
+          openItemCount: counts.openItemCount ?? 0,
+          memberCount: counts.memberCount ?? 0,
+          viewCount: counts.viewCount ?? 0,
+        }))
+        .catch(() => undefined);
+      return {
+        ...mapBoardSettings(boardId, board, inherited, savedViews),
+        ...(impact ? { impact } : {}),
+      };
     },
 
     updateGeneral: (s: BoardSettingsDto, changes: BoardSettingsGeneralPatch) =>
@@ -364,14 +393,68 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         },
         quiet,
       ),
-    archiveBoard: (s: BoardSettingsDto) =>
-      api.post<void>(
-        `${endpoints.boards.detail(s.boardId)}/archive`,
-        {},
+    /** `POST /boards/{id}/archive` with the board version the person saw: a stale one changes nothing. */
+    archiveBoard: (s: BoardSettingsDto) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Archive"> = {
+        expectedVersion: s.version,
+      };
+      return api.post<void>(endpoints.boards.archive(s.boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    unarchiveBoard: (s: BoardSettingsDto) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Unarchive"> = {
+        expectedVersion: s.version,
+      };
+      return api.post<void>(endpoints.boards.unarchive(s.boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    /** What archiving or deleting the board touches, for the confirmation that names it. */
+    lifecycleImpact: (boardId: string) =>
+      api.get<BoardLifecycleImpact>(
+        endpoints.boards.lifecycleImpact(boardId),
         quiet,
       ),
+    /** The archived boards the person can see; they read, and a Manager unarchives them. */
+    listArchivedBoards: (workspaceId: string) =>
+      api.get<RetiredBoard[]>(
+        endpoints.boards.archivedByWorkspaceId(workspaceId),
+        quiet,
+      ),
+    /** The boards deleted in the last 30 days that the person can restore. */
+    listDeletedBoards: (workspaceId: string) =>
+      api.get<RetiredBoard[]>(
+        endpoints.boards.deletedByWorkspaceId(workspaceId),
+        quiet,
+      ),
+    unarchiveBoardById: (boardId: string, expectedVersion: number) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Unarchive"> = {
+        expectedVersion,
+      };
+      return api.post<void>(endpoints.boards.unarchive(boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    /** Refused after the 30-day window with the rule code `WorkManagement_Board_RestoreWindowElapsed`. */
+    restoreBoard: (boardId: string, expectedVersion: number) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Restore"> = {
+        expectedVersion,
+      };
+      return api.post<void>(endpoints.boards.restore(boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    /** `DELETE /boards/{id}?expectedVersion=n`: soft delete, restorable by a Manager for 30 days. */
     deleteBoard: (s: BoardSettingsDto) =>
-      api.delete<void>(endpoints.boards.detail(s.boardId), quiet),
+      api.delete<void>(
+        `${endpoints.boards.detail(s.boardId)}?expectedVersion=${s.version}`,
+        { ...quiet, idempotencyKey: crypto.randomUUID() },
+      ),
 
     createField: (
       s: BoardSettingsDto,

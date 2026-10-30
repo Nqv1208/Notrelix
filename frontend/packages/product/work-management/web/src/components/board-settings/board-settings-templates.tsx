@@ -48,6 +48,8 @@ export function TemplatesSection({
   const failed = useWriteErrorProps("template-save", errorId);
   const trimmed = name.trim();
   const items = panel.itemCount ?? 0;
+  // A template never holds a silently shortened board: past the cap the save is refused.
+  const overCap = includeItems && items > 500;
 
   function open() {
     setSaved(null);
@@ -162,6 +164,11 @@ export function TemplatesSection({
                 </span>
               </div>
             </div>
+            {overCap ? (
+              <p role="alert" className="m-0 text-crumb text-danger-text">
+                {fillCopy(t.includeItemsOverCap, { count: String(items) })}
+              </p>
+            ) : null}
             <WriteError scope="template-save" id={errorId} />
             <div className="flex items-center justify-end gap-2">
               <button
@@ -173,7 +180,7 @@ export function TemplatesSection({
               </button>
               <button
                 type="submit"
-                disabled={trimmed === ""}
+                disabled={trimmed === "" || overCap}
                 className={BUTTON_CLASS.primary}
               >
                 {t.saveConfirm}

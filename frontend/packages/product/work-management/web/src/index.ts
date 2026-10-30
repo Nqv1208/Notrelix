@@ -17,6 +17,9 @@ export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
 export * from "./components/board-layout/board-header-surface";
 export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
+export * from "./components/board-lifecycle/retired-boards-surface";
+export { retiredBoardsCatalog } from "./components/board-lifecycle/retired-boards.catalog";
+export { useRetiredBoardsCopy } from "./components/board-lifecycle/use-retired-boards-copy";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
 export { itemCreateCatalog } from "./components/item-create/item-create.catalog";
 export {

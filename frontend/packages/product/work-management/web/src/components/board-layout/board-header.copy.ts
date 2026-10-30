@@ -63,6 +63,19 @@ export const en = {
     listPairSeparator: " and ",
     listLastSeparator: ", and ",
     moreAvatars: "+{{count}}",
+    /** The archived-board banner: read-only for everyone, Unarchive for a manager. */
+    archived: {
+      banner:
+        "This board is archived. It is read-only until a manager unarchives it.",
+      bannerManager:
+        "This board is archived and read-only. Unarchive it to let people write again.",
+      unarchive: "Unarchive",
+      unarchiving: "Unarchiving…",
+      conflict:
+        "Someone changed the board first. It was reloaded, check it and try again.",
+      denied: "Only a manager can unarchive this board.",
+      failed: "The board could not be unarchived. Nothing changed, try again.",
+    },
     /** Read-only banner by effective level. */
     banner: {
       commenter: "You can comment on this board",
@@ -126,6 +139,18 @@ export const vi: BoardHeaderCopy = {
     listPairSeparator: " và ",
     listLastSeparator: " và ",
     moreAvatars: "+{{count}}",
+    archived: {
+      banner:
+        "Board này đã được lưu trữ. Board chỉ đọc cho đến khi quản lý bỏ lưu trữ.",
+      bannerManager:
+        "Board này đã lưu trữ và chỉ đọc. Bỏ lưu trữ để mọi người ghi lại được.",
+      unarchive: "Bỏ lưu trữ",
+      unarchiving: "Đang bỏ lưu trữ…",
+      conflict:
+        "Người khác vừa thay đổi board trước. Board đã được tải lại, hãy xem rồi thử lại.",
+      denied: "Chỉ quản lý mới bỏ lưu trữ được board này.",
+      failed: "Chưa bỏ lưu trữ được board. Chưa có gì thay đổi, hãy thử lại.",
+    },
     banner: {
       commenter: "Bạn có quyền bình luận trên board này",
       viewer: "Bạn có quyền xem board này",

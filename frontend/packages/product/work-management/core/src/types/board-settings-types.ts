@@ -188,6 +188,14 @@ export interface BoardSettingsGeneralDto {
   readonly isArchived: boolean;
 }
 
+/** What archiving or deleting the board touches; absent when the person may not read it. */
+export interface BoardSettingsLifecycleImpact {
+  readonly itemCount: number;
+  readonly openItemCount: number;
+  readonly memberCount: number;
+  readonly viewCount: number;
+}
+
 export interface BoardSettingsDto {
   readonly boardId: string;
   /** Version of this read: a write may send it back to detect a conflict. */
@@ -200,6 +208,7 @@ export interface BoardSettingsDto {
   readonly views: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
   readonly automations: readonly BoardSettingsAutomationDto[];
+  readonly impact?: BoardSettingsLifecycleImpact;
   readonly unavailable?: BoardSettingsUnavailable;
 }
 
