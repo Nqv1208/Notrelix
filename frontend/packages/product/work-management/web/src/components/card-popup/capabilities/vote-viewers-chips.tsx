@@ -1,9 +1,11 @@
 import { ThumbsUp, Eye } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger, cn } from "@notrelix/ui-web";
-import type {
-  CardDetail,
-  CardVoteValue,
-  FieldDefinition,
+import { useState } from "react";
+import { PopoverTrigger, cn } from "@notrelix/ui-web";
+import {
+  personInitials,
+  type CardDetail,
+  type CardVoteValue,
+  type FieldDefinition,
 } from "@notrelix/work-management-core";
 import {
   useItemViewers,
@@ -11,6 +13,9 @@ import {
   useRecordItemView,
   useVoteWrites,
 } from "@notrelix/work-management-state";
+import { PanelBtn, PanelPopover, PersonMark } from "../popup-ui";
+import { Caption, Hint, PickerHead } from "../pickers/picker-bits";
+import { useCardPopup } from "../card-popup-context";
 import { fillCapabilityCopy } from "./capabilities.copy";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
 
@@ -23,16 +28,8 @@ function stamp(iso: string, locale: string): string {
   }).format(new Date(iso));
 }
 
-function initials(name: string): string {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(-2)
-      .map((part) => Array.from(part)[0] ?? "")
-      .join("")
-      .toUpperCase() || "?"
-  );
+function markOf(person: { userId: string; name: string }) {
+  return { ...person, initials: personInitials(person.name) };
 }
 
 /** The value of a Vote field on a card, `{ count: 0, voted: false }` when it carries none. */
@@ -67,7 +64,7 @@ export function VoteChip({
   const value = readVoteValue(card, field.id);
   const voters = useItemVotes(card.id, field.id, card.workspaceId, true);
   const shown = write.data ?? value;
-  const locale = copy.locale;
+  const [voteOpen, setVoteOpen] = useState(false);
   return (
     <div className="flex items-center gap-1.5">
       <button
@@ -83,47 +80,55 @@ export function VoteChip({
         <ThumbsUp className="size-3.5" aria-hidden="true" />
         {shown.voted ? copy.vote.voted : field.name || copy.vote.toggle}
       </button>
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            aria-label={fillCapabilityCopy(copy.vote.count, {
-              count: shown.count,
-            })}
-            className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-state-hover-strong px-1.5 text-nav font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-ring"
+      <PanelPopover
+        open={voteOpen}
+        onOpenChange={setVoteOpen}
+        width={300}
+        trigger={
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={fillCapabilityCopy(copy.vote.count, {
+                count: shown.count,
+              })}
+              className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-state-hover-strong px-1.5 text-nav font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {shown.count}
+            </button>
+          </PopoverTrigger>
+        }
+      >
+        <PickerHead
+          title={copy.vote.panel}
+          onClose={() => setVoteOpen(false)}
+        />
+        <PanelBtn
+          className="w-full"
+          disabled={!canVote || write.isPending}
+          aria-pressed={shown.voted}
+          onClick={() => write.mutate(!shown.voted)}
+        >
+          <ThumbsUp aria-hidden="true" className="size-4" />
+          {copy.vote.title}
+        </PanelBtn>
+        <Caption>
+          {shown.count === 0
+            ? copy.vote.none
+            : fillCapabilityCopy(copy.vote.people, { count: shown.count })}
+        </Caption>
+        {(voters.data?.voters ?? []).map((voter) => (
+          <div
+            key={voter.userId}
+            className="flex min-h-10 items-center gap-2.5 px-1"
           >
-            {shown.count}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="flex w-72 flex-col gap-2 p-3">
-          <h2 className="text-nav font-semibold">{copy.vote.title}</h2>
-          <p className="text-micro text-meta-foreground">
-            {shown.count === 0
-              ? copy.vote.none
-              : fillCapabilityCopy(copy.vote.people, { count: shown.count })}
-          </p>
-          <ul className="flex flex-col gap-1.5">
-            {(voters.data?.voters ?? []).map((voter) => (
-              <li
-                key={voter.userId}
-                className="flex items-center gap-2 text-nav"
-              >
-                <span
-                  aria-hidden="true"
-                  className="grid size-6 place-items-center rounded-full bg-state-hover-strong text-mark-xs"
-                >
-                  {initials(voter.name)}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{voter.name}</span>
-                <span className="text-micro tabular-nums text-meta-foreground">
-                  {stamp(voter.votedAt, locale)}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-micro text-meta-foreground">{copy.vote.note}</p>
-        </PopoverContent>
-      </Popover>
+            <PersonMark member={markOf(voter)} size={24} />
+            <span className="min-w-0 flex-1 truncate text-[13.5px]">
+              {voter.name}
+            </span>
+          </div>
+        ))}
+        <Hint className="mt-2 px-0.5">{copy.vote.note}</Hint>
+      </PanelPopover>
     </div>
   );
 }
@@ -144,44 +149,49 @@ export function ViewersChip({
   useRecordItemView(card.id, recordView && !card.isArchived);
   const viewers = useItemViewers(card.id, card.workspaceId);
   const count = viewers.data?.count ?? 0;
+  const [open, setOpen] = useState(false);
+  const viewerId = useCardPopup().data.viewerUserId ?? null;
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={fillCapabilityCopy(copy.viewers.count, { count })}
-          className="inline-flex h-7 items-center gap-1 rounded-md bg-state-hover-strong px-2 text-nav font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-ring"
+    <PanelPopover
+      open={open}
+      onOpenChange={setOpen}
+      width={320}
+      trigger={
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={fillCapabilityCopy(copy.viewers.count, { count })}
+            className="inline-flex h-7 items-center gap-1 rounded-md bg-state-hover-strong px-2 text-nav font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <Eye className="size-3.5" aria-hidden="true" />
+            {count}
+          </button>
+        </PopoverTrigger>
+      }
+    >
+      <PickerHead title={copy.viewers.label} onClose={() => setOpen(false)} />
+      <Caption className="mt-0">
+        {count === 0
+          ? copy.viewers.none
+          : fillCapabilityCopy(copy.viewers.people, { count })}
+      </Caption>
+      {(viewers.data?.viewers ?? []).map((viewer) => (
+        <div
+          key={viewer.userId}
+          className="flex min-h-11 items-center gap-2.5 px-1"
         >
-          <Eye className="size-3.5" aria-hidden="true" />
-          {count}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="flex w-72 flex-col gap-2 p-3">
-        <h2 className="text-nav font-semibold">{copy.viewers.title}</h2>
-        {count === 0 ? (
-          <p className="text-micro text-meta-foreground">{copy.viewers.none}</p>
-        ) : null}
-        <ul className="flex flex-col gap-1.5">
-          {(viewers.data?.viewers ?? []).map((viewer) => (
-            <li
-              key={viewer.userId}
-              className="flex items-center gap-2 text-nav"
-            >
-              <span
-                aria-hidden="true"
-                className="grid size-6 place-items-center rounded-full bg-state-hover-strong text-mark-xs"
-              >
-                {initials(viewer.name)}
-              </span>
-              <span className="min-w-0 flex-1 truncate">{viewer.name}</span>
-              <span className="text-micro tabular-nums text-meta-foreground">
-                {stamp(viewer.lastViewedAt, copy.locale)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-micro text-meta-foreground">{copy.viewers.note}</p>
-      </PopoverContent>
-    </Popover>
+          <PersonMark member={markOf(viewer)} size={24} />
+          <span className="min-w-0 flex-1 truncate text-[13.5px]">
+            {viewer.name}
+          </span>
+          <span className="shrink-0 text-[12.5px] text-meta-foreground">
+            {viewer.userId === viewerId
+              ? copy.viewers.you
+              : stamp(viewer.lastViewedAt, copy.locale)}
+          </span>
+        </div>
+      ))}
+      <Hint className="mt-2 px-0.5">{copy.viewers.note}</Hint>
+    </PanelPopover>
   );
 }
