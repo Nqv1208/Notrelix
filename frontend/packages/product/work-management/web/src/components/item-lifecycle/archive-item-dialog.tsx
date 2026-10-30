@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   CornerDownRight,
   Link2,
@@ -65,6 +66,7 @@ export function ArchiveItemDialog({
   onConfirm: () => void;
 }) {
   const busy = status === "busy";
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const total = 1 + impact.subItems;
   const refusal = refusalCopy(copy, status);
   const canRetry = status === "error" || status === "conflict";
@@ -80,8 +82,13 @@ export function ArchiveItemDialog({
         showCloseButton={false}
         className={cn(
           "gap-0 overflow-hidden rounded-[14px] p-0 sm:max-w-110",
-          "max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-2xl",
+          "max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[16px]",
         )}
+        // The safe choice has focus, so Enter does not archive by accident.
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          cancelRef.current?.focus();
+        }}
         onEscapeKeyDown={(event) => {
           if (busy) event.preventDefault();
         }}
@@ -89,8 +96,12 @@ export function ArchiveItemDialog({
           if (busy) event.preventDefault();
         }}
       >
+        <span
+          aria-hidden="true"
+          className="mx-auto mt-2 hidden h-1 w-9 rounded-full bg-line-strong max-sm:block"
+        />
         <DialogHeader className="flex-row items-center gap-2.5 px-5 pt-4 pb-2">
-          <DialogTitle className="min-w-0 flex-1 text-[17px] leading-snug font-semibold">
+          <DialogTitle className="min-w-0 flex-1 text-[17px] leading-snug font-[650]">
             {copy.archiveTitle}
           </DialogTitle>
           {busy ? null : (
@@ -175,10 +186,11 @@ export function ArchiveItemDialog({
         </div>
         <DialogFooter className="items-center gap-2 border-t border-line px-5 py-3 max-sm:flex-col-reverse max-sm:items-stretch">
           <Button
+            ref={cancelRef}
             type="button"
             variant="outline"
             disabled={busy}
-            className="max-sm:h-11"
+            className="px-3.5 max-sm:h-11"
             onClick={onCancel}
           >
             {blocked ? copy.archiveClose : copy.archiveCancel}
@@ -187,7 +199,7 @@ export function ArchiveItemDialog({
             <Button
               type="button"
               disabled={busy || impact.checking}
-              className="max-sm:h-11"
+              className="px-3.5 max-sm:h-11"
               onClick={onConfirm}
             >
               {busy ? (
