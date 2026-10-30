@@ -16,6 +16,7 @@ import type {
   StepUpFactor,
   StepUpPurpose,
   StepUpRequirement,
+  TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
 } from "../types/account";
@@ -458,12 +459,13 @@ export function createAccountService(
       return wire?.revokedCount ?? 0;
     },
 
-    async startTwoFactor(): Promise<TwoFactorEnrollment> {
+    /** Needs an `EnrollMfa` proof (single use). */
+    async startTwoFactor(stepUpToken: string): Promise<TwoFactorEnrollment> {
       const wire = await api.post<{
         mfaMethodId?: string;
         secret?: string | null;
         otpAuthUri?: string | null;
-      }>(endpoints.auth.mfaEnrollmentStart, {}, QUIET);
+      }>(endpoints.auth.mfaEnrollmentStart, { stepUpToken }, QUIET);
       return {
         methodId: wire.mfaMethodId ?? "",
         secret: wire.secret ?? "",
@@ -471,17 +473,27 @@ export function createAccountService(
       };
     },
 
-    /** Activates the authenticator; the recovery codes are shown once. */
+    /**
+     * Activates the authenticator with its own `EnrollMfa` proof (single use); the
+     * recovery codes are shown once, and every other device was signed out.
+     */
     async verifyTwoFactor(
       methodId: string,
       code: string,
-    ): Promise<readonly string[]> {
-      const wire = await api.post<{ recoveryCodes?: string[] | null }>(
+      stepUpToken: string,
+    ): Promise<TwoFactorActivation> {
+      const wire = await api.post<{
+        recoveryCodes?: string[] | null;
+        otherSessionsEnded?: number;
+      }>(
         endpoints.auth.mfaEnrollmentVerify,
-        { mfaMethodId: methodId, code },
+        { mfaMethodId: methodId, code, stepUpToken },
         QUIET,
       );
-      return wire.recoveryCodes ?? [];
+      return {
+        recoveryCodes: wire.recoveryCodes ?? [],
+        otherSessionsEnded: wire.otherSessionsEnded ?? 0,
+      };
     },
 
     async getStepUpRequirement(

@@ -13,7 +13,8 @@ public enum StepUpPurpose
     IssueApiToken,
     ChangeSecurityIdentity,
     ChangePassword,
-    RevokeOtherSessions
+    RevokeOtherSessions,
+    EnrollMfa
 }
 
 /// <summary>

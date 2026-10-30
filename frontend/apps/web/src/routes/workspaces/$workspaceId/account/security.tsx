@@ -30,20 +30,31 @@ function waitOf(error: unknown): number | null {
 }
 
 type Step =
-  | { kind: "enroll"; methodId: string; secret: string; otpAuthUri: string }
+  | {
+      kind: "enroll";
+      methodId: string;
+      secret: string;
+      otpAuthUri: string;
+      /** The activation spends a proof of its own, bought with the same answer as the start. */
+      verifyProof: string;
+    }
   | {
       kind: "stepUp";
-      purpose: "disable" | "renew" | "others";
+      purpose: "enroll" | "disable" | "renew" | "others";
       factor: "code" | "password";
       challengeToken: string | null;
     }
-  | { kind: "codes"; codes: readonly string[] }
+  | { kind: "codes"; codes: readonly string[]; othersEnded?: number }
   | { kind: "password" }
   | { kind: "passwordChanged" }
   | { kind: "twoFactorOff" }
   | { kind: "signOutThis" };
 
-const PURPOSE: Record<"disable" | "renew" | "others", StepUpPurpose> = {
+const PURPOSE: Record<
+  "enroll" | "disable" | "renew" | "others",
+  StepUpPurpose
+> = {
+  enroll: "EnrollMfa",
   disable: "DisableMfa",
   renew: "RegenerateRecoveryCodes",
   others: "RevokeOtherSessions",
@@ -198,9 +209,9 @@ export function AccountSecurityPage() {
     }
   }, [activeSessions, service, signOutThisDevice]);
 
-  // Turning two-factor on starts the enrollment; off asks for proof first.
+  // Turning two-factor on or off asks for proof first.
   const beginStepUp = useCallback(
-    async (purpose: "disable" | "renew" | "others") => {
+    async (purpose: "enroll" | "disable" | "renew" | "others") => {
       setActionError(false);
       setStepError(null);
       setBusy(true);
@@ -225,24 +236,11 @@ export function AccountSecurityPage() {
 
   const setTwoFactor = useCallback(
     async (enabled: boolean) => {
-      if (!enabled) {
-        await beginStepUp("disable");
-        return;
-      }
-      setActionError(false);
-      setStepError(null);
-      // One start at a time: a second one would replace the secret the first one shows.
-      setBusy(true);
-      try {
-        const enrollment = await service.startTwoFactor();
-        setStep({ kind: "enroll", ...enrollment });
-      } catch {
-        setActionError(true);
-      } finally {
-        setBusy(false);
-      }
+      // The proof comes first; the enrollment starts once it is in hand (`finishStepUp`).
+      // One start at a time: the buttons wait while the proof is asked for.
+      await beginStepUp(enabled ? "enroll" : "disable");
     },
-    [beginStepUp, service],
+    [beginStepUp],
   );
 
   const fail = (error: unknown, wrongStatus: boolean) => {
@@ -261,6 +259,8 @@ export function AccountSecurityPage() {
     async (
       proof: Promise<string>,
       current: Extract<Step, { kind: "stepUp" }>,
+      /** Turning two-factor on spends two proofs (start, then activation): this buys the second. */
+      spare?: () => Promise<string>,
     ) => {
       setBusy(true);
       setStepError(null);
@@ -268,8 +268,12 @@ export function AccountSecurityPage() {
       let proved = false;
       try {
         const token = await proof;
+        const verifyProof = spare ? await spare() : "";
         proved = true;
-        if (current.purpose === "disable") {
+        if (current.purpose === "enroll") {
+          const enrollment = await service.startTwoFactor(token);
+          setStep({ kind: "enroll", ...enrollment, verifyProof });
+        } else if (current.purpose === "disable") {
           await service.disableTwoFactor(token);
           // The producer ended every session, this one too: nothing more can be read here.
           setStep({ kind: "twoFactorOff" });
@@ -329,15 +333,27 @@ export function AccountSecurityPage() {
         setStepError(null);
         try {
           // Authenticator apps group the digits ("123 456"); the producer wants six.
-          const codes = await service.verifyTwoFactor(
+          const activation = await service.verifyTwoFactor(
             step.methodId,
             code.replace(/\s+/g, ""),
+            step.verifyProof,
           );
-          setStep({ kind: "codes", codes });
+          setStep({
+            kind: "codes",
+            codes: activation.recoveryCodes,
+            othersEnded: activation.otherSessionsEnded,
+          });
           await invalidate();
           showNotice(copy.twoFactor.turnedOn);
         } catch (error) {
-          fail(error, true);
+          // The activation's proof is gone (too old): ask again, then start a fresh enrollment.
+          if (
+            (error as { code?: string }).code ===
+            "identity.security.step-up-invalid"
+          ) {
+            await beginStepUp("enroll");
+            setStepError({ error: "expired" });
+          } else fail(error, true);
         } finally {
           setBusy(false);
         }
@@ -354,6 +370,7 @@ export function AccountSecurityPage() {
         );
     },
     [
+      beginStepUp,
       copy.twoFactor.turnedOn,
       finishStepUp,
       invalidate,
@@ -365,11 +382,14 @@ export function AccountSecurityPage() {
 
   const submitPassword = useCallback(
     async (password: string) => {
-      if (step?.kind === "stepUp")
-        await finishStepUp(
-          service.completeStepUpWithPassword(PURPOSE[step.purpose], password),
-          step,
-        );
+      if (step?.kind !== "stepUp") return;
+      const proofFor = () =>
+        service.completeStepUpWithPassword(PURPOSE[step.purpose], password);
+      await finishStepUp(
+        proofFor(),
+        step,
+        step.purpose === "enroll" ? proofFor : undefined,
+      );
     },
     [finishStepUp, service, step],
   );

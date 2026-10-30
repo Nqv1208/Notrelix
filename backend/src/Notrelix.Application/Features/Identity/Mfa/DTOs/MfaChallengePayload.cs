@@ -11,7 +11,8 @@ public enum MfaChallengePurpose
     StepUpIssueApiToken,
     StepUpChangeSecurityIdentity,
     StepUpChangePassword,
-    StepUpRevokeOtherSessions
+    StepUpRevokeOtherSessions,
+    StepUpEnrollMfa
 }
 
 /// <summary>

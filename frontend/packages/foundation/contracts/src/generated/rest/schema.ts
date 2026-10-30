@@ -1641,7 +1641,7 @@ export interface paths {
         put?: never;
         /**
          * Start MFA authenticator app enrollment
-         * @description Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409.
+         * @description Requires a single-use step-up proof for the EnrollMfa purpose. Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409 and the proof is kept.
          */
         post: operations["Identity.Mfa.StartEnrollment"];
         delete?: never;
@@ -1661,7 +1661,7 @@ export interface paths {
         put?: never;
         /**
          * Verify MFA enrollment code and activate the authenticator
-         * @description A wrong code leaves the method pending. The recovery codes in the answer are shown once and never readable again.
+         * @description Requires a single-use step-up proof for the EnrollMfa purpose. A wrong code leaves the method pending and the proof unspent. When the factor becomes active every other session of the person ends and the answer says how many; the current session stays. The recovery codes in the answer are shown once and never readable again.
          */
         post: operations["Identity.Mfa.VerifyEnrollment"];
         delete?: never;
@@ -6355,6 +6355,9 @@ export interface components {
         "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
             stepUpToken?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
         };
@@ -6362,6 +6365,7 @@ export interface components {
             /** Format: uuid */
             mfaMethodId?: string;
             code?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Queries.IdentifySignInRequest": {
             email?: string | null;
@@ -6892,6 +6896,13 @@ export interface components {
             orgInitials?: string | null;
             provider?: string | null;
             providerLabel?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
+            /** Format: uuid */
+            mfaMethodId?: string;
+            recoveryCodes?: string[] | null;
+            /** Format: int32 */
+            otherSessionsEnded?: number;
         };
         "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult": {
             /** Format: uuid */
@@ -11804,7 +11815,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -11813,6 +11828,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
             /** @description Unauthorized */
@@ -11835,6 +11859,15 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11872,7 +11905,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult"];
                 };
             };
             /** @description Bad Request */
@@ -11886,6 +11919,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };

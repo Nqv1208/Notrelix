@@ -72,14 +72,19 @@ export type AccountSecurityFlow =
     }
   | {
       readonly kind: "stepUp";
-      /** What the proof is for: two-factor off, fresh backup codes, or ending every other device. */
-      readonly purpose: "disable" | "renew" | "others";
+      /** What the proof is for: two-factor on or off, fresh backup codes, or ending every other device. */
+      readonly purpose: "enroll" | "disable" | "renew" | "others";
       readonly factor: "code" | "password";
       /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. */
       readonly error: "wrong" | "wait" | "failed" | "expired" | null;
       readonly wait?: number;
     }
-  | { readonly kind: "codes"; readonly codes: readonly string[] }
+  | {
+      readonly kind: "codes";
+      readonly codes: readonly string[];
+      /** Turning two-factor on signed out this many other devices; absent for fresh codes alone. */
+      readonly othersEnded?: number;
+    }
   | {
       /** Changing the password; `needsCode` while two-factor is on. */
       readonly kind: "password";
@@ -293,6 +298,19 @@ function FlowPanel({
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
           {t.codesText}
         </p>
+        {flow.othersEnded === undefined ? null : (
+          <p
+            role="status"
+            className="m-0 mt-1 text-crumb text-muted-foreground"
+          >
+            {flow.othersEnded > 0
+              ? pluralCopy(
+                  { one: t.codesOthers_one, other: t.codesOthers_other },
+                  flow.othersEnded,
+                )
+              : copy.others.nobody}
+          </p>
+        )}
         <ul className="m-0 mt-2.5 grid list-none grid-cols-2 gap-1.5 p-0 font-mono text-nav">
           {flow.codes.map((code) => (
             <li key={code}>{code}</li>
@@ -324,11 +342,13 @@ function FlowPanel({
   const title =
     flow.kind === "enroll"
       ? t.enrollTitle
-      : flow.purpose === "disable"
-        ? t.disableTitle
-        : flow.purpose === "others"
-          ? t.othersTitle
-          : t.renewTitle;
+      : flow.purpose === "enroll"
+        ? t.enrollProofTitle
+        : flow.purpose === "disable"
+          ? t.disableTitle
+          : flow.purpose === "others"
+            ? t.othersTitle
+            : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -360,6 +380,7 @@ function FlowPanel({
       ) : (
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
           {flow.purpose === "disable" ? `${t.disableText} ` : null}
+          {flow.purpose === "enroll" ? `${t.enrollProofText} ` : null}
           {usesPassword ? t.passwordText : t.codeText}
         </p>
       )}

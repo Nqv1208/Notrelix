@@ -6050,8 +6050,18 @@
           "Identity.Mfa"
         ],
         "summary": "Start MFA authenticator app enrollment",
-        "description": "Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409.",
+        "description": "Requires a single-use step-up proof for the EnrollMfa purpose. Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409 and the proof is kept.",
         "operationId": "Identity.Mfa.StartEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -6059,6 +6069,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -6085,6 +6105,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6121,7 +6151,7 @@
           "Identity.Mfa"
         ],
         "summary": "Verify MFA enrollment code and activate the authenticator",
-        "description": "A wrong code leaves the method pending. The recovery codes in the answer are shown once and never readable again.",
+        "description": "Requires a single-use step-up proof for the EnrollMfa purpose. A wrong code leaves the method pending and the proof unspent. When the factor becomes active every other session of the person ends and the answer says how many; the current session stays. The recovery codes in the answer are shown once and never readable again.",
         "operationId": "Identity.Mfa.VerifyEnrollment",
         "requestBody": {
           "content": {
@@ -6139,7 +6169,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult"
                 }
               }
             }
@@ -6156,6 +6186,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -25023,6 +25063,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
         "type": "object",
         "properties": {
@@ -25041,6 +25091,10 @@
             "format": "uuid"
           },
           "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "stepUpToken": {
             "type": "string",
             "nullable": true
           }
@@ -26614,6 +26668,27 @@
           "providerLabel": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
+        "type": "object",
+        "properties": {
+          "mfaMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recoveryCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "otherSessionsEnded": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

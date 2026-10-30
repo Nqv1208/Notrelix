@@ -52,6 +52,9 @@ export const en = {
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
     othersTitle: "Confirm to sign out of all other devices",
+    enrollProofTitle: "Confirm to turn on two-factor authentication",
+    enrollProofText:
+      "Once it is on, you are signed out of every other device. This one stays signed in.",
     disableText:
       "Turning it off voids your backup codes and signs you out of every device, this one included.",
     signOutThisTitle: "Sign out of this device?",
@@ -74,6 +77,8 @@ export const en = {
     codesTitle: "Save your backup codes",
     codesText:
       "Each code works once when you don't have your phone. They are shown only now.",
+    codesOthers_one: "{{count}} other device was signed out.",
+    codesOthers_other: "{{count}} other devices were signed out.",
     done: "I saved them",
     disabledTitle: "Two-factor authentication is off",
     disabledText:
@@ -210,6 +215,9 @@ export const vi: AccountSecurityCopy = {
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
     othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
+    enrollProofTitle: "Xác nhận để bật xác thực hai yếu tố",
+    enrollProofText:
+      "Khi bật xong, bạn sẽ bị đăng xuất khỏi mọi thiết bị khác. Thiết bị này vẫn giữ đăng nhập.",
     disableText:
       "Tắt xác thực hai lớp sẽ vô hiệu các mã dự phòng và đăng xuất bạn khỏi mọi thiết bị, kể cả thiết bị này.",
     signOutThisTitle: "Đăng xuất khỏi thiết bị này?",
@@ -230,6 +238,9 @@ export const vi: AccountSecurityCopy = {
     codesTitle: "Lưu mã dự phòng của bạn",
     codesText:
       "Mỗi mã dùng được một lần khi bạn không có điện thoại. Mã chỉ hiện lúc này.",
+    // Vietnamese has no singular/plural distinction; both forms stay complete.
+    codesOthers_one: "Đã đăng xuất {{count}} thiết bị khác.",
+    codesOthers_other: "Đã đăng xuất {{count}} thiết bị khác.",
     done: "Tôi đã lưu",
     disabledTitle: "Đã tắt xác thực hai lớp",
     disabledText:

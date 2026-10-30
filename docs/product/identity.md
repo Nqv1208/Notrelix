@@ -302,6 +302,8 @@ Do not leave stale authority active accidentally.
 
 Turning the second factor off ends every session of the person, the one that asked included (confirmed 2026-10-30); the person signs in again.
 
+Turning the second factor on is the reverse: starting the enrollment and activating it each need a single-use step-up proof of their own (a session alone may not enrol a factor, or a stolen session could lock the owner out). When the factor becomes active every other session of the person ends; the session that enrolled it stays, and the person is told how many other devices were signed out (confirmed 2026-10-30).
+
 # 21. Session claims
 
 Claims may cache identity/security hints for performance.
@@ -351,6 +353,8 @@ disabled/removed
 where applicable.
 
 An unverified enrollment must not be treated as active MFA.
+
+Starting and activating an enrollment need a step-up proof each (ID-006); a wrong code leaves the pending method and the proof alone.
 
 # 25. MFA removal
 

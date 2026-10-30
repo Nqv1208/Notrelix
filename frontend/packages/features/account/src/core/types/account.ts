@@ -95,6 +95,12 @@ export interface TwoFactorEnrollment {
   readonly otpAuthUri: string;
 }
 
+/** What turning two-factor on gave back: the codes (shown once) and how many other devices it signed out. */
+export interface TwoFactorActivation {
+  readonly recoveryCodes: readonly string[];
+  readonly otherSessionsEnded: number;
+}
+
 /** What proves the person is present before a sensitive change. */
 export type StepUpFactor = "mfa" | "password" | "oauth";
 
@@ -102,7 +108,8 @@ export type StepUpPurpose =
   | "DisableMfa"
   | "RegenerateRecoveryCodes"
   | "ChangePassword"
-  | "RevokeOtherSessions";
+  | "RevokeOtherSessions"
+  | "EnrollMfa";
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;
