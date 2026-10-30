@@ -64,6 +64,7 @@ export type ItemCreateCopy = {
   readonly undone: string;
   readonly undoFailed: string;
   readonly noGroup: string;
+  readonly groupGone: string;
   readonly addGroup: string;
   readonly addingGroup: string;
   readonly groupAdded: string;
@@ -148,6 +149,8 @@ export const en: ItemCreateCopy = {
   undoFailed: "The item could not be removed. Open it to archive it.",
   noGroup:
     "This board has no group yet, and every item belongs to a group. Add a group to start adding items.",
+  groupGone:
+    "The group you picked is no longer available. Choose another group to add the item.",
   addGroup: "Add a group",
   addingGroup: "Adding the group…",
   groupAdded: "Group added. Add your item again.",
@@ -232,6 +235,8 @@ export const vi: ItemCreateCopy = {
   undoFailed: "Chưa bỏ được công việc. Hãy mở công việc để lưu trữ.",
   noGroup:
     "Board này chưa có nhóm nào, mà mọi công việc đều thuộc một nhóm. Hãy thêm nhóm để bắt đầu thêm công việc.",
+  groupGone:
+    "Nhóm bạn chọn không còn nữa. Hãy chọn nhóm khác để thêm công việc.",
   addGroup: "Thêm nhóm",
   addingGroup: "Đang thêm nhóm…",
   groupAdded: "Đã thêm nhóm. Hãy thêm lại công việc.",

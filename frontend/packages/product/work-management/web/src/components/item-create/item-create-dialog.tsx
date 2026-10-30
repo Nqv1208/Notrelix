@@ -312,7 +312,7 @@ export function ItemCreateDialog({
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
     setTouched(true);
-    if (pending || unavailable) return;
+    if (pending || unavailable || groupGone) return;
     if (trimmed === "") {
       nameRef.current?.focus();
       return;
@@ -346,11 +346,20 @@ export function ItemCreateDialog({
     }
   };
   const blockedByGroup = !unavailable && listId === "";
+  // The group picked here was deleted while the dialog was open: say so and
+  // hold the submit until another group is chosen.
+  const groupGone =
+    !unavailable &&
+    listId !== "" &&
+    groups.length > 0 &&
+    !groups.some((group) => group.id === listId);
   const blocker = unavailable
     ? copy.chooseBoard
     : blockedByGroup
       ? copy.noGroup
-      : null;
+      : groupGone
+        ? copy.groupGone
+        : null;
   const hint = dueDay ? dueHint(copy, today, dueDay) : "";
   const contextLabel = context
     ? context.kind === "lane"
@@ -499,7 +508,7 @@ export function ItemCreateDialog({
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {groups.length > 1 && !hideGroup ? (
+              {(groups.length > 1 || groupGone) && !hideGroup ? (
                 <Field>
                   <FieldLabel htmlFor={ids.group}>{copy.group}</FieldLabel>
                   <Select
@@ -717,7 +726,7 @@ export function ItemCreateDialog({
             <Button
               type="submit"
               className="h-11 rounded-[9px] px-4 font-semibold"
-              disabled={pending || unavailable || blockedByGroup}
+              disabled={pending || unavailable || blockedByGroup || groupGone}
               title={blocker ?? undefined}
             >
               {pending ? copy.submitting : (submitLabel ?? copy.submit)}
