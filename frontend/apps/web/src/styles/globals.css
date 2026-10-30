@@ -373,6 +373,14 @@
   --color-label-doc-foreground: var(--label-doc-foreground);
   --color-label-test: var(--label-test);
   --color-label-test-foreground: var(--label-test-foreground);
+  --color-label-orange: var(--label-orange);
+  --color-label-orange-foreground: var(--label-orange-foreground);
+  --color-label-green: var(--label-green);
+  --color-label-green-foreground: var(--label-green-foreground);
+  --color-label-indigo: var(--label-indigo);
+  --color-label-indigo-foreground: var(--label-indigo-foreground);
+  --color-label-red: var(--label-red);
+  --color-label-red-foreground: var(--label-red-foreground);
   --color-cover-blue: var(--cover-blue);
   --color-cover-teal: var(--cover-teal);
   --color-cover-violet: var(--cover-violet);

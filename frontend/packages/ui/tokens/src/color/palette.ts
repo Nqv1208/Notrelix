@@ -130,7 +130,7 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     canvas: n(0.177, 0.011), // #0E1116
     sidebar: n(0.207, 0.014), // #13181E
     panel: n(0.216, 0.016), // #151A21
-    raised: n(0.235, 0.009),
+    raised: fromHex("#1A2028"), // the popup artboard's Đêm `--panel`
     subtle: n(0.253, 0.02), // #1C232C
     hover: n(0.253, 0.02), // #1C232C
     hoverStrong: n(0.283, 0.021), // #232A34
@@ -232,6 +232,8 @@ interface AccentRecipe {
   readonly lightMarkL?: number;
   /** Light-appearance tones pinned to exact mockup values. */
   readonly lightTones?: Partial<AccentTones>;
+  /** Dark-appearance tones pinned to exact mockup values. */
+  readonly darkTones?: Partial<AccentTones>;
 }
 
 function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
@@ -276,6 +278,7 @@ function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
         subtle: tone(0.254, 0.036, hue),
         onSubtle: tone(recipe.lightFill ? 0.84 : 0.8, chroma, hue),
         ring: tone(recipe.lightFill ? 0.8 : 0.72, chroma, hue),
+        ...recipe.darkTones,
       },
       "high-contrast": {
         mark: tone(0.5, chroma, inkHue),
@@ -307,6 +310,14 @@ export const accents: Record<AccentId, AccentDefinition> = {
       subtle: oklch(0.952, 0.019, 255.5),
       onSubtle: oklch(0.466, 0.155, 257.1),
       ring: oklch(0.525, 0.175, 257.4),
+    },
+    // Mockup Đêm accent: `--accent` #5AA9FF, `--accent-ink` #04111F,
+    // `--accent-text` #7DBBFF.
+    darkTones: {
+      solid: fromHex("#5AA9FF"),
+      onSolid: fromHex("#04111F"),
+      ink: fromHex("#7DBBFF"),
+      ring: fromHex("#5AA9FF"),
     },
   }),
   /** Coral — from #FC744C. */
@@ -663,6 +674,10 @@ export const LABEL_TONE_IDS = [
   "report",
   "doc",
   "test",
+  "orange",
+  "green",
+  "indigo",
+  "red",
 ] as const;
 export type LabelToneId = (typeof LABEL_TONE_IDS)[number];
 
@@ -677,6 +692,9 @@ export interface LabelTone {
  * ≥ 6.3:1). High contrast keeps the light fills; text below 7:1 is lowered
  * in 0.01 L steps: security 0.455 → 0.435 #970C31 (7.28), training
  * 0.442 → 0.412 #235547 (7.20), report 0.448 → 0.428 #684901 (7.28).
+ * Orange, green, indigo and red are the card popup's label colours
+ * (`.lc-*` of the popup artboard, hex values as drawn; every pair ≥ 5.6:1);
+ * in high contrast orange, green and red are lowered the same way.
  */
 export const labelTones: Record<
   LabelToneId,
@@ -707,6 +725,10 @@ export const labelTones: Record<
       fill: oklch(0.939, 0.028, 301.8), // #EEE7FB
       onFill: oklch(0.432, 0.178, 290.6), // #5532A8
     },
+    orange: { fill: fromHex("#FDE9DA"), onFill: fromHex("#9A4308") },
+    green: { fill: fromHex("#E5F3EA"), onFill: fromHex("#1F6B42") },
+    indigo: { fill: fromHex("#E4E8FB"), onFill: fromHex("#3A3FA6") },
+    red: { fill: fromHex("#FBDADA"), onFill: fromHex("#A11D1D") },
   };
   const dark: Record<LabelToneId, LabelTone> = {
     data: {
@@ -733,11 +755,18 @@ export const labelTones: Record<
       fill: oklch(0.294, 0.079, 292.1), // #2E2350
       onFill: oklch(0.816, 0.096, 297), // #C9B6FA
     },
+    orange: { fill: fromHex("#40260F"), onFill: fromHex("#FFB27A") },
+    green: { fill: fromHex("#12251C"), onFill: fromHex("#7FDDA8") },
+    indigo: { fill: fromHex("#1E2250"), onFill: fromHex("#AEB4FA") },
+    red: { fill: fromHex("#4A1A1A"), onFill: fromHex("#FF9A9A") },
   };
   const highContrastText: Partial<Record<LabelToneId, Oklch>> = {
     security: oklch(0.435, 0.167, 15.6), // #970C31
     training: oklch(0.412, 0.06, 171.6), // #235547
     report: oklch(0.428, 0.088, 80.8), // #684901
+    orange: fromHex("#873100"),
+    green: fromHex("#075B33"),
+    red: fromHex("#930710"),
   };
   const tones = {} as Record<LabelToneId, Record<ThemeAppearance, LabelTone>>;
   for (const id of LABEL_TONE_IDS) {
