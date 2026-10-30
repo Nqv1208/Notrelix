@@ -592,6 +592,9 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
+    /// <summary>True when completing the Item moves it to its next occurrence instead of closing it.</summary>
+    public bool RepeatsOnCompletion => RepeatRule is not null && DueAt is not null && !CompletedAt.HasValue;
+
     /// <summary>
     /// Completes the Item. A repeating Item with a due date is not left completed: it stays open and its due
     /// (and start) date moves to the next occurrence after the completion, in this one change. Completing an

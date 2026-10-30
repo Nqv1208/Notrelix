@@ -47,15 +47,26 @@ public static class BoardItemFieldWrites
             ? WorkItemSemanticFields.ReadOptionId(item.FieldValues.FirstOrDefault(v => v.FieldId == field.Id)?.Value)
             : null;
 
+        var newOptionId = isStatusWrite ? WorkItemSemanticFields.ReadOptionId(value) : null;
+        var newCategory = isStatusWrite ? statusField!.Options.FirstOrDefault(option => option.Id == newOptionId)?.Category : null;
+        // Remembered for reopening, only when it was a status that is not done itself.
+        var previousIsOpen = isStatusWrite && previousOptionId is not null
+            && statusField!.Options.FirstOrDefault(option => option.Id == previousOptionId)?.Category is not (null or WorkStatusCategory.Done);
+
+        // A repeating Item moved to a done status completes its occurrence, exactly as CompleteBoardItem does: it
+        // stays open at its current status and its dates move to the next occurrence, in this one change.
+        if (newCategory == WorkStatusCategory.Done && previousIsOpen && item.RepeatsOnCompletion)
+        {
+            item.CompleteOccurrence(now, actorUserId, now);
+            return;
+        }
+
         item.UpdateFieldValue(field, value, actorUserId, now);
 
         if (isStatusWrite)
         {
-            var optionId = WorkItemSemanticFields.ReadOptionId(value);
-            var category = statusField!.Options.FirstOrDefault(option => option.Id == optionId)?.Category;
-            // Remembered for reopening, only when it was a status that is not done itself.
-            var previousIsOpen = previousOptionId is not null
-                && statusField.Options.FirstOrDefault(option => option.Id == previousOptionId)?.Category is not (null or WorkStatusCategory.Done);
+            var optionId = newOptionId;
+            var category = newCategory;
             item.SyncCompletionWithStatus(category, actorUserId, now, previousIsOpen ? previousOptionId : null);
         }
     }
