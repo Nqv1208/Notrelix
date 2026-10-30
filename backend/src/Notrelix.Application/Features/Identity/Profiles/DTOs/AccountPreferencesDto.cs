@@ -14,7 +14,8 @@ public sealed record AccountPreferencesDto(
     string Theme,
     long Version,
     string? Phone = null,
-    bool PhoneVisibleToWorkspaceMembers = false)
+    bool PhoneVisibleToWorkspaceMembers = false,
+    bool ColourBlindLabels = false)
 {
     public const string DefaultLocale = "vi";
     public const string DefaultTimezone = "UTC";
