@@ -27183,6 +27183,10 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "parentTitle": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -27262,6 +27266,10 @@
           "spaceId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "parentTitle": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -27376,6 +27384,10 @@
           "spaceId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "parentTitle": {
+            "type": "string",
             "nullable": true
           }
         },
