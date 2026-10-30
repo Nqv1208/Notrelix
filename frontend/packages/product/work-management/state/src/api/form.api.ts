@@ -123,6 +123,11 @@ function mapQuestion(row: QuestionWire): FormQuestion | null {
   };
 }
 
+/** The version a body-less write names, as the producer's `expectedVersion` query parameter. */
+function withVersion(path: string, expectedVersion: number): string {
+  return `${path}?expectedVersion=${expectedVersion}`;
+}
+
 export function createFormApi(client: NotrelixClient) {
   const api = client.api;
   return {
@@ -158,27 +163,38 @@ export function createFormApi(client: NotrelixClient) {
       return api.post<string>(endpoints.forms.forBoard(boardId), { title });
     },
 
+    /** Every write on a form names the version the caller last read (`expectedVersion`); a stale one is a 409. */
     async updateDetails(
       formId: string,
       title: string,
       description: string,
+      expectedVersion: number,
     ): Promise<void> {
       await api.patch<void>(endpoints.forms.detail(formId), {
         title,
         description,
+        expectedVersion,
       });
     },
 
-    async publish(formId: string): Promise<void> {
-      await api.post<void>(endpoints.forms.publish(formId), {});
+    async publish(formId: string, expectedVersion: number): Promise<void> {
+      await api.post<void>(
+        withVersion(endpoints.forms.publish(formId), expectedVersion),
+        {},
+      );
     },
 
-    async close(formId: string): Promise<void> {
-      await api.post<void>(endpoints.forms.close(formId), {});
+    async close(formId: string, expectedVersion: number): Promise<void> {
+      await api.post<void>(
+        withVersion(endpoints.forms.close(formId), expectedVersion),
+        {},
+      );
     },
 
-    async remove(formId: string): Promise<void> {
-      await api.delete<void>(endpoints.forms.detail(formId));
+    async remove(formId: string, expectedVersion: number): Promise<void> {
+      await api.delete<void>(
+        withVersion(endpoints.forms.detail(formId), expectedVersion),
+      );
     },
 
     async restore(formId: string): Promise<void> {
@@ -188,6 +204,7 @@ export function createFormApi(client: NotrelixClient) {
     async addQuestion(
       formId: string,
       question: NewFormQuestion,
+      expectedVersion: number,
     ): Promise<void> {
       const body: AddQuestionBody = {
         questionKey: question.key,
@@ -199,6 +216,7 @@ export function createFormApi(client: NotrelixClient) {
         configJson: serializeFormQuestionConfig(question.required, question),
         position: question.position,
         boardFieldId: question.boardFieldId,
+        expectedVersion,
       };
       await api.post<void>(endpoints.forms.questions(formId), body);
     },
@@ -207,6 +225,7 @@ export function createFormApi(client: NotrelixClient) {
       formId: string,
       questionId: string,
       changes: FormQuestionChanges,
+      expectedVersion: number,
     ): Promise<void> {
       const body: UpdateQuestionBody = {
         label: changes.label,
@@ -214,12 +233,22 @@ export function createFormApi(client: NotrelixClient) {
         configJson: serializeFormQuestionConfig(changes.required, changes),
         position: changes.position,
         boardFieldId: changes.boardFieldId,
+        expectedVersion,
       };
       await api.patch<void>(endpoints.forms.question(formId, questionId), body);
     },
 
-    async removeQuestion(formId: string, questionId: string): Promise<void> {
-      await api.delete<void>(endpoints.forms.question(formId, questionId));
+    async removeQuestion(
+      formId: string,
+      questionId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.delete<void>(
+        withVersion(
+          endpoints.forms.question(formId, questionId),
+          expectedVersion,
+        ),
+      );
     },
 
     /** The responses of a form, newest first (a deleted one is not listed). */

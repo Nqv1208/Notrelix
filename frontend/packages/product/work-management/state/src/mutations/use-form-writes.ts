@@ -1,6 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
+  FormDetail,
   FormQuestionChanges,
   FormWriteResult,
   NewFormQuestion,
@@ -39,6 +40,24 @@ export function useFormWrites(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient();
   const { forms } = useWorkManagementServices();
 
+  // The version of the form the screen last read. A form that is not open (the
+  // list) has none in the cache, so it is read first.
+  const versionOf = useCallback(
+    async (formId: string): Promise<number> => {
+      const key = wmQueryKeys.form(workspaceId, formId);
+      const cached = queryClient.getQueryData<FormDetail>(key);
+      if (cached) return cached.version;
+      return (
+        await queryClient.fetchQuery({
+          queryKey: key,
+          queryFn: () => forms.get(formId),
+          staleTime: 0,
+        })
+      ).version;
+    },
+    [forms, queryClient, workspaceId],
+  );
+
   const refresh = useCallback(
     (formId?: string, submissions = false) =>
       Promise.all([
@@ -59,20 +78,27 @@ export function useFormWrites(boardId: string, workspaceId: string) {
     [boardId, queryClient, workspaceId],
   );
 
+  // One write at a time: the next one reads the version the last one made.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
   const write = useCallback(
-    async (
+    (
       send: () => Promise<string | void>,
       formId?: string,
       submissions = false,
     ): Promise<FormWriteResult> => {
-      try {
-        const id = await send();
-        await refresh(formId, submissions);
-        return typeof id === "string" ? { ok: true, id } : { ok: true };
-      } catch (caught) {
-        await refresh(formId, submissions);
-        return failure(caught);
-      }
+      const attempt = async (): Promise<FormWriteResult> => {
+        try {
+          const id = await send();
+          await refresh(formId, submissions);
+          return typeof id === "string" ? { ok: true, id } : { ok: true };
+        } catch (caught) {
+          await refresh(formId, submissions);
+          return failure(caught);
+        }
+      };
+      const run = queue.current.then(attempt, attempt);
+      queue.current = run;
+      return run;
     },
     [refresh],
   );
@@ -81,21 +107,56 @@ export function useFormWrites(boardId: string, workspaceId: string) {
     () => ({
       create: (title: string) => write(() => forms.create(boardId, title)),
       updateDetails: (formId: string, title: string, description: string) =>
-        write(() => forms.updateDetails(formId, title, description), formId),
-      publish: (formId: string) => write(() => forms.publish(formId), formId),
-      close: (formId: string) => write(() => forms.close(formId), formId),
-      remove: (formId: string) => write(() => forms.remove(formId), formId),
+        write(
+          async () =>
+            forms.updateDetails(
+              formId,
+              title,
+              description,
+              await versionOf(formId),
+            ),
+          formId,
+        ),
+      publish: (formId: string) =>
+        write(
+          async () => forms.publish(formId, await versionOf(formId)),
+          formId,
+        ),
+      close: (formId: string) =>
+        write(async () => forms.close(formId, await versionOf(formId)), formId),
+      remove: (formId: string) =>
+        write(
+          async () => forms.remove(formId, await versionOf(formId)),
+          formId,
+        ),
       restore: (formId: string) => write(() => forms.restore(formId), formId),
       addQuestion: (formId: string, question: NewFormQuestion) =>
-        write(() => forms.addQuestion(formId, question), formId),
+        write(
+          async () =>
+            forms.addQuestion(formId, question, await versionOf(formId)),
+          formId,
+        ),
       updateQuestion: (
         formId: string,
         questionId: string,
         changes: FormQuestionChanges,
       ) =>
-        write(() => forms.updateQuestion(formId, questionId, changes), formId),
+        write(
+          async () =>
+            forms.updateQuestion(
+              formId,
+              questionId,
+              changes,
+              await versionOf(formId),
+            ),
+          formId,
+        ),
       removeQuestion: (formId: string, questionId: string) =>
-        write(() => forms.removeQuestion(formId, questionId), formId),
+        write(
+          async () =>
+            forms.removeQuestion(formId, questionId, await versionOf(formId)),
+          formId,
+        ),
       process: (formId: string, submissionId: string, itemId: string) =>
         write(() => forms.process(submissionId, itemId), formId, true),
       reject: (formId: string, submissionId: string, reason: string) =>
@@ -105,7 +166,7 @@ export function useFormWrites(boardId: string, workspaceId: string) {
       removeSubmission: (formId: string, submissionId: string) =>
         write(() => forms.removeSubmission(submissionId), formId, true),
     }),
-    [boardId, forms, write],
+    [boardId, forms, versionOf, write],
   );
 }
 
