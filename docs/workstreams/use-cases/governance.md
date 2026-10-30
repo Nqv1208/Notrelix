@@ -411,7 +411,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Input: Resource kind and id; subject type `User`; subject id; level Viewer, Commenter, Editor, Manager or Owner. No expiry, no deny, no condition.
 - Output: A `ResourcePermission` (Allow, priority 100); access-change record for Boards; audit `GrantResourcePermission`; `ResourcePermissionGranted` fact after commit.
 - Main flow: 1. Manager opens Share. 2. Picks a person and a level. 3. Add. 4. The person appears; they gain access on their next request.
-- No-op / rejection / concurrency / retry: Subject outside the workspace: 422 `PermissionSubjectMustBelongToWorkspace`. Level above the actor's own: refused by the grant ceiling. Same level again: no-op (no version bump, no record). Different level: changes the level (UC-GOV-D03). Retry: the unique subject-per-resource rule makes a second call a no-op. No expected version exists on this write.
+- No-op / rejection / concurrency / retry: Subject outside the workspace: 422 `PermissionSubjectMustBelongToWorkspace`. Level above the actor's own: refused by the grant ceiling. Same level again: no-op (no version bump, no record). Different level: changes the level (UC-GOV-D03). Retry: the unique subject-per-resource rule makes a second call a no-op. A level change of an existing grant must name its version (UC-GOV-D03).
 - UI states: loading, empty, validation error, permission denied, pending, conflict, success
 - Rules: [Governance §16, §19, §23.3](../../product/governance.md) GOV-006, GOV-027, GOV-021; WGREQ076-WGREQ079, WGREQ180; certification P2B-CERT-010.
 - Acceptance: Given a Manager, When they add member M as Editor, Then 201 and M can edit. Given M outside the workspace, Then 422. Given a Member, Then 403/404.
@@ -436,10 +436,10 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Capability: D Permission assignment (team spec, Governance list)
 - Actors and permission: Board or Page manager; `ManageBoardPermission` or `ManagePagePermission`
 - Preconditions: A grant exists for the subject.
-- Input: Same subject, new level.
+- Input: Same subject, new level, and the version of the grant being changed.
 - Output: Level changed; access-change record `Changed` with previous and new level; audit entry; `ResourcePermissionLevelChanged` fact.
 - Main flow: 1. Open the level menu of a row. 2. Choose a level. 3. The row updates.
-- No-op / rejection / concurrency / retry: Same level: no-op. Level above actor's: refused. Demoting the last Manager of a Board is refused (WM rule). A Guest row shows Manager disabled. Two managers changing at once: last write wins today.
+- No-op / rejection / concurrency / retry: Same level: no-op. Level above actor's: refused. Demoting the last Manager of a Board is refused (WM rule). A Guest row shows Manager disabled. Two managers changing at once: the second names a version that is gone and gets 412.
 - UI states: pending, conflict, optimistic update with rollback, permission denied
 - Rules: [Governance §21, §23.3, §30.1](../../product/governance.md) GOV-027, GOV-030; WGREQ079.
 - Acceptance: Given a grant at Viewer, When changed to Editor, Then the subject can edit. When the call fails, Then the row returns to Viewer.
@@ -453,7 +453,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Input: Resource kind, resource id, permission id.
 - Output: Grant revoked; access-change record `Removed`; audit `RevokeResourcePermission`; `ResourcePermissionRevoked` fact. Other sources (Space role, Team, Board member) still apply.
 - Main flow: 1. Open the row menu. 2. Remove access. 3. Confirm. 4. The row disappears.
-- No-op / rejection / concurrency / retry: Unknown id or id of another resource or workspace: NotFound. Already revoked: NotFound today (not a no-op). Revoking above the actor's level is refused. Removing yourself is allowed unless you are the last Manager.
+- No-op / rejection / concurrency / retry: Unknown id or id of another resource or workspace: NotFound. Already revoked: success, nothing changes. Revoking above the actor's level is refused. Removing yourself is allowed unless you are the last Manager.
 - UI states: destructive confirmation, pending, permission denied, optimistic update with rollback
 - Rules: [Governance §73](../../product/governance.md) GOV-021; WGREQ079, WGREQ149.
 - Acceptance: Given a grant, When revoked, Then DELETE returns 204 and the subject gets NotFound on the resource unless another source applies.
@@ -467,7 +467,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Input: Resource kind and id.
 - Output: The resource's grants (id, subject, level, creator, deleted flag).
 - Main flow: 1. The dialog opens. 2. The list loads.
-- No-op / rejection / concurrency / retry: A non-manager gets the counts through the sharing read (UC-GOV-D10), not this list. Unknown resource: NotFound. The list is unbounded and returns revoked rows.
+- No-op / rejection / concurrency / retry: A non-manager gets the counts through the sharing read (UC-GOV-D10), not this list. Unknown resource: NotFound. The list leaves out revoked rows and holds at most 500 entries.
 - UI states: loading, empty, permission denied, error
 - Rules: [Governance §6, §62](../../product/governance.md) GOV-001, GOV-019; WGREQ168.
 - Acceptance: Given a manager, When they GET the list, Then they see every active grant. Given a Member without management, Then denied.
