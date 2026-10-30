@@ -6,6 +6,7 @@ import {
   type CSSProperties,
   type DragEvent,
   type PointerEvent,
+  type ReactNode,
 } from "react";
 import { cn } from "@notrelix/ui-web";
 import {
@@ -74,6 +75,8 @@ export interface BoardTimelineSurfaceProps {
   onOpenItem: (id: string) => void;
   onReschedule: (item: TimelineItem, change: TimelineReschedule) => void;
   onAddItem?: () => void;
+  /** The view controls (`ViewStateBar`) the toolbar shows after "Vừa khít". */
+  viewBar?: ReactNode;
   /**
    * Creates a finish-to-start link (`to` waits for `from`). Without it the
    * chart draws no connectors.
@@ -121,6 +124,7 @@ export function BoardTimelineSurface({
   onOpenItem,
   onReschedule,
   onAddItem,
+  viewBar,
   onCreateLink,
   onRemoveLink,
   undatedItems,
@@ -551,6 +555,7 @@ export function BoardTimelineSurface({
     trayOpen: undatedItems ? trayOpen : undefined,
     canAdd: canEdit,
     onAddItem,
+    viewBar,
   };
 
   const gridLabel = fill(copy.gridLabel, {

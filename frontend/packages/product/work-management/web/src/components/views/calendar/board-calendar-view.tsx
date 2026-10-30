@@ -1,21 +1,16 @@
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
-  dropUnknownFilterIds,
   useBoardKanban,
   useBoardPlanItems,
   useCreateDatedItem,
   useUpdateCard,
 } from "@notrelix/work-management-state";
-import { type Card } from "@notrelix/work-management-core";
+import {
+  serializeCompoundFilter,
+  type Card,
+} from "@notrelix/work-management-core";
 import { ItemCreateHost } from "../../item-create/item-create-host";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
@@ -32,11 +27,11 @@ import {
 import { calendarParts } from "../../shared/item-display";
 import { useItemSheetActions } from "../../shared/use-item-sheet-actions";
 import {
+  emptyKanbanFilter,
   isKanbanCardOverdue,
-  parseKanbanFilter,
-  serializeKanbanFilter,
-  type KanbanFilterState,
 } from "../kanban/kanban-filter";
+import { useBoardViewState } from "../../filters/use-board-view-state";
+import { ViewStateBar } from "../../filters/view-state-bar";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { BoardCalendarSurface } from "./board-calendar-surface";
 import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
@@ -138,42 +133,37 @@ export function BoardCalendarView({
     },
     [onFilterChange],
   );
-  const parsedFilter = useMemo(
-    () => parseKanbanFilter(filterValue),
-    [filterValue],
-  );
+  const noLegacyFilter = useMemo(() => emptyKanbanFilter(), []);
+  const {
+    copy: filtersCopy,
+    view,
+    kanbanView,
+  } = useBoardViewState({
+    boardId,
+    workspaceId,
+    routeFilter: filterValue,
+    onRouteFilterChange: setFilterValue,
+  });
   const isOverdue = useCallback(
     (card: Card) => isKanbanCardOverdue(card, now, timeZone),
     [now, timeZone],
   );
 
   const kanban = useBoardKanban(boardId, workspaceId, {
-    filter: parsedFilter,
+    filter: noLegacyFilter,
+    view: kanbanView,
     isOverdue,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
 
-  const { board, filterChoices } = kanban;
-  // The filter as it applies: ids the board no longer has are dropped, and
-  // the route parameter is rewritten (history replace) to match.
-  const filter = useMemo(
-    () =>
-      board ? dropUnknownFilterIds(parsedFilter, filterChoices) : parsedFilter,
-    [board, parsedFilter, filterChoices],
-  );
-  useEffect(() => {
-    if (!board || filterValue === undefined) return;
-    const canonical = serializeKanbanFilter(filter);
-    if (canonical !== filterValue) {
-      setFilterValue(canonical || undefined, { replace: true });
-    }
-  }, [board, filter, filterValue, setFilterValue]);
+  const { board } = kanban;
 
   // Phases and milestones belong to nobody: any filter hides them with the
   // items it filters out, as Final-Calendar's empty state shows.
   const planItems = useBoardPlanItems(boardId, workspaceId).data?.items;
-  const shownPlanItems = serializeKanbanFilter(filter) ? undefined : planItems;
+  const shownPlanItems =
+    view.applied.filter.conditions.length > 0 ? undefined : planItems;
   const built = useMemo(
     () =>
       buildCalendarEntries({
@@ -445,23 +435,31 @@ export function BoardCalendarView({
         entries={shownEntries}
         undatedTotal={undatedTotal}
         undated={built.undated}
-        filter={filter}
         filterActive={kanban.filterActive}
-        filterOptions={{
-          statuses: [...filterChoices.statuses],
-          assignees: [...filterChoices.assignees],
-          labels: [...filterChoices.labels],
-        }}
-        onFilterChange={(next: KanbanFilterState) =>
-          setFilterValue(serializeKanbanFilter(next) || undefined)
+        onClearFilter={() =>
+          view.setFilter({ ...view.state.filter, conditions: [] })
         }
-        savedFilters={
-          <SavedFiltersControl
-            workspaceId={workspaceId}
-            boardId={boardId}
-            filter={filterValue}
-            canEdit={capabilities.canEditFields}
-            onApply={(criteria) => setFilterValue(criteria.filter || undefined)}
+        viewBar={
+          <ViewStateBar
+            canSave={capabilities.canEditFields}
+            copy={filtersCopy}
+            view={view}
+            fields={kanban.filterFields}
+            memberName={kanban.memberName}
+            people={kanban.filterChoices.assignees}
+            counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
+            now={now}
+            savedFilters={(save) => (
+              <SavedFiltersControl
+                compact
+                workspaceId={workspaceId}
+                boardId={boardId}
+                filter={serializeCompoundFilter(view.applied.filter)}
+                canEdit={capabilities.canEditFields}
+                onApply={view.applyCriteria}
+                {...save}
+              />
+            )}
           />
         }
         hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}

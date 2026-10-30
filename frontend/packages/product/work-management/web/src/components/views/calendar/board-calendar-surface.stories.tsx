@@ -8,7 +8,6 @@ import {
   calendarScenario,
   type CalendarScenario,
 } from "../../../verification/calendar-fixtures";
-import type { KanbanFilterState } from "../kanban/kanban-filter";
 import { BoardCalendarSurface } from "./board-calendar-surface";
 import type {
   CalendarDateBasis,
@@ -26,7 +25,6 @@ function CalendarStory({ scenario }: { scenario: CalendarScenario }) {
   const [dateBasis, setDateBasis] = useState<CalendarDateBasis>(
     scenario.dateBasis,
   );
-  const [filter, setFilter] = useState<KanbanFilterState>(scenario.filter);
   return (
     <div className="h-[793px] min-h-0">
       <BoardCalendarSurface
@@ -37,8 +35,7 @@ function CalendarStory({ scenario }: { scenario: CalendarScenario }) {
         onAnchorChange={setAnchorDay}
         dateBasis={dateBasis}
         onDateBasisChange={setDateBasis}
-        filter={filter}
-        onFilterChange={setFilter}
+        onClearFilter={() => undefined}
         onOpenItem={() => undefined}
         onReschedule={() => undefined}
         onSetDue={() => undefined}

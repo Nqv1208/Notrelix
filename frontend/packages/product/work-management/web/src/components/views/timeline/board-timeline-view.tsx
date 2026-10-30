@@ -1,4 +1,4 @@
-import { useContext, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -7,7 +7,11 @@ import {
   useTimelineDependencies,
   useUpdateCard,
 } from "@notrelix/work-management-state";
-import type { Card, WorkStatusCategory } from "@notrelix/work-management-core";
+import {
+  serializeCompoundFilter,
+  type Card,
+  type WorkStatusCategory,
+} from "@notrelix/work-management-core";
 import { ItemCreateHost } from "../../item-create/item-create-host";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
@@ -25,6 +29,9 @@ import {
   zonedInstant,
 } from "../calendar/calendar-entries";
 import { toDayKey, type DayKey } from "../calendar/calendar-model";
+import { useBoardViewState } from "../../filters/use-board-view-state";
+import { ViewStateBar } from "../../filters/view-state-bar";
+import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { emptyKanbanFilter } from "../kanban/kanban-filter";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
@@ -58,6 +65,12 @@ export interface BoardTimelineViewProps {
   ) => void;
   /** The signed-in member (from the host's session): offers "Giao cho tôi". */
   currentUserId?: string | null;
+  /** The route `filter` parameter (compound or older facet form), shared with the other views. */
+  filter?: string | undefined;
+  onFilterChange?: (
+    value: string | undefined,
+    options?: { replace?: boolean },
+  ) => void;
   /** Switches the board to the Calendar, where an item gets its first date. */
   onOpenCalendar?: () => void;
   /** The IANA time zone of the days; the runtime zone when omitted. */
@@ -99,6 +112,8 @@ export function BoardTimelineView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  filter: filterParam,
+  onFilterChange,
   onOpenCalendar,
   timeZone: timeZoneProp,
   now: nowProp,
@@ -116,9 +131,29 @@ export function BoardTimelineView({
   const [anchorDay, setAnchorDay] = useState<DayKey>(today);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const filter = useMemo(() => emptyKanbanFilter(), []);
+  const [localFilter, setLocalFilter] = useState<string | undefined>();
+  const filterValue = onFilterChange ? filterParam : localFilter;
+  const setFilterValue = useCallback(
+    (value: string | undefined, options?: { replace?: boolean }) => {
+      if (onFilterChange) onFilterChange(value, options);
+      else setLocalFilter(value);
+    },
+    [onFilterChange],
+  );
+  const noLegacyFilter = useMemo(() => emptyKanbanFilter(), []);
+  const {
+    copy: filtersCopy,
+    view,
+    kanbanView,
+  } = useBoardViewState({
+    boardId,
+    workspaceId,
+    routeFilter: filterValue,
+    onRouteFilterChange: setFilterValue,
+  });
   const kanban = useBoardKanban(boardId, workspaceId, {
-    filter,
+    filter: noLegacyFilter,
+    view: kanbanView,
     isOverdue: NEVER_OVERDUE,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
@@ -130,6 +165,7 @@ export function BoardTimelineView({
   const planQuery = useBoardPlanItems(boardId, workspaceId);
   const plan = planQuery.data;
   const { board } = kanban;
+  const filtered = view.applied.filter.conditions.length > 0;
   const { groups, undated, cardsById, links } = useMemo(() => {
     // An item with no start day is listed only when a dependency names it;
     // one with a due day alone belongs to the Calendar.
@@ -139,7 +175,7 @@ export function BoardTimelineView({
     const byId = new Map<string, Card>();
     const byGroup = new Map<string, TimelineItem[]>();
     const undatedItems: TimelineUndated[] = [];
-    for (const lane of kanban.allLanes) {
+    for (const lane of kanban.lanes) {
       const tone = toneOf(lane.category);
       for (const card of lane.cards) {
         byId.set(card.id, card);
@@ -182,7 +218,9 @@ export function BoardTimelineView({
     }
     const dayKeyOf = (item: TimelineItem) => item.startDay ?? item.dueDay ?? "";
     const markers = new Map<string, { index: number; item: TimelineItem }[]>();
-    for (const marker of plan?.items ?? []) {
+    // Phases and milestones belong to nobody: any filter hides them with the
+    // items it filters out.
+    for (const marker of filtered ? [] : (plan?.items ?? [])) {
       const list = markers.get(marker.groupId) ?? [];
       list.push({
         index: marker.index,
@@ -233,7 +271,7 @@ export function BoardTimelineView({
       cardsById: byId,
       links: shownLinks,
     };
-  }, [kanban.allLanes, kanban.groups, timeZone, plan]);
+  }, [kanban.lanes, kanban.groups, timeZone, plan, filtered]);
 
   const handleReschedule = (
     item: TimelineItem,
@@ -421,6 +459,29 @@ export function BoardTimelineView({
         onOpenItem={(id) => onSelectedItemChange?.(id)}
         onReschedule={handleReschedule}
         onAddItem={() => setCreateOpen(true)}
+        viewBar={
+          <ViewStateBar
+            canSave={capabilities.canEditFields}
+            copy={filtersCopy}
+            view={view}
+            fields={kanban.filterFields}
+            memberName={kanban.memberName}
+            people={kanban.filterChoices.assignees}
+            counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
+            now={now}
+            savedFilters={(save) => (
+              <SavedFiltersControl
+                compact
+                workspaceId={workspaceId}
+                boardId={boardId}
+                filter={serializeCompoundFilter(view.applied.filter)}
+                canEdit={capabilities.canEditFields}
+                onApply={view.applyCriteria}
+                {...save}
+              />
+            )}
+          />
+        }
       />
       {board && capabilities.canCreateCard ? (
         <ItemCreateHost

@@ -181,6 +181,8 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             selectedItemId={kanbanParams?.selectedItemId}
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            filter={kanbanParams?.filter}
+            onFilterChange={kanbanParams?.onFilterChange}
             currentUserId={currentUserId}
             onOpenCalendar={onOpenCalendar}
           />
