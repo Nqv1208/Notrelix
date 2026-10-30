@@ -133,7 +133,7 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
   return (
     <div className="relative z-[6] flex h-14 flex-none items-center gap-1.5 border-b border-line bg-popover pr-1 pl-3 md:pr-3 md:pl-4">
       {mode === "create" ? (
-        <span className="mr-1 text-[13.5px] text-muted-foreground">
+        <span className="pr-2 text-[12.5px] text-meta-foreground">
           {t.groupPickerCreate}
         </span>
       ) : null}

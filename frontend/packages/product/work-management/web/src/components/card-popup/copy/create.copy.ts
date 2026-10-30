@@ -5,8 +5,8 @@ export const en = {
   cancel: "Cancel",
   submit: "Create card",
   submitting: "Creating…",
-  submittingNote:
-    "Creating the card, sent once. Pressing again will not create a second card.",
+  submittingNote: "Creating the card, sent once.",
+  submittingNoteMore: "Pressing again will not create a second card.",
   nameRequired: "A card needs a name",
   created: "Card created",
   createdIn: "Created {{key}} in {{group}}",
@@ -68,8 +68,8 @@ export const vi: CreateCopy = {
   cancel: "Huỷ",
   submit: "Tạo thẻ",
   submitting: "Đang tạo…",
-  submittingNote:
-    "Đang tạo thẻ, chỉ gửi một lần. Bấm lại cũng không tạo thẻ thứ hai.",
+  submittingNote: "Đang tạo thẻ, chỉ gửi một lần.",
+  submittingNoteMore: "Bấm lại cũng không tạo thẻ thứ hai.",
   nameRequired: "Thẻ cần có tên",
   created: "Đã tạo thẻ",
   createdIn: "Đã tạo {{key}} trong {{group}}",

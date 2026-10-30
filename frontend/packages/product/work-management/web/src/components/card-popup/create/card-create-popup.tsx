@@ -6,6 +6,7 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogTitle,
+  cn,
 } from "@notrelix/ui-web";
 import {
   useCreateItemWithDetails,
@@ -27,7 +28,7 @@ const FULL: TaskDetailCapabilities = {
   canRenameGroup: false,
   canDelete: false,
   canEditFields: true,
-  canComment: false,
+  canComment: true,
 };
 
 /** `YYYY-MM-DD` as the instant that day starts in UTC (the backend keeps UTC days). */
@@ -130,6 +131,7 @@ function CreateBody({
   const [attempted, setAttempted] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const attempt = useRef<{ key: string; signature: string } | null>(null);
+  const sending = useRef(false);
   const pending = create.isPending;
   const blank = d.draft.title.trim() === "";
 
@@ -185,7 +187,7 @@ function CreateBody({
   };
 
   function submit() {
-    if (pending) return;
+    if (pending || sending.current) return;
     if (blank) {
       setAttempted(true);
       return;
@@ -198,7 +200,11 @@ function CreateBody({
     });
     if (attempt.current?.signature !== signature)
       attempt.current = { key: crypto.randomUUID(), signature };
+    sending.current = true;
     create.mutate(d.toInput(attempt.current.key), {
+      onSettled: () => {
+        sending.current = false;
+      },
       onSuccess: ({ failed: missing, itemId }) => {
         attempt.current = null;
         void onCreated?.({ boardId: board.id, itemId });
@@ -224,24 +230,26 @@ function CreateBody({
   }
 
   const footer = (
-    <div className="relative z-[5] flex flex-none items-center gap-2.5 border-t border-line bg-popover px-6 py-3">
+    <div className="relative z-[5] flex flex-none items-center gap-2.5 border-t border-line bg-popover px-6 py-3 max-md:flex-col max-md:items-stretch max-md:gap-2 max-md:px-4">
       {pending ? (
         <span className="inline-flex items-center gap-1.5 text-[12.5px] text-meta-foreground">
           <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
           {t.submittingNote}
+          <span className="max-md:hidden">{t.submittingNoteMore}</span>
         </span>
       ) : (
         <>
           {hideAnother ? null : (
-            <label className="inline-flex min-h-9 items-center gap-[9px] text-[13.5px]">
+            <label className="inline-flex min-h-9 items-center gap-[9px] text-[13.5px] max-md:min-h-11">
               <input
                 type="checkbox"
+                aria-label={t.another}
                 checked={another}
                 onChange={(event) => setAnother(event.target.checked)}
                 className="m-0 size-[18px] shrink-0 accent-primary"
               />
               {t.another}
-              <span className="text-[12.5px] text-meta-foreground">
+              <span className="text-[12.5px] text-meta-foreground max-md:hidden">
                 {t.anotherKept}
               </span>
             </label>
@@ -256,26 +264,35 @@ function CreateBody({
           ) : null}
         </>
       )}
-      <span className="flex-1" />
-      <PanelBtn disabled={pending} onClick={requestClose}>
-        {t.cancel}
-      </PanelBtn>
-      <PanelBtn
-        variant="primary"
-        aria-disabled={pending || blank || undefined}
-        aria-busy={pending || undefined}
-        className={pending || blank ? "opacity-55" : undefined}
-        onClick={submit}
-      >
-        {pending ? (
-          <>
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            {t.submitting}
-          </>
-        ) : (
-          (submitLabel ?? t.submit)
-        )}
-      </PanelBtn>
+      <span className="flex-1 max-md:hidden" />
+      <div className="flex gap-2.5 max-md:gap-2">
+        <PanelBtn
+          className="max-md:h-11"
+          disabled={pending}
+          onClick={requestClose}
+        >
+          {t.cancel}
+        </PanelBtn>
+        <PanelBtn
+          variant="primary"
+          aria-disabled={pending || blank || undefined}
+          aria-busy={pending || undefined}
+          className={cn(
+            "max-md:h-11 max-md:flex-1",
+            (pending || blank) && "opacity-55",
+          )}
+          onClick={submit}
+        >
+          {pending ? (
+            <>
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              {t.submitting}
+            </>
+          ) : (
+            (submitLabel ?? t.submit)
+          )}
+        </PanelBtn>
+      </div>
     </div>
   );
 
