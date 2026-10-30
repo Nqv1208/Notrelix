@@ -1,0 +1,104 @@
+import { createContext, useContext, type ReactNode } from "react";
+import type { Board, CardDetail } from "@notrelix/work-management-core";
+import type {
+  ItemSheetGroup,
+  TaskDetailCallbacks,
+  TaskDetailCapabilities,
+  TaskDetailData,
+} from "../card-detail/task-detail-types";
+import type { findItemFields } from "../card-detail/item-field-editors";
+import type { CardPopupCopy } from "./card-popup.copy";
+
+export type CardPopupMode = "view" | "create";
+
+/** Why every write is off: a viewer without the right, or an archived board. */
+export type CardPopupReadOnly = "permission" | "archived" | null;
+
+/** The state of one field's save: the chip row and the sections show it in place. */
+export type FieldSave =
+  | { readonly status: "saving" }
+  | { readonly status: "error"; readonly retry: () => void };
+
+/** The pickers the quick row and the "+ Thêm" menu open. */
+export type CardPopupPicker =
+  "labels" | "dates" | "checklist" | "assignees" | "attach" | "fields" | "add";
+
+/**
+ * Mount slots for capabilities another part of the product fills in: each is
+ * rendered where the artboard puts it and is absent until a capability plugs in.
+ */
+export interface CardPopupSlots {
+  /** The cover control of the header (the picture button and its panel). */
+  readonly cover?: ReactNode;
+  /** The banner image above the title row. */
+  readonly coverBanner?: ReactNode;
+  /** "Lặp lại" row of the dates panel. */
+  readonly repeat?: ReactNode;
+  /** "Nhắc trước hạn" row of the dates panel. */
+  readonly reminder?: ReactNode;
+  /** Extra chips of the chip row (vote, viewers). */
+  readonly chips?: ReactNode;
+  /** Colour-blind marks of the label picker. */
+  readonly labelMarks?: ReactNode;
+  /** Extra entries of the checklist menu ("Chép mục từ checklist khác"). */
+  readonly checklistExtras?: ReactNode;
+  /** Extra entries of the links section ("Gỡ tất cả liên kết"). */
+  readonly linksExtras?: ReactNode;
+}
+
+/** Writes the popup needs beyond the sheet's callbacks; absent: the control is off. */
+export interface CardPopupActions {
+  /** Moves the card to another column of the board (MoveBoardItem). */
+  readonly moveToGroup?: (groupId: string) => void;
+  /** Renames or recolours a board label (UpdateLabel); resolves false when refused. */
+  readonly updateLabel?: (
+    labelId: string,
+    patch: { readonly name?: string; readonly color?: string },
+  ) => Promise<boolean>;
+  /** Attaches a web link (CreateBoardItemAttachment with a URL). */
+  readonly addWebLink?: (url: string, name: string) => Promise<boolean>;
+  /** Links a Documents page to the card (LinkPageToBoardItem). */
+  readonly linkPage?: (pageId: string) => Promise<boolean>;
+}
+
+export interface CardPopupModel {
+  readonly mode: CardPopupMode;
+  readonly board: Board;
+  /** The card; in create mode the draft shaped as a card. */
+  readonly card: CardDetail;
+  readonly capabilities: TaskDetailCapabilities;
+  readonly readOnly: CardPopupReadOnly;
+  readonly data: TaskDetailData;
+  readonly callbacks: TaskDetailCallbacks;
+  readonly actions: CardPopupActions;
+  readonly groups: readonly ItemSheetGroup[];
+  readonly fields: ReturnType<typeof findItemFields>;
+  readonly copy: CardPopupCopy;
+  readonly now: Date;
+  readonly timeZone?: string;
+  readonly slots: CardPopupSlots;
+  /** Per-field save state by field key ("title", "description", a field id). */
+  readonly saves: Readonly<Record<string, FieldSave | undefined>>;
+  /** Runs a write and tracks it under `key`; a failure keeps `retry`. */
+  readonly track: (key: string, run: () => Promise<unknown>) => void;
+  /** The open picker; null: none. */
+  readonly picker: CardPopupPicker | null;
+  readonly openPicker: (picker: CardPopupPicker | null) => void;
+}
+
+const CardPopupContext = createContext<CardPopupModel | null>(null);
+
+export const CardPopupProvider = CardPopupContext.Provider;
+
+/** The popup model; every part of the popup reads its card, words and writes here. */
+export function useCardPopup(): CardPopupModel {
+  const model = useContext(CardPopupContext);
+  if (!model) throw new Error("useCardPopup needs a CardPopupProvider");
+  return model;
+}
+
+/** Whether a property may be edited right now. */
+export function useCanEdit(): boolean {
+  const { readOnly, capabilities } = useCardPopup();
+  return readOnly === null && capabilities.canEditFields;
+}

@@ -69,6 +69,7 @@ import { KanbanBulkBar } from "./kanban-bulk-bar";
 import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
+import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneDrop } from "./kanban-dnd";
@@ -1195,33 +1196,48 @@ export function KanbanSelectedItem({
   onRestoreFocus,
   ...rest
 }: SelectedItemProps) {
-  const { card, error } = useCard(cardId, board.workspaceId);
-  const notFound =
-    Boolean(error) ||
+  const { card, error, isLoading, refetch } = useCard(
+    cardId,
+    board.workspaceId,
+  );
+  // A card that is gone, moved to another board, or not for this viewer reads
+  // the same: one generic message, nothing about what or why.
+  const kind = (error as { kind?: string } | null)?.kind;
+  const gone =
+    kind === "not_found" ||
+    kind === "forbidden" ||
     (card !== undefined &&
       (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+  const failed = Boolean(error) && !gone;
   const lastShown = useRef<CardDetail | null>(null);
-  if (card && !notFound) lastShown.current = card;
-  const shown = notFound ? null : (card ?? lastShown.current);
+  if (card && !gone) lastShown.current = card;
+  const shown = gone
+    ? null
+    : failed && !card
+      ? null
+      : (card ?? lastShown.current);
+  const restore = (event: Event) => {
+    event.preventDefault();
+    onRestoreFocus(lastShown.current?.id ?? cardId);
+  };
 
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
-  useEffect(() => {
-    if (notFound) onCloseRef.current();
-  }, [notFound, cardId]);
-
-  if (!shown) return null;
+  if (!shown)
+    return (
+      <CardPopupSurface
+        status={
+          gone ? "gone" : failed ? "error" : isLoading ? "loading" : "loading"
+        }
+        onClose={onClose}
+        onRetry={refetch}
+        onCloseAutoFocus={restore}
+      />
+    );
   return (
     <KanbanSelectedItemReady
       board={board}
       card={shown}
       onClose={onClose}
-      onCloseAutoFocus={(event) => {
-        event.preventDefault();
-        onRestoreFocus(lastShown.current?.id ?? cardId);
-      }}
+      onCloseAutoFocus={restore}
       {...rest}
     />
   );
@@ -1231,7 +1247,6 @@ function KanbanSelectedItemReady({
   board,
   card,
   capabilities: boardCapabilitiesOfViewer,
-  departmentMark,
   groups,
   linkCandidates,
   onClose,
@@ -1292,7 +1307,6 @@ function KanbanSelectedItemReady({
         board={board}
         card={card}
         capabilities={capabilities}
-        departmentMark={departmentMark}
         groups={groups}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{

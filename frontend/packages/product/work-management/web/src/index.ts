@@ -138,6 +138,7 @@ export * from "./components/card-detail/task-activity-tab";
 export * from "./components/card-detail/task-updates-tab";
 export * from "./components/card-detail/update-composer";
 export { itemSheetCatalog } from "./components/card-detail/item-sheet.catalog";
+export { cardPopupCatalog } from "./components/card-popup/card-popup.catalog";
 export { itemChecklistsCatalog } from "./components/checklists/item-checklists.catalog";
 export {
   itemSheetCopy,
