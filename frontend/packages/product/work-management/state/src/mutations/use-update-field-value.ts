@@ -36,6 +36,22 @@ interface FieldValueWriter {
 }
 
 /**
+ * Formula and Rollup results of a card whose source value was just written:
+ * kept as shown but `stale` until the board read comes back with the new result.
+ */
+function markComputedStale(
+  computed: Card["computedValues"],
+): Card["computedValues"] {
+  if (!computed) return computed;
+  return Object.fromEntries(
+    Object.entries(computed).map(([id, value]) => [
+      id,
+      value.state === "ok" ? { state: "stale", value: value.value } : value,
+    ]),
+  );
+}
+
+/**
  * A card with one field value changed, keeping the card's derived fields in
  * step: Status (lane), priority word, due date and assignees.
  */
@@ -52,11 +68,16 @@ export function applyFieldValue<T extends Card>(
   const priorityField = findPriorityField(fields);
   const isStatus = field !== undefined && field.id === statusField?.id;
   const isPriority = field !== undefined && field.id === priorityField?.id;
+  // Only the item's own Due (first Date field) and Assignee (first Person field)
+  // move its due date and members; a custom Date or Person field is a plain value.
   const isDue =
-    field?.fieldType === "date" ||
+    (field !== undefined &&
+      field.id === fields.find((entry) => entry.fieldType === "date")?.id) ||
     payload.fieldDefinitionId.endsWith("field-due-date");
   const memberIds =
-    field?.fieldType === "person" && Array.isArray(payload.value)
+    field !== undefined &&
+    field.id === fields.find((entry) => entry.fieldType === "person")?.id &&
+    Array.isArray(payload.value)
       ? (payload.value as string[])
       : undefined;
 
@@ -93,6 +114,7 @@ export function applyFieldValue<T extends Card>(
       ...base.fieldValues,
       [payload.fieldDefinitionId]: payload.value,
     },
+    computedValues: markComputedStale(base.computedValues),
     updatedAt: new Date().toISOString(),
   };
 }

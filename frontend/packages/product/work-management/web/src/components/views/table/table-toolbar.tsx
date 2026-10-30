@@ -11,13 +11,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notrelix/ui-web";
-import type { TableDensity, TableSort } from "@notrelix/work-management-core";
+import type {
+  FieldDefinition,
+  TableDensity,
+  TableSort,
+} from "@notrelix/work-management-core";
 import {
   kanbanPillClass,
   kanbanPrimaryButtonClass,
 } from "../kanban/kanban-chrome";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
-import { TABLE_COLUMNS, visibleTableColumns } from "./table-columns";
+import {
+  allTableColumns,
+  moveColumnId,
+  visibleTableColumns,
+} from "./table-columns";
 
 export interface MainTableToolbarProps {
   copy: MainTableCopy;
@@ -30,6 +38,11 @@ export interface MainTableToolbarProps {
   viewBar: ReactNode;
   /** The effective sort the table header marks: the member's first level, else the shared view's. */
   sort: TableSort | null;
+  /** Custom fields shown as columns (hide, order and width apply to them like the built-in ones). */
+  customFields?: readonly FieldDefinition[];
+  /** The column order in effect (personal, else the shared view's); empty = the default order. */
+  columnOrder?: readonly string[];
+  onColumnOrderChange?: (order: string[]) => void;
   hiddenColumnIds: readonly string[];
   onColumnVisibleChange: (columnId: string, visible: boolean) => void;
   density: TableDensity;
@@ -79,6 +92,9 @@ export function MainTableToolbar({
   hideDone,
   onShowDone,
   viewBar,
+  customFields = [],
+  columnOrder = [],
+  onColumnOrderChange,
   hiddenColumnIds,
   onColumnVisibleChange,
   density,
@@ -87,7 +103,15 @@ export function MainTableToolbar({
   onAddItem,
 }: MainTableToolbarProps) {
   const t = copy.toolbar;
-  const shownColumns = visibleTableColumns(hiddenColumnIds).length;
+  const columnName = (column: ReturnType<typeof allTableColumns>[number]) =>
+    column.field?.name ?? copy.columns[column.id as keyof typeof copy.columns];
+  const shownColumns = visibleTableColumns(
+    hiddenColumnIds,
+    customFields,
+    columnOrder,
+  ).length;
+  // The menu lists the columns in their display order.
+  const orderedColumns = visibleTableColumns([], customFields, columnOrder);
 
   return (
     <div
@@ -124,7 +148,7 @@ export function MainTableToolbar({
             <Columns3 className="size-4" aria-hidden="true" />
             {t.columns.label}{" "}
             <b className="font-semibold leading-[1.45] text-foreground">
-              {shownColumns}/{TABLE_COLUMNS.length}
+              {shownColumns}/{orderedColumns.length}
             </b>
           </Button>
         </DropdownMenuTrigger>
@@ -132,19 +156,43 @@ export function MainTableToolbar({
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t.columns.heading}
           </DropdownMenuLabel>
-          {TABLE_COLUMNS.map((column) => (
+          {orderedColumns.map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
               checked={column.locked || !hiddenColumnIds.includes(column.id)}
               disabled={column.locked}
+              aria-keyshortcuts={
+                column.locked ? undefined : "Alt+ArrowUp Alt+ArrowDown"
+              }
               onCheckedChange={(checked) =>
                 onColumnVisibleChange(column.id, Boolean(checked))
               }
               onSelect={(event) => event.preventDefault()}
+              onKeyDown={(event) => {
+                // Alt+Up / Alt+Down move the column; the order is saved in the view.
+                if (
+                  !event.altKey ||
+                  (event.key !== "ArrowUp" && event.key !== "ArrowDown")
+                )
+                  return;
+                event.preventDefault();
+                const ids = orderedColumns
+                  .filter((entry) => entry.id !== "key" && entry.id !== "title")
+                  .map((entry) => entry.id);
+                const next = moveColumnId(
+                  ids,
+                  column.id,
+                  event.key === "ArrowUp" ? -1 : 1,
+                );
+                if (next) onColumnOrderChange?.(next);
+              }}
             >
-              {copy.columns[column.id]}
+              {columnName(column)}
             </DropdownMenuCheckboxItem>
           ))}
+          <p className="m-0 px-2 pt-1.5 pb-1 text-crumb text-meta-foreground">
+            {t.columns.reorderHint}
+          </p>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t.columns.density}

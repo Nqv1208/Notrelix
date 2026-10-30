@@ -28,6 +28,7 @@ export * from "./utils/status-lanes";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
 export * from "./utils/table-projection";
+export * from "./utils/table-fields";
 export * from "./utils/person-initials";
 export * from "./utils/item-file-rules";
 export * from "./utils/move-preview";

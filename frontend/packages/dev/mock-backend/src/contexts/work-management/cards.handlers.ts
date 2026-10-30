@@ -43,6 +43,7 @@
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
 
+import { projectComputedValues } from "../../state/mock-computed-values";
 import type {
   CardDtoApi,
   ChecklistDtoApi,
@@ -250,6 +251,10 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
     ...{
+      computedValues: projectComputedValues(
+        store.getColumns(c.boardId),
+        fieldValues,
+      ),
       name: c.title,
       groupId: c.listId,
       isArchived: c.isArchived === true,
@@ -730,6 +735,14 @@ export const cardsOperations = [
     route: "/board-items/:id/values/:fieldId",
     async handle({ params, body, store }) {
       const data = body as { value: unknown };
+      const target = store.getCard(params.id)?.boardId
+        ? store
+            .getColumns(store.getCard(params.id)!.boardId)
+            .find((column) => column.id === (params as any).fieldId)
+        : undefined;
+      // A Formula is evaluated by the backend and never written.
+      if (target?.fieldType === "formula")
+        return badRequest({ value: ["Cannot write a computed field."] });
       const updated = store.updateFieldValue(
         params.id,
         (params as any).fieldId,

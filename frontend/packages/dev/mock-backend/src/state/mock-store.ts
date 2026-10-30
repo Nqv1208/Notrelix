@@ -104,8 +104,12 @@ import {
   ERP_EXTRA_COMMENTS,
   ERP_HISTORY,
   ERP_ITEM_CREATED,
+  ERP_DOUBLE_COLUMN_ID,
+  ERP_LINK_COLUMN_ID,
   ERP_MODULE_COLUMN_ID,
   ERP_MODULE_OPTIONS,
+  ERP_NOTE_COLUMN_ID,
+  ERP_POINTS_COLUMN_ID,
   ERP_RELATED_LINKS,
   ERP_REQUESTER_COLUMN_ID,
   ERP_REQUESTER_OPTIONS,
@@ -1210,6 +1214,35 @@ export class MockStore {
           position: `a${String(index).padStart(4, "0")}`,
         }),
       ),
+    });
+    this.insertColumn({
+      id: ERP_NOTE_COLUMN_ID,
+      boardId,
+      name: "Ghi chú",
+      fieldType: "long_text",
+      position: 7,
+    });
+    this.insertColumn({
+      id: ERP_LINK_COLUMN_ID,
+      boardId,
+      name: "Liên kết",
+      fieldType: "link",
+      position: 8,
+    });
+    this.insertColumn({
+      id: ERP_POINTS_COLUMN_ID,
+      boardId,
+      name: "Điểm",
+      fieldType: "number",
+      position: 9,
+    });
+    this.insertColumn({
+      id: ERP_DOUBLE_COLUMN_ID,
+      boardId,
+      name: "Điểm gấp đôi",
+      fieldType: "formula",
+      settings: JSON.stringify({ expression: "[Điểm] * 2" }),
+      position: 10,
     });
     this.settings.set(
       boardId,
@@ -3019,10 +3052,10 @@ export class MockStore {
     const field = this.getColumns(card.boardId).find(
       (column) => column.id === fieldDefinitionId,
     );
-    if (
-      (field?.fieldType === "user" || field?.fieldType === "person") &&
-      Array.isArray(value)
-    ) {
+    const assigneeField = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "user" || column.fieldType === "person",
+    );
+    if (field && field.id === assigneeField?.id && Array.isArray(value)) {
       this.cardsById.set(cardId, {
         ...card,
         assigneeUserIds: value.filter(

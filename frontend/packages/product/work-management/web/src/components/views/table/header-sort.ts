@@ -6,7 +6,11 @@ import type {
 } from "@notrelix/work-management-core";
 
 /** The table column a sort field orders; none for a custom field the table has no column for. */
-function columnOf(field: FilterField): TableSortKey | null {
+function columnOf(
+  field: FilterField,
+  customColumnIds: ReadonlySet<string>,
+): TableSortKey | (string & {}) | null {
+  if (customColumnIds.has(field.id)) return field.id;
   if (field.id === "$title") return "title";
   if (field.id === "$label") return "label";
   if (field.id === "$assignee") return "assignee";
@@ -22,8 +26,9 @@ function columnOf(field: FilterField): TableSortKey | null {
 export function headerSortOf(
   level: SortLevel,
   fields: readonly FilterField[],
+  customColumnIds: ReadonlySet<string> = new Set(),
 ): TableSort | null {
   const field = fields.find((f) => f.id === level.fieldId);
-  const key = field ? columnOf(field) : null;
+  const key = field ? columnOf(field, customColumnIds) : null;
   return key ? { key, direction: level.direction } : null;
 }

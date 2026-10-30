@@ -24,6 +24,7 @@ import type { TableGroupMenuModel } from "./table-group-menu";
 import { TableHeaderRow } from "./table-header-row";
 import type { TableGroupModel, TableStatusOption } from "./table-model";
 import type { TableEditors } from "./table-cell-editors";
+import type { TableFieldEditing } from "./table-field-cell";
 import { TableRow } from "./table-row";
 import { TableEmpty, TableFooter, TableNoResults } from "./table-states";
 import { MainTableToolbar, type MainTableToolbarProps } from "./table-toolbar";
@@ -49,6 +50,8 @@ export interface MainTableSurfaceProps {
   canEdit: boolean;
   /** In-place editors of assignee, due date and priority; absent = read-only. */
   editors?: TableEditors;
+  /** Editing of the custom field columns; absent = they show values only. */
+  fieldEditing?: TableFieldEditing;
   /** Saves a row's title typed in place; absent = titles are read-only here. */
   onRename?: (rowId: string, title: string) => void;
   /** The viewer may add items. */
@@ -144,6 +147,7 @@ export function MainTableSurface({
   openItemId,
   canEdit,
   editors,
+  fieldEditing,
   onRename,
   canCreate,
   onOpenCreateDialog,
@@ -180,7 +184,11 @@ export function MainTableSurface({
   initialEditing,
 }: MainTableSurfaceProps) {
   const { copy } = toolbar;
-  const columns = visibleTableColumns(toolbar.hiddenColumnIds);
+  const columns = visibleTableColumns(
+    toolbar.hiddenColumnIds,
+    toolbar.customFields,
+    toolbar.columnOrder,
+  );
   const [editingId, setEditingId] = useState<string | null>(
     initialEditing?.rowId ?? null,
   );
@@ -334,6 +342,7 @@ export function MainTableSurface({
             sort={toolbar.sort}
             allChecked={allChecked}
             canSelect={allRowIds.length > 0}
+            canEditFields={canEdit && Boolean(fieldEditing?.canEdit)}
             onToggleAll={onSelectAllChange}
             onWidthPreview={(id, width) =>
               setPreview(width === null ? null : { id, width })
@@ -376,6 +385,7 @@ export function MainTableSurface({
                           tabStop={tabStop === row.id}
                           canEdit={canEdit}
                           editors={editors}
+                          fieldEditing={fieldEditing}
                           onRename={
                             onRename
                               ? (title) => onRename(row.id, title)
