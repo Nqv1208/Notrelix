@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import {
   createSpacesService,
   type CreateSpaceInput,
@@ -18,6 +19,12 @@ import { workspaceQueryKeys } from "../../../query/keys";
 interface SpaceMutationDeps {
   api: SpacesApiClient;
   endpoints: SpacesEndpoints;
+}
+
+/** A Space write that carries the Space version the person last read. */
+export interface SpaceVersionedWrite {
+  readonly spaceId: string;
+  readonly expectedVersion: number;
 }
 
 export interface SpaceMemberWrite {
@@ -50,10 +57,20 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
       await refreshTree();
     };
 
+    // One key per create the person asked for: a retry of the same input reuses it, so the producer
+    // answers with the Space the first attempt made; a changed input is a new request.
+    const attempt = useRef<{ signature: string; key: string } | null>(null);
     const create = useMutation({
-      mutationFn: (input: CreateSpaceInput) =>
-        service.create(workspaceId, input),
+      mutationFn: (input: CreateSpaceInput) => {
+        const signature = JSON.stringify([workspaceId, input]);
+        if (attempt.current?.signature !== signature)
+          attempt.current = { signature, key: crypto.randomUUID() };
+        return service.create(workspaceId, input, attempt.current.key);
+      },
       retry: false,
+      onSuccess: () => {
+        attempt.current = null;
+      },
       onSettled: refreshTree,
     });
 
@@ -82,21 +99,24 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
     const updateDetails = useMutation({
       mutationFn: ({
         spaceId,
+        expectedVersion,
         ...input
-      }: SpaceDetailsInput & { readonly spaceId: string }) =>
-        service.updateDetails(workspaceId, spaceId, input),
+      }: SpaceDetailsInput & SpaceVersionedWrite) =>
+        service.updateDetails(workspaceId, spaceId, input, expectedVersion),
       retry: false,
       onSettled: refreshTree,
     });
 
     const archive = useMutation({
-      mutationFn: (spaceId: string) => service.archive(workspaceId, spaceId),
+      mutationFn: ({ spaceId, expectedVersion }: SpaceVersionedWrite) =>
+        service.archive(workspaceId, spaceId, expectedVersion),
       retry: false,
       onSettled: refreshTree,
     });
 
     const unarchive = useMutation({
-      mutationFn: (spaceId: string) => service.unarchive(workspaceId, spaceId),
+      mutationFn: ({ spaceId, expectedVersion }: SpaceVersionedWrite) =>
+        service.unarchive(workspaceId, spaceId, expectedVersion),
       retry: false,
       onSettled: refreshTree,
     });

@@ -567,7 +567,13 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const board = listed.find((b) => b.id === boardId)!;
     expect(board.spaceId).toBe(id);
     // A Space with a placed Board cannot be archived (WSP-022).
-    await expect(spaces.archive(workspaceId, id!)).rejects.toMatchObject({
+    await expect(
+      spaces.archive(
+        workspaceId,
+        id!,
+        (await spaces.getTree(workspaceId)).find((s) => s.id === id)!.version,
+      ),
+    ).rejects.toMatchObject({
       status: 400,
     });
     await expect(
@@ -609,7 +615,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const moved = (await spaces.getTree(workspaceId)).find((s) => s.id === id)!;
     expect(moved.parentId).toBe(mockIds.spaces.engineering);
     // The now-empty Space archives.
-    await spaces.archive(workspaceId, id!);
+    await spaces.archive(workspaceId, id!, moved.version);
 
     // A guest sees only what Space access gives them, with placement masked.
     const guest = new MockStore({ ...store.getConfig(), persona: "viewer" });

@@ -185,6 +185,22 @@ export function createOnboardingApi(api: OnboardingApiClient) {
     );
     return account;
   };
+  /** Every page of the caller's Space tree, 200 Spaces per request. */
+  async function readSpaceTree(workspaceId: string) {
+    const nodes: NonNullable<SpaceTreeOutput["items"]> = [];
+    let cursor: string | null = null;
+    do {
+      const query: string = `limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const page: SpaceTreeOutput = await api.get<SpaceTreeOutput>(
+        `${endpoints.workspaces.spaceTree(workspaceId)}?${query}`,
+        QUIET,
+      );
+      nodes.push(...(page.items ?? []));
+      cursor = page.nextCursor ?? null;
+    } while (cursor);
+    return nodes;
+  }
+
   return {
     async slugCheck(slug: string): Promise<SlugCheckDto> {
       const checked = await api.get<SlugCheckOutput>(
@@ -335,10 +351,7 @@ export function createOnboardingApi(api: OnboardingApiClient) {
             endpoints.workspaces.myMembership(workspaceId),
             QUIET,
           ),
-          api.get<SpaceTreeOutput>(
-            endpoints.workspaces.spaceTree(workspaceId),
-            QUIET,
-          ),
+          readSpaceTree(workspaceId),
           api.get<BoardsOutput>(
             endpoints.boards.listByWorkspaceId(workspaceId),
             QUIET,
