@@ -1,5 +1,11 @@
 import { useId, useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, CircleCheck, Lock, TriangleAlert } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  CircleCheck,
+  Lock,
+  TriangleAlert,
+} from "lucide-react";
 import { Skeleton, cn } from "@notrelix/ui-web";
 import type {
   FormAnswerErrors,
@@ -15,6 +21,12 @@ import {
   TEXTAREA_CLASS,
 } from "../board-settings/board-settings-parts";
 import { FormAlert } from "./forms-parts";
+import {
+  MiniCalendar,
+  dayText as isoToDayText,
+  parseDay,
+} from "../card-popup/sections/field-editors";
+import { useCardPopupCopy } from "../card-popup/use-card-popup-copy";
 import { fillFormsCopy, type FormsCopy } from "./forms.copy";
 import {
   questionOptions,
@@ -524,11 +536,10 @@ function Question({
       break;
     case "date":
       control = (
-        <input
+        <DateAnswer
           {...common}
-          type="date"
           value={text}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
           className={cn(INPUT_CLASS, BOX)}
         />
       );
@@ -654,6 +665,76 @@ function Question({
           />
           {error}
         </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** A day typed as dd/mm/yyyy, with the month grid of the card popup's date field to pick it; the answer is the day as yyyy-mm-dd. */
+function DateAnswer({
+  value,
+  onChange,
+  className,
+  ...rest
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  className: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
+  const copy = useCardPopupCopy();
+  const t = copy.sections.chips;
+  const [text, setText] = useState(isoToDayText(value));
+  const [open, setOpen] = useState(false);
+  const parsed = parseDay(text);
+  const invalid = text.trim() !== "" && parsed === null;
+  const change = (next: string) => {
+    setText(next);
+    onChange(next.trim() === "" ? "" : (parseDay(next) ?? ""));
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <input
+          {...rest}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={text}
+          placeholder={t.dayPlaceholder}
+          aria-invalid={invalid || undefined}
+          onChange={(e) => change(e.target.value)}
+          className={className}
+        />
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={t.dayField}
+          onClick={() => setOpen((v) => !v)}
+          className={cn(BUTTON_CLASS.outline, "h-11 shrink-0 px-3 sm:h-[34px]")}
+        >
+          <CalendarDays aria-hidden="true" className="size-4" />
+        </button>
+      </div>
+      {invalid ? (
+        <p
+          role="alert"
+          className="m-0 text-[12.5px] font-medium text-danger-text"
+        >
+          {t.invalidDate}
+        </p>
+      ) : null}
+      {open ? (
+        <div className="rounded-lg border border-line bg-popover p-2">
+          <MiniCalendar
+            copy={copy}
+            value={parsed ?? (value || null)}
+            today={new Date()}
+            onPick={(day) => {
+              change(isoToDayText(day));
+              setOpen(false);
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );
