@@ -91,7 +91,8 @@ public sealed partial class ResourceAccessSummaryService
                     placed && !hasSpaceRole,
                     null,
                     addedAt,
-                    canManage ? GrantorOf(grant?.GrantedBy) : null));
+                    canManage ? GrantorOf(grant?.GrantedBy) : null,
+                    canManage && grant is not null ? AccessLevels.OfRank(grant.Rank) : null));
             }
 
             foreach (var grant in entries.Grants.Where(g => g.SubjectType == "Team"))
@@ -111,7 +112,8 @@ public sealed partial class ResourceAccessSummaryService
                     placed,
                     grant.TeamPeople,
                     grant.GrantedAt ?? DateTimeOffset.MinValue,
-                    canManage ? GrantorOf(grant.GrantedBy) : null));
+                    canManage ? GrantorOf(grant.GrantedBy) : null,
+                    canManage ? AccessLevels.OfRank(grant.Rank) : null));
             }
         }
 

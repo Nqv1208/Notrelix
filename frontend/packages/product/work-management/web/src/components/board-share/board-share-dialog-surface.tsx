@@ -510,6 +510,9 @@ function ShareBody({
                 >
                   {fill(copy.people.viewersLabel, { count: viewerRows.length })}
                 </div>
+                <p className="m-0 mb-1 text-compact leading-[1.45] text-meta-foreground">
+                  {copy.people.viewersHint}
+                </p>
                 <div
                   role="group"
                   aria-label={fill(copy.people.viewersLabel, {

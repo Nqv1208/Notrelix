@@ -28,6 +28,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardSharingSummary _sharing;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public AddBoardMemberCommandHandler(
@@ -36,8 +37,10 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
+        IBoardSharingSummary sharing,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _sharing = sharing;
         _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
@@ -73,6 +76,8 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         if (alreadyMember) return Result.Success();
 
         var role = request.Role ?? BoardRole.Member;
+        if (role.IsViewer())
+            await BoardManagerGuard.EnsureNoHigherGrantAsync(_sharing, board.Id, request.UserId, ct);
 
         var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
         _context.BoardMembers.Add(member);

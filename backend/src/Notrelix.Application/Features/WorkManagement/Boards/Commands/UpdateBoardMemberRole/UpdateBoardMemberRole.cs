@@ -71,6 +71,9 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         if (BoardRoleLevels.RankOf(previous.ToString()) >= 4 && BoardRoleLevels.RankOf(request.Role.ToString()) < 4)
             await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, request.BoardId, request.UserId, ct);
 
+        if (request.Role.IsViewer() && !previous.IsViewer())
+            await BoardManagerGuard.EnsureNoHigherGrantAsync(_sharing, request.BoardId, request.UserId, ct);
+
         member.UpdateRole(request.Role);
         board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberRoleChangedAsync(request.BoardId, request.UserId, previous, request.Role, ct);

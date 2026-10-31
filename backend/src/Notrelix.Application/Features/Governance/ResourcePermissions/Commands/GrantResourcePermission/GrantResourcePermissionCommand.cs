@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Public.BoardAccess;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 
@@ -49,6 +50,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly IBoardAccessSubjectFacts _boards;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
@@ -56,8 +58,10 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
         IResourceAccessChangeRecorder changes,
-        IWorkspaceAccessResolver workspaceAccess)
+        IWorkspaceAccessResolver workspaceAccess,
+        IBoardAccessSubjectFacts boards)
     {
+        _boards = boards;
         _workspaceAccess = workspaceAccess;
         _changes = changes;
         _context = context;
@@ -91,6 +95,20 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                     "PermissionSubjectMustBelongToWorkspace",
                     "Permission subject must belong to the same workspace.");
+            }
+        }
+
+        // A read-only board role (Observer, Guest) caps the person at Viewer, so a higher explicit grant would be
+        // inert: it is refused instead, and the board role is the one source to change.
+        if (subjectType == PermissionSubjectType.User && kind.Value == BoardResourceKind && (int)level > (int)PermissionLevel.Viewer)
+        {
+            var board = await _boards.FindAsync(workspaceId, request.ResourceId, cancellationToken);
+            var role = board?.Members?.FirstOrDefault(m => m.UserId == request.SubjectId)?.Role;
+            if (BoardRoleLevels.RankOf(role) is > 0 and <= 1)
+            {
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    Notrelix.Domain.Governance.GovernanceRuleCodes.Governance_ResourcePermission_ViewerRoleCapsGrant,
+                    "This person is a viewer of the board, so they can only view. Change their board role first.");
             }
         }
 

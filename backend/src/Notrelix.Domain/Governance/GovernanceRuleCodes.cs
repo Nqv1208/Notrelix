@@ -13,6 +13,7 @@ public static class GovernanceRuleCodes
 
     // ── ResourcePermission ─────────────────────────────────────────────
     public const string Governance_ResourcePermission_SubjectTypeNotSupported = "Governance_ResourcePermission_SubjectTypeNotSupported";
+    public const string Governance_ResourcePermission_ViewerRoleCapsGrant = "Governance_ResourcePermission_ViewerRoleCapsGrant";
 
     // ── ResourceAccessChange ───────────────────────────────────────────
     public const string Governance_AccessChange_SubjectRequired = "Governance_AccessChange_SubjectRequired";

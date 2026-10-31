@@ -53,6 +53,8 @@ export const en = {
   people: {
     label: "Permissions on this Board · {{count}}",
     viewersLabel: "Viewers (read only) · {{count}}",
+    viewersHint:
+      "A viewer can only read. Choosing a higher level changes their board role first.",
     empty: "No one has been added to this Board on their own.",
     you: "(you)",
     owner: "Board owner",
@@ -188,6 +190,8 @@ export const vi: BoardShareCopy = {
   people: {
     label: "Quyền riêng trên board này · {{count}}",
     viewersLabel: "Người xem (chỉ đọc) · {{count}}",
+    viewersHint:
+      "Người xem chỉ đọc. Chọn mức cao hơn sẽ đổi vai trò trên board của họ trước.",
     empty: "Chưa có ai được thêm riêng vào board này.",
     you: "(bạn)",
     owner: "Chủ board",

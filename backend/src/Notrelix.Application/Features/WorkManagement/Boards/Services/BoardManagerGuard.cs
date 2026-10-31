@@ -23,4 +23,24 @@ public static class BoardManagerGuard
                 "A board needs at least one manager. Make someone else a manager first.");
         }
     }
+
+    /// <summary>
+    /// A read-only board role caps the person at Viewer, so it cannot be given to a person who holds an explicit
+    /// grant above Viewer: the grant would be inert. The change is refused naming the grant; the grant is
+    /// the one thing to lower or revoke first, so each person keeps a single source of truth.
+    /// </summary>
+    public static async Task EnsureNoHigherGrantAsync(
+        IBoardSharingSummary sharing, Guid boardId, Guid userId, CancellationToken ct)
+    {
+        var summary = await sharing.GetBoardSharingAsync(boardId, ct);
+        var grant = summary?.Entries.FirstOrDefault(entry =>
+            entry.Id == userId && entry.Kind != BoardSharingEntryKinds.Team
+            && entry.GrantLevel is { } level && level != AccessLevels.Viewer);
+        if (grant is not null)
+        {
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Board_ViewerHoldsGrant,
+                $"This person holds an explicit {grant.GrantLevel} permission on the board. Lower or remove it first, then make them a viewer.");
+        }
+    }
 }
