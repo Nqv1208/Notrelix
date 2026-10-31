@@ -1094,6 +1094,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/permissions/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The product-defined permission catalog roles are composed from */
+        get: operations["Governance.Permissions.Catalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the account's custom roles */
+        get: operations["Governance.Roles.List"];
+        put?: never;
+        /** Create a custom role */
+        post: operations["Governance.Roles.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/roles/{roleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a custom role's name, description or actions */
+        patch: operations["Governance.Roles.Update"];
+        trace?: never;
+    };
+    "/api/v1/accounts/roles/{roleId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a custom role, moving its holders to another role */
+        post: operations["Governance.Roles.Archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Built-in and custom roles with the people holding them in this workspace */
+        get: operations["Governance.Roles.ListForWorkspace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/members/me/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's effective role and what a custom role adds or removes */
+        get: operations["Governance.Roles.MyAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/access-explanations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Why can this person do this? The decision, its sources and its ordered steps (audited) */
+        get: operations["Governance.Access.Explain"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/members/{userId}/custom-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Give a member a custom role (replaces their built-in role while assigned) */
+        put: operations["Governance.Roles.Assign"];
+        post?: never;
+        /** Return a member to their built-in role */
+        delete: operations["Governance.Roles.Remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{resourceType}/{resourceId}/share-links": {
         parameters: {
             query?: never;
@@ -5769,6 +5907,9 @@ export interface components {
             status?: number | null;
             detail?: string | null;
             instance?: string | null;
+            errorCode?: string | null;
+            ruleCode?: string | null;
+            traceId?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -5959,6 +6100,31 @@ export interface components {
             level?: string | null;
             /** Format: date-time */
             expiresAt?: string | null;
+        };
+        "Notrelix.API.Contracts.Governance.Roles.Requests.ArchiveCustomRoleRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            moveToRoleId?: string | null;
+        };
+        "Notrelix.API.Contracts.Governance.Roles.Requests.AssignCustomRoleRequest": {
+            /** Format: uuid */
+            roleId?: string;
+        };
+        "Notrelix.API.Contracts.Governance.Roles.Requests.CreateCustomRoleRequest": {
+            name?: string | null;
+            description?: string | null;
+            baseRole?: string | null;
+            addedActions?: string[] | null;
+            removedActions?: string[] | null;
+        };
+        "Notrelix.API.Contracts.Governance.Roles.Requests.UpdateCustomRoleRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            name?: string | null;
+            description?: string | null;
+            addedActions?: string[] | null;
+            removedActions?: string[] | null;
         };
         "Notrelix.API.Contracts.Governance.ShareLinks.Requests.CreateShareLinkRequest": {
             level?: string | null;
@@ -7178,6 +7344,15 @@ export interface components {
             version?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
             blocks?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
         };
+        "Notrelix.Application.Features.Governance.Authorization.PermissionCatalogEntry": {
+            action?: string | null;
+            area?: string | null;
+            labelKey?: string | null;
+            level?: string | null;
+            canAdd?: boolean;
+            canRemove?: boolean;
+            locked?: boolean;
+        };
         "Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto": {
             /** Format: uuid */
             id?: string;
@@ -7195,6 +7370,73 @@ export interface components {
             isRevoked?: boolean;
             /** Format: date-time */
             revokedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Governance.Roles.CustomRoleDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            baseRole?: string | null;
+            status?: string | null;
+            addedActions?: string[] | null;
+            removedActions?: string[] | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: int32 */
+            memberCount?: number;
+        };
+        "Notrelix.Application.Features.Governance.Roles.CustomRoleListDto": {
+            roles?: components["schemas"]["Notrelix.Application.Features.Governance.Roles.CustomRoleDto"][] | null;
+        };
+        "Notrelix.Application.Features.Governance.Roles.MyEffectiveAccessDto": {
+            /** Format: uuid */
+            customRoleId?: string | null;
+            customRoleName?: string | null;
+            role?: string | null;
+            addedActions?: string[] | null;
+            removedActions?: string[] | null;
+        };
+        "Notrelix.Application.Features.Governance.Roles.PermissionCatalogDto": {
+            actions?: components["schemas"]["Notrelix.Application.Features.Governance.Authorization.PermissionCatalogEntry"][] | null;
+        };
+        "Notrelix.Application.Features.Governance.Roles.Queries.AccessExplanationDto": {
+            /** Format: uuid */
+            userId?: string;
+            action?: string | null;
+            resourceKind?: string | null;
+            /** Format: uuid */
+            resourceId?: string | null;
+            allowed?: boolean;
+            decision?: string | null;
+            storedRole?: string | null;
+            effectiveRole?: string | null;
+            customRoleName?: string | null;
+            sources?: string[] | null;
+            steps?: components["schemas"]["Notrelix.Application.Features.Governance.Roles.Queries.ExplainStepDto"][] | null;
+        };
+        "Notrelix.Application.Features.Governance.Roles.Queries.ExplainStepDto": {
+            /** Format: int32 */
+            order?: number;
+            code?: string | null;
+            outcome?: string | null;
+            detail?: string | null;
+        };
+        "Notrelix.Application.Features.Governance.Roles.WorkspaceRoleDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string | null;
+            key?: string | null;
+            name?: string | null;
+            description?: string | null;
+            baseRole?: string | null;
+            status?: string | null;
+            addedActions?: string[] | null;
+            removedActions?: string[] | null;
+            /** Format: int32 */
+            memberCount?: number;
+        };
+        "Notrelix.Application.Features.Governance.Roles.WorkspaceRoleListDto": {
+            roles?: components["schemas"]["Notrelix.Application.Features.Governance.Roles.WorkspaceRoleDto"][] | null;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -10960,6 +11202,338 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+        };
+    };
+    "Governance.Permissions.Catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.PermissionCatalogDto"];
+                };
+            };
+        };
+    };
+    "Governance.Roles.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.CustomRoleListDto"];
+                };
+            };
+        };
+    };
+    "Governance.Roles.Create": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Governance.Roles.Requests.CreateCustomRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.CustomRoleDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Governance.Roles.Update": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Governance.Roles.Requests.UpdateCustomRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.CustomRoleDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Governance.Roles.Archive": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Governance.Roles.Requests.ArchiveCustomRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.CustomRoleDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Governance.Roles.ListForWorkspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.WorkspaceRoleListDto"];
+                };
+            };
+        };
+    };
+    "Governance.Roles.MyAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.MyEffectiveAccessDto"];
+                };
+            };
+        };
+    };
+    "Governance.Access.Explain": {
+        parameters: {
+            query: {
+                userId: string;
+                action: string;
+                resourceKind?: string;
+                resourceId?: string;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Governance.Roles.Queries.AccessExplanationDto"];
+                };
+            };
+        };
+    };
+    "Governance.Roles.Assign": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Governance.Roles.Requests.AssignCustomRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Governance.Roles.Remove": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
