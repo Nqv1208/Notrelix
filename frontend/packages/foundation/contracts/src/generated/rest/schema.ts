@@ -2578,6 +2578,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/items/lanes/{lane}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one page of a status lane's items under a filter and sort */
+        get: operations["WorkManagement.BoardItems.ListLane"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/items/dependencies": {
         parameters: {
             query?: never;
@@ -7575,6 +7592,21 @@ export interface components {
             /** Format: date-time */
             restorableUntil?: string;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemDto": {
+            /** Format: uuid */
+            groupId?: string;
+            item?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSummaryDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemPageDto": {
+            /** Format: uuid */
+            optionId?: string | null;
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemDto"][] | null;
+            nextCursor?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            filteredCount?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
             boardId?: string;
@@ -7849,6 +7881,15 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLaneDto": {
+            /** Format: uuid */
+            optionId?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            filteredCount?: number;
+            nextCursor?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto": {
             /** Format: uuid */
             boardId?: string;
@@ -8017,6 +8058,11 @@ export interface components {
             spaceId?: string | null;
             itemKeyPrefix?: string | null;
             isArchived?: boolean;
+            /** Format: int32 */
+            filteredTotal?: number | null;
+            /** Format: int32 */
+            totalItems?: number | null;
+            lanes?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLaneDto"][] | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto": {
             /** Format: uuid */
@@ -14624,6 +14670,34 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.ListLane": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                filter?: string;
+                sort?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+                lane: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemPageDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardItems.ListDependencies": {
         parameters: {
             query?: never;
@@ -16583,7 +16657,11 @@ export interface operations {
     };
     "WorkManagement.Boards.GetOverview": {
         parameters: {
-            query?: never;
+            query?: {
+                pageSize?: number;
+                filter?: string;
+                sort?: string;
+            };
             header?: never;
             path: {
                 boardId: string;
