@@ -430,6 +430,12 @@ describe("MainTableView on the ERP board", () => {
   });
 
   it("applies the route filter and says when nothing matches", async () => {
+    // The ERP seed dates its low-priority items up to 30/10: judge "overdue" on that day, not on the
+    // day the suite runs, or the filter that is meant to match nothing starts matching on 31/10.
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-10-30T05:00:00+07:00"),
+    });
     renderTable(erpOwnerAccess(), { initialFilter: "p.low~o" });
     await screen.findByText("Không có việc khớp bộ lọc");
     expect(
