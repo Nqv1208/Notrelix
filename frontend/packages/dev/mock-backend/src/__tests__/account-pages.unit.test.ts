@@ -20,8 +20,8 @@ type Api = ReturnType<typeof client>["api"];
 async function proofFor(api: Api, purpose: string): Promise<string> {
   const requirement = (await api.post("/auth/security/step-up/requirement", {
     purpose,
-  })) as { requiredFactor: number; challengeToken: string | null };
-  const proof = (await (requirement.requiredFactor === 0
+  })) as { requiredFactor: string; challengeToken: string | null };
+  const proof = (await (requirement.requiredFactor === "MfaChallenge"
     ? api.post("/auth/security/step-up/complete-mfa", {
         purpose,
         challengeToken: requirement.challengeToken,
@@ -148,8 +148,8 @@ describe("security", () => {
     ).rejects.toMatchObject({ status: 412 });
     const requirement = (await api.post("/auth/security/step-up/requirement", {
       purpose: "DisableMfa",
-    })) as { requiredFactor: number; challengeToken: string };
-    expect(requirement.requiredFactor).toBe(0);
+    })) as { requiredFactor: string; challengeToken: string };
+    expect(requirement.requiredFactor).toBe("MfaChallenge");
     const proof = (await api.post("/auth/security/step-up/complete-mfa", {
       purpose: "DisableMfa",
       challengeToken: requirement.challengeToken,

@@ -6976,11 +6976,8 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
         };
-        /**
-         * Format: int32
-         * @enum {integer}
-         */
-        "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": 0 | 1 | 2;
+        /** @enum {string} */
+        "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": "MfaChallenge" | "Password" | "OAuth";
         "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult": {
             requiredFactor?: components["schemas"]["Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor"];
             challengeToken?: string | null;

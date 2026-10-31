@@ -26909,12 +26909,11 @@
       },
       "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": {
         "enum": [
-          0,
-          1,
-          2
+          "MfaChallenge",
+          "Password",
+          "OAuth"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult": {
         "type": "object",

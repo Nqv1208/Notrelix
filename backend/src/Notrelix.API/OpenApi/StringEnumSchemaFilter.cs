@@ -16,6 +16,7 @@ public sealed class StringEnumSchemaFilter : ISchemaFilter
     [
         typeof(SecurityActivityType),
         typeof(AutomationExecutionStatus),
+        typeof(Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor),
     ];
 
     public void Apply(OpenApiSchema schema, SchemaFilterContext context)

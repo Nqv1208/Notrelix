@@ -602,7 +602,7 @@ describe("AccountSecurityPage container", () => {
   it("asks for a proof before creating new backup codes and shows them once", async () => {
     const post = vi.fn((url: string) =>
       url === "/auth/security/step-up/requirement"
-        ? { requiredFactor: 0, challengeToken: "challenge-1" }
+        ? { requiredFactor: "MfaChallenge", challengeToken: "challenge-1" }
         : url === "/auth/security/step-up/complete-mfa"
           ? { proofToken: "proof-1" }
           : { recoveryCodes: ["AAAA-1111", "BBBB-2222"] },
@@ -630,7 +630,7 @@ describe("AccountSecurityPage container", () => {
     let proofs = 0;
     const post = vi.fn((url: string) =>
       url === "/auth/security/step-up/requirement"
-        ? { requiredFactor: 1, challengeToken: null }
+        ? { requiredFactor: "Password", challengeToken: null }
         : url === "/auth/security/step-up/complete-password"
           ? { proofToken: `proof-${++proofs}` }
           : url === "/auth/mfa/enrollment/start"
@@ -690,7 +690,7 @@ describe("AccountSecurityPage container", () => {
   it("changes the password with a second-factor proof, then tells the person every session ended", async () => {
     const post = vi.fn((url: string) =>
       url === "/auth/security/step-up/requirement"
-        ? { requiredFactor: 0, challengeToken: "challenge-1" }
+        ? { requiredFactor: "MfaChallenge", challengeToken: "challenge-1" }
         : url === "/auth/security/step-up/complete-mfa"
           ? { proofToken: "proof-1" }
           : undefined,
@@ -745,7 +745,10 @@ describe("AccountSecurityPage container", () => {
   it("says the current password is wrong when the producer refuses it", async () => {
     const post = vi.fn((url: string) => {
       if (url === "/auth/security/step-up/requirement")
-        return { requiredFactor: 0, challengeToken: "challenge-1" };
+        return {
+          requiredFactor: "MfaChallenge",
+          challengeToken: "challenge-1",
+        };
       if (url === "/auth/security/step-up/complete-mfa")
         return { proofToken: "proof-1" };
       throw Object.assign(new Error("refused"), {

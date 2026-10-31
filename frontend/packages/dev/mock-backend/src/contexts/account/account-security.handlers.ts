@@ -339,8 +339,7 @@ export const accountSecurityOperations = [
         return identityProblem(400, "common.validation", "Unknown purpose.");
       const security = securityOf(store);
       return ok({
-        // 0 = MFA challenge, 1 = password.
-        requiredFactor: security.twoFactorEnabled ? 0 : 1,
+        requiredFactor: security.twoFactorEnabled ? "MfaChallenge" : "Password",
         challengeToken: security.twoFactorEnabled
           ? "mock-step-up-challenge"
           : null,

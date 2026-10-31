@@ -311,14 +311,19 @@ export function toActivityPage(wire: ActivityPageWire): AccountActivityPage {
   return { items, nextCursor: wire.nextCursor ?? null };
 }
 
-const FACTORS: readonly StepUpFactor[] = ["mfa", "password", "oauth"];
+/** The producer names the factor (`StepUpRequiredFactor`, serialized as a string). */
+const FACTORS: Readonly<Record<string, StepUpFactor>> = {
+  MfaChallenge: "mfa",
+  Password: "password",
+  OAuth: "oauth",
+};
 
 export function toStepUpRequirement(wire: {
-  readonly requiredFactor?: number;
+  readonly requiredFactor?: string;
   readonly challengeToken?: string | null;
 }): StepUpRequirement {
   return {
-    factor: FACTORS[wire.requiredFactor ?? 1] ?? "password",
+    factor: FACTORS[wire.requiredFactor ?? ""] ?? "password",
     challengeToken: wire.challengeToken ?? null,
   };
 }
