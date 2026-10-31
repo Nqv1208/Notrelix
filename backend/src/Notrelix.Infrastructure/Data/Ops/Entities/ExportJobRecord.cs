@@ -2,28 +2,28 @@ namespace Notrelix.Infrastructure.Data.Ops.Entities;
 
 public sealed class ExportJobRecord
 {
-    public Guid Id { get; private set; }
-    public Guid WorkspaceId { get; private set; }
-    public string JobType { get; private set; } = null!;
-    public string? SourceResourceType { get; private set; }
-    public Guid? SourceResourceId { get; private set; }
-    public string Status { get; private set; } = null!;
-    public string Format { get; private set; } = null!;
-    public int? RowCount { get; private set; }
-    public string OptionsJson { get; private set; } = null!;
-    public string FiltersJson { get; private set; } = null!;
-    public Guid? ResultAttachmentId { get; private set; }
-    public Guid? ResultFileId { get; private set; }
-    public string? StorageProvider { get; private set; }
-    public string? StorageKey { get; private set; }
-    public string? DownloadUrl { get; private set; }
-    public DateTimeOffset? ExpiresAt { get; private set; }
-    public string? ErrorMessage { get; private set; }
-    public Guid? RequestedByUserId { get; private set; }
-    public DateTimeOffset? StartedAt { get; private set; }
-    public DateTimeOffset? CompletedAt { get; private set; }
-    public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; private set; }
+    public Guid Id { get; internal set; }
+    public Guid WorkspaceId { get; internal set; }
+    public string JobType { get; internal set; } = null!;
+    public string? SourceResourceType { get; internal set; }
+    public Guid? SourceResourceId { get; internal set; }
+    public string Status { get; internal set; } = null!;
+    public string Format { get; internal set; } = null!;
+    public int? RowCount { get; internal set; }
+    public string OptionsJson { get; internal set; } = null!;
+    public string FiltersJson { get; internal set; } = null!;
+    public Guid? ResultAttachmentId { get; internal set; }
+    public Guid? ResultFileId { get; internal set; }
+    public string? StorageProvider { get; internal set; }
+    public string? StorageKey { get; internal set; }
+    public string? DownloadUrl { get; internal set; }
+    public DateTimeOffset? ExpiresAt { get; internal set; }
+    public string? ErrorMessage { get; internal set; }
+    public Guid? RequestedByUserId { get; internal set; }
+    public DateTimeOffset? StartedAt { get; internal set; }
+    public DateTimeOffset? CompletedAt { get; internal set; }
+    public DateTimeOffset CreatedAt { get; internal set; }
+    public DateTimeOffset? UpdatedAt { get; internal set; }
 
     private ExportJobRecord() { }
 

@@ -16,6 +16,8 @@ public static class ErrorCodes
     public const string IdempotencyPayloadMismatch = "idempotency_payload_mismatch";
     public const string IdempotencyStateIncomplete = "idempotency_state_incomplete";
     public const string InternalServerError = "internal_server_error";
+    public const string TransferPayloadTooLarge = "transfer.payload_too_large";
+    public const string TransferUnsupportedMediaType = "transfer.unsupported_media_type";
     public const string AttachmentPayloadTooLarge = "attachment.payload_too_large";
     public const string AttachmentUnsupportedMediaType = "attachment.unsupported_media_type";
     public const string AttachmentLimitExceeded = "attachment.limit_exceeded";

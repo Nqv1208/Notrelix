@@ -53,6 +53,10 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DueDateNotificationSweeper>();
         services.AddHostedService<DueDateNotificationService>();
 
+        // Work Management: run queued board file imports and exports, and remove expired export files.
+        services.AddScoped<BoardTransferRunner>();
+        services.AddHostedService<BoardTransferService>();
+
         return services;
     }
 }

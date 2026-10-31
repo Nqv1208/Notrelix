@@ -4606,6 +4606,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a CSV or XLSX file to import items from (multipart/form-data, streamed); nothing is created yet */
+        post: operations["WorkManagement.Imports.Upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a column mapping against the uploaded file: per-column checks and per-row errors */
+        post: operations["WorkManagement.Imports.Preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the import: all rows or none, created in the background; a retry queues no second run */
+        post: operations["WorkManagement.Imports.Confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress and outcome of the caller's import */
+        get: operations["WorkManagement.Imports.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rows a refused import could not take, for the downloadable error report */
+        get: operations["WorkManagement.Imports.GetErrors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's exports of this board from the last 24 hours */
+        get: operations["WorkManagement.Exports.List"];
+        put?: never;
+        /** Ask for a CSV or XLSX of the current view or all items; made in the background, 24 hours to download */
+        post: operations["WorkManagement.Exports.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many items the current view and the whole board would export */
+        get: operations["WorkManagement.Exports.GetSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress of the caller's export */
+        get: operations["WorkManagement.Exports.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports/{jobId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the caller's ready export (authorised on every call; gone after 24 hours) */
+        get: operations["WorkManagement.Exports.GetFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/activity": {
         parameters: {
             query?: never;
@@ -6586,6 +6740,25 @@ export interface components {
             description?: string | null;
             includeItems?: boolean;
         };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ExportRequest": {
+            format?: string | null;
+            scope?: string | null;
+            filter?: string | null;
+            sort?: string | null;
+            locale?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportColumnMapRequest": {
+            /** Format: int32 */
+            column?: number;
+            target?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportFileForm": {
+            /** Format: binary */
+            file: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest": {
+            mapping?: components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportColumnMapRequest"][] | null;
+        };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.AcceptInvitationWithRegistrationRequest": {
             token?: string | null;
             name?: string | null;
@@ -8380,6 +8553,132 @@ export interface components {
             description?: string | null;
             status?: string | null;
             builtInKey?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ColumnCheck": {
+            /** Format: int32 */
+            column?: number;
+            target?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            count?: number;
+            examples?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ColumnMap": {
+            /** Format: int32 */
+            column?: number;
+            target?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto": {
+            /** Format: uuid */
+            id?: string;
+            status?: string | null;
+            format?: string | null;
+            scope?: string | null;
+            fileName?: string | null;
+            /** Format: int32 */
+            rowCount?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int64 */
+            size?: number | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            failureCode?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ExportSummaryDto": {
+            /** Format: int32 */
+            viewCount?: number;
+            /** Format: int32 */
+            allCount?: number;
+            hiddenFields?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportColumnDto": {
+            /** Format: int32 */
+            index?: number;
+            header?: string | null;
+            examples?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportErrorsDto": {
+            errors?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError"][] | null;
+            truncated?: boolean;
+            headers?: string[] | null;
+            fileName?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportJobDto": {
+            /** Format: uuid */
+            id?: string;
+            status?: string | null;
+            phase?: string | null;
+            /** Format: int32 */
+            total?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int32 */
+            created?: number;
+            /** Format: int32 */
+            errorCount?: number;
+            /** Format: int32 */
+            errorRows?: number;
+            firstKey?: string | null;
+            lastKey?: string | null;
+            failureCode?: string | null;
+            fileName?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            failureBy?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto": {
+            /** Format: int32 */
+            rowCount?: number;
+            missingTitle?: boolean;
+            checks?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ColumnCheck"][] | null;
+            /** Format: int32 */
+            errorCount?: number;
+            /** Format: int32 */
+            errorRows?: number;
+            errors?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError"][] | null;
+            sample?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.SampleRow"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError": {
+            /** Format: int32 */
+            row?: number;
+            column?: string | null;
+            target?: string | null;
+            value?: string | null;
+            code?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportTarget": {
+            id?: string | null;
+            name?: string | null;
+            type?: string | null;
+            required?: boolean;
+            lockedReason?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportUploadDto": {
+            /** Format: uuid */
+            jobId?: string | null;
+            rejection?: string | null;
+            fileName?: string | null;
+            format?: string | null;
+            /** Format: int64 */
+            size?: number;
+            /** Format: int32 */
+            rowCount?: number;
+            /** Format: int32 */
+            columnCount?: number;
+            columns?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportColumnDto"][] | null;
+            targets?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportTarget"][] | null;
+            suggested?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ColumnMap"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.SampleRow": {
+            /** Format: int32 */
+            row?: number;
+            cells?: {
+                [key: string]: string | null;
+            } | null;
+            errorTargets?: string[] | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.AccountWorkspaceDto": {
             /** Format: uuid */
@@ -20367,6 +20666,307 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.Upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportFileForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportUploadDto"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.Preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.Confirm": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportJobDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Imports.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportJobDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.GetErrors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportErrorsDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.Create": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Exports.GetSummary": {
+        parameters: {
+            query?: {
+                filter?: string;
+                sort?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportSummaryDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.GetFile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

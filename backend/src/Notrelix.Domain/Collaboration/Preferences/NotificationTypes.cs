@@ -64,6 +64,9 @@ public static class NotificationTypes
     /// <summary>An approval the person asked for was rejected; maps to <see cref="Approval"/>.</summary>
     public const string ApprovalRejectedProducedType = "approval.rejected";
 
+    /// <summary>A file the person asked a board to export is ready to download; maps to <see cref="Assigned"/>.</summary>
+    public const string ExportReadyProducedType = "work.export.ready";
+
     /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
     /// literal has no preference type.
@@ -71,7 +74,7 @@ public static class NotificationTypes
     public static string? FromProducedType(string? producedType) => producedType switch
     {
         MentionProducedType => Mention,
-        ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType => Assigned,
+        ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType or ExportReadyProducedType => Assigned,
         ItemDueTomorrowProducedType or ItemOverdueProducedType or ItemDueReminderProducedType => Overdue,
         ApprovalRequestedProducedType or ApprovalApprovedProducedType or ApprovalRejectedProducedType => Approval,
         ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,
