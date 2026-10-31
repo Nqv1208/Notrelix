@@ -40,6 +40,6 @@ public class UnarchiveBoardItemCommandHandler : IRequestHandler<UnarchiveBoardIt
             .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null && child.ArchivedWithParent)
             .ToListAsync(ct);
         foreach (var child in children) child.UnarchiveWithParent(_currentUser.UserId, now);
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 }

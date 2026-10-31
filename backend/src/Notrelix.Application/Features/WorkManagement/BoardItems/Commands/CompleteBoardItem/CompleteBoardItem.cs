@@ -38,6 +38,6 @@ public class CompleteBoardItemCommandHandler : IRequestHandler<CompleteBoardItem
 
         var completedAt = request.CompletedAt ?? _dateTimeProvider.UtcNow;
         item.CompleteOccurrence(completedAt, _requestContext.UserId, _dateTimeProvider.UtcNow);
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 }

@@ -35,6 +35,6 @@ public class UnassignBoardItemMemberCommandHandler : IRequestHandler<UnassignBoa
             _context.BoardItemMembers.Remove(member);
             item.NoteAssigneesChanged(_currentUser.UserId, _timeProvider.UtcNow);
         }
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 }

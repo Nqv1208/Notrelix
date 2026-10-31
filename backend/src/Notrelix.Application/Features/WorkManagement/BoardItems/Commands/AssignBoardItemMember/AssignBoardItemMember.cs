@@ -61,7 +61,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
 
         var alreadyAssigned = await _context.BoardItemMembers
             .AnyAsync(m => m.ItemId == card.Id && m.UserId == request.UserId, ct);
-        if (alreadyAssigned) return Result.Success();
+        if (alreadyAssigned) return VersionedResult.Success(card.Version);
 
         var member = BoardItemMember.Create(
             _requestContext.RequireAccountId(),
@@ -74,7 +74,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
 
         _context.BoardItemMembers.Add(member);
         card.NoteAssigneesChanged(_requestContext.UserId, _dateTimeProvider.UtcNow);
-        var response = Result.Success();
+        var response = VersionedResult.Success(card.Version);
         if (_realtime is not null && _events is not null)
             _events.Add(_realtime.Map(request, response, card.Version));
         return response;

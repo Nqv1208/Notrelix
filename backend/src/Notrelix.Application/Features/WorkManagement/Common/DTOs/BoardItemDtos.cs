@@ -112,6 +112,9 @@ public record BoardItemSlimDto(
     List<Guid> LabelIds,
     long Version);
 
+/// <summary>The version a board item has after one write, so the next write in a chain can name it.</summary>
+public record BoardItemVersionDto(long Version);
+
 /// <summary>A sub-item as its parent lists it. <see cref="Done"/> is whether it is completed.</summary>
 public record ChildItemDto(
     Guid Id,

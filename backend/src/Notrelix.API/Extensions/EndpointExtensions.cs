@@ -36,6 +36,12 @@ public static class EndpointExtensions
             : Results.Json(result.Data, statusCode: StatusCodes.Status201Created);
     }
 
+    /// <summary>The item's new version when the handler reported one, else no content.</summary>
+    public static IResult ToItemVersionResult(this Result result)
+        => result is VersionedResult { Succeeded: true } versioned
+            ? Results.Ok(new Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto(versioned.Version))
+            : result.ToNoContentResult();
+
     public static IResult ToNoContentResult(this Result result)
     {
         if (result.Succeeded)

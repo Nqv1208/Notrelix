@@ -10377,7 +10377,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -10452,7 +10452,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -11092,7 +11092,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -11176,7 +11176,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -11636,7 +11636,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -11711,7 +11711,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -11863,7 +11863,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"
                 }
               }
             }
@@ -29797,6 +29797,16 @@
           "reminderOffsetMinutes": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

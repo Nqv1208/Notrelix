@@ -37,7 +37,7 @@ public class ReopenBoardItemCommandHandler : IRequestHandler<ReopenBoardItemComm
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        if (!item.CompletedAt.HasValue) return Result.Success();
+        if (!item.CompletedAt.HasValue) return VersionedResult.Success(item.Version);
 
         var now = _timeProvider.UtcNow;
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, ct);
@@ -52,7 +52,7 @@ public class ReopenBoardItemCommandHandler : IRequestHandler<ReopenBoardItemComm
             item.Reopen(_currentUser.UserId, now);
         }
 
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 
     /// <summary>The recorded earlier status when it is still an open option, else the first open option.</summary>

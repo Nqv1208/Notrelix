@@ -47,6 +47,6 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
 
         BoardItemFieldWrites.Write(card, statusField, fieldValue, statusField, _currentUser.UserId, now);
 
-        return Result.Success();
+        return VersionedResult.Success(card.Version);
     }
 }

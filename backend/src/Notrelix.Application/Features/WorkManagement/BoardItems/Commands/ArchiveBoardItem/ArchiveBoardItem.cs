@@ -40,6 +40,6 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
             .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null && !child.IsArchived)
             .ToListAsync(ct);
         foreach (var child in children) child.ArchiveWithParent(_currentUser.UserId, now);
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 }

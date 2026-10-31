@@ -49,3 +49,19 @@ public class Result<T> : Result
     public new static Result<T> Failure(IEnumerable<ApplicationError> errors) => new(false, default, errors);
     public new static Result<T> Failure(ApplicationError error) => new(false, default, new[] { error });
 }
+
+/// <summary>
+/// A successful write on one versioned resource that tells the caller the version it now has, so a chain of
+/// writes names the right one at each step. It is still a plain <see cref="Result"/> to every handler caller.
+/// </summary>
+public sealed class VersionedResult : Result
+{
+    private VersionedResult(long version) : base(true, Array.Empty<string>())
+    {
+        Version = version;
+    }
+
+    public long Version { get; }
+
+    public static VersionedResult Success(long version) => new(version);
+}

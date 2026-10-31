@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
@@ -10,6 +11,7 @@ public static class UnassignBoardItemMemberEndpoint
         group.MapResourceDelete("/assignees/{userId:guid}", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.UnassignMember")
+            .Produces<BoardItemVersionDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Unassign a member from board item");
         return group;
@@ -23,6 +25,6 @@ public static class UnassignBoardItemMemberEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UnassignBoardItemMemberCommand(itemId, userId, expectedVersion), cancellationToken);
-        return result.ToNoContentResult();
+        return result.ToItemVersionResult();
     }
 }

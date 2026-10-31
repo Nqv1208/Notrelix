@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
@@ -11,6 +12,7 @@ public static class CompleteBoardItemEndpoint
         group.MapResourcePost("/complete", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Complete")
+            .Produces<BoardItemVersionDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Complete a board item");
         return group;
@@ -23,6 +25,6 @@ public static class CompleteBoardItemEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new CompleteBoardItemCommand(itemId, body.CompletedAt, body.ExpectedVersion), cancellationToken);
-        return result.ToNoContentResult();
+        return result.ToItemVersionResult();
     }
 }
