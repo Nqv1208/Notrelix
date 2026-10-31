@@ -92,6 +92,13 @@ export const en = {
     body: "We refreshed the fields with their version. Your change was not saved.",
     reload: "Reload the card",
   },
+  fieldConflict: {
+    title: "Someone else just changed {{field}} to {{value}}",
+    body: "Your value is {{mine}}. Nothing has been overwritten.",
+    takeTheirs: "Use the new value",
+    keepMine: "Keep my value",
+    titleField: "the title",
+  },
 };
 export type ShellCopy = typeof en;
 export const vi: ShellCopy = {
@@ -186,5 +193,12 @@ export const vi: ShellCopy = {
     title: "Người khác vừa sửa thẻ này",
     body: "Các ô đã cập nhật theo bản mới. Thay đổi của bạn chưa được lưu.",
     reload: "Tải lại thẻ",
+  },
+  fieldConflict: {
+    title: "Một người khác vừa đổi {{field}} thành {{value}}",
+    body: "Giá trị của bạn là {{mine}}. Chưa có gì bị ghi đè.",
+    takeTheirs: "Dùng giá trị mới",
+    keepMine: "Giữ giá trị của tôi",
+    titleField: "tên thẻ",
   },
 };

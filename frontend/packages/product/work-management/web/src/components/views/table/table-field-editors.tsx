@@ -117,10 +117,12 @@ export function InlineInputEditor({
   label: string;
   copy: FieldCopy;
   alignEnd?: boolean;
-  onCommit: (value: unknown) => void;
+  /** `stale`: someone else changed the cell while this one was open. */
+  onCommit: (value: unknown, stale?: boolean) => void;
   children: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
+  const started = useRef<unknown>(undefined);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<DraftError | null>(null);
   const settled = useRef(false);
@@ -140,7 +142,8 @@ export function InlineInputEditor({
       // A draft that does not parse stays open with its reason and is never sent.
       if (!parsed.ok) return setError(parsed.error);
       settled.current = true;
-      if (!sameValue(field, parsed.value, value)) onCommit(parsed.value);
+      if (!sameValue(field, parsed.value, value))
+        onCommit(parsed.value, !sameValue(field, started.current, value));
     } else {
       settled.current = true;
     }
@@ -158,6 +161,7 @@ export function InlineInputEditor({
         title={text || undefined}
         onClick={() => {
           settled.current = false;
+          started.current = value;
           setDraft(text);
           setEditing(true);
         }}
@@ -224,15 +228,17 @@ export function LongTextEditor({
   text: string;
   label: string;
   copy: FieldCopy;
-  onCommit: (value: string | null) => void;
+  onCommit: (value: string | null, stale?: boolean) => void;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(text);
   const cancelled = useRef(false);
+  const started = useRef(text);
   const finish = (save: boolean) => {
     cancelled.current = !save;
-    if (save && draft !== text) onCommit(draft.trim() === "" ? null : draft);
+    if (save && draft !== text)
+      onCommit(draft.trim() === "" ? null : draft, text !== started.current);
     setOpen(false);
   };
   return (
@@ -241,6 +247,7 @@ export function LongTextEditor({
       onOpenChange={(next) => {
         if (next) {
           cancelled.current = false;
+          started.current = text;
           setDraft(text);
           setOpen(true);
         } else finish(!cancelled.current);

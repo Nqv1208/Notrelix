@@ -16,18 +16,28 @@ public class UpdateBoardGroupCommandHandler : IRequestHandler<UpdateBoardGroupCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(UpdateBoardGroupCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateBoardGroupCommand request, CancellationToken ct)
     {
         var list = await _context.BoardGroups.FirstOrDefaultAsync(l => l.Id == request.GroupId, ct);
         if (list is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);

@@ -17,8 +17,10 @@ public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand,
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICommentTargetAccess _access;
-    public UpdateCommentCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICommentTargetAccess access)
+    private readonly IBoardRealtimeNotifier? _realtime;
+    public UpdateCommentCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICommentTargetAccess access, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -26,6 +28,13 @@ public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand,
     }
 
     public async Task<Result> Handle(UpdateCommentCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateCommentCommand request, CancellationToken ct)
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
         if (comment is null) throw CommentAccessRules.NotFound(request.CommentId);

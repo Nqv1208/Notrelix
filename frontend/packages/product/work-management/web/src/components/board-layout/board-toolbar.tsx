@@ -35,6 +35,8 @@ interface BoardToolbarProps {
   /** Opens the board's deleted items from the More options menu. */
   onOpenTrash?: () => void;
   onOpenArchive?: () => void;
+  /** A notice between the title row and the view tabs (the live connection). */
+  notice?: React.ReactNode;
 }
 
 /**
@@ -54,6 +56,7 @@ export function BoardToolbar({
   onOpenSettings,
   onOpenTrash,
   onOpenArchive,
+  notice,
 }: BoardToolbarProps) {
   const contextCopy = useContext(BoardHeaderCopyContext);
   const contextHeader = useContext(BoardHeaderDataContext);
@@ -77,6 +80,7 @@ export function BoardToolbar({
         {...headerWithTrash}
         {...(onOpenSettings ? { onOpenSettings } : {})}
       />
+      {notice}
       <div
         className={cn(
           // One height for every view, so switching views moves nothing: the

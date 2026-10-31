@@ -22,15 +22,24 @@ public class RestoreBoardFieldCommandHandler : IRequestHandler<RestoreBoardField
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public RestoreBoardFieldCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public RestoreBoardFieldCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(RestoreBoardFieldCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RestoreBoardFieldCommand request, CancellationToken ct)
     {
         // The global filter hides soft-deleted rows and bypassing it drops its tenant predicate, so the scope is re-applied.
         var accountId = _requestContext.RequireAccountId();

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
+import { useLocale } from "@notrelix/i18n";
 import {
+  BoardConnectionNotice,
   BoardHeaderCopyContext,
   BoardHeaderDataContext,
   BoardLayoutShell,
@@ -20,6 +22,7 @@ import {
   boardSearchSchema,
   type BoardSearch,
 } from "../../../../router/schemas/board-search-schema";
+import { useRealtimeConnection } from "../../../../realtime/use-realtime-connection";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
@@ -49,6 +52,8 @@ export function BoardPage() {
   const { board } = useFullBoard(boardId, workspaceId);
   const currentUser = useCurrentUser();
   const headerCopy = useBoardHeaderCopy();
+  const connection = useRealtimeConnection();
+  const { locale } = useLocale();
   // `share` in the address opens the share dialog (the settings page's
   // "Quyền truy cập" lands here); the dialog also opens from the header.
   const [shareOpen, setShareOpen] = useState(search.share === true);
@@ -149,6 +154,15 @@ export function BoardPage() {
           onAddView={(layout) => void handleAddView(layout)}
           onOpenTrash={() => setTrashOpen(true)}
           onOpenArchive={() => setArchiveOpen(true)}
+          notice={
+            <BoardConnectionNotice
+              state={connection.state}
+              lostAt={connection.lostAt}
+              copy={headerCopy}
+              locale={locale}
+              onReconnect={connection.reconnect}
+            />
+          }
           onOpenSettings={() =>
             navigate({
               to: "/workspaces/$workspaceId/boards/$boardId/settings",

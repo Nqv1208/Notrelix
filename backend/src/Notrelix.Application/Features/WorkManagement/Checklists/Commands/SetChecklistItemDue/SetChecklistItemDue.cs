@@ -15,9 +15,17 @@ public record SetChecklistItemDueCommand(Guid ItemId, DateTimeOffset? DueAt, lon
 public class SetChecklistItemDueCommandHandler(
     IWorkManagementDbContext context,
     ICurrentUser currentUser,
-    IDateTimeProvider clock) : IRequestHandler<SetChecklistItemDueCommand, Result>
+    IDateTimeProvider clock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<SetChecklistItemDueCommand, Result>
 {
     public async Task<Result> Handle(SetChecklistItemDueCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(SetChecklistItemDueCommand request, CancellationToken ct)
     {
         var checklist = await ChecklistAggregateLoader.LoadOwningAsync(context, request.ItemId, ct);
         checklist.SetItemDue(request.ItemId, request.DueAt?.ToUniversalTime(), currentUser.UserId, clock.UtcNow);

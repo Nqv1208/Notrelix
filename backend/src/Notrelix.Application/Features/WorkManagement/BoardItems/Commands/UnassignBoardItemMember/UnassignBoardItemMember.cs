@@ -15,16 +15,25 @@ public class UnassignBoardItemMemberCommandHandler : IRequestHandler<UnassignBoa
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UnassignBoardItemMemberCommandHandler(
-        IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+        IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null)
     {
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
+        _realtime = realtime;
     }
 
     public async Task<Result> Handle(UnassignBoardItemMemberCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UnassignBoardItemMemberCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems.FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct)
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);

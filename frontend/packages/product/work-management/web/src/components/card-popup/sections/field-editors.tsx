@@ -39,6 +39,7 @@ import {
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup, useCanEdit } from "../card-popup-context";
+import { useServerDraft } from "../use-server-draft";
 import {
   ChipBtn,
   ChipReadOnly,
@@ -851,12 +852,16 @@ function TypedControl({
   const { write, save } = useFieldWrite(field);
   const kind = field.fieldType;
   const initial = raw === undefined || raw === null ? "" : String(raw);
-  const [draft, setDraft] = useState(initial);
+  const { draft, setDraft, held } = useServerDraft(initial, {
+    key: `field:${field.id}`,
+    field: field.name,
+    commit: () => commit(),
+  });
   const [invalid, setInvalid] = useState<string | undefined>();
-  useEffect(() => setDraft(initial), [initial]);
   const saving = save?.status === "saving";
   const Icon = kind === "number" ? Hash : Type;
   const commit = () => {
+    if (held()) return;
     if (draft === initial) return setInvalid(undefined);
     if (kind === "number") {
       const parsed = fieldTypeRegistry.number.parseDraft(

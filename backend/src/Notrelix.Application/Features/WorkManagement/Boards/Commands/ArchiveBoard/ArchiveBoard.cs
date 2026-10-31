@@ -24,18 +24,28 @@ public class ArchiveBoardCommandHandler : IRequestHandler<ArchiveBoardCommand, R
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public ArchiveBoardCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(ArchiveBoardCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(ArchiveBoardCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);

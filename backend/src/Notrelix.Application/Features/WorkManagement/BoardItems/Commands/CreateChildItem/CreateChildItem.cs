@@ -25,14 +25,17 @@ public class CreateChildItemCommandHandler : IRequestHandler<CreateChildItemComm
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
     private readonly IBoardItemKeyAllocator _keys;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateChildItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
         WorkPlacementResolver placement,
-        IBoardItemKeyAllocator keys)
+        IBoardItemKeyAllocator keys,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -41,6 +44,13 @@ public class CreateChildItemCommandHandler : IRequestHandler<CreateChildItemComm
     }
 
     public async Task<ChildItemDto> Handle(CreateChildItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<ChildItemDto> HandleCore(CreateChildItemCommand request, CancellationToken ct)
     {
         var parent = await _context.BoardItems
             .FirstOrDefaultAsync(item => item.Id == request.ParentItemId && item.DeletedAt == null, ct)

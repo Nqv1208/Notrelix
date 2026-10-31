@@ -9,17 +9,21 @@ public static class RealtimeRegistration
     public static IServiceCollection AddRealtime(
         this IServiceCollection services, IConfiguration configuration, IHostEnvironment? environment = null)
     {
-        if (IsDevelopmentOrTesting(configuration, environment))
+        var forceRedis = string.Equals(configuration["Realtime:Transport"], "Redis", StringComparison.OrdinalIgnoreCase);
+        if (IsDevelopmentOrTesting(configuration, environment) && !forceRedis)
         {
-            // Dev fallback: no transport side effects in development/testing.
-            services.AddScoped<IRealtimePublisher, DevNullRealtimePublisher>();
             services.AddSingleton<InMemoryRealtimeNotificationSource>();
             services.AddSingleton<IRealtimeNotificationSource>(
                 provider => provider.GetRequiredService<InMemoryRealtimeNotificationSource>());
+            // Testing: no transport side effects. Development: deliver to this process's sockets.
+            if (IsTesting(configuration, environment))
+                services.AddScoped<IRealtimePublisher, DevNullRealtimePublisher>();
+            else
+                services.AddScoped<IRealtimePublisher, InProcessRealtimePublisher>();
         }
         else
         {
-            // Production: real Redis-backed publisher (envelope contract in
+            // Production (or Realtime:Transport=Redis): real Redis-backed publisher (envelope contract in
             // RedisRealtimePublisher). Requires the Redis connection registered
             // by AddCaching; construction never connects (lazy multiplexer).
             services.AddScoped<IRealtimePublisher, RedisRealtimePublisher>();
@@ -27,6 +31,14 @@ public static class RealtimeRegistration
         }
 
         return services;
+    }
+
+    private static bool IsTesting(IConfiguration configuration, IHostEnvironment? environment)
+    {
+        var env = environment?.EnvironmentName
+               ?? configuration["DOTNET_ENVIRONMENT"]
+               ?? configuration["ASPNETCORE_ENVIRONMENT"];
+        return string.Equals(env, "Testing", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsDevelopmentOrTesting(IConfiguration configuration, IHostEnvironment? environment)

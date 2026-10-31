@@ -80,6 +80,17 @@ export interface CardPopupActions {
   readonly linkPage?: (pageId: string) => Promise<boolean>;
 }
 
+/** A field the person was editing that someone else saved: both values stay until the person picks one. */
+export interface FieldConflict {
+  readonly key: string;
+  /** The field's name, as the notice says it. */
+  readonly field: string;
+  readonly theirs: string;
+  readonly mine: string;
+  readonly takeTheirs: () => void;
+  readonly keepMine: () => void;
+}
+
 export interface CardPopupModel {
   readonly mode: CardPopupMode;
   readonly board: Board;
@@ -103,6 +114,10 @@ export interface CardPopupModel {
   /** A write was refused because someone else saved first. */
   readonly conflict: boolean;
   readonly clearConflict: () => void;
+  /** Fields another person changed while the person was editing them: each keeps its draft and shows a choice. */
+  readonly fieldConflicts: readonly FieldConflict[];
+  readonly raiseFieldConflict: (conflict: FieldConflict) => void;
+  readonly clearFieldConflict: (key: string) => void;
   /** The open picker; null: none. */
   readonly picker: CardPopupPicker | null;
   /** The control that opened the picker; the panel opens under it. Null: the quick row's own button. */

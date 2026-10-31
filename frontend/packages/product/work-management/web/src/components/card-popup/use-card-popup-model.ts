@@ -14,6 +14,7 @@ import {
   type CardPopupModel,
   type CardPopupPicker,
   type CardPopupSlots,
+  type FieldConflict,
   type FieldSave,
 } from "./card-popup-context";
 import { useCapabilitySlots } from "./capabilities/use-capability-slots";
@@ -73,6 +74,15 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
   );
   const [saves, setSaves] = useState<Record<string, FieldSave | undefined>>({});
   const [conflict, setConflict] = useState(false);
+  const [fieldConflicts, setFieldConflicts] = useState<readonly FieldConflict[]>(
+    [],
+  );
+  const raiseFieldConflict = useCallback((next: FieldConflict) => {
+    setFieldConflicts((all) => [...all.filter((c) => c.key !== next.key), next]);
+  }, []);
+  const clearFieldConflict = useCallback((key: string) => {
+    setFieldConflicts((all) => all.filter((c) => c.key !== key));
+  }, []);
   const mounted = useRef(true);
 
   const track = useCallback((key: string, run: () => Promise<unknown>) => {
@@ -143,6 +153,9 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     track,
     conflict,
     clearConflict: () => setConflict(false),
+    fieldConflicts,
+    raiseFieldConflict,
+    clearFieldConflict,
     picker,
     pickerAnchor,
     openPicker,

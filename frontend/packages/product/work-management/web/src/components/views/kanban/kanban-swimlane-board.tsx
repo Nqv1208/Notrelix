@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight, Ban, ArrowRight } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import { useHoldRealtimeRefetch } from "@notrelix/work-management-state";
 import {
   planLaneDrop,
   type Card,
@@ -94,6 +95,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
     () => new Set(),
   );
   const [dragId, setDragId] = useState<string | null>(null);
+  useHoldRealtimeRefetch(dragId !== null);
   const [overCell, setOverCell] = useState<string | null>(null);
   const [live, setLive] = useState("");
   const sensors = useSensors(

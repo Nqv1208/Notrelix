@@ -23,13 +23,16 @@ public class MoveChildItemCommandHandler : IRequestHandler<MoveChildItemCommand,
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveChildItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider timeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
@@ -37,6 +40,13 @@ public class MoveChildItemCommandHandler : IRequestHandler<MoveChildItemCommand,
     }
 
     public async Task<ChildItemDto> Handle(MoveChildItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<ChildItemDto> HandleCore(MoveChildItemCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
             .FirstOrDefaultAsync(i => i.Id == request.ItemId && i.DeletedAt == null, ct)

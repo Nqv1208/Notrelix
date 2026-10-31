@@ -43,10 +43,12 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
   }, []);
 
   const write = useCallback(
-    (rowId: string, fieldId: string, value: unknown) => {
+    (rowId: string, fieldId: string, value: unknown, stale = false) => {
       const key = keyOf(rowId, fieldId);
       const attempt = (latest.current.get(key) ?? 0) + 1;
       latest.current.set(key, attempt);
+      // The cell changed on the server while this one was open: the choice shows and nothing is sent.
+      if (stale) return put(key, { status: "conflict", value });
       put(key, { status: "pending", value });
       send(rowId, fieldId, value).then(
         () => {

@@ -29,15 +29,18 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardMemberRoleCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         BoardAccessChangeLog changeLog,
-        IBoardSharingSummary sharing)
+        IBoardSharingSummary sharing,
+        IBoardRealtimeNotifier? realtime = null)
     {
         _sharing = sharing;
+        _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
@@ -45,6 +48,13 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     }
 
     public async Task<Result> Handle(UpdateBoardMemberRoleCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateBoardMemberRoleCommand request, CancellationToken ct)
     {
         var board = await _context.Boards
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);

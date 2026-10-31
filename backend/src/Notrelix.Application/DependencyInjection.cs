@@ -100,6 +100,7 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
             (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
 
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddSingleton<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics>();

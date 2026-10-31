@@ -19,14 +19,17 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAttachmentTargetLock _targetLock;
     private readonly AttachmentUploadOptions _options;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateBoardItemAttachmentCommandHandler(
         ICollaborationDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IAttachmentTargetLock targetLock,
-        IOptions<AttachmentUploadOptions> options)
+        IOptions<AttachmentUploadOptions> options,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -34,7 +37,14 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
         _options = options.Value;
     }
 
-    public Task<Result<AttachmentDto>> Handle(CreateBoardItemAttachmentCommand request, CancellationToken ct) =>
+    public async Task<Result<AttachmentDto>> Handle(CreateBoardItemAttachmentCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private Task<Result<AttachmentDto>> HandleCore(CreateBoardItemAttachmentCommand request, CancellationToken ct) =>
         AttachmentTargetOperations.CreateLinkAsync(
             _context, _requestContext, _dateTimeProvider, _targetLock, _options,
             AttachmentTargets.BoardItem, request.BoardItemId,

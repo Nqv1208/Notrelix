@@ -20,13 +20,16 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public RestoreBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -34,6 +37,13 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
     }
 
     public async Task<Result> Handle(RestoreBoardItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RestoreBoardItemCommand request, CancellationToken ct)
     {
         // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
         // drops its tenant predicate, so the resolved tenant scope is re-applied here.

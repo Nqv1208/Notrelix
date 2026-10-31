@@ -8,6 +8,13 @@
 export const en = {
   /** Accessible name of the view tab list. */
   boardViews: "Views",
+  /** The live connection: shown only while it is not connected (see `BoardConnectionNotice`). */
+  connection: {
+    reconnecting: "Reconnecting…",
+    lostTitle: "Connection lost since {{time}}. Data may be out of date",
+    lostBody: "You can still read. Changes you make will fail and offer Try again.",
+    reconnect: "Reconnect",
+  },
   views: {
     table: "Table",
     kanban: "Kanban",
@@ -91,6 +98,12 @@ export type BoardHeaderCopy = typeof en;
 
 export const vi: BoardHeaderCopy = {
   boardViews: "Chế độ xem",
+  connection: {
+    reconnecting: "Đang kết nối lại…",
+    lostTitle: "Mất kết nối từ {{time}}. Dữ liệu có thể đã cũ",
+    lostBody: "Bạn vẫn đọc được. Thay đổi bạn làm sẽ báo lỗi và cho Thử lại.",
+    reconnect: "Kết nối lại",
+  },
   views: {
     table: "Bảng",
     kanban: "Kanban",

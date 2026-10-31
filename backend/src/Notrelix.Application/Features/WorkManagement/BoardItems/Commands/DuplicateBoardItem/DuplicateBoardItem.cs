@@ -22,9 +22,11 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
     private readonly IBoardItemKeyAllocator _keys;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _keys = keys;
         _context = context;
         _requestContext = requestContext;
@@ -33,6 +35,13 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(DuplicateBoardItemCommand request, CancellationToken ct)
     {
         var options = request.Options ?? new DuplicateBoardItemOptions();
         var source = await _context.BoardItems

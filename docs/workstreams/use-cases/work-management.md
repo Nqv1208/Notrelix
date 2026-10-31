@@ -54,27 +54,27 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 1 | 5 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 2 | 5 | 7 | 5 | 0 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 2 | 1 | 11 | 5 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
-| J | Kanban view | WM-010 | 6 | 2 | 1 | 2 | 1 | 0 | 0 |
+| J | Kanban view | WM-010 | 6 | 0 | 0 | 5 | 1 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
-| P | Realtime synchronization | WM-016 | 4 | 1 | 3 | 0 | 0 | 0 | 0 |
+| P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 21 | 14 | 71 | 63 | 0 | 1 |
+| | Total | | 170 | 18 | 6 | 78 | 67 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
 ## 1.2 The ten most important gaps
 
 1. Competing writes are last-writer-wins. Eight item commands (status, due date, complete, reopen, move to board, assign, unassign), label update and delete, member role change, view config writes and form question writes carry no expected version, and bulk edit sends none per item. The decision is that all of them carry it (UC-WM-B05, UC-WM-B06, UC-WM-B08, UC-WM-B14, UC-WM-A17, UC-WM-C22, UC-WM-H02, UC-WM-N02; D77.3; WMREQ110 to WMREQ113).
-2. There is no realtime on `develop`. Boards converge only by refetch; the adapter, wider event coverage and the access-loss handling are in open PR #193 (UC-WM-P01, UC-WM-P02, UC-WM-P03, UC-WM-P04, UC-WM-Q02). The stream version is also a wall-clock counter, not the resource version (LD4).
+2. Realtime is a notify-only board stream: every board change sends one content-free frame and the open board and card refetch (UC-WM-P01 to UC-WM-P04, UC-WM-Q02). The connection status, the draft choice and live role lowering are built; real e2e and owner check remain. The stream version is also a wall-clock counter, not the resource version (LD4).
 3. Large boards do not scale. Board, item and trash reads are unpaged, filter and sort run on the client, and no read returns filtered totals (UC-WM-T01, UC-WM-H17, UC-WM-I01, UC-WM-J01; WMREQ147).
 4. The delete lifecycle is half built. Board restore applies no 30-day rule, field delete is a hard delete with no restore, and no purge job exists for boards, fields or items (UC-WM-A07, UC-WM-C05, UC-WM-B17).
 5. Personal view state (filter, sort, group, swimlane, return to the shared view, stale-reference hint) exists only in open PR #201; saved filters and preferences are stored but never applied on the server (UC-WM-H06, UC-WM-H07, UC-WM-H08, UC-WM-J04, UC-WM-H11, UC-WM-H12, UC-WM-H09).
@@ -104,7 +104,7 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 | B-09 | Fixed for the cycle part: CreateBoardItemLink now runs DependencyRules.EnsureNoCycle and refuses a waits-on or blocks link that closes a cycle, naming the path. Open: links are same-board only (cross-board links not built); no kind-change command exists | CreateBoardItemLink; DependencyRules.EnsureNoCycle | UC-WM-B20 UC-WM-B21 UC-WM-L01 UC-WM-B35 | backend/src/Notrelix.Application/Features/WorkManagement/ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs; backend/src/Notrelix.Domain/WorkManagement/Items/DependencyRules.cs |
 | B-10 | PATCH /board-items/{id} has expected version but no Idempotency-Key, unlike sibling mutations | UpdateBoardItem | UC-WM-B04 UC-WM-B19 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs |
 | B-11 | Unbounded reads: board items, full board and trash load everything; computed fields add O(board) work per request (AGENTS.md section 25 red flag) | GetBoardItems, GetFullBoard, ListBoardItemTrash | UC-WM-A09 UC-WM-I01 UC-WM-J01 UC-WM-T01 UC-WM-B13 UC-WM-D07 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Queries/GetFullBoard/GetFullBoard.cs; backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/ListBoardItemTrash/ListBoardItemTrash.cs |
-| B-12 | Realtime StreamVersion is a wall-clock counter, not the resource version; only 8 commands publish on develop (open PR #193 widens coverage, version semantics unchanged) | RealtimeResourceChangedV1, RealtimeChangeMapper | UC-WM-P01 UC-WM-P03 | backend/src/Notrelix.Application/Common/Realtime/RealtimeResourceChangedV1.cs; backend/src/Notrelix.Application/Common/Realtime/RealtimeChangeMapper.cs |
+| B-12 | Realtime StreamVersion is a wall-clock counter, not the resource version; every board write handler now announces on the board stream; version semantics unchanged | RealtimeResourceChangedV1, RealtimeChangeMapper | UC-WM-P01 UC-WM-P03 | backend/src/Notrelix.Application/Common/Realtime/RealtimeResourceChangedV1.cs; backend/src/Notrelix.Application/Common/Realtime/RealtimeChangeMapper.cs |
 | B-13 | Dead code: unregistered duplicate endpoint, handler with no endpoint, stub consumers | CreateChecklistItemEndpoint, GetBoardsBySlugQuery, WM Stub consumers | UC-WM-G02 UC-WM-A09 UC-WM-O03 UC-WM-O04 | backend/src/Notrelix.API/Endpoints/WorkManagement/Checklists/Commands/CreateChecklistItemEndpoint.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Queries/GetBoardsBySlug/GetBoardsBySlug.cs; backend/src/Notrelix.Infrastructure/Messaging/ConsumerRegistrySetup.cs |
 | B-14 | Handlers with zero test references | ListApprovalRequests, Archive/Unarchive/RestoreBoardView, UpdateFormQuestion, Delete/Pause/ResumeBoardRelation | UC-WM-B28 UC-WM-H03 UC-WM-N02 UC-WM-C18 | backend/src/Notrelix.Application/Features/WorkManagement/Approvals, BoardViews, Forms, Relations |
 | B-15 | No API-level endpoint tests for Forms, Approvals, Templates, Relations, SavedFilters, Preferences | all endpoints of those groups | UC-WM-N01 to N05 UC-WM-B24 to B28 UC-WM-A12 to A15 UC-WM-H09 UC-WM-H06 | backend/tests (API tests project); backend/src/Notrelix.API/Endpoints/WorkManagement |
@@ -122,7 +122,7 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 | F-03 | Raw /boards/:id/plan-items path for Calendar and Timeline; the backend inventory lists no such route and a real e2e asserts it is not called | plan-items | UC-WM-K01 UC-WM-L01 | frontend/packages/product/work-management/state/src/api/item-extras.api.ts:276 |
 | F-04 | About 40 contract operations have no mock handler by id (Approvals.*, Relations.*, BoardPreferences.*, many BoardItems.*, Boards.*, SavedFilters update ops); mock e2e cannot prove those flows | mock-backend | UC-WM-A08 UC-WM-B10 UC-WM-B20 UC-WM-B24 to B28 UC-WM-H09 | frontend/packages/dev/mock-backend/src/contexts/work-management/ |
 | F-05 | Contract operations never called by the UI: BoardPreferences.* (open PR #201), Boards.Restore/Unarchive, BoardGroups.Archive/Unarchive, BoardViews.Archive/Restore, ClearFieldValue, UpdateFieldValues, GetSchema, SavedFilters update ops | generated client | UC-WM-A05 UC-WM-A07 UC-WM-E03 UC-WM-H03 UC-WM-D03 UC-WM-D01 UC-WM-H09 | frontend/packages/product/work-management/state/src (no callers) |
-| F-06 | No realtime adapter on develop: boards converge by refetch only (open PR #193 adds it) | module-adapter-registry | UC-WM-P01 UC-WM-P02 UC-WM-P03 UC-WM-P04 UC-WM-Q02 | frontend/apps/web/src/realtime/module-adapter-registry.ts |
+| F-06 | The Work Management adapter refetches the open board on a board frame; the connection status shows while reconnecting or lost | module-adapter-registry | UC-WM-P01 UC-WM-P02 UC-WM-P03 UC-WM-P04 UC-WM-Q02 | frontend/apps/web/src/realtime/module-adapter-registry.ts |
 | F-07 | No virtualization or paging; sort and filter run client-side on a fully loaded board | table, kanban views | UC-WM-I01 UC-WM-J01 UC-WM-T01 UC-WM-H17 | frontend/packages/product/work-management/web/src/components/views/table, views/kanban |
 | F-08 | Hard-coded capability flags lock field archive, field rules, view split, board automations; field archive contradicts D76.5 soft delete with restore | UNAVAILABLE | UC-WM-C04 UC-WM-C05 UC-WM-Q01 | frontend/packages/product/work-management/state/src/api/board-settings.api.ts |
 | F-09 | Kanban has no multi-select (Q8) and no WIP limit (D37) | KanbanView | UC-WM-B14 UC-WM-I03 UC-WM-J06 | frontend/packages/product/work-management/web/src/components/views/kanban/kanban-view.tsx |
@@ -330,10 +330,10 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | INTEGRATING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
 | UC-WM-O03 | Expose events and projections to Analytics | O | Analytics (consumer) | partial | not applicable | not applicable | none | INTEGRATING | 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13). |
 | UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | INTEGRATING | Single-logical-event proof under retry |
-| UC-WM-P01 | See a colleague's change live | P | Any viewer | partial (open PR #193) | no (open PR #193) | complete | none | IMPLEMENTING | the central code is in open PR #193, not on develop; real e2e (the PR adds mock e2e only); proof of the 2 s delivery. |
-| UC-WM-P02 | Keep editing safe while others edit | P | Editor | not applicable | no (open PR #193) | complete | none | DEFINED | the central code is in open PR #193, not on develop; tests that an unsaved draft and a drag survive an incoming frame. |
-| UC-WM-P03 | Lose and regain the connection | P | Any viewer | partial (open PR #193) | no (open PR #193) | complete | none | IMPLEMENTING | the central code is in open PR #193, not on develop; reconnect and gap-recovery proof. |
-| UC-WM-P04 | Lose access or role while the board is open | P | Any viewer | yes | no (open PR #193) | complete | none | IMPLEMENTING | the realtime subscription authorization exists; live role-lowering handling is in open PR #193 and unproven. |
+| UC-WM-P01 | See a colleague's change live | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec for two users on one board and card, tests of the notifier and the adapter, and owner check. |
+| UC-WM-P02 | Keep editing safe while others edit | P | Editor | not applicable | yes | complete | none | HARDENING | real e2e spec, tests that an unsaved draft and a drag survive a frame, the table cell choice driven live, and owner check. |
+| UC-WM-P03 | Lose and regain the connection | P | Any viewer | yes | yes | partial | none | HARDENING | real e2e spec, reconnect and gap tests, the status measured in dark and at 1024, and owner check. |
+| UC-WM-P04 | Lose access or role while the board is open | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec, a test of the 60 s re-check, and owner check. |
 | UC-WM-Q01 | Let an Automation rule act on items | Q | Rule executor identity | yes | yes | complete | automation | HARDENING | Loop-guard and executor-lost tests |
 | UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | IMPLEMENTING | live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
 | UC-WM-Q03 | Sync items with an external provider | Q | Integrations | no | no | not applicable | none | DEFINED | Integrations-owned; idempotent replay test when built |
@@ -2527,8 +2527,8 @@ Team capability WM-016.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115-116; WM-032; WMREQ124-126; LD4
 - Acceptance: (1) Given reduced motion is set, when any remote change, drop or create highlight occurs, then no animation plays. (2) Given A creates the first item on an empty board, when the frame arrives, then B's empty state is replaced by the item. (3) Given a frame of another board or of the previous workspace arrives late, when received, then no view of the current board changes.
-- Evidence: BE in open PR #193: BoardRealtimeNotifier announces every board change (develop: 8 commands) · FE in open PR #193: work-management-realtime-adapter.ts (develop: none) · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #193, not on develop; real e2e (the PR adds mock e2e only); proof of the 2 s delivery.
+- Evidence: BE `IBoardRealtimeNotifier` called by the Work Management write handlers and the comment, attachment and reaction handlers (`BoardRealtimeNotifier`, `BoardRealtimeScopeAdapter`); development publisher `InProcessRealtimePublisher` · FE `work-management-realtime-adapter.ts`, `realtime-lifecycle.tsx`, `drag-gate.ts` · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none · real-stack check 2026-10-31: two browser contexts on one board and one open card; one person changed the title, comment, due date, labels, checklist, link, attachment, cover, vote, lane and assignee and created a card; the other person's popup and board showed each change in 0.1 to 1.2 s without a reload, one frame per change, no duplicate event id; a rejected write and a write that changed nothing (same title, same cover, same vote) sent no frame; after leaving the workspace no board frame arrived; over Redis and in-process, commit efd513a3f
+- State: HARDENING — the real e2e spec, tests of the notifier and the adapter, and the owner check.
 
 ### UC-WM-P02 Keep editing safe while others edit
 - Capability: P Realtime synchronization (WM-016)
@@ -2541,8 +2541,8 @@ Team capability WM-016.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115; WM-032
 - Acceptance: (1) Given B is dragging a card, when A moves another card, then B's drag completes unaffected and the board re-reads after the drop. (2) Given B has a cell editor open on another item, when A changes something, then B's editor, caret, scroll position and selection are unchanged. (3) Given B has an unsaved edit on field F and A changes F, when B saves, then the in-cell conflict choice appears; B's draft is never overwritten before that.
-- Evidence: BE not applicable · FE in open PR #193: refetch only open board's queries; editor-preserving behaviour per unproven · Design BC-Notices, BC-Realtime-1440 · Tests none found · Real e2e none
-- State: DEFINED — the central code is in open PR #193, not on develop; tests that an unsaved draft and a drag survive an incoming frame.
+- Evidence: BE not applicable · FE `use-server-draft.ts` and `popup-states.tsx` (two-way choice from BC-Notices), `use-field-cell-writes.ts` (stale cell opens the in-cell choice), `kanban-board.tsx` and `refetch-hold.ts` (drag hold) · Design BC-Notices, BC-Realtime-1440 · Tests none found · Real e2e none · real-stack check 2026-10-31: a person typing in the title kept the draft when another person renamed the item and saw "Someone else just changed the title to …"; leaving the field wrote nothing; "Use the new value" took theirs and "Keep my value" saved the draft; a card dragged while another person renamed another card caused no refetch until the drop, commit efd513a3f
+- State: HARDENING — the real e2e spec, tests that a draft and a drag survive a frame, the table cell and the sheet cell choice driven live (typechecked only), and the owner check; the description editor still relies on the server's stale-version notice.
 
 ### UC-WM-P03 Lose and regain the connection
 - Capability: P Realtime synchronization (WM-016)
@@ -2555,8 +2555,8 @@ Team capability WM-016.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115-116; WM-032; WMREQ126; LD4
 - Acceptance: (1) Given a stream gap or reset, when detected, then the open board refetches from the server and shows no stale item. (2) Given connection loss, when the stream drops, then a "reconnecting" status shows, writes still follow/ failure rules, and on reconnect the board refetches.
-- Evidence: BE in open PR #193: gateway recovery; StreamVersion is a clock (unchanged) · FE in open PR #193: `frontend/apps/web/src/providers/realtime-lifecycle.tsx`, transport recovery · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #193, not on develop; reconnect and gap-recovery proof.
+- Evidence: BE gateway reconnect and re-authorization every 60 s · FE `realtime-lifecycle.tsx` refetches the workspace scope on resubscribe; `use-realtime-connection.ts` and `board-connection-notice.tsx` show the status · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none · real-stack check 2026-10-31: a viewer's socket was closed while another person commented and renamed; it reconnected within 1 s and the missed comment showed in 2.6 s without a reload; with the server killed a "Reconnecting…" pill showed at once and after 10 s the "Connection lost since 12:48 PM. Data may be out of date" notice with Reconnect; box check at 1440: banner 64 px high, button 44 px, pill 28 px high, as the artboard; at 320 banner 148 px high, button 44 px full width, as the artboard; commit efd513a3f
+- State: HARDENING — the real e2e spec, reconnect and gap tests, the status measured in dark and at 1024 and 390, and the owner check; deviations: nothing shows while connected (the artboard's quiet "connected" line is left out so the measured headers keep their size), widths differ by the font and the shell (button 99 vs 94 px at 1440, banner 472 px wide and two lines at 768 because the rail takes the width), the offline write rule "fails and offers Try again" is the existing write failure.
 
 ### UC-WM-P04 Lose access or role while the board is open
 - Capability: P Realtime synchronization (WM-016)
@@ -2569,8 +2569,8 @@ Team capability WM-016.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115, 103; WM-030; WMREQ105-108
 - Acceptance: (1) Given B's level drops from Member to Viewer, when the access read updates, then editors, drag handles and bulk checkboxes disappear without reload. (2) Given B's access to the board is removed, when the next frame or refetch returns NotFound, then B's view shows the generic no-access state and no board data remains on screen. (3) Given the person's level drops to Viewer while the sheet is open, when the next frame or refetch arrives, then editors close, values remain, and a banner says the item is now read-only.
-- Evidence: BE realtime subscription authorization (AuthorizeBoardRealtimeSubscriptionQuery) · FE in open PR #193: adapter; live role-lowering unproven · Design BC-Realtime (access lost, permission reduced) · Tests `RealtimeSubscriptionAuthorizationTests.cs` · Real e2e none
-- State: IMPLEMENTING — the realtime subscription authorization exists; live role-lowering handling is in open PR #193 and unproven.
+- Evidence: BE realtime subscription authorization (AuthorizeBoardRealtimeSubscriptionQuery), re-checked every 60 s · FE adapter and refetch, `use-full-board.ts` drops the cached board once the read answers NotFound or forbidden · Design BC-Realtime (access lost, permission reduced) · Tests `RealtimeSubscriptionAuthorizationTests.cs` · Real e2e none · real-stack check 2026-10-31: a workspace member without access and a guest were refused the private board's stream (subscription_denied) and received no frame while its owner received every change; their REST read returned the same NotFound as an unknown id; a member whose role was lowered to Observer saw the title editor turn read-only and the read-only banner without a reload; a member removed from the board saw the generic unavailable state with no board name or card, commit efd513a3f
+- State: HARDENING — the real e2e spec, a test of the 60 s re-check, and the owner check; the lowered role was checked on the popup title and banner, not on bulk checkboxes or drag handles.
 
 ## Q. Automation handoff
 

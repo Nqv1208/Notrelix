@@ -26,14 +26,17 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public RemoveBoardMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         BoardAccessChangeLog changeLog,
         IDateTimeProvider dateTimeProvider,
-        IBoardSharingSummary sharing)
+        IBoardSharingSummary sharing,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _dateTimeProvider = dateTimeProvider;
         _sharing = sharing;
         _changeLog = changeLog;
@@ -42,6 +45,13 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
     }
 
     public async Task<Result> Handle(RemoveBoardMemberCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RemoveBoardMemberCommand request, CancellationToken ct)
     {
         var board = await _context.Boards
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);

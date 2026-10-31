@@ -653,9 +653,9 @@ export function MainTableView({
     canEdit: capabilities.canEditFields,
     members,
     writeOf: cellWrites.writeOf,
-    onWrite: (cardId, fieldDefinitionId, value) => {
+    onWrite: (cardId, fieldDefinitionId, value, stale) => {
       noteTitle(cardId);
-      cellWrites.write(cardId, fieldDefinitionId, value);
+      cellWrites.write(cardId, fieldDefinitionId, value, stale);
     },
     onRetry: cellWrites.retry,
     onKeepMine: cellWrites.keepMine,

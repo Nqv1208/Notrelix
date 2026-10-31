@@ -16,9 +16,17 @@ public record ClearBoardItemLinksCommand(Guid BoardItemId)
     public PermissionAction Action => PermissionAction.UpdateItem;
 }
 
-public class ClearBoardItemLinksCommandHandler(IWorkManagementDbContext context) : IRequestHandler<ClearBoardItemLinksCommand, Result<int>>
+public class ClearBoardItemLinksCommandHandler(IWorkManagementDbContext context,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<ClearBoardItemLinksCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(ClearBoardItemLinksCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<int>> HandleCore(ClearBoardItemLinksCommand request, CancellationToken ct)
     {
         var itemKind = ResourceKind.Create("work-management.board-item");
         var links = (await context.BoardItemLinks

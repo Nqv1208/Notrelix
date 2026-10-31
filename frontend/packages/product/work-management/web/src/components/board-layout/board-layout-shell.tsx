@@ -15,6 +15,8 @@ interface BoardLayoutShellProps {
   onOpenTrash?: () => void;
   /** Opens the board's archived items; absent: no entry in the menu. */
   onOpenArchive?: () => void;
+  /** A notice between the title row and the view tabs. */
+  notice?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -29,6 +31,7 @@ export function BoardLayoutShell({
   onOpenSettings,
   onOpenTrash,
   onOpenArchive,
+  notice,
   children,
 }: BoardLayoutShellProps) {
   return (
@@ -42,6 +45,7 @@ export function BoardLayoutShell({
         onOpenSettings={onOpenSettings}
         onOpenTrash={onOpenTrash}
         onOpenArchive={onOpenArchive}
+        notice={notice}
       />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>
