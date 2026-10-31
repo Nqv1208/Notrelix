@@ -528,8 +528,7 @@ export function FieldControl({
           <DateEditor
             field={field}
             value={typeof raw === "string" ? raw.slice(0, 10) : null}
-            // The server keeps a date as an instant, like the item's own due date.
-            onSave={(day) => write(day === null ? null : `${day}T00:00:00.000Z`)}
+            onSave={write}
             onClose={() => setOpen(false)}
           />
         ) : null}

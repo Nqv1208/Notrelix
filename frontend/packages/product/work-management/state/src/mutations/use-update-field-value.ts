@@ -168,11 +168,21 @@ export function runFieldValueCommand(
           .filter((id): id is string => typeof id === "string");
         return cards.setAssignees(payload.cardId, next, current);
       }
-      return cards.updateFieldValue(payload, {
-        ...context,
-        expectedVersion:
-          findBoardCard(board, payload.cardId)?.version ?? undefined,
-      });
+      // The server keeps a date field as an instant; the editors pick a day.
+      const value =
+        field?.fieldType === "date" &&
+        typeof payload.value === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(payload.value)
+          ? `${payload.value}T00:00:00.000Z`
+          : payload.value;
+      return cards.updateFieldValue(
+        { ...payload, value },
+        {
+          ...context,
+          expectedVersion:
+            findBoardCard(board, payload.cardId)?.version ?? undefined,
+        },
+      );
     },
   });
 }
