@@ -19,17 +19,20 @@ public record DeleteBlockCommand(Guid PageId, Guid BlockId, long? ExpectedVersio
 public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Result>
 {
     private readonly IDocumentDbContext _context;
+    private readonly IPageBlockWriteLock _writeLock;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public DeleteBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public DeleteBlockCommandHandler(IDocumentDbContext context, IPageBlockWriteLock writeLock, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _writeLock = writeLock;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(DeleteBlockCommand request, CancellationToken ct)
     {
+        await _writeLock.AcquireAsync(request.PageId, ct);
         var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(Page), request.PageId);
         PageRules.EnsureCanEdit(page.Status);

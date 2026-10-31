@@ -173,6 +173,8 @@ internal sealed class OrgTreeTestHost
             Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,
+            Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
             Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
 

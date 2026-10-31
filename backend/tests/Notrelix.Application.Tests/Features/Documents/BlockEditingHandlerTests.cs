@@ -53,6 +53,20 @@ public sealed class BlockEditingHandlerTests
     }
 
     [Fact]
+    public async Task CreatingBetweenTwoBlocksOnTheSameKey_IsAConflict_NotAnUnmappedFailure()
+    {
+        var page = NewPage();
+        var first = NewBlock(page, "a0");
+        var (sut, context) = CreateCreateSut(page, [first, NewBlock(page, "a0")]);
+
+        var act = () => sut.Handle(
+            new CreateBlockCommand(page.Id, null, "paragraph", null, null, first.Id, null), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ConflictException>()).Which.ErrorCode.Should().Be("documents.block.position-conflict");
+        context.Added.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task CreatingAfterAnUnknownBlock_IsNotFound()
     {
         var page = NewPage();
@@ -210,7 +224,7 @@ public sealed class BlockEditingHandlerTests
         context.Setup(c => c.Blocks).Returns(blockSet.Object);
         var requestContext = new FakeCurrentRequestContext().AsUser(UserId);
         requestContext.Tenant.SetWorkspace(AccountId, WorkspaceId, UserId);
-        return (new CreateBlockCommandHandler(context.Object, requestContext, new FixedClock()), recorded);
+        return (new CreateBlockCommandHandler(context.Object, new NoPageBlockWriteLock(), requestContext, new FixedClock()), recorded);
     }
 
     private static UpdateBlockCommandHandler CreateUpdateSut(List<Block> blocks, Page page)

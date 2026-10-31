@@ -31,18 +31,21 @@ public record CreateBlockCommand(
 public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Result<BlockDto>>
 {
     private readonly IDocumentDbContext _context;
+    private readonly IPageBlockWriteLock _writeLock;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateBlockCommandHandler(IDocumentDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateBlockCommandHandler(IDocumentDbContext context, IPageBlockWriteLock writeLock, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _writeLock = writeLock;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<BlockDto>> Handle(CreateBlockCommand request, CancellationToken ct)
     {
+        await _writeLock.AcquireAsync(request.PageId, ct);
         var page = await _context.Pages
             .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);

@@ -3,6 +3,7 @@ using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Infrastructure.Data.Concurrency;
+using Notrelix.Infrastructure.Data.Documents;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -114,7 +115,19 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
             using var transactionCommit = PipelineActivitySource.Instance.StartActivity("data_session.commit");
             commitStarted = true;
-            await transaction.CommitAsync(cancellationToken);
+            try
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception exception) when (DocumentOrderingConstraints.IsBlockOrderingViolation(exception))
+            {
+                // Deferred check: two live blocks of one page would share a sort key. The database rolled the
+                // whole write back, so the caller reloads and retries.
+                throw new ConflictException(
+                    "The block position was taken by a concurrent change. Reload and retry.",
+                    DocumentOrderingConstraints.BlockPositionConflictCode);
+            }
+
             if (options.Access == RequestDataAccess.Transactional)
                 _outboxWakeSignal?.TrySignal();
             _logger.LogTrace("Committed data session");

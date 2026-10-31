@@ -26,13 +26,15 @@ public record RestorePageVersionCommand(Guid PageId, Guid VersionId, List<SeenBl
 public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersionCommand, Result<RestorePageVersionResultDto>>
 {
     private readonly IDocumentDbContext _context;
+    private readonly IPageBlockWriteLock _writeLock;
     private readonly IPageVersionRecorder _recorder;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public RestorePageVersionCommandHandler(IDocumentDbContext context, IPageVersionRecorder recorder, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public RestorePageVersionCommandHandler(IDocumentDbContext context, IPageBlockWriteLock writeLock, IPageVersionRecorder recorder, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _writeLock = writeLock;
         _recorder = recorder;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -40,6 +42,7 @@ public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersi
 
     public async Task<Result<RestorePageVersionResultDto>> Handle(RestorePageVersionCommand request, CancellationToken ct)
     {
+        await _writeLock.AcquireAsync(request.PageId, ct);
         var page = await _context.Pages
             .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(Page), request.PageId);

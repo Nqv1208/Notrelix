@@ -140,7 +140,7 @@ public sealed class ReorderBlocksHandlerTests
         context.Setup(c => c.Blocks).Returns(TestDbSet.Create(blocks).Object);
         var requestContext = new FakeCurrentRequestContext().AsUser(UserId);
         requestContext.Tenant.SetWorkspace(AccountId, WorkspaceId, UserId);
-        return new ReorderBlocksCommandHandler(context.Object, requestContext, new FixedClock());
+        return new ReorderBlocksCommandHandler(context.Object, new NoPageBlockWriteLock(), requestContext, new FixedClock());
     }
 
     private sealed class FixedClock : IDateTimeProvider

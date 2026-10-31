@@ -31,18 +31,21 @@ public record ReorderBlockItem(Guid BlockId, long? ExpectedVersion, Guid? Parent
 public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand, Result<List<BlockDto>>>
 {
     private readonly IDocumentDbContext _context;
+    private readonly IPageBlockWriteLock _writeLock;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ReorderBlocksCommandHandler(IDocumentDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public ReorderBlocksCommandHandler(IDocumentDbContext context, IPageBlockWriteLock writeLock, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _writeLock = writeLock;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<List<BlockDto>>> Handle(ReorderBlocksCommand request, CancellationToken ct)
     {
+        await _writeLock.AcquireAsync(request.PageId, ct);
         var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(Page), request.PageId);
         PageRules.EnsureCanEdit(page.Status);

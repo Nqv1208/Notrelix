@@ -71,7 +71,7 @@ internal sealed class PageBlockSet
     {
         var (lower, upper) = Bounds(Siblings(parentId, moving), afterBlockId, beforeBlockId);
         if (string.IsNullOrWhiteSpace(explicitPosition))
-            return FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
+            return KeyBetween(lower, upper);
 
         FractionalIndex key;
         try
@@ -89,6 +89,25 @@ internal sealed class PageBlockSet
             throw new Notrelix.Application.Common.Exceptions.ValidationException($"'{explicitPosition}' does not lie between the siblings the request names.");
         return key;
     }
+
+    /// <summary>
+    /// A key strictly between the bounds. Bounds that are not in order (two siblings on one key) leave no room
+    /// for one: that is a conflict the caller can reload from, not a failure of the server.
+    /// </summary>
+    private static FractionalIndex KeyBetween(FractionalIndex? lower, FractionalIndex? upper)
+    {
+        try
+        {
+            return FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
+        }
+        catch (ArgumentException)
+        {
+            throw new ConflictException("The blocks around the position share a sort key. Reload and retry.", PositionConflictCode);
+        }
+    }
+
+    /// <summary>The error code of a position that two blocks would share.</summary>
+    public const string PositionConflictCode = "documents.block.position-conflict";
 
     /// <summary>The keys of the siblings a placement lies between; null at the start or end of the list.</summary>
     private (FractionalIndex? Lower, FractionalIndex? Upper) Bounds(List<Block> siblings, Guid? afterBlockId, Guid? beforeBlockId)

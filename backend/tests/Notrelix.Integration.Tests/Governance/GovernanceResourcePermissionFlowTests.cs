@@ -1643,6 +1643,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             global::Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,
+            global::Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
             global::Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
