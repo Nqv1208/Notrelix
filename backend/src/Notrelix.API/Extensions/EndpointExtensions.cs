@@ -27,9 +27,13 @@ public static class EndpointExtensions
         if (!result.Succeeded)
             return ResultToProblemDetails(result);
 
-        return location is not null
-            ? Results.Created(location, result.Data)
-            : Results.Created($"/{result.Data}", result.Data);
+        if (location is not null)
+            return Results.Created(location, result.Data);
+
+        // A DTO's ToString is not a URL (it carries dates and names that are not valid in a header).
+        return result.Data is Guid or string
+            ? Results.Created($"/{result.Data}", result.Data)
+            : Results.Json(result.Data, statusCode: StatusCodes.Status201Created);
     }
 
     public static IResult ToNoContentResult(this Result result)
