@@ -383,18 +383,24 @@ export function groupCardsByField(
   naming: LaneNaming,
 ): KanbanStatusLane[] {
   const type = field.field.fieldType;
-  const keyOf = (card: Card): string => {
+  const keysOf = (card: Card): string[] => {
     const value = field.read(card);
     if (type === "date") {
       const day = dayOf(value, naming.timeZone);
-      return day ? bucketKeyOf(day, bucket ?? "day") : "";
+      return [day ? bucketKeyOf(day, bucket ?? "day") : ""];
     }
-    return groupKeyOf(field.field, value) ?? "";
+    // A person field holds several people: the card shows in every person's lane (Q13).
+    if (type === "person" && Array.isArray(value)) {
+      const people = [...new Set(value.map(String).filter(Boolean))];
+      if (people.length > 0) return people;
+    }
+    return [groupKeyOf(field.field, value) ?? ""];
   };
   const byKey = new Map<string, Card[]>();
   for (const card of cards) {
-    const key = keyOf(card);
-    byKey.set(key, [...(byKey.get(key) ?? []), card]);
+    for (const key of keysOf(card)) {
+      byKey.set(key, [...(byKey.get(key) ?? []), card]);
+    }
   }
   let keys = [...byKey.keys()].filter((key) => key !== "");
   if (type === "select" || type === "checkbox") {
@@ -454,6 +460,8 @@ export interface LaneDropInput {
   /** The lane group key the card is in and the target lane's (`null`: the "none" lane). */
   readonly fromLane: string | null;
   readonly toLane: string | null;
+  /** The card's people when the lane field is a person field: a drop swaps only `fromLane` for `toLane` (Q13). */
+  readonly people?: readonly string[];
   /** The target column's WIP limit and how many cards the cell column holds now. */
   readonly wip?: { readonly limit: number; readonly count: number } | null;
 }
@@ -494,16 +502,20 @@ export function planLaneDrop(input: LaneDropInput): LaneDropPlan {
   let lane: unknown;
   if (laneChanged) {
     const type = input.laneField.field.fieldType;
-    lane =
-      input.toLane === null
-        ? type === "person"
-          ? []
-          : null
-        : type === "person"
-          ? [input.toLane]
+    if (type === "person") {
+      const others = (input.people ?? []).filter((id) => id !== input.fromLane);
+      lane =
+        input.toLane === null || others.includes(input.toLane)
+          ? others
+          : [...others, input.toLane];
+    } else {
+      lane =
+        input.toLane === null
+          ? null
           : type === "checkbox"
             ? input.toLane === "true"
             : input.toLane;
+    }
   }
   return {
     ok: true,

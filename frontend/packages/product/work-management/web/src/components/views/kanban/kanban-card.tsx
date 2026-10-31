@@ -568,6 +568,7 @@ export function KanbanCardOverlay({
  */
 export function KanbanCard({
   card,
+  dndId,
   laneKey,
   now,
   timeZone,
@@ -580,6 +581,8 @@ export function KanbanCard({
   selection,
 }: {
   card: Card;
+  /** The drag id when the same card shows in several cells (a card of several people in swimlanes); the card id when absent. */
+  dndId?: string;
   /** The lane this card is shown in (the lane it is dragged over while dragging). */
   laneKey?: string;
   /** The reference time for the due wording; read once by the container. */
@@ -607,7 +610,7 @@ export function KanbanCard({
   const picking = (selection?.selectedIds.size ?? 0) > 0;
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
-      id: card.id,
+      id: dndId ?? card.id,
       data: { type: KANBAN_CARD_TYPE, card, laneKey },
       disabled: dragDisabled,
       // The sortable animation of the cards that make room is the smooth part

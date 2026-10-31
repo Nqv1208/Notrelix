@@ -39,6 +39,9 @@ import type { KanbanMoveDirection } from "./kanban-dnd";
 const CELL_TYPE = "swimlane-cell";
 const keyOf = (optionId: string | null) => optionId ?? "none";
 const cellId = (lane: string, column: string) => `cell:${lane}::${column}`;
+/** One drag id per cell: the same card can show in several lanes. */
+const dndIdOf = (lane: string, column: string, card: Card) =>
+  `${lane}::${column}::${card.id}`;
 
 export interface SwimlaneDrop {
   readonly card: Card;
@@ -94,7 +97,14 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const [dragId, setDragId] = useState<string | null>(null);
+  // The card being dragged and the lane it was picked up from: a card of
+  // several people shows in each person's lane (Q13), so the card alone does
+  // not say which lane it leaves.
+  const [drag, setDrag] = useState<{
+    cardId: string;
+    lane: string | null;
+  } | null>(null);
+  const dragId = drag?.cardId ?? null;
   useHoldRealtimeRefetch(dragId !== null);
   const [overCell, setOverCell] = useState<string | null>(null);
   const [live, setLive] = useState("");
@@ -111,12 +121,6 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
       for (const card of column.cards) map.set(card.id, column.optionId);
     return map;
   }, [columns]);
-  const laneOf = useMemo(() => {
-    const map = new Map<string, string | null>();
-    for (const lane of swimlanes)
-      for (const card of lane.cards) map.set(card.id, lane.optionId);
-    return map;
-  }, [swimlanes]);
   const cardsById = useMemo(() => {
     const map = new Map<string, Card>();
     for (const lane of swimlanes)
@@ -131,6 +135,12 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
   const dragged = dragId ? cardsById.get(dragId) : undefined;
 
   /** What dropping the dragged card on a cell does; the refusal when it cannot be written. */
+  const peopleOf = (card: Card): string[] | undefined => {
+    if (laneField.field.fieldType !== "person") return undefined;
+    const value = laneField.read(card);
+    return Array.isArray(value) ? value.map(String) : [];
+  };
+
   const planFor = (cell: {
     lane: string | null;
     column: string | null;
@@ -141,8 +151,9 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
       laneField,
       fromColumn: columnOf.get(dragged.id) ?? null,
       toColumn: cell.column,
-      fromLane: laneOf.get(dragged.id) ?? null,
+      fromLane: drag?.lane ?? null,
       toLane: cell.lane,
+      people: peopleOf(dragged),
       wip:
         limit !== undefined
           ? {
@@ -182,8 +193,16 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
     return lane ? props.laneName(lane) : "";
   };
 
-  const onDragStart = (event: DragStartEvent) =>
-    setDragId(String(event.active.id));
+  const onDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current as
+      { card?: Card; laneKey?: string } | undefined;
+    const origin = data?.laneKey?.replace(/^cell:/, "").split("::")[0];
+    if (!data?.card) return;
+    setDrag({
+      cardId: data.card.id,
+      lane: !origin || origin === "none" ? null : origin,
+    });
+  };
   const onDragOver = (event: DragOverEvent) => {
     const target = targetOf(event.over);
     setOverCell(target?.id ?? null);
@@ -206,7 +225,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
   const onDragEnd = (event: DragEndEvent) => {
     const target = targetOf(event.over);
     const card = dragged;
-    setDragId(null);
+    setDrag(null);
     setOverCell(null);
     if (!target || !card) return;
     const plan = planFor(target);
@@ -229,13 +248,17 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
     });
   };
 
-  const moveByKey = (cardId: string, direction: KanbanMoveDirection) => {
+  const moveByKey = (
+    cardId: string,
+    direction: KanbanMoveDirection,
+    fromLane: string | null,
+  ) => {
     const card = cardsById.get(cardId);
     if (!card) return;
     const columnKeys = columns.map((c) => c.optionId);
     const laneKeys = swimlanes.map((l) => l.optionId);
     const ci = columnKeys.indexOf(columnOf.get(cardId) ?? null);
-    const li = laneKeys.indexOf(laneOf.get(cardId) ?? null);
+    const li = laneKeys.indexOf(fromLane);
     const nextCi =
       direction === "left" ? ci - 1 : direction === "right" ? ci + 1 : ci;
     const nextLi =
@@ -254,8 +277,9 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
       laneField,
       fromColumn: columnOf.get(cardId) ?? null,
       toColumn,
-      fromLane: laneOf.get(cardId) ?? null,
+      fromLane,
       toLane,
+      people: peopleOf(card),
       wip:
         limit !== undefined
           ? { limit, count: countByColumn.get(keyOf(toColumn)) ?? 0 }
@@ -287,7 +311,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
       onDragCancel={() => {
-        setDragId(null);
+        setDrag(null);
         setOverCell(null);
       }}
     >
@@ -398,9 +422,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
                                     columnOf.get(dragged?.id ?? "") ?? null,
                                   ),
                                   toColumn: columnLabel(column.optionId),
-                                  fromLane: laneLabel(
-                                    laneOf.get(dragged?.id ?? "") ?? null,
-                                  ),
+                                  fromLane: laneLabel(drag?.lane ?? null),
                                   toLane: name,
                                 })
                               : refusalText(
@@ -414,19 +436,31 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
                         empty={copy.states.laneEmpty}
                       >
                         <SortableContext
-                          items={cards.map((card) => card.id)}
+                          items={cards.map((card) =>
+                            dndIdOf(laneKey, colKey, card),
+                          )}
                           strategy={verticalListSortingStrategy}
                         >
                           {cards.map((card) => (
                             <KanbanCard
                               key={card.id}
                               card={card}
+                              dndId={dndIdOf(laneKey, colKey, card)}
                               laneKey={cellId(laneKey, colKey)}
                               now={props.now}
                               copy={props.cardCopy}
                               selected={card.id === props.selectedItemId}
                               dragDisabled={!props.canDrag}
-                              onMoveKey={props.canDrag ? moveByKey : undefined}
+                              onMoveKey={
+                                props.canDrag
+                                  ? (cardId, direction) =>
+                                      moveByKey(
+                                        cardId,
+                                        direction,
+                                        lane.optionId,
+                                      )
+                                  : undefined
+                              }
                               actions={props.cardActions}
                               selection={props.cardSelection}
                               onOpenDetails={props.onOpenDetails}
