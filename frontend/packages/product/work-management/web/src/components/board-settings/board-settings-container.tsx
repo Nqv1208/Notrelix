@@ -90,7 +90,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const { workspaceId, boardId } = props;
   const copy = useBoardSettingsCopy();
   const laneCopy = useKanbanLaneCopy();
-  const { board, groups } = useFullBoard(boardId, workspaceId);
+  const { board, groups, paging } = useFullBoard(boardId, workspaceId);
   // The Kanban panel edits the Kanban view that is open (or the board's first one).
   const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId, {
     viewId: props.viewId ?? undefined,
@@ -217,8 +217,8 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const templates = useMemo<BoardTemplatesPanelProps>(() => {
     let itemCount: number | undefined;
     if (board) {
-      itemCount = 0;
-      for (const group of groups) itemCount += group.cards.length;
+      itemCount = paging?.totalItems ?? 0;
+      if (!paging) for (const group of groups) itemCount += group.cards.length;
     }
     return {
       status: boardTemplates.isError
@@ -236,7 +236,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onArchive: templateWrites.archive,
       onDelete: templateWrites.remove,
     };
-  }, [board, boardId, boardTemplates, groups, templateWrites]);
+  }, [board, boardId, boardTemplates, groups, paging, templateWrites]);
 
   const rules = useWorkspaceAutomations(
     workspaceId,

@@ -14,6 +14,7 @@ import type {
   BoardDtoApi,
   BoardGroup,
   BoardMember,
+  BoardPaging,
   Card,
   CardActivity,
   CardDetail,
@@ -34,6 +35,8 @@ import type {
   FieldSemanticRole,
   FullBoardDtoApi,
   FullBoardResponse,
+  KanbanStatusLane,
+  LanePaging,
   ListDtoApi,
   WorkStatusCategory,
 } from "@notrelix/work-management-core";
@@ -47,7 +50,9 @@ import {
 import {
   findPriorityField,
   findStatusField,
+  groupCardsByStatus,
   inferStatusCategory,
+  NO_STATUS_LANE,
   isPriorityFieldName,
   normalizeName,
   orderByKey,
@@ -150,7 +155,11 @@ export function mapBoardDto(dto: BoardDtoApi): Board {
 
 export function mapFullBoardDto(
   dto: BoardReadDto,
-  context: { workspaceId: string },
+  context: {
+    workspaceId: string;
+    /** The filter and sort a paged read was made under. */
+    criteria?: { filter: string; sort: string };
+  },
 ): FullBoardResponse {
   const boardId = dto.id ?? "";
   const columns: AnyField[] = (dto.columns ?? []).filter(
@@ -185,13 +194,88 @@ export function mapFullBoardDto(
   const archivedGroupIds = (dto.lists ?? [])
     .filter((list) => list.isArchived === true)
     .map((list) => list.id ?? "");
+  const mappedGroups = orderByKey(lists, (list) => list.position).map(
+    (list, index) => mapListDto(list, index, board, fieldDefinitions),
+  );
+  const lanes = (dto as GeneratedFullBoardDto).lanes;
   return {
     board,
     fieldDefinitions,
-    groups: orderByKey(lists, (list) => list.position).map((list, index) =>
-      mapListDto(list, index, board, fieldDefinitions),
-    ),
+    groups: mappedGroups,
     ...(archivedGroupIds.length > 0 ? { archivedGroupIds } : {}),
+    ...(lanes
+      ? {
+          paging: mapBoardPaging(
+            dto as GeneratedFullBoardDto,
+            lanes,
+            groupCardsByStatus({ fieldDefinitions, groups: mappedGroups }),
+            context.criteria ?? { filter: "", sort: "" },
+          ),
+        }
+      : {}),
+  };
+}
+
+/** The sizes of a paged read, each lane's loaded cards counted as the lanes will group them. */
+function mapBoardPaging(
+  dto: GeneratedFullBoardDto,
+  lanes: NonNullable<GeneratedFullBoardDto["lanes"]>,
+  grouped: readonly KanbanStatusLane[],
+  criteria: { filter: string; sort: string },
+): BoardPaging {
+  const loadedBy = new Map(
+    grouped.map((lane) => [lane.optionId ?? NO_STATUS_LANE, lane.cards.length]),
+  );
+  const byLane: Record<string, LanePaging> = {};
+  for (const lane of lanes) {
+    const key = lane.optionId ?? NO_STATUS_LANE;
+    byLane[key] = {
+      total: lane.itemCount ?? 0,
+      filteredTotal: lane.filteredCount ?? 0,
+      nextCursor: lane.nextCursor ?? null,
+      baseLoaded: loadedBy.get(key) ?? 0,
+    };
+  }
+  return {
+    lanes: byLane,
+    totalItems: dto.totalItems ?? 0,
+    filteredTotal: dto.filteredTotal ?? 0,
+    criteria,
+  };
+}
+
+/** One page of a lane, its cards each with the group they sit in, and the lane's new sizes. */
+export interface LanePage {
+  readonly cards: readonly { readonly groupId: string; readonly card: Card }[];
+  readonly total: number;
+  readonly filteredTotal: number;
+  readonly nextCursor: string | null;
+}
+
+export function mapLanePageDto(
+  dto: OperationResponse<"WorkManagement.BoardItems.ListLane">,
+  context: { board: Board; fieldDefinitions: FieldDefinition[] },
+): LanePage {
+  return {
+    cards: (dto.items ?? []).flatMap((entry, index) =>
+      entry.item && entry.groupId
+        ? [
+            {
+              groupId: entry.groupId,
+              card: mapCardSummaryDto(
+                entry.item as AnyItemSummary,
+                index,
+                entry.groupId,
+                context.board,
+                context.fieldDefinitions,
+              ),
+            },
+          ]
+        : [],
+    ),
+    total: dto.itemCount ?? 0,
+    filteredTotal: dto.filteredCount ?? 0,
+    nextCursor: dto.nextCursor ?? null,
   };
 }
 

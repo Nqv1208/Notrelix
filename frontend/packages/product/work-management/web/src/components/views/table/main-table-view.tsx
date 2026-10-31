@@ -900,6 +900,21 @@ export function MainTableView({
           canCreate={capabilities.canCreateCard}
           onOpenCreateDialog={() => setCreateOpen(true)}
           canArchive={capabilities.canDelete}
+          paging={
+            table.paging
+              ? {
+                  boardTotal: table.boardTotals.total,
+                  boardFiltered:
+                    table.boardTotals.filtered < table.boardTotals.total
+                      ? projection.visibleCount
+                      : null,
+                  loadMore: (groupId) =>
+                    void table.loadMoreLane(groupId === "none" ? null : groupId),
+                  loading: table.lanePages.loading,
+                  failed: table.lanePages.failed,
+                }
+              : undefined
+          }
           shown={projection.visibleCount}
           hidden={projection.hiddenCount}
           canShowDone={!showDone && projection.doneHiddenCount > 0}

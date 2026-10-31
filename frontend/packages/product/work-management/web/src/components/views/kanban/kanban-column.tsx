@@ -147,7 +147,16 @@ export interface KanbanColumnProps {
   onRequestCreate?: () => void;
   /** Quick add handed over to the full form with the typed title. */
   onExpandCreate?: (title: string) => void;
+  /** A board read in pages: reads the lane's next page from the server. */
+  onLoadMore?: () => void;
+  /** The lane's next page is being read. */
+  loadingMore?: boolean;
+  /** The lane's next page did not come; the cards already loaded stay. */
+  loadFailed?: boolean;
 }
+
+/** Cards a lane read in pages shows at first, and each "Hiện thêm" adds. */
+export const KANBAN_LANE_PAGE = 50;
 
 /**
  * One Kanban lane: the cards whose grouping value is the lane's option.
@@ -184,6 +193,9 @@ export function KanbanColumn({
   onCreateItem,
   onRequestCreate,
   onExpandCreate,
+  onLoadMore,
+  loadingMore = false,
+  loadFailed = false,
 }: KanbanColumnProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -215,7 +227,11 @@ export function KanbanColumn({
   // three To do cards and two Done cards before "Xem thêm").
   const limit =
     lane.category === "done" ? Math.max(1, laneCardLimit - 1) : laneCardLimit;
-  const count = lane.cards.length;
+  const loaded = lane.cards.length;
+  // A lane read in pages counts the cards that pass the filter, loaded or not.
+  const paged = lane.filteredTotal !== undefined;
+  const count = lane.filteredTotal ?? loaded;
+  const [pageShown, setPageShown] = useState(KANBAN_LANE_PAGE);
   const selectedIndex = selectedItemId
     ? lane.cards.findIndex((card) => card.id === selectedItemId)
     : -1;
@@ -224,11 +240,21 @@ export function KanbanColumn({
     : -1;
   const showAll =
     expanded ||
-    count <= limit ||
+    loaded <= limit ||
     selectedIndex >= limit ||
     draggedIndex >= limit;
-  const visibleCards = showAll ? lane.cards : lane.cards.slice(0, limit);
-  const hiddenCount = count - visibleCards.length;
+  // A paged lane draws a window of its loaded cards (the selected and the dragged card stay in it).
+  const pagedWindow = Math.max(
+    pageShown,
+    Math.max(selectedIndex, draggedIndex) + 1,
+  );
+  const visibleCards = paged
+    ? lane.cards.slice(0, pagedWindow)
+    : showAll
+      ? lane.cards
+      : lane.cards.slice(0, limit);
+  const hiddenCount = paged ? 0 : loaded - visibleCards.length;
+  const pagedMore = paged && (visibleCards.length < loaded || lane.hasMore === true);
   const tint = lane.category
     ? LANE_TINT_CLASS[lane.category]
     : LANE_TINT_CLASS.todo;
@@ -293,13 +319,14 @@ export function KanbanColumn({
 
   useEffect(() => {
     const cardId = focusFirstRevealed.current;
-    if (!cardId || !expanded) return;
-    focusFirstRevealed.current = null;
+    if (!cardId || !(expanded || paged)) return;
     const target = Array.from(
       sectionRef.current?.querySelectorAll<HTMLElement>("[data-card-id]") ?? [],
     ).find((element) => element.dataset.cardId === cardId);
-    target?.focus();
-  }, [expanded]);
+    if (!target) return; // a page still on its way: the focus waits for its cards
+    focusFirstRevealed.current = null;
+    target.focus();
+  }, [expanded, paged, pageShown, loaded]);
 
   const setRefs = (element: HTMLElement | null) => {
     sectionRef.current = element;
@@ -700,6 +727,44 @@ export function KanbanColumn({
             ) : null}
           </div>
         )
+      ) : null}
+
+      {pagedMore && loadFailed && lane.hasMore ? (
+        <div role="alert" className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-label text-danger-text">
+          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <b className="font-semibold text-foreground">{copy.loadMoreFailed}</b>
+            <span>{copy.loadMoreFailedBody}</span>
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={onLoadMore}>
+            {copy.loadMoreRetry}
+          </Button>
+        </div>
+      ) : pagedMore ? (
+        <div className="flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground">
+          {fillCopy(copy.shownOf, {
+            shown: visibleCards.length,
+            total: count,
+          })}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={loadingMore}
+            aria-busy={loadingMore || undefined}
+            onClick={() => {
+              focusFirstRevealed.current =
+                lane.cards[visibleCards.length]?.id ?? null;
+              if (visibleCards.length >= loaded) onLoadMore?.();
+              setPageShown(visibleCards.length + KANBAN_LANE_PAGE);
+            }}
+          >
+            {pluralCopy(
+              { one: copy.pageMore_one, other: copy.pageMore_other },
+              Math.min(KANBAN_LANE_PAGE, count - visibleCards.length),
+            )}
+          </Button>
+        </div>
       ) : null}
 
       {hiddenCount > 0 ? (

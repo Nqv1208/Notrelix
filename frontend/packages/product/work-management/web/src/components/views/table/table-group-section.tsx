@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus, TriangleAlert } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import {
   fillTableCopy,
   pluralTableCopy,
   type MainTableCopy,
 } from "./main-table.copy";
-import { tablePanelClass } from "./table-chrome";
+import { pageButtonClass, tablePanelClass } from "./table-chrome";
 import { TableGroupMenu, type TableGroupMenuModel } from "./table-group-menu";
-import type { TableGroupModel } from "./table-model";
+import { formatTableCount, type TableGroupModel } from "./table-model";
 import { StatusDot } from "./table-parts";
 
 /** The group header: toggle, status dot, name, count and the overdue note. */
@@ -18,6 +18,7 @@ export function TableGroupHeader({
   collapsed,
   onToggle,
   menu,
+  boardNote,
 }: {
   copy: MainTableCopy;
   group: TableGroupModel;
@@ -25,7 +26,19 @@ export function TableGroupHeader({
   onToggle: () => void;
   /** Move and delete of the group's option; absent = the viewer cannot, or the group is not an option. */
   menu?: TableGroupMenuModel;
+  /** What the first group says of the whole board ("Board có 5.000 việc"); absent on the others. */
+  boardNote?: string;
 }) {
+  // A group read in pages counts the rows that pass the filter, loaded or not; a filtered one says of how many.
+  const count =
+    group.filteredTotal === undefined
+      ? String(group.rows.length)
+      : group.filteredTotal < group.total
+        ? fillTableCopy(copy.group.filteredOf, {
+            count: formatTableCount(group.filteredTotal),
+            total: formatTableCount(group.total),
+          })
+        : formatTableCount(group.filteredTotal);
   return (
     <div
       role="row"
@@ -52,9 +65,7 @@ export function TableGroupHeader({
         </button>
         <StatusDot category={group.category} />
         {group.name}
-        <span className="font-medium text-meta-foreground">
-          {group.rows.length}
-        </span>
+        <span className="font-medium text-meta-foreground">{count}</span>
         {group.overdueCount > 0 ? (
           <span className="text-crumb font-semibold text-danger-text">
             ·{" "}
@@ -71,6 +82,14 @@ export function TableGroupHeader({
           <TableGroupMenu copy={copy} name={group.name} menu={menu} />
         ) : null}
       </span>
+      {boardNote ? (
+        <span
+          role="cell"
+          className="ml-auto pr-3 text-[13px] font-medium text-meta-foreground"
+        >
+          {boardNote}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -87,11 +106,14 @@ export function TableShowMoreRow({
   copy,
   shown,
   total,
+  loading = false,
   onShowMore,
 }: {
   copy: MainTableCopy;
   shown: number;
   total: number;
+  /** The next page of the group is being read from the server. */
+  loading?: boolean;
   onShowMore: () => void;
 }) {
   const next = Math.min(TABLE_GROUP_WINDOW, total - shown);
@@ -99,19 +121,78 @@ export function TableShowMoreRow({
     <div
       role="row"
       data-slot="table-show-more"
-      className="flex flex-wrap items-center justify-center gap-3 border-b border-border px-6 py-2.5 text-crumb text-muted-foreground"
+      className="flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground"
     >
       <span role="cell">
         {fillTableCopy(copy.group.shownOf, { shown, total })}
       </span>
       <span role="cell">
-        <Button type="button" variant="outline" size="sm" onClick={onShowMore}>
-          {pluralTableCopy(
-            { one: copy.group.showMore_one, other: copy.group.showMore_other },
-            next,
-          )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={pageButtonClass}
+          disabled={loading}
+          aria-busy={loading || undefined}
+          onClick={onShowMore}
+        >
+          {loading
+            ? copy.group.loadingMore
+            : pluralTableCopy(
+                {
+                  one: copy.group.showMore_one,
+                  other: copy.group.showMore_other,
+                },
+                next,
+              )}
         </Button>
       </span>
+    </div>
+  );
+}
+
+/**
+ * The next page of a group did not come: the rows already shown stay, and the row says so where the page would
+ * have started, with a retry.
+ */
+export function TableLoadMoreError({
+  copy,
+  next,
+  onRetry,
+}: {
+  copy: MainTableCopy;
+  next: number;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="row" data-slot="table-load-more-error" className="px-6 py-2.5">
+      <div role="cell">
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text"
+        >
+          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <span className="flex min-w-0 flex-1 flex-col gap-px">
+            <b className="font-semibold text-foreground">
+              {copy.group.loadMoreFailed}
+            </b>
+            <span>
+              {fillTableCopy(copy.group.loadMoreFailedBody, {
+                count: formatTableCount(next),
+              })}
+            </span>
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={pageButtonClass}
+            onClick={onRetry}
+          >
+            {copy.group.loadMoreRetry}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,17 +1,26 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
-import type { OperationRequestBody } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import type {
   Board,
   BoardDtoApi,
   BoardViewDtoApi,
+  FieldDefinition,
   FullBoardDtoApi,
   FullBoardResponse,
   SavedBoardView,
   ViewConfig,
   ViewMode,
 } from "@notrelix/work-management-core";
-import { mapBoardDto, mapFullBoardDto } from "./board-api-mappers";
+import {
+  mapBoardDto,
+  mapFullBoardDto,
+  mapLanePageDto,
+  type LanePage,
+} from "./board-api-mappers";
 
 /**
  * Table columns a new view does not show ("Cột 9/15"): start date, created
@@ -37,6 +46,17 @@ export const defaultTableViewConfig: ViewConfig = {
   density: "comfortable",
 };
 
+/** The query string of a paged read: the filter and sort only when set, the rest as given. */
+function criteriaQuery(
+  criteria: { filter: string; sort: string },
+  rest: Record<string, string>,
+): string {
+  const params = new URLSearchParams(rest);
+  if (criteria.filter) params.set("filter", criteria.filter);
+  if (criteria.sort) params.set("sort", criteria.sort);
+  return params.toString();
+}
+
 type SaveBoardViewOp = "WorkManagement.BoardViews.Save";
 type SaveBoardViewBody = OperationRequestBody<SaveBoardViewOp>;
 
@@ -50,14 +70,59 @@ export function createBoardApi(client: NotrelixClient) {
       return boards.map(mapBoardDto);
     },
 
+    /**
+     * The board. With `page` the groups carry only the first `size` items of each Status lane that pass the
+     * `filter` and `sort` (the web client's own wire forms) and the lane sizes come back with it; without it
+     * the whole board is read.
+     */
     async getFullBoard(
       boardId: string,
-      context: { workspaceId: string },
+      context: {
+        workspaceId: string;
+        page?: { size: number; filter: string; sort: string };
+      },
     ): Promise<FullBoardResponse> {
+      const query = context.page
+        ? `?${criteriaQuery(context.page, { pageSize: String(context.page.size) })}`
+        : "";
       const board = await api.get<FullBoardDtoApi>(
-        endpoints.boards.full(boardId),
+        `${endpoints.boards.full(boardId)}${query}`,
       );
-      return mapFullBoardDto(board, context);
+      return mapFullBoardDto(board, {
+        workspaceId: context.workspaceId,
+        ...(context.page
+          ? {
+              criteria: {
+                filter: context.page.filter,
+                sort: context.page.sort,
+              },
+            }
+          : {}),
+      });
+    },
+
+    /** The next page of one Status lane (`none`: the lane without a status), under the criteria the board was read with. */
+    async getLanePage(
+      boardId: string,
+      lane: string,
+      input: {
+        cursor: string;
+        limit: number;
+        filter: string;
+        sort: string;
+        board: Board;
+        fieldDefinitions: FieldDefinition[];
+      },
+    ): Promise<LanePage> {
+      const dto = await api.get<
+        OperationResponse<"WorkManagement.BoardItems.ListLane">
+      >(
+        `${endpoints.boards.lane(boardId, lane)}?${criteriaQuery(input, {
+          cursor: input.cursor,
+          limit: String(input.limit),
+        })}`,
+      );
+      return mapLanePageDto(dto, input);
     },
 
     async getBoardView(

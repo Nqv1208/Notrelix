@@ -1092,6 +1092,16 @@ export function KanbanView({
                 groupTitles={kanban.groups.map((group) => group.title)}
                 groupPending={addingGroup}
                 laneCardLimit={kanbanSettings.laneCardLimit}
+                lanePaging={
+                  kanban.paging
+                    ? {
+                        loadMore: (lane) =>
+                          void kanban.loadMoreLane(lane.optionId),
+                        loading: kanban.lanePages.loading,
+                        failed: kanban.lanePages.failed,
+                      }
+                    : undefined
+                }
                 keyboardMove={kanbanSettings.keyboardMove}
                 cardActions={cardActions}
                 cardSelection={cardSelection}

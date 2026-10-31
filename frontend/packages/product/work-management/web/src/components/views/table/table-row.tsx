@@ -55,6 +55,8 @@ export interface TableRowActions {
 
 export interface TableRowProps {
   row: TableRowModel;
+  /** The row's place among every row of the table, loaded or not (a table read in pages). */
+  rowIndex?: number | undefined;
   copy: MainTableCopy;
   columns: readonly TableColumnSpec[];
   /** Accent of the row's group: the left edge takes its colour. */
@@ -137,6 +139,7 @@ function Cell({
  */
 export function TableRow({
   row,
+  rowIndex,
   copy,
   columns,
   accent,
@@ -612,6 +615,7 @@ export function TableRow({
   const rowElement = (
     <div
       role="row"
+      aria-rowindex={rowIndex}
       tabIndex={tabStop ? 0 : -1}
       aria-selected={selected}
       aria-current={active ? "true" : undefined}

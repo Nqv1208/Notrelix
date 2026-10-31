@@ -197,6 +197,10 @@ export interface TableLane {
   readonly total: number;
   /** Visible cards that are overdue (the group header says so). */
   readonly overdueCount: number;
+  /** A board read in pages: items of the lane that pass the filter, loaded or not. Absent: the lane holds them all. */
+  readonly filteredTotal?: number;
+  /** The server holds more items of the lane that pass the filter than are loaded. */
+  readonly hasMore: boolean;
 }
 
 export interface TableProjectionInput {
@@ -255,7 +259,12 @@ export function projectTableLanes({
       ? lane.cards.filter((card) => !isTableCardDone(card))
       : lane.cards;
     doneHiddenCount += lane.cards.length - kept.length;
-    visibleCount += kept.length;
+    // A paged lane shows how many items pass the filter, not how many are loaded so far.
+    const laneShown =
+      lane.filteredTotal === undefined
+        ? kept.length
+        : Math.max(kept.length, lane.filteredTotal - (lane.cards.length - kept.length));
+    visibleCount += laneShown;
     if (kept.length === 0 && (lane.total > 0 || narrowed)) continue;
     const cards = orderCards
       ? orderCards([...kept])
@@ -268,6 +277,8 @@ export function projectTableLanes({
       cards,
       total: lane.total,
       overdueCount: cards.filter(isOverdue).length,
+      ...(lane.filteredTotal === undefined ? {} : { filteredTotal: laneShown }),
+      hasMore: lane.hasMore === true,
     });
   }
 

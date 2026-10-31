@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { readBoard } from "./board-read";
 import { wmQueryKeys } from "./keys";
 import { useWorkManagementServices } from "../services";
 
 export function useFullBoard(boardId?: string, workspaceId?: string) {
-  const { boards } = useWorkManagementServices();
+  const services = useWorkManagementServices();
+  const queryClient = useQueryClient();
   const resolvedBoardId = boardId ?? "pending";
   const resolvedWorkspaceId = workspaceId ?? "pending";
   const query = useQuery({
@@ -12,7 +14,7 @@ export function useFullBoard(boardId?: string, workspaceId?: string) {
       if (!boardId || !workspaceId) {
         throw new Error("boardId and workspaceId are required to load a board");
       }
-      return boards.getFullBoard(boardId, { workspaceId });
+      return readBoard(services, queryClient, workspaceId, boardId);
     },
     enabled: Boolean(boardId && workspaceId),
     staleTime: 10_000,
@@ -29,6 +31,8 @@ export function useFullBoard(boardId?: string, workspaceId?: string) {
     groups: data?.groups ?? [],
     archivedGroupIds: data?.archivedGroupIds ?? [],
     fieldDefinitions: data?.fieldDefinitions ?? [],
+    /** Present when the groups hold only the first pages of each Status lane. */
+    paging: data?.paging,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,

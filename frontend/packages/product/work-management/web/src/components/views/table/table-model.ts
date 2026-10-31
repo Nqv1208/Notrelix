@@ -78,6 +78,21 @@ export interface TableGroupModel {
   readonly total: number;
   readonly overdueCount: number;
   readonly rows: readonly TableRowModel[];
+  /** A board read in pages: rows of the group that pass the filter, loaded or not. Absent: the group holds them all. */
+  readonly filteredTotal?: number;
+  /** The server holds more rows of the group than are loaded. */
+  readonly hasMore?: boolean;
+}
+
+/** A count in the active language ("5.000" in Vietnamese). */
+export function formatTableCount(value: number): string {
+  const lang =
+    typeof document === "undefined" ? undefined : document.documentElement.lang;
+  try {
+    return value.toLocaleString(lang || undefined);
+  } catch {
+    return String(value);
+  }
 }
 
 /**
@@ -247,6 +262,8 @@ export function buildTableGroup(
     readonly total: number;
     readonly overdueCount: number;
     readonly cards: readonly Card[];
+    readonly filteredTotal?: number;
+    readonly hasMore?: boolean;
   },
   name: string,
   options: BuildTableRowOptions,
@@ -259,5 +276,9 @@ export function buildTableGroup(
     total: lane.total,
     overdueCount: lane.overdueCount,
     rows: lane.cards.map((card) => buildTableRow(card, options)),
+    ...(lane.filteredTotal === undefined
+      ? {}
+      : { filteredTotal: lane.filteredTotal }),
+    hasMore: lane.hasMore === true,
   };
 }

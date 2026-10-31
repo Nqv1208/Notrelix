@@ -197,6 +197,9 @@ export const endpoints = {
     restore: (boardId: string) => `/boards/${boardId}/restore`,
     lifecycleImpact: (boardId: string) => `/boards/${boardId}/lifecycle-impact`,
     full: (boardId: string) => `/boards/${boardId}/full`,
+    // WorkManagement.BoardItems.ListLane: the next page of a Status lane ("none" is the lane without a status).
+    lane: (boardId: string, lane: string) =>
+      `/boards/${boardId}/items/lanes/${lane}`,
     access: (boardId: string) => `/boards/${boardId}/access`,
     schema: (boardId: string) => `/boards/${boardId}/schema`,
     labels: (boardId: string) => `/boards/${boardId}/labels`,
