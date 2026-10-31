@@ -297,7 +297,13 @@ describe("AccountProfileSurface", () => {
     for (const locale of LOCALES) {
       const copy = profileCopyFixture(locale);
       const saved = renderProfile(profileSavedScenario(locale));
-      expect(screen.getByRole("status").textContent).toContain(copy.saved);
+      // The photo's progress line is a status region too; the save confirmation is among them.
+      expect(
+        screen
+          .getAllByRole("status")
+          .map((node) => node.textContent)
+          .join(" "),
+      ).toContain(copy.saved);
       saved.view.unmount();
 
       const failed = renderProfile(profileSaveErrorScenario(locale));
@@ -377,9 +383,19 @@ describe("AccountProfileSurface", () => {
             }
           : base.profile,
     });
+    // It asks first, in place; keeping the photo hands nothing over.
     fireEvent.click(
       screen.getByRole("button", { name: copy.removePhotoLabel }),
     );
+    expect(
+      screen.getByRole("group", { name: copy.removePhotoConfirm }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.removePhotoKeep }));
+    expect(props.onPhotoRemove).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.removePhotoLabel }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.removePhotoYes }));
     expect(props.onPhotoRemove).toHaveBeenCalledTimes(1);
     view.unmount();
   });

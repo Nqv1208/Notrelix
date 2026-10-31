@@ -14,6 +14,26 @@ function client() {
   return { store, api };
 }
 
+type Api = ReturnType<typeof client>["api"];
+
+/** A single-use step-up proof for a purpose, with whichever factor the mock account has now. */
+async function proofFor(api: Api, purpose: string): Promise<string> {
+  const requirement = (await api.post("/auth/security/step-up/requirement", {
+    purpose,
+  })) as { requiredFactor: number; challengeToken: string | null };
+  const proof = (await (requirement.requiredFactor === 0
+    ? api.post("/auth/security/step-up/complete-mfa", {
+        purpose,
+        challengeToken: requirement.challengeToken,
+        code: MOCK_AUTH.otpCode,
+      })
+    : api.post("/auth/security/step-up/complete-password", {
+        purpose,
+        password: MOCK_AUTH.personalPassword,
+      }))) as { proofToken: string };
+  return proof.proofToken;
+}
+
 describe("account preferences", () => {
   it("reads defaults at version 0, saves with the version and refuses a stale or unknown value", async () => {
     const { api } = client();
@@ -84,7 +104,16 @@ describe("security", () => {
     expect(first).toHaveLength(3);
     expect(first.filter((s) => s.isCurrent)).toHaveLength(1);
     await api.post("/auth/sessions/session-ipad/revoke", {});
-    await api.post("/auth/sessions/revoke-others", {});
+    // Ending every other device is a sensitive change: no proof, no change.
+    await expect(
+      api.post("/auth/sessions/revoke-others", {}),
+    ).rejects.toMatchObject({
+      status: 412,
+      code: "identity.security.step-up-required",
+    });
+    await api.post("/auth/sessions/revoke-others", {
+      stepUpToken: await proofFor(api, "RevokeOtherSessions"),
+    });
     const after = (await api.get("/auth/sessions")) as typeof first;
     expect(after.filter((s) => s.status === 0).map((s) => s.id)).toEqual([
       "session-macbook",
@@ -130,20 +159,33 @@ describe("security", () => {
     expect(await api.get("/auth/security/summary")).toMatchObject({
       mfa: { isEnabled: false },
     });
-    const enrollment = (await api.post("/auth/mfa/enrollment/start", {})) as {
+    // Enrolling needs a proof as well, so a stolen session cannot add its own factor.
+    await expect(
+      api.post("/auth/mfa/enrollment/start", {}),
+    ).rejects.toMatchObject({
+      status: 412,
+      code: "identity.security.step-up-required",
+    });
+    const enrollment = (await api.post("/auth/mfa/enrollment/start", {
+      stepUpToken: await proofFor(api, "EnrollMfa"),
+    })) as {
       mfaMethodId: string;
     };
+    const activation = await proofFor(api, "EnrollMfa");
+    // A mistyped code keeps the proof.
     await expect(
       api.post("/auth/mfa/enrollment/verify", {
         mfaMethodId: enrollment.mfaMethodId,
         code: "000000",
+        stepUpToken: activation,
       }),
     ).rejects.toMatchObject({ status: 400 });
     const done = (await api.post("/auth/mfa/enrollment/verify", {
       mfaMethodId: enrollment.mfaMethodId,
       code: MOCK_AUTH.otpCode,
+      stepUpToken: activation,
     })) as { recoveryCodes: string[] };
-    expect(done.recoveryCodes).toHaveLength(10);
+    expect(done.recoveryCodes).toHaveLength(8);
   });
 
   it("changes the password with the current one and, while two-factor is on, a proof; every session ends", async () => {
