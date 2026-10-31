@@ -9,7 +9,7 @@ public static class GovernanceRegistration
         this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IWorkspaceSharingPolicy, Services.WorkspaceSharingPolicy>();
+        services.AddScoped<IWorkspaceSharingPolicy, CrossContext.Governance.Workspaces.WorkspaceSharingPolicy>();
         return services;
     }
 }

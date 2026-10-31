@@ -169,7 +169,7 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("User not found"));
+        result.Errors.Should().Contain(e => e.Contains("Session is invalid or expired"));
         PasswordHasherMock.Verify(h => h.HashPassword(It.IsAny<string>()), Times.Never);
     }
 

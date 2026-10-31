@@ -1,7 +1,7 @@
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
-namespace Notrelix.Infrastructure.Services;
+namespace Notrelix.Infrastructure.CrossContext.Governance.Workspaces;
 
 /// <summary>Reads the workspace's <c>AllowPublicSharing</c> setting through the request's data session (workspace RLS applies).</summary>
 public sealed class WorkspaceSharingPolicy : IWorkspaceSharingPolicy

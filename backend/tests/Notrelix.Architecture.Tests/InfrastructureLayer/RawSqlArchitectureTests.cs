@@ -25,6 +25,10 @@ public class RawSqlArchitectureTests
 
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs",
+
+        // Reason: delete Board access-change rows past retention_until in bounded batches, claimed with
+        // FOR UPDATE SKIP LOCKED so several instances can sweep at once (off by default)
+        "src/Notrelix.Infrastructure/BackgroundJobs/ResourceAccessChangeRetention.cs",
         
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/EmailDispatcher.cs",

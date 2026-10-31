@@ -83,7 +83,8 @@ public class ForgotPasswordTests : IdentityHandlerTestBase
 
         var result = await CreateSut().Handle(new ForgotPasswordCommand { Email = TestEmail }, CancellationToken.None);
 
-        result.Succeeded.Should().BeFalse();
+        // A failed send answers like an unknown address, so the reply never tells them apart.
+        result.Succeeded.Should().BeTrue();
         ForgotPasswordLoggerMock.Invocations
             .SelectMany(i => i.Arguments)
             .Select(a => a?.ToString() ?? string.Empty)

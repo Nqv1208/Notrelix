@@ -2,7 +2,8 @@ namespace Notrelix.Application.Features.Governance.ShareLinks;
 
 /// <summary>
 /// How a share-link request names the shared resource and which action authorizes it. Create and
-/// disable use the same rule, so whoever may make a link on a resource may also turn it off.
+/// disable use the same rule, so whoever may make a link on a resource may also turn it off. The action
+/// is what both commands answer to <see cref="IRequirePermission.Action"/>.
 /// </summary>
 internal static class ShareLinkResources
 {
