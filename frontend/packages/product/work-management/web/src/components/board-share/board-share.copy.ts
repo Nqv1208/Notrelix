@@ -78,6 +78,12 @@ export const en = {
     label: "Permission of {{name}}",
     remove: "Remove access",
     removeHint: "{{name}} no longer sees this Board",
+    needManager: "At least one Manager is needed",
+    keepCurrent: "Current level, kept",
+    removeLast: "The only Manager of the Board can't be removed",
+    lastNote:
+      "A Board needs at least one person or team at Manager level. Make someone else a Manager first.",
+    addManager: "Add a Manager",
   },
   link: {
     title: "Board link",
@@ -118,6 +124,20 @@ export const en = {
     keepInSpace: "**{{names}}** (already added on their own)",
     keepGuest: "guest **{{name}}**",
     keepAnd: " and ",
+  },
+  lastManager: {
+    lowerTitle: "Couldn't change the permission of {{name}}",
+    lowerBody:
+      "A Board needs at least one Manager, so the permission stays Manager. Make someone else a Manager first, then lower or remove.",
+    removeTitle: "Couldn't remove {{name}}",
+    removeBody:
+      "{{name}} is the only Manager, so the Board keeps its list. Make someone else a Manager first.",
+    teamTitle: "Couldn't change the permission of {{name}}",
+    teamBody:
+      "{{name}} is the only Manager team of the Board. A Board needs at least one person or team at Manager level. Add another Manager first.",
+    viaAdminTitle: "You manage this Board through workspace administration",
+    viaAdminBody:
+      "The workspace owner and admins can still open the Board's settings when the Board has no Manager.",
   },
   log: {
     title: "Permission history",
@@ -212,6 +232,12 @@ export const vi: BoardShareCopy = {
     label: "Quyền của {{name}}",
     remove: "Gỡ quyền",
     removeHint: "{{name}} không còn thấy board này",
+    needManager: "Cần ít nhất một Quản lý",
+    keepCurrent: "Mức hiện tại, giữ nguyên",
+    removeLast: "Không gỡ được người Quản lý duy nhất của board",
+    lastNote:
+      "Board cần ít nhất một người hoặc nhóm ở mức Quản lý. Thêm người khác làm Quản lý trước.",
+    addManager: "Thêm Quản lý",
   },
   link: {
     title: "Liên kết của board",
@@ -252,6 +278,20 @@ export const vi: BoardShareCopy = {
     keepInSpace: "**{{names}}** (đã được thêm riêng)",
     keepGuest: "khách **{{name}}**",
     keepAnd: " và ",
+  },
+  lastManager: {
+    lowerTitle: "Chưa đổi được quyền của {{name}}",
+    lowerBody:
+      "Board cần ít nhất một Quản lý nên quyền vẫn là Quản lý. Thêm người khác làm Quản lý trước, rồi hạ hoặc gỡ.",
+    removeTitle: "Chưa gỡ được {{name}}",
+    removeBody:
+      "{{name}} là người Quản lý duy nhất, nên board giữ nguyên danh sách. Thêm người khác làm Quản lý trước.",
+    teamTitle: "Chưa đổi được quyền của {{name}}",
+    teamBody:
+      "{{name}} là nhóm Quản lý duy nhất của board. Board cần ít nhất một người hoặc nhóm ở mức Quản lý. Thêm Quản lý khác trước.",
+    viaAdminTitle: "Bạn quản lý board này qua Quản trị workspace",
+    viaAdminBody:
+      "Chủ sở hữu và Quản trị workspace vẫn vào được thiết lập board khi board không còn Quản lý.",
   },
   log: {
     title: "Nhật ký thay đổi quyền",

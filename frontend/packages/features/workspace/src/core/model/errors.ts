@@ -30,6 +30,8 @@ export interface WorkspaceFailure {
   readonly reason: WorkspaceFailureReason | null;
   /** The producer's `errorCode` extension, when present. */
   readonly errorCode: string | null;
+  /** The rule a business-rule failure names (`ruleCode` extension), when present. */
+  readonly ruleCode?: string | null;
   /** The producer's human-readable `detail`, when present. */
   readonly detail: string | null;
   /** Field errors from a validation failure (`errors` extension). */
@@ -97,5 +99,6 @@ export function describeWorkspaceFailure(error: unknown): WorkspaceFailure {
       ? "email-not-confirmed"
       : null;
 
-  return { kind, reason, errorCode, detail, fieldErrors };
+  const ruleCode = typeof body?.ruleCode === "string" ? body.ruleCode : null;
+  return { kind, reason, errorCode, ruleCode, detail, fieldErrors };
 }

@@ -176,6 +176,12 @@ public static class ProblemDetailsMapper
         problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
 
+        // A stable name for the rule a client may word itself (the last Manager of a Board).
+        if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException rule)
+        {
+            problemDetails.Extensions["ruleCode"] = rule.RuleCode;
+        }
+
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
         {
             foreach (var (key, value) in stale.Extensions)

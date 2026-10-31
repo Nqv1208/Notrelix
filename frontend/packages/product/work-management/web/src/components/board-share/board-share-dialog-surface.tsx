@@ -1,9 +1,12 @@
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   Building2,
   Check,
   ChevronDown,
   CircleAlert,
+  Info,
+  Plus,
+  TriangleAlert,
   Link2,
   Lock,
   Users,
@@ -133,6 +136,17 @@ export interface BoardShareDialogSurfaceProps {
     /** The kept permissions as a sentence, strong parts between `**`. */
     readonly keepText: string;
   } | null;
+  /**
+   * A refusal or a standing fact the host puts at the head of the dialog (the last
+   * Manager refused, a workspace admin managing through Governance).
+   */
+  readonly notice?: {
+    readonly kind: "refused" | "info";
+    readonly title: string;
+    readonly body: string;
+    /** The refusal offers "Add a Manager": it focuses the add field at Manager level. */
+    readonly addManager?: boolean;
+  } | null;
   readonly initialView?: "share" | "private" | "log";
   readonly initialLevelMenu?: string | null;
 }
@@ -160,6 +174,7 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
   const [menuFor, setMenuFor] = useState<string | null>(
     props.initialLevelMenu ?? null,
   );
+  const [managerToken, setManagerToken] = useState(0);
   const title = fill(copy.title, { name: view.boardTitle });
   const closeButton = (label: string) => (
     <button
@@ -231,6 +246,11 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
             menuFor={menuFor}
             setMenuFor={setMenuFor}
             setScreen={setScreen}
+            managerToken={managerToken}
+            addManager={() => {
+              setMenuFor(null);
+              setManagerToken((token) => token + 1);
+            }}
           />
         ) : screen === "log" ? (
           <LogBody {...props} setScreen={setScreen} />
@@ -270,18 +290,34 @@ function ShareBody({
   menuFor,
   setMenuFor,
   setScreen,
+  notice,
+  managerToken,
+  addManager,
 }: BodyProps & {
   menuFor: string | null;
   setMenuFor: (id: string | null) => void;
+  managerToken: number;
+  addManager: () => void;
 }) {
   const g = copy.general;
+  // The only person or team at Manager level cannot be lowered or removed: lock it from the start.
+  const managers = view.rows.filter((row) => row.level === "manage");
+  const lockedId = onChangeLevel && managers.length === 1 ? managers[0]!.id : null;
   const general = view.general;
   const [expandedRows, setExpandedRows] = useState(false);
   return (
     <>
       <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+        {notice ? (
+          <ShareNotice notice={notice} copy={copy} onAddManager={addManager} />
+        ) : null}
         {candidates && onInvite ? (
-          <AddPeople copy={copy} candidates={candidates} onInvite={onInvite} />
+          <AddPeople
+            copy={copy}
+            candidates={candidates}
+            onInvite={onInvite}
+            managerToken={managerToken}
+          />
         ) : (
           <div data-f="add" className="flex gap-2">
             <label
@@ -478,6 +514,8 @@ function ShareBody({
                     setMenu={(open) => setMenuFor(open ? row.id : null)}
                     onChangeLevel={onChangeLevel}
                     onRemove={onRemove}
+                    locked={row.id === lockedId}
+                    onAddManager={addManager}
                   />
                 ))}
                 {!expandedRows && view.rows.length > VISIBLE_ROWS ? (
@@ -600,11 +638,20 @@ function AddPeople({
   copy,
   candidates,
   onInvite,
+  managerToken,
 }: {
   copy: BoardShareCopy;
   candidates: readonly ShareCandidate[];
   onInvite: (userId: string, level: ShareLevel) => Promise<void> | void;
+  /** Bumped by "Add a Manager": the field takes the Manager level and focus. */
+  managerToken: number;
 }) {
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (managerToken === 0) return;
+    setLevel("manage");
+    field.current?.focus();
+  }, [managerToken]);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<ShareCandidate | null>(null);
   const [level, setLevel] = useState<ShareLevel>("edit");
@@ -638,6 +685,7 @@ function AddPeople({
           strokeWidth={1.8}
         />
         <input
+          ref={field}
           role="combobox"
           aria-expanded={listOpen && matches.length > 0}
           aria-controls="board-share-candidates"
@@ -757,6 +805,57 @@ function AddPeople({
   );
 }
 
+function ShareNotice({
+  notice,
+  copy,
+  onAddManager,
+}: {
+  notice: NonNullable<BoardShareDialogSurfaceProps["notice"]>;
+  copy: BoardShareCopy;
+  onAddManager: () => void;
+}) {
+  const refused = notice.kind === "refused";
+  return (
+    <div
+      data-f="bn"
+      role={refused ? "alert" : "status"}
+      className={cn(
+        "flex items-start gap-2.5 rounded-[10px] px-3.5 py-2.5 text-compact leading-[1.4]",
+        refused
+          ? "bg-danger-subtle text-danger-text"
+          : "bg-state-selected text-state-selected-foreground",
+      )}
+    >
+      {refused ? (
+        <TriangleAlert
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0"
+          strokeWidth={1.8}
+        />
+      ) : (
+        <Info
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0"
+          strokeWidth={1.8}
+        />
+      )}
+      <span className="flex min-w-0 flex-1 flex-col gap-px">
+        <b className="font-semibold text-foreground">{notice.title}</b>
+        <span>{notice.body}</span>
+      </span>
+      {notice.addManager ? (
+        <button
+          type="button"
+          onClick={onAddManager}
+          className={cn(BTN, "h-7 shrink-0 bg-popover px-2.5 text-xs", FOCUS)}
+        >
+          {copy.menu.addManager}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function PersonRow({
   copy,
   row,
@@ -764,6 +863,8 @@ function PersonRow({
   setMenu,
   onChangeLevel,
   onRemove,
+  locked,
+  onAddManager,
 }: {
   copy: BoardShareCopy;
   row: ShareRowView;
@@ -771,6 +872,9 @@ function PersonRow({
   setMenu: (open: boolean) => void;
   onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   onRemove?: (rowId: string) => void;
+  /** The only Manager of the Board: lower levels and removal are locked with the reason. */
+  locked: boolean;
+  onAddManager: () => void;
 }) {
   const p = copy.people;
   const trigger = useRef<HTMLButtonElement>(null);
@@ -911,6 +1015,8 @@ function PersonRow({
               <LevelMenu
                 copy={copy}
                 row={row}
+                locked={locked}
+                onAddManager={onAddManager}
                 onPick={(next) => {
                   setMenu(false);
                   if (next !== row.level) onChangeLevel(row.id, next);
@@ -940,12 +1046,16 @@ function PersonRow({
 function LevelMenu({
   copy,
   row,
+  locked,
+  onAddManager,
   onPick,
   onRemove,
   onClose,
 }: {
   copy: BoardShareCopy;
   row: ShareRowView;
+  locked: boolean;
+  onAddManager: () => void;
   onPick: (level: ShareLevel) => void;
   onRemove: (() => void) | null;
   onClose: () => void;
@@ -984,7 +1094,7 @@ function LevelMenu({
       className="box-content w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 text-nav font-normal shadow-popover dark:bg-card"
     >
       {LEVELS.map((level) => {
-        const disabled = level === "manage" && guest;
+        const disabled = (level === "manage" && guest) || (locked && level !== "manage");
         const checked = row.level === level;
         return (
           <div
@@ -1018,9 +1128,13 @@ function LevelMenu({
                 data-f="loh"
                 className="block text-xs leading-[1.45] font-normal text-meta-foreground"
               >
-                {disabled
-                  ? copy.levelHints.guestManage
-                  : copy.levelHints[level]}
+                {locked
+                  ? checked
+                    ? copy.menu.keepCurrent
+                    : copy.menu.needManager
+                  : disabled
+                    ? copy.levelHints.guestManage
+                    : copy.levelHints[level]}
               </small>
             </span>
             {checked ? (
@@ -1037,11 +1151,11 @@ function LevelMenu({
       <div
         data-f="lo"
         role="menuitem"
-        aria-disabled={onRemove ? undefined : true}
+        aria-disabled={onRemove && !locked ? undefined : true}
         tabIndex={-1}
-        onClick={onRemove ?? undefined}
+        onClick={locked ? undefined : (onRemove ?? undefined)}
         onKeyDown={(event) => {
-          if ((event.key === "Enter" || event.key === " ") && onRemove) {
+          if ((event.key === "Enter" || event.key === " ") && onRemove && !locked) {
             event.preventDefault();
             event.stopPropagation();
             onRemove();
@@ -1049,7 +1163,8 @@ function LevelMenu({
         }}
         className={cn(
           itemClass,
-          !onRemove && "cursor-not-allowed opacity-55 hover:bg-transparent",
+          (!onRemove || locked) &&
+            "cursor-not-allowed opacity-55 hover:bg-transparent",
         )}
       >
         <span>
@@ -1063,10 +1178,33 @@ function LevelMenu({
             data-f="loh"
             className="block text-xs leading-[1.45] font-normal text-meta-foreground"
           >
-            {fill(copy.menu.removeHint, { name: row.shortName ?? row.name })}
+            {locked
+              ? copy.menu.removeLast
+              : fill(copy.menu.removeHint, {
+                  name: row.shortName ?? row.name,
+                })}
           </small>
         </span>
       </div>
+      {locked ? (
+        <>
+          <div data-f="lsep" role="separator" className="my-1 h-px bg-line" />
+          <div
+            data-f="lnote"
+            className="flex flex-col gap-2 px-3 pt-2 pb-1.5 text-xs leading-[1.45] text-muted-foreground"
+          >
+            <span>{copy.menu.lastNote}</span>
+            <button
+              type="button"
+              onClick={onAddManager}
+              className={cn(BTN, "h-7 self-start px-2.5 text-xs", FOCUS)}
+            >
+              <Plus aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              {copy.menu.addManager}
+            </button>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
