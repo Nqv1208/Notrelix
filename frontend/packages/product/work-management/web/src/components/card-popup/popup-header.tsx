@@ -124,7 +124,7 @@ function GroupPicker() {
               aria-selected={selected}
               onClick={() => move(group.id)}
               className={cn(
-                "flex min-h-9 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong",
+                "flex min-h-10 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong",
                 selected &&
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
