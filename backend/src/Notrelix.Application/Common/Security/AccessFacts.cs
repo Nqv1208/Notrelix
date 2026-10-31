@@ -64,6 +64,13 @@ public sealed record AccessFacts(
     public bool BoardArchived { get; init; }
 
     /// <summary>
+    /// The Board is deleted and the request is one that may reach a deleted Board (restore, delete).
+    /// A caller who then lacks the manager level gets the identical NotFound, so a deleted Board
+    /// is never told apart from one that does not exist.
+    /// </summary>
+    public bool BoardDeleted { get; init; }
+
+    /// <summary>
     /// The resource is an Item, or belongs to one, whose Group is archived: the Item stays
     /// readable and read-only.
     /// </summary>

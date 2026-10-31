@@ -170,6 +170,9 @@ public static class AccessFactsQuery
               WHERE tbm.board_id = @board_id AND tbm.user_id = @target_subject_id LIMIT 1) END,
           CASE WHEN @board_id IS NOT NULL THEN EXISTS (
             SELECT 1 FROM work.boards b WHERE b.id = @board_id
-              AND b.workspace_id = @workspace_id AND b.is_archived) ELSE false END
+              AND b.workspace_id = @workspace_id AND b.is_archived) ELSE false END,
+          CASE WHEN @board_id IS NOT NULL AND @board_deleted_ok THEN EXISTS (
+            SELECT 1 FROM work.boards b WHERE b.id = @board_id
+              AND b.workspace_id = @workspace_id AND b.deleted_at IS NOT NULL) ELSE false END
     """;
 }

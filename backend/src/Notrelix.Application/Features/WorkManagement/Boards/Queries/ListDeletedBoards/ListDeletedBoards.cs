@@ -11,7 +11,8 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.ListDelete
 /// The boards of one Workspace deleted inside the 30-day restore window that the caller can restore:
 /// the ones the caller deleted and the ones where the caller is a board Owner or Admin. A deleted board
 /// is NotFound to everyone else, so it is absent here, never marked. A deleter who has since lost the
-/// board's Space and holds no role on the board no longer sees it. Restore itself is authorized again
+/// board's Space and holds no role on the board no longer sees it; a deleted board at the Workspace root
+/// stays listed for its deleter while it is visible to the whole Workspace. Restore itself is authorized again
 /// on the board (ManageBoard).
 /// </summary>
 public record ListDeletedBoardsQuery(Guid WorkspaceId)
@@ -55,6 +56,7 @@ public class ListDeletedBoardsQueryHandler : IRequestHandler<ListDeletedBoardsQu
                 && b.DeletedAt != null && b.DeletedAt >= since
                 && ((b.DeletedBy == userId
                         && ((b.SpaceId != null && spaces.Contains(b.SpaceId.Value))
+                            || (b.SpaceId == null && b.Visibility == BoardVisibility.Workspace)
                             || _context.BoardMembers.Any(m => m.BoardId == b.Id && m.UserId == userId)))
                     || _context.BoardMembers.Any(m => m.BoardId == b.Id && m.UserId == userId && managerRoles.Contains(m.Role))))
             .OrderByDescending(b => b.DeletedAt)

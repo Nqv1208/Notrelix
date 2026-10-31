@@ -144,6 +144,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 IsBoardChild = boardChild.IsBoardChild,
                 TargetBoardMemberRole = NullableString(reader, 18),
                 BoardArchived = reader.GetBoolean(19),
+                BoardDeleted = reader.GetBoolean(20),
                 ChildInArchivedGroup = boardChild.InArchivedGroup,
             };
         }

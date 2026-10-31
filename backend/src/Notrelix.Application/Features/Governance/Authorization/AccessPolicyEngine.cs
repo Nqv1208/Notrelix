@@ -53,7 +53,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             var permission = EvaluatePermission(descriptor, facts, request, context.UserId);
             if (permission.Kind != AccessDecisionKind.Allowed)
             {
-                return permission;
+                // A deleted Board is NotFound to everyone who cannot manage it (S1).
+                return facts.BoardDeleted && permission.Kind == AccessDecisionKind.Forbidden
+                    ? AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.")
+                    : permission;
             }
         }
 
