@@ -194,6 +194,7 @@ public static class DependencyInjection
 
             // Enums the HTTP pipeline serializes as names but the generator would export as integers.
             options.SchemaFilter<StringEnumSchemaFilter>();
+            options.SchemaFilter<ProblemDetailsSchemaFilter>();
 
             // Endpoints declaring their canonical success code (201/204) must
             // not also export the default inferred 200 response.
