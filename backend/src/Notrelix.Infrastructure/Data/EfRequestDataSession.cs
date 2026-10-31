@@ -93,10 +93,13 @@ public sealed class EfRequestDataSession : IRequestDataSession
                 {
                     await _dbContext.SaveChangesAsync(cancellationToken);
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException concurrency)
                 {
                     // Normal optimistic-concurrency precondition failure: the
                     // declared version lost the race at the database.
+                    _logger.LogDebug(
+                        "Concurrency conflict on {Entries}",
+                        string.Join(", ", concurrency.Entries.Select(entry => $"{entry.Metadata.Name}:{entry.State}")));
                     _metrics.ExpectedVersionConflicts.Add(1);
                     throw new PreconditionFailedException(
                         "The resource was modified by another request. Reload and retry.", "common.precondition-failed");
