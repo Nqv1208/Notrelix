@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Data;
-using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 using Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.SharedKernel;
