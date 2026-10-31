@@ -5,7 +5,7 @@ namespace Notrelix.Infrastructure.Data.Authz;
 
 /// <summary>
 /// Governance public target action for a resource invitation's explicit entry
-/// (WSP-026 / GOV-030). Runs on the request's unit of work, so the entry is
+/// (WSP-026 / GOV-030, view-only). Runs on the request's unit of work, so the entry is
 /// saved with the Workspace membership or not at all. Resource existence is
 /// checked in the request tenant, so a resource of another Workspace is
 /// unavailable (cross-tenant fail closed).
@@ -25,8 +25,12 @@ public sealed class GuestResourceAccessActionsAdapter : IGuestResourceAccessActi
         if (!Enum.TryParse<PermissionLevel>(request.Level, ignoreCase: true, out var level)
             || level is not (PermissionLevel.Viewer or PermissionLevel.Commenter or PermissionLevel.Editor))
         {
-            throw new ArgumentOutOfRangeException(nameof(request), "A guest resource entry is capped at Editor.");
+            throw new ArgumentOutOfRangeException(nameof(request), "A guest resource entry is view-only.");
         }
+
+        // A guest is view-only (GOV-030): an invitation created before that cap, with a higher stored level,
+        // still opens the resource for reading and never writes a higher entry.
+        level = PermissionLevel.Viewer;
 
         var available = request.ResourceKind switch
         {
