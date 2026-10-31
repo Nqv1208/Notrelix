@@ -7,6 +7,7 @@ import type {
   FormWriteResult,
   NewFormQuestion,
 } from "@notrelix/work-management-core";
+import { conflictOf } from "../queries/use-board-settings";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 
@@ -29,7 +30,7 @@ function failure(error: unknown): FormWriteResult {
   if (caught.status === 403) return { ok: false, reason: "forbidden" };
   if (caught.status === 404) return { ok: false, reason: "missing" };
   if (caught.status === 409 || caught.status === 412)
-    return { ok: false, reason: "conflict" };
+    return { ok: false, reason: "conflict", conflict: conflictOf(error) };
   if (
     (caught.status === 400 || caught.status === 422) &&
     caught.validationErrors
@@ -104,8 +105,12 @@ export function useFormWrites(boardId: string, workspaceId: string) {
           await refresh(formId, submissions);
           return typeof id === "string" ? { ok: true, id } : { ok: true };
         } catch (caught) {
-          await refresh(formId, submissions);
-          return failure(caught);
+          const result = failure(caught);
+          // A stale save keeps the form the person edited from, so the builder can
+          // show what changed; they pick Keep mine or Use the new version first.
+          if (!(result.ok === false && result.conflict))
+            await refresh(formId, submissions);
+          return result;
         }
       };
       const run = queue.current.then(attempt, attempt);
@@ -117,6 +122,10 @@ export function useFormWrites(boardId: string, workspaceId: string) {
 
   return useMemo(
     () => ({
+      /** The form as saved now, without replacing the one the builder shows. */
+      readLatest: (formId: string) => forms.get(formId).catch(() => null),
+      /** Reads the form again (after a stale save is settled). */
+      reload: (formId: string) => refresh(formId),
       create: (title: string) => write(() => forms.create(boardId, title)),
       updateDetails: (formId: string, title: string, description: string) =>
         write(
@@ -166,7 +175,7 @@ export function useFormWrites(boardId: string, workspaceId: string) {
       removeSubmission: (formId: string, submissionId: string) =>
         write(() => forms.removeSubmission(submissionId), formId, true),
     }),
-    [boardId, forms, versionOf, write],
+    [boardId, forms, refresh, versionOf, write],
   );
 }
 

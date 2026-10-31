@@ -12,6 +12,17 @@ import { DisabledControl, MARK_TONE_CLASS } from "../item-page/item-page-parts";
 import type { BoardSettingsSpace } from "./board-settings-types";
 import { useSettings } from "./board-settings-context";
 import { WriteError } from "./board-settings-write-error";
+import {
+  SettingsConflictSlot,
+  show,
+  useConflictFor,
+  useSavedBy,
+  type ConflictPart,
+} from "./board-settings-conflict";
+import {
+  CHANGED_INPUT_CLASS,
+  ConflictFieldNote,
+} from "./board-settings-conflict-parts";
 import { fillCopy } from "./board-settings-format";
 import {
   BUTTON_CLASS,
@@ -34,6 +45,8 @@ const ZONES = ["Asia/Ho_Chi_Minh", "Asia/Singapore", "Asia/Tokyo"] as const;
 const ROW_CLASS =
   "grid grid-cols-[190px_minmax(0,1fr)] items-start gap-4 border-t border-line px-4 py-2.5 first:border-t-0";
 const LABEL_CLASS = "pt-[7px] text-item-small font-semibold";
+
+const isGeneralScope = (scope: string | null) => scope === "general";
 
 /** The "Chung" section: identity of the board, defaults and the danger zone. */
 export function GeneralSection({
@@ -75,17 +88,70 @@ export function GeneralSection({
       }
     : null;
 
+  const conflict = useConflictFor(isGeneralScope);
+  // A stale save holds what the person typed until they choose; a newer read waits.
   useEffect(() => {
+    if (conflict) return;
     setTitle(general.title);
     setDescription(general.description);
     setColor(general.color);
     setPrefix(general.itemKeyPrefix);
     setTimeZone(general.timeZone);
     setWeekStart(general.weekStart);
-  }, [general]);
+  }, [general, conflict]);
 
   const unavailable = settings.unavailable ?? {};
   const trimmed = title.trim();
+  const edited = conflict ? conflict.base.general : general;
+  const savedBy = useSavedBy(conflict);
+  const latest = conflict?.latest?.general;
+  const base = conflict?.base.general;
+  const theirs = (key: "title" | "description" | "itemKeyPrefix" | "color") =>
+    latest && base && latest[key] !== base[key] ? latest[key] : null;
+  const conflictParts: ConflictPart[] = [
+    {
+      id: "title",
+      label: copy.conflict.parts.name,
+      mine: trimmed !== edited.title ? show(trimmed) : null,
+      latest: theirs("title") !== null ? show(latest!.title) : null,
+    },
+    {
+      id: "description",
+      label: copy.conflict.parts.description,
+      mine: description !== edited.description ? show(description) : null,
+      latest: theirs("description") !== null ? show(latest!.description) : null,
+    },
+    {
+      id: "color",
+      label: copy.conflict.parts.color,
+      mine: color.toLowerCase() !== edited.color.toLowerCase() ? color : null,
+      latest: theirs("color") !== null ? latest!.color : null,
+    },
+    {
+      id: "itemKeyPrefix",
+      label: copy.conflict.parts.prefix,
+      mine:
+        prefix.trim().toUpperCase() !== edited.itemKeyPrefix
+          ? show(prefix.trim().toUpperCase())
+          : null,
+      latest:
+        theirs("itemKeyPrefix") !== null ? show(latest!.itemKeyPrefix) : null,
+    },
+  ];
+  const note = (key: "title" | "description" | "itemKeyPrefix") => {
+    const value = theirs(key);
+    return value === null ? null : (
+      <ConflictFieldNote>
+        {fillCopy(
+          key === "title" ? copy.conflict.renamed : copy.conflict.changedTo,
+          {
+            by: savedBy,
+            value: show(value),
+          },
+        )}
+      </ConflictFieldNote>
+    );
+  };
   const prefixOk =
     unavailable.itemKeyPrefix ||
     // A board without a key yet may still save its other fields.
@@ -174,7 +240,9 @@ export function GeneralSection({
               </button>
               <button
                 type="button"
-                disabled={trimmed === "" || !prefixOk || saving}
+                disabled={
+                  trimmed === "" || !prefixOk || saving || conflict !== null
+                }
                 onClick={() => void save()}
                 className={BUTTON_CLASS.primary}
               >
@@ -184,19 +252,32 @@ export function GeneralSection({
           }
         />
 
+        <div className="mb-3 flex flex-col gap-3 empty:hidden">
+          <SettingsConflictSlot
+            match={isGeneralScope}
+            kind="general"
+            parts={conflictParts}
+          />
+        </div>
         <WriteError scope="general" id="bs-general-error" />
         <div className="rounded-[10px] border border-line bg-popover">
           <div className={ROW_CLASS}>
             <label htmlFor={ids.name} className={LABEL_CLASS}>
               {t.name}
             </label>
-            <input
-              id={ids.name}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              aria-invalid={trimmed === "" ? true : undefined}
-              className={INPUT_CLASS}
-            />
+            <div className="flex flex-col gap-1.5">
+              <input
+                id={ids.name}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                aria-invalid={trimmed === "" ? true : undefined}
+                className={cn(
+                  INPUT_CLASS,
+                  theirs("title") !== null && CHANGED_INPUT_CLASS,
+                )}
+              />
+              {note("title")}
+            </div>
           </div>
           <div className={ROW_CLASS}>
             <label htmlFor={ids.desc} className={LABEL_CLASS}>
@@ -205,13 +286,19 @@ export function GeneralSection({
                 {t.descriptionHint}
               </small>
             </label>
-            <textarea
-              id={ids.desc}
-              rows={2}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              className={TEXTAREA_CLASS}
-            />
+            <div className="flex flex-col gap-1.5">
+              <textarea
+                id={ids.desc}
+                rows={2}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                className={cn(
+                  TEXTAREA_CLASS,
+                  theirs("description") !== null && CHANGED_INPUT_CLASS,
+                )}
+              />
+              {note("description")}
+            </div>
           </div>
           <div className={ROW_CLASS}>
             <span id={ids.icon} className={LABEL_CLASS}>
@@ -306,8 +393,13 @@ export function GeneralSection({
                 }
                 aria-describedby={ids.keyHint}
                 aria-invalid={prefixOk ? undefined : true}
-                className={cn(INPUT_CLASS, "w-[120px] font-mono text-[13px]")}
+                className={cn(
+                  INPUT_CLASS,
+                  "w-[120px] font-mono text-[13px]",
+                  theirs("itemKeyPrefix") !== null && CHANGED_INPUT_CLASS,
+                )}
               />
+              {note("itemKeyPrefix")}
               <span id={ids.keyHint} className={HINT_CLASS}>
                 {unavailable.itemKeyPrefix
                   ? t.keyReadOnly

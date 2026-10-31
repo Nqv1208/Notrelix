@@ -131,6 +131,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
             timeZone={props.timeZone}
             defaultFeedback={props.defaultFeedback}
             onReload={props.onReload}
+            readLatest={props.onReadLatest}
           >
             <ReadyBody {...props} />
           </BoardSettingsProvider>

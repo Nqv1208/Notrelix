@@ -76,11 +76,7 @@ export interface DeletedFieldRow {
 }
 
 export type DeletedFieldRestore =
-  | "restored"
-  | "name-taken"
-  | "expired"
-  | "forbidden"
-  | "failed";
+  "restored" | "name-taken" | "expired" | "forbidden" | "failed";
 
 /** The board's deleted fields and the way back (a Manager restores). */
 export interface DeletedFieldsPanelProps {
@@ -241,8 +237,10 @@ export interface BoardSettingsSurfaceProps {
   templates?: BoardTemplatesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
-  /** Reads the settings again (after a conflict or an error). */
-  onReload: () => void;
+  /** Reads the settings again (after a conflict or an error); a conflict waits for it. */
+  onReload: () => void | Promise<unknown>;
+  /** Reads the settings as saved now without replacing the shown ones (the diff of a conflict). */
+  onReadLatest?: () => Promise<BoardSettingsDto | null>;
   boardHref?: string;
   onBack: () => void;
   /** Opens the board's access dialog. */

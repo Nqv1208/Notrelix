@@ -198,7 +198,8 @@ export function FormBuilderPage({
       onPublish={() => writes.publish(formId)}
       onClose={() => writes.close(formId)}
       onCopyLink={() => copyText(formLink(workspaceId, boardId, formId))}
-      onReload={() => void query.refetch()}
+      onReload={() => writes.reload(formId)}
+      onReadLatest={() => writes.readLatest(formId)}
       onBack={onBack}
     />
   );

@@ -102,8 +102,15 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const savedViews = useSavedViews(boardId, workspaceId);
   const kanban = useMemo(() => resolveKanbanSettings(viewConfig), [viewConfig]);
   const { access, error: accessError } = useBoardAccess(boardId, workspaceId);
-  const { settings, isLoading, isError, forbidden, refetch, write } =
-    useBoardSettings(boardId, workspaceId);
+  const {
+    settings,
+    isLoading,
+    isError,
+    forbidden,
+    refetch,
+    write,
+    readLatest,
+  } = useBoardSettings(boardId, workspaceId);
 
   const actions = useMemo<BoardSettingsActions>(
     () => ({
@@ -380,7 +387,8 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
           }
         />
       }
-      onReload={() => void refetch()}
+      onReload={refetch}
+      onReadLatest={readLatest}
       boardHref={props.boardHref}
       onBack={props.onBack}
       onOpenAccess={props.onOpenAccess}

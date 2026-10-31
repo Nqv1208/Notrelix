@@ -279,6 +279,11 @@ export type FormWriteResult =
         "forbidden" | "missing" | "conflict" | "validation" | "failed";
       /** Per question key, for a refused submit. */
       readonly errors?: FormAnswerErrors;
+      /** Present on a conflict, when the server named who saved first. */
+      readonly conflict?: {
+        readonly byName: string | null;
+        readonly at: string | null;
+      };
     };
 
 /** What a question's own settings keep, in the producer's `configJson`. */
