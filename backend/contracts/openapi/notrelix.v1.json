@@ -26768,6 +26768,9 @@
               "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportColumnMapRequest"
             },
             "nullable": true
+          },
+          "allErrors": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

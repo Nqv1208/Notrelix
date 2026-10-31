@@ -52,7 +52,7 @@ public static class TabularReader
     private static TabularData ReadCsv(byte[] bytes)
     {
         // Text only: a NUL byte or invalid UTF-8 means a binary file (PDF, image, legacy XLS).
-        if (Array.IndexOf(bytes, (byte)0) >= 0) throw new TabularFileException(UnsupportedType);
+        if (Array.IndexOf(bytes, (byte)0) >= 0 || LooksLikeOtherFile(bytes)) throw new TabularFileException(UnsupportedType);
         string text;
         try { text = new UTF8Encoding(false, true).GetString(bytes); }
         catch (DecoderFallbackException) { throw new TabularFileException(UnsupportedType); }
@@ -115,6 +115,15 @@ public static class TabularReader
         if (quoted) throw new TabularFileException(Malformed);
         if (any || cell.Length > 0) { cells.Add(Cap(cell)); yield return cells.ToArray(); }
     }
+
+    private static readonly byte[][] OtherSignatures =
+    [
+        "%PDF-"u8.ToArray(), "MZ"u8.ToArray(), [0x7F, (byte)'E', (byte)'L', (byte)'F'], [0xD0, 0xCF, 0x11, 0xE0], [0x89, (byte)'P', (byte)'N', (byte)'G'],
+        "GIF8"u8.ToArray(), [0xFF, 0xD8, 0xFF], "{\\rtf"u8.ToArray(), "<!DOCTYPE html"u8.ToArray(), "<html"u8.ToArray(),
+    ];
+
+    /// <summary>Text that is really another kind of file (a PDF with only text in its first bytes, a web page).</summary>
+    private static bool LooksLikeOtherFile(byte[] bytes) => OtherSignatures.Any(sig => bytes.AsSpan().StartsWith(sig));
 
     private static string? Cap(StringBuilder cell)
     {

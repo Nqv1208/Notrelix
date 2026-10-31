@@ -25,6 +25,9 @@ import {
 } from "../../../../router/schemas/board-search-schema";
 import { useRealtimeConnection } from "../../../../realtime/use-realtime-connection";
 import { BoardDuplicateDialog } from "../../../../shell/workspace/board-duplicate-dialog";
+import { BoardExportDialog } from "../../../../shell/workspace/board-export-dialog";
+import { BoardImportDialog } from "../../../../shell/workspace/board-import-dialog";
+import { useWorkspaceViewer } from "../../../../shell/workspace/use-workspace-viewer";
 import { BoardLeaveDialog } from "../../../../shell/workspace/board-leave-dialog";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
@@ -84,6 +87,11 @@ export function BoardPage() {
   const [shareOpen, setShareOpen] = useState(search.share === true);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  // A guest sees a board but never takes its data out as a file.
+  const viewerRole = useWorkspaceViewer(workspaceId).role;
+  const canExport = viewerRole !== null && viewerRole !== "guest";
   const [trashOpen, setTrashOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   useEffect(() => {
@@ -101,6 +109,8 @@ export function BoardPage() {
     () => setShareOpen(true),
     () => setLeaveOpen(true),
     () => setDuplicateOpen(true),
+    () => setImportOpen(true),
+    canExport ? () => setExportOpen(true) : undefined,
   );
 
   const showView = (mode: BoardSearch["view"], savedView?: string) => {
@@ -230,6 +240,25 @@ export function BoardPage() {
           boardId={boardId}
           open={trashOpen}
           onClose={() => setTrashOpen(false)}
+        />
+        <BoardImportDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          boardName={board?.title ?? ""}
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+        />
+        <BoardExportDialog
+          boardId={boardId}
+          boardName={board?.title ?? ""}
+          viewName={
+            saved.views.find((entry) => entry.id === search.savedView)?.name ??
+            headerCopy.views[search.view]
+          }
+          filter={search.filter}
+          sort={search.sort}
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
         />
         <BoardDuplicateDialog
           workspaceId={workspaceId}

@@ -11,7 +11,8 @@ public sealed class ImportFileForm
 }
 
 /// <param name="Mapping">Which file column (0-based) goes to which target: a field id, "$title" or "$group".</param>
-public record ImportMappingRequest(IReadOnlyList<ImportColumnMapRequest> Mapping);
+/// <param name="AllErrors">Preview only: return every error found (at most 5,000) for the report, not the first 20.</param>
+public record ImportMappingRequest(IReadOnlyList<ImportColumnMapRequest> Mapping, bool AllErrors = false);
 
 public record ImportColumnMapRequest(int Column, string Target);
 

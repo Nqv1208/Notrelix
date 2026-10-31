@@ -48,6 +48,10 @@ export function useBoardHeaderData(
   onLeave?: () => void,
   /** Opens the Duplicate board dialog; absent: no entry in the menu. */
   onDuplicate?: () => void,
+  /** Opens the Import items dialog; absent: no entry in the menu. */
+  onImport?: () => void,
+  /** Opens the Export dialog; absent: no entry in the menu. */
+  onExport?: () => void,
 ): BoardHeaderData {
   const navigate = useNavigate();
   const laneCopy = useKanbanLaneCopy();
@@ -115,6 +119,8 @@ export function useBoardHeaderData(
       onOpenShare,
       onLeave,
       onDuplicate,
+      onImport,
+      onExport,
       // A Manager unarchives with the version the open board showed; a stale one changes nothing.
       archived: board?.isArchived
         ? {

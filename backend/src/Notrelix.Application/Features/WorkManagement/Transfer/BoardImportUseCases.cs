@@ -140,7 +140,8 @@ public class StartBoardImportCommandHandler(
 }
 
 /// <summary>Step 2 and 3: checks a mapping against the stored file and the board as it is now. Reads only.</summary>
-public record PreviewBoardImportQuery(Guid BoardId, Guid JobId, IReadOnlyList<ColumnMap> Mapping)
+/// <param name="AllErrors">Return every stored error (for the report) instead of the first 20.</param>
+public record PreviewBoardImportQuery(Guid BoardId, Guid JobId, IReadOnlyList<ColumnMap> Mapping, bool AllErrors = false)
     : IQuery<ImportPreviewDto>, IReadRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.CreateItem;
@@ -160,7 +161,7 @@ public class PreviewBoardImportQueryHandler(
         var missing = !request.Mapping.Any(m => m.Target == ImportPlanner.Title || (schema.TitleField is { } t && m.Target == t.Id.ToString()));
         var result = ImportPlanner.Evaluate(data, schema, request.Mapping, collectItems: false);
         return new ImportPreviewDto(
-            data.TotalRows, missing, result.Checks, result.ErrorCount, result.ErrorRows, result.Errors.Take(20).ToList(), result.Sample);
+            data.TotalRows, missing, result.Checks, result.ErrorCount, result.ErrorRows, result.Errors.Take(request.AllErrors ? ImportPlanner.MaxStoredErrors : 20).ToList(), result.Sample);
     }
 }
 

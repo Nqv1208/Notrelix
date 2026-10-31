@@ -44,6 +44,8 @@ export const en = {
     deleteBoard: "Delete board…",
     leaveBoard: "Leave board…",
     duplicateBoard: "Duplicate board…",
+    importItems: "Import items from a file…",
+    exportItems: "Export items…",
     /** Access chip wording by board visibility. */
     scope: {
       space: "{{space}}",
@@ -134,6 +136,8 @@ export const vi: BoardHeaderCopy = {
     deleteBoard: "Xoá board…",
     leaveBoard: "Rời board…",
     duplicateBoard: "Nhân bản board…",
+    importItems: "Nhập việc từ tệp…",
+    exportItems: "Xuất việc…",
     scope: {
       space: "{{space}}",
       workspace: "Cả workspace",

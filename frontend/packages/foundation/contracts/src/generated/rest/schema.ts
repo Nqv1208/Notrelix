@@ -6758,6 +6758,7 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest": {
             mapping?: components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportColumnMapRequest"][] | null;
+            allErrors?: boolean;
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.AcceptInvitationWithRegistrationRequest": {
             token?: string | null;

@@ -210,6 +210,22 @@ export const endpoints = {
     duplicate: (boardId: string) => `/boards/${boardId}/duplicate`,
     duplicatePreview: (boardId: string) =>
       `/boards/${boardId}/duplicate-preview`,
+    // WorkManagement.Imports.* (upload, preview, confirm, get, errors) and WorkManagement.Exports.* (create, list, summary, get, file).
+    imports: (boardId: string) => `/boards/${boardId}/imports`,
+    importPreview: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}/preview`,
+    importConfirm: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}/confirm`,
+    importJob: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}`,
+    importErrors: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}/errors`,
+    exports: (boardId: string) => `/boards/${boardId}/exports`,
+    exportSummary: (boardId: string) => `/boards/${boardId}/exports/summary`,
+    exportJob: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/exports/${jobId}`,
+    exportFile: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/exports/${jobId}/file`,
     // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
     sharing: (boardId: string) => `/boards/${boardId}/sharing`,
     sharingPrivate: (boardId: string) => `/boards/${boardId}/sharing/private`,

@@ -21,7 +21,7 @@ public static class MapBoardTransferEndpoints
             .Produces<ImportUploadDto>(StatusCodes.Status200OK, "application/json")
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge);
         group.MapResourcePost("/imports/{jobId:guid}/preview", async (Guid boardId, Guid jobId, ImportMappingRequest body, ISender sender, CancellationToken ct) =>
-                Results.Ok(await sender.Send(new PreviewBoardImportQuery(boardId, jobId, Map(body)), ct)))
+                Results.Ok(await sender.Send(new PreviewBoardImportQuery(boardId, jobId, Map(body), body.AllErrors), ct)))
             .WithName("WorkManagement.Imports.Preview").WithTags(Tag)
             .WithSummary("Check a column mapping against the uploaded file: per-column checks and per-row errors")
             .Produces<ImportPreviewDto>(StatusCodes.Status200OK, "application/json");

@@ -236,9 +236,9 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B26 | Cancel a request | B | Requester or manager | yes | yes | none | none | HARDENING | Race test; real e2e; design |
 | UC-WM-B27 | Re-request after rejection or cancel | B | Requester | partial | partial | none | none | INTEGRATING | no link from the new request to the previous one (verified: no previous-request field in the Approvals domain); no design. |
 | UC-WM-B28 | See approval state and waiting-review figures | B | ViewBoard | yes | yes | partial | approvals | HARDENING | Tests for List; waiting-review count-once proof |
-| UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | no | no | none | none | DEFINED | Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE |
-| UC-WM-B30 | Map import columns to fields | B | Editor | no | no | none | none | DEFINED | Part of D76.15 import; design, BE, FE |
-| UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | no | no | none | none | DEFINED | CSV/XLSX of the current view with filters (D76.15); design, BE, FE |
+| UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | no | no | none | none | HARDENING | Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE |
+| UC-WM-B30 | Map import columns to fields | B | Editor | no | no | none | none | HARDENING | Part of D76.15 import; design, BE, FE |
+| UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | no | no | none | none | HARDENING | CSV/XLSX of the current view with filters (D76.15); design, BE, FE |
 | UC-WM-B32 | Provider/migration import | B | Integrations | no | no | none | none | DEFINED | Integrations-owned migration path; no WM work scheduled |
 | UC-WM-B33 | Handle a stale-version write conflict | B | Editor | partial | yes | complete | none | INTEGRATING | Actor on conflict (Q12 contract); EV gaps; real e2e |
 | UC-WM-B34 | Item deleted or archived by someone else while open | B | Any viewer (see UC-) | partial | yes | complete | none | INTEGRATING | actor name on the deleted notice needs the Q12 contract addition; live delivery needs open PR #193; real e2e. |
@@ -1156,8 +1156,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 133-134; WM-035; D76.15
 - Acceptance: Given a CSV with a bad Number cell, then the import reports the row and the contract-defined outcome. Given a file of 5,001 rows or one bad cell, then nothing is imported and the report names the row.
-- Evidence: BE none: no code · FE none · Design none; needs import wizard (upload, mapping, preview, error report, over-limit) · Tests none found · Real e2e none
-- State: DEFINED — Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE
+- Evidence: BE: board import upload/preview/confirm/get/errors on `/boards/{id}/imports`, background all-or-nothing run, Ops import_jobs · FE: board menu `Nhập việc từ tệp…`, 4-step dialog (file, mapping, check, import with progress), downloadable CSV error report · Design: Import-1 and Import-2 (880 px dialog, 390 px sheet); box tree not diffed, dialog box measured 880 wide at 1440 and full-width sheet at 390 · real-stack check 2026-10-31: 5,000-row XLSX and CSV imported (10.8 s), 5,001+ rows, PDF, macro and external-link XLSX refused with a reason, wrong type and bad date/option/empty title reported by row and column, error report downloaded, viewer and guest refused, archive mid-way names the actor and creates nothing, same key twice queues one run; commit 37785495e and the commit after it · Tests none (build-only phase) · Real e2e none
+- State: HARDENING — gap: tests and owner check; Assignee column cannot be imported yet (needs an owner decision on how a person is matched); import into a new board later (decision 11)
 
 ### UC-WM-B30 Map import columns to fields
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1170,8 +1170,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 134; WM-035; D76.15
 - Acceptance: Given a column mapped to an incompatible field, then flagged before import.
-- Evidence: BE none: no code · FE none · Design none; needs column-to-field mapping with preview · Tests none found · Real e2e none
-- State: DEFINED — Part of D76.15 import; design, BE, FE
+- Evidence: BE: per-column checks (ok, unknown values, incompatible) from `POST /imports/{id}/preview`, suggested mapping by field name · FE: mapping step with field select, chips, required Title, locked fields with reason · real-stack check 2026-10-31: Number column with `ba ngày` flagged incompatible and Continue locked, missing Title blocks, skipping the column opens Continue, stranger gets the identical 404; commit see B29 · Tests none · Real e2e none
+- State: HARDENING — gap: tests and owner check
 
 ### UC-WM-B31 Export a board or view
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1184,8 +1184,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 135, 104; WM-030; D76.15
 - Acceptance: Given a person without export right, then 403. Given a Guest, when export is attempted, then it is refused; given a Viewer, then the current view's rows export.
-- Evidence: BE none: no code (reports export is Analytics) · FE none; reports export only · Design none; needs export dialog (current view, queued/ready/expired) · Tests none found · Real e2e none
-- State: DEFINED — CSV/XLSX of the current view with filters (D76.15); design, BE, FE
+- Evidence: BE: `POST /boards/{id}/exports`, background run, file in storage, inbox entry when ready, `GET .../exports/{job}/file` authorised per call, 24 h expiry sweep, formula-injection guard · FE: board menu `Xuất việc…`, dialog (format, view or all, progress, ready, download, expired, failed) · Design: Export artboard (600 px dialog, 390 px sheet); box tree not diffed · real-stack check 2026-10-31: CSV and XLSX of 5,006 items, filtered view export (1 of 3 rows), `=`, `+`, `-`, `@` titles prefixed with an apostrophe, private board 404 for a non-member, viewer exports, guest 403 on export, summary and download, other person's file 404, inbox entry `work.export.ready`; commit see B29 · Tests none · Real e2e none
+- State: HARDENING — gap: tests and owner check; no field-level view right exists so no field is hidden; sub-items are not exported
 
 ### UC-WM-B32 Provider/migration import
 - Capability: B BoardItem lifecycle (WM-002)

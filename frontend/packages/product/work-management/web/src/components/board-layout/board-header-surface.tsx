@@ -125,6 +125,10 @@ export interface BoardHeaderData {
   readonly onLeave?: () => void;
   /** Opens the Duplicate board dialog (a Manager); absent: no entry in the menu. */
   readonly onDuplicate?: () => void;
+  /** Opens the Import items dialog (someone who may create items); absent: no entry in the menu. */
+  readonly onImport?: () => void;
+  /** Opens the Export dialog (anyone who sees the board, not a guest); absent: no entry in the menu. */
+  readonly onExport?: () => void;
   /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
   readonly archived?: BoardHeaderArchived;
 }
@@ -377,6 +381,8 @@ export function BoardHeaderSurface({
   onCopyLink,
   onLeave,
   onDuplicate,
+  onImport,
+  onExport,
   onOpenTrash,
   onOpenArchive,
   archived,
@@ -506,6 +512,8 @@ export function BoardHeaderSurface({
         {onCopyLink ||
         onLeave ||
         (onDuplicate && canManage) ||
+        (onImport && canEditItems) ||
+        onExport ||
         canManage ||
         ((onOpenTrash || onOpenArchive) && canEditItems) ? (
           <DropdownMenu>
@@ -569,6 +577,16 @@ export function BoardHeaderSurface({
               {onDuplicate && canManage ? (
                 <DropdownMenuItem onSelect={onDuplicate}>
                   {h.duplicateBoard}
+                </DropdownMenuItem>
+              ) : null}
+              {onImport && canEditItems ? (
+                <DropdownMenuItem onSelect={onImport}>
+                  {h.importItems}
+                </DropdownMenuItem>
+              ) : null}
+              {onExport ? (
+                <DropdownMenuItem onSelect={onExport}>
+                  {h.exportItems}
                 </DropdownMenuItem>
               ) : null}
               {onLeave ? (
