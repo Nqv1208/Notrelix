@@ -361,6 +361,8 @@ function PanelPopoverDesktop({
         }}
         className={cn(
           "z-modal gap-0 rounded-[12px] border border-line-strong bg-popover p-3 text-[14px] text-popover-foreground shadow-popover ring-0 outline-none",
+          // A panel taller than the room under its button scrolls instead of running off the window.
+          "max-h-(--radix-popover-content-available-height) overflow-y-auto",
           className,
         )}
       >

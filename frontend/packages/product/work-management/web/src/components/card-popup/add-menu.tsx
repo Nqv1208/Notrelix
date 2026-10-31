@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -451,6 +451,17 @@ export function AddMenu() {
     picker === "subitem";
   const close = () => openPicker(null);
   const back = () => openPicker("add");
+  // A panel the menu swaps in has no open event of its own, so its field takes the cursor here.
+  useEffect(() => {
+    if (picker !== "attach" && picker !== "link" && picker !== "subitem") return;
+    const id = window.setTimeout(() => {
+      const fields = document.querySelectorAll<HTMLElement>(
+        "[data-slot=popover-content] [data-picker-search], [data-slot=popover-content] [data-autofocus]",
+      );
+      fields[fields.length - 1]?.focus();
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [picker]);
   return (
     <PanelPopover
       open={isOpen}
