@@ -37,7 +37,12 @@ export interface TableFieldEditing {
   readonly canEdit: boolean;
   readonly members: readonly TableFieldMember[];
   readonly writeOf: (rowId: string, fieldId: string) => CellWrite | undefined;
-  readonly onWrite: (rowId: string, fieldId: string, value: unknown) => void;
+  readonly onWrite: (
+    rowId: string,
+    fieldId: string,
+    value: unknown,
+    stale?: boolean,
+  ) => void;
   readonly onRetry: (rowId: string, fieldId: string) => void;
   readonly onKeepMine: (rowId: string, fieldId: string) => void;
   readonly onUseTheirs: (rowId: string, fieldId: string) => void;
@@ -53,7 +58,7 @@ export interface TableFieldCellProps {
   /** The viewer may write this field. */
   editable: boolean;
   write?: CellWrite;
-  onWrite: (value: unknown) => void;
+  onWrite: (value: unknown, stale?: boolean) => void;
   onRetry: () => void;
   onKeepMine: () => void;
   onUseTheirs: () => void;

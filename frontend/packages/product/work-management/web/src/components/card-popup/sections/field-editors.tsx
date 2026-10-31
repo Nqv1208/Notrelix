@@ -835,7 +835,7 @@ function TypedControl({
   raw: unknown;
   chip: boolean;
 }) {
-  const { copy, openFieldId, clearOpenField, flagConflict } = useCardPopup();
+  const { copy, openFieldId, clearOpenField } = useCardPopup();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (openFieldId !== field.id) return;
@@ -852,11 +852,16 @@ function TypedControl({
   const { write, save } = useFieldWrite(field);
   const kind = field.fieldType;
   const initial = raw === undefined || raw === null ? "" : String(raw);
-  const [draft, setDraft] = useServerDraft(initial, flagConflict);
+  const { draft, setDraft, held } = useServerDraft(initial, {
+    key: `field:${field.id}`,
+    field: field.name,
+    commit: () => commit(),
+  });
   const [invalid, setInvalid] = useState<string | undefined>();
   const saving = save?.status === "saving";
   const Icon = kind === "number" ? Hash : Type;
   const commit = () => {
+    if (held()) return;
     if (draft === initial) return setInvalid(undefined);
     if (kind === "number") {
       const parsed = fieldTypeRegistry.number.parseDraft(

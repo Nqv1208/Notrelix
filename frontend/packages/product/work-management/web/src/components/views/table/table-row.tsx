@@ -596,8 +596,8 @@ export function TableRow({
               members={fieldEditing?.members ?? []}
               editable={Boolean(canEdit && fieldEditing?.canEdit)}
               write={fieldEditing?.writeOf(row.id, field.id)}
-              onWrite={(value) =>
-                fieldEditing?.onWrite(row.id, field.id, value)
+              onWrite={(value, stale) =>
+                fieldEditing?.onWrite(row.id, field.id, value, stale)
               }
               onRetry={() => fieldEditing?.onRetry(row.id, field.id)}
               onKeepMine={() => fieldEditing?.onKeepMine(row.id, field.id)}

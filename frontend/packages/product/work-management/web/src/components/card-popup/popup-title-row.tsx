@@ -6,12 +6,15 @@ import { useServerDraft } from "./use-server-draft";
 
 /** The complete circle and the inline title. */
 export function PopupTitleRow() {
-  const { card, copy, callbacks, mode, saves, track, flagConflict } =
-    useCardPopup();
+  const { card, copy, callbacks, mode, saves, track } = useCardPopup();
   const t = copy.shell;
   const canEdit = useCanEdit();
   const done = Boolean(card.completedAt) || card.statusCategory === "done";
-  const [draft, setDraft] = useServerDraft(card.title, flagConflict);
+  const { draft, setDraft, held } = useServerDraft(card.title, {
+    key: "title",
+    field: t.fieldConflict.titleField,
+    commit: () => commit(),
+  });
   const [touched, setTouched] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   // A card opened from "Thêm chi tiết" or a blank draft puts the cursor on the name.
@@ -20,6 +23,7 @@ export function PopupTitleRow() {
   }, [mode]);
 
   const commit = () => {
+    if (held()) return;
     const next = draft.trim();
     if (mode === "create") {
       callbacks.onRenameTitle(card.id, { title: next });
