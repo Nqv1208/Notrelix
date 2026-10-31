@@ -50,7 +50,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | A | Board lifecycle | WM-001 | 26 | 4 | 2 | 16 | 4 | 0 | 0 |
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 2 | 1 | 17 | 2 | 0 | 0 |
-| D | Field values | WM-004 | 12 | 0 | 0 | 12 | 0 | 0 | 0 |
+| D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 2 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 22 | 13 | 99 | 35 | 0 | 1 |
+| | Total | | 170 | 22 | 13 | 90 | 44 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -265,17 +265,17 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-C20 | Define a Formula field | C | Editor | yes | yes | partial | none | INTEGRATING | Cycle error design; formula Er; real e2e |
 | UC-WM-C21 | Define a Rollup field | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e |
 | UC-WM-C22 | Create, rename, recolor and delete a label | C | Editor | partial | yes | complete | none | INTEGRATING | EV on update/delete; real e2e |
-| UC-WM-D01 | Validate a value against the current schema | D | System (every write path) | yes | partial | not applicable | none | INTEGRATING | Cross-board field-id rejection test |
-| UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | INTEGRATING | tests and owner check; conflict copy names no actor until the API carries one (Q12). |
-| UC-WM-D03 | Clear a value (explicit clear) | D | Editor | partial | partial | partial | none | INTEGRATING | Wire clear in UI; test omitted-date means unchanged |
-| UC-WM-D04 | Set start and due dates | D | Editor | partial | yes | complete | none | INTEGRATING | EV on due date; inverted-range proof; real e2e |
-| UC-WM-D05 | Change an item's status | D | Editor and above | partial | yes | complete | none | INTEGRATING | EV on status write; four-path completion-time test; real e2e |
-| UC-WM-D06 | Set priority | D | Editor | yes | yes | complete | none | INTEGRATING | Real e2e |
-| UC-WM-D07 | Read a formula value (valid, stale, error) | D | Any viewer | partial | yes | partial | none | INTEGRATING | Valid/stale/error states; design |
+| UC-WM-D01 | Validate a value against the current schema | D | System (every write path) | yes | partial | not applicable | none | HARDENING | Cross-board field-id rejection test |
+| UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | HARDENING | tests and owner check; conflict copy names no actor until the API carries one (Q12). |
+| UC-WM-D03 | Clear a value (explicit clear) | D | Editor | partial | partial | partial | none | HARDENING | Wire clear in UI; test omitted-date means unchanged |
+| UC-WM-D04 | Set start and due dates | D | Editor | partial | yes | complete | none | HARDENING | EV on due date; inverted-range proof; real e2e |
+| UC-WM-D05 | Change an item's status | D | Editor and above | partial | yes | complete | none | HARDENING | EV on status write; four-path completion-time test; real e2e |
+| UC-WM-D06 | Set priority | D | Editor | yes | yes | complete | none | HARDENING | Real e2e |
+| UC-WM-D07 | Read a formula value (valid, stale, error) | D | Any viewer | partial | yes | partial | none | HARDENING | Valid/stale/error states; design |
 | UC-WM-D08 | Rollup and relation authorization | D | Any viewer | partial | not applicable | not applicable | none | INTEGRATING | masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection. |
-| UC-WM-D09 | Show derived progress of an item with child Items | D | Any viewer | partial | partial | partial | sub-items | INTEGRATING | only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not. |
+| UC-WM-D09 | Show derived progress of an item with child Items | D | Any viewer | partial | partial | partial | sub-items | HARDENING | only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not. |
 | UC-WM-D10 | Keep one progress truth | D | Product rule | partial | partial | not applicable | none | INTEGRATING | implement the D76.10 precedence on the server; test. |
-| UC-WM-D11 | Add or remove labels on an item | D | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; 200-label window |
+| UC-WM-D11 | Add or remove labels on an item | D | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; 200-label window |
 | UC-WM-D12 | Handle a client with a stale field or view schema | D | Editor with old schema | partial | partial | none | none | INTEGRATING | no test of a stale-field write refusal. |
 | UC-WM-E01 | Create a group | E | Editor (CreateItem class) | yes | yes | partial | board-settings | HARDENING | Design for create flow; no-group notice proof |
 | UC-WM-E02 | Rename or edit a group | E | Editor | yes | yes | partial | board-settings | HARDENING | Design Er/P; no-op (same name) proof |
@@ -1570,7 +1570,7 @@ Team capability WM-004.
 - Rules: product sections 29-31; WM-011; WMREQ024-025, WMREQ036, WMREQ040
 - Acceptance: Given a field id of another board, when a value is written, then it is refused and nothing is stored. Given a bulk value write with one invalid value, then none is stored.
 - Evidence: BE BoardFields.GetSchema = GET /boards/{boardId:guid}/schema -> GetBoardSchemaQuery (`BoardSchema/Queries/GetBoardSchema/GetBoardSchemaQuery.cs`) [- / -] · FE GetSchema op unused by UI · Design not applicable (no screen) · Tests `GetBoardSchemaTests.cs` · Real e2e none
-- State: INTEGRATING — Cross-board field-id rejection test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: values of every field type checked through the API: number text, link without http(s), checkbox string, bad date, duplicate multi-select ids, an option or a person that does not belong are refused (400); a field of another board answers 404; a batch with one invalid value changes nothing, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D02 Edit a custom field value in place (cell, sheet, page)
 - Capability: D Field values (WM-004)
@@ -1584,7 +1584,7 @@ Team capability WM-004.
 - Rules: product sections 29-32; WM-011; WMREQ024-025, WMREQ036-040
 - Acceptance: (1) Given a Viewer or Commenter, when they select any cell, then no editor opens and the header lock explains why. (2) Given B has an unsaved edit on field F and A changes F, when B saves, then the in-cell conflict choice appears; B's draft is never overwritten before that. (3) Given a Member on any editable cell, when Enter/double-click opens it, then the editor matches the field type and Enter saves, Escape restores, leaving saves.
 - Evidence: BE BoardItems.UpdateFieldValues = PATCH /board-items/{itemId:guid}/field-values -> UpdateBoardItemFieldValuesCommand (`BoardItems/Commands/UpdateBoardItemFieldValues/UpdateBoardItemFieldValues.cs`) [EV / Idem]; BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE sheet/page on develop; Table cell editors in PR #204 · Design WM-Field-Editors(-Dem), WM-Field-Sheet · Tests `BulkUpdateBoardItemsTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; conflict copy names no actor until the API carries one (Q12). Built: custom-field cell editors in the Table.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; conflict copy names no actor until the API carries it; the Add field menu leaves focus on a button instead of the new input. Evidence: real-stack check 2026-10-31: in the card popup in the browser a Text and a Number field were added and edited in place (PATCH values 200), 'Enter a number' showed for 'abc' with no request, both stayed after reload; stale version answers 412 and keeps the value; the same value changes nothing, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D03 Clear a value (explicit clear)
 - Capability: D Field values (WM-004)
@@ -1598,7 +1598,7 @@ Team capability WM-004.
 - Rules: product sections 27.3, 31; WM-044; D29; WMREQ037, WMREQ039
 - Acceptance: Given a due date, when Clear due is used, then the date is empty and the version bumps once. Given an already empty field, then nothing changes.
 - Evidence: BE BoardItems.Update = PATCH /board-items/{itemId:guid} -> UpdateBoardItemCommand (`BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs`) [EV / -]; BoardItems.ClearFieldValue = DELETE /board-items/{itemId:guid}/values/{fieldId:guid} -> ClearFieldValueCommand (`BoardItems/Commands/ClearFieldValue/ClearFieldValue.cs`) [EV / Idem] · FE ClearFieldValue unused by UI · Design WM-Field-Editors (clear) · Tests `BoardAuthorizationHardeningIntegrationTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — Wire clear in UI; test omitted-date means unchanged
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: clearing in the popup removed the row and it stayed gone after reload; clearing through the API twice changed nothing the second time, a stale clear answers 412, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D04 Set start and due dates
 - Capability: D Field values (WM-004)
@@ -1612,7 +1612,7 @@ Team capability WM-004.
 - Rules: product sections 146, 138; WM-044; D29; WMREQ021, WMREQ110-113
 - Acceptance: (1) Given due before start, an invalid date, a number out of range, or a non-URL Link, when submitting, then the inline error appears under that input, focus goes to the first invalid input, and nothing is sent. (2) Given a card, when it renders, then it shows key (or "#n"), title (max 2 lines, full title in tooltip and accessible name), up to 2 labels and 2 avatars then "+N", due chip with overdue and today states, priority glyph, and counts for checklist, comments and files, each count 99+ above 99 (D39).
 - Evidence: BE BoardItems.Update = PATCH /board-items/{itemId:guid} -> UpdateBoardItemCommand (`BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs`) [EV / -]; BoardItems.SetDueDate = PATCH /board-items/{itemId:guid}/due-date -> SetBoardItemDueDateCommand (`BoardItems/Commands/SetBoardItemDueDate/SetBoardItemDueDate.cs`) [- / Idem] · FE ItemDatePicker, `frontend/packages/product/work-management/web/src/components/views/calendar/calendar-dates-dialog.tsx` · Design WM-Field-Editors (date), Final-Calendar · Tests `BoardAuthorizationHardeningIntegrationTests.cs`, `PipelineTelemetryIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — EV on due date; inverted-range proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: start and due date set with the expected version, an inverted range refused (400), the same dates changed nothing, a stale version answers 412, clearing the due date works, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D05 Change an item's status
 - Capability: D Field values (WM-004)
@@ -1626,7 +1626,7 @@ Team capability WM-004.
 - Rules: product sections 148, 148.1; WM-038, WM-042; WMREQ110-113
 - Acceptance: Given a done-category status chosen, when saved, then completion time is set. Given the item reopened, then it is cleared. Given a stale version, then the write is refused and nothing changes.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem]; BoardItems.Complete = POST /board-items/{itemId:guid}/complete -> CompleteBoardItemCommand (`BoardItems/Commands/CompleteBoardItem/CompleteBoardItem.cs`) [- / Idem]; BoardItems.UpdateStatus = PATCH /board-items/{itemId:guid}/status -> UpdateBoardItemStatusCommand (`BoardItems/Commands/UpdateBoardItemStatus/UpdateBoardItemStatus.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-status-picker.tsx`, useUpdateItemStatus (optimistic, rollback) · Design Final-Table/BC-Kanban status picker · Tests `BulkUpdateBoardItemsTests.cs`, `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — EV on status write; four-path completion-time test; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: status change set and cleared completion, a status of another board refused, the same status changed nothing, a stale version answers 412, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D06 Set priority
 - Capability: D Field values (WM-004)
@@ -1640,7 +1640,7 @@ Team capability WM-004.
 - Rules: product sections 147; WM-038; D43; WMREQ110-113
 - Acceptance: Given a priority set, when saved, then the card glyph and the text change for everyone. Given the same option chosen again, then the version does not change.
 - Evidence: BE BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/shared/item-priority.ts`, `frontend/packages/product/work-management/web/src/components/shared/priority-glyph.tsx` · Design WM-Card-Face (priority glyph) · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design for the picker. Evidence: real-stack check 2026-10-31: priority set as a Select option through the API; an option of another field refused, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D07 Read a formula value (valid, stale, error)
 - Capability: D Field values (WM-004)
@@ -1654,7 +1654,7 @@ Team capability WM-004.
 - Rules: product sections 69-73, 149; WM-022; D78.8; WMREQ147
 - Acceptance: Given a formula that divides by zero, then the cell shows an error with the reason. Given a stale value, then it is marked and never shown as current.
 - Evidence: BE evaluated per read; no stale state · FE read-only fx value · Design WM-Field-Computed; stale/recomputing missing · Tests none found · Real e2e none
-- State: INTEGRATING — Valid/stale/error states; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; stale and error states in the popup. Evidence: real-stack check 2026-10-31: formula field computed [n] * 2 = 6 on the item, a bad expression refused (400), a write to a formula field refused (400), commits 609c34dbd, d290bb373.
 
 ### UC-WM-D08 Rollup and relation authorization
 - Capability: D Field values (WM-004)
@@ -1682,7 +1682,7 @@ Team capability WM-004.
 - Rules: product sections 77, 77.1; WM-041; D76.10
 - Acceptance: Given 5 sub-items with 3 done, then progress reads 3/5. Given no sub-items and a checklist at 2 of 4, then it reads 50 percent.
 - Evidence: BE derived in item DTO (BoardItemReadValues.cs); D76.10 fallbacks unproven · FE group/field progress copy · Design WM-Card-Face (count); progress bar missing · Tests none found · Real e2e `sub-items.real.e2e.spec.ts` (count only)
-- State: INTEGRATING — only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; checklist share of the progress (D76.10 precedence) is not derived. Evidence: real-stack check 2026-10-31: a parent's progress counted a completed sub-item (1 of 2) and fell back to 0 of 2 on reopen, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D10 Keep one progress truth
 - Capability: D Field values (WM-004)
@@ -1710,7 +1710,7 @@ Team capability WM-004.
 - Rules: product sections 78-79; WM-024; D61; WMREQ023
 - Acceptance: Given 200 labels, then the picker searches and windows. Given a typed text that matches nothing, then 'Create label' is offered.
 - Evidence: BE BoardItems.AddLabel = POST /board-items/{itemId:guid}/labels -> AddLabelToBoardItemCommand (`Labels/Commands/AddLabelToBoardItem/AddLabelToBoardItem.cs`) [- / Idem]; BoardItems.RemoveLabel = DELETE /board-items/{itemId:guid}/labels/{labelId:guid} -> RemoveLabelFromBoardItemCommand (`Labels/Commands/RemoveLabelFromBoardItem/RemoveLabelFromBoardItem.cs`) [- / Idem]; Labels.List = GET /boards/{boardId:guid}/labels -> GetLabelsQuery (`Labels/Queries/GetLabels/GetLabels.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/card-detail/item-labels-popover.tsx` · Design WM-Labels, WM-Sheet-Create, BC-Create-320-Pickers · Tests `AddLabelToBoardItemTests.cs`, `GetLabelsTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; 200-label window
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: label added, added again (no change), removed, and a label of another board answered 404, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D12 Handle a client with a stale field or view schema
 - Capability: D Field values (WM-004)
