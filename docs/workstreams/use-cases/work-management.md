@@ -54,7 +54,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 2 | 1 | 11 | 5 | 0 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 2 | 0 | 2 | 15 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 4 | 52 | 95 | 0 | 1 |
+| | Total | | 170 | 18 | 3 | 43 | 105 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -291,22 +291,22 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-G02 | Complete, reorder and delete checklist items | G | Editor | yes | yes | complete | none | HARDENING | a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13). |
 | UC-WM-H01 | Create a view | H | Editor | yes | yes | none | saved-views | HARDENING | design for view create, edit and delete; proof that Calendar needs a date field. |
 | UC-WM-H02 | Edit a shared view's configuration | H | Editor | partial | yes | complete | saved-views | HARDENING | PUT and PATCH carry no expected version (defect B-06). |
-| UC-WM-H03 | Delete or archive a view | H | Editor | partial | partial | none | none | INTEGRATING | delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design. |
+| UC-WM-H03 | Delete or archive a view | H | Editor | partial | partial | none | none | HARDENING | delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design. |
 | UC-WM-H04 | Set the default view | H | Editor | yes | yes | none | saved-views | HARDENING | Exactly-one default invariant and delete flow (D76.9); design |
 | UC-WM-H05 | Create and use a private view | H | Editor (creator only sees it) | partial | yes | none | saved-views | HARDENING | Design states; prove absent from others' list and realtime (D77.4) |
-| UC-WM-H06 | Filter the view (personal state) | H | Any role incl. Viewer | partial | yes | complete | none | INTEGRATING | tests and owner check; server-side filter on paged boards (Q9) is not built. |
-| UC-WM-H07 | Sort the view | H | Any role | partial | yes | complete | none | INTEGRATING | tests and owner check; server-side sort is not built. |
-| UC-WM-H08 | Group the view | H | Any role | partial | yes | complete | none | INTEGRATING | tests and owner check; 'No value' group proof. |
-| UC-WM-H09 | Save, share, edit and delete a saved filter | H | Editor (create/share); Viewer applies | yes | yes | complete | none | INTEGRATING | API tests; real e2e; criteria without sort; open PR #201 touches the menu. |
+| UC-WM-H06 | Filter the view (personal state) | H | Any role incl. Viewer | partial | yes | complete | none | HARDENING | tests and owner check; server-side filter on paged boards (Q9) is not built. |
+| UC-WM-H07 | Sort the view | H | Any role | partial | yes | complete | none | HARDENING | tests and owner check; server-side sort is not built. |
+| UC-WM-H08 | Group the view | H | Any role | partial | yes | complete | none | HARDENING | tests and owner check; 'No value' group proof. |
+| UC-WM-H09 | Save, share, edit and delete a saved filter | H | Editor (create/share); Viewer applies | yes | yes | complete | none | HARDENING | API tests; real e2e; criteria without sort; open PR #201 touches the menu. |
 | UC-WM-H10 | Apply a saved filter | H | Anyone who can see it | yes | yes | complete | none | INTEGRATING | real e2e; re-check against open PR #201. |
-| UC-WM-H11 | Return to the shared view ("Về view chung") | H | Any role | yes | yes | complete | none | INTEGRATING | tests and owner check; the owner confirms the icon button with a dot. |
+| UC-WM-H11 | Return to the shared view ("Về view chung") | H | Any role | yes | yes | complete | none | HARDENING | tests and owner check; the owner confirms the icon button with a dot. |
 | UC-WM-H12 | Repair stale view references | H | System; Editor | not applicable | no (open PR #201) | complete | none | DEFINED | the stale-condition hint is in open PR #201; real e2e. |
-| UC-WM-H13 | Switch and open views via tabs and URL | H | Any viewer | yes | yes | complete | saved-views | INTEGRATING | proof that Back and Forward follow the URL; unknown-view notice. |
+| UC-WM-H13 | Switch and open views via tabs and URL | H | Any viewer | yes | yes | complete | saved-views | HARDENING | proof that Back and Forward follow the URL; unknown-view notice. |
 | UC-WM-H14 | Apply workspace time zone to date filters and buckets | H | Any member | yes | partial | none | work-board-management | HARDENING | proof of date buckets in the workspace time zone, after open PR #201. |
 | UC-WM-H15 | Make a field filterable, sortable, groupable per its type | H | System | partial | partial | not applicable | none | INTEGRATING | server-side filter, sort and group with parity to the client for every field type. |
-| UC-WM-H16 | Search items and boards | H | Any member; Guest shared only | yes | yes | complete | none | INTEGRATING | Real e2e; Private-board no-leak test |
-| UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | IMPLEMENTING | BoardItems.List has no q parameter; search runs on the client. |
-| UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | INTEGRATING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
+| UC-WM-H16 | Search items and boards | H | Any member; Guest shared only | yes | yes | complete | none | HARDENING | Real e2e; Private-board no-leak test |
+| UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | HARDENING | BoardItems.List has no q parameter; search runs on the client. |
+| UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | HARDENING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
 | UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | DEFINED | label operators are in open PR #201, not on develop; no server-side label filter. |
 | UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; virtualization (UC-WM-T01) |
 | UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | HARDENING | tests and owner check |
@@ -1950,7 +1950,7 @@ Team capability WM-008.
 - Rules: product sections 62, 125; WM-004, WM-017; D76.9
 - Acceptance: Given the default view deleted, then another becomes default deterministically and no item is deleted.
 - Evidence: BE BoardViews.Delete = DELETE /boards/{boardId:guid}/views/{viewId:guid} -> DeleteBoardViewCommand (`BoardViews/Commands/DeleteBoardView/DeleteBoardView.cs`) [- / Idem]; BoardViews.Archive = POST /boards/{boardId:guid}/views/{viewId:guid}/archive -> ArchiveBoardViewCommand (`BoardViews/Commands/ArchiveBoardView/ArchiveBoardView.cs`) [- / Idem]; BoardViews.Unarchive = POST /boards/{boardId:guid}/views/{viewId:guid}/unarchive -> UnarchiveBoardViewCommand (`BoardViews/Commands/UnarchiveBoardView/UnarchiveBoardView.cs`) [- / Idem]; BoardViews.Restore = POST /boards/{boardId:guid}/views/{viewId:guid}/restore -> RestoreBoardViewCommand (`BoardViews/Commands/RestoreBoardView/RestoreBoardView.cs`) [- / Idem] · FE delete; archive/restore unused · Design none; needs delete view, default-fallback, archive · Tests `DeleteBoardViewTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: delete, archive, unarchive and restore of a view carry the view version; deleting or archiving the default view hands the default to the view the person picks, else to the oldest shared view, in the same commit; board settings ask for the next default before deleting it and keep the only shared view undeletable. Not built: archive and restore in the web UI, design.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; archive and restore of a view not driven in the UI; tests and owner check. Built: delete, archive, unarchive and restore of a view carry the view version; deleting or archiving the default view hands the default to the view the person picks, else to the oldest shared view, in the same commit; board settings ask for the next default before deleting it and keep the only shared view undeletable. Not built: archive and restore in the web UI, design. Evidence: real-stack check 2026-10-31: deleted a shared view (204, a stale version 412, an Observer 403, deleting again 404); the default hands over to the view the person picks or the oldest shared one, commit 2ab39238c.
 
 ### UC-WM-H04 Set the default view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1964,7 +1964,7 @@ Team capability WM-008.
 - Rules: product sections 154; D76.9
 - Acceptance: Given a new default set, then exactly one view is default.
 - Evidence: BE BoardViews.SetDefault = POST /boards/{boardId:guid}/views/{viewId:guid}/set-default -> SetDefaultViewCommand (`BoardViews/Commands/SetDefaultView/SetDefaultView.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design none; needs pick next default when deleting default view · Tests `BoardManagementLevelTests.cs` · Real e2e `saved-views.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check. Built: set-default carries the view version and clears the old default in the same commit; the delete flow above keeps exactly one default. Not built: design for the next-default picker.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design for the next-default picker; tests and owner check. Built: set-default carries the view version and clears the old default in the same commit; the delete flow above keeps exactly one default. Not built: design for the next-default picker. Evidence: real-stack check 2026-10-31: set the default view (it answered 500 because the command named the board while its expected version binds the view, fixed); exactly one default after the write, setting the default again bumps nothing, a stale version 412, an Observer 403, commit 2ab39238c.
 
 ### UC-WM-H05 Create and use a private view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1992,7 +1992,7 @@ Team capability WM-008.
 - Rules: product sections 150, 153; D68, D71; views pack section 4, 11
 - Acceptance: (1) Given an incomplete condition row, when the view shows results, then the row stays visible and is not applied. (2) Given two Members, when A sets a personal filter, then B's view is unchanged and the shared BoardView is not written. (3) Given saving personal state fails, when the failure returns, then the state stays applied for the session and an alert with "Thử lại" shows.
 - Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -]; BoardPreferences.UpdateFilters = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/filters -> UpdateBoardPreferenceFiltersCommand (`BoardPreferences/Commands/UpdateBoardPreferenceFilters/UpdateBoardPreferenceFilters.cs`) [- / -] · FE `filters/filter-builder.tsx`, `filters/use-view-state.ts`, `filters/view-state-bar.tsx` in the toolbars of `main-table-view.tsx`, `kanban-view.tsx`, `board-calendar-view.tsx` and `board-timeline-view.tsx` · Design WM-Filter-Builder, -States, -320, BC-View-Personal, BC-Filter-Gaps · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: the compound filter model, the member's personal view state (filter, three sort levels, group, swimlane field) kept as versioned criteria on the board preference (server stores an opaque JSON object up to 8 KB), the preference read and write in the web client, the filter builder, sort and group menus and the view state bar with a state hook and mock handlers, and the bar in the Table, Kanban, Calendar and Timeline toolbars in place of the older filter menu. Not built: server-side filter on paged boards (Q9).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a condition on a deleted field is not shown with a hint; the typed rule writes (PUT filters and sorts, PATCH filters, sorts and group) answer 500 because the rule types cannot bind and no server check names the rules, the web client writes criteria only; tests and owner check. Built: the compound filter model, the member's personal view state (filter, three sort levels, group, swimlane field) kept as versioned criteria on the board preference (server stores an opaque JSON object up to 8 KB), the preference read and write in the web client, the filter builder, sort and group menus and the view state bar with a state hook and mock handlers, and the bar in the Table, Kanban, Calendar and Timeline toolbars in place of the older filter menu. Not built: server-side filter on paged boards (Q9). Evidence: real-stack check 2026-10-31: added a condition in the Filter dialog: the count updates as typed and the view filters, the personal state is written per person (PUT preference) and survives the reload, another member's view is unaffected; no match shows No items match the filter with Clear filter; the system Title is no longer offered twice, commit 2ab39238c.
 
 ### UC-WM-H07 Sort the view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2006,7 +2006,7 @@ Team capability WM-008.
 - Rules: product sections 151; WM-016; views pack section 4
 - Acceptance: Given a sort on a Number field ascending, then empty values come last. Given 3 levels, then ties on level 1 order by level 2.
 - Evidence: BE BoardPreferences.UpdateSorts = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/sorts -> UpdateBoardPreferenceSortsCommand (`BoardPreferences/Commands/UpdateBoardPreferenceSorts/UpdateBoardPreferenceSorts.cs`) [- / -] · FE `filters/sort-menu.tsx` (3 levels) in the Table and Kanban toolbars · Design WM-Filter-SortGroup · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: up to three sort levels in the personal view state and the sort menu in the Table and Kanban toolbars; the Table header marks the first level. Not built: server-side sort.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; server-side sort; the typed rule writes answer 500 (see UC-WM-H06); tests and owner check. Built: up to three sort levels in the personal view state and the sort menu in the Table and Kanban toolbars; the Table header marks the first level. Not built: server-side sort. Evidence: real-stack check 2026-10-31: added sort levels in the Sort menu up to three (the fourth is disabled), the state is written to the preference and survives the reload, the shared view is not written, commit 2ab39238c.
 
 ### UC-WM-H08 Group the view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2020,7 +2020,7 @@ Team capability WM-008.
 - Rules: product sections 152; D71, Q13; views pack section 4
 - Acceptance: Given Group by Assignee on a multi-assignee item, then it shows in each lane and the board total counts it once (Q13).
 - Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE `filters/field-ref-menu.tsx` (group), `filters/use-view-state.ts` in the Table and Kanban toolbars · Design WM-Filter-SortGroup, BC-Kanban (No value) · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: group and swimlane field in the personal view state with date buckets, and the group menu in the Table and Kanban toolbars. Not built: server-side grouping on paged boards (Q9).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; server-side grouping on paged boards (Q9); tests and owner check. Built: group and swimlane field in the personal view state with date buckets, and the group menu in the Table and Kanban toolbars. Not built: server-side grouping on paged boards (Q9). Evidence: real-stack check 2026-10-31: grouped by Assignee from the Group menu, the state survives the reload; a non-groupable field is listed as unavailable with the reason, commit 2ab39238c.
 
 ### UC-WM-H09 Save, share, edit and delete a saved filter
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2034,7 +2034,7 @@ Team capability WM-008.
 - Rules: product sections 150, 153; D68; WMREQ110-113
 - Acceptance: Given a personal saved filter, then another member cannot see it and gets NotFound by id. Given a shared one, then every viewer can apply it.
 - Evidence: BE SavedFilters.Create = POST /boards/{boardId:guid}/saved-filters -> CreateSavedFilterCommand (`Views/Commands/CreateSavedFilter/CreateSavedFilter.cs`) [- / Idem]; SavedFilters.Rename = PATCH /saved-filters/{filterId:guid}/rename -> RenameSavedFilterCommand (`Views/Commands/RenameSavedFilter/RenameSavedFilter.cs`) [EV / Idem]; SavedFilters.UpdateVisibility = PATCH /saved-filters/{filterId:guid}/visibility -> UpdateSavedFilterVisibilityCommand (`Views/Commands/UpdateSavedFilterVisibility/UpdateSavedFilterVisibility.cs`) [EV / Idem]; SavedFilters.UpdateFilters = PATCH /saved-filters/{filterId:guid}/filters -> UpdateSavedFilterFiltersCommand (`Views/Commands/UpdateSavedFilterFilters/UpdateSavedFilterFilters.cs`) [EV / Idem]; SavedFilters.UpdateSorts = PATCH /saved-filters/{filterId:guid}/sorts -> UpdateSavedFilterSortsCommand (`Views/Commands/UpdateSavedFilterSorts/UpdateSavedFilterSorts.cs`) [EV / Idem]; SavedFilters.UpdateGroup = PATCH /saved-filters/{filterId:guid}/group -> UpdateSavedFilterGroupCommand (`Views/Commands/UpdateSavedFilterGroup/UpdateSavedFilterGroup.cs`) [EV / Idem]; SavedFilters.SoftDelete = DELETE /saved-filters/{filterId:guid} -> DeleteSavedFilterCommand (`Views/Commands/DeleteSavedFilter/DeleteSavedFilter.cs`) [EV / Idem]; SavedFilters.Restore = POST /saved-filters/{filterId:guid}/restore -> RestoreSavedFilterCommand (`Views/Commands/RestoreSavedFilter/RestoreSavedFilter.cs`) [- / Idem] · FE saved-filters-menu/control (11 tests); update ops unused · Design WM-SavedFilter-Menu, -Save, -States · Tests `BoardManagementLevelTests.cs`, `SavedFilterCommandTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e; criteria without sort; open PR #201 touches the menu.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; another member's private filter answers 403 instead of NotFound to a viewer-level member (the policy decides before the handler); applying and saving from the menu not driven; tests and owner check. Evidence: real-stack check 2026-10-31: created a private and a shared saved filter: a member sees only the shared one; rename (204, same name bumps nothing, a stale version 412), delete and restore (204), an empty name 400; an Observer's rename of another person's private filter answers 403, commit 2ab39238c.
 
 ### UC-WM-H10 Apply a saved filter
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2062,7 +2062,7 @@ Team capability WM-008.
 - Rules: product sections 153; D71
 - Acceptance: Given personal filter and sort, when 'Về view chung' is pressed, then both clear and the shared view's own sort shows.
 - Evidence: BE BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE `filters/view-state-bar.tsx` (Về view chung) in all four view toolbars · Design BC-View-Personal (icon + dot), BC-Toolbar · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: the view state bar clears the whole personal state including the saved criteria, in the Table, Kanban, Calendar and Timeline toolbars.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Built: the view state bar clears the whole personal state including the saved criteria, in the Table, Kanban, Calendar and Timeline toolbars. Evidence: real-stack check 2026-10-31: Back to shared view clears the personal state on the server (204) and the shared defaults show after the reload; with no personal state the button is absent and nothing is written, commit 2ab39238c.
 
 ### UC-WM-H12 Repair stale view references
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2090,7 +2090,7 @@ Team capability WM-008.
 - Rules: product sections 154; WM-018
 - Acceptance: Given a URL naming a deleted view, then the default shows with a notice. Given Back, then the previous view returns.
 - Evidence: BE BoardViews.Get = GET /boards/{boardId:guid}/views -> GetBoardViewQuery (`BoardViews/Queries/GetBoardView/GetBoardView.cs`) [- / -]; BoardViews.List = GET /boards/{boardId:guid}/views/saved -> ListBoardViewsQuery (`BoardViews/Queries/ListBoardViews/ListBoardViews.cs`) [- / -] · FE ViewTabs, `?view=`, `?savedView=` · Design BC-Toolbar, BC-Shell · Tests `BoardViewVisibilityTests.cs`, `GetBoardViewTests.cs` · Real e2e `saved-views.real.e2e.spec.ts` (partial)
-- State: INTEGRATING — proof that Back and Forward follow the URL; unknown-view notice.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: tabs write the layout to the address, Back and Forward follow it; an unknown layout in the address no longer fails the page and an unknown saved view opens the default with one notice, commit 2ab39238c.
 
 ### UC-WM-H14 Apply workspace time zone to date filters and buckets
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2132,7 +2132,7 @@ Team capability WM-008.
 - Rules: product sections 136; WM-030; D33
 - Acceptance: Given a board the person cannot see, then it never appears in results.
 - Evidence: BE GET /workspaces/{ws}/command-search (CommandSearchQuery, adjacent; 5 tests) · FE `frontend/apps/web/src/shell/workspace/use-command-search.ts`, features-search · Design Final-Command, Final-M-Search · Tests `CommandSearchQueryHandlerTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; Private-board no-leak test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the caps (6, 5, 5) were not driven; tests and owner check. Evidence: real-stack check 2026-10-31: command search finds a Private board and its item for its manager and returns nothing for a non-member and a Guest, commit 2ab39238c.
 
 ### UC-WM-H17 Filter by text inside a board
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2146,7 +2146,7 @@ Team capability WM-008.
 - Rules: product sections 136; D71
 - Acceptance: (1) Given a filter that matches nothing, when applied, then a "no results" state with "Xóa bộ lọc" shows, not the empty-board state, and group headers show 0. (2) Given a filter or sort on a paged board, when applied, then it is evaluated on the server, group totals show the filtered total, and the result equals the full-data result on a fixed dataset.
 - Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE useKanbanSearch client-side · Design BC-Toolbar (search), BC-Table filtered-empty · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: IMPLEMENTING — BoardItems.List has no q parameter; search runs on the client.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; BoardItems.List has no text parameter, the search runs on the client; tests and owner check. Evidence: real-stack check 2026-10-31: the board search box filters the table by text as typed, a no-match state names the filter with Clear filter, empty text clears it, commit 2ab39238c.
 
 ### UC-WM-H18 List My Work
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2160,7 +2160,7 @@ Team capability WM-008.
 - Rules: product sections 136; D35, D76.17
 - Acceptance: Given an item on a board the person cannot view, then it never appears. Given a done item assigned to me, then My Work does not list it; given open items, then they are ordered by due date.
 - Evidence: BE BoardItems.ListMyWork = GET /workspaces/{workspaceId:guid}/my-work/items -> GetMyBoardItemsQuery (`BoardItems/Queries/GetMyBoardItems/GetMyBoardItems.cs`) [- / -]; BoardItems.GetMyWorkExtended = GET /workspaces/{workspaceId:guid}/my-work/extended -> GetMyWorkExtendedQuery (`BoardItems/Queries/GetMyWorkExtended/GetMyWorkExtended.cs`) [- / -] · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/my-work.tsx` · Design Final-MyWork, Final-T-MyWork, Final-M-MyWork · Tests `CollectionVisibilityIntegrationTests.cs`, `MyWorkAndHomeFeedTests.cs` · Real e2e `work-feeds.real.e2e.spec.ts` (smoke)
-- State: INTEGRATING — Prove D76.17 rule (not-done, assigned, due order); Er/L design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; Er and L design; tests and owner check. Evidence: real-stack check 2026-10-31: My Work for a member lists the assigned not-done items in due order with undated last, a done item is absent, items of a board the member cannot open never appear, commit 2ab39238c.
 
 ### UC-WM-H19 Filter items by label
 - Capability: H Query, filter and sort foundation (WM-008)
