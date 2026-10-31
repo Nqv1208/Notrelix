@@ -34,11 +34,14 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
     private readonly Mock<IActorLookupService> _actors = new();
     private readonly Mock<IGuestResourceInvitationFacts> _facts = new();
     private readonly Mock<IAuditService> _audit = new();
+    private readonly Mock<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure> _memberEmails = new();
     private readonly List<IIntegrationEvent> _published = [];
 
     public ResourceInvitationLifecycleTests()
     {
         _events.Setup(e => e.Add(It.IsAny<IIntegrationEvent>())).Callback<IIntegrationEvent>(_published.Add);
+        _memberEmails.Setup(m => m.ResolveAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string>());
         _tokens.Setup(t => t.Generate(TokenPurpose.WorkspaceInvitation))
             .Returns(new IssuedOneTimeToken("raw-token", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1));
         _encryptor.Setup(e => e.Protect(It.IsAny<string>(), It.IsAny<string>())).Returns("protected");
@@ -287,7 +290,8 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         var handler = new InviteMemberCommandHandler(
             DbContextMock.Object, _actors.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
             _tokens.Object, _encryptor.Object, _events.Object,
-            new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object));
+            new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
+            _memberEmails.Object);
 
         var act = () => handler.Handle(
             new InviteMemberCommand(TestWorkspaceId, "a@example.com", WorkspaceRole.Admin), CancellationToken.None);
