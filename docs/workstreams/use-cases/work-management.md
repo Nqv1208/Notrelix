@@ -51,8 +51,8 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
-| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 1 | 5 | 0 | 0 |
-| F | Ordering | WM-006 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
+| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
+| F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | H | Query, filter and sort foundation | WM-008 | 19 | 2 | 1 | 11 | 5 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 6 | 73 | 72 | 0 | 1 |
+| | Total | | 170 | 18 | 6 | 70 | 75 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -281,10 +281,10 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-E02 | Rename or edit a group | E | Editor | yes | yes | partial | board-settings | HARDENING | Design Er/P; no-op (same name) proof |
 | UC-WM-E03 | Archive or delete a group | E | Editor | yes | partial | none | work-board-management | HARDENING | Design; archive/unarchive UI or drop; dialog-open case |
 | UC-WM-E04 | Move an item between groups (Table) | E | Editor | yes | yes | complete | none | HARDENING | Real e2e; status-unchanged proof |
-| UC-WM-E05 | Collapse or expand a group (personal) | E | Any role (personal, client-side) | not applicable | partial | complete | none | INTEGRATING | proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence. |
+| UC-WM-E05 | Collapse or expand a group (personal) | E | Any role (personal, client-side) | not applicable | partial | complete | none | HARDENING | proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence. |
 | UC-WM-E06 | Move an item between groups (Table) | E | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; two-user same-position test |
-| UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | INTEGRATING | tests and owner check; concurrent reorder test; design. Personal Table column order is built (Alt+Arrow in the Cột menu, kept on the board preference). |
-| UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | INTEGRATING | Design; deterministic-order test |
+| UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | HARDENING | tests and owner check; concurrent reorder test; design. Personal Table column order is built (Alt+Arrow in the Cột menu, kept on the board preference). |
+| UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | HARDENING | Design; deterministic-order test |
 | UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | HARDENING | No-op move proof; real e2e |
 | UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | HARDENING | test of ten concurrent inserts into one ordering scope. |
 | UC-WM-G01 | Add and edit a checklist on an item | G | Editor and above | yes | yes | complete | none | HARDENING | Optional assignee and convert-to-sub-item (D69) proof; real e2e |
@@ -1328,7 +1328,7 @@ Team capability WM-003.
 - Rules: product sections 23-24; WM-009; WMREQ029
 - Acceptance: Given a Created-at system field, when a Manager attempts delete via API, then refused.
 - Evidence: BE domain rule (Fields 102 tests); no API refusal test · FE read-only column header lock · Design WM-Field-Editors (locked, ƒx header lock) · Tests none found · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check. Evidence: real-stack check 2026-10-31: renaming Title, Status, Assignee or Due Date answers 409 work-management.field.system-locked, the same name changes nothing, deleting one is refused (400); no screen offers a rename of a field today, commit b45baefb5, da1695a37.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: renaming Title, Status, Assignee or Due Date answers 409 work-management.field.system-locked, the same name changes nothing, deleting one is refused (400); no screen offers a rename of a field today, commit b45baefb5, da1695a37.
 
 ### UC-WM-C07 Manage Select / Status / Priority options
 - Capability: C BoardField definitions (WM-003)
@@ -1742,7 +1742,7 @@ Team capability WM-005.
 - Rules: product sections 38-39; WM-014; D49; WMREQ044, WMREQ048, WMREQ132, WMREQ140
 - Acceptance: Given an Editor, when they add a group, then it appears for everyone and no item changes. Given a Viewer, then Add group is absent.
 - Evidence: BE BoardGroups.Create = POST /boards/{boardId:guid}/groups -> CreateBoardGroupCommand (`BoardGroups/Commands/CreateBoardGroup/CreateBoardGroup.cs`) [- / Idem]; BoardGroups.Duplicate = POST /board-groups/{groupId:guid}/duplicate (group duplicate; UI `useDuplicateGroup`) · FE `frontend/packages/product/work-management/web/src/components/views/table/table-add-group.tsx`, `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-add-lane.tsx`, `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-groups.tsx` · Design Final-Settings `nhom-viec`; create flow, Er, P not drawn · Tests `BoardManagementLevelTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (adds group)
-- State: HARDENING — tests and owner check. Built: Duplicate in the group menu of board settings; the server copies the group's settings and its active items with their sub-items, skips archived items, refuses past 500 items with a stable code, and names the copy from the client's localised title. Not built: design for the create flow.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; no design for the create flow. Built: Duplicate in the group menu of board settings; the server copies the group's settings and its active items with their sub-items, skips archived items, refuses past 500 items with a stable code, and names the copy from the client's localised title. Not built: design for the create flow. Evidence: real-stack check 2026-10-31: Add group in the Kanban strip made the group (201) with a confirmation, no item changed; an outsider is refused with the identical NotFound; Duplicate exists in board settings, commit c8fa65246.
 
 ### UC-WM-E02 Rename or edit a group
 - Capability: E Groups and grouping (WM-005)
@@ -1756,7 +1756,7 @@ Team capability WM-005.
 - Rules: product sections 38-39; WM-014; WMREQ110-113
 - Acceptance: Given a renamed group, when another member reloads, then they see the new name and the same group id.
 - Evidence: BE BoardGroups.Update = PATCH /board-groups/{groupId:guid} -> UpdateBoardGroupCommand (`BoardGroups/Commands/UpdateBoardGroup/UpdateBoardGroup.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-groups.tsx` (rename, recolor) · Design Final-Settings `nhom-viec` · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (renames group)
-- State: HARDENING — tests and owner check. Built: the renamed event carries the old title. Not built: design Er/P, rename from a group menu in the views (rename lives in board settings).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; rename lives in board settings only. Built: the renamed event carries the old title. Not built: design Er/P, rename from a group menu in the views (rename lives in board settings). Evidence: real-stack check 2026-10-31: rename from board settings wrote the group (200); the same name wrote nothing and kept the version (API: version 2 stays 2); a stale version answers 412, commit c8fa65246.
 
 ### UC-WM-E03 Archive or delete a group
 - Capability: E Groups and grouping (WM-005)
@@ -1770,7 +1770,7 @@ Team capability WM-005.
 - Rules: product sections 125, 38; WM-014, WM-033; D76.6
 - Acceptance: Given a group with 3 items, when delete is attempted without a target, then it is refused. Given a target group, then the 3 items move and keep their keys.
 - Evidence: BE BoardGroups.Archive = POST /board-groups/{groupId:guid}/archive -> ArchiveBoardGroupCommand (`BoardGroups/Commands/ArchiveBoardGroup/ArchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Unarchive = POST /board-groups/{groupId:guid}/unarchive -> UnarchiveBoardGroupCommand (`BoardGroups/Commands/UnarchiveBoardGroup/UnarchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Delete = DELETE /board-groups/{groupId:guid} -> DeleteBoardGroupCommand (`BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs`) [EV / Idem] · FE delete with item reassignment; create dialog guards a deleted group (`item-create-dialog.tsx`); archive/unarchive not in UI · Design none; needs delete group holding items (move-to picker), archive/unarchive · Tests `ArchiveBoardGroupTests.cs`, `BoardManagementLevelTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete group with items)
-- State: HARDENING — tests and owner check. Built: a create dialog whose group was deleted says it is no longer available, offers the other groups and holds the submit. Built: archive (with a confirm naming the item count) and unarchive carry the group version; an archived group and its items leave every board view (full board, item list, schema), the settings list the archived groups with Unarchive, and an archived group refuses new or moved items with a stable code. Built: an item inside an archived group, and the checklists of such an item, stay readable and take no write: the policy refuses it with `WorkManagement_Group_Archived` through the board-child relation (owner decision 2026-10-30), and the item sheet and page turn the write controls, follow and remind off. Not built: My Work, inbox and report lists still count such items, design.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: a create dialog whose group was deleted says it is no longer available, offers the other groups and holds the submit. Built: archive (with a confirm naming the item count) and unarchive carry the group version; an archived group and its items leave every board view (full board, item list, schema), the settings list the archived groups with Unarchive, and an archived group refuses new or moved items with a stable code. Built: an item inside an archived group, and the checklists of such an item, stay readable and take no write: the policy refuses it with `WorkManagement_Group_Archived` through the board-child relation (owner decision 2026-10-30), and the item sheet and page turn the write controls, follow and remind off. Not built: My Work, inbox and report lists still count such items, design. Evidence: real-stack check 2026-10-31: Delete on a group with 3 items asked for the group to move them to and held the button; the delete named expectedVersion and the target, the 3 items kept their keys in the new group; without a target the API answers 400, commit c8fa65246.
 
 ### UC-WM-E04 Move an item between groups (Table)
 - Capability: E Groups and grouping (WM-005)
@@ -1798,7 +1798,7 @@ Team capability WM-005.
 - Rules: product sections 38; D38
 - Acceptance: Given a collapsed group, when a refetch happens, then it stays collapsed. Given another device, then the group is expanded.
 - Evidence: BE not applicable (client-side, 38) · FE `frontend/packages/product/work-management/web/src/components/views/kanban/use-kanban-collapsed-lanes.ts` (Kanban lanes and Table groups) · Design BC-Table collapsed, Kanban-Card-States · Tests none found · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: the Table keeps its collapsed groups per workspace and board on this device, as the Kanban does for lanes.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: the Table keeps its collapsed groups per workspace and board on this device, as the Kanban does for lanes. Evidence: real-stack check 2026-10-31: collapsing a Table group survived a reload and showed expanded in a fresh browser context (per device), commit c8fa65246.
 
 ### UC-WM-E06 Move an item between groups (Table)
 - Capability: E Groups and grouping (WM-005)
@@ -1830,7 +1830,7 @@ Team capability WM-006.
 - Rules: product sections 42-45, 130; WM-016; WMREQ041-045, WMREQ114, WMREQ132, WMREQ141
 - Acceptance: Given two Editors reorder at once, then the final order is deterministic and no duplicate keys exist.
 - Evidence: BE BoardFields.Move = POST /boards/{boardId:guid}/fields/{fieldId:guid}/move -> MoveBoardFieldCommand (`BoardFields/Commands/MoveBoardField/MoveBoardField.cs`) [EV / Idem] · FE settings reorder; Alt+Arrow Cột menu (`table-toolbar.tsx`, personal order in `use-board-table.ts`) · Design WM-Table-Columns; field reorder drag/Er missing · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: the field list of board settings moves a field by drag or Alt+Arrow on its handle, names its neighbours in the server's whole field order (locked system fields included), puts the old order back when the write fails, and announces the new place. Not built: personal Table column order (BoardPreference, with the Table unit), design for the Alt+Arrow and conflict states, the conflict notice does not name the actor (the 409 carries none).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; no personal Table column order here (Table unit); the conflict notice names no actor. Built: the field list of board settings moves a field by drag or Alt+Arrow on its handle, names its neighbours in the server's whole field order (locked system fields included), puts the old order back when the write fails, and announces the new place. Not built: personal Table column order (BoardPreference, with the Table unit), design for the Alt+Arrow and conflict states, the conflict notice does not name the actor (the 409 carries none). Evidence: real-stack check 2026-10-31: Alt+Arrow on a field handle moved it and announced the place (Fc moved to position 3 of 4); a pointer drag moved a field to the end; a move above the Status used to answer 409 because the neighbours named were not adjacent on the server, now fixed, commit c8fa65246.
 
 ### UC-WM-F02 Reorder groups
 - Capability: F Ordering (WM-006)
@@ -1844,7 +1844,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ042-044, WMREQ132, WMREQ140
 - Acceptance: Given two groups swapped, when the board is read, then the order is the same for everyone. Given a drop on the current position, then the version does not change.
 - Evidence: BE BoardGroups.Move = POST /board-groups/{groupId:guid}/move -> MoveBoardGroupCommand (`BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs`) [EV / Idem] · FE useMoveRow, Table menu 'move group up/down' · Design none; needs group reorder (move up/down), conflict · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: the group list of board settings has the same drag and Alt+Arrow move with rollback; an archived group between two visible groups no longer makes every move between them fail, because the server checks the neighbours against the visible groups and keeps the archived group's key. Not built: design for group reorder and conflict, the conflict notice does not name the actor.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the conflict notice does not name the actor. Built: the group list of board settings has the same drag and Alt+Arrow move with rollback; an archived group between two visible groups no longer makes every move between them fail, because the server checks the neighbours against the visible groups and keeps the archived group's key. Not built: design for group reorder and conflict, the conflict notice does not name the actor. Evidence: real-stack check 2026-10-31: Alt+ArrowUp on a group handle moved it (POST move 204) and the list followed, commit c8fa65246.
 
 ### UC-WM-F03 Reorder an item within its group or lane
 - Capability: F Ordering (WM-006)
@@ -1858,7 +1858,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ041-044, WMREQ050-052, WMREQ114, WMREQ131, WMREQ139
 - Acceptance: Given an item dragged one place down, when the board reloads, then the order holds for everyone. Given two people dragging at once, then one gets a conflict and the other order stands.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem]; BoardItems.MoveChild = POST /board-items/{itemId:guid}/move-within-parent -> MoveChildItemCommand (`BoardItems/Commands/MoveChildItem/MoveChildItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts`, useMoveRow · Design BC-Table, BC-Kanban · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `SubItemTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; drag in the browser. Evidence: real-stack check 2026-10-31: reorder through the API: a card placed first took position 0 and the order followed, placing it where it is changed nothing, a sibling of another group answers 409 work.ordering.stale-placement, a stale version answers 412; the pointer drag was not driven, commit 4d4c7b5fa.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; drag in the browser. Evidence: real-stack check 2026-10-31: reorder through the API: a card placed first took position 0 and the order followed, placing it where it is changed nothing, a sibling of another group answers 409 work.ordering.stale-placement, a stale version answers 412; pointer drag in the browser: a card dropped above another in its lane took the new place, a drop on the place it holds wrote nothing, Alt+ArrowDown moved it one place and a move past the end wrote nothing, commit c8fa65246.
 
 ### UC-WM-F04 Resolve an ordering collision
 - Capability: F Ordering (WM-006)
@@ -2238,7 +2238,7 @@ Team capability WM-010.
 - Rules: product sections 51, 40-41; WM-015; views pack section 6
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given a quick add failing, when the write errors, then the typed name stays in the input with an inline error and "Thử lại". (3) Given Kanban, when a Member selects cards (Space, Shift+click, checkbox), then the same bulk bar as the Table appears (owner Q8).
 - Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -]; BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-view.tsx`, `kanban-selection.ts`, `kanban-bulk-bar.tsx` (the Table's bar over the picked cards), `kanban-card.tsx` (checkbox, Space, Shift+click) · Design BC-Kanban (Final-Board; Kanban-Board proposal, canonical unrecorded) · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check; not built: an undo window for the bulk archive, the card checkbox is on no artboard. Evidence: real-stack check 2026-10-31: drop on an empty lane shows the target and keeps the move; a failed quick add keeps the typed name in the field with an inline error and Retry (retry created it); checkbox plus Shift+click picks cards and the bulk bar (BC-Bulk, dark bar at the bottom centre) set Hoàn thành for both in one request, commit 2eed7b832.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; not built: an undo window for the bulk archive, the card checkbox is on no artboard. Evidence: real-stack check 2026-10-31: drop on an empty lane shows the target and keeps the move; a failed quick add keeps the typed name in the field with an inline error and Retry (retry created it); checkbox plus Shift+click picks cards and the bulk bar (BC-Bulk, dark bar at the bottom centre) set Hoàn thành for both in one request, commit 2eed7b832.
 
 ### UC-WM-J02 Move an item between Kanban lanes
 - Capability: J Kanban view (WM-010)
@@ -2266,7 +2266,7 @@ Team capability WM-010.
 - Rules: product sections 40-41; WM-015; D71; Q13
 - Acceptance: Given an item in lane A and swimlane X, when dropped in lane B and swimlane Y, then both fields hold the new values. Given a multi-assignee item, then other assignees are unchanged.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-swimlane-board.tsx` (a drop on a cell writes the column and the lane value that changed) · Design WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check; the swimlane header is not sticky when the board scrolls. Evidence: real-stack check 2026-10-31: swimlanes by Assignee: a multi-assignee card shows in each assignee lane, a drop on another lane and column wrote the status and swapped only the source assignee (admin, member kept), the two writes run in turn and the column is put back when the lane write fails; a stale drop answers 412, commit 2eed7b832.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the swimlane header is not sticky when the board scrolls. Evidence: real-stack check 2026-10-31: swimlanes by Assignee: a multi-assignee card shows in each assignee lane, a drop on another lane and column wrote the status and swapped only the source assignee (admin, member kept), the two writes run in turn and the column is put back when the lane write fails; a stale drop answers 412, commit 2eed7b832.
 
 ### UC-WM-J04 Use swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2280,7 +2280,7 @@ Team capability WM-010.
 - Rules: product sections 51; D71, D38
 - Acceptance: Given swimlanes by Assignee, then each swimlane header is sticky and collapses per person.
 - Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE `kanban-swimlane-board.tsx`, the swimlane field in the view bar (personal state, kept on the preference) · Design WM-Swimlanes · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check; the collapsed state is not kept across a reload; 320 snap-scroll design. Evidence: real-stack check 2026-10-31: Lane: Assignee is personal (no view write, Back to shared view offered); each lane header collapses on its own, commit 2eed7b832.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the collapsed state is not kept across a reload; 320 snap-scroll design. Evidence: real-stack check 2026-10-31: Lane: Assignee is personal (no view write, Back to shared view offered); each lane header collapses on its own, commit 2eed7b832.
 
 ### UC-WM-J05 Choose fields shown on the card
 - Capability: J Kanban view (WM-010)
@@ -2294,7 +2294,7 @@ Team capability WM-010.
 - Rules: product sections 51; D39
 - Acceptance: Given a field ticked, then every card shows it formatted for its type.
 - Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE Kanban settings panel (card face columns) · Design WM-Card-Face · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check. Evidence: real-stack check 2026-10-31: Fields shown on the card: the panel opened without the crash it had, the switch wrote the view config and every card showed Points in its type format (5, or a dash when empty), commit 2eed7b832.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: Fields shown on the card: the panel opened without the crash it had, the switch wrote the view config and every card showed Points in its type format (5, or a dash when empty), commit 2eed7b832.
 
 ### UC-WM-J06 Set a WIP limit and see the warning
 - Capability: J Kanban view (WM-010)
@@ -2308,7 +2308,7 @@ Team capability WM-010.
 - Rules: product sections 51; D37
 - Acceptance: Given a lane limit of 3 holding 3 cards, when a fourth is dropped, then the drop succeeds and the lane shows the warning.
 - Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE the lane menu sets the limit (`kanban-column.tsx`, `kanban-view.tsx` writes `wipLimits` to the view config); the lane and the drop target warn · Design Kanban-Card-States (WIP warning) · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check. Evidence: real-stack check 2026-10-31: lane menu Set item limit 1 wrote the view config; dragging a second card in showed the over-limit warning while hovering, the drop was kept and the lane header showed 2 / 1, commit 2eed7b832.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: lane menu Set item limit 1 wrote the view config; dragging a second card in showed the over-limit warning while hovering, the drop was kept and the lane header showed 2 / 1, commit 2eed7b832.
 
 ## K. Calendar view
 
