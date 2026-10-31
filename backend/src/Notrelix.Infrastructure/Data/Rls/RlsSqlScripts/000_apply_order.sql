@@ -16,3 +16,4 @@
 \i 016_policies_derived_scope.sql
 \i 017_webhook_scope.sql
 \i 018_billing_usage.sql
+\i 019_authz_access_helpers_static.sql
