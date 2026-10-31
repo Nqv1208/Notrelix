@@ -3,28 +3,6 @@ using Notrelix.Application.Events.Governance;
 namespace Notrelix.Infrastructure.Messaging.Consumers.Governance;
 
 [OrderingNotApplicable(OrderingReasons.LogOnly)]
-public sealed class CustomRoleAssignedConsumer : IConsumer<CustomRoleAssignedIntegrationEvent>
-{
-    private readonly ILogger<CustomRoleAssignedConsumer> _logger;
-
-    public CustomRoleAssignedConsumer(ILogger<CustomRoleAssignedConsumer> logger)
-    {
-        _logger = logger;
-    }
-
-    public Task Consume(ConsumeContext<CustomRoleAssignedIntegrationEvent> context)
-    {
-        _logger.LogInformation(
-            "[Governance] CustomRoleAssigned: RoleId={RoleId}, RoleName={RoleName}, UserId={UserId}, WorkspaceId={WorkspaceId}",
-            context.Message.RoleId,
-            context.Message.RoleName,
-            context.Message.UserId,
-            context.Message.WorkspaceId);
-        return Task.CompletedTask;
-    }
-}
-
-[OrderingNotApplicable(OrderingReasons.LogOnly)]
 public sealed class ResourcePermissionGrantedConsumer : IConsumer<ResourcePermissionGrantedIntegrationEvent>
 {
     private readonly ILogger<ResourcePermissionGrantedConsumer> _logger;

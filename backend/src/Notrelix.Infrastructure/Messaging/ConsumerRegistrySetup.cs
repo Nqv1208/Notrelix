@@ -726,16 +726,6 @@ public static class ConsumerRegistrySetup
             // Governance
             new ConsumerDefinition
             {
-                ConsumerName = "CustomRoleAssigned",
-                EventName = "governance.role.assigned",
-                EventVersion = 1,
-                EndpointName = "notrelix-governance-role-assigned-v1",
-                BoundedContext = "Governance",
-                Description = "Custom role assigned",
-                Maturity = ConsumerMaturity.Stub
-            },
-            new ConsumerDefinition
-            {
                 ConsumerName = "ResourcePermissionGranted",
                 EventName = "governance.permission.granted",
                 EventVersion = 1,

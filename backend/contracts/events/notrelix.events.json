@@ -2375,15 +2375,15 @@
       ]
     },
     {
-      "name": "governance.role.assigned",
+      "name": "governance.role.changed",
       "version": 1,
-      "clrType": "Notrelix.Application.Events.Governance.CustomRoleAssignedIntegrationEvent",
+      "clrType": "Notrelix.Application.Events.Governance.CustomRoleChangedIntegrationEvent",
       "producerContext": "Governance",
       "classification": "Business",
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "tenantScope": "Workspace",
+        "tenantScope": "Account",
         "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
@@ -2399,9 +2399,14 @@
           "nullable": false
         },
         {
-          "name": "userId",
-          "type": "Guid",
+          "name": "changeKind",
+          "type": "string",
           "nullable": false
+        },
+        {
+          "name": "userId",
+          "type": "Guid?",
+          "nullable": true
         },
         {
           "name": "eventId",
@@ -2456,13 +2461,7 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": [
-        {
-          "name": "CustomRoleAssigned",
-          "context": "Governance",
-          "maturity": "Stub"
-        }
-      ]
+      "consumers": []
     },
     {
       "name": "identity.email-verification-delivery-requested",
