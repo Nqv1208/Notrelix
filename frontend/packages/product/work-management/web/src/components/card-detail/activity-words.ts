@@ -41,6 +41,8 @@ export type ActivityEventWords = {
   readonly datesChanged: string;
   readonly deleted: string;
   readonly restored: string;
+  /** Added after a line an Automation rule made. Placeholder: {{rule}}. */
+  readonly viaRule: string;
 };
 
 export const ACTIVITY_WORDS_EN: ActivityEventWords = {
@@ -76,6 +78,7 @@ export const ACTIVITY_WORDS_EN: ActivityEventWords = {
   datesChanged: "changed the dates",
   deleted: "deleted this item",
   restored: "restored this item from deleted",
+  viaRule: "by the rule {{rule}}",
 };
 
 export const ACTIVITY_WORDS_VI: ActivityEventWords = {
@@ -113,6 +116,7 @@ export const ACTIVITY_WORDS_VI: ActivityEventWords = {
   datesChanged: "đổi ngày của việc này",
   deleted: "xóa việc này",
   restored: "khôi phục việc này đã xóa",
+  viaRule: "bằng quy tắc {{rule}}",
 };
 
 export interface DescribedActivity {
@@ -164,15 +168,21 @@ export function describeActivityEvent(
   const sentence = (
     template: string,
     detail?: ActivityDetail,
-  ): DescribedActivity => ({
-    verb: fill(template, {
+  ): DescribedActivity => {
+    const verb = fill(template, {
       field: change.fieldName ?? "",
       from: from ?? "",
       to: to ?? "",
       person,
-    }).trim(),
-    ...(detail ? { detail } : {}),
-  });
+    }).trim();
+    return {
+      // The history says which rule made the change, not only the person the rule acts for.
+      verb: change.ruleName
+        ? `${verb} ${fill(words.viaRule, { rule: change.ruleName })}`
+        : verb,
+      ...(detail ? { detail } : {}),
+    };
+  };
 
   switch (event.code) {
     case "work.item-created":
