@@ -134,10 +134,10 @@ public static class TabularReader
     // ----- XLSX -----
     private static TabularData ReadXlsx(byte[] bytes)
     {
+        var budget = new Budget();
         try
         {
             using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
-            var budget = new Budget();
             GuardPackage(zip, budget);
             var sheetPath = FirstSheetPath(zip, budget);
             var shared = ReadSharedStrings(zip, budget);
@@ -145,7 +145,8 @@ public static class TabularReader
             return ReadSheet(zip, budget, sheetPath, shared, dateStyles);
         }
         catch (InvalidDataException) { throw new TabularFileException(UnsupportedType); }
-        catch (XmlException) { throw new TabularFileException(Malformed); }
+        // The runtime cuts a stream off at its declared size, so an entry that inflates past it shows up as XML cut short there.
+        catch (XmlException) { throw new TabularFileException(budget.HitDeclared ? Unsafe : Malformed); }
     }
 
     private static void GuardPackage(ZipArchive zip, Budget budget)
@@ -189,14 +190,16 @@ public static class TabularReader
     {
         private long used;
 
+        public bool HitDeclared { get; private set; }
+
         public Stream Open(ZipArchiveEntry entry) => new CountingStream(entry.Open(), entry.Length, n =>
         {
             used += n;
             if (used > MaxUncompressedBytes) throw new TabularFileException(Unsafe);
-        });
+        }, () => HitDeclared = true);
     }
 
-    private sealed class CountingStream(Stream inner, long declared, Action<int> total) : Stream
+    private sealed class CountingStream(Stream inner, long declared, Action<int> total, Action reachedDeclared) : Stream
     {
         private long read;
 
@@ -207,6 +210,7 @@ public static class TabularReader
         {
             read += n;
             if (read > declared) throw new TabularFileException(Unsafe);
+            if (n > 0 && read == declared) reachedDeclared();
             total(n);
             return n;
         }
