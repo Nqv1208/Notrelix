@@ -24,6 +24,7 @@ import {
   type BoardSearch,
 } from "../../../../router/schemas/board-search-schema";
 import { useRealtimeConnection } from "../../../../realtime/use-realtime-connection";
+import { BoardDuplicateDialog } from "../../../../shell/workspace/board-duplicate-dialog";
 import { BoardLeaveDialog } from "../../../../shell/workspace/board-leave-dialog";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
@@ -82,6 +83,7 @@ export function BoardPage() {
   // "Quyền truy cập" lands here); the dialog also opens from the header.
   const [shareOpen, setShareOpen] = useState(search.share === true);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   useEffect(() => {
@@ -98,6 +100,7 @@ export function BoardPage() {
     board,
     () => setShareOpen(true),
     () => setLeaveOpen(true),
+    () => setDuplicateOpen(true),
   );
 
   const showView = (mode: BoardSearch["view"], savedView?: string) => {
@@ -227,6 +230,13 @@ export function BoardPage() {
           boardId={boardId}
           open={trashOpen}
           onClose={() => setTrashOpen(false)}
+        />
+        <BoardDuplicateDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          board={board}
+          open={duplicateOpen}
+          onClose={() => setDuplicateOpen(false)}
         />
         <BoardLeaveDialog
           workspaceId={workspaceId}

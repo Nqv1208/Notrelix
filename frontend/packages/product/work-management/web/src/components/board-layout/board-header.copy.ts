@@ -12,7 +12,8 @@ export const en = {
   connection: {
     reconnecting: "Reconnecting…",
     lostTitle: "Connection lost since {{time}}. Data may be out of date",
-    lostBody: "You can still read. Changes you make will fail and offer Try again.",
+    lostBody:
+      "You can still read. Changes you make will fail and offer Try again.",
     reconnect: "Reconnect",
   },
   views: {
@@ -42,6 +43,7 @@ export const en = {
     archiveBoard: "Archive board…",
     deleteBoard: "Delete board…",
     leaveBoard: "Leave board…",
+    duplicateBoard: "Duplicate board…",
     /** Access chip wording by board visibility. */
     scope: {
       space: "{{space}}",
@@ -131,6 +133,7 @@ export const vi: BoardHeaderCopy = {
     archiveBoard: "Lưu trữ board…",
     deleteBoard: "Xoá board…",
     leaveBoard: "Rời board…",
+    duplicateBoard: "Nhân bản board…",
     scope: {
       space: "{{space}}",
       workspace: "Cả workspace",

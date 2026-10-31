@@ -46,6 +46,8 @@ export function useBoardHeaderData(
   onOpenShare?: () => void,
   /** Opens the Leave board dialog; absent: no entry in the menu. */
   onLeave?: () => void,
+  /** Opens the Duplicate board dialog; absent: no entry in the menu. */
+  onDuplicate?: () => void,
 ): BoardHeaderData {
   const navigate = useNavigate();
   const laneCopy = useKanbanLaneCopy();
@@ -112,6 +114,7 @@ export function useBoardHeaderData(
       })),
       onOpenShare,
       onLeave,
+      onDuplicate,
       // A Manager unarchives with the version the open board showed; a stale one changes nothing.
       archived: board?.isArchived
         ? {

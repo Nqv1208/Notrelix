@@ -206,6 +206,10 @@ export const endpoints = {
     moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
     // WorkManagement.Boards.GetMoveImpact: who gains and loses the board in another space (`?targetSpaceId=`).
     moveImpact: (boardId: string) => `/boards/${boardId}/move-impact`,
+    // WorkManagement.Boards.Duplicate / GetDuplicatePreview (`?spaceId=`).
+    duplicate: (boardId: string) => `/boards/${boardId}/duplicate`,
+    duplicatePreview: (boardId: string) =>
+      `/boards/${boardId}/duplicate-preview`,
     // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
     sharing: (boardId: string) => `/boards/${boardId}/sharing`,
     sharingPrivate: (boardId: string) => `/boards/${boardId}/sharing/private`,

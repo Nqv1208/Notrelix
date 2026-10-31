@@ -123,6 +123,8 @@ export interface BoardHeaderData {
   readonly onOpenArchive?: () => void;
   /** Opens the Leave board dialog; absent: no entry in the menu. */
   readonly onLeave?: () => void;
+  /** Opens the Duplicate board dialog (a Manager); absent: no entry in the menu. */
+  readonly onDuplicate?: () => void;
   /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
   readonly archived?: BoardHeaderArchived;
 }
@@ -374,6 +376,7 @@ export function BoardHeaderSurface({
   onOpenShare,
   onCopyLink,
   onLeave,
+  onDuplicate,
   onOpenTrash,
   onOpenArchive,
   archived,
@@ -502,6 +505,7 @@ export function BoardHeaderSurface({
 
         {onCopyLink ||
         onLeave ||
+        (onDuplicate && canManage) ||
         canManage ||
         ((onOpenTrash || onOpenArchive) && canEditItems) ? (
           <DropdownMenu>
@@ -561,6 +565,11 @@ export function BoardHeaderSurface({
                     {h.deleteBoard}
                   </DropdownMenuItem>
                 </>
+              ) : null}
+              {onDuplicate && canManage ? (
+                <DropdownMenuItem onSelect={onDuplicate}>
+                  {h.duplicateBoard}
+                </DropdownMenuItem>
               ) : null}
               {onLeave ? (
                 <>
