@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Models;
-
 namespace Notrelix.Application.Tests.Features.Governance;
 
 /// <summary>
