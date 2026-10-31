@@ -25,14 +25,12 @@ export function createUseAcceptInvitation({
 
     return useMutation({
       mutationFn: (invitationId: string) => service.acceptById(invitationId),
-      // A refusal too (gone, no free seat) changes what the list should say: read it again.
+      // Whatever the answer, a lost reply included: the invitation may be answered and the person already a
+      // member, so the pending list and the person's workspaces (the rail lists them) are read again.
       onSettled: () => {
         void queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.pendingInvitations(accountId),
         });
-      },
-      // A new membership changes the person's workspaces (the rail lists them).
-      onSuccess: () => {
         void queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.all(accountId),
         });
