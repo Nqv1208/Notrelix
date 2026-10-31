@@ -397,7 +397,7 @@ Team capability WM-001.
 - Rules: product sections 9, 14; WM-043; WMREQ005, WMREQ010, WMREQ095-097
 - Acceptance: Given a Manager renames the board, when saved, then URL id and item keys are unchanged and members see the new name without reload. Given an Editor opens Settings, then fields are read-only with reason. Given items PRJ-1..3 and a prefix changed to NEW, when saved, then PRJ-1..3 keep their keys and the next item is NEW-4.
 - Evidence: BE Boards.Rename = PATCH /boards/{boardId:guid} -> UpdateBoardCommand (`Boards/Commands/UpdateBoard/UpdateBoard.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-general.tsx` (icon unchangeable) · Design Final-Settings `chung`; Er-on-save, 320, 768 missing · Tests `BoardManagementLevelTests.cs` · Real e2e `board-settings.real.e2e.spec.ts`, `work-board-management.real.e2e.spec.ts` (key prefix)
-- State: HARDENING — tests and owner check; a board name is 1 to 120 characters on create and rename (D78.3); not built: icon change, design Er/320/768.
+- State: HARDENING — tests and owner check; a board name is 1 to 120 characters on create and rename (D78.3); not built: icon change, design Er/320/768. Real-stack check 2026-10-31: a second manager saved first and the stale save answered 412 with the last writer (name and time); the page named the person, held the typed values, showed the three-column diff, Keep mine saved only my fields on the newest version and Use the new version dropped them, commit f7b60fb72. Not built: Undo after Use the new version, the 1180/1024 px artboard layout of the general panel (the built panel keeps the Final-Settings rows).
 
 ### UC-WM-A03 Place a board in a Space or move it between Spaces
 - Capability: A Board lifecycle (WM-001)
@@ -663,7 +663,7 @@ Team capability WM-001.
 - Rules: product sections 103-106; WM-030, WM-040; D76.4; WMREQ006
 - Acceptance: Given a board made Private, when a non-member Workspace Member opens it, then NotFound.
 - Evidence: BE Boards.UpdateVisibility = PATCH /boards/{boardId:guid}/visibility -> UpdateBoardVisibilityCommand (`Boards/Commands/UpdateBoardVisibility/UpdateBoardVisibility.cs`) [- / Idem] · FE contract op unused; header offers Make private only · Design Final-Share (private) · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; settings conflict notice names no actor and has no keep-mine (artboard Er-on-save needed); tests and owner check. Built: PublicLink is refused on create and on every visibility change (rule code `WorkManagement_Board_PublicLinkNotSupported`); the visibility write carries the board version. Not built: affected-assignee warning (UC-WM-A25), UI for Workspace visibility. Evidence: real-stack check 2026-10-31: switched a board to Private from the Share dialog and a member now gets the not-available state after reload; an unknown visibility value is now 400 (it answered 204 and stored it); the same value bumps nothing; a stale version 412, commit 33ed8c465.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; settings conflict notice names no actor and has no keep-mine (artboard Er-on-save needed); tests and owner check. Built: PublicLink is refused on create and on every visibility change (rule code `WorkManagement_Board_PublicLinkNotSupported`); the visibility write carries the board version. Not built: affected-assignee warning (UC-WM-A25), UI for Workspace visibility. Evidence: real-stack check 2026-10-31: switched a board to Private from the Share dialog and a member now gets the not-available state after reload; an unknown visibility value is now 400 (it answered 204 and stored it); the same value bumps nothing; a stale version 412, commit 33ed8c465. Settings conflict notice now names the actor and offers Keep mine / Use the new version (same panel as UC-WM-A02); tests and owner check.
 
 ### UC-WM-A22 Make a board private with impact preview and bulk add
 - Capability: A Board lifecycle (WM-001)
@@ -1287,7 +1287,7 @@ Team capability WM-003.
 - Rules: product sections 16, 20; WM-006; WMREQ026, WMREQ030-032, WMREQ110-113
 - Acceptance: Given a field renamed, then views, filters and automation referring to its key still work. Given an existing field, when the person looks for change type, then the UI says to create a new field.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE field panel; 'change type' says create new field · Design Final-Settings `truong`; WM-Field-Sheet · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version, the same name changed nothing, a stale version answers 412, a taken name answers 409, a case-only rename of itself passes, commit b45baefb5, da1695a37.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version, the same name changed nothing, a stale version answers 412, a taken name answers 409, a case-only rename of itself passes, commit b45baefb5, da1695a37. Real-stack check 2026-10-31: a second manager saved first and the stale save answered 412 with the last writer (name and time); the page named the person, held the typed values, showed the three-column diff, Keep mine saved only my fields on the newest version and Use the new version dropped them, commit f7b60fb72. The field panel's options keep their own saves; Keep mine re-sends only the panel fields.
 
 ### UC-WM-C03 Change a field default
 - Capability: C BoardField definitions (WM-003)
@@ -1887,7 +1887,7 @@ Team capability WM-006.
 - Rules: product sections 130, 43; WM-016; WMREQ042, WMREQ050-052, WMREQ114
 - Acceptance: Given 10 concurrent inserts at one position, then 10 distinct keys and a deterministic order.
 - Evidence: BE fractional ordering/rebalance (Ordering 15 tests) · FE fractional-index (core) · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; ten-insert test. Evidence: real-stack check 2026-10-31: six parallel creates into one group all answered 200 and took six distinct positions, commit 4d4c7b5fa.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; ten-insert test. Evidence: real-stack check 2026-10-31: six parallel creates into one group all answered 200 and took six distinct positions, commit 4d4c7b5fa. Form builder: the stale autosave names who saved first, holds the person's edit, shows what differs (label, required, new and removed questions, order) and locks Publish until Keep mine or Use the new version is chosen; real-stack check 2026-10-31 with two sessions, commit f7b60fb72.
 
 ## G. Checklists
 
