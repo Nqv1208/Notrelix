@@ -1,4 +1,5 @@
 using Notrelix.Infrastructure.BackgroundJobs;
+using Notrelix.Infrastructure.Messaging.Options;
 using Notrelix.Infrastructure.Storage;
 
 namespace Notrelix.Infrastructure;
@@ -12,6 +13,10 @@ public static class BackgroundJobsRegistration
     public static IServiceCollection AddBackgroundJobs(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<OutboxDispatchOptions>()
+            .Bind(configuration.GetSection(OutboxDispatchOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<OutboxDispatchOptions>, OutboxDispatchOptionsValidator>();
         services.AddHostedService<OutboxDispatcher>();
         services.AddHostedService<EmailDispatcher>();
 
