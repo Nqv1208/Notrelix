@@ -35,4 +35,27 @@ public interface IWorkspaceGrantProjectionService
         Guid userId,
         DateTimeOffset now,
         CancellationToken ct);
+
+    /// <summary>
+    /// A person who no longer holds an active grant in any Workspace of the Account loses their
+    /// account-level Member grant in the same request transaction (derived access never outlives the
+    /// membership that justified it). An account administrator's grant is never touched. Call after the
+    /// Workspace grant has been revoked.
+    /// </summary>
+    Task RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Ends the custom-role assignments of a member of the Workspace. A member who is removed or
+    /// reactivated returns to their built-in role and is configured again.
+    /// </summary>
+    Task ClearCustomRoleAssignmentsAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        CancellationToken ct);
 }

@@ -30,6 +30,7 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.021_billing_and_account_writes.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.022_audit_append_only.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.023_custom_role_assignments.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.024_membership_end_access.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

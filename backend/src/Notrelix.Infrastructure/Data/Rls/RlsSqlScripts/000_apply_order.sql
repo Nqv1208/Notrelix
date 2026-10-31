@@ -21,3 +21,4 @@
 \i 021_billing_and_account_writes.sql
 \i 022_audit_append_only.sql
 \i 023_custom_role_assignments.sql
+\i 024_membership_end_access.sql

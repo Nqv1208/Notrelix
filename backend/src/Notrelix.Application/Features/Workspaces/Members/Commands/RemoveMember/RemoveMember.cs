@@ -65,6 +65,12 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
             _dateTimeProvider.UtcNow,
             ct);
 
+        // Derived access ends with the membership, in the same transaction.
+        await _grantProjection.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            workspace.AccountId, workspace.Id, request.UserId, _dateTimeProvider.UtcNow, ct);
+        await _grantProjection.ClearCustomRoleAssignmentsAsync(
+            workspace.AccountId, workspace.Id, request.UserId, ct);
+
         return Result.Success();
     }
 }
