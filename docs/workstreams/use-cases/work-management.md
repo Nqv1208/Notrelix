@@ -53,7 +53,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
-| G | Checklists | WM-007 | 2 | 0 | 0 | 2 | 0 | 0 | 0 |
+| G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | H | Query, filter and sort foundation | WM-008 | 19 | 2 | 5 | 7 | 5 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 2 | 1 | 3 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 22 | 13 | 78 | 56 | 0 | 1 |
+| | Total | | 170 | 22 | 13 | 76 | 58 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -247,7 +247,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; stale-schema conflict proof |
 | UC-WM-C03 | Change a field default | C | Editor | yes | partial | complete | none | INTEGRATING | Test existing values unchanged; UI proof |
 | UC-WM-C04 | Archive or delete a custom field | C | Editor | partial | yes | none | work-board-management | HARDENING | Soft delete with 30-day restore (D76.5); dependents rejection; EV; design |
-| UC-WM-C05 | Restore an archived field | C | Editor | no | no | none | none | DEFINED | no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive. |
+| UC-WM-C05 | Restore an archived field | C | Editor | no | no | none | none | IMPLEMENTING | no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive. |
 | UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | HARDENING | API test: delete/edit system field refused |
 | UC-WM-C07 | Manage Select / Status / Priority options | C | Editor (statusManageRoles on views) | yes | yes | partial | board-settings | HARDENING | design for the replacement picker; live refresh needs open PR #193. |
 | UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | HARDENING | API test 'last Done option'; e2e |
@@ -287,8 +287,8 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | INTEGRATING | Design; deterministic-order test |
 | UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | INTEGRATING | No-op move proof; real e2e |
 | UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | INTEGRATING | test of ten concurrent inserts into one ordering scope. |
-| UC-WM-G01 | Add and edit a checklist on an item | G | Editor and above | yes | yes | complete | none | INTEGRATING | Optional assignee and convert-to-sub-item (D69) proof; real e2e |
-| UC-WM-G02 | Complete, reorder and delete checklist items | G | Editor | yes | yes | complete | none | INTEGRATING | a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13). |
+| UC-WM-G01 | Add and edit a checklist on an item | G | Editor and above | yes | yes | complete | none | HARDENING | Optional assignee and convert-to-sub-item (D69) proof; real e2e |
+| UC-WM-G02 | Complete, reorder and delete checklist items | G | Editor | yes | yes | complete | none | HARDENING | a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13). |
 | UC-WM-H01 | Create a view | H | Editor | yes | yes | none | saved-views | HARDENING | design for view create, edit and delete; proof that Calendar needs a date field. |
 | UC-WM-H02 | Edit a shared view's configuration | H | Editor | partial | yes | complete | saved-views | HARDENING | PUT and PATCH carry no expected version (defect B-06). |
 | UC-WM-H03 | Delete or archive a view | H | Editor | partial | partial | none | none | INTEGRATING | delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design. |
@@ -1258,7 +1258,7 @@ Team capability WM-003.
 - Rules: product sections 15-22; WM-006, WM-007, WM-008; WMREQ026-028, WMREQ030
 - Acceptance: Given an Editor, when they add a Select field with 3 options, then the field shows as a column for everyone and each option has a stable id. Given an invalid default for a Number with a maximum, when saved, then it is rejected with the reason. Given a Viewer, then Add field is absent.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-fields.tsx`, useCreateItemField · Design Final-Settings `truong`/`them-truong`, WM-Field-Sheet(-Dem) · Tests `CreateBoardFieldTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; field names are not unique on a board and formulas read by name (owner decision: unique names per board). Evidence: real-stack check 2026-10-31: fields of nine types created through the API, an empty name, a 101-char name and an unknown type refused (400); an Editor member created one, commit 6e59c53bb.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design measurement of the inline name message. Evidence: real-stack check 2026-10-31: fields of nine types created through the API; empty and 101-char names and an unknown type refused (400); a name already used on the board (trimmed, any case) answers 409 work-management.field.name-taken and the new-property form in the card popup shows it inline in the browser, commit b45baefb5, da1695a37.
 
 ### UC-WM-C02 Rename a field or change its settings
 - Capability: C BoardField definitions (WM-003)
@@ -1272,7 +1272,7 @@ Team capability WM-003.
 - Rules: product sections 16, 20; WM-006; WMREQ026, WMREQ030-032, WMREQ110-113
 - Acceptance: Given a field renamed, then views, filters and automation referring to its key still work. Given an existing field, when the person looks for change type, then the UI says to create a new field.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE field panel; 'change type' says create new field · Design Final-Settings `truong`; WM-Field-Sheet · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version, the same name changed nothing, a stale version answers 412 and kept the name, commit 6e59c53bb.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version, the same name changed nothing, a stale version answers 412, a taken name answers 409, a case-only rename of itself passes, commit b45baefb5, da1695a37.
 
 ### UC-WM-C03 Change a field default
 - Capability: C BoardField definitions (WM-003)
@@ -1300,7 +1300,7 @@ Team capability WM-003.
 - Rules: product sections 124, 25; WM-009; D76.5; WMREQ035, WMREQ040, WMREQ110-113
 - Acceptance: Given a formula that references field F, when F is deleted, then the action is rejected naming the formula. Given a field deleted 5 days ago, when an Editor restores it, then its values return; after 30 days restore is refused.
 - Evidence: BE BoardFields.Delete = DELETE /boards/{boardId:guid}/fields/{fieldId:guid} -> DeleteBoardFieldCommand (`BoardFields/Commands/DeleteBoardField/DeleteBoardField.cs`) [- / Idem] · FE board-settings-field-delete; fieldArchive flag locked · Design none; needs delete-field confirm listing dependents (formula, view, form) · Tests `DeleteBoardFieldTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete field)
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; restore of a deleted field (UC-WM-C05) is not built. Evidence: real-stack check 2026-10-31: delete of a field answered 204 and the field left the schema; deleting a field a formula reads is refused (400) naming the formula, commit 6e59c53bb.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; restore has no screen (UC-WM-C05). Evidence: real-stack check 2026-10-31: delete of a field names the expected version (stale 412) and the field left the schema; deleting a field a formula reads is refused (400) naming the formula, commit b45baefb5, da1695a37.
 
 ### UC-WM-C05 Restore an archived field
 - Capability: C BoardField definitions (WM-003)
@@ -1314,7 +1314,7 @@ Team capability WM-003.
 - Rules: product sections 124-125; D76.5; WMREQ035
 - Acceptance: Given an archived field restored, then old item values show again.
 - Evidence: BE none: no endpoint (domain event exists) · FE none · Design none; needs archived/deleted fields list, restore · Tests none found · Real e2e none
-- State: DEFINED — no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive.
+- State: IMPLEMENTING — the restore endpoint (POST /boards/{id}/fields/{fieldId}/restore, a Manager, within 30 days, a taken name refused with 409) and the deleted-fields list (GET /boards/{id}/fields/deleted) run through the API (real-stack check 2026-10-31, commit b45baefb5); no screen lists or restores a deleted field yet (needs an artboard and the owner's wording), tests and owner check.
 
 ### UC-WM-C06 Attempt to edit or delete a system field
 - Capability: C BoardField definitions (WM-003)
@@ -1328,7 +1328,7 @@ Team capability WM-003.
 - Rules: product sections 23-24; WM-009; WMREQ029
 - Acceptance: Given a Created-at system field, when a Manager attempts delete via API, then refused.
 - Evidence: BE domain rule (Fields 102 tests); no API refusal test · FE read-only column header lock · Design WM-Field-Editors (locked, ƒx header lock) · Tests none found · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; renaming a system field is allowed, the catalog says edit is refused (owner decision: may Status, Assignee and Due date be renamed). Evidence: real-stack check 2026-10-31: deleting a system field is refused (400); renaming one is allowed today, commit 6e59c53bb.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check. Evidence: real-stack check 2026-10-31: renaming Title, Status, Assignee or Due Date answers 409 work-management.field.system-locked, the same name changes nothing, deleting one is refused (400); no screen offers a rename of a field today, commit b45baefb5, da1695a37.
 
 ### UC-WM-C07 Manage Select / Status / Priority options
 - Capability: C BoardField definitions (WM-003)
@@ -1552,7 +1552,7 @@ Team capability WM-003.
 - Rules: product sections 78-79; WM-024; D61; WMREQ023
 - Acceptance: Given a label renamed, then items show the new name.
 - Evidence: BE Labels.Create = POST /boards/{boardId:guid}/labels -> CreateLabelCommand (`Labels/Commands/CreateLabel/CreateLabel.cs`) [- / Idem]; Labels.Update = PATCH /labels/{labelId:guid} -> UpdateLabelCommand (`Labels/Commands/UpdateLabel/UpdateLabel.cs`) [- / Idem]; Labels.Delete = DELETE /labels/{labelId:guid} -> DeleteLabelCommand (`Labels/Commands/DeleteLabel/DeleteLabel.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-labels.tsx` · Design WM-Labels; Er missing · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; expected version on label update and delete is not built. Evidence: real-stack check 2026-10-31: label created, renamed, recoloured and deleted through the API; a non-hex colour is refused; deleting it removed it from the item, commit 6e59c53bb.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design. Evidence: real-stack check 2026-10-31: label created, renamed, recoloured and deleted through the API with the expected version (stale 412, same content changes nothing); a non-hex colour is refused; deleting it removed it from the item; a conflict shows the board settings reload notice, commit b45baefb5, da1695a37.
 
 ## D. Field values
 
@@ -1890,7 +1890,7 @@ Team capability WM-007.
 - Rules: product sections 80-83; WM-025; WMREQ056-059, WMREQ066, WMREQ142
 - Acceptance: Given a checklist item added, when the item is read, then the list shows it in order. Given a stale parent version, then the write is refused.
 - Evidence: BE Checklists.List = GET /board-items/{itemId:guid}/checklists -> GetChecklistsQuery (`Checklists/Queries/GetChecklists/GetChecklists.cs`) [- / -]; Checklists.Create = POST /board-items/{itemId:guid}/checklists -> CreateChecklistCommand (`Checklists/Commands/CreateChecklist/CreateChecklist.cs`) [- / Idem]; Checklists.Update = PATCH /checklists/{checklistId:guid} -> UpdateChecklistCommand (`Checklists/Commands/UpdateChecklist/UpdateChecklist.cs`) [EV / Idem]; Checklists.Delete = DELETE /checklists/{checklistId:guid} -> DeleteChecklistCommand (`Checklists/Commands/DeleteChecklist/DeleteChecklist.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/checklists/item-checklists.tsx`, `frontend/packages/product/work-management/state/src/mutations/checklist-queue.ts` · Design WM-Checklist-Sheet, WM-Checklist-States · Tests `CreateChecklistTests.cs`, `DeleteChecklistTests.cs`, `GetChecklistsTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Optional assignee and convert-to-sub-item (D69) proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; convert-to-sub-item (D69) proof; focus lands on a button, not the new item input, after creating a checklist. Evidence: real-stack check 2026-10-31: checklist created, renamed and deleted through the API and in the card popup in the browser (it stayed after reload); an empty title refused (400), a stale version answers 412 on rename, add item and delete (the delete took no version before), the same title changed nothing, a non-member got 404, a new checklist on an archived item is refused (400); a checklist item can be given a person (403 for someone who cannot see the board) and a due time, commits 8b16f42a3.
 
 ### UC-WM-G02 Complete, reorder and delete checklist items
 - Capability: G Checklists (WM-007)
@@ -1904,7 +1904,7 @@ Team capability WM-007.
 - Rules: product sections 83; WM-025; WMREQ060-062, WMREQ066, WMREQ142
 - Acceptance: Given a checklist item set done twice, then the version bumps once. Given a reorder, then the order holds for everyone.
 - Evidence: BE Checklists.CreateItemByChecklist = POST /checklists/{checklistId:guid}/items -> CreateChecklistItemCommand (`Checklists/Commands/CreateChecklistItem/CreateChecklistItem.cs`) [EV / Idem]; Checklists.Move = POST /checklists/{checklistId:guid}/move -> MoveChecklistCommand (`Checklists/Commands/MoveChecklist/MoveChecklist.cs`) [EV / Idem]; Checklists.MoveItem = POST /checklist-items/{itemId:guid}/move -> MoveChecklistItemCommand (`Checklists/Commands/MoveChecklistItem/MoveChecklistItem.cs`) [EV / Idem]; Checklists.UpdateItem = PATCH /checklist-items/{itemId:guid} -> UpdateChecklistItemCommand (`Checklists/Commands/UpdateChecklistItem/UpdateChecklistItem.cs`) [EV / Idem]; Checklists.DeleteItem = DELETE /checklist-items/{itemId:guid} -> DeleteChecklistItemCommand (`Checklists/Commands/DeleteChecklistItem/DeleteChecklistItem.cs`) [EV / Idem]; Checklists.ToggleItem = POST /checklist-items/{itemId:guid}/toggle -> ToggleChecklistItemCommand (`Checklists/Commands/ToggleChecklistItem/ToggleChecklistItem.cs`) [EV / Idem]; Checklists.CreateItem = a second endpoint class `Checklists/Commands/CreateChecklistItemEndpoint.cs` that is never mapped (dead code, defect B-13); the live route is Checklists.CreateItemByChecklist · FE `frontend/packages/product/work-management/web/src/components/checklists/item-checklists.tsx` · Design WM-Checklist-States (drag-sort) · Tests `CreateChecklistItemTests.cs`, `DeleteChecklistItemTests.cs`, `NotrelixApiFactory.cs`, `WorkChecklistIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a second unregistered CreateChecklistItem endpoint file is dead code. Evidence: real-stack check 2026-10-31: checklist item toggled, edited, moved first and deleted through the API: a stale version answers 412 on each; the order followed the move, commits 8b16f42a3.
 
 ## H. Query, filter and sort foundation
 
