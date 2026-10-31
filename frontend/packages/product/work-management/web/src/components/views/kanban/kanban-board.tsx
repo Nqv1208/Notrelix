@@ -83,7 +83,10 @@ export interface KanbanBoardProps {
   onOpenDetails: (cardId: string) => void;
   /** A card was dropped: another lane's value, a place in a lane, or a reorder. */
   onDropCard: (drop: KanbanLaneDrop) => void;
-  onCreateItem: (lane: KanbanStatusLane, title: string) => void;
+  onCreateItem: (
+    lane: KanbanStatusLane,
+    title: string,
+  ) => void | Promise<unknown>;
   /**
    * The status form's copy. With it (and the callbacks below) the viewer can
    * add a lane after the last one and rename or recolour a lane.

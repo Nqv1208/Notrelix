@@ -27,6 +27,7 @@ export const en = {
   newItemPlaceholder: "Item title…",
   addSubmit: "Add",
   addCancel: "Cancel",
+  addRetry: "Retry",
   /** The trailing slot after the last lane (a status of Status, a value of another Select field). */
   addStatus: "Add status",
   addValue: "Add value",
@@ -114,6 +115,7 @@ export const vi: KanbanLaneCopy = {
   newItemPlaceholder: "Nhập tên việc…",
   addSubmit: "Thêm",
   addCancel: "Huỷ",
+  addRetry: "Thử lại",
   addStatus: "Thêm trạng thái",
   addValue: "Thêm giá trị",
   editStatus: "Sửa trạng thái",

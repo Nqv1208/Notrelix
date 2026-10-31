@@ -142,7 +142,7 @@ export interface KanbanColumnProps {
   onCollapsedChange: (collapsed: boolean) => void;
   onHide: () => void;
   onOpenDetails: (cardId: string) => void;
-  onCreateItem: (title: string) => void;
+  onCreateItem: (title: string) => void | Promise<unknown>;
   /** Opens the full form for this lane (the header "+" and the empty lane's button). */
   onRequestCreate?: () => void;
   /** Quick add handed over to the full form with the typed title. */

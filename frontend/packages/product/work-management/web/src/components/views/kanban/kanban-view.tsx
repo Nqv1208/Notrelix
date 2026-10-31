@@ -243,10 +243,8 @@ export function KanbanView({
   laneCopyRef.current = laneCopy;
   const onWriteError = useCallback((failure: KanbanWriteFailure) => {
     const copy = laneCopyRef.current;
-    if (failure.kind === "create") {
-      toast.error(fillCopy(copy.createFailed, { title: failure.title ?? "" }));
-      return;
-    }
+    // A failed quick add shows inline in the lane's add field, with a retry.
+    if (failure.kind === "create") return;
     const cardId = failure.cardId ?? "";
     const origin = writeOrigins.current.get(cardId);
     writeOrigins.current.delete(cardId);
@@ -730,7 +728,7 @@ export function KanbanView({
       !isStatusGrouping && kanban.groupByField && lane.optionId
         ? { fieldDefinitionId: kanban.groupByField.id, value: lane.optionId }
         : null;
-    kanban.createItemInLane.mutate({
+    return kanban.createItemInLane.mutateAsync({
       listId,
       title,
       statusOptionId: isStatusGrouping ? lane.optionId : null,
