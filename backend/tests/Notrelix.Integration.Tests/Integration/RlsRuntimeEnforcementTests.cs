@@ -829,7 +829,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SupportReadonlyRole_SelectsAllRows_ButCannotMutate()
+    public async Task SupportReadonlyRole_ReadsNoTenantContent_AndCannotMutate()
     {
         await SeedBoardsAsync();
 
@@ -845,16 +845,10 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         await using (var select = connection.CreateCommand())
         {
             select.CommandText = "SELECT title FROM work.boards ORDER BY title;";
-            var titles = new List<string>();
-            await using (var reader = await select.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    titles.Add(reader.GetString(0));
-                }
-            }
-
-            titles.Should().HaveCount(3, "the support role reads everything through p_support_select");
+            var selectAct = async () => await select.ExecuteReaderAsync();
+            var selectException = await selectAct.Should().ThrowAsync<PostgresException>();
+            selectException.Which.SqlState.Should().Be("42501",
+                "support holds no tenant content until each case type is designed");
         }
 
         await using (var update = connection.CreateCommand())
@@ -863,7 +857,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             var updateAct = async () => await update.ExecuteNonQueryAsync();
             var updateException = await updateAct.Should().ThrowAsync<PostgresException>();
             updateException.Which.SqlState.Should().Be("42501",
-                "the support role has SELECT-only grants; UPDATE must be denied at the privilege level");
+                "the support role has no write grant; UPDATE must be denied at the privilege level");
         }
 
         await using var insert = connection.CreateCommand();
@@ -873,7 +867,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             """;
         var act = async () => await insert.ExecuteNonQueryAsync();
         var exception = await act.Should().ThrowAsync<PostgresException>();
-        exception.Which.SqlState.Should().Be("42501", "INSERT without an INSERT policy must be denied, not silently dropped");
+        exception.Which.SqlState.Should().Be("42501", "the support role cannot insert");
     }
 
     [Fact]
