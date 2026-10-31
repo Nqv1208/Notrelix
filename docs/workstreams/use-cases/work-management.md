@@ -2468,7 +2468,7 @@ Team capability WM-015.
 - Rules: product sections 113; D56; WMREQ118-119
 - Acceptance: Given a status change, then a history line shows who, what and when, newest first. Given an item the person cannot view, then the read is NotFound.
 - Evidence: BE GET /board-items/{id}/activity (Collaboration, adjacent) · FE `frontend/packages/product/work-management/web/src/components/card-detail/task-activity-tab.tsx`, `frontend/packages/product/work-management/web/src/components/card-detail/activity-words.ts` · Design Final-Detail `lich-su`; E, L, Er missing · Tests none found · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; a due-date change and a field value other than status add no history line (no integration event for the dates); the page cap of 100 was not driven; design E, L and Er; tests and owner check. Evidence: real-stack check 2026-10-31: the card popup lists the history newest first, one line per action by name (created, renamed, status, assigned, checklist, archived, restored, deleted); a same-value write adds no line; a person without access and an unknown id get NotFound; a member reads; the archive line was missing because the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a date change now leaves a history line (new dates-changed fact, from and to shown under Show details; the events manifest and AsyncAPI must be regenerated in the test phase); a field value other than status adds no line; the page cap of 100 was not driven; design E, L and Er; tests and owner check. Evidence: real-stack check 2026-10-31: the card popup lists the history newest first, one line per action by name (created, renamed, status, assigned, checklist, archived, restored, deleted); a same-value write adds no line; a person without access and an unknown id get NotFound; a member reads; the archive line was missing because the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
 
 ### UC-WM-O02 Provide first-work-item facts for getting-started
 - Capability: O Activity and event production (WM-015)
@@ -2510,7 +2510,7 @@ Team capability WM-015.
 - Rules: product sections 113-114; WM-031; WMREQ118-123
 - Acceptance: Given a value set to the same value, then no event; given a retry, then one logical event.
 - Evidence: BE domain/integration events (38 contracts); no-op suppression tests exist per command · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; a replayed versioned write answers 204 where the first answered 200 with the version; the date change publishes no integration event; tests and owner check. Evidence: real-stack check 2026-10-31: a status write enrolled one logical event; a retry under the same key and a same-value write enrolled none; the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a replay under the same key now answers exactly what the first call answered (200 with the version); tests and owner check. Evidence: real-stack check 2026-10-31: a status write enrolled one logical event; a retry under the same key and a same-value write enrolled none; the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
 
 ## P. Realtime synchronization
 
