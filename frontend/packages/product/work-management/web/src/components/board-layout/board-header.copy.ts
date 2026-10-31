@@ -24,6 +24,8 @@ export const en = {
   /** Heading shown while the board title is not loaded. */
   untitledBoard: "Board",
   addView: "Add view",
+  /** One notice when the address names a saved view that no longer exists. */
+  viewGone: "That view no longer exists. Showing the default view.",
   /** Marks a saved view only its creator sees. */
   privateView: "Private view",
   header: {
@@ -112,6 +114,7 @@ export const vi: BoardHeaderCopy = {
   },
   untitledBoard: "Board",
   addView: "Thêm chế độ xem",
+  viewGone: "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
   privateView: "Chế độ xem riêng tư",
   header: {
     settings: "Thiết lập",

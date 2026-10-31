@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useLocale } from "@notrelix/i18n";
@@ -50,8 +51,30 @@ export function BoardPage() {
   const view = { type: viewType, name: viewType.toUpperCase() };
 
   const { board } = useFullBoard(boardId, workspaceId);
-  const currentUser = useCurrentUser();
   const headerCopy = useBoardHeaderCopy();
+  const goneNotice = useRef<string | null>(null);
+  // An address that names a saved view that is gone shows the default once, with one notice.
+  useEffect(() => {
+    const wanted = search.savedView;
+    if (!wanted || saved.isLoading || saved.isError) return;
+    if (saved.views.some((entry) => entry.id === wanted)) return;
+    if (goneNotice.current !== wanted) {
+      goneNotice.current = wanted;
+      toast(headerCopy.viewGone);
+    }
+    void navigate({
+      search: (prev: BoardSearch) => ({ ...prev, savedView: undefined }),
+      replace: true,
+    });
+  }, [
+    headerCopy.viewGone,
+    navigate,
+    saved.isError,
+    saved.isLoading,
+    saved.views,
+    search.savedView,
+  ]);
+  const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
   // `share` in the address opens the share dialog (the settings page's
