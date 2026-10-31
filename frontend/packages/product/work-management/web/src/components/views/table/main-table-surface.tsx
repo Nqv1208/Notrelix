@@ -5,6 +5,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
+import { BULK_ITEM_LIMIT } from "@notrelix/work-management-core";
 import { fillTableCopy } from "./main-table.copy";
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
@@ -494,6 +495,7 @@ export function MainTableSurface({
         <TableBulkBar
           copy={copy}
           count={selectedCount}
+          limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
           statusOptions={statusOptions}
           canEdit={canEdit}
           canArchive={canArchive}

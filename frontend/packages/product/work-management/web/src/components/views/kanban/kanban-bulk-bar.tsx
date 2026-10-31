@@ -6,6 +6,7 @@ import {
   type BulkItemChange,
 } from "@notrelix/work-management-state";
 import {
+  BULK_ITEM_LIMIT,
   findStatusField,
   orderByKey,
   type Board,
@@ -82,6 +83,7 @@ export function KanbanBulkBar({
     <TableBulkBar
       copy={copy}
       count={ids.length}
+      limit={{ max: BULK_ITEM_LIMIT, available: ids.length }}
       statusOptions={
         statusField
           ? tableStatusOptions(

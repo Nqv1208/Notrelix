@@ -25,6 +25,7 @@ export * from "./schemas";
 
 // Utils
 export * from "./utils/status-lanes";
+export * from "./utils/bulk";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
 export * from "./utils/table-projection";

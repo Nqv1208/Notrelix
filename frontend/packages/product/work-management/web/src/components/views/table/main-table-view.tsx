@@ -33,6 +33,7 @@ import {
   orderByKey,
   groupableFields,
   NONE_VALUE,
+  BULK_ITEM_LIMIT,
   projectTableLanes,
   serializeCompoundFilter,
   sortCardsByLevels,
@@ -925,7 +926,11 @@ export function MainTableView({
             })
           }
           onSelectAllChange={(selectAll) =>
-            setSelection(selectAll ? new Set(visibleIds) : new Set())
+            setSelection(
+              selectAll
+                ? new Set([...visibleIds].slice(0, BULK_ITEM_LIMIT))
+                : new Set(),
+            )
           }
           onClearSelection={() => setSelection(new Set())}
           onGroupToggle={(groupId) => {

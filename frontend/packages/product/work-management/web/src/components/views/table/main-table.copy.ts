@@ -228,6 +228,8 @@ export const en = {
   bulk: {
     label: "Actions for {{count}} selected items",
     selected: "{{count}} selected",
+    overLimit: "{{count}} selected, at most {{max}}",
+    capped: "At most {{max}} at a time. {{rest}} more are not selected.",
     status: "Status",
     assign: "Assign to",
     due: "Set due date",
@@ -499,6 +501,9 @@ export const vi: MainTableCopy = {
   bulk: {
     label: "Thao tác với {{count}} công việc đã chọn",
     selected: "{{count}} đã chọn",
+    overLimit: "Đã chọn {{count}} việc, nhiều nhất {{max}}",
+    capped:
+      "Nhiều nhất {{max}} việc mỗi lần. {{rest}} việc còn lại chưa được chọn.",
     status: "Trạng thái",
     assign: "Giao cho",
     due: "Đặt hạn",
