@@ -61,7 +61,7 @@ describe("Board sharing in the mock world (WorkManagement.Boards.GetSharing)", (
     });
     expect(tuan).toMatchObject({
       kind: "guest",
-      level: "editor",
+      level: "viewer",
       levelCapped: false,
       email: null,
     });
@@ -147,7 +147,7 @@ describe("Board sharing in the mock world (WorkManagement.Boards.GetSharing)", (
     expect(boardSharing(store, BOARD, true)!.entries![1]!.level).toBe("viewer");
   });
 
-  it("caps a Guest at Editor and shows it, instead of refusing Manager", async () => {
+  it("caps a Guest at Viewer and shows it, instead of refusing a higher level", async () => {
     const { client, store } = setup();
     await grant(client, {
       subjectType: "User",
@@ -158,7 +158,7 @@ describe("Board sharing in the mock world (WorkManagement.Boards.GetSharing)", (
     const guest = boardSharing(store, BOARD, true)!.entries!.find(
       (entry) => entry.kind === "guest",
     )!;
-    expect(guest).toMatchObject({ level: "editor", levelCapped: true });
+    expect(guest).toMatchObject({ level: "viewer", levelCapped: true });
   });
 
   it("changes a member's role and removes a member with the member operations", async () => {

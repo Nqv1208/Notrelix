@@ -894,7 +894,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateComment_OnBoardItem_Guest_WithResourcePermission_Allows()
+    public async Task CreateComment_OnBoardItem_Guest_WithResourcePermission_IsDenied_GuestsAreViewOnly()
     {
         var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
         var itemId = await ResolveBoardItemIdAsync(boardId);
@@ -905,10 +905,11 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             accountId, workspaceId, "work-management.board-item", itemId, guest, PermissionLevel.Commenter);
 
         using var provider = CreateProvider(accountId, guest);
-        var result = await SendAsync<Result<Guid>>(provider,
+        var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
 
-        result.Succeeded.Should().BeTrue();
+        await act.Should().ThrowAsync<AppForbidden>(
+            "a guest is capped at Viewer whatever the grant, so a Commenter entry does not allow commenting");
     }
 
     [Fact]

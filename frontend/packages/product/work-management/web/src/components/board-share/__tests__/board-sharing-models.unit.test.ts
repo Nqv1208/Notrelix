@@ -204,7 +204,7 @@ describe("buildSharingRows", () => {
       ["Đỗ Khánh Linh", null, "comment"],
       [
         "Đặng Minh Tuấn",
-        "khách, chỉ thấy board này · khách tối đa Có thể sửa",
+        "khách, chỉ thấy board này · khách tối đa Có thể xem",
         "edit",
       ],
     ]);

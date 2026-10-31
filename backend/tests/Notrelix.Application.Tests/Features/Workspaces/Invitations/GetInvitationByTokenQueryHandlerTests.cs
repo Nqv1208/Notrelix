@@ -107,7 +107,7 @@ public class GetInvitationByTokenQueryHandlerTests : AcceptInvitationHandlerTest
         var boardId = Guid.CreateVersion7();
         var invitation = WorkspaceInvitation.CreateForResource(
             TestAccountId, TestWorkspaceId, TestEmail,
-            new WorkspaceInvitationResourceGrant(WorkspaceInvitationResourceGrant.BoardKind, boardId, "Commenter"),
+            new WorkspaceInvitationResourceGrant(WorkspaceInvitationResourceGrant.BoardKind, boardId, "Viewer"),
             InvitationTokenHash.Create(ValidTokenHash), 1, inviter, TestNow.AddDays(-1), TimeSpan.FromDays(7));
         SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
         SetupInvitations(invitation);
@@ -119,7 +119,7 @@ public class GetInvitationByTokenQueryHandlerTests : AcceptInvitationHandlerTest
 
         result.Data!.Role.Should().Be("Guest");
         result.Data.ResourceTitle.Should().Be("ERP rollout");
-        result.Data.ResourceLevel.Should().Be("Commenter");
+        result.Data.ResourceLevel.Should().Be("Viewer");
     }
 
     [Fact]

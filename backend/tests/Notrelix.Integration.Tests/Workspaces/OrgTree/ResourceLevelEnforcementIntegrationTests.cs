@@ -26,7 +26,7 @@ namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 /// Resource levels are enforced for every access source on PostgreSQL through
 /// the real pipeline: an explicit Commenter reads and comments but cannot edit
 /// the Board, a board Observer only reads, a Space Member edits but cannot
-/// manage permissions, a Guest with a Manager grant is capped at Editor, and the
+/// manage permissions, a Guest with a Manager grant is capped at Viewer, and the
 /// workspace Owner does everything. The access summary reports the enforced
 /// level, and an archived Board is NotFound for the access read exactly as for
 /// the full board read.
@@ -87,7 +87,7 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GuestWithAManagerGrant_IsCappedAtEditor()
+    public async Task GuestWithAManagerGrant_IsCappedAtViewer()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
@@ -98,10 +98,10 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
 
         using var provider = CreateProvider(stack, guest);
 
-        // Editor level: the Guest edits content. Renaming the Board is Board
-        // management (Manager), which a Guest never holds (previously the rename
-        // was the Editor probe here).
-        await UpdateItemAsync(provider, item, "Edited by the guest");
+        // A person outside the company reads what was shared with them: even a stored Manager entry
+        // grants no edit, no board management and no permission management (GOV-030).
+        await FluentActions.Awaiting(() => UpdateItemAsync(provider, item, "Edited by the guest"))
+            .Should().ThrowAsync<AppForbidden>("a Guest is view-only");
         await FluentActions.Awaiting(() => UpdateBoardAsync(provider, board, "Renamed by the guest"))
             .Should().ThrowAsync<AppForbidden>();
         await FluentActions.Awaiting(() => OrgTreeTestHost.QueryAsync(provider, new GetResourcePermissionsQuery(BoardKind, board)))
@@ -109,7 +109,7 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
         await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider,
                 new GrantResourcePermissionCommand(BoardKind, board, "User", colleague, "Viewer")))
             .Should().ThrowAsync<AppForbidden>();
-        (await OrgTreeTestHost.QueryAsync(provider, new GetBoardAccessQuery(board))).MyLevel.Should().Be("editor");
+        (await OrgTreeTestHost.QueryAsync(provider, new GetBoardAccessQuery(board))).MyLevel.Should().Be("viewer");
     }
 
     [Fact]

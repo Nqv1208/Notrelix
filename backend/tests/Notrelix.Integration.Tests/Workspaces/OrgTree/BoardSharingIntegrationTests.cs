@@ -32,7 +32,7 @@ namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 /// CTR-GAP-WM-BOARD-SHARING on PostgreSQL through the real pipeline (NRX-003, NRX-004, GOV-025, GOV-030,
 /// WSP-026): entries and names only for managers and board members, counts for everyone else who can read
 /// the Board, NotFound for everyone who cannot; entry id = user id or Team id; a Guest is identified by
-/// membership and capped at Editor; email only for Owner/Admin and never for a Guest; the log and the
+/// membership and capped at Viewer; email only for Owner/Admin and never for a Guest; the log and the
 /// Private impact only for managers; and the atomic make-private command.
 /// </summary>
 [Collection("Database")]
@@ -93,8 +93,8 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
 
         var capped = sharing.Entries.Single(e => e.Id == guest);
         capped.Kind.Should().Be("guest", "a Guest is the Workspace role, never an email domain");
-        capped.Level.Should().Be("editor");
-        capped.LevelCapped.Should().BeTrue("a stored Manager level is capped at Editor for a Guest (GOV-030)");
+        capped.Level.Should().Be("viewer");
+        capped.LevelCapped.Should().BeTrue("a stored Manager level is capped at Viewer for a Guest (GOV-030)");
         capped.ExpiresAt.Should().BeNull();
 
         var teamEntry = sharing.Entries.Single(e => e.Id == team.Id);
