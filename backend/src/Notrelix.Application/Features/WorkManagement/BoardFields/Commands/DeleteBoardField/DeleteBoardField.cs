@@ -33,6 +33,8 @@ public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCo
             .FirstOrDefaultAsync(item => item.Id == request.ColumnId && item.BoardId == request.BoardId, ct);
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);
 
+        await ComputedFieldGuard.EnsureNoDependentsAsync(_context, column, ct);
+
         var now = _dateTimeProvider.UtcNow;
         column.Delete(_currentUser.UserId, now);
         return Result.Success();

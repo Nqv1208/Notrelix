@@ -25,6 +25,26 @@ public static class ComputedFieldGuard
         return ComputedFieldGraph.NormalizeToIds(settings, board);
     }
 
+    /// <summary>
+    /// A field that a Formula or Rollup reads cannot be deleted: the computed field would lose its input and
+    /// every item would show an error. The refusal names the first field that depends on it.
+    /// </summary>
+    public static async Task EnsureNoDependentsAsync(IWorkManagementDbContext context, BoardField target, CancellationToken cancellationToken)
+    {
+        var fields = await context.BoardFields.AsNoTracking()
+            .Where(f => f.BoardId == target.BoardId && f.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+        var board = fields.Select(f => new ComputedFieldInput(f.Id, f.Name, f.Type, f.Settings.Data.Value)).ToList();
+        foreach (var computed in board.Where(f => f.Id != target.Id && f.Type is FieldType.Formula or FieldType.Rollup))
+        {
+            IReadOnlyList<Guid> reads;
+            try { reads = ComputedFieldGraph.DependenciesOf(computed, board); }
+            catch (BusinessRuleException) { continue; }
+            if (reads.Contains(target.Id))
+                throw new BusinessRuleException($"'{computed.Name}' reads this field. Change or delete it first.");
+        }
+    }
+
     public static async Task EnsureAsync(IWorkManagementDbContext context, BoardField candidate, CancellationToken cancellationToken)
     {
         if (candidate.Type is not (FieldType.Formula or FieldType.Rollup)) return;
