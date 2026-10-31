@@ -27,6 +27,12 @@ public static class BoardMembersEndpoint
         return group;
     }
 
+    private const string UnknownRole = "role must be one of Guest, Member, Observer, Admin, Owner.";
+
+    // A role name that names no role is a bad request, never a server error; numbers are not role names.
+    private static bool TryParseRole(string value, out BoardRole role) =>
+        Enum.TryParse(value, ignoreCase: true, out role) && Enum.IsDefined(role) && !string.IsNullOrWhiteSpace(value) && !char.IsDigit(value.TrimStart()[0]);
+
     private static async Task<IResult> HandleGetBoardMembers(
         Guid boardId,
         ISender sender,
@@ -42,7 +48,13 @@ public static class BoardMembersEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AddBoardMemberCommand(boardId, body.UserId, body.Role is not null ? Enum.Parse<BoardRole>(body.Role, ignoreCase: true) : null), cancellationToken);
+        BoardRole? role = null;
+        if (body.Role is not null)
+        {
+            if (!TryParseRole(body.Role, out var parsed)) return EndpointExtensions.InvalidInput(UnknownRole);
+            role = parsed;
+        }
+        var result = await sender.Send(new AddBoardMemberCommand(boardId, body.UserId, role), cancellationToken);
         return result.ToNoContentResult();
     }
 
@@ -64,7 +76,7 @@ public static class BoardMembersEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var role = Enum.Parse<BoardRole>(body.Role, ignoreCase: true);
+        if (!TryParseRole(body.Role, out var role)) return EndpointExtensions.InvalidInput(UnknownRole);
         var result = await sender.Send(new UpdateBoardMemberRoleCommand(boardId, userId, role, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
