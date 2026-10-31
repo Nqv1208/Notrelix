@@ -41,6 +41,10 @@ public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistComm
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct)
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
+        // An archived item is read-only: it refuses a new checklist like every other edit.
+        if (item.IsArchived)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_CannotModifyArchived, "Cannot modify an archived board item.");
+
         var position = await _placement.ResolveAsync(
             new WorkOrderingScope(WorkOrderingScopeKind.ItemChecklists, item.Id),
             new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
