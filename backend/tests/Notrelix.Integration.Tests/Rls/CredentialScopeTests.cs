@@ -125,8 +125,10 @@ public sealed class CredentialScopeTests : IAsyncLifetime
 
         var unknown = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: "refresh-unknown");
         unknown.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        // The replaced credential answers with its successor for a short grace window (two tabs refreshing
+        // together, a lost response retried); past it, presenting it again ends the session.
         var replay = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: raw);
-        replay.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "a rotated refresh token cannot be used again");
+        replay.StatusCode.Should().Be(HttpStatusCode.OK, "a retry inside the grace window is answered, not treated as theft");
     }
 
     [Fact]
