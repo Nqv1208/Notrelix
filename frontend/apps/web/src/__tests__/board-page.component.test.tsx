@@ -34,7 +34,18 @@ vi.mock("../shell/workspace/use-board-header-data", () => ({
   useBoardHeaderData: () => ({}),
 }));
 
+vi.mock("../realtime/use-realtime-connection", () => ({
+  useRealtimeConnection: () => ({
+    state: "connected",
+    lostAt: null,
+    reconnect: () => undefined,
+  }),
+}));
+
+vi.mock("@notrelix/i18n", () => ({ useLocale: () => ({ locale: "vi" }) }));
+
 vi.mock("@notrelix/work-management-web", () => ({
+  BoardConnectionNotice: () => null,
   BoardHeaderCopyContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
