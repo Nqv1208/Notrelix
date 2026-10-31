@@ -134,6 +134,10 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
         scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
             .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
 
+        // Page creation is idempotent: bind the key a transport would.
+        scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Idempotency.IIdempotencyExecutionContextWriter>()
+            .Set(Guid.NewGuid().ToString("N"), Notrelix.Application.Common.Idempotency.IdempotencyExecutionSource.Internal);
+
         var result = await scope.ServiceProvider.GetRequiredService<ISender>()
             .Send(new CreatePageCommand(graph.WorkspaceId, graph.Title, null), CancellationToken.None);
 

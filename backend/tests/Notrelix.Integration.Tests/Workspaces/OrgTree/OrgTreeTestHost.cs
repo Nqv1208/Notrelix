@@ -169,6 +169,8 @@ internal sealed class OrgTreeTestHost
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
 
@@ -212,6 +214,9 @@ internal sealed class OrgTreeTestHost
     public static async Task<object?> SendAsync(ServiceProvider provider, object request)
     {
         using var scope = provider.CreateScope();
+        // Idempotent requests (creates) need the key a transport would bind; others ignore it.
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set($"org-tree-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
         var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
         if (result is Result plain)
             plain.Succeeded.Should().BeTrue(string.Join("; ", plain.Errors));
