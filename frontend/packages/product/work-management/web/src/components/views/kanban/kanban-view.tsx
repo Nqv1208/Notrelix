@@ -241,6 +241,10 @@ export function KanbanView({
   );
   const laneCopyRef = useRef(laneCopy);
   laneCopyRef.current = laneCopy;
+  // Set once the board is read: who last changed a card and the lane it is in.
+  const conflictRef = useRef<
+    ((card: Card) => { actor: string; lane: string }) | undefined
+  >(undefined);
   const onWriteError = useCallback((failure: KanbanWriteFailure) => {
     const copy = laneCopyRef.current;
     // A failed quick add shows inline in the lane's add field, with a retry.
@@ -248,6 +252,27 @@ export function KanbanView({
     const cardId = failure.cardId ?? "";
     const origin = writeOrigins.current.get(cardId);
     writeOrigins.current.delete(cardId);
+    // Lost to someone else's change: name who, and where the card now is.
+    const seen = failure.conflict
+      ? conflictRef.current?.(failure.conflict.card)
+      : undefined;
+    if (seen) {
+      const values = {
+        actor: seen.actor || copy.someone,
+        title: origin?.title ?? failure.conflict?.card.title ?? "",
+        lane: seen.lane,
+      };
+      toast.error(
+        fillCopy(
+          failure.kind !== "field" && seen.lane
+            ? copy.conflictMoved
+            : copy.conflictChanged,
+          values,
+        ),
+        { id: `kanban-write-${cardId}` },
+      );
+      return;
+    }
     const message =
       failure.kind === "field"
         ? fillCopy(copy.saveFailed, { title: origin?.title ?? "" })
@@ -419,6 +444,18 @@ export function KanbanView({
 
   const isStatusGrouping =
     !kanban.groupByField || kanban.groupByField.id === kanban.statusField?.id;
+  conflictRef.current = (card) => {
+    const optionId = isStatusGrouping
+      ? card.statusOptionId
+      : kanban.groupByField
+        ? card.fieldValues[kanban.groupByField.id]
+        : null;
+    const lane = kanban.allLanes.find((entry) => entry.optionId === optionId);
+    return {
+      actor: card.updatedByName ?? "",
+      lane: lane ? laneName(lane, laneCopyRef.current, isStatusGrouping) : "",
+    };
+  };
   const allCards = useMemo(
     () => kanban.allLanes.flatMap((lane) => lane.cards),
     [kanban.allLanes],
@@ -582,28 +619,51 @@ export function KanbanView({
     return column ? laneName(column, laneCopy, isStatusGrouping) : "";
   };
 
-  /** Writes the column and/or the lane value of a card; the two are separate writes. */
-  const writeCell = (
+  /**
+   * Writes the column and/or the lane value of a card. The two are separate
+   * writes, one after the other: the second names the version the first
+   * answered. Resolves false when one failed (its failure toast is shown).
+   */
+  const writeCell = async (
     cardId: string,
     column: { set: boolean; value: string | null },
     lane: { set: boolean; value: unknown },
-  ) => {
+    /** The column the card was in: put back when the lane write fails after the column write kept (both or neither). */
+    columnBefore?: string | null,
+  ): Promise<boolean> => {
     noteOrigin(cardId);
-    if (column.set) {
-      if (column.value !== null) writeLaneValue(cardId, column.value);
-      else if (!isStatusGrouping && kanban.groupByField)
-        kanban.updateFieldValue.mutate({
+    let columnKept = false;
+    try {
+      if (column.set) {
+        if (!isStatusGrouping && kanban.groupByField)
+          await kanban.updateFieldValue.mutateAsync({
+            cardId,
+            fieldDefinitionId: kanban.groupByField.id,
+            value: column.value,
+          });
+        else if (column.value !== null)
+          await kanban.updateStatus.mutateAsync({
+            cardId,
+            statusOptionId: column.value,
+          });
+        columnKept = true;
+      }
+      if (lane.set && laneField)
+        await kanban.updateFieldValue.mutateAsync({
           cardId,
-          fieldDefinitionId: kanban.groupByField.id,
-          value: null,
+          fieldDefinitionId: laneField.id,
+          value: lane.value,
         });
+      return true;
+    } catch {
+      if (columnKept && columnBefore !== undefined)
+        await writeCell(
+          cardId,
+          { set: true, value: columnBefore },
+          { set: false, value: null },
+        );
+      return false;
     }
-    if (lane.set && laneField)
-      kanban.updateFieldValue.mutate({
-        cardId,
-        fieldDefinitionId: laneField.id,
-        value: lane.value,
-      });
   };
 
   const handleSwimlaneDrop = ({
@@ -617,11 +677,6 @@ export function KanbanView({
       column: lanesByCard.get(card.id)?.optionId ?? null,
       lane: laneField.read(card),
     };
-    writeCell(
-      card.id,
-      { set: plan.columnChanged, value: toColumn },
-      { set: plan.laneChanged, value: plan.lane },
-    );
     const t = filtersCopy.lane.toast;
     const values = {
       title: card.title,
@@ -629,27 +684,35 @@ export function KanbanView({
       field: laneField.name,
       value: swimlaneLabel(swimlanes.find((lane) => lane.optionId === toLane)),
     };
-    toast(
-      fillFiltersCopy(
-        plan.columnChanged && plan.laneChanged
-          ? t.moved
-          : plan.laneChanged
-            ? t.movedLane
-            : t.movedColumn,
-        values,
-      ),
-      {
-        action: {
-          label: t.undo,
-          onClick: () =>
-            writeCell(
-              card.id,
-              { set: plan.columnChanged, value: previous.column },
-              { set: plan.laneChanged, value: previous.lane },
-            ),
+    void writeCell(
+      card.id,
+      { set: plan.columnChanged, value: toColumn },
+      { set: plan.laneChanged, value: plan.lane },
+      previous.column,
+    ).then((kept) => {
+      if (!kept) return;
+      toast(
+        fillFiltersCopy(
+          plan.columnChanged && plan.laneChanged
+            ? t.moved
+            : plan.laneChanged
+              ? t.movedLane
+              : t.movedColumn,
+          values,
+        ),
+        {
+          action: {
+            label: t.undo,
+            onClick: () =>
+              void writeCell(
+                card.id,
+                { set: plan.columnChanged, value: previous.column },
+                { set: plan.laneChanged, value: previous.lane },
+              ),
+          },
         },
-      },
-    );
+      );
+    });
   };
 
   const handleSwimlaneRefused = ({
