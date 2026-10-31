@@ -63,7 +63,7 @@ public sealed class CompleteOAuthLinkCommandHandler
         if (!string.IsNullOrWhiteSpace(request.Error))
         {
             _logger.LogInformation("OAuth link callback error: {Error} ({ErrorDescription})",
-                request.Error, request.ErrorDescription);
+                OAuthCallbackLog.Sanitize(request.Error), OAuthCallbackLog.Sanitize(request.ErrorDescription));
             return Result<OAuthLinkResult>.Failure("OAuth provider returned an error.");
         }
 

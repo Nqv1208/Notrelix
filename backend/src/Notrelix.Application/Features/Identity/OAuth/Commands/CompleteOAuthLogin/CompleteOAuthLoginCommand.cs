@@ -93,7 +93,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         if (!string.IsNullOrWhiteSpace(request.Error))
         {
             _logger.LogInformation("OAuth callback error: {Error} ({ErrorDescription})",
-                request.Error, request.ErrorDescription);
+                OAuthCallbackLog.Sanitize(request.Error), OAuthCallbackLog.Sanitize(request.ErrorDescription));
             return Fail(
                 string.Equals(request.Error, "access_denied", StringComparison.Ordinal)
                     ? OAuthLoginErrorCodes.Denied
