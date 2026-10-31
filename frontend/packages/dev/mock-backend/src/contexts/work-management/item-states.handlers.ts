@@ -66,7 +66,7 @@ export const itemStatesOperations = [
       if (!item) return notFound();
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       store.restoreCard(params.id);
-      return noContent();
+      return ok({ version: store.getCard(params.id)?.version ?? 1 });
     },
   }),
 ];

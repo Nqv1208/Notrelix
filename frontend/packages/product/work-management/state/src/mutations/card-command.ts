@@ -6,6 +6,10 @@ import type {
 import { findBoardCard, restoreBoardCard } from "../cache/card-restore";
 import { workspaceQueryKey } from "@notrelix/query";
 import { wmQueryKeys } from "../queries/keys";
+import {
+  isVersionConflict,
+  reportItemConflict,
+} from "../queries/use-item-conflict";
 
 /**
  * In-flight card commands per board read, per query client. The board read
@@ -105,6 +109,8 @@ export async function runCardCommand<T>({
     if (applyDetail && detailBefore) {
       queryClient.setQueryData(detailKey, detailBefore);
     }
+    // A stale version is refused: the open card says someone else changed it.
+    if (isVersionConflict(error)) reportItemConflict(queryClient, workspaceId, cardId);
     throw error;
   } finally {
     const left = (pending.get(boardHash) ?? 1) - 1;

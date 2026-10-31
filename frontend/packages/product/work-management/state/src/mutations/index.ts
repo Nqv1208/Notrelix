@@ -39,3 +39,4 @@ export * from "./checklist-queue";
 export * from "./use-checklist-writes";
 export * from "./use-item-capabilities";
 export * from "./use-card-attachment-writes";
+export { neededVersion, requireSeenItemVersion } from "./seen-version";

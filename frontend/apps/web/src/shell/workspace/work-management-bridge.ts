@@ -114,7 +114,10 @@ export function useCompleteItem(workspaceId: string) {
       item: MyWorkItem;
       attemptKey: string;
     }) => {
-      const body: CompleteBody = {};
+      // The version the row showed: a colleague's change since is refused (412), never overwritten.
+      if (!item.version || item.version <= 0)
+        throw new Error(`The version of item ${item.id} is unknown.`);
+      const body: CompleteBody = { expectedVersion: item.version };
       await client.api.post<void>(
         client.endpoints.boardItems.complete(item.id),
         body,

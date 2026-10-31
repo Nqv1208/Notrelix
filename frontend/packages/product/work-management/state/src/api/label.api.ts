@@ -30,15 +30,13 @@ export interface UpdateLabelInput {
   labelId: string;
   color?: string;
   name?: string;
+  /** The label version the person saw. */
+  expectedVersion: number;
 }
 
 export function createLabelApi(client: NotrelixClient) {
   const api = client.api;
-  // A label write names the version the label had when it was last read; one that is not known is read just before.
-  const versionOf = async (boardId: string, labelId: string): Promise<number> =>
-    (
-      await api.get<ListLabelsResponse>(endpoints.boards.labels(boardId))
-    )?.find((label) => label.labelId === labelId)?.version ?? 0;
+  // A label write names the version the person saw (the caller takes it from the list the panel renders).
   return {
     async getBoardLabels(boardId: string): Promise<CardLabel[]> {
       const labels = await api.get<ListLabelsResponse>(
@@ -51,6 +49,9 @@ export function createLabelApi(client: NotrelixClient) {
                 id: label.labelId,
                 name: label.name ?? "",
                 color: label.color ?? "",
+                ...(typeof label.version === "number"
+                  ? { version: label.version }
+                  : {}),
               },
             ]
           : [],
@@ -75,14 +76,14 @@ export function createLabelApi(client: NotrelixClient) {
       const body: UpdateLabelBody = {
         color: input.color,
         name: input.name,
-        expectedVersion: await versionOf(input.boardId, input.labelId),
+        expectedVersion: input.expectedVersion,
       };
       await api.patch<void>(endpoints.labels.detail(input.labelId), body);
     },
 
-    async deleteLabel(boardId: string, labelId: string): Promise<void> {
+    async deleteLabel(labelId: string, expectedVersion: number): Promise<void> {
       await api.delete<void>(
-        `${endpoints.labels.detail(labelId)}?expectedVersion=${await versionOf(boardId, labelId)}`,
+        `${endpoints.labels.detail(labelId)}?expectedVersion=${expectedVersion}`,
       );
     },
 

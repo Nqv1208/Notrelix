@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
 import type { ItemLinkDto } from "../api/item-extras.api";
 import { useWorkManagementServices } from "../services";
+import { neededVersion } from "../mutations/seen-version";
+import type { ItemChildItemDto, ItemLifecycleDto } from "../api/item-extras.api";
 import { wmQueryKeys } from "./keys";
 
 const childKey = (workspaceId: string, itemId: string) =>
@@ -41,7 +43,16 @@ export function useItemChildItems(
   };
   const toggle = useMutation({
     mutationFn: (input: { childId: string; done: boolean }) =>
-      itemExtras.setChildDone(input.childId, input.done),
+      itemExtras.setChildDone(
+        input.childId,
+        input.done,
+        neededVersion(
+          queryClient
+            .getQueryData<readonly ItemChildItemDto[]>(childKey(workspaceId, itemId))
+            ?.find((child) => child.id === input.childId)?.version,
+          input.childId,
+        ),
+      ),
     onSettled: refresh,
   });
   const add = useMutation({
@@ -295,12 +306,21 @@ export function useItemLifecycle(
       queryKey: workspaceQueryKey(workspaceId, "work-management", "cards"),
     });
   };
+  // Both writes name the version the lifecycle read showed, never a fresh one.
+  const lifecycleVersion = () =>
+    neededVersion(
+      queryClient.getQueryData<ItemLifecycleDto>(
+        lifecycleKey(workspaceId, itemId),
+      )?.version,
+      itemId,
+    );
   const restore = useMutation({
-    mutationFn: () => itemExtras.restoreItem(itemId),
+    mutationFn: () =>
+      itemExtras.restoreItem(itemId, lifecycleVersion()),
     onSettled: refresh,
   });
   const reopen = useMutation({
-    mutationFn: () => itemExtras.reopenItem(itemId),
+    mutationFn: () => itemExtras.reopenItem(itemId, lifecycleVersion()),
     onSettled: refresh,
   });
   return {

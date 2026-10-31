@@ -7869,6 +7869,10 @@ export interface components {
             /** Format: int32 */
             reminderOffsetMinutes?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
+            /** Format: int64 */
+            version?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto": {
             /** Format: uuid */
             boardId?: string;
@@ -14814,7 +14818,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14857,7 +14861,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -15232,7 +15236,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -15276,7 +15280,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -15539,7 +15543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -15582,7 +15586,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -15672,7 +15676,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */

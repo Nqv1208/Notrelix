@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
+import type { BoardArchivedEntryDto } from "../api/item-extras.api";
+import { neededVersion } from "../mutations/seen-version";
 import { wmQueryKeys } from "./keys";
 import { useWorkManagementServices } from "../services";
 
@@ -63,7 +65,18 @@ export function useBoardArchive(
     staleTime: 0,
   });
   const unarchive = useMutation({
-    mutationFn: (itemId: string) => itemExtras.restoreItem(itemId),
+    mutationFn: (itemId: string) =>
+      itemExtras.restoreItem(
+        itemId,
+        neededVersion(
+          queryClient
+            .getQueryData<readonly BoardArchivedEntryDto[]>(
+              wmQueryKeys.boardArchive(workspaceId, boardId, search),
+            )
+            ?.find((entry) => entry.id === itemId)?.version,
+          itemId,
+        ),
+      ),
     onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: wmQueryKeys.boardArchive(workspaceId, boardId),

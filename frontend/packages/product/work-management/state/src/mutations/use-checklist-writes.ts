@@ -9,6 +9,7 @@ import {
 } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
+import { neededVersion } from "./seen-version";
 import {
   CHECKLIST_UNDO_MS,
   checklistQueueFor,
@@ -92,7 +93,7 @@ export function useChecklistWrites(
           api.updateChecklist({
             checklistId,
             title: text,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -112,7 +113,7 @@ export function useChecklistWrites(
           text: removed.title,
           apply: (lists) => lists.filter((list) => list.id !== checklistId),
           send: (version) =>
-            api.deleteChecklist(checklistId, version ?? removed.version ?? 0),
+            api.deleteChecklist(checklistId, neededVersion(version ?? removed.version, cardId)),
         },
         {
           delayMs: CHECKLIST_UNDO_MS,
@@ -138,7 +139,7 @@ export function useChecklistWrites(
         send: (version) =>
           api.moveChecklist({
             checklistId,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
             ...placementOf(moved, checklistId),
           }),
       });
@@ -174,7 +175,7 @@ export function useChecklistWrites(
           api.createChecklistItem({
             checklistId,
             title: text,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -205,7 +206,7 @@ export function useChecklistWrites(
           api.renameChecklistItem({
             itemId,
             title: text,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -231,7 +232,7 @@ export function useChecklistWrites(
             ),
           })),
         send: (version) =>
-          api.toggleChecklistItem({ itemId, expectedVersion: version ?? 0 }),
+          api.toggleChecklistItem({ itemId, expectedVersion: neededVersion(version, cardId) }),
       });
     },
     [api, checklists, queue],
@@ -260,7 +261,7 @@ export function useChecklistWrites(
           api.setChecklistItemAssignee({
             itemId,
             assigneeUserId: assigneeId,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -290,7 +291,7 @@ export function useChecklistWrites(
           api.setChecklistItemDue({
             itemId,
             dueAt,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -322,7 +323,7 @@ export function useChecklistWrites(
               items: entry.items.filter((item) => item.id !== itemId),
             })),
           send: (version) =>
-            api.deleteChecklistItem({ itemId, expectedVersion: version ?? 0 }),
+            api.deleteChecklistItem({ itemId, expectedVersion: neededVersion(version, cardId) }),
         },
         undoable
           ? {
@@ -365,7 +366,7 @@ export function useChecklistWrites(
         send: (version) =>
           api.moveChecklistItem({
             itemId,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
             ...placementOf(moved, itemId),
           }),
       });

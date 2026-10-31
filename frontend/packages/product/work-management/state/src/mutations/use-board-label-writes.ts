@@ -7,6 +7,7 @@ import type {
 } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
+import { neededVersion } from "./seen-version";
 
 /** How a failed label write is told to the page. */
 function failure(error: unknown): BoardSettingsWriteResult {
@@ -64,6 +65,20 @@ export function useBoardLabelWrites(boardId: string, workspaceId: string) {
     [boardId, labels, refresh],
   );
 
+  /** The label version the panel rendered; a label it does not hold is refused. */
+  const seenVersion = useCallback(
+    (labelId: string) =>
+      neededVersion(
+        queryClient
+          .getQueryData<readonly CardLabel[]>(
+            wmQueryKeys.boardLabels(workspaceId, boardId),
+          )
+          ?.find((label) => label.id === labelId)?.version,
+        labelId,
+      ),
+    [boardId, queryClient, workspaceId],
+  );
+
   const write = useCallback(
     async (send: () => Promise<unknown>): Promise<BoardSettingsWriteResult> => {
       try {
@@ -82,8 +97,15 @@ export function useBoardLabelWrites(boardId: string, workspaceId: string) {
     create: (name: string, color: string) =>
       write(() => labels.createLabel({ boardId, name, color })),
     update: (labelId: string, changes: { name?: string; color?: string }) =>
-      write(() => labels.updateLabel({ boardId, labelId, ...changes })),
+      write(async () =>
+        labels.updateLabel({
+          boardId,
+          labelId,
+          ...changes,
+          expectedVersion: seenVersion(labelId),
+        }),
+      ),
     remove: (labelId: string) =>
-      write(() => labels.deleteLabel(boardId, labelId)),
+      write(async () => labels.deleteLabel(labelId, seenVersion(labelId))),
   };
 }

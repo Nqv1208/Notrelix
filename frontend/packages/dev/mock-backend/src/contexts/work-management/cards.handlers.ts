@@ -65,6 +65,11 @@ import {
 import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
 import { rollRepeatOnCompletion } from "./item-capabilities.handlers";
+
+/** What a versioned item write answers: the item's version after it. */
+const versionOf = (store: MockStore, itemId: string) => ({
+  version: store.getCard(itemId)?.version ?? 1,
+});
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
 import {
   assignMember,
@@ -544,7 +549,7 @@ export const cardsOperations = [
       if (!item.isArchived && (item.version ?? 1) !== expectedVersion)
         return preconditionFailed();
       store.archiveCard(params.id);
-      return ok<void>(undefined);
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -766,7 +771,7 @@ export const cardsOperations = [
         data.value,
       );
       if (!updated) return notFound("Card not found");
-      return ok<void>(undefined);
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -790,7 +795,8 @@ export const cardsOperations = [
       const status = (body as { status?: string | null } | undefined)?.status;
       if (!status) return badRequest({ status: ["The status is required."] });
       // A repeating item moved to a done status rolls to its next occurrence and keeps its status.
-      if (rollRepeatOnCompletion(store, params.id, status)) return noContent();
+      if (rollRepeatOnCompletion(store, params.id, status))
+        return ok(versionOf(store, params.id));
       const result = store.updateItemStatus(params.id, status);
       if (result === "not-found") return notFound("Card not found");
       if (result === "invalid") {
@@ -798,8 +804,8 @@ export const cardsOperations = [
           status: ["Not an option of the board's Status field."],
         });
       }
-      // The real endpoint answers 204 No Content.
-      return noContent();
+      // The real endpoint answers the item's new version.
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -824,7 +830,7 @@ export const cardsOperations = [
       if (result === "invalid") {
         return badRequest({ userId: ["That person is not a member."] });
       }
-      return noContent();
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -845,7 +851,7 @@ export const cardsOperations = [
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       unassignMember(store, params.id, params.userId);
-      return noContent();
+      return ok(versionOf(store, params.id));
     },
   }),
 

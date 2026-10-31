@@ -59,8 +59,9 @@ export const myWorkOperations = [
           "Idempotency-Key": ["The header is required."],
         });
       }
-      if (rollRepeatOnCompletion(store, params.id)) return noContent();
-      return store.completeCard(params.id) ? noContent() : notFound();
+      const version = () => ({ version: store.getCard(params.id)?.version ?? 1 });
+      if (rollRepeatOnCompletion(store, params.id)) return ok(version());
+      return store.completeCard(params.id) ? ok(version()) : notFound();
     },
   }),
 ];

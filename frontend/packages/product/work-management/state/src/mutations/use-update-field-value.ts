@@ -20,19 +20,22 @@ import { withItemStatus } from "../cache/item-status";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
+import { seenItemVersion } from "./seen-version";
+import { UnknownItemVersionError } from "./use-move-card";
 import type { CardWriteHookOptions } from "./use-update-item-status";
 
 interface FieldValueWriter {
   updateFieldValue(
     payload: UpdateFieldValueInput,
-    options?: ApiRequestOptions & { readonly expectedVersion?: number },
-  ): Promise<void>;
+    options: ApiRequestOptions & { readonly expectedVersion: number },
+  ): Promise<unknown>;
   /** Writes the item's own assignee members (the Assignee system field). */
   setAssignees?(
     cardId: string,
     next: readonly string[],
     current: readonly string[],
-  ): Promise<void>;
+    expectedVersion: number,
+  ): Promise<unknown>;
 }
 
 /**
@@ -136,6 +139,15 @@ export function runFieldValueCommand(
   const board = queryClient.getQueryData<FullBoardResponse>(
     wmQueryKeys.fullBoard(workspaceId, boardId),
   );
+  // The write names the version the person saw (the cache the screen renders from).
+  const expectedVersion = seenItemVersion(queryClient, {
+    workspaceId,
+    boardId,
+    cardId: payload.cardId,
+  });
+  if (expectedVersion === undefined) {
+    return Promise.reject(new UnknownItemVersionError(payload.cardId));
+  }
   const fields = board?.board.fieldDefinitions ?? [];
   const members = board?.board.members ?? [];
   return runCardCommand({
@@ -166,7 +178,9 @@ export function runFieldValueCommand(
         const current = (findBoardCard(board, payload.cardId)?.members ?? [])
           .map((member) => member.userId)
           .filter((id): id is string => typeof id === "string");
-        return cards.setAssignees(payload.cardId, next, current);
+        return cards
+          .setAssignees(payload.cardId, next, current, expectedVersion)
+          .then(() => undefined);
       }
       // The server keeps a date field as an instant; the editors pick a day.
       const value =
@@ -175,14 +189,9 @@ export function runFieldValueCommand(
         /^\d{4}-\d{2}-\d{2}$/.test(payload.value)
           ? `${payload.value}T00:00:00.000Z`
           : payload.value;
-      return cards.updateFieldValue(
-        { ...payload, value },
-        {
-          ...context,
-          expectedVersion:
-            findBoardCard(board, payload.cardId)?.version ?? undefined,
-        },
-      );
+      return cards
+        .updateFieldValue({ ...payload, value }, { ...context, expectedVersion })
+        .then(() => undefined);
     },
   });
 }

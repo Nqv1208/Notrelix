@@ -95,7 +95,7 @@ export async function runCreateItemWithDetails(
   boardId: string,
   input: CreateItemWithDetailsInput,
 ): Promise<CreateItemWithDetailsResult> {
-  const itemId = await cards.createCard(
+  const created = await cards.createCard(
     boardId,
     {
       listId: input.listId,
@@ -106,8 +106,16 @@ export async function runCreateItemWithDetails(
     },
     { idempotencyKey: input.idempotencyKey ?? crypto.randomUUID() },
   );
+  const itemId = created?.id;
   const failed: CreateItemDetail[] = [];
   if (itemId) {
+    // Each write names the version the one before it returned (the create returns the first).
+    let version = created.version;
+    const advance = (written: { version?: number }) => {
+      if (typeof written.version !== "number")
+        throw new Error("The server sent no version after a write.");
+      version = written.version;
+    };
     const attempt = async (
       detail: CreateItemDetail,
       write: () => Promise<unknown>,
@@ -120,33 +128,45 @@ export async function runCreateItemWithDetails(
     };
     if (input.statusOptionId) {
       const optionId = input.statusOptionId;
-      await attempt("status", () => cards.updateStatus(itemId, optionId));
+      await attempt("status", async () =>
+        advance(await cards.updateStatus(itemId, optionId, version)),
+      );
     }
     if (input.laneValue) {
       const lane = input.laneValue;
-      await attempt("lane", () =>
-        cards.updateFieldValue({
-          cardId: itemId,
-          fieldDefinitionId: lane.fieldDefinitionId,
-          value: lane.value,
-        }),
+      await attempt("lane", async () =>
+        advance(
+          await cards.updateFieldValue(
+            {
+              cardId: itemId,
+              fieldDefinitionId: lane.fieldDefinitionId,
+              value: lane.value,
+            },
+            { expectedVersion: version },
+          ),
+        ),
       );
     }
     if (input.priority) {
       const priority = input.priority;
-      await attempt("priority", () =>
-        cards.updateFieldValue({
-          cardId: itemId,
-          fieldDefinitionId: priority.fieldDefinitionId,
-          value: priority.value,
-        }),
+      await attempt("priority", async () =>
+        advance(
+          await cards.updateFieldValue(
+            {
+              cardId: itemId,
+              fieldDefinitionId: priority.fieldDefinitionId,
+              value: priority.value,
+            },
+            { expectedVersion: version },
+          ),
+        ),
       );
     }
     if (input.assigneeIds?.length) {
       const assignees = input.assigneeIds;
-      await attempt("assignees", () =>
-        cards.setAssignees(itemId, assignees, []),
-      );
+      await attempt("assignees", async () => {
+        version = await cards.setAssignees(itemId, assignees, [], version);
+      });
     }
     if (input.labelIds?.length) {
       const labelIds = input.labelIds;
@@ -160,7 +180,12 @@ export async function runCreateItemWithDetails(
       const values = input.fieldValues;
       await attempt("fields", async () => {
         for (const value of values) {
-          await cards.updateFieldValue({ cardId: itemId, ...value });
+          advance(
+            await cards.updateFieldValue(
+              { cardId: itemId, ...value },
+              { expectedVersion: version },
+            ),
+          );
         }
       });
     }
