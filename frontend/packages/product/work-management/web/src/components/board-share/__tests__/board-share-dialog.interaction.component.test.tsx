@@ -87,7 +87,7 @@ describe("BoardShareDialogSurface", () => {
     expect(props.onClose).toHaveBeenCalledTimes(3);
   });
 
-  it("FUI[wm.board-share:level-menu] changes a permission from the menu and keeps a guest below Manager", async () => {
+  it("FUI[wm.board-share:level-menu] changes a permission from the menu and keeps a guest on view only", async () => {
     const onChangeLevel = vi.fn();
     const onRemove = vi.fn();
     renderShare(shareLevelScenario(), { onChangeLevel, onRemove });
@@ -101,13 +101,23 @@ describe("BoardShareDialogSurface", () => {
       "true",
       "false",
     ]);
-    expect(items[3]?.getAttribute("aria-disabled")).toBe("true");
+    // A guest is view-only: every level above view is disabled, with the reason.
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual([
+      null,
+      "true",
+      "true",
+      "true",
+    ]);
     expect(within(menu).queryByText("31/01/2027")).toBeNull();
-    fireEvent.click(items[3]!);
+    expect(
+      within(menu).getAllByText("Khách chỉ được xem phần được chia sẻ với họ"),
+    ).toHaveLength(3);
+    for (const blocked of [items[1]!, items[2]!, items[3]!]) {
+      fireEvent.click(blocked);
+    }
     expect(onChangeLevel).not.toHaveBeenCalled();
-    fireEvent.keyDown(menu, { key: "ArrowUp" });
-    fireEvent.keyDown(document.activeElement ?? menu, { key: "Enter" });
-    expect(onChangeLevel).toHaveBeenCalledWith("u-tuan", "comment");
+    fireEvent.click(items[0]!);
+    expect(onChangeLevel).toHaveBeenCalledWith("u-tuan", "view");
     expect(screen.queryByRole("menu")).toBeNull();
   });
 

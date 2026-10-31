@@ -72,7 +72,7 @@ const INVITES: readonly MockGuestInvite[] = [
     inviterInitials: "HA",
     orgName: "Minh An Group",
     boardTitle: "Triển khai ERP Q4",
-    level: "editor",
+    level: "viewer",
     expiresOn: "2027-01-31",
     email: "tuan@doitac-erp.vn",
     name: "Đặng Minh Tuấn",

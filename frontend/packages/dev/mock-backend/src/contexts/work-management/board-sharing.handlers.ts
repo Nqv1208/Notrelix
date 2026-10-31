@@ -10,7 +10,7 @@
  *   resources.permissions.revoke— DELETE /resources/:resourceType/:resourceId/permissions/:permissionId
  *
  * The rules mirror the producer: entries are disclosed to a Board manager or
- * member; a Guest is capped at Editor and shown as capped, never refused;
+ * member; a Guest is capped at Viewer and shown as capped, never refused;
  * nothing expires; the log records added, changed, removed, private and
  * visibility changes; the owner and the caller keep their own access.
  */

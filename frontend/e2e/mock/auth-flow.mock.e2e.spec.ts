@@ -299,7 +299,7 @@ test.describe("Sign-in pages (owner)", () => {
       "Nguyễn Thu Hà mời bạn vào board Triển khai ERP Q4 của Minh An Group",
     );
     await expect(
-      page.getByText(/Khách · Có thể sửa · đến 31\/01\/2027/),
+      page.getByText(/Khách · Có thể xem · đến 31\/01\/2027/),
     ).toBeVisible();
     await expect(page.getByLabel("Email được mời")).toHaveAttribute(
       "readonly",
