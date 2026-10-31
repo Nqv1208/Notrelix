@@ -8,7 +8,8 @@ using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
-public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("collaboration.comments.create-comment.v1")]
+public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public static CreateCommentCommand ForBoardItem(Guid boardItemId, string contentMd, Guid? parentCommentId, IReadOnlyList<Guid>? mentionedUserIds = null, CommentAnchorInput? anchor = null)
         => new(ResourceKind.Create(BoardItemKind), boardItemId, contentMd, parentCommentId, mentionedUserIds, anchor);
