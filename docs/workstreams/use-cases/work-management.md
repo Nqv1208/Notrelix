@@ -732,7 +732,7 @@ Team capability WM-001.
 - Rules: product sections 103; WM-030; D78.9; WMREQ007
 - Acceptance: Given one Manager, when that person is demoted or removed, then it is refused and the role is unchanged.
 - Evidence: BE domain rule unverified on RemoveMember/UpdateMemberRole · FE none · Design none; needs last-manager blocked message · Tests none found · Real e2e none
-- State: DEFINED — tests and owner check. Built: `BoardManagerGuard` refuses lowering or removing the last person or Team at Manager level on the board (rule code `WorkManagement_Board_LastManager`, nothing changes); the dialog toast shows the server's reason. Not built: design for the message, disabling the control up front.
+- State: HARDENING — tests and owner check. Built: `BoardManagerGuard` refuses lowering or removing the last person or Team at Manager level on the board (rule code `WorkManagement_Board_LastManager`, nothing changes; the problem now carries `ruleCode`). The share dialog locks lower levels and removal of the only Manager from the start with the reason and "Add a Manager", names the refusal at the head of the dialog when a stale list still tried, and tells a workspace admin managing through Governance. Not built: the own row stays fixed (no menu); leave board has no endpoint; the Governance grant and revoke path does not run the guard (owner decision needed: which context refuses). Evidence: real-stack check 2026-10-31: lowering the only board-member Manager answered 400 with ruleCode WorkManagement_Board_LastManager and the role stayed; the menu of a sole grant Manager drew lower levels and removal locked with the reasons, commit a4966637e.
 
 ## B. BoardItem lifecycle
 
