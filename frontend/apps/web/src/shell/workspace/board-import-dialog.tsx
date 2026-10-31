@@ -294,24 +294,26 @@ export function BoardImportDialog({
   }
 
   function download(errors: readonly RowError[]) {
-    const quote = (v: string) =>
-      /[",\r\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
     // A cell that starts like a formula is prefixed so a spreadsheet never runs it.
     const safe = (v: string) => (/^[=+\-@\t\r]/.test(v) ? `'${v}` : v);
+    const cell = (v: string) => {
+      const t = safe(v);
+      return /[",\r\n;]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+    };
     const lines = [
       [copy.colRow, copy.colColumn, copy.colValue, copy.colReason]
-        .map(quote)
+        .map(cell)
         .join(","),
     ];
     for (const e of errors)
       lines.push(
         [
           String(e.row ?? ""),
-          safe(e.column ?? ""),
-          safe(e.value ?? copy.empty),
+          e.column ?? "",
+          e.value ?? copy.empty,
           `${targetName(e.target ?? "")} ${c[REASONS[e.code ?? ""] ?? "reason_invalidValue"]}`,
         ]
-          .map(quote)
+          .map(cell)
           .join(","),
       );
     const blob = new Blob(["﻿" + lines.join("\r\n")], {
