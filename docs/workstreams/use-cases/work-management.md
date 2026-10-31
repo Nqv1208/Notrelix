@@ -57,7 +57,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | H | Query, filter and sort foundation | WM-008 | 19 | 2 | 1 | 11 | 5 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
-| K | Calendar view | WM-011 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
+| K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 4 | 54 | 93 | 0 | 1 |
+| | Total | | 170 | 18 | 4 | 53 | 94 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -317,7 +317,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | HARDENING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
 | UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
 | UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | HARDENING | tests and owner check. |
-| UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
+| UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
 | UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
@@ -2326,7 +2326,7 @@ Team capability WM-011.
 - Rules: product sections 52, 138; WMREQ021; views pack section 7; LD5
 - Acceptance: Given the Calendar over field Due, when an item's due changes, then it moves on the calendar for all members.
 - Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -] · FE `board-calendar-view.tsx` with the view bar (filter, personal state, saved filters) in `calendar-toolbar.tsx` · Design Final-Calendar, WM-Cal-Interactions, WM-Toolbar-Calendar · Tests `ComputedFieldsIntegrationTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
-- State: INTEGRATING — tests and owner check. Built: the Calendar filters with the member's own view state (an item with no date still lists in the undated aside; phases and milestones hide under a filter). Not built: a date field chosen per Calendar view.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a date field chosen per Calendar view is not built; the quick-add makes two writes (create, then date); tests and owner check. Built: the Calendar filters with the member's own view state (an item with no date still lists in the undated aside; phases and milestones hide under a filter). Not built: a date field chosen per Calendar view. Evidence: real-stack check 2026-10-31: on a board with dated, ranged and undated items: dragged an item a day (200, the reload keeps it, an undo toast); Set date scheduled an undated item; a day click opened Add item with the day prefilled and the new item kept its date after reload; a stale drag answered 412 and the toast now names the actor, the item snapped back; an Observer sees no Add item or Set date and the drag and resize handles are disabled; an archived board hides Add item and refuses the drag; Week view opens, commit 4b8a14c28.
 
 ## L. Timeline view
 
