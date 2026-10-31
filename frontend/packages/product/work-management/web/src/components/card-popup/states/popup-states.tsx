@@ -33,7 +33,7 @@ export function PopupSkeleton({ label }: { label?: string }) {
     <div
       role="status"
       aria-busy="true"
-      className="flex min-h-0 flex-1 flex-col md:h-[584px] md:flex-row md:overflow-hidden"
+      className="flex min-h-0 flex-1 flex-col md:flex-row md:overflow-hidden"
     >
       <span className="sr-only">{label ?? t.loading}</span>
       <div className="box-border min-w-0 md:w-[720px] md:flex-none">
@@ -107,7 +107,7 @@ function EmptyState({
   note?: string;
 }) {
   return (
-    <div className="grid min-h-0 flex-1 place-items-center p-6 md:h-[344px] md:flex-none">
+    <div className="grid min-h-0 flex-1 place-items-center p-6">
       <div className="flex max-w-[460px] flex-col items-center gap-3 text-center text-[13.5px] text-muted-foreground">
         <span className="grid size-11 place-items-center rounded-full bg-danger-subtle text-danger-text">
           <AlertCircle aria-hidden="true" className="size-6" />
