@@ -58,7 +58,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
-| L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
+| L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 4 | 53 | 94 | 0 | 1 |
+| | Total | | 170 | 18 | 4 | 52 | 95 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -318,7 +318,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
 | UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
-| UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
+| UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
 | UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
@@ -2344,7 +2344,7 @@ Team capability WM-012.
 - Rules: product sections 53, 68.1; WMREQ021; views pack section 8; D76.9, D76.18; LD5
 - Acceptance: Given due before start, then the write is rejected (pattern).
 - Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE `board-timeline-view.tsx` with the view bar in `timeline-toolbar.tsx`; raw plan-items · Design Final-Timeline, WM-TL-Interactions · Tests `CreateBoardItemLinkTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
-- State: INTEGRATING — tests and owner check. Built: the Timeline filters with the member's own view state (phases and milestones hide under a filter), and a due day moved before the start day from the keyboard is refused with a visible error (the pointer drag was already clamped). Not built: grouping and bar span choices (shown as unavailable).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; grouping and bar span choices are not built; a timeline drag shows no success toast or undo; the archived Timeline was not driven; tests and owner check. Built: the Timeline filters with the member's own view state (phases and milestones hide under a filter), and a due day moved before the start day from the keyboard is refused with a visible error (the pointer drag was already clamped). Not built: grouping and bar span choices (shown as unavailable). Evidence: real-stack check 2026-10-31: dragged a bar two days (200 with the expected version, the reload keeps it); a stale drag answered 412 and the toast now names who changed the item, the bar snapped back; Alt+Shift+Left past the start day was refused with a visible error; an Observer cannot drag or link; Link with... created a dependency and the line is drawn, a cycle is refused (400, and the dialog disables the item); the Timeline had no dependency lines and hid dependency-only items because the real backend has no plan read, now a board read gives the dependencies, commit c1c8abded.
 
 ## M. Dashboard projection
 
