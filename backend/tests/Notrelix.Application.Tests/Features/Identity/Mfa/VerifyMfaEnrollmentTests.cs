@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Commands.VerifyMfaEnrollment;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
-using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Tests.Features.Identity.Mfa;
 

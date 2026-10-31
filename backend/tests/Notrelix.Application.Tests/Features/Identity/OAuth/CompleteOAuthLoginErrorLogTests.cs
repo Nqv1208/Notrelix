@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
-using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
