@@ -50,24 +50,24 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | A | Board lifecycle | WM-001 | 26 | 4 | 0 | 3 | 19 | 0 | 0 |
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
-| D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
+| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 12 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 2 | 0 | 2 | 15 | 0 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 1 | 18 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 0 | 5 | 0 | 1 |
-| O | Activity and event production | WM-015 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
+| O | Activity and event production | WM-015 | 4 | 0 | 0 | 1 | 3 | 0 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 2 | 30 | 119 | 0 | 1 |
+| | Total | | 170 | 16 | 2 | 25 | 126 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -272,11 +272,11 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-D05 | Change an item's status | D | Editor and above | partial | yes | complete | none | HARDENING | EV on status write; four-path completion-time test; real e2e |
 | UC-WM-D06 | Set priority | D | Editor | yes | yes | complete | none | HARDENING | Real e2e |
 | UC-WM-D07 | Read a formula value (valid, stale, error) | D | Any viewer | partial | yes | partial | none | HARDENING | Valid/stale/error states; design |
-| UC-WM-D08 | Rollup and relation authorization | D | Any viewer | partial | not applicable | not applicable | none | INTEGRATING | masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection. |
+| UC-WM-D08 | Rollup and relation authorization | D | Any viewer | partial | not applicable | not applicable | none | HARDENING | masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection. |
 | UC-WM-D09 | Show derived progress of an item with child Items | D | Any viewer | partial | partial | partial | sub-items | HARDENING | only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not. |
-| UC-WM-D10 | Keep one progress truth | D | Product rule | partial | partial | not applicable | none | INTEGRATING | implement the D76.10 precedence on the server; test. |
+| UC-WM-D10 | Keep one progress truth | D | Product rule | partial | partial | not applicable | none | HARDENING | implement the D76.10 precedence on the server; test. |
 | UC-WM-D11 | Add or remove labels on an item | D | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; 200-label window |
-| UC-WM-D12 | Handle a client with a stale field or view schema | D | Editor with old schema | partial | partial | none | none | INTEGRATING | no test of a stale-field write refusal. |
+| UC-WM-D12 | Handle a client with a stale field or view schema | D | Editor with old schema | partial | partial | none | none | HARDENING | no test of a stale-field write refusal. |
 | UC-WM-E01 | Create a group | E | Editor (CreateItem class) | yes | yes | partial | board-settings | HARDENING | Design for create flow; no-group notice proof |
 | UC-WM-E02 | Rename or edit a group | E | Editor | yes | yes | partial | board-settings | HARDENING | Design Er/P; no-op (same name) proof |
 | UC-WM-E03 | Archive or delete a group | E | Editor | yes | partial | none | work-board-management | HARDENING | Design; archive/unarchive UI or drop; dialog-open case |
@@ -298,16 +298,16 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-H07 | Sort the view | H | Any role | partial | yes | complete | none | HARDENING | tests and owner check; server-side sort is not built. |
 | UC-WM-H08 | Group the view | H | Any role | partial | yes | complete | none | HARDENING | tests and owner check; 'No value' group proof. |
 | UC-WM-H09 | Save, share, edit and delete a saved filter | H | Editor (create/share); Viewer applies | yes | yes | complete | none | HARDENING | API tests; real e2e; criteria without sort; open PR #201 touches the menu. |
-| UC-WM-H10 | Apply a saved filter | H | Anyone who can see it | yes | yes | complete | none | INTEGRATING | real e2e; re-check against open PR #201. |
+| UC-WM-H10 | Apply a saved filter | H | Anyone who can see it | yes | yes | complete | none | HARDENING | real e2e; re-check against open PR #201. |
 | UC-WM-H11 | Return to the shared view ("Về view chung") | H | Any role | yes | yes | complete | none | HARDENING | tests and owner check; the owner confirms the icon button with a dot. |
-| UC-WM-H12 | Repair stale view references | H | System; Editor | not applicable | no (open PR #201) | complete | none | DEFINED | the stale-condition hint is in open PR #201; real e2e. |
+| UC-WM-H12 | Repair stale view references | H | System; Editor | not applicable | no (open PR #201) | complete | none | HARDENING | the stale-condition hint is in open PR #201; real e2e. |
 | UC-WM-H13 | Switch and open views via tabs and URL | H | Any viewer | yes | yes | complete | saved-views | HARDENING | proof that Back and Forward follow the URL; unknown-view notice. |
 | UC-WM-H14 | Apply workspace time zone to date filters and buckets | H | Any member | yes | partial | none | work-board-management | HARDENING | proof of date buckets in the workspace time zone, after open PR #201. |
 | UC-WM-H15 | Make a field filterable, sortable, groupable per its type | H | System | partial | partial | not applicable | none | INTEGRATING | server-side filter, sort and group with parity to the client for every field type. |
 | UC-WM-H16 | Search items and boards | H | Any member; Guest shared only | yes | yes | complete | none | HARDENING | Real e2e; Private-board no-leak test |
 | UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | HARDENING | BoardItems.List has no q parameter; search runs on the client. |
 | UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | HARDENING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
-| UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | DEFINED | label operators are in open PR #201, not on develop; no server-side label filter. |
+| UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | HARDENING | label operators are in open PR #201, not on develop; no server-side label filter. |
 | UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; virtualization (UC-WM-T01) |
 | UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | HARDENING | tests and owner check |
 | UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | HARDENING | tests and owner check; proof of the 200 cap; no selection across windows. |
@@ -327,7 +327,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-N05 | Process, reject or mark spam on a submission | N | Editor (UpdateItem) | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal and abuse controls |
 | UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | HARDENING | Design E/L/Er; one-line-per-action proof; real e2e |
-| UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | INTEGRATING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
+| UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | HARDENING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
 | UC-WM-O03 | Expose events and projections to Analytics | O | Analytics (consumer) | partial | not applicable | not applicable | none | INTEGRATING | 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13). |
 | UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | HARDENING | Single-logical-event proof under retry |
 | UC-WM-P01 | See a colleague's change live | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec for two users on one board and card, tests of the notifier and the adapter, and owner check. |
@@ -1668,7 +1668,7 @@ Team capability WM-004.
 - Rules: product sections 76, 66; WM-023, WM-030; WMREQ148
 - Acceptance: Given a sub-item the viewer cannot read, then the rollup excludes it and no title or value of it appears.
 - Evidence: BE masking of unreadable children unproven · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a parent with two sub-items and a checklist read as the admin and as a member gives the same child progress (1 of 2) on the card and on the item; sub-items live on the parent's board and the read has no per-item grant, so there is no unreadable child to mask here; relation rollups wait on the relation field type (C18), commit 25aa0bddb.
 
 ### UC-WM-D09 Show derived progress of an item with child Items
 - Capability: D Field values (WM-004)
@@ -1696,7 +1696,7 @@ Team capability WM-004.
 - Rules: product sections 77; D76.10
 - Acceptance: Given a parent with sub-items and a checklist, then the parent shows the sub-item progress and the checklist shows its own count.
 - Evidence: BE no single progress source · FE none · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — implement the D76.10 precedence on the server; test.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a parent with two sub-items (one done) and a three-item checklist reads childProgress 1/2 and checklist 0/3 as two separate figures on the card and the item, the same for an admin and a member: sub-item progress is never merged with the checklist count, commit 25aa0bddb.
 
 ### UC-WM-D11 Add or remove labels on an item
 - Capability: D Field values (WM-004)
@@ -1724,7 +1724,7 @@ Team capability WM-004.
 - Rules: product sections 129, 117; WM-011; WMREQ036, WMREQ040
 - Acceptance: Given field F archived, when a stale client writes F, then conflict and no value stored.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE settings conflict reloads (D64) · Design none; needs stale-schema conflict and reload · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — no test of a stale-field write refusal.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; stale write is 404, the spec asks for a conflict; no artboard for the stale-schema notice; tests and owner check. Evidence: real-stack check 2026-10-31: a write to a field the board no longer has answered 404 (BoardField not found) and stored nothing; an unknown field id answers the same 404; the settings dialog conflict reload was driven in an earlier check, commit 25aa0bddb.
 
 ## E. Groups and grouping
 
@@ -2048,7 +2048,7 @@ Team capability WM-008.
 - Rules: product sections 150, 153; D68, D71
 - Acceptance: Given a shared filter applied, then only this person's state changes.
 - Evidence: BE SavedFilters.List = GET /boards/{boardId:guid}/saved-filters -> ListSavedFiltersQuery (`Views/Queries/ListSavedFilters/ListSavedFilters.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/saved-filters/saved-filters-menu.tsx` (changed by PR #201) · Design WM-SavedFilter-Menu · Tests `SavedFilterPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; re-check against open PR #201.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: saved the current filter as 'Later only' (a personal saved filter), went Back to shared view (6 of 6 items), opened the Saved filters menu (Mine, Later only, Only me) and applied it (2 of 6): only preference writes went out and the shared view's config stayed {}, commit 25aa0bddb.
 
 ### UC-WM-H11 Return to the shared view ("Về view chung")
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2076,7 +2076,7 @@ Team capability WM-008.
 - Rules: product sections 49, 150; D71; views pack section 11
 - Acceptance: Given a filter on a deleted field, then the view loads, the condition is ignored and a hint says so.
 - Evidence: BE not applicable (opaque criteria) · FE in open PR #201: stale condition ignored with hint · Design WM-Filter-States (deleted-field chip) · Tests none found · Real e2e none
-- State: DEFINED — the stale-condition hint is in open PR #201; real e2e.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a filter on a deleted label (a value, not a field) is not ignored: it shows 0 items with no hint, because label choices come from the items; the board's label list would tell; tests and owner check. Evidence: real-stack check 2026-10-31: a filter on a field that was deleted afterwards loads the view with all 6 items, the chip reads 'Removed field · field removed', and the bar says the condition is ignored with Remove ignored conditions and Save as a new filter, commit 25aa0bddb.
 
 ### UC-WM-H13 Switch and open views via tabs and URL
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2174,7 +2174,7 @@ Team capability WM-008.
 - Rules: product sections 150; D71
 - Acceptance: Given a label filter 'has any of', then only items with those labels show.
 - Evidence: BE no server-side filter · FE in open PR #201: label operators in filter-builder.tsx · Design WM-Filter-Builder · Tests none found · Real e2e none
-- State: DEFINED — label operators are in open PR #201, not on develop; no server-side label filter.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; filter runs on the client only (no server-side filter on paged boards, Q9); tests and owner check. Evidence: real-stack check 2026-10-31: a Labels condition (is one of) on a board with two labels filtered 2 of 6 items, the count in the builder matched, and the filter survived a reload and a new browser context (personal preference write), commit 25aa0bddb.
 
 ## I. Table view
 
@@ -2482,7 +2482,7 @@ Team capability WM-015.
 - Rules: product sections 101; WM-030
 - Acceptance: Given the caller creates the first item, then `first-item` becomes done.
 - Evidence: BE IFirstWorkItemFacts not verified · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; first item becoming done on a fresh workspace was not driven (every seeded workspace already has items); tests and owner check. Evidence: real-stack check 2026-10-31: the getting-started read answers first-item done with the earliest board holding an item for an admin and for a member (member: only a board he can read), on every seeded workspace, commit 25aa0bddb.
 
 ### UC-WM-O03 Expose events and projections to Analytics
 - Capability: O Activity and event production (WM-015)
