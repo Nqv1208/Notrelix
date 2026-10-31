@@ -68,6 +68,12 @@ public static class MapCustomRoleEndpoints
             .WithSummary("The caller's effective role and what a custom role adds or removes")
             .Produces<MyEffectiveAccessDto>();
 
+        workspace.MapWorkspaceGet("/access-explanations", async (Guid workspaceId, Guid userId, string action, string? resourceKind, Guid? resourceId, ISender sender, CancellationToken ct) =>
+                (await sender.Send(new ExplainAccessQuery(workspaceId, userId, action, resourceKind, resourceId), ct)).ToApiResult())
+            .WithName("Governance.Access.Explain")
+            .WithSummary("Why can this person do this? The decision, its sources and its ordered steps (audited)")
+            .Produces<AccessExplanationDto>();
+
         workspace.MapWorkspacePut("/members/{userId:guid}/custom-role", async (Guid workspaceId, Guid userId, AssignCustomRoleRequest body, ISender sender, CancellationToken ct) =>
                 (await sender.Send(new AssignCustomRoleCommand(workspaceId, userId, body.RoleId), ct)).ToNoContentResult())
             .WithIdempotencyKey()
