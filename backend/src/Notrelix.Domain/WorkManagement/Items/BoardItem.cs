@@ -649,11 +649,13 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (StartedAt == startedAt && DueAt == dueAt) return;
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var previousStart = StartedAt;
+        var previousDue = DueAt;
         StartedAt = startedAt;
         DueAt = dueAt;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt, previousStart, previousDue));
     }
 
     public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt, Guid? statusBeforeCompletionOptionId = null)

@@ -38,6 +38,7 @@ export type ActivityEventWords = {
   readonly movedToBoardPlain: string;
   readonly archived: string;
   readonly unarchived: string;
+  readonly datesChanged: string;
   readonly deleted: string;
   readonly restored: string;
 };
@@ -72,6 +73,7 @@ export const ACTIVITY_WORDS_EN: ActivityEventWords = {
   movedToBoardPlain: "moved this item to another board",
   archived: "archived this item",
   unarchived: "restored this item from the archive",
+  datesChanged: "changed the dates",
   deleted: "deleted this item",
   restored: "restored this item from deleted",
 };
@@ -108,6 +110,7 @@ export const ACTIVITY_WORDS_VI: ActivityEventWords = {
   movedToBoardPlain: "chuyển việc sang bảng khác",
   archived: "lưu trữ việc này",
   unarchived: "khôi phục việc này từ kho lưu trữ",
+  datesChanged: "đổi ngày của việc này",
   deleted: "xóa việc này",
   restored: "khôi phục việc này đã xóa",
 };
@@ -231,6 +234,8 @@ export function describeActivityEvent(
       );
     case "work.item-archived":
       return sentence(words.archived);
+    case "work.item-dates-changed":
+      return sentence(words.datesChanged, diff());
     case "work.item-unarchived":
       return sentence(words.unarchived);
     case "work.item-deleted":

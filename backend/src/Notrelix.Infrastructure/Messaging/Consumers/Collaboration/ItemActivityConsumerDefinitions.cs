@@ -72,6 +72,11 @@ public sealed class ItemLabelRemovedActivityConsumerDefinition : ItemActivityCon
     public ItemLabelRemovedActivityConsumerDefinition() : base("notrelix-activity-item-label-removed-v1") { }
 }
 
+public sealed class ItemDatesChangedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemDatesChangedActivityConsumer>
+{
+    public ItemDatesChangedActivityConsumerDefinition() : base("notrelix-activity-item-dates-changed-v1") { }
+}
+
 public sealed class ItemArchivedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemArchivedActivityConsumer>
 {
     public ItemArchivedActivityConsumerDefinition() : base("notrelix-activity-item-archived-v1") { }

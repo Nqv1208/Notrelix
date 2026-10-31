@@ -212,6 +212,30 @@ public sealed class ItemLabelRemovedActivityConsumer : IConsumer<BoardItemLabelR
 }
 
 [OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemDatesChangedActivityConsumer : IConsumer<BoardItemDatesChangedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemDatesChangedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    private static string Words(DateTimeOffset? start, DateTimeOffset? due) =>
+        start is null && due is null
+            ? "no dates"
+            : $"{start?.UtcDateTime.ToString("yyyy-MM-dd") ?? "…"} → {due?.UtcDateTime.ToString("yyyy-MM-dd") ?? "…"}";
+
+    public Task Consume(ConsumeContext<BoardItemDatesChangedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var from = Words(msg.PreviousStartedAt, msg.PreviousDueAt);
+        var to = Words(msg.StartedAt, msg.DueAt);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, msg.BoardId, ItemActivityTypes.DatesChanged, msg.EventId, msg.ChangedBy, msg.OccurredAt,
+            "changed the dates", null,
+            new Dictionary<string, string?> { ["from"] = from, ["to"] = to }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
 public sealed class ItemArchivedActivityConsumer : IConsumer<BoardItemArchivedIntegrationEventV2>
 {
     private readonly ItemActivityRecorder _recorder;
