@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Data.Rls;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.AcceptInvitation;

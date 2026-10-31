@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.AcceptInvitation;
