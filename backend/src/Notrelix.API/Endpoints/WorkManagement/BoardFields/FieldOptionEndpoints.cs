@@ -12,6 +12,7 @@ public static class FieldOptionEndpoints
     {
         group.MapResourcePost("/{fieldId:guid}/options", HandleAddFieldOption)
             .WithIdempotencyKey()
+            .Produces<AddFieldOptionResult>(StatusCodes.Status201Created, "application/json")
             .WithName("WorkManagement.BoardFields.AddFieldOption")
             .WithSummary("Add an option to a select/status field");
         group.MapResourceDelete("/{fieldId:guid}/options/{optionId:guid}", HandleRemoveFieldOption)

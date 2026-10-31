@@ -80,7 +80,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .Where(member => cardIds.Contains(member.ItemId))
             .ToListAsync(cancellationToken);
 
-        var memberUserIds = cardMemberEntities.Select(m => m.UserId).Distinct().ToList();
+        var memberUserIds = cardMemberEntities.Select(m => m.UserId)
+            .Concat(cards.Where(card => card.UpdatedBy.HasValue).Select(card => card.UpdatedBy!.Value))
+            .Distinct().ToList();
         var memberActors = await _actorLookup.FindManyAsync(memberUserIds, cancellationToken);
         var memberActorMap = memberActors.ToDictionary(a => a.UserId);
 
@@ -233,7 +235,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         card.CoverAttachmentId,
                         card.CoverStyle,
                         card.RepeatRule,
-                        card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes
+                        card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
+                        card.UpdatedBy,
+                        card.UpdatedBy.HasValue && memberActorMap.TryGetValue(card.UpdatedBy.Value, out var editor) ? editor.Name : null
                     );
                 })
                 .ToList());

@@ -15,6 +15,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddF
 /// "in_progress", "review", "done"); when a caller that predates categories omits
 /// it, the option is added as "in_progress". Other field types take no category.
 /// </summary>
+/// <summary>The new option's id and the field's version after the add, so a chain of option adds names the right version.</summary>
+public record AddFieldOptionResult(Guid OptionId, long Version);
+
 [IdempotencyOperation("work-management.board-fields.add-field-option.v1")]
 public record AddFieldOptionCommand(
     Guid BoardId,
@@ -24,13 +27,13 @@ public record AddFieldOptionCommand(
     long ExpectedVersion,
     Guid? PreviousSiblingId = null,
     Guid? NextSiblingId = null,
-    string? Category = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    string? Category = null) : ICommand<Result<AddFieldOptionResult>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
 }
 
-public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionCommand, Result<Guid>>
+public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionCommand, Result<AddFieldOptionResult>>
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
@@ -52,14 +55,14 @@ public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionComman
         _placement = placement;
     }
 
-    public async Task<Result<Guid>> Handle(AddFieldOptionCommand request, CancellationToken ct)
+    public async Task<Result<AddFieldOptionResult>> Handle(AddFieldOptionCommand request, CancellationToken ct)
     {
         var response = await HandleCore(request, ct);
         if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
         return response;
     }
 
-    private async Task<Result<Guid>> HandleCore(AddFieldOptionCommand request, CancellationToken ct)
+    private async Task<Result<AddFieldOptionResult>> HandleCore(AddFieldOptionCommand request, CancellationToken ct)
     {
         var field = await _context.BoardFields
             .Include(f => f.Options)
@@ -78,6 +81,6 @@ public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionComman
             category ??= WorkStatusCategory.InProgress;
 
         var option = field.AddOption(request.Name, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow, category);
-        return Result<Guid>.Success(option.Id);
+        return Result<AddFieldOptionResult>.Success(new AddFieldOptionResult(option.Id, field.Version));
     }
 }

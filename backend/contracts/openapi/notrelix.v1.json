@@ -8976,8 +8976,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "headers": {
               "Idempotency-Replayed": {
                 "description": "true when this response is a replay of a stored result",
@@ -8989,7 +8989,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionResult"
                 }
               }
             }
@@ -28423,6 +28423,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionResult": {
+        "type": "object",
+        "properties": {
+          "optionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
         "type": "object",
         "properties": {
@@ -29571,6 +29585,15 @@
           "reminderOffsetMinutes": {
             "type": "integer",
             "format": "int32"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updatedByName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -29797,6 +29820,15 @@
           "reminderOffsetMinutes": {
             "type": "integer",
             "format": "int32"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updatedByName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

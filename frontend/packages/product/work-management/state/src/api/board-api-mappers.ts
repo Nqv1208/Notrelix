@@ -296,6 +296,9 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     dueAt: dueDate ?? null,
     childProgress: values.childProgress,
     ...readCardSettings(dto),
+    updatedBy: (dto as { updatedBy?: string | null }).updatedBy ?? null,
+    updatedByName:
+      (dto as { updatedByName?: string | null }).updatedByName ?? null,
     boardTitle: "",
     watchers: members,
     isWatched: false,
@@ -635,6 +638,12 @@ function mapCardSummaryDto(
       ? 0
       : ((dto as GeneratedItemSummary).openBlockerCount ?? 0),
     ...readCardSettings(dto),
+    updatedBy: legacy
+      ? null
+      : ((dto as GeneratedItemSummary).updatedBy ?? null),
+    updatedByName: legacy
+      ? null
+      : ((dto as GeneratedItemSummary).updatedByName ?? null),
   };
 }
 

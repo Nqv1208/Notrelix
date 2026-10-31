@@ -39,7 +39,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .ToListAsync(ct);
 
         var memberUserIds = memberEntities.Select(m => m.UserId).Distinct().ToList();
-        var lifecycleUserIds = new[] { card.CompletedBy, card.ArchivedBy }.Where(id => id.HasValue).Select(id => id!.Value);
+        var lifecycleUserIds = new[] { card.CompletedBy, card.ArchivedBy, card.UpdatedBy }.Where(id => id.HasValue).Select(id => id!.Value);
         memberUserIds = memberUserIds.Concat(lifecycleUserIds).Distinct().ToList();
         var actors = await _actorLookup.FindManyAsync(memberUserIds, ct);
         var actorMap = actors.ToDictionary(a => a.UserId);
@@ -119,7 +119,9 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.CoverAttachmentId,
             card.CoverStyle,
             card.RepeatRule,
-            card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes
+            card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
+            card.UpdatedBy,
+            NameOf(card.UpdatedBy)
         ));
     }
 }

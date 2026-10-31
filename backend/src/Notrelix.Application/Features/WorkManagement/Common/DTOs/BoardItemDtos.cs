@@ -40,7 +40,10 @@ public record BoardItemSummaryDto(
     // How the Item repeats ("daily", "weekdays", "weekly", "biweekly", "monthly"); null when it does not.
     string? RepeatRule = null,
     // Minutes before the due time for the reminder: -1 off, 0, 15, 60, 1440 (default), 2880, 10080.
-    int ReminderOffsetMinutes = 1440
+    int ReminderOffsetMinutes = 1440,
+    // Who last changed the Item (a user id); the client names them when a competing write is refused.
+    Guid? UpdatedBy = null,
+    string? UpdatedByName = null
 );
 
 /// <summary>
@@ -97,7 +100,10 @@ public record BoardItemDto(
     // How the Item repeats ("daily", "weekdays", "weekly", "biweekly", "monthly"); null when it does not.
     string? RepeatRule = null,
     // Minutes before the due time for the reminder: -1 off, 0, 15, 60, 1440 (default), 2880, 10080.
-    int ReminderOffsetMinutes = 1440
+    int ReminderOffsetMinutes = 1440,
+    // Who last changed the Item (a user id); the client names them when a competing write is refused.
+    Guid? UpdatedBy = null,
+    string? UpdatedByName = null
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);

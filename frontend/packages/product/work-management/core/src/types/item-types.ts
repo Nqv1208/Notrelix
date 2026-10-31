@@ -85,6 +85,10 @@ export interface Card {
    * `expectedVersion`. Absent on reads that do not carry it.
    */
   version?: number | null;
+  /** The user who last changed the item; names who a refused competing write lost to. Absent on reads that do not carry it. */
+  updatedBy?: string | null;
+  /** The display name of `updatedBy`, resolved by the server (the user may not be a member of the board). */
+  updatedByName?: string | null;
   /** Board item key such as "ERP-142", or a plain number on a board without a prefix. */
   itemKey?: string | null;
   /** Parent item id when this item is a child item; child items are not top-level cards. */

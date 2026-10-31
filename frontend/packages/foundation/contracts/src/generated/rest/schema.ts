@@ -7379,6 +7379,12 @@ export interface components {
             /** Format: uuid */
             id?: string;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionResult": {
+            /** Format: uuid */
+            optionId?: string;
+            /** Format: int64 */
+            version?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
             /** Format: int32 */
             updated?: number;
@@ -7787,6 +7793,9 @@ export interface components {
             repeatRule?: string | null;
             /** Format: int32 */
             reminderOffsetMinutes?: number;
+            /** Format: uuid */
+            updatedBy?: string | null;
+            updatedByName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */
@@ -7868,6 +7877,9 @@ export interface components {
             repeatRule?: string | null;
             /** Format: int32 */
             reminderOffsetMinutes?: number;
+            /** Format: uuid */
+            updatedBy?: string | null;
+            updatedByName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
             /** Format: int64 */
@@ -14040,15 +14052,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionResult"];
                 };
             };
             /** @description Idempotency key reused with a different payload */

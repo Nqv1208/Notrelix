@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   buildFilterFields,
   filterLanesByCompound,
@@ -14,6 +15,9 @@ import {
   type KanbanStatusLane,
   type ViewState,
 } from "@notrelix/work-management-core";
+import { findBoardCard } from "../cache/card-restore";
+import { wmQueryKeys } from "../queries/keys";
+import { isVersionConflict } from "../queries/use-item-conflict";
 import { useFullBoard } from "../queries/use-full-board";
 import { useDebounce } from "./use-debounce";
 import {
@@ -71,6 +75,12 @@ export interface KanbanWriteFailure {
   /** The title of the item being created. */
   readonly title?: string;
   readonly error: unknown;
+  /**
+   * Set when the write lost to someone else's change (a stale version): the
+   * card as the board read now holds it, so the view can say who moved it and
+   * where it is.
+   */
+  readonly conflict?: { readonly card: Card } | undefined;
 }
 
 function optionValue(value: unknown): string | null {
@@ -292,21 +302,52 @@ export function useBoardKanban(
     };
   }, [compound, filterFields, legacyFiltered, memberName]);
 
+  const queryClient = useQueryClient();
+  // A refused stale write has already refetched the board (the write's own
+  // cleanup), so the card read from the cache is the other person's version.
+  const conflictOf = (error: unknown, cardId: string) => {
+    if (!isVersionConflict(error) || !workspaceId) return undefined;
+    const card = findBoardCard(
+      queryClient.getQueryData(wmQueryKeys.fullBoard(workspaceId, boardId)),
+      cardId,
+    );
+    return card ? { card } : undefined;
+  };
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "status", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "status",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const updateFieldValue = useUpdateFieldValue(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "field", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "field",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const moveCard = useMoveCard(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "move", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "move",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const dropItemInLane = useDropItemInLane(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "place", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "place",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const createItemInLane = useCreateItemInLane(boardId, workspaceId, {
     onError: (error, input) =>
