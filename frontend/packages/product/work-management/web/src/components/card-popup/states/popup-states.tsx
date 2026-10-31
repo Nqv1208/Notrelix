@@ -180,13 +180,13 @@ function Banner({
     <div
       role={tone === "warn" ? "alert" : "status"}
       className={cn(
-        "mx-6 mt-3 box-border flex items-start gap-3 rounded-[10px] px-4 py-3 text-[13.5px] leading-[1.45] text-foreground",
+        "mx-4 mt-3 box-border flex md:mx-6 items-start gap-3 rounded-[10px] px-4 py-3 text-[13.5px] leading-[1.45] text-foreground",
         tone === "warn"
           ? "bg-warning-subtle shadow-[inset_0_0_0_1px_var(--warning-text)]"
           : "bg-brand-subtle",
       )}
     >
-      <Icon aria-hidden="true" className="mt-px size-4 shrink-0" />
+      <Icon aria-hidden="true" className="mt-px size-5 shrink-0" />
       <div className="flex-1">
         <b className="font-[650]">{title}</b>
         <br />
