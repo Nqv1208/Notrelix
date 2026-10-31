@@ -60,6 +60,10 @@ services:
       JwtSettings__Audience: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
       Cors__AllowedOrigins__0: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
       Frontend__AppBaseUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
+      # The browser comes back to this web app after a provider sign-in, a refusal included.
+      OAuth__FrontendSuccessUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/auth/callback
+      OAuth__FrontendFailureUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/sign-in
+      OAuth__FrontendMfaUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/sign-in?step=mfa
     command:
       - dotnet
       - run
