@@ -143,6 +143,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     track,
     conflict,
     clearConflict: () => setConflict(false),
+    flagConflict: () => setConflict(true),
     picker,
     pickerAnchor,
     openPicker,

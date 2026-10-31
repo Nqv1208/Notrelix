@@ -97,6 +97,38 @@ function event(workspaceId: string, eventId: string, streamVersion: number) {
   });
 }
 
+function boardSubscribed(boardId: string) {
+  return frame({
+    type: "subscribed",
+    subscriptionId: `board:${boardId}`,
+    scope: { kind: "board", id: boardId },
+    streamKey: `board:Board:${boardId}`,
+  });
+}
+
+function boardEvent(
+  boardId: string,
+  eventId: string,
+  streamVersion: number,
+  workspaceId = "ws-a",
+) {
+  return frame({
+    type: "event",
+    subscriptionId: `board:${boardId}`,
+    schemaVersion: 1,
+    eventId,
+    eventType: "board.board",
+    changeKind: "UpdateBoardItemStatus",
+    streamKey: `board:Board:${boardId}`,
+    streamVersion,
+    resourceKind: "Board",
+    resourceId: boardId,
+    workspaceId,
+    correlationId: "corr",
+    occurredAt: new Date().toISOString(),
+  });
+}
+
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 let sockets: ReturnType<typeof createSocket>[] = [];
@@ -279,5 +311,94 @@ describe("RealtimeLifecycle", () => {
 
     expect(sockets).toHaveLength(0);
     expect(realtime.getState()).toBe("closed");
+  });
+
+  describe("open board", () => {
+    const itemKey = [
+      "workspace",
+      "ws-a",
+      "work-management",
+      "cards",
+      "detail",
+      "i1",
+    ];
+
+    async function openBoard(boardId: string) {
+      state.pathname = `/workspaces/ws-a/boards/${boardId}`;
+      await render();
+      await flush();
+    }
+
+    it("subscribes the board stream and a board frame refetches the work-management scope", async () => {
+      const socket = await openSocket(0);
+      await openBoard("b1");
+      await act(async () => {
+        socket.onmessage?.(subscribed("ws-a"));
+        socket.onmessage?.(boardSubscribed("b1"));
+      });
+      await flush();
+
+      expect(socket.sent).toContainEqual({
+        type: "subscribe",
+        subscriptionId: "board:b1",
+        scope: { kind: "board", id: "b1" },
+      });
+
+      queryClient.setQueryData(itemKey, { name: "fresh" });
+      await act(async () => {
+        socket.onmessage?.(boardEvent("b1", "e1", 1));
+      });
+      await flush();
+
+      expect(queryClient.getQueryState(itemKey)?.isInvalidated).toBe(true);
+    });
+
+    it("a duplicate frame is applied once and a stream gap refetches the workspace scope", async () => {
+      const socket = await openSocket(0);
+      await openBoard("b1");
+      await act(async () => {
+        socket.onmessage?.(boardSubscribed("b1"));
+        socket.onmessage?.(boardEvent("b1", "e1", 1));
+      });
+      await flush();
+      queryClient.setQueryData(itemKey, { name: "fresh" });
+
+      await act(async () => {
+        socket.onmessage?.(boardEvent("b1", "e1", 1));
+      });
+      await flush();
+      expect(queryClient.getQueryState(itemKey)?.isInvalidated).toBe(false);
+
+      await act(async () => {
+        socket.onmessage?.(boardEvent("b1", "e9", 9));
+      });
+      await flush();
+      expect(queryClient.getQueryState(itemKey)?.isInvalidated).toBe(true);
+    });
+
+    it("a late frame of the previous board is ignored after opening another board", async () => {
+      const socket = await openSocket(0);
+      await openBoard("b1");
+      await act(async () => {
+        socket.onmessage?.(boardSubscribed("b1"));
+      });
+      await openBoard("b2");
+      await act(async () => {
+        socket.onmessage?.(boardSubscribed("b2"));
+      });
+      await flush();
+
+      queryClient.setQueryData(itemKey, { name: "B2" });
+      await act(async () => {
+        socket.onmessage?.(boardEvent("b1", "late", 1));
+        socket.onmessage?.(boardEvent("b1", "late2", 5));
+      });
+      await flush();
+
+      expect(queryClient.getQueryState(itemKey)?.isInvalidated).toBe(false);
+      expect(
+        socket.sent.filter((f) => f.type === "unsubscribe"),
+      ).toContainEqual({ type: "unsubscribe", subscriptionId: "board:b1" });
+    });
   });
 });

@@ -37,6 +37,9 @@ export * from "./hooks";
 
 export * from "./api/board-preference.api";
 
+// Realtime adapter
+export * from "./realtime";
+
 // Cache helpers
 export * from "./cache";
 

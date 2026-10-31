@@ -2,17 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { useCardPopup, useCanEdit } from "./card-popup-context";
+import { useServerDraft } from "./use-server-draft";
 
 /** The complete circle and the inline title. */
 export function PopupTitleRow() {
-  const { card, copy, callbacks, mode, saves, track } = useCardPopup();
+  const { card, copy, callbacks, mode, saves, track, flagConflict } =
+    useCardPopup();
   const t = copy.shell;
   const canEdit = useCanEdit();
   const done = Boolean(card.completedAt) || card.statusCategory === "done";
-  const [draft, setDraft] = useState(card.title);
+  const [draft, setDraft] = useServerDraft(card.title, flagConflict);
   const [touched, setTouched] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => setDraft(card.title), [card.title]);
   // A card opened from "Thêm chi tiết" or a blank draft puts the cursor on the name.
   useEffect(() => {
     if (mode === "create") ref.current?.focus();

@@ -2,6 +2,8 @@ import type { RealtimeEnvelope } from "./envelope";
 
 export interface ModuleRealtimeContext {
   readonly workspaceId: string;
+  /** Set when the frame arrived through a board subscription: the open board. */
+  readonly boardId?: string;
   readonly invalidateQueries: (
     queryKeys: readonly unknown[][],
   ) => Promise<void> | void;

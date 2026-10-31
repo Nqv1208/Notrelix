@@ -39,6 +39,7 @@ import {
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup, useCanEdit } from "../card-popup-context";
+import { useServerDraft } from "../use-server-draft";
 import {
   ChipBtn,
   ChipReadOnly,
@@ -834,7 +835,7 @@ function TypedControl({
   raw: unknown;
   chip: boolean;
 }) {
-  const { copy, openFieldId, clearOpenField } = useCardPopup();
+  const { copy, openFieldId, clearOpenField, flagConflict } = useCardPopup();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (openFieldId !== field.id) return;
@@ -851,9 +852,8 @@ function TypedControl({
   const { write, save } = useFieldWrite(field);
   const kind = field.fieldType;
   const initial = raw === undefined || raw === null ? "" : String(raw);
-  const [draft, setDraft] = useState(initial);
+  const [draft, setDraft] = useServerDraft(initial, flagConflict);
   const [invalid, setInvalid] = useState<string | undefined>();
-  useEffect(() => setDraft(initial), [initial]);
   const saving = save?.status === "saving";
   const Icon = kind === "number" ? Hash : Type;
   const commit = () => {

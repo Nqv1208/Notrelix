@@ -103,6 +103,8 @@ export interface CardPopupModel {
   /** A write was refused because someone else saved first. */
   readonly conflict: boolean;
   readonly clearConflict: () => void;
+  /** Another person changed a field the person is editing: the draft stays and the notice shows. */
+  readonly flagConflict: () => void;
   /** The open picker; null: none. */
   readonly picker: CardPopupPicker | null;
   /** The control that opened the picker; the panel opens under it. Null: the quick row's own button. */
