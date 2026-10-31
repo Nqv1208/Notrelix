@@ -235,7 +235,7 @@ describe("WorkspaceMembersSurface", () => {
     expect(screen.getByText(copy.onlyYouAdmin)).toBeTruthy();
   });
 
-  it("FUI[workspace.members:only-you] keeps the invite hint away from someone who cannot invite", () => {
+  it("keeps the only-you invite hint away from someone who cannot invite", () => {
     const [grace] = membersFixture().filter(
       (member) => member.userId === "u-grace",
     );
