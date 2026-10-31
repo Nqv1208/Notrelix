@@ -31,7 +31,7 @@ public static class BoardItemReadValues
         var children = await context.BoardItems
             .AsNoTracking()
             .Where(child => child.ParentItemId != null && itemIds.Contains(child.ParentItemId.Value) && !child.IsArchived)
-            .Select(child => new { child.Id, ParentId = child.ParentItemId!.Value })
+            .Select(child => new { child.Id, ParentId = child.ParentItemId!.Value, Completed = child.CompletedAt != null })
             .ToListAsync(cancellationToken);
 
         var fieldIds = new[] { status?.Id, priority?.Id }.OfType<Guid>().ToList();
@@ -55,7 +55,7 @@ public static class BoardItemReadValues
             .Where(option => option.Category == WorkStatusCategory.Done)
             .Select(option => option.Id)
             .ToHashSet() ?? [];
-        var childrenByParent = children.GroupBy(child => child.ParentId).ToDictionary(group => group.Key, group => group.Select(child => child.Id).ToList());
+        var childrenByParent = children.GroupBy(child => child.ParentId).ToDictionary(group => group.Key, group => group.Select(child => (child.Id, child.Completed)).ToList());
 
         var result = new Dictionary<Guid, BoardItemReadValue>(itemIds.Count);
         foreach (var itemId in itemIds)
@@ -63,7 +63,8 @@ public static class BoardItemReadValues
             BoardItemChildProgressDto? progress = null;
             if (childrenByParent.TryGetValue(itemId, out var childIds))
             {
-                var done = childIds.Count(childId => OptionOf(childId, status) is { } option && doneOptionIds.Contains(option));
+                // One truth with the sub-item list: a child counts as done when it was completed or holds a done status.
+                var done = childIds.Count(child => child.Completed || (OptionOf(child.Id, status) is { } option && doneOptionIds.Contains(option)));
                 progress = new BoardItemChildProgressDto(done, childIds.Count);
             }
 
