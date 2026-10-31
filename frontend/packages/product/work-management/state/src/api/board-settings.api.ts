@@ -495,17 +495,33 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         ids,
       );
       if (!moved) return;
-      // The page lists the custom fields only; the server orders all of them.
-      const listed = new Set(s.fields.map((field) => field.id));
-      let next = 0;
-      const full = (s.fieldOrder ?? s.fields.map((field) => field.id)).map(
-        (id) => (listed.has(id) ? ids[next++]! : id),
+      // The page lists the board's own fields only; the server orders all of
+      // them, locked system fields included, and the neighbours named must be
+      // adjacent in that order: the listed neighbour the field lands next to,
+      // and what is on the other side of it on the server.
+      const server = (s.fieldOrder ?? s.fields.map((field) => field.id)).filter(
+        (id) => id !== moved,
       );
+      const at = ids.indexOf(moved);
+      const side =
+        at < ids.length - 1
+          ? { listed: ids[at + 1]!, before: true }
+          : { listed: ids[at - 1]!, before: false };
+      const place = server.indexOf(side.listed);
+      const around = side.before
+        ? {
+            previousSiblingId: server[place - 1] ?? null,
+            nextSiblingId: side.listed,
+          }
+        : {
+            previousSiblingId: side.listed,
+            nextSiblingId: server[place + 1] ?? null,
+          };
       await api.post<void>(
         endpoints.boardFields.move(s.boardId, moved),
         {
           expectedVersion: fieldOf(s, moved).version ?? 0,
-          ...neighbours(full, moved),
+          ...around,
         },
         quiet,
       );
