@@ -699,7 +699,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §6](../../product/governance.md) GOV-025; WGREQ086, WGREQ155.
 - Acceptance: Given a Private Board, When a non-member reads it, Then the body equals that of a random id.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` (accepts 403 or 404) · Design none
-- State: HARDENING - The real spec accepts 403 or 404; README §7 requires identical NotFound. Real-stack check 2026-10-31: private-to-another-person views and saved filters are decided by a policy fact (PrivateToAnotherPerson) and answer the identical NotFound, commit 1bf4354c9.
+- State: HARDENING - The real spec accepts 403 or 404; README §7 requires identical NotFound. Real-stack check 2026-10-31: private-to-another-person views and saved filters are decided by a policy fact (PrivateToAnotherPerson) and answer the identical NotFound, commit 1bf4354c9. Real-stack check 2026-10-31: the workspace gate no longer says 403 to a non-member of an existing workspace; user9 against a made-up id gives byte-identical 404 bodies on members, members/me, roles, api-tokens, boards, pages, spaces, access and the role PUT/DELETE; a suspended member gets the 404, a member lacking the action still 403; item matrix 403/404 outcomes and the private-view matrix (demo, admin, user4: 12 of 12 identical each) unchanged, commit SHA.
 
 ### UC-GOV-E07 Fail closed when facts are missing, stale or unavailable
 - Capability: E Effective permission evaluation (team spec, Governance list)
