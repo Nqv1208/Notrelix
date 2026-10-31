@@ -47,7 +47,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
-| A | Board lifecycle | WM-001 | 26 | 4 | 2 | 16 | 4 | 0 | 0 |
+| A | Board lifecycle | WM-001 | 26 | 4 | 0 | 3 | 19 | 0 | 0 |
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 6 | 67 | 78 | 0 | 1 |
+| | Total | | 170 | 18 | 4 | 54 | 93 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -181,28 +181,28 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-WM-A01 | Create a board (blank, preset or from template) | A | Owner/Admin/Member (Space: Editor); Guest denied | yes | partial | partial | none | INTEGRATING | No real e2e; default-group proof (D49, D58); template gallery entry; Guest 403 test |
+| UC-WM-A01 | Create a board (blank, preset or from template) | A | Owner/Admin/Member (Space: Editor); Guest denied | yes | partial | partial | none | HARDENING | No real e2e; default-group proof (D49, D58); template gallery entry; Guest 403 test |
 | UC-WM-A02 | Rename the board and edit its settings | A | Manager | yes | yes | partial | board-settings, work-board-management | HARDENING | Test prefix change affects new items only; design Er/320/768; icon change |
-| UC-WM-A03 | Place a board in a Space or move it between Spaces | A | Manager (+ CreateBoard on target Space) | yes | partial | none | none | INTEGRATING | Design; access-impact warning with grant offer (UC-WM-A25); real e2e |
-| UC-WM-A04 | Archive a board | A | Manager | partial | partial | partial | none | INTEGRATING | automation and integration sync are not paused (D76.1; defect B-18); archive uses a raw path, not the typed client (defect F-02); no real e2e; peers see the banner live only with open PR #193. |
-| UC-WM-A05 | Unarchive a board | A | Manager | yes | no | none | none | IMPLEMENTING | Unarchive UI; design; resume automation/sync; real e2e |
-| UC-WM-A06 | Delete a board | A | Manager (workspace Owner) | partial | partial | none | none | INTEGRATING | 30-day soft delete and purge (D76.1); impact counts in confirm; typed client; design |
-| UC-WM-A07 | Restore a deleted board | A | Manager | partial | no | none | none | IMPLEMENTING | no 30-day window check in Board.Restore, no deleted-boards list or UI, no purge job (see UC-WM-B17); verified in source. |
-| UC-WM-A08 | List boards the person may see | A | Any member; Guest only shared boards | yes | yes | partial | guest-permission | INTEGRATING | Parity test: Private board absent for non-member; mock handler |
-| UC-WM-A09 | Open a board (read: schema, groups, items, preferences) | A | Viewer and above; Guest per grant | partial | partial | complete | board-views-and-settings | INTEGRATING | per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states. |
-| UC-WM-A10 | Assign and keep the item key (prefix and sequence) | A | System on create | partial | yes | complete | work-board-management | INTEGRATING | no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence. |
+| UC-WM-A03 | Place a board in a Space or move it between Spaces | A | Manager (+ CreateBoard on target Space) | yes | partial | none | none | HARDENING | Design; access-impact warning with grant offer (UC-WM-A25); real e2e |
+| UC-WM-A04 | Archive a board | A | Manager | partial | partial | partial | none | HARDENING | automation and integration sync are not paused (D76.1; defect B-18); archive uses a raw path, not the typed client (defect F-02); no real e2e; peers see the banner live only with open PR #193. |
+| UC-WM-A05 | Unarchive a board | A | Manager | yes | no | none | none | HARDENING | Unarchive UI; design; resume automation/sync; real e2e |
+| UC-WM-A06 | Delete a board | A | Manager (workspace Owner) | partial | partial | none | none | HARDENING | 30-day soft delete and purge (D76.1); impact counts in confirm; typed client; design |
+| UC-WM-A07 | Restore a deleted board | A | Manager | partial | no | none | none | HARDENING | no 30-day window check in Board.Restore, no deleted-boards list or UI, no purge job (see UC-WM-B17); verified in source. |
+| UC-WM-A08 | List boards the person may see | A | Any member; Guest only shared boards | yes | yes | partial | guest-permission | HARDENING | Parity test: Private board absent for non-member; mock handler |
+| UC-WM-A09 | Open a board (read: schema, groups, items, preferences) | A | Viewer and above; Guest per grant | partial | partial | complete | board-views-and-settings | HARDENING | per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states. |
+| UC-WM-A10 | Assign and keep the item key (prefix and sequence) | A | System on create | partial | yes | complete | work-board-management | HARDENING | no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence. |
 | UC-WM-A11 | Duplicate a board | A | Manager (ManageBoard); CreateBoard in target Space | no | no | none | none | DEFINED | no endpoint, no UI, no design; behaviour is decided in D78.5. |
-| UC-WM-A12 | Save a board as a template | A | Manager of the board | partial | yes | complete | none | INTEGRATING | Include-items option and 500 refusal (D76.13, 66); design Er |
-| UC-WM-A13 | Publish a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | INTEGRATING | API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5). |
-| UC-WM-A14 | Archive or delete a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | INTEGRATING | API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66). |
-| UC-WM-A15 | Create a board from a template or built-in starter | A | As UC-WM-A01 | yes | partial | complete | none | INTEGRATING | Gallery route on New board; real e2e |
+| UC-WM-A12 | Save a board as a template | A | Manager of the board | partial | yes | complete | none | HARDENING | Include-items option and 500 refusal (D76.13, 66); design Er |
+| UC-WM-A13 | Publish a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | HARDENING | API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5). |
+| UC-WM-A14 | Archive or delete a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | HARDENING | API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66). |
+| UC-WM-A15 | Create a board from a template or built-in starter | A | As UC-WM-A01 | yes | partial | complete | none | HARDENING | Gallery route on New board; real e2e |
 | UC-WM-A16 | Read who has access (sharing summary) | A | ViewBoard (counts); members/managers (entries, log) | yes | yes | partial | board-sharing | HARDENING | Direct GetSharing tests; design Er/L/E |
 | UC-WM-A17 | Add, change or remove a board member | A | Manager (up to own level) | yes | yes | partial | board-sharing | HARDENING | Expected version on role change; last-manager guard (UC-WM-A26) |
 | UC-WM-A18 | Grant explicit access to a user or team | A | Manager (ManageBoardPermission) | yes | yes | partial | guest-permission, board-sharing | HARDENING | Expiry input removed (D76.4); Guest capped at Editor proof |
 | UC-WM-A19 | Invite an external guest to one board | A | ManageBoardPermission | no | no | none | none | DEFINED | no Work Management call to the Workspaces resource-invitation API from the Share dialog; no UI. |
 | UC-WM-A20 | Resend or revoke a resource invitation | A | Issuer or Owner/Admin | no | no | none | none | DEFINED | Depends on UC-WM-A19; design; BE; FE |
-| UC-WM-A21 | Change board visibility (Workspace or Private) | A | Manager | partial | partial | partial | none | INTEGRATING | Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility |
-| UC-WM-A22 | Make a board private with impact preview and bulk add | A | Manager | yes | yes | complete | none | INTEGRATING | Direct handler tests; real e2e; one-transaction proof |
+| UC-WM-A21 | Change board visibility (Workspace or Private) | A | Manager | partial | partial | partial | none | HARDENING | Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility |
+| UC-WM-A22 | Make a board private with impact preview and bulk add | A | Manager | yes | yes | complete | none | HARDENING | Direct handler tests; real e2e; one-transaction proof |
 | UC-WM-A23 | Open a shared board as a Guest | A | Guest with explicit access | yes | partial | none | guest-permission | INTEGRATING | design for the Guest board view; proof that pickers show no emails (Q7); positive guest journey e2e. |
 | UC-WM-A24 | Copy item/board link | A | Any viewer | not applicable | yes | complete | none | INTEGRATING | non-member gets NotFound e2e |
 | UC-WM-A25 | Warn when an access change would strand assignees | A | Manager | partial | partial | none | none | INTEGRATING | Warning on visibility change and move-to-space; design |
@@ -382,7 +382,7 @@ Team capability WM-001.
 - Rules: product sections 7-9, 12-13, 101-102; WM-003, WM-005, WM-028, WM-042; WMREQ001-003, WMREQ008-010, WMREQ016
 - Acceptance: Given a Member in Workspace W, when they create a board from a template, then a new Board with new Field/Group/View identities exists in W and later template edits do not change it. Given a Guest, when they look for "New board", then it is not available (403 on API). Given a Space from another Workspace, when chosen, then the request is rejected and nothing is created.
 - Evidence: BE Boards.Create = POST /workspaces/{workspaceId:guid}/boards -> CreateBoardInWorkspaceCommand (`Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs`) [- / Idem]; Templates.CreateBoard = POST /templates/{templateId:guid}/create-board -> CreateBoardFromTemplateCommand (`Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs`) [- / Idem] · FE `frontend/apps/web/src/shell/workspace/use-create-resource.tsx`; no template gallery route · Design Final-Space `tao-moi`, Final-M-Space; no Er, L, name-taken · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — No real e2e; default-group proof (D49, D58); template gallery entry; Guest 403 test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design Er and name-taken; tests and owner check. Evidence: real-stack check 2026-10-31: created a blank, a starter and a workspace-template board from New Board as a member (201, lands on the board, the reload keeps it); a retry under one key made one board; an empty or 121-character name 400; a Guest 403; an unknown Space 404, commit 33ed8c465.
 
 ### UC-WM-A02 Rename the board and edit its settings
 - Capability: A Board lifecycle (WM-001)
@@ -410,7 +410,7 @@ Team capability WM-001.
 - Rules: product sections 101-102; WM-003, WM-040; WMREQ002, WMREQ005
 - Acceptance: Given a Manager moves a board to another Space, when confirmed, then the board remains in the same Workspace and a person with only the old Space's access receives NotFound. Given assignees would lose access, then a warning lists them and offers to grant access.
 - Evidence: BE Boards.MoveToSpace = POST /boards/{boardId:guid}/move-to-space -> MoveBoardToSpaceCommand (`Boards/Commands/MoveBoardToSpace/MoveBoardToSpace.cs`) [EV / Idem] · FE `frontend/apps/web/src/shell/workspace/use-move-to-space.tsx`, `frontend/apps/web/src/shell/workspace/board-placement-bridge.ts`; no impact warning · Design none; needs move-board dialog, access-impact warning list, error · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — Design; access-impact warning with grant offer (UC-WM-A25); real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; access-impact warning with grant offer (UC-WM-A25), move dialog design; tests and owner check. Evidence: real-stack check 2026-10-31: moved a board to a department from the Library dialog and the reload shows the new location; the same Space is a no-op; a member 403; an unknown Space 404, commit 33ed8c465.
 
 ### UC-WM-A04 Archive a board
 - Capability: A Board lifecycle (WM-001)
@@ -424,7 +424,7 @@ Team capability WM-001.
 - Rules: product sections 10-11; D76.1; WMREQ004-005, WMREQ110-113
 - Acceptance: . Given an archived board, when a Member tries any write via API, then it is refused with the archived reason and no version/event changes. Given a board with enabled automation rules, when it is archived, then its rules and integration sync pause; when unarchived they resume.
 - Evidence: BE Boards.Archive = POST /boards/{boardId:guid}/archive -> ArchiveBoardCommand (`Boards/Commands/ArchiveBoard/ArchiveBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/state/src/api/board-settings.api.ts`:367 raw path; archived banner · Design Final-Settings `luu-tru`, BC-Shell archived banner · Tests `ArchiveBoardCommandHandlerTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: archive carries the board version (`BoardVersionRequest`), the typed client, a confirmation that names the effect with item, open-item and member counts (`GET /boards/{id}/lifecycle-impact`), an archived board opens read-only with a banner (`GET /boards/{id}/full` no longer refuses it) and the views, item sheet and item page turn every write control off through `useBoardCapabilities`, and the archived list at `/workspaces/{id}/archived-boards`. Built: an archived board and its children are reachable to whoever passes GOV-025 steps 2-6, so the read, the access read and the archived list answer, and the policy refuses every write on the board or a child with `WorkManagement_Board_Archived` once the decision is Allow, after the NotFound checks (owner decision 2026-10-30; the one rule covers every child write through the board-child relation, no extra pipeline behaviour); archive, unarchive, delete and restore carry `IBoardLifecycleRequest` and pass; the viewer's personal view state stays on screen only on an archived board. Archive carries the lifecycle marker too, so archiving an archived board stays a no-op and a retry under the same key replays. Not built: pausing automation rules and integration sync (D76.1; defect B-18), live banner for peers (open PR #193).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; automation and integration sync are not paused (D76.1); tests and owner check. Built: archive carries the board version (`BoardVersionRequest`), the typed client, a confirmation that names the effect with item, open-item and member counts (`GET /boards/{id}/lifecycle-impact`), an archived board opens read-only with a banner (`GET /boards/{id}/full` no longer refuses it) and the views, item sheet and item page turn every write control off through `useBoardCapabilities`, and the archived list at `/workspaces/{id}/archived-boards`. Built: an archived board and its children are reachable to whoever passes GOV-025 steps 2-6, so the read, the access read and the archived list answer, and the policy refuses every write on the board or a child with `WorkManagement_Board_Archived` once the decision is Allow, after the NotFound checks (owner decision 2026-10-30; the one rule covers every child write through the board-child relation, no extra pipeline behaviour); archive, unarchive, delete and restore carry `IBoardLifecycleRequest` and pass; the viewer's personal view state stays on screen only on an archived board. Archive carries the lifecycle marker too, so archiving an archived board stays a no-op and a retry under the same key replays. Not built: pausing automation rules and integration sync (D76.1; defect B-18), live banner for peers (open PR #193). Evidence: real-stack check 2026-10-31: archived from Settings through the confirm that names the effect (204); the reload shows the archived banner; a write answers 403 with the reason and a member still reads; archiving again bumps nothing; a stale version 412; a member 403, commit 33ed8c465.
 
 ### UC-WM-A05 Unarchive a board
 - Capability: A Board lifecycle (WM-001)
@@ -438,7 +438,7 @@ Team capability WM-001.
 - Rules: product sections 10-11; D76.1; WMREQ004-005
 - Acceptance: Given an archived board, when a Manager unarchives it, then all controls re-enable for Editors without reload.
 - Evidence: BE Boards.Unarchive = POST /boards/{boardId:guid}/unarchive -> UnarchiveBoardCommand (`Boards/Commands/UnarchiveBoard/UnarchiveBoard.cs`) [- / Idem] · FE none; operation unused, no UI · Design none; needs unarchive action on archived banner/settings · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: IMPLEMENTING — tests and owner check. Built: unarchive carries the board version; the archived banner and the General settings danger zone offer Unarchive to a Manager; the archived list at `/workspaces/{id}/archived-boards` unarchives from a row. Built: unarchive now reaches the handler (the access facts no longer answer NotFound for an archived board) and passes the policy as a lifecycle command. Not built: resuming automation and integration sync (D76.1), design.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; resuming automation and integration sync (D76.1); tests and owner check. Built: unarchive carries the board version; the archived banner and the General settings danger zone offer Unarchive to a Manager; the archived list at `/workspaces/{id}/archived-boards` unarchives from a row. Built: unarchive now reaches the handler (the access facts no longer answer NotFound for an archived board) and passes the policy as a lifecycle command. Not built: resuming automation and integration sync (D76.1), design. Evidence: real-stack check 2026-10-31: unarchived from the banner (204) and the banner stays gone after reload; a second unarchive bumps nothing; a stale version 412; writes work again, commit 33ed8c465.
 
 ### UC-WM-A06 Delete a board
 - Capability: A Board lifecycle (WM-001)
@@ -452,7 +452,7 @@ Team capability WM-001.
 - Rules: product sections 121-122; WM-033; D76.1; WMREQ004-005, WMREQ113
 - Acceptance: Given a Manager deletes a board, when a member reloads, then the generic no-access state shows and Collaboration comments of its items are retained (not hard-deleted). Given a board deleted 29 days ago, when a Manager restores it, then it returns; given 31 days (after purge), then restore is refused.
 - Evidence: BE Boards.Delete = DELETE /boards/{boardId:guid} -> DeleteBoardCommand (`Boards/Commands/DeleteBoard/DeleteBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/state/src/api/board-settings.api.ts`:373 raw DELETE, typed-name confirm · Design none; needs delete confirm naming impact, deleted state · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: delete carries the board version (`?expectedVersion=n`), the typed client, a confirmation that names the 30-day window and the item count, and a redirect to the deleted list. Built: delete passes the policy on an active or archived board as a lifecycle command, and a deleted board stays reachable for Delete (`IBoardReachesDeletedRequest`, ManageBoard only), so deleting a deleted board is a no-op and a retry under the same key replays; a deleted board is NotFound to every other request. Not built: the purge job after 30 days (see UC-WM-B17), design.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; purge job after 30 days (UC-WM-B17), design; tests and owner check. Built: delete carries the board version (`?expectedVersion=n`), the typed client, a confirmation that names the 30-day window and the item count, and a redirect to the deleted list. Built: delete passes the policy on an active or archived board as a lifecycle command, and a deleted board stays reachable for Delete (`IBoardReachesDeletedRequest`, ManageBoard only), so deleting a deleted board is a no-op and a retry under the same key replays; a deleted board is NotFound to every other request. Not built: the purge job after 30 days (see UC-WM-B17), design. Evidence: real-stack check 2026-10-31: deleted with the typed name (204) and landed on the deleted list; a member and an unknown id now both answer 404 (restore and delete answered 403 before); a stale version 412; a member 403 on an active board, commit 33ed8c465.
 
 ### UC-WM-A07 Restore a deleted board
 - Capability: A Board lifecycle (WM-001)
@@ -466,7 +466,7 @@ Team capability WM-001.
 - Rules: product sections 121-122; WM-033; D76.1; WMREQ004
 - Acceptance: Given a deleted board, when a Manager restores it within retention, then items, fields, views return unchanged.
 - Evidence: BE Boards.Restore = POST /boards/{boardId:guid}/restore -> RestoreBoardCommand (`Boards/Commands/RestoreBoard/RestoreBoard.cs`) [- / Idem] · FE none; no UI · Design none; needs deleted-boards list, restore, restore-refused · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: IMPLEMENTING — tests and owner check. Built: `Board.Restore` refuses after 30 days with rule code `WorkManagement_Board_RestoreWindowElapsed`; restore carries the board version; `GET /workspaces/{id}/boards/deleted` lists the boards the caller deleted or holds Owner or Admin on, and the page at `/workspaces/{id}/archived-boards?tab=deleted` restores with the conflict, window, denied and gone states. Built: restore now reaches the handler: a deleted board is reachable only for `IBoardReachesDeletedRequest` (restore and delete; the facts query reads the deleted board and its Space only then). Not built: listing for Space and workspace managers who are neither the deleter nor a board Owner or Admin (needs a Governance listing), the purge job (UC-WM-B17).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; listing for Space and workspace managers who are neither the deleter nor a board Owner or Admin; purge job; tests and owner check. Built: `Board.Restore` refuses after 30 days with rule code `WorkManagement_Board_RestoreWindowElapsed`; restore carries the board version; `GET /workspaces/{id}/boards/deleted` lists the boards the caller deleted or holds Owner or Admin on, and the page at `/workspaces/{id}/archived-boards?tab=deleted` restores with the conflict, window, denied and gone states. Built: restore now reaches the handler: a deleted board is reachable only for `IBoardReachesDeletedRequest` (restore and delete; the facts query reads the deleted board and its Space only then). Not built: listing for Space and workspace managers who are neither the deleter nor a board Owner or Admin (needs a Governance listing), the purge job (UC-WM-B17). Evidence: real-stack check 2026-10-31: restored from the deleted list (204) and the board opens for admin and member after reload; past 30 days it is refused with the reason; restoring an active board bumps nothing; a retry under the same key replays (it answered 500 before); a stale version 412; a member 404, commit 33ed8c465.
 
 ### UC-WM-A08 List boards the person may see
 - Capability: A Board lifecycle (WM-001)
@@ -480,7 +480,7 @@ Team capability WM-001.
 - Rules: product sections 103-105; WM-030; WMREQ105-108
 - Acceptance: Given a Private board and a non-member Member, when boards are listed, then it is absent and a direct URL gives [S1]..
 - Evidence: BE Boards.ListWorkspaceBoards = GET /workspaces/{workspaceId:guid}/boards -> GetBoardsQuery (`Boards/Queries/GetBoards/GetBoards.cs`) [- / -] · FE useWorkspaceBoards; contract op has no mock handler · Design Final-Space `chi-xem`, Final-M-Space · Tests `CollectionVisibilityIntegrationTests.cs` · Real e2e `guest-permission.real.e2e.spec.ts` (negative only)
-- State: INTEGRATING — Parity test: Private board absent for non-member; mock handler
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a Private board is absent from a member's list and present for its manager; the Library list shows the boards of the workspace, commit 33ed8c465.
 
 ### UC-WM-A09 Open a board (read: schema, groups, items, preferences)
 - Capability: A Board lifecycle (WM-001)
@@ -494,7 +494,7 @@ Team capability WM-001.
 - Rules: product sections 26, 27.2, 46; WM-030; WMREQ111, WMREQ147-148
 - Acceptance: (1) Given an archived board, when it opens, then a banner states archived, every write control is disabled with that reason, and reads work. (2) Given a view URL naming a deleted or unknown view, when opened, then the default view shows and one notice says the view no longer exists. (3) Given a board with no BoardGroup, when a Member tries to add, then the no-group notice names the reason and offers "Add group"; adding never returns silently (D49).
 - Evidence: BE Boards.Get = GET /boards/{boardId:guid} -> GetBoardQuery (`Boards/Queries/GetBoard/GetBoard.cs`) [- / -]; Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardFields.GetSchema = GET /boards/{boardId:guid}/schema -> GetBoardSchemaQuery (`BoardSchema/Queries/GetBoardSchema/GetBoardSchemaQuery.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE BoardScreen; whole board loaded, no paging · Design BC-Shell-1440, BC-Shell-1280-768, BC-Shell-320, BC-Index · Tests `CacheIdentityHashTests.cs`, `ComputedFieldsIntegrationTests.cs`, `GetBoardSchemaTests.cs`, `NotrelixApiFactory.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (implicit)
-- State: INTEGRATING — per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states (an archived board now reads end to end, owner decision 2026-10-30).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; per-group paging (UC-WM-T01); tests and owner check. Evidence: real-stack check 2026-10-31: a board opens with its views; an archived board shows the banner and still reads; a deleted or Private board shows the not-available state to a member; the reload keeps the view, commit 33ed8c465.
 
 ### UC-WM-A10 Assign and keep the item key (prefix and sequence)
 - Capability: A Board lifecycle (WM-001)
@@ -508,7 +508,7 @@ Team capability WM-001.
 - Rules: product sections 27.1; WM-043; WMREQ015
 - Acceptance: Given 20 parallel creates on one board, then keys are unique and gapless-or-gapped but never duplicated; given an item is moved to another board, then it takes a key on the target board's sequence (see UC-WM-B08). Given an item moved to board B and keyed B-9, when its old key is opened, then it resolves to the same item.
 - Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem] · FE key display (D39) · Design WM-Card-Face (key) · Tests `CreateBoardItemTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (prefix only)
-- State: INTEGRATING — no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; no stored alias, so an old key does not resolve after a move; tests and owner check. Evidence: real-stack check 2026-10-31: 20 parallel creates on one board gave 20 distinct keys, commit 33ed8c465.
 
 ### UC-WM-A11 Duplicate a board
 - Capability: A Board lifecycle (WM-001)
@@ -536,7 +536,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005, WM-028; D66; D76.13
 - Acceptance: Given a board with 600 items and "include items", then the action states the 500 cap. Given a board with 501 items and include items ticked, then the action is refused with the reason and nothing is truncated.
 - Evidence: BE Templates.Create = POST /boards/{boardId:guid}/templates -> CreateBoardTemplateCommand (`Templates/Commands/CreateBoardTemplate/CreateBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx` · Design WM-Template-Save; Er missing · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: more than 500 top-level items with include-items is refused with rule code `WorkManagement_BoardTemplate_TooManyItems` instead of being cut short, and the form names the cap and disables Save. Not built: design Er.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; include-items 500 refusal driven; design Er; tests and owner check. Built: more than 500 top-level items with include-items is refused with rule code `WorkManagement_BoardTemplate_TooManyItems` instead of being cut short, and the form names the cap and disables Save. Not built: design Er. Evidence: real-stack check 2026-10-31: saved a board as a draft template (201, listed as Draft); an empty name 400; a member without Manage 403, commit 33ed8c465.
 
 ### UC-WM-A13 Publish a template
 - Capability: A Board lifecycle (WM-001)
@@ -550,7 +550,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005; D66
 - Acceptance: Given a Manager who is not Owner/Admin, when they publish, then 403.
 - Evidence: BE Templates.Publish = PATCH /templates/{templateId:guid}/publish -> PublishBoardTemplateCommand (`Templates/Commands/PublishBoardTemplate/PublishBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx` · Design WM-Template-Manage; denied/Er missing · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the template list returns Draft and Archived templates to every member; the product doc says Owner or Admin publishes and D66 says ManageBoard; tests and owner check. Evidence: real-stack check 2026-10-31: published a template (200); publishing again changes nothing; a member 403; it appears in New board for a member, commit 33ed8c465.
 
 ### UC-WM-A14 Archive or delete a template
 - Capability: A Board lifecycle (WM-001)
@@ -564,7 +564,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005; D66
 - Acceptance: Given a template archived, then boards created from it are unchanged and it is no longer offered.
 - Evidence: BE Templates.Archive = PATCH /templates/{templateId:guid}/archive -> ArchiveBoardTemplateCommand (`Templates/Commands/ArchiveBoardTemplate/ArchiveBoardTemplate.cs`) [- / Idem]; Templates.Delete = DELETE /templates/{templateId:guid} -> DeleteBoardTemplateCommand (`Templates/Commands/DeleteBoardTemplate/DeleteBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx`; no unarchive · Design WM-Template-Manage · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; same list gap as UC-WM-A13; no unarchive; tests and owner check. Evidence: real-stack check 2026-10-31: archived a template (200) and it left New board and could not be used (404); a member delete 403; delete 204, commit 33ed8c465.
 
 ### UC-WM-A15 Create a board from a template or built-in starter
 - Capability: A Board lifecycle (WM-001)
@@ -578,7 +578,7 @@ Team capability WM-001.
 - Rules: product sections 12-13, 96-98; WM-005, WM-028; D66; WMREQ008-009
 - Acceptance: Given a template edited after instantiation, then the existing board is unchanged.
 - Evidence: BE Templates.CreateBoard = POST /templates/{templateId:guid}/create-board -> CreateBoardFromTemplateCommand (`Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs`) [- / Idem]; Templates.List = GET /workspaces/{workspaceId:guid}/templates -> ListBoardTemplatesQuery (`Templates/Queries/ListBoardTemplates/ListBoardTemplates.cs`) [- / -] · FE create from template in settings; no gallery on New board path · Design WM-Template-Gallery; L, Er, E, M missing · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Gallery route on New board; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a member created boards from a starter and from a workspace template (201, groups and fields copied, no items); a Guest 403; an unknown Space 404, commit 33ed8c465.
 
 ### UC-WM-A16 Read who has access (sharing summary)
 - Capability: A Board lifecycle (WM-001)
@@ -662,7 +662,7 @@ Team capability WM-001.
 - Rules: product sections 103-106; WM-030, WM-040; D76.4; WMREQ006
 - Acceptance: Given a board made Private, when a non-member Workspace Member opens it, then NotFound.
 - Evidence: BE Boards.UpdateVisibility = PATCH /boards/{boardId:guid}/visibility -> UpdateBoardVisibilityCommand (`Boards/Commands/UpdateBoardVisibility/UpdateBoardVisibility.cs`) [- / Idem] · FE contract op unused; header offers Make private only · Design Final-Share (private) · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: PublicLink is refused on create and on every visibility change (rule code `WorkManagement_Board_PublicLinkNotSupported`); the visibility write carries the board version. Not built: affected-assignee warning (UC-WM-A25), UI for Workspace visibility.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; settings conflict notice names no actor and has no keep-mine (artboard Er-on-save needed); tests and owner check. Built: PublicLink is refused on create and on every visibility change (rule code `WorkManagement_Board_PublicLinkNotSupported`); the visibility write carries the board version. Not built: affected-assignee warning (UC-WM-A25), UI for Workspace visibility. Evidence: real-stack check 2026-10-31: switched a board to Private from the Share dialog and a member now gets the not-available state after reload; an unknown visibility value is now 400 (it answered 204 and stored it); the same value bumps nothing; a stale version 412, commit 33ed8c465.
 
 ### UC-WM-A22 Make a board private with impact preview and bulk add
 - Capability: A Board lifecycle (WM-001)
@@ -676,7 +676,7 @@ Team capability WM-001.
 - Rules: product sections 103-106; WM-030, WM-040; WMREQ006-007
 - Acceptance: Given 3 Space-only people with open Items, when "Make private" lists them, then confirming with 2 selected adds those 2 as editors and the third loses access, all in one transaction.
 - Evidence: BE Boards.MakePrivate = POST /boards/{boardId:guid}/sharing/private -> MakeBoardPrivateCommand (`Boards/Commands/MakeBoardPrivate/MakeBoardPrivate.cs`) [- / Idem] · FE BoardShareDialogSurface · Design Final-Share (private flow) · Tests `BoardSharingIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Direct handler tests; real e2e; one-transaction proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: made a board Private from the Share dialog with the impact count (204) and the reload keeps it; the people added keep access; a Guest cannot open it, commit 33ed8c465.
 
 ### UC-WM-A23 Open a shared board as a Guest
 - Capability: A Board lifecycle (WM-001)
