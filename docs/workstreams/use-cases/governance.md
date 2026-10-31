@@ -444,7 +444,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §21, §23.3, §30.1](../../product/governance.md) GOV-027, GOV-030; WGREQ079.
 - Acceptance: Given a grant at Viewer, When changed to Editor, Then the subject can edit. When the call fails, Then the row returns to Viewer.
 - Evidence: BE `POST /api/v1/resources/{resourceType}/{resourceId}/permissions` (Governance.ResourcePermissions.Grant, `GrantResourcePermissionCommand`) · FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx`, `use-board-sharing.ts`, `frontend/packages/foundation/contracts/src/endpoints/endpoints.ts` (`resourcePermissions`) · Design `Final-Share`, `Final-M-Share` · Tests `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Governance/GrantResourcePermissionWorkspaceMembershipTests.cs`, `GrantResourcePermissionCommandValidatorTests.cs`, `backend/tests/Notrelix.Domain.Tests/Governance/Permissions/ResourcePermissionTests.cs` · Real e2e `frontend/e2e/real/board-sharing.real.e2e.spec.ts`
-- State: HARDENING - Competing changes have no expected version (README §7 line 1 fails).
+- State: HARDENING - Competing changes have no expected version (README §7 line 1 fails). Real-stack check 2026-10-31: the sharing read shows a person with an Observer role as Viewer even with an explicit higher grant, commit be9ce0348.
 
 ### UC-GOV-D04 Remove someone's access to a Board or Page
 - Capability: D Permission assignment (team spec, Governance list)
@@ -628,7 +628,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23.1, §99](../../product/governance.md) GOV-024, GOV-025, GOV-027; WGREQ080-WGREQ086.
 - Acceptance: Given a Private Board and a Space Admin who is not a member, When they read it, Then NotFound. Given the Owner, Then allowed.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · Tests `EffectiveBoardAccessTests`, `ResourceLevelEnforcementMatrixTests`, `BoardManagementLevelTests`, `GovernanceResourcePermissionFlowTests`, `PostgresAccessFactsProviderTests` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` (partial) · Design none
-- State: HARDENING - Real e2e covers one Guest path; Page decisions have a thinner matrix than Board decisions.
+- State: HARDENING - Real e2e covers one Guest path; Page decisions have a thinner matrix than Board decisions. Real-stack check 2026-10-31: a read-only board role (Observer, Guest) caps the person at Viewer over every source except the workspace Owner and a Deny rule; an explicit Editor grant on top of an Observer stays Viewer (stricter reading, owner to confirm), commit be9ce0348.
 
 ### UC-GOV-E02 Space-derived access
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -698,7 +698,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §6](../../product/governance.md) GOV-025; WGREQ086, WGREQ155.
 - Acceptance: Given a Private Board, When a non-member reads it, Then the body equals that of a random id.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` (accepts 403 or 404) · Design none
-- State: HARDENING - The real spec accepts 403 or 404; README §7 requires identical NotFound.
+- State: HARDENING - The real spec accepts 403 or 404; README §7 requires identical NotFound. Real-stack check 2026-10-31: private-to-another-person views and saved filters are decided by a policy fact (PrivateToAnotherPerson) and answer the identical NotFound, commit 1bf4354c9.
 
 ### UC-GOV-E07 Fail closed when facts are missing, stale or unavailable
 - Capability: E Effective permission evaluation (team spec, Governance list)
