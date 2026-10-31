@@ -9,4 +9,10 @@ namespace Notrelix.Application.Features.WorkManagement.Ports.Realtime;
 public interface IBoardRealtimeScopeFacts
 {
     Task<Guid?> ResolveBoardIdAsync(string resourceKind, Guid resourceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The request's data session holds a change that the commit will write. A semantic no-op holds none and
+    /// announces nothing, as it bumps nothing.
+    /// </summary>
+    bool HasPendingChanges();
 }

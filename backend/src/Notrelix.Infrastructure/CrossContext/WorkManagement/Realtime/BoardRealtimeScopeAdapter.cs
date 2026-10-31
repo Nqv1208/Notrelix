@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Ports.Realtime;
@@ -18,16 +19,21 @@ public sealed class BoardRealtimeScopeAdapter : IBoardRealtimeScopeFacts
     private readonly IBoardChildAuthorizationFacts _boardChildren;
     private readonly IWorkManagementDbContext _work;
     private readonly ICollaborationDbContext _collaboration;
+    private readonly ApplicationDbContext _session;
 
     public BoardRealtimeScopeAdapter(
         IBoardChildAuthorizationFacts boardChildren,
         IWorkManagementDbContext work,
-        ICollaborationDbContext collaboration)
+        ICollaborationDbContext collaboration,
+        ApplicationDbContext session)
     {
+        _session = session;
         _boardChildren = boardChildren;
         _work = work;
         _collaboration = collaboration;
     }
+
+    public bool HasPendingChanges() => _session.ChangeTracker.HasChanges();
 
     public async Task<Guid?> ResolveBoardIdAsync(string resourceKind, Guid resourceId, CancellationToken cancellationToken)
     {

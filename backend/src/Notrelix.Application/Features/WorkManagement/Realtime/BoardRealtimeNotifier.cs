@@ -40,6 +40,7 @@ public sealed class BoardRealtimeNotifier : IBoardRealtimeNotifier
     public async Task NotifyResourceAsync(string resourceKind, Guid resourceId, string changeKind, object? response, CancellationToken cancellationToken)
     {
         if (response is Result { Succeeded: false }) return;
+        if (_scope is not null && !_scope.HasPendingChanges()) return;
 
         var boardId = resourceKind == BoardKind
             ? resourceId
