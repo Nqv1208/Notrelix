@@ -138,10 +138,20 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (spaceId is { } id) Guard.NotEmpty(id);
         if (SpaceId == spaceId) return;
 
-        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldSpaceId = SpaceId;
-        SpaceId = spaceId;
-        ApplyAuditUpdate(pending);
+        // A page in the trash is dated by the time it went there: a restore and a delete find the pages trashed
+        // together by that time, so a Space move that carries the page along must not change it.
+        if (Status == PageStatus.Archived)
+        {
+            SpaceId = spaceId;
+        }
+        else
+        {
+            var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+            SpaceId = spaceId;
+            ApplyAuditUpdate(pending);
+        }
+
         IncrementVersion();
         RaiseDomainEvent(new PageSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
     }
