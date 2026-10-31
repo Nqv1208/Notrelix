@@ -3,6 +3,8 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
+using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 
@@ -14,7 +16,9 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 /// ManageTeams for Team entries, ManageSpaces for Space entries, and both when the
 /// invitation names both kinds (<see cref="IRequireAdditionalPermission"/>), because
 /// Team composition and Space members are managed by Workspace Owner/Admin
-/// (GOV-028); there is no handler role check.
+/// (GOV-028); there is no handler role check. A person who is already an Active
+/// member of the Workspace is refused with a conflict and nothing is created or sent;
+/// someone who was removed or suspended may be invited again.
 /// </summary>
 public record InviteMemberCommand(
     Guid WorkspaceId,
@@ -51,6 +55,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     private readonly ISecretEncryptor _secretEncryptor;
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly InvitationInitialEntries _initialEntries;
+    private readonly IMemberEmailDisclosure _memberEmails;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -60,8 +65,10 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         IOneTimeTokenService oneTimeTokenService,
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
-        InvitationInitialEntries initialEntries)
+        InvitationInitialEntries initialEntries,
+        IMemberEmailDisclosure memberEmails)
     {
+        _memberEmails = memberEmails;
         _initialEntries = initialEntries;
         _workspaceContext = workspaceContext;
         _actorLookup = actorLookup;
@@ -90,6 +97,9 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             if (!await _initialEntries.AllTargetsEligibleAsync(request.WorkspaceId, entries, ct))
                 return Result<Guid>.Failure("Every initial team or space must be an active team or space of this workspace.");
         }
+
+        if (await IsActiveMemberAsync(request.WorkspaceId, cleanEmail, ct))
+            return Result<Guid>.Failure(AlreadyMember);
 
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
@@ -139,6 +149,28 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
         return Result<Guid>.Success(invitation.Id);
     }
+
+    // shortcut: reads every active colleague's address through the disclosure rule (the inviter is an
+    // Owner or Admin, who may see them), so the cost grows with the workspace; upgrade to a lookup by
+    // address when workspaces reach tens of thousands of members. An Active Guest is not disclosed and
+    // so is not refused here.
+    private async Task<bool> IsActiveMemberAsync(Guid workspaceId, string email, CancellationToken ct)
+    {
+        var activeIds = await _workspaceContext.WorkspaceMembers
+            .AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId)
+            .Where(WorkspaceMemberRules.ActiveColleague)
+            .Select(m => m.UserId)
+            .ToListAsync(ct);
+
+        var emails = await _memberEmails.ResolveAsync(workspaceId, activeIds, ct);
+        return emails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static readonly ApplicationError AlreadyMember = new(
+        "workspaces.invitation.already-member",
+        "This person is already a member of this workspace.",
+        ApplicationErrorType.Conflict);
 
     private static IReadOnlyList<WorkspaceInvitationInitialEntry> ToDomainEntries(
         IReadOnlyList<InvitationInitialEntryInput>? inputs)
