@@ -246,7 +246,7 @@ Moving a Page changes organization, not identity.
 
 Derived breadcrumb/path state reconciles after move.
 
-A page moves under another parent when the caller may update the page and create under the new parent (or in the Space, for a root page), the parent is an active page of the same workspace, the move carries the page's expected version, and ancestry facts show no cycle. The page and the pages under it follow the Space of the new parent, and when the Space changes the caller must be allowed to edit every page below. A page is never moved to another workspace; content crosses workspaces by export and import or by duplicate.
+A page moves under another parent when the caller may update the page and create under the new parent (or in the Space, for a root page), the parent is an active page of the same workspace, the move carries the page's expected version, and ancestry facts show no cycle. The page and the pages under it follow the Space of the new parent, and when the Space changes the caller must be allowed to edit every page below. Cycle and depth checks follow the chain of parents through deleted pages too, and moves and creates under a parent are serialized per workspace, so two moves that are each valid alone cannot together form a cycle. A page cannot be moved into an archived Space. A page is never moved to another workspace; content crosses workspaces by export and import or by duplicate.
 
 # 17. Page path
 
@@ -349,7 +349,7 @@ Ordering must preserve adjacency, prefix/boundary correctness, concurrency behav
 
 No floating midpoint, array-index durable identity, or client-only ordering authority.
 
-The server makes the sort key. A request names the sibling a Block goes right after (or right before, or neither for last) under a parent; a client key is accepted only next to a named sibling and only when it lies strictly between the siblings the request names, otherwise `400`. Two named siblings must be neighbours. A reorder (`POST /blocks/reorder`) names the version of each Block it moves, applies all moves or none, answers the moved Blocks with their new versions, and announces one Page save when something moved; a stale version is `412` with the current Block and a Block of another Page is `404`.
+The server makes the sort key. A request names the sibling a Block goes right after (or right before, or neither for last) under a parent; a client key is accepted only next to a named sibling and only when it lies strictly between the siblings the request names, otherwise `400`. Two named siblings must be neighbours. A reorder (`POST /blocks/reorder`) names the version of each Block it moves, applies all moves or none, answers the moved Blocks with their new versions, and announces one Page save when something moved; a stale version is `412` with the current Block and a Block of another Page is `404`. Writes that create, move or delete the Blocks of one Page are serialized per Page, and two live sibling Blocks never share a sort key (a database guard judged at commit); a lost race or a pair of siblings on one key answers `409` (`documents.block.position-conflict`).
 
 # 30. Reorder no-op
 
