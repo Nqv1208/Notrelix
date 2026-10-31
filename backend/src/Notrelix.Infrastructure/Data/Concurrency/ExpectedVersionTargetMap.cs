@@ -26,6 +26,7 @@ using Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetCheckl
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.WorkManagement.Checklists.Events;
 using Notrelix.Domain.WorkManagement.Approvals;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -167,6 +168,12 @@ public sealed class ExpectedVersionTargetMap
     // A method, not a static field: Default is initialized before later static fields.
     private static bool ChecklistOwnsItem(AggregateRoot aggregate, Guid itemId) =>
         aggregate is Checklist checklist && checklist.Items.Any(item => item.Id == itemId);
+
+    /// <summary>Like <see cref="ChecklistOwnsItem"/>, and after the item was removed: the removal is recorded as an event.</summary>
+    private static bool ChecklistOwnedOrRemovedItem(AggregateRoot aggregate, Guid itemId) =>
+        ChecklistOwnsItem(aggregate, itemId)
+        || (aggregate is Checklist checklist
+            && checklist.DomainEvents.OfType<ChecklistItemRemovedDomainEvent>().Any(removed => removed.ItemId == itemId));
     private const string FormKind = "work-management.form";
     private const string SavedFilterKind = "work-management.saved-filter";
     private const string WorkspaceKind = "workspaces.workspace";
@@ -236,7 +243,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(MoveChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(UpdateChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(ToggleChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
-        [typeof(DeleteChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(DeleteChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnedOrRemovedItem),
         [typeof(SetChecklistItemDueCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(SetChecklistItemAssigneeCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
 
