@@ -8,11 +8,11 @@ import { wmQueryKeys } from "./keys";
 import { useWorkManagementServices } from "../services";
 
 /** Items of each Status lane a board read brings with it. */
-export const BOARD_FIRST_PAGE = 200;
+export const BOARD_FIRST_PAGE = 50;
 /** Items a "show more" reads from the server. */
-export const BOARD_LANE_PAGE = 200;
+export const BOARD_LANE_PAGE = 50;
 // Pages a refetch reads back to put a lane's loaded items where they were (about 2,000 items).
-const RESTORE_PAGES = 10;
+const RESTORE_PAGES = 40;
 
 /** What the open view needs of the board read. */
 export interface BoardReadNeed {

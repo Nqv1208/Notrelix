@@ -21,6 +21,7 @@ import { wmQueryKeys } from "../queries/keys";
 import { isVersionConflict } from "../queries/use-item-conflict";
 import { useFullBoard } from "../queries/use-full-board";
 import { useBoardReadNeed, useLanePager } from "../queries/board-read";
+import { useBoardLabels } from "../queries/use-board-labels";
 import { laneKeyOf } from "../cache/lane-pages";
 import { useDebounce } from "./use-debounce";
 import {
@@ -199,9 +200,19 @@ export function useBoardKanban(
     () => (fields ? kanbanGroupByFields(fields) : []),
     [fields],
   );
+  // The cards of a paged read hold only some of the board's labels: the filter offers the board's own list.
+  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(paging));
+  const pagedLabels = useMemo(
+    () =>
+      paging && boardLabels.data
+        ? boardLabels.data.map((label) => ({ id: label.id, name: label.name }))
+        : undefined,
+    [paging, boardLabels.data],
+  );
   const labelChoices = useMemo(
-    () => (board ? kanbanFilterChoices(board, groups).labels : []),
-    [board, groups],
+    () =>
+      pagedLabels ?? (board ? kanbanFilterChoices(board, groups).labels : []),
+    [board, groups, pagedLabels],
   );
   const filterFields = useMemo(
     () =>
@@ -285,13 +296,11 @@ export function useBoardKanban(
     paging,
   ]);
 
-  const filterChoices = useMemo(
-    () =>
-      board
-        ? kanbanFilterChoices(board, groups)
-        : { statuses: [], assignees: [], labels: [] },
-    [board, groups],
-  );
+  const filterChoices = useMemo(() => {
+    if (!board) return { statuses: [], assignees: [], labels: [] };
+    const choices = kanbanFilterChoices(board, groups);
+    return pagedLabels ? { ...choices, labels: pagedLabels } : choices;
+  }, [board, groups, pagedLabels]);
   // Ids the board no longer has never narrow the board (a stale URL).
   const appliedFilter = useMemo(
     () => (board ? dropUnknownFilterIds(filter, filterChoices) : filter),
