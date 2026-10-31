@@ -232,8 +232,8 @@ function CreateBody({
   const footer = (
     <div className="relative z-[5] flex flex-none items-center gap-2.5 border-t border-line bg-popover px-6 py-3 max-md:flex-col max-md:items-stretch max-md:gap-2 max-md:px-4">
       {pending ? (
-        <span className="inline-flex items-center gap-1.5 text-[12.5px] text-meta-foreground">
-          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+        <span className="inline-flex items-center gap-1.5 text-[12.5px] leading-[1.45] text-meta-foreground">
+          <Loader2 aria-hidden="true" className="size-[13px] animate-spin" />
           {t.submittingNote}
           <span className="max-md:hidden">{t.submittingNoteMore}</span>
         </span>
