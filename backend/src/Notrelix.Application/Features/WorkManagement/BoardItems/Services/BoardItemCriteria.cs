@@ -103,7 +103,8 @@ public sealed record CriteriaField(
 /// One lane's page of Item ids with its sizes before and after the filter. A lane is what a Status field groups the
 /// board into: one per option, and the empty lane ("" key) for Items whose status is none or no longer an option.
 /// </summary>
-public sealed record BoardItemLanePage(string LaneKey, IReadOnlyList<Guid> ItemIds, int Total, int FilteredTotal);
+/// <param name="NextCursor">Where the lane's next page starts; null when this page holds the rest.</param>
+public sealed record BoardItemLanePage(string LaneKey, IReadOnlyList<Guid> ItemIds, int Total, int FilteredTotal, string? NextCursor);
 
 /// <summary>
 /// Reads the ordered ids of a page of each lane's live root Items under criteria, and the lane sizes. The
@@ -121,32 +122,39 @@ public interface IBoardItemPageReader
         IReadOnlyList<CriteriaField> fields,
         BoardItemCriteria criteria,
         string? onlyLane,
-        int offset,
+        string? cursor,
         int limit,
         CancellationToken cancellationToken);
 }
 
-/// <summary>An opaque page cursor. shortcut: an offset into the ordered group, so a concurrent write can shift a page by a row; the client dedupes by id and a board frame refetches from the first page. Upgrade to a keyset when a board's churn makes that visible.</summary>
+/// <summary>Where a lane page stopped: the sort keys, group place, place and id of its last Item.</summary>
+/// <param name="Sort">The sort the keys belong to; a cursor is refused under another sort.</param>
+public sealed record LaneKeyset(string Sort, IReadOnlyList<string?> Keys, string GroupPosition, string Position, Guid Id);
+
+/// <summary>
+/// An opaque page cursor: the position of the last Item of a page in the lane's order (sort keys, then group place,
+/// place and id). The next page is what follows that position, so a write on another Item cannot shift a page.
+/// </summary>
 public static class PageCursor
 {
-    public static string? Encode(int nextOffset, int total) =>
-        nextOffset >= total ? null : Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"v1:{nextOffset}"))
+    private sealed record Wire(int V, string S, string?[] K, string G, string P, Guid I);
+
+    public static string Encode(LaneKeyset keyset) =>
+        Convert.ToBase64String(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(
+                new Wire(2, keyset.Sort, keyset.Keys.ToArray(), keyset.GroupPosition, keyset.Position, keyset.Id)))
             .TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
-    public static int Decode(string? cursor)
+    public static LaneKeyset? Decode(string? cursor)
     {
-        if (string.IsNullOrEmpty(cursor)) return 0;
+        if (string.IsNullOrEmpty(cursor)) return null;
         try
         {
             var padded = cursor.Replace('-', '+').Replace('_', '/');
             padded = padded.PadRight(padded.Length + (4 - padded.Length % 4) % 4, '=');
-            var text = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(padded));
-            if (text.StartsWith("v1:", StringComparison.Ordinal) && int.TryParse(text.AsSpan(3), out var offset) && offset >= 0)
-            {
-                return offset;
-            }
+            var wire = System.Text.Json.JsonSerializer.Deserialize<Wire>(Convert.FromBase64String(padded));
+            if (wire is { V: 2, S: not null, K: not null, G: not null, P: not null }) return new LaneKeyset(wire.S, wire.K, wire.G, wire.P, wire.I);
         }
-        catch (FormatException) { }
+        catch (Exception ex) when (ex is FormatException or System.Text.Json.JsonException) { }
 
         throw BoardItemCriteria.Refuse("cursor", "The cursor is not valid.");
     }

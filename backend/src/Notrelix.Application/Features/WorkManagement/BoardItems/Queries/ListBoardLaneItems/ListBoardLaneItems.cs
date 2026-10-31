@@ -48,7 +48,6 @@ public class ListBoardLaneItemsQueryHandler : IRequestHandler<ListBoardLaneItems
     public async Task<BoardLaneItemPageDto> Handle(ListBoardLaneItemsQuery request, CancellationToken cancellationToken)
     {
         var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort);
-        var offset = PageCursor.Decode(request.Cursor);
         var limit = PageCursor.ClampLimit(request.Limit);
         Guid? optionId = null;
         if (request.Lane != "none")
@@ -75,7 +74,7 @@ public class ListBoardLaneItemsQueryHandler : IRequestHandler<ListBoardLaneItems
 
         var page = (await _pageReader.ReadAsync(
             request.BoardId, groupIds, laneField, GetFullBoardQueryHandler.CriteriaFieldsOf(fields), criteria,
-            optionId?.ToString() ?? "", offset, limit, cancellationToken))
+            optionId?.ToString() ?? "", request.Cursor, limit, cancellationToken))
             .Single();
 
         var loaded = await _context.BoardItems.AsNoTracking().Where(card => page.ItemIds.Contains(card.Id)).ToListAsync(cancellationToken);
@@ -85,6 +84,6 @@ public class ListBoardLaneItemsQueryHandler : IRequestHandler<ListBoardLaneItems
         var items = summaries.Select(summary => new BoardLaneItemDto(byId[summary.Id].GroupId, summary)).ToList();
 
         return new BoardLaneItemPageDto(
-            optionId, items, PageCursor.Encode(offset + page.ItemIds.Count, page.FilteredTotal), page.Total, page.FilteredTotal);
+            optionId, items, page.NextCursor, page.Total, page.FilteredTotal);
     }
 }

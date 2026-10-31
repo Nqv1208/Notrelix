@@ -120,13 +120,13 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort);
             var laneField = LaneFieldOf(fields);
             var read = await _pageReader.ReadAsync(
-                board.Id, listIds, laneField, CriteriaFieldsOf(fields), criteria, null, 0, PageCursor.ClampLimit(pageSize), cancellationToken);
+                board.Id, listIds, laneField, CriteriaFieldsOf(fields), criteria, null, null, PageCursor.ClampLimit(pageSize), cancellationToken);
             lanes = read
                 .Select(page => new BoardLaneDto(
                     page.LaneKey == "" ? null : Guid.Parse(page.LaneKey),
                     page.Total,
                     page.FilteredTotal,
-                    PageCursor.Encode(page.ItemIds.Count, page.FilteredTotal)))
+                    page.NextCursor))
                 .ToList();
             var pageIds = read.SelectMany(page => page.ItemIds).ToList();
             var loaded = await _context.BoardItems.AsNoTracking().Where(card => pageIds.Contains(card.Id)).ToListAsync(cancellationToken);
