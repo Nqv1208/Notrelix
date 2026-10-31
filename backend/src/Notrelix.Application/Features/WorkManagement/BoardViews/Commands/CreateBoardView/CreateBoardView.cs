@@ -61,6 +61,21 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
     }
 }
 
+/// <summary>A missing or unknown view mode or visibility is a 400 with the field named, not a server error.</summary>
+public sealed class CreateBoardViewCommandValidator : AbstractValidator<CreateBoardViewCommand>
+{
+    public CreateBoardViewCommandValidator()
+    {
+        RuleFor(x => x.ViewMode)
+            .Must(mode => Enum.TryParse<ViewType>(mode, true, out var type) && Enum.IsDefined(type))
+            .WithMessage("'ViewMode' must be a known view type.");
+        RuleFor(x => x.Visibility)
+            .Must(visibility => string.IsNullOrWhiteSpace(visibility)
+                || (Enum.TryParse<BoardViewVisibility>(visibility, true, out var parsed) && Enum.IsDefined(parsed)))
+            .WithMessage("'Visibility' must be a known view visibility.");
+    }
+}
+
 public sealed class CreateBoardViewRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
     : RealtimeChangeMapper<CreateBoardViewCommand, BoardViewDto>(context, time)
 {
