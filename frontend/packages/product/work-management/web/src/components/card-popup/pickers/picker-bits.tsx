@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { useCardPopup } from "../card-popup-context";
+import { useCardPopupCopy } from "../use-card-popup-copy";
 import { PanelHead } from "../popup-ui";
 
 /** The panel's title row with an optional back arrow and the close button. */
@@ -14,7 +14,7 @@ export function PickerHead({
   onBack?: () => void;
   onClose: () => void;
 }) {
-  const { copy } = useCardPopup();
+  const copy = useCardPopupCopy();
   return (
     <PanelHead
       title={title}
