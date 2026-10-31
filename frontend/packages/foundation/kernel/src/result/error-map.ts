@@ -22,7 +22,8 @@ export function mapStatusToKind(status: number): AppErrorKind {
   if (status === 401) return "auth";
   if (status === 403) return "forbidden";
   if (status === 404) return "not_found";
-  if (status === 409) return "conflict";
+  // A stale expected version answers 412: the same conflict as a 409.
+  if (status === 409 || status === 412) return "conflict";
   if (status === 422) return "validation";
   if (status === 429) return "rate_limited";
   if (status >= 500) return "server";

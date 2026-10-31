@@ -28,8 +28,11 @@ export function PopupTitleRow() {
       setDraft(card.title);
       return;
     }
+    // The item write answers with its promise, so a refused or stale save shows in the popup.
     track("title", async () =>
-      callbacks.onRenameTitle(card.id, { title: next }),
+      (callbacks.onUpdateItem ?? callbacks.onRenameTitle)(card.id, {
+        title: next,
+      }),
     );
   };
   const invalid = touched && draft.trim() === "";
