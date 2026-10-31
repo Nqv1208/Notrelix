@@ -17,7 +17,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 /// invitation names both kinds (<see cref="IRequireAdditionalPermission"/>), because
 /// Team composition and Space members are managed by Workspace Owner/Admin
 /// (GOV-028); there is no handler role check. A person who is already an Active
-/// member of the Workspace is refused with a conflict and nothing is created or sent;
+/// member of the Workspace is refused with a coded conflict (409) and nothing is created or sent;
 /// someone who was removed or suspended may be invited again.
 /// </summary>
 public record InviteMemberCommand(
@@ -99,7 +99,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         }
 
         if (await IsActiveMemberAsync(request.WorkspaceId, cleanEmail, ct))
-            return Result<Guid>.Failure(AlreadyMember);
+            throw new ConflictException("This person is already a member of this workspace.", AlreadyMemberCode);
 
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
@@ -167,10 +167,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         return emails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static readonly ApplicationError AlreadyMember = new(
-        "workspaces.invitation.already-member",
-        "This person is already a member of this workspace.",
-        ApplicationErrorType.Conflict);
+    private const string AlreadyMemberCode = "workspaces.invitation.already-member";
 
     private static IReadOnlyList<WorkspaceInvitationInitialEntry> ToDomainEntries(
         IReadOnlyList<InvitationInitialEntryInput>? inputs)

@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Messaging;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
@@ -49,11 +48,10 @@ public class InviteMemberActiveMemberTests : WorkspaceHandlerTestBase
     {
         SetupMembers(CreateMember(WorkspaceRole.Member, _linhId));
 
-        var result = await Invite("  Linh@Example.com ");
+        var act = () => Invite("  Linh@Example.com ");
 
-        result.Succeeded.Should().BeFalse();
-        result.TypedErrors.Should().ContainSingle(e =>
-            e.Code == "workspaces.invitation.already-member" && e.Type == ApplicationErrorType.Conflict);
+        (await act.Should().ThrowAsync<ConflictException>())
+            .Which.ErrorCode.Should().Be("workspaces.invitation.already-member");
         _published.Should().BeEmpty();
         DbContextMock.Verify(c => c.WorkspaceInvitations.Add(It.IsAny<WorkspaceInvitation>()), Times.Never);
     }
