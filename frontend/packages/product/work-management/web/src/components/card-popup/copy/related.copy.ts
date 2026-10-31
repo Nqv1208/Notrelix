@@ -96,6 +96,7 @@ export const en = {
   },
   comments: {
     showDetails: "Show details",
+    more: "Show more comments",
     composerPlaceholder: "Write a comment…",
     composerLabel: "Write a comment",
     send: "Comment",
@@ -212,6 +213,7 @@ export const vi: RelatedCopy = {
   },
   comments: {
     showDetails: "Hiện chi tiết",
+    more: "Xem thêm bình luận",
     composerPlaceholder: "Viết bình luận…",
     composerLabel: "Viết bình luận",
     send: "Bình luận",

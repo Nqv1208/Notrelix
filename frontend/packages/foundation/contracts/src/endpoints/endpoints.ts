@@ -291,6 +291,7 @@ export const endpoints = {
     fieldValue: (itemId: string, fieldId: string) =>
       `/board-items/${itemId}/values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
+    commentsPage: (itemId: string) => `/board-items/${itemId}/comments/page`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
     attachmentFiles: (itemId: string) =>
       `/board-items/${itemId}/attachments/files`,

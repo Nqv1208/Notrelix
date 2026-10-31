@@ -135,6 +135,11 @@ export interface ItemSheetMark {
 export interface TaskDetailData {
   readonly updates: readonly CardUpdate[];
   readonly updatesLoading: boolean;
+  /** More comments wait on the server: "Show more" reads the next page. */
+  readonly updatesMore?: {
+    readonly loading: boolean;
+    readonly onMore: () => void;
+  };
   readonly files: readonly CardFile[];
   readonly filesLoading: boolean;
   readonly activity: readonly CardActivity[];

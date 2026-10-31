@@ -506,6 +506,15 @@ export function CommentsColumn() {
               />
             ),
           )}
+          {data.updatesMore ? (
+            <SmallBtn
+              className="self-center max-md:h-11"
+              disabled={data.updatesMore.loading}
+              onClick={data.updatesMore.onMore}
+            >
+              {data.updatesMore.loading ? t.loading : t.more}
+            </SmallBtn>
+          ) : null}
         </div>
       )}
     </>

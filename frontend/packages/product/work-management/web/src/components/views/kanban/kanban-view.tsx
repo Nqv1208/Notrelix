@@ -6,13 +6,7 @@ import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
@@ -1401,6 +1395,12 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          updatesMore: updates.hasNextPage
+            ? {
+                loading: updates.isFetchingNextPage,
+                onMore: () => void updates.fetchNextPage(),
+              }
+            : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,
