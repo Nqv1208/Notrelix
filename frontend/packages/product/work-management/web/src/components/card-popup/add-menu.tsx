@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -339,11 +339,13 @@ function MenuBody({ onClose }: { onClose: () => void }) {
       </>
     );
     return entry.wrap ? (
-      entry.wrap((extra) => (
-        <button {...props} {...extra}>
-          {body}
-        </button>
-      ))
+      <Fragment key={entry.id}>
+        {entry.wrap((extra) => (
+          <button {...props} {...extra}>
+            {body}
+          </button>
+        ))}
+      </Fragment>
     ) : (
       <button key={entry.id} {...props}>
         {body}

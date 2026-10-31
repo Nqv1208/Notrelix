@@ -115,9 +115,11 @@ export function ChipsRow() {
     );
   // Each group of the first row appears once the card holds something for it; the quick row adds it.
   const hasDates = Boolean(card.startDate ?? card.dueAt ?? card.dueDate);
+  // Priority shows once it has a value, or once the "+ Thêm" menu put it on the card.
   const hasPriority =
     fields.priority !== undefined &&
-    faceFieldText(card, fields.priority) !== null;
+    (faceFieldText(card, fields.priority) !== null ||
+      addedFieldIds.includes(fields.priority.id));
   const showFirstRow =
     card.members.length > 0 ||
     card.labels.length > 0 ||

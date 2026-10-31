@@ -64,6 +64,32 @@ export function findPriorityField(
 }
 
 /**
+ * The item read keeps Status and Priority in their own columns, not in `fieldValues`; this puts them
+ * back under the board's fields so an editor or a chip reads one place.
+ */
+export function withReservedFieldValues<T extends Card>(
+  card: T,
+  fields: readonly FieldDefinition[],
+): T {
+  const statusField = findStatusField(fields);
+  const priorityField = findPriorityField(fields);
+  const fieldValues = { ...card.fieldValues };
+  if (
+    statusField &&
+    card.statusOptionId &&
+    fieldValues[statusField.id] === undefined
+  )
+    fieldValues[statusField.id] = card.statusOptionId;
+  if (
+    priorityField &&
+    card.priorityOptionId &&
+    fieldValues[priorityField.id] === undefined
+  )
+    fieldValues[priorityField.id] = card.priorityOptionId;
+  return { ...card, fieldValues };
+}
+
+/**
  * Maps a priority option's name to the card's priority. Vietnamese and English
  * names, case- and diacritics-insensitive; anything else has no priority.
  */

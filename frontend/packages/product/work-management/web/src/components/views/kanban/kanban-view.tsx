@@ -46,6 +46,7 @@ import {
   groupCardsByField,
   groupableFields,
   resolveKanbanSettings,
+  withReservedFieldValues,
   serializeCompoundFilter,
   type FilterField,
   type Board,
@@ -1191,8 +1192,13 @@ export function KanbanSelectedItem({
     event.preventDefault();
     onRestoreFocus(lastShown.current?.id ?? cardId);
   };
+  const withValues = useMemo(
+    () =>
+      shown ? withReservedFieldValues(shown, board.fieldDefinitions) : null,
+    [shown, board.fieldDefinitions],
+  );
 
-  if (!shown)
+  if (!withValues)
     return (
       <CardPopupSurface
         status={
@@ -1206,7 +1212,7 @@ export function KanbanSelectedItem({
   return (
     <KanbanSelectedItemReady
       board={board}
-      card={shown}
+      card={withValues}
       onClose={onClose}
       onCloseAutoFocus={restore}
       {...rest}
