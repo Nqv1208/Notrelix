@@ -94,6 +94,26 @@ public sealed class PageSubtreeStore : IPageSubtreeStore
         return ancestry;
     }
 
+    public async Task<int> SubtreeDepthAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
+    {
+        var depth = 1;
+        var seen = new HashSet<Guid> { pageId };
+        var frontier = new List<Guid> { pageId };
+        while (depth <= PageTreeRules.MaxDepth)
+        {
+            var parents = frontier;
+            var children = await _context.Pages.AsNoTracking()
+                .Where(p => p.WorkspaceId == workspaceId && p.ParentId != null && parents.Contains(p.ParentId.Value))
+                .Select(p => p.Id)
+                .ToListAsync(cancellationToken);
+            frontier = children.Where(seen.Add).ToList();
+            if (frontier.Count == 0) break;
+            depth++;
+        }
+
+        return depth;
+    }
+
     public async Task<IReadOnlyList<Page>> LoadDescendantsAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
     {
         var descendants = new List<Page>();

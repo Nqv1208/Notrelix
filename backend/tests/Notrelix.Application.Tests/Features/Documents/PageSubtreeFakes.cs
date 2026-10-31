@@ -29,6 +29,15 @@ internal sealed class InMemoryPageSubtreeStore : IPageSubtreeStore
         return Task.FromResult<IReadOnlyList<Page>>(found);
     }
 
+    public async Task<int> SubtreeDepthAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken)
+    {
+        var descendants = await LoadDescendantsAsync(workspaceId, pageId, cancellationToken);
+        var level = new Dictionary<Guid, int> { [pageId] = 1 };
+        foreach (var descendant in descendants)
+            level[descendant.Id] = level.GetValueOrDefault(descendant.ParentId!.Value, 1) + 1;
+        return level.Values.Max();
+    }
+
     public async Task<int> DepthOfAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken) =>
         (await LoadAncestryAsync(workspaceId, pageId, cancellationToken)).Count;
 

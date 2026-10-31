@@ -147,6 +147,42 @@ public sealed class PageTreeShapeIntegrationTests : IAsyncLifetime
             .Should().Be(DocumentRuleCodes.Documents_PageTree_MaxDepthExceeded);
     }
 
+    // ── The nesting limit holds for a move inside one Space ───────────────
+
+    [Theory]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    public async Task MovingASubtreeUnderADeepParent_KeepsTheNestingLimit_CountingTrashedPages(int subtreeLevels, bool allowed)
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        Guid? deep = null;
+        for (var level = 1; level <= 8; level++) deep = await _host.SeedPageAsync(stack, $"T{level}", deep);
+        var root = await _host.SeedPageAsync(stack, "S");
+        var below = root;
+        for (var level = 2; level <= subtreeLevels; level++)
+        {
+            // The deepest page of the subtree is in the trash: it keeps its place and still counts.
+            var trashed = level == subtreeLevels;
+            below = await _host.SeedPageAsync(stack, $"S{level}", below, trashed ? page => page.Archive(stack.OwnerId, OrgTreeTestHost.BaseTime) : null);
+        }
+
+        var version = await DocumentsFlows.PageVersionAsync(_host, root);
+        var act = () => OrgTreeTestHost.SendAsync(owner, new MovePageCommand(root, deep, version));
+
+        if (allowed)
+        {
+            await act();
+            (await DocumentsFlows.ParentOfAsync(_host, root)).Should().Be(deep);
+        }
+        else
+        {
+            (await act.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode
+                .Should().Be(DocumentRuleCodes.Documents_PageTree_MaxDepthExceeded);
+            (await DocumentsFlows.ParentOfAsync(_host, root)).Should().BeNull();
+        }
+    }
+
     // ── An archived Space takes no page ───────────────────────────────────
 
     [Fact]

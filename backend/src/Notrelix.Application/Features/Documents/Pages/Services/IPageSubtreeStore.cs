@@ -21,6 +21,12 @@ public interface IPageSubtreeStore
     Task<IReadOnlyList<Page>> LoadDescendantsAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Levels from the page down to its deepest descendant, the page itself counting as 1. Reads only the
+    /// shape (ids and parents), nothing is tracked; a trashed descendant keeps its place in the tree and counts.
+    /// </summary>
+    Task<int> SubtreeDepthAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The page's level in the tree (a root page is 1), deleted ancestors counting, walking up at most one level past
     /// <see cref="Notrelix.Domain.Documents.Rules.PageTreeRules.MaxDepth"/>: a deeper answer is only "too deep".
     /// </summary>

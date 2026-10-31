@@ -65,6 +65,9 @@ public class MovePageCommandHandler : IRequestHandler<MovePageCommand, Result>
                 throw new NotFoundException(nameof(Page), parentId);
 
             await _placement.AuthorizeParentAsync(workspaceId, parentId, ct);
+            // A page cannot be moved into an archived Space (the same rule creating or restoring a page there has).
+            if (parent.SpaceId is { } parentSpace && parent.SpaceId != page.SpaceId)
+                await _placement.EnsureActiveTargetAsync(workspaceId, parentSpace, ct);
             foreach (var (id, above) in await _pages.LoadAncestryAsync(workspaceId, parentId, ct)) ancestry[id] = above;
             parentDepth = ancestry.Count;
             newSpaceId = parent.SpaceId;
@@ -76,15 +79,23 @@ public class MovePageCommandHandler : IRequestHandler<MovePageCommand, Result>
             await _placement.AuthorizeTargetAsync(workspaceId, page.SpaceId, ct);
         }
 
-        var descendants = (await _pages.LoadDescendantsAsync(workspaceId, page.Id, ct))
-            .Where(descendant => !descendant.IsDeleted)
-            .ToList();
-        PageTreeRules.EnsureCanNestUnder(parentDepth, SubtreeDepth(page, descendants));
-
-        // Moving into another Space changes who can see the pages below: each must be the caller's to edit.
+        // Moving into another Space changes who can see the pages below: each must be the caller's to edit, and
+        // each follows the Space, so they are loaded for writing. Within one Space only the depth of the
+        // subtree is needed, and it is read without loading the pages.
         var spaceChanged = newSpaceId != page.SpaceId;
+        var descendants = new List<Page>();
         if (spaceChanged)
+        {
+            descendants = (await _pages.LoadDescendantsAsync(workspaceId, page.Id, ct))
+                .Where(descendant => !descendant.IsDeleted)
+                .ToList();
+            PageTreeRules.EnsureCanNestUnder(parentDepth, SubtreeDepth(page, descendants));
             await _subtree.EnsureAllowedAsync(descendants.Select(descendant => descendant.Id), id => new MovePageCommand(id, null, 1), ct);
+        }
+        else
+        {
+            PageTreeRules.EnsureCanNestUnder(parentDepth, await _pages.SubtreeDepthAsync(workspaceId, page.Id, ct));
+        }
 
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
