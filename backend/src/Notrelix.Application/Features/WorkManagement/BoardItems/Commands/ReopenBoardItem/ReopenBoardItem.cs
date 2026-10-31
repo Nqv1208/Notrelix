@@ -22,15 +22,24 @@ public class ReopenBoardItemCommandHandler : IRequestHandler<ReopenBoardItemComm
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public ReopenBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public ReopenBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(ReopenBoardItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(ReopenBoardItemCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
             .Include(i => i.FieldValues)

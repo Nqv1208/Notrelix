@@ -1977,6 +1977,7 @@ Contract:
 - `streamKey` identifies one stream (`{namespace}:{kind}:{id:N}`). `streamVersion` is a per-stream counter allocated atomically with publication, so a client that sees anything other than previous + 1 (gap, duplicate, counter reset after Redis loss) must refetch. The producer's resource version is carried separately as `resourceVersion` and is informational.
 - There is no replay buffer. A slow consumer, heartbeat timeout, expiry or revocation closes the socket; the client reconnects, resubscribes and refetches.
 - Streams not yet routable by scope (item-level and view-level topics that carry no board identity) are not delivered by the gateway until their producers publish on a board or workspace stream.
+- Work Management announces a change of anything on a Board through `IBoardRealtimeNotifier` (Public contract): a handler calls it once after its mutation, and one notify-only `RealtimeResourceChangedV1` (topic `board`/`Board`, resource = the board, `changeKind` = the command name, empty payload) is enrolled in the request's outbox transaction. The Board is resolved by the Work-owned `IBoardRealtimeScopeFacts` port (Board children through the Board-child authorization fact; approval requests, comments and attachments through their item target). A failed `Result` and a resource on no Board (a page comment) announce nothing. `WorkManagement` write commands must call the notifier or be named in `BoardRealtimeCoverageArchitectureTests`.
 
 ---
 

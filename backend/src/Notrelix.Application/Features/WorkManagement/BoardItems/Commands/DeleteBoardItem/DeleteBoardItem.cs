@@ -15,18 +15,28 @@ public class DeleteBoardItemCommandHandler : IRequestHandler<DeleteBoardItemComm
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public DeleteBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider timeProvider)
+        IDateTimeProvider timeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(DeleteBoardItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(DeleteBoardItemCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);

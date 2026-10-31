@@ -20,8 +20,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IResourceVisibility _visibility;
-    private readonly IRealtimeChangeMapper<AssignBoardItemMemberCommand, Result>? _realtime;
-    private readonly IIntegrationEventCollector? _events;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public AssignBoardItemMemberCommandHandler(
         IWorkManagementDbContext context,
@@ -29,19 +28,24 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess,
         IResourceVisibility visibility,
-        IRealtimeChangeMapper<AssignBoardItemMemberCommand, Result>? realtime = null,
-        IIntegrationEventCollector? events = null)
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccess = workspaceAccess;
         _visibility = visibility;
-        _realtime = realtime;
-        _events = events;
     }
 
     public async Task<Result> Handle(AssignBoardItemMemberCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(AssignBoardItemMemberCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
@@ -73,15 +77,6 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
 
         _context.BoardItemMembers.Add(member);
         var response = Result.Success();
-        if (_realtime is not null && _events is not null)
-            _events.Add(_realtime.Map(request, response, card.Version));
         return response;
     }
-}
-
-public sealed class AssignBoardItemMemberRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
-    : RealtimeChangeMapper<AssignBoardItemMemberCommand, Result>(context, time)
-{
-    public override RealtimeResourceChangedV1 Map(AssignBoardItemMemberCommand request, Result response, long streamVersion) =>
-        Create("board", "BoardItem", request.BoardItemId, "AssignBoardItemMember", response, streamVersion);
 }

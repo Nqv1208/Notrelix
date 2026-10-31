@@ -21,9 +21,17 @@ public class CopyChecklistCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IDateTimeProvider clock,
-    WorkPlacementResolver placement) : IRequestHandler<CopyChecklistCommand, Result<Guid>>
+    WorkPlacementResolver placement,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<CopyChecklistCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(CopyChecklistCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CopyChecklistCommand request, CancellationToken ct)
     {
         var item = await context.BoardItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);

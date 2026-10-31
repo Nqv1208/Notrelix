@@ -21,9 +21,17 @@ public record SetBoardItemVoteCommand(Guid BoardItemId, Guid FieldId, bool Voted
 public class SetBoardItemVoteCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
-    IDateTimeProvider clock) : IRequestHandler<SetBoardItemVoteCommand, Result<BoardItemVoteStateDto>>
+    IDateTimeProvider clock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<SetBoardItemVoteCommand, Result<BoardItemVoteStateDto>>
 {
     public async Task<Result<BoardItemVoteStateDto>> Handle(SetBoardItemVoteCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<BoardItemVoteStateDto>> HandleCore(SetBoardItemVoteCommand request, CancellationToken ct)
     {
         var item = await context.BoardItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);

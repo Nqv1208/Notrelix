@@ -13,9 +13,22 @@ public record UnassignBoardItemMemberCommand(Guid BoardItemId, Guid UserId) : IC
 public class UnassignBoardItemMemberCommandHandler : IRequestHandler<UnassignBoardItemMemberCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    public UnassignBoardItemMemberCommandHandler(IWorkManagementDbContext context) => _context = context;
+    private readonly IBoardRealtimeNotifier? _realtime;
+
+    public UnassignBoardItemMemberCommandHandler(IWorkManagementDbContext context, IBoardRealtimeNotifier? realtime = null)
+    {
+        _context = context;
+        _realtime = realtime;
+    }
 
     public async Task<Result> Handle(UnassignBoardItemMemberCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UnassignBoardItemMemberCommand request, CancellationToken ct)
     {
         var member = await _context.BoardItemMembers
             .FirstOrDefaultAsync(m => m.ItemId == request.BoardItemId && m.UserId == request.UserId, ct);

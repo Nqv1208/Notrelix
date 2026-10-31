@@ -21,9 +21,17 @@ public class SetChecklistItemAssigneeCommandHandler(
     ICurrentUser currentUser,
     IWorkspaceAccessResolver workspaceAccess,
     IResourceVisibility visibility,
-    IDateTimeProvider clock) : IRequestHandler<SetChecklistItemAssigneeCommand, Result>
+    IDateTimeProvider clock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<SetChecklistItemAssigneeCommand, Result>
 {
     public async Task<Result> Handle(SetChecklistItemAssigneeCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(SetChecklistItemAssigneeCommand request, CancellationToken ct)
     {
         var checklist = await ChecklistAggregateLoader.LoadOwningAsync(context, request.ItemId, ct);
 

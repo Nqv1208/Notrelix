@@ -22,9 +22,11 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
     private readonly IBoardItemKeyAllocator _keys;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys)
+    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _keys = keys;
         _context = context;
         _requestContext = requestContext;
@@ -33,6 +35,13 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardGroupCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(DuplicateBoardGroupCommand request, CancellationToken ct)
     {
         var source = await _context.BoardGroups
             .AsNoTracking()

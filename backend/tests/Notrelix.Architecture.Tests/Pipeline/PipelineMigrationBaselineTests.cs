@@ -65,7 +65,7 @@ public sealed class PipelineMigrationBaselineTests : ArchitectureTestBase
             .ToArray();
 
         var realtimeRequests = baseline.Where(entry => entry.Kind == "realtime-request").ToArray();
-        realtimeRequests.Should().HaveCount(8);
+        realtimeRequests.Should().HaveCount(5);
         foreach (var entry in realtimeRequests)
             mapperRequests.Count(name => name == entry.RequestType).Should().Be(1);
 

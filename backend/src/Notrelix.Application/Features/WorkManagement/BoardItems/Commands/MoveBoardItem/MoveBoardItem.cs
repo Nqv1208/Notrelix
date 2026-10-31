@@ -19,22 +19,26 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
 {
     private readonly MoveBoardItemUseCase _useCase;
     private readonly ICurrentUser _currentUser;
-    private readonly IRealtimeChangeMapper<MoveBoardItemCommand, BoardItemSlimDto>? _realtime;
-    private readonly IIntegrationEventCollector? _events;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveBoardItemCommandHandler(
         MoveBoardItemUseCase useCase,
         ICurrentUser currentUser,
-        IRealtimeChangeMapper<MoveBoardItemCommand, BoardItemSlimDto>? realtime = null,
-        IIntegrationEventCollector? events = null)
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _useCase = useCase;
         _currentUser = currentUser;
-        _realtime = realtime;
-        _events = events;
     }
 
     public async Task<BoardItemSlimDto> Handle(MoveBoardItemCommand request, CancellationToken cancellationToken)
+    {
+        var response = await HandleCore(request, cancellationToken);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, cancellationToken);
+        return response;
+    }
+
+    private async Task<BoardItemSlimDto> HandleCore(MoveBoardItemCommand request, CancellationToken cancellationToken)
     {
         var outcome = await _useCase.MoveAsync(
             request.ItemId,
@@ -42,16 +46,6 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
             new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
             _currentUser.UserId,
             cancellationToken);
-
-        if (_realtime is not null && _events is not null)
-            _events.Add(_realtime.Map(request, outcome.Item, outcome.Version));
         return outcome.Item;
     }
-}
-
-public sealed class MoveBoardItemRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
-    : RealtimeChangeMapper<MoveBoardItemCommand, BoardItemSlimDto>(context, time)
-{
-    public override RealtimeResourceChangedV1 Map(MoveBoardItemCommand request, BoardItemSlimDto response, long streamVersion) =>
-        Create("board", "Board", request.ItemId, "MoveBoardItem", response, streamVersion);
 }

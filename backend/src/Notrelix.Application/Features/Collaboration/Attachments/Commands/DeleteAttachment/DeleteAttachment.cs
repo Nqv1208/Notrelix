@@ -18,13 +18,16 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICommentTargetAccess _access;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public DeleteAttachmentCommandHandler(
         ICollaborationDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        ICommentTargetAccess access)
+        ICommentTargetAccess access,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -32,6 +35,13 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
     }
 
     public async Task<Result> Handle(DeleteAttachmentCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(DeleteAttachmentCommand request, CancellationToken ct)
     {
         // This use case is authorised as a board item attachment; an attachment of any other
         // target (a Documents page) is removed only through that target's own use case.

@@ -28,13 +28,16 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
     private readonly IBoardSpacePlacement _placement;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveBoardToSpaceCommandHandler(
         IWorkManagementDbContext context,
         IBoardSpacePlacement placement,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _placement = placement;
         _requestContext = requestContext;
@@ -42,6 +45,13 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
     }
 
     public async Task<Result> Handle(MoveBoardToSpaceCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(MoveBoardToSpaceCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct)
             ?? throw new NotFoundException(nameof(BoardEntity), request.BoardId);

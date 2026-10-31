@@ -15,9 +15,17 @@ public record SetBoardItemRepeatCommand(Guid BoardItemId, string? Rule, long Exp
 public class SetBoardItemRepeatCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
-    IDateTimeProvider clock) : IRequestHandler<SetBoardItemRepeatCommand, Result>
+    IDateTimeProvider clock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<SetBoardItemRepeatCommand, Result>
 {
     public async Task<Result> Handle(SetBoardItemRepeatCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(SetBoardItemRepeatCommand request, CancellationToken ct)
     {
         var item = await context.BoardItems.FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);

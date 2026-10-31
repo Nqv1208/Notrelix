@@ -18,9 +18,17 @@ public record SetBoardItemReminderCommand(Guid BoardItemId, int OffsetMinutes, l
 public class SetBoardItemReminderCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
-    IDateTimeProvider clock) : IRequestHandler<SetBoardItemReminderCommand, Result>
+    IDateTimeProvider clock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<SetBoardItemReminderCommand, Result>
 {
     public async Task<Result> Handle(SetBoardItemReminderCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(SetBoardItemReminderCommand request, CancellationToken ct)
     {
         var item = await context.BoardItems.FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
