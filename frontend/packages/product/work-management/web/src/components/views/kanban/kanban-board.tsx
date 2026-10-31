@@ -44,6 +44,7 @@ import {
   kanbanLaneKey,
   laneKeyOfCard,
   moveCardByKey,
+  SILENT_DND_ANNOUNCEMENTS,
   moveCardInArrangement,
   type KanbanArrangement,
   type KanbanMoveDirection,
@@ -475,6 +476,7 @@ export function KanbanBoard({
         acceleration: 12,
         interval: 5,
       }}
+      accessibility={{ announcements: SILENT_DND_ANNOUNCEMENTS }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}

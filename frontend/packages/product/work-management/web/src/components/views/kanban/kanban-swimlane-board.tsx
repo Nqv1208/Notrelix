@@ -34,7 +34,10 @@ import { KanbanCard, KanbanCardOverlay } from "./kanban-card";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import type { KanbanCardSelection } from "./kanban-selection";
 import type { KanbanCardCopy } from "./kanban-card.copy";
-import type { KanbanMoveDirection } from "./kanban-dnd";
+import {
+  SILENT_DND_ANNOUNCEMENTS,
+  type KanbanMoveDirection,
+} from "./kanban-dnd";
 
 const CELL_TYPE = "swimlane-cell";
 const keyOf = (optionId: string | null) => optionId ?? "none";
@@ -307,6 +310,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
     <DndContext
       sensors={sensors}
       collisionDetection={collision}
+      accessibility={{ announcements: SILENT_DND_ANNOUNCEMENTS }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
