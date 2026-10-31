@@ -274,7 +274,7 @@ function EventEntry({
 }
 
 function Composer() {
-  const { card, data, callbacks, capabilities, copy, readOnly } =
+  const { card, data, callbacks, capabilities, copy, readOnly, mode } =
     useCardPopup();
   const t = copy.related.comments;
   const [open, setOpen] = useState(false);
@@ -309,6 +309,16 @@ function Composer() {
     copy: pageCopy,
     viewerUserId: data.viewerUserId,
   });
+  // A card that is not created yet has no comments: the composer waits, as the artboard draws it.
+  if (mode === "create")
+    return (
+      <div
+        aria-disabled="true"
+        className="box-border flex h-11 w-full items-center rounded-[10px] border border-dashed border-line-strong bg-state-hover-strong px-3.5 text-[14px] text-meta-foreground"
+      >
+        {t.composerPlaceholder}
+      </div>
+    );
   if (disabled)
     return (
       <div
@@ -432,7 +442,7 @@ export function CommentsColumn() {
         <span className="text-muted-foreground">
           <MessageCircle aria-hidden="true" className="size-5" />
         </span>
-        <h3 className="m-0 flex-1 text-[16px] font-[650]">
+        <h3 className="m-0 flex-1 text-[16px] leading-[1.45] font-[650]">
           {copy.shell.comments}
         </h3>
         <SmallBtn
@@ -450,8 +460,10 @@ export function CommentsColumn() {
           <span className="grid size-11 place-items-center rounded-full bg-state-hover-strong text-meta-foreground">
             <MessageSquareOff aria-hidden="true" className="size-5" />
           </span>
-          <b className="text-[14px] text-foreground">{t.createTitle}</b>
-          <span>{t.createBody}</span>
+          <b className="text-[14px] leading-[1.45] text-foreground">
+            {t.createTitle}
+          </b>
+          <span className="leading-[1.45]">{t.createBody}</span>
         </div>
       ) : loading && feed.length === 0 ? (
         <div
