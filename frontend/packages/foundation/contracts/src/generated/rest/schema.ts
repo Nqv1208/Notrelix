@@ -3267,57 +3267,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/boards/{boardId}/preferences/{viewId}/filters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update board preference filters for current user */
-        patch: operations["WorkManagement.BoardPreferences.UpdateFilters"];
-        trace?: never;
-    };
-    "/api/v1/boards/{boardId}/preferences/{viewId}/sorts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update board preference sorts for current user */
-        patch: operations["WorkManagement.BoardPreferences.UpdateSorts"];
-        trace?: never;
-    };
-    "/api/v1/boards/{boardId}/preferences/{viewId}/group": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update board preference group for current user */
-        patch: operations["WorkManagement.BoardPreferences.UpdateGroup"];
-        trace?: never;
-    };
     "/api/v1/workspaces/{workspaceId}/boards": {
         parameters: {
             query?: never;
@@ -6233,20 +6182,8 @@ export interface components {
             expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.CreateOrUpdateBoardPreferenceRequest": {
-            filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
-            sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
-            group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
             criteria?: string | null;
             columns?: string | null;
-        };
-        "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest": {
-            filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
-        };
-        "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceGroupRequest": {
-            group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
-        };
-        "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceSortsRequest": {
-            sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.ArchiveBoardViewRequest": {
             /** Format: int64 */
@@ -16370,87 +16307,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.CreateOrUpdateBoardPreferenceRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-        };
-    };
-    "WorkManagement.BoardPreferences.UpdateFilters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                boardId: string;
-                viewId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-        };
-    };
-    "WorkManagement.BoardPreferences.UpdateSorts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                boardId: string;
-                viewId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceSortsRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-        };
-    };
-    "WorkManagement.BoardPreferences.UpdateGroup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                boardId: string;
-                viewId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceGroupRequest"];
             };
         };
         responses: {

@@ -23,7 +23,7 @@ public static class CreateOrUpdateBoardPreferenceEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateOrUpdateBoardPreferenceCommand(boardId, viewId, body.Filters, body.Sorts, body.Group, body.Criteria, body.Columns),
+            new CreateOrUpdateBoardPreferenceCommand(boardId, viewId, body.Criteria, body.Columns),
             cancellationToken);
         return result.ToNoContentResult();
     }
