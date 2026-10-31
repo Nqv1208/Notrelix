@@ -313,6 +313,14 @@ export function useBoardKanban(
     );
     return card ? { card } : undefined;
   };
+  // Who last changed a card, read from the cache after a refetch (the other person once a write lost).
+  const lastEditorOf = (cardId: string) =>
+    workspaceId
+      ? findBoardCard(
+          queryClient.getQueryData(wmQueryKeys.fullBoard(workspaceId, boardId)),
+          cardId,
+        )?.updatedByName ?? undefined
+      : undefined;
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>
       onWriteError?.({
@@ -364,6 +372,7 @@ export function useBoardKanban(
     groups,
     /** Reads the board again (the "Tải lại" of a conflict). */
     refetch,
+    lastEditorOf,
     statusField,
     groupByField,
     /** The person or date field the view is grouped by, when it is one (lanes are then built from card values). */

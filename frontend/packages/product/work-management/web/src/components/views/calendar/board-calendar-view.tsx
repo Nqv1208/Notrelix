@@ -264,13 +264,22 @@ export function BoardCalendarView({
         onError: (error: unknown) => {
           if (isConflict(error)) {
             setUnsavedDays(card.id, null);
-            toast.error(fillCopy(text.conflict, { key: nameOf(card) }), {
-              id: toastId,
-              description: text.conflictNote,
-              action: {
-                label: text.reload,
-                onClick: () => void kanban.refetch(),
-              },
+            // The refetch brings the other person's version, which says who changed it.
+            void Promise.resolve(kanban.refetch()).then(() => {
+              const actor = kanban.lastEditorOf(card.id);
+              toast.error(
+                actor
+                  ? fillCopy(text.conflictBy, { actor, key: nameOf(card) })
+                  : fillCopy(text.conflict, { key: nameOf(card) }),
+                {
+                  id: toastId,
+                  description: text.conflictNote,
+                  action: {
+                    label: text.reload,
+                    onClick: () => void kanban.refetch(),
+                  },
+                },
+              );
             });
             return;
           }
