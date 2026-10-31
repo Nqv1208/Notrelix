@@ -128,7 +128,7 @@ export function ChipsRow() {
   return (
     <div className="box-border flex flex-col gap-3 pt-3 pr-4 pl-4 md:pr-6 md:pl-[60px]">
       {showFirstRow ? (
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-3 md:gap-x-4">
           {card.members.length > 0 ? (
             <FieldGroup label={t.assignees}>
               <div className="flex min-h-11 items-center md:min-h-9">
@@ -206,7 +206,7 @@ export function ChipsRow() {
         </div>
       ) : null}
       {pinned.length > 0 || slots.chips ? (
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-3 md:gap-x-4">
           {pinned.map((field) => (
             <FieldGroup key={field.id} label={field.name}>
               <div className="flex items-center gap-2">
