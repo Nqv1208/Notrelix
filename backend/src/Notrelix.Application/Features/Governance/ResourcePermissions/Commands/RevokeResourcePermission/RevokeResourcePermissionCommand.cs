@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.Public.Access;
@@ -39,14 +40,17 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
+    private readonly IAccessChangeSignal _access;
 
     public RevokeResourcePermissionCommandHandler(
         IGovernanceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
-        IResourceAccessChangeRecorder changes)
+        IResourceAccessChangeRecorder changes,
+        IAccessChangeSignal access)
     {
+        _access = access;
         _changes = changes;
         _context = context;
         _requestContext = requestContext;
@@ -81,6 +85,11 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             await _changes.RecordAsync(
                 new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Removed, permission.SubjectType.ToString(), permission.SubjectId, AccessLevels.OfRank((int)permission.Level), null),
                 cancellationToken);
+            // The person (or the Team's people) may lose the board now, not at the next periodic pass.
+            if (permission.SubjectType == PermissionSubjectType.User)
+                _access.BoardPerson(request.ResourceId, permission.SubjectId);
+            else
+                _access.Board(request.ResourceId);
         }
 
         await _auditService.RecordAsync(

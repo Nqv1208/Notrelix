@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
@@ -51,6 +52,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly IResourceAccessChangeRecorder _changes;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IBoardAccessSubjectFacts _boards;
+    private readonly IAccessChangeSignal _access;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
@@ -59,8 +61,10 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         IAuditService auditService,
         IResourceAccessChangeRecorder changes,
         IWorkspaceAccessResolver workspaceAccess,
-        IBoardAccessSubjectFacts boards)
+        IBoardAccessSubjectFacts boards,
+        IAccessChangeSignal access)
     {
+        _access = access;
         _boards = boards;
         _workspaceAccess = workspaceAccess;
         _changes = changes;
@@ -134,6 +138,9 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 permission = existingPermission;
                 if (isBoard)
                 {
+                    // A lowered level cuts live subscriptions that held the higher one.
+                    if (subjectType == PermissionSubjectType.User) _access.BoardPerson(request.ResourceId, request.SubjectId);
+                    else _access.Board(request.ResourceId);
                     await _changes.RecordAsync(
                         new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Changed, subjectType.ToString(), request.SubjectId, LevelToken(previous), LevelToken(level)),
                         cancellationToken);

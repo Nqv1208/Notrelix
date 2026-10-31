@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
@@ -22,13 +23,17 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
     private readonly IWorkspaceGrantProjectionService _grantProjection;
     private readonly IWorkspaceOwnerUpdateLocker _locker;
 
+    private readonly IAccessChangeSignal _access;
+
     public UpdateMemberRoleCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
-        IWorkspaceOwnerUpdateLocker locker)
+        IWorkspaceOwnerUpdateLocker locker,
+        IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -62,6 +67,7 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
             _dateTimeProvider.UtcNow,
             ct);
 
+        _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
     }
 }

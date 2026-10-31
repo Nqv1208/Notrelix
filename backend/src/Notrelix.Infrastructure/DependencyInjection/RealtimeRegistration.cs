@@ -15,6 +15,8 @@ public static class RealtimeRegistration
             services.AddSingleton<InMemoryRealtimeNotificationSource>();
             services.AddSingleton<IRealtimeNotificationSource>(
                 provider => provider.GetRequiredService<InMemoryRealtimeNotificationSource>());
+            services.AddSingleton<IRealtimeAccessSignalSource>(
+                provider => provider.GetRequiredService<InMemoryRealtimeNotificationSource>());
             // Testing: no transport side effects. Development: deliver to this process's sockets.
             if (IsTesting(configuration, environment))
                 services.AddScoped<IRealtimePublisher, DevNullRealtimePublisher>();
@@ -27,7 +29,9 @@ public static class RealtimeRegistration
             // RedisRealtimePublisher). Requires the Redis connection registered
             // by AddCaching; construction never connects (lazy multiplexer).
             services.AddScoped<IRealtimePublisher, RedisRealtimePublisher>();
-            services.AddSingleton<IRealtimeNotificationSource, RedisRealtimeNotificationSource>();
+            services.AddSingleton<RedisRealtimeNotificationSource>();
+            services.AddSingleton<IRealtimeNotificationSource>(provider => provider.GetRequiredService<RedisRealtimeNotificationSource>());
+            services.AddSingleton<IRealtimeAccessSignalSource>(provider => provider.GetRequiredService<RedisRealtimeNotificationSource>());
         }
 
         return services;

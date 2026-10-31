@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Spaces.Services;
 
@@ -31,12 +32,16 @@ public class MoveSpaceCommandHandler : IRequestHandler<MoveSpaceCommand, Result>
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
+    private readonly IAccessChangeSignal _access;
+
     public MoveSpaceCommandHandler(
         ISpaceStore spaces,
         ISpaceTargetAuthorizer targetAuthorizer,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IAccessChangeSignal access)
     {
+        _access = access;
         _spaces = spaces;
         _targetAuthorizer = targetAuthorizer;
         _requestContext = requestContext;
@@ -75,6 +80,7 @@ public class MoveSpaceCommandHandler : IRequestHandler<MoveSpaceCommand, Result>
         if (parentChanged)
             await _spaces.StageMovedAsync(space, ct);
 
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

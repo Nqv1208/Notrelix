@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;
@@ -31,6 +32,7 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
     private readonly IDateTimeProvider _clock;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IAccessChangeSignal _access;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public MakeBoardPrivateCommandHandler(
@@ -39,8 +41,10 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
         IDateTimeProvider clock,
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
@@ -90,6 +94,7 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
                     _context, board.Id, _requestContext.UserId, request.AddMeAsOwner && !request.AddUserIds.Contains(_requestContext.UserId), _clock.UtcNow, ct))
                 await _changeLog.MemberAddedAsync(board.Id, _requestContext.UserId, BoardRole.Owner, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
+            _access.Board(board.Id);
         }
 
         return Result.Success();

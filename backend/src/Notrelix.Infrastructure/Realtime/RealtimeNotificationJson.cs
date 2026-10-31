@@ -71,14 +71,15 @@ public static class RealtimeNotificationJson
         long ResourceVersion,
         int SchemaVersion,
         string PayloadContract,
+        Guid? SubjectUserId,
         long StreamVersion)
     {
         public static Wire From(RealtimeNotification n) => new(
             n.EventId, n.EventType, n.ChangeKind, n.StreamKey, n.ResourceKind, n.ResourceId, n.WorkspaceId,
-            n.CorrelationId, n.OccurredAt, n.ResourceVersion, n.SchemaVersion, n.PayloadContract, 0);
+            n.CorrelationId, n.OccurredAt, n.ResourceVersion, n.SchemaVersion, n.PayloadContract, n.SubjectUserId, 0);
 
         public RealtimeNotification ToNotification() => new(
             EventId, EventType, ChangeKind, StreamKey, StreamVersion, ResourceKind, ResourceId, WorkspaceId,
-            CorrelationId, OccurredAt, ResourceVersion, SchemaVersion, PayloadContract);
+            CorrelationId, OccurredAt, ResourceVersion, SchemaVersion, PayloadContract, SubjectUserId);
     }
 }

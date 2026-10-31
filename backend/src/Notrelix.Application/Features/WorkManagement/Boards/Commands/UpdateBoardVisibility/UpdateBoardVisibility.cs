@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
@@ -22,6 +23,7 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IAccessChangeSignal _access;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardVisibilityCommandHandler(
@@ -29,8 +31,10 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         BoardAccessChangeLog changeLog,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
@@ -59,6 +63,7 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
             if (board.Visibility == BoardVisibility.Private)
                 await BoardOwnership.EnsureOwnerForPrivateAsync(_context, board.Id, _requestContext.UserId, false, _dateTimeProvider.UtcNow, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
+            _access.Board(board.Id);
         }
         return Result.Success();
     }

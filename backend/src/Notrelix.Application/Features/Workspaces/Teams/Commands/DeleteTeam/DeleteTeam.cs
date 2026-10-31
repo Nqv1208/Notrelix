@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
@@ -22,8 +23,11 @@ public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand, Resul
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public DeleteTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public DeleteTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -38,6 +42,7 @@ public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand, Resul
             throw new NotFoundException(nameof(Team), request.TeamId);
 
         team.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

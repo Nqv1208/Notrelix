@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;
@@ -29,6 +30,7 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IAccessChangeSignal _access;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardMemberRoleCommandHandler(
@@ -37,8 +39,10 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         IDateTimeProvider dateTimeProvider,
         BoardAccessChangeLog changeLog,
         IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _sharing = sharing;
         _realtime = realtime;
         _changeLog = changeLog;
@@ -80,6 +84,7 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         member.UpdateRole(request.Role);
         board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberRoleChangedAsync(request.BoardId, request.UserId, previous, request.Role, ct);
+        _access.BoardPerson(request.BoardId, request.UserId);
         return Result.Success();
     }
 }

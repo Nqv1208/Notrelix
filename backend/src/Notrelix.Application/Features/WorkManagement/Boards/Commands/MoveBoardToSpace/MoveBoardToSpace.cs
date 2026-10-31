@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
@@ -26,6 +27,7 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IBoardSpacePlacement _placement;
+    private readonly IAccessChangeSignal _access;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardRealtimeNotifier? _realtime;
@@ -35,8 +37,10 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
         IBoardSpacePlacement placement,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _realtime = realtime;
         _context = context;
         _placement = placement;
@@ -64,6 +68,7 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
             await _placement.EnsureActiveTargetAsync(board.WorkspaceId, spaceId, ct);
 
         board.PlaceInSpace(request.SpaceId, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        _access.Board(board.Id);
         return Result.Success();
     }
 }

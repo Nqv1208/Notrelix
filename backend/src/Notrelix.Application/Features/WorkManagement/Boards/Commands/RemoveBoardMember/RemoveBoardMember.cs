@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Access;
@@ -26,6 +27,7 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IAccessChangeSignal _access;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public RemoveBoardMemberCommandHandler(
@@ -34,8 +36,10 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
         BoardAccessChangeLog changeLog,
         IDateTimeProvider dateTimeProvider,
         IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _realtime = realtime;
         _dateTimeProvider = dateTimeProvider;
         _sharing = sharing;
@@ -73,6 +77,7 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
             _context.BoardMembers.Remove(member);
             board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
             await _changeLog.MemberRemovedAsync(board.Id, request.UserId, member.Role, ct);
+            _access.BoardPerson(board.Id, request.UserId);
         }
 
         return Result.Success();

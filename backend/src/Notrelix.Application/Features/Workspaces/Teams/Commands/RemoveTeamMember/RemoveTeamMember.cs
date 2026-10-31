@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
@@ -23,8 +24,11 @@ public class RemoveTeamMemberCommandHandler : IRequestHandler<RemoveTeamMemberCo
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public RemoveTeamMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public RemoveTeamMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -40,6 +44,7 @@ public class RemoveTeamMemberCommandHandler : IRequestHandler<RemoveTeamMemberCo
             throw new NotFoundException(nameof(Team), request.TeamId);
 
         team.RemoveMember(request.UserId, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
     }
 }

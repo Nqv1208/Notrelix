@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Public.DefaultWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -40,14 +41,18 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
     private readonly IWorkspaceOwnerUpdateLocker _locker;
     private readonly IIdentityDefaultWorkspace _defaultWorkspace;
 
+    private readonly IAccessChangeSignal _access;
+
     public LeaveWorkspaceCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
         IWorkspaceOwnerUpdateLocker locker,
-        IIdentityDefaultWorkspace defaultWorkspace)
+        IIdentityDefaultWorkspace defaultWorkspace,
+        IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -96,6 +101,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
 
         await _defaultWorkspace.ClearIfAsync(userId, workspace.Id, ct);
 
+        _access.WorkspacePerson(request.WorkspaceId, _requestContext.UserId);
         return Result.Success();
     }
 }

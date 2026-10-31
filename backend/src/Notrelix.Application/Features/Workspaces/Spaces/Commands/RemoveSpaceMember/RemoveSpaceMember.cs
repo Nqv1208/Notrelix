@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Spaces.Services;
 
@@ -26,8 +27,11 @@ public class RemoveSpaceMemberCommandHandler : IRequestHandler<RemoveSpaceMember
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public RemoveSpaceMemberCommandHandler(ISpaceStore spaces, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public RemoveSpaceMemberCommandHandler(ISpaceStore spaces, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _spaces = spaces;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -40,6 +44,7 @@ public class RemoveSpaceMemberCommandHandler : IRequestHandler<RemoveSpaceMember
 
         var subjectType = Enum.Parse<SpaceMemberSubjectType>(request.SubjectType, ignoreCase: true);
         space.RemoveMember(subjectType, request.SubjectId, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        if (string.Equals(request.SubjectType, "User", StringComparison.OrdinalIgnoreCase)) _access.WorkspacePerson(request.WorkspaceId, request.SubjectId); else _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

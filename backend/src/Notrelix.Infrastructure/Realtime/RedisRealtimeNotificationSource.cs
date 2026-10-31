@@ -8,7 +8,7 @@ namespace Notrelix.Infrastructure.Realtime;
 /// logged without their content. The consumer is responsible for tenant checks
 /// (see the realtime gateway), this class only maps scope to channel.
 /// </summary>
-public sealed class RedisRealtimeNotificationSource : IRealtimeNotificationSource
+public sealed class RedisRealtimeNotificationSource : IRealtimeNotificationSource, IRealtimeAccessSignalSource
 {
     private readonly ILogger<RedisRealtimeNotificationSource> _logger;
     private readonly Func<string, Action<string>, Task<IAsyncDisposable>> _openChannel;
@@ -39,6 +39,12 @@ public sealed class RedisRealtimeNotificationSource : IRealtimeNotificationSourc
         Func<RealtimeNotification, ValueTask> onNotification,
         CancellationToken cancellationToken)
         => _fanout.SubscribeAsync(RealtimeChannelResolver.ForScope(scope), onNotification, cancellationToken);
+
+    public Task<IAsyncDisposable> SubscribeAccessAsync(
+        Guid workspaceId,
+        Func<RealtimeNotification, ValueTask> onSignal,
+        CancellationToken cancellationToken)
+        => _fanout.SubscribeAsync(RealtimeChannelResolver.Access(workspaceId), onSignal, cancellationToken);
 
     private Task<IAsyncDisposable> OpenAsync(
         string channel,
@@ -84,7 +90,7 @@ public sealed class RedisRealtimeNotificationSource : IRealtimeNotificationSourc
 /// transport. <see cref="Publish"/> delivers to current subscribers of the
 /// notification's stream, which makes gateway behavior testable without Redis.
 /// </summary>
-public sealed class InMemoryRealtimeNotificationSource : IRealtimeNotificationSource
+public sealed class InMemoryRealtimeNotificationSource : IRealtimeNotificationSource, IRealtimeAccessSignalSource
 {
     private readonly RealtimeNotificationFanout _fanout;
 
@@ -101,6 +107,16 @@ public sealed class InMemoryRealtimeNotificationSource : IRealtimeNotificationSo
         Func<RealtimeNotification, ValueTask> onNotification,
         CancellationToken cancellationToken)
         => _fanout.SubscribeAsync(RealtimeChannelResolver.ForScope(scope), onNotification, cancellationToken);
+
+    public Task<IAsyncDisposable> SubscribeAccessAsync(
+        Guid workspaceId,
+        Func<RealtimeNotification, ValueTask> onSignal,
+        CancellationToken cancellationToken)
+        => _fanout.SubscribeAsync(RealtimeChannelResolver.Access(workspaceId), onSignal, cancellationToken);
+
+    /// <summary>Delivers an access signal to every connection of the workspace on this instance.</summary>
+    public ValueTask PublishAccess(Guid workspaceId, RealtimeNotification signal)
+        => _fanout.DeliverAsync(RealtimeChannelResolver.Access(workspaceId), signal);
 
     /// <summary>Delivers a notification to every subscriber of the given channel scope.</summary>
     public ValueTask Publish(RealtimeScope scope, RealtimeNotification notification)

@@ -21,6 +21,12 @@ public sealed class InProcessRealtimePublisher : IRealtimePublisher
     {
         if (change.WorkspaceId is not { } workspaceId || workspaceId == Guid.Empty) return;
 
+        if (RealtimeAccessSignalMapping.IsAccessSignal(change))
+        {
+            await _source.PublishAccess(workspaceId, RealtimeAccessSignalMapping.ToNotification(change, workspaceId));
+            return;
+        }
+
         var kind = change.TopicNamespace switch
         {
             "workspace" => RealtimeScopeKind.Workspace,

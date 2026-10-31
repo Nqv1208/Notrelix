@@ -63,6 +63,15 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
             return;
         }
 
+        if (RealtimeAccessSignalMapping.IsAccessSignal(change))
+        {
+            // A signal needs no per-stream counter: a lost one is covered by the periodic re-authorization.
+            await _redis.GetSubscriber().PublishAsync(
+                RedisChannel.Literal(RealtimeChannelResolver.RedisChannel(RealtimeChannelResolver.Access(workspaceId))),
+                RealtimeNotificationJson.Serialize(RealtimeAccessSignalMapping.ToNotification(change, workspaceId)));
+            return;
+        }
+
         var topic = new RealtimeTopic(change.TopicNamespace, change.ResourceKind, change.ResourceId);
         var channel = RealtimeChannelResolver.RedisChannel(RealtimeChannelResolver.ForTopic(topic));
         var draft = new RealtimeNotification(
