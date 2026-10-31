@@ -550,7 +550,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005; D66
 - Acceptance: Given a Manager who is not Owner/Admin, when they publish, then 403.
 - Evidence: BE Templates.Publish = PATCH /templates/{templateId:guid}/publish -> PublishBoardTemplateCommand (`Templates/Commands/PublishBoardTemplate/PublishBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx` · Design WM-Template-Manage; denied/Er missing · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; the template list returns Draft and Archived templates to every member; the product doc says Owner or Admin publishes and D66 says ManageBoard; tests and owner check. Evidence: real-stack check 2026-10-31: published a template (200); publishing again changes nothing; a member 403; it appears in New board for a member, commit 33ed8c465.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; conflict: the product doc says Owner or Admin publishes and D66 says ManageBoard on the template; the stricter one (workspace Owner and Admin) is built and the product doc records it; tests and owner check. Built: the template list returns Draft and Archived templates only to workspace Owner and Admin, a member sees published ones. Evidence: real-stack check 2026-10-31: published a template (200); publishing again changes nothing; a member 403; it appears in New board for a member, commit 33ed8c465.
 
 ### UC-WM-A14 Archive or delete a template
 - Capability: A Board lifecycle (WM-001)
@@ -564,7 +564,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005; D66
 - Acceptance: Given a template archived, then boards created from it are unchanged and it is no longer offered.
 - Evidence: BE Templates.Archive = PATCH /templates/{templateId:guid}/archive -> ArchiveBoardTemplateCommand (`Templates/Commands/ArchiveBoardTemplate/ArchiveBoardTemplate.cs`) [- / Idem]; Templates.Delete = DELETE /templates/{templateId:guid} -> DeleteBoardTemplateCommand (`Templates/Commands/DeleteBoardTemplate/DeleteBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx`; no unarchive · Design WM-Template-Manage · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; same list gap as UC-WM-A13; no unarchive; tests and owner check. Evidence: real-stack check 2026-10-31: archived a template (200) and it left New board and could not be used (404); a member delete 403; delete 204, commit 33ed8c465.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; same Owner/Admin versus ManageBoard (D66) conflict as UC-WM-A13, the stricter one built; no unarchive; tests and owner check. Evidence: real-stack check 2026-10-31: archived a template (200) and it left New board and could not be used (404); a member delete 403; delete 204, commit 33ed8c465.
 
 ### UC-WM-A15 Create a board from a template or built-in starter
 - Capability: A Board lifecycle (WM-001)

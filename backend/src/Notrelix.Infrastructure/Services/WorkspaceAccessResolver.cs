@@ -52,7 +52,8 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
             actorUserId,
             CanAccess: role is not null,
             IsWorkspaceActive: isActive,
-            IsGuest: role == WorkspaceRole.Guest);
+            IsGuest: role == WorkspaceRole.Guest,
+            Role: role?.ToString());
     }
 
     public async Task<WorkspaceBySlugSnapshot?> ResolveBySlugAsync(string slug, CancellationToken ct)
