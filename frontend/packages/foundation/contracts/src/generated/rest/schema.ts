@@ -332,6 +332,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{boardItemId}/comments/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a page of the comments of a board item
+         * @description Oldest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["Collaboration.Comments.GetBoardItemCommentsPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji}": {
         parameters: {
             query?: never;
@@ -2191,6 +2211,26 @@ export interface paths {
         put?: never;
         /** Create a new approval request */
         post: operations["WorkManagement.Approvals.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/approvals/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a page of the approval requests of a board
+         * @description Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["WorkManagement.Approvals.ListPage"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4057,6 +4097,26 @@ export interface paths {
         put?: never;
         /** Submit answers to a published form as the signed-in member */
         post: operations["WorkManagement.Forms.Submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forms/{formId}/submissions/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a page of the submissions of a form
+         * @description Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["WorkManagement.Forms.ListSubmissionsPage"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6724,6 +6784,21 @@ export interface components {
             /** Format: uuid */
             workspaceId?: string;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfCommentDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto"][] | null;
             nextCursor?: string | null;
@@ -7607,6 +7682,34 @@ export interface components {
             /** Format: int32 */
             filteredCount?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            description?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            requestedByUserId?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            steps?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto"][] | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            approverUserId?: string | null;
+            /** Format: uuid */
+            approverTeamId?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            position?: number;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            note?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
             boardId?: string;
@@ -8039,6 +8142,26 @@ export interface components {
             state?: string | null;
             value?: unknown;
             errorCode?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            formId?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            createdItemId?: string | null;
+            /** Format: uuid */
+            submitterUserId?: string | null;
+            submitterEmail?: string | null;
+            status?: string | null;
+            /** Format: date-time */
+            submittedAt?: string;
+            /** Format: date-time */
+            processedAt?: string | null;
+            payloadJson?: string | null;
+            reason?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto": {
             /** Format: uuid */
@@ -9380,6 +9503,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Collaboration.Comments.GetBoardItemCommentsPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                boardItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfCommentDto"];
+                };
             };
         };
     };
@@ -13568,6 +13716,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.Approvals.ListPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto"];
+                };
             };
         };
     };
@@ -18756,6 +18929,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.Forms.ListSubmissionsPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto"];
+                };
             };
         };
     };

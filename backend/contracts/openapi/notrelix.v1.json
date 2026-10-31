@@ -1320,6 +1320,63 @@
         ]
       }
     },
+    "/api/v1/board-items/{boardItemId}/comments/page": {
+      "get": {
+        "tags": [
+          "Collaboration.Comments",
+          "Collaboration.Comments"
+        ],
+        "summary": "Get a page of the comments of a board item",
+        "description": "Oldest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.",
+        "operationId": "Collaboration.Comments.GetBoardItemCommentsPage",
+        "parameters": [
+          {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfCommentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji}": {
       "put": {
         "tags": [
@@ -8069,6 +8126,63 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/boards/{boardId}/approvals/page": {
+      "get": {
+        "tags": [
+          "WorkManagement.Approvals",
+          "WorkManagement.Approvals"
+        ],
+        "summary": "List a page of the approval requests of a board",
+        "description": "Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.",
+        "operationId": "WorkManagement.Approvals.ListPage",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto"
                 }
               }
             }
@@ -17265,6 +17379,63 @@
           },
           "503": {
             "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/forms/{formId}/submissions/page": {
+      "get": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "List a page of the submissions of a form",
+        "description": "Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.",
+        "operationId": "WorkManagement.Forms.ListSubmissionsPage",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -26520,6 +26691,69 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Models.CursorPageOfCommentDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
         "type": "object",
         "properties": {
@@ -29102,6 +29336,84 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto"
+            },
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approverUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "approverTeamId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
         "type": "object",
         "properties": {
@@ -30342,6 +30654,59 @@
             "nullable": true
           },
           "errorCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdItemId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "submitterUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "submitterEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "payloadJson": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
             "type": "string",
             "nullable": true
           }

@@ -13,6 +13,7 @@ public static class MapApprovalEndpoints
             .WithOpenApi();
         boardGroup.MapCreateApprovalRequest();
         boardGroup.MapListApprovalRequests();
+        boardGroup.MapListApprovalRequestsPage();
 
         var group = app
             .MapGroup("/api/v1/approvals/{requestId:guid}")
