@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Domain.Identity.Sessions;
 

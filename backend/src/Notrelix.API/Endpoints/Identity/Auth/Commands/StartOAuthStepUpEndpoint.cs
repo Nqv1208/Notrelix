@@ -1,7 +1,6 @@
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthStepUp;
-using Notrelix.Application.Features.Identity.Security.DTOs;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
 

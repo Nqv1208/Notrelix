@@ -7,7 +7,6 @@ using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Domain.Identity.Security;
-using Notrelix.Domain.Identity.Sessions;
 
 namespace Notrelix.Application.Features.Identity.Mfa.Commands.VerifyMfaEnrollment;
 

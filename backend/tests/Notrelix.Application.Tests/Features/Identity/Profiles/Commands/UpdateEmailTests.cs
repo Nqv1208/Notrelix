@@ -2,7 +2,6 @@ using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
-using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Tests.Features.Identity.Profiles.Commands;

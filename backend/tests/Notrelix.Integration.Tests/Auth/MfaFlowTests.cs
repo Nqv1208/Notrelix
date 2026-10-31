@@ -26,7 +26,6 @@ using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Mfa;
-using Notrelix.Infrastructure.Identity.Mfa;
 using Notrelix.Infrastructure.Identity.Security;
 using Notrelix.Integration.Tests.Containers;
 using StackExchange.Redis;
