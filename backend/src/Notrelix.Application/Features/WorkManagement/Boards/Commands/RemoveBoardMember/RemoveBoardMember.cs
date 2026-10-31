@@ -63,6 +63,9 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
 
         if (member is not null)
         {
+            if (member.Role == BoardRole.Owner)
+                await BoardOwnership.EnsureAnotherOwnerAsync(_context, board.Id, request.UserId, ct);
+
             // Removing the only manager would leave the Board with nobody to manage it.
             if (BoardRoleLevels.RankOf(member.Role.ToString()) >= 4)
                 await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, board.Id, request.UserId, ct);

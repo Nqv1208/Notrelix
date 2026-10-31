@@ -113,6 +113,8 @@ export interface BoardShareDialogSurfaceProps {
   /** Change a person's permission; absent: the level buttons are inert. */
   readonly onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   readonly onRemove?: (rowId: string) => void;
+  /** Hands the board's ownership to the person (a board keeps at least one owner); absent: no such action. */
+  readonly onMakeOwner?: (rowId: string) => void;
   /** Switch who can open the Board; absent: "Đổi" is inert. */
   readonly onChangeGeneral?: (target: "private") => void;
   /** Confirms the switch to Private, adding the chosen people first; absent: inert. */
@@ -263,6 +265,7 @@ function ShareBody({
   onClose,
   onChangeLevel,
   onRemove,
+  onMakeOwner,
   onChangeGeneral,
   candidates,
   onInvite,
@@ -483,6 +486,7 @@ function ShareBody({
                     setMenu={(open) => setMenuFor(open ? row.id : null)}
                     onChangeLevel={onChangeLevel}
                     onRemove={onRemove}
+                    onMakeOwner={onMakeOwner}
                   />
                 ))}
                 {!expandedRows && memberRows.length > VISIBLE_ROWS ? (
@@ -502,6 +506,14 @@ function ShareBody({
                 ) : null}
               </div>
             )}
+            {view.canManage && memberRows.length > 0 ? (
+              <p
+                data-f="ownerhint"
+                className="m-0 mt-1.5 text-xs leading-[1.45] text-meta-foreground"
+              >
+                {copy.people.ownerHint}
+              </p>
+            ) : null}
             {viewerRows.length > 0 ? (
               <div className="mt-3" data-f="viewers">
                 <div
@@ -529,6 +541,7 @@ function ShareBody({
                       setMenu={(open) => setMenuFor(open ? row.id : null)}
                       onChangeLevel={onChangeLevel}
                       onRemove={onRemove}
+                      onMakeOwner={onMakeOwner}
                     />
                   ))}
                 </div>
@@ -801,6 +814,7 @@ function PersonRow({
   setMenu,
   onChangeLevel,
   onRemove,
+  onMakeOwner,
 }: {
   copy: BoardShareCopy;
   row: ShareRowView;
@@ -808,6 +822,7 @@ function PersonRow({
   setMenu: (open: boolean) => void;
   onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   onRemove?: (rowId: string) => void;
+  onMakeOwner?: (rowId: string) => void;
 }) {
   const p = copy.people;
   const trigger = useRef<HTMLButtonElement>(null);
@@ -961,6 +976,14 @@ function PersonRow({
                       }
                     : null
                 }
+                onMakeOwner={
+                  onMakeOwner && row.ownable
+                    ? () => {
+                        setMenu(false);
+                        onMakeOwner(row.id);
+                      }
+                    : null
+                }
                 onClose={() => {
                   setMenu(false);
                   trigger.current?.focus();
@@ -979,12 +1002,14 @@ function LevelMenu({
   row,
   onPick,
   onRemove,
+  onMakeOwner,
   onClose,
 }: {
   copy: BoardShareCopy;
   row: ShareRowView;
   onPick: (level: ShareLevel) => void;
   onRemove: (() => void) | null;
+  onMakeOwner: (() => void) | null;
   onClose: () => void;
 }) {
   const menu = useRef<HTMLDivElement>(null);
@@ -1071,6 +1096,39 @@ function LevelMenu({
         );
       })}
       <div data-f="lsep" role="separator" className="my-1 h-px bg-line" />
+      {onMakeOwner ? (
+        <div
+          data-f="lo"
+          role="menuitem"
+          tabIndex={-1}
+          onClick={onMakeOwner}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              onMakeOwner();
+            }
+          }}
+          className={itemClass}
+        >
+          <span>
+            <b
+              data-f="lot"
+              className="block text-nav leading-[1.45] font-semibold text-foreground"
+            >
+              {copy.menu.makeOwner}
+            </b>
+            <small
+              data-f="loh"
+              className="block text-xs leading-[1.45] font-normal text-meta-foreground"
+            >
+              {fill(copy.menu.makeOwnerHint, {
+                name: row.shortName ?? row.name,
+              })}
+            </small>
+          </span>
+        </div>
+      ) : null}
       <div
         data-f="lo"
         role="menuitem"

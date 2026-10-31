@@ -67,6 +67,9 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         var previous = member.Role;
         if (previous == request.Role) return Result.Success();
 
+        if (previous == BoardRole.Owner)
+            await BoardOwnership.EnsureAnotherOwnerAsync(_context, request.BoardId, request.UserId, ct);
+
         // Lowering the only manager would leave the Board with nobody to manage it.
         if (BoardRoleLevels.RankOf(previous.ToString()) >= 4 && BoardRoleLevels.RankOf(request.Role.ToString()) < 4)
             await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, request.BoardId, request.UserId, ct);

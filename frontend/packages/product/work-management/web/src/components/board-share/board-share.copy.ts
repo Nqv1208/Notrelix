@@ -53,6 +53,8 @@ export const en = {
   people: {
     label: "Permissions on this Board · {{count}}",
     viewersLabel: "Viewers (read only) · {{count}}",
+    ownerHint:
+      "A board always keeps an owner. To hand it over, make someone else the owner first.",
     viewersHint:
       "A viewer can only read. Choosing a higher level changes their board role first.",
     empty: "No one has been added to this Board on their own.",
@@ -81,6 +83,8 @@ export const en = {
     label: "Permission of {{name}}",
     remove: "Remove access",
     removeHint: "{{name}} no longer sees this Board",
+    makeOwner: "Make owner",
+    makeOwnerHint: "{{name}} becomes an owner of this Board",
   },
   link: {
     title: "Board link",
@@ -190,6 +194,8 @@ export const vi: BoardShareCopy = {
   people: {
     label: "Quyền riêng trên board này · {{count}}",
     viewersLabel: "Người xem (chỉ đọc) · {{count}}",
+    ownerHint:
+      "Board luôn có một chủ. Muốn trao lại, hãy giao quyền chủ cho người khác trước.",
     viewersHint:
       "Người xem chỉ đọc. Chọn mức cao hơn sẽ đổi vai trò trên board của họ trước.",
     empty: "Chưa có ai được thêm riêng vào board này.",
@@ -218,6 +224,8 @@ export const vi: BoardShareCopy = {
     label: "Quyền của {{name}}",
     remove: "Gỡ quyền",
     removeHint: "{{name}} không còn thấy board này",
+    makeOwner: "Giao quyền chủ board",
+    makeOwnerHint: "{{name}} trở thành chủ của board này",
   },
   link: {
     title: "Liên kết của board",

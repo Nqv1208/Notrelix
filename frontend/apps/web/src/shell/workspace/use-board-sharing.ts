@@ -146,6 +146,9 @@ export function useBoardSharing(
         runAll([
           { kind: "grant", subjectType: "User", subjectId: userId, level },
         ]),
+      /** Hands ownership to a board member (`WorkManagement.Boards.UpdateMemberRole` to Owner). */
+      makeOwner: async (entryId: string) =>
+        runAll([{ kind: "member-role", userId: entryId, role: "Owner" }]),
       remove: async (entryId: string) => {
         const entry = entryOf(entryId);
         if (entry) await runAll(planRemoval(entry));

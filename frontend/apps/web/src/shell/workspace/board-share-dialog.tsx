@@ -310,6 +310,11 @@ export function BoardShareDialog({
           ? (rowId: string) => write(() => sharing.remove(rowId))
           : undefined
       }
+      onMakeOwner={
+        view.canManage && sharing.data
+          ? (rowId: string) => write(() => sharing.makeOwner(rowId))
+          : undefined
+      }
       onChangeGeneral={
         view.canManage && sharing.data ? () => undefined : undefined
       }

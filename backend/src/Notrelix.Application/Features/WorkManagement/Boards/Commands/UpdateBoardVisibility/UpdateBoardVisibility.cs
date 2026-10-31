@@ -53,7 +53,13 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
         var previous = board.Visibility;
         board.ChangeVisibility(request.Visibility, _requestContext.UserId, _dateTimeProvider.UtcNow);
         if (previous != board.Visibility)
+        {
+            // Going Private ends every Space and workspace source: the person who does it stays on the board.
+            if (board.Visibility == BoardVisibility.Private
+                && await BoardOwnership.EnsureActorStaysAsync(_context, board.Id, _requestContext.UserId, _dateTimeProvider.UtcNow, ct))
+                await _changeLog.MemberAddedAsync(board.Id, _requestContext.UserId, BoardRole.Owner, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
+        }
         return Result.Success();
     }
 }

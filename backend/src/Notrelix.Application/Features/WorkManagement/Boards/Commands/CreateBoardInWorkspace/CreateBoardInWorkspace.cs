@@ -70,6 +70,8 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         if (request.Background is not null) board.UpdateBackground(request.Background, _requestContext.UserId, createdAt);
 
         _context.Boards.Add(board);
+        // The creator is the board's Owner, whatever its visibility: a Private board has no other source of access.
+        BoardOwnership.AddCreatorAsOwner(_context, board.Id, _requestContext.UserId, createdAt);
 
         var defaultFields = new[]
         {

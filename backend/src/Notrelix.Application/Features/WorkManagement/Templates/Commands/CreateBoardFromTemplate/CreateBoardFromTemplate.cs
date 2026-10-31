@@ -76,6 +76,7 @@ public class CreateBoardFromTemplateCommandHandler : IRequestHandler<CreateBoard
         var accountId = _requestContext.RequireAccountId();
         var board = Board.Create(accountId, request.WorkspaceId, userId, request.Name, description, now, spaceId: request.SpaceId);
         _context.Boards.Add(board);
+        BoardOwnership.AddCreatorAsOwner(_context, board.Id, userId, now);
 
         // Every id of the new board is fresh; the structure's ids only say which new row a reference points to.
         var map = new Dictionary<Guid, Guid>();

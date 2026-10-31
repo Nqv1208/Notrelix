@@ -81,6 +81,11 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
             await _changeLog.MemberAddedAsync(board.Id, userId, BoardRole.Member, ct);
         }
 
+        // The person who makes the board Private stays on it as Owner when they hold no board role yet.
+        if (!request.AddUserIds.Contains(_requestContext.UserId)
+            && await BoardOwnership.EnsureActorStaysAsync(_context, board.Id, _requestContext.UserId, _clock.UtcNow, ct))
+            await _changeLog.MemberAddedAsync(board.Id, _requestContext.UserId, BoardRole.Owner, ct);
+
         var previous = board.Visibility;
         board.ChangeVisibility(BoardVisibility.Private, _requestContext.UserId, _clock.UtcNow);
         if (previous != board.Visibility)
