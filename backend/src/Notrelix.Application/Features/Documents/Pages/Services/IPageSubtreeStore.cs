@@ -7,6 +7,14 @@ namespace Notrelix.Application.Features.Documents.Pages.Services;
 /// </summary>
 public interface IPageSubtreeStore
 {
+    /// <summary>
+    /// Serializes the writes that change the shape of the page tree of a Workspace (a move, a Space move, a
+    /// create under a parent). Cycle, depth and Space checks read the tree and are only true until another such
+    /// write commits, so a write takes this lock before its first read of the tree and a second one reads what
+    /// the first committed. Held until the request's transaction ends.
+    /// </summary>
+    Task LockTreeAsync(Guid workspaceId, CancellationToken cancellationToken);
+
     Task<Page?> FindAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
 
     /// <summary>Every non-deleted descendant (children, grandchildren, …) of the page.</summary>

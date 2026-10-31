@@ -64,6 +64,7 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
         var spaceId = request.SpaceId;
         if (request.ParentId is { } parentId)
         {
+            await _tree.LockTreeAsync(request.WorkspaceId, ct);
             var parent = await _context.Pages.AsNoTracking()
                 .Where(p => p.Id == parentId && p.WorkspaceId == request.WorkspaceId && p.Status != PageStatus.Archived && p.DeletedAt == null)
                 .Select(p => new { p.SpaceId })

@@ -11,6 +11,8 @@ internal sealed class InMemoryPageSubtreeStore : IPageSubtreeStore
 
     public InMemoryPageSubtreeStore(params Page[] pages) => _pages = [.. pages];
 
+    public Task LockTreeAsync(Guid workspaceId, CancellationToken cancellationToken) => Task.CompletedTask;
+
     public Task<Page?> FindAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken) =>
         Task.FromResult(_pages.FirstOrDefault(p => p.WorkspaceId == workspaceId && p.Id == pageId));
 

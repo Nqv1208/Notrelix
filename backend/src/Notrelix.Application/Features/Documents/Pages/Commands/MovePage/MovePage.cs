@@ -48,6 +48,7 @@ public class MovePageCommandHandler : IRequestHandler<MovePageCommand, Result>
     public async Task<Result> Handle(MovePageCommand request, CancellationToken ct)
     {
         var workspaceId = _requestContext.RequireWorkspaceId();
+        await _pages.LockTreeAsync(workspaceId, ct);
         var page = await _pages.FindAsync(workspaceId, request.PageId, ct);
         if (page is null || page.IsDeleted) throw new NotFoundException(nameof(Page), request.PageId);
 

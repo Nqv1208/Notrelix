@@ -1,7 +1,9 @@
+using System.Buffers.Binary;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Services;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Documents.Rules;
+using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Documents.Pages;
 
@@ -12,11 +14,30 @@ namespace Notrelix.Infrastructure.Documents.Pages;
 /// </summary>
 public sealed class PageSubtreeStore : IPageSubtreeStore
 {
-    private readonly IDocumentDbContext _context;
+    private readonly ApplicationDbContext _context;
 
-    public PageSubtreeStore(IDocumentDbContext context)
+    public PageSubtreeStore(ApplicationDbContext context)
     {
         _context = context;
+    }
+
+    public async Task LockTreeAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        if (_context.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                "The page tree lock must be acquired inside the active request transaction.");
+        }
+
+        var key = ComputeLockKey(workspaceId);
+        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key})", cancellationToken);
+    }
+
+    /// <summary>The first 8 bytes of SHA-256 of "documents.page-tree:&lt;workspace-guid-N&gt;", read big-endian.</summary>
+    public static long ComputeLockKey(Guid workspaceId)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes($"documents.page-tree:{workspaceId:N}"));
+        return BinaryPrimitives.ReadInt64BigEndian(hash);
     }
 
     public Task<Page?> FindAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken) =>
