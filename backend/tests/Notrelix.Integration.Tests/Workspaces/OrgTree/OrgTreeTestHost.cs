@@ -212,6 +212,9 @@ internal sealed class OrgTreeTestHost
     public static async Task<object?> SendAsync(ServiceProvider provider, object request)
     {
         using var scope = provider.CreateScope();
+        // Idempotent requests (creates) need the key a transport would bind; others ignore it.
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set($"org-tree-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
         var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
         if (result is Result plain)
             plain.Succeeded.Should().BeTrue(string.Join("; ", plain.Errors));
@@ -249,11 +252,26 @@ internal sealed class OrgTreeTestHost
         await context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Moves an invitation's send time back an hour: the clock of these hosts is fixed, so an invitation sent
+    /// "now" would still be inside the one-minute wait before it can be sent again.
+    /// </summary>
+    public Task AgeInvitationAsync(Guid invitationId) =>
+        WithSystemContextAsync(c => c.WorkspaceInvitations.IgnoreQueryFilters()
+            .Where(i => i.Id == invitationId)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(i => i.CreatedAt, i => i.CreatedAt.AddHours(-1))
+                .SetProperty(i => i.UpdatedAt, i => i.UpdatedAt == null ? null : i.UpdatedAt.Value.AddHours(-1))));
+
     public async Task<T> ReadAsync<T>(Func<ApplicationDbContext, Task<T>> read)
     {
         await using var context = _db.CreateOwnerContext(SystemTenant());
         return await read(context);
     }
+
+    /// <summary>The Space's current version: what an editor read before it writes.</summary>
+    public Task<long> SpaceVersionAsync(Guid spaceId) =>
+        ReadAsync(c => c.Spaces.IgnoreQueryFilters().Where(s => s.Id == spaceId).Select(s => s.Version).SingleAsync());
 
     public async Task<OrgStack> SeedWorkspaceAsync()
     {

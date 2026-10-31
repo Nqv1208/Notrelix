@@ -309,7 +309,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
 
         var act = () => handler.Handle(
             new Notrelix.Application.Features.Workspaces.Invitations.Commands.ChangeInvitationRole.ChangeInvitationRoleCommand(
-                TestWorkspaceId, invitation.Id, WorkspaceRole.Admin), CancellationToken.None);
+                TestWorkspaceId, invitation.Id, WorkspaceRole.Admin, invitation.Version), CancellationToken.None);
 
         (await act.Should().ThrowAsync<DomainBusinessRuleException>())
             .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);

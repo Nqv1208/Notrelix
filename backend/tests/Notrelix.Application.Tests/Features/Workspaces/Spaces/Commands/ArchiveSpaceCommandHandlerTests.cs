@@ -22,7 +22,7 @@ public class ArchiveSpaceCommandHandlerTests : WorkspaceHandlerTestBase
         var space = CreateSpace();
         SetupSpaces(space);
         var sut = CreateSut();
-        var result = await sut.Handle(new ArchiveSpaceCommand(TestWorkspaceId, space.Id), CancellationToken.None);
+        var result = await sut.Handle(new ArchiveSpaceCommand(TestWorkspaceId, space.Id, space.Version), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
     }
 
@@ -31,7 +31,7 @@ public class ArchiveSpaceCommandHandlerTests : WorkspaceHandlerTestBase
     {
         SetupSpaces();
         var sut = CreateSut();
-        Func<Task> act = () => sut.Handle(new ArchiveSpaceCommand(TestWorkspaceId, Guid.CreateVersion7()), CancellationToken.None);
+        Func<Task> act = () => sut.Handle(new ArchiveSpaceCommand(TestWorkspaceId, Guid.CreateVersion7(), 1), CancellationToken.None);
         await act.Should().ThrowAsync<NotFoundException>();
     }
 }

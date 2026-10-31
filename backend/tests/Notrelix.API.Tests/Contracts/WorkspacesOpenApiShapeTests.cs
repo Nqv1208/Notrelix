@@ -34,7 +34,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Members.InviteMember", "201", "uuid")]
     [InlineData("Workspaces.Members.UpdateMyJobTitle", "200", "WorkspaceMemberProfileDto")]
     [InlineData("Workspaces.Members.UpdateMemberJobTitle", "200", "WorkspaceMemberProfileDto")]
-    [InlineData("Workspaces.Invitations.ListWorkspaceInvitations", "200", "WorkspaceInvitationDto[]")]
+    [InlineData("Workspaces.Invitations.ListWorkspaceInvitations", "200", "CursorPageOfWorkspaceInvitationDto")]
     [InlineData("Workspaces.Invitations.GetUserPendingInvitations", "200", "UserPendingInvitationDto[]")]
     [InlineData("Workspaces.Invitations.AcceptInvitation", "200", "AcceptInvitationResultDto")]
     [InlineData("Workspaces.Invitations.GetInvitationByToken", "200", "InvitationPreviewDto")]
@@ -43,10 +43,10 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Settings.GetWorkspaceSettings", "200", "WorkspaceSettingsDto")]
     [InlineData("Workspaces.Spaces.CreateSpace", "201", "uuid")]
     [InlineData("Workspaces.Spaces.GetSpace", "200", "SpaceDto")]
-    [InlineData("Workspaces.Spaces.GetWorkspaceSpaces", "200", "SpaceDto[]")]
+    [InlineData("Workspaces.Spaces.GetWorkspaceSpaces", "200", "CursorPageOfSpaceDto")]
     [InlineData("Workspaces.Teams.CreateTeam", "201", "uuid")]
     [InlineData("Workspaces.Teams.GetTeam", "200", "TeamDto")]
-    [InlineData("Workspaces.Teams.GetWorkspaceTeams", "200", "TeamDto[]")]
+    [InlineData("Workspaces.Teams.GetWorkspaceTeams", "200", "CursorPageOfTeamDto")]
     [InlineData("Workspaces.Teams.GetTeamMembers", "200", "TeamMemberDto[]")]
     public void BodyReturningOperation_DeclaresItsResponseType(string operationId, string status, string expected)
     {

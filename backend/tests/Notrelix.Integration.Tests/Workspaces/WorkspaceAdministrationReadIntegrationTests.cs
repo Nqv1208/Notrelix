@@ -308,7 +308,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         (await ListMembersPageAsync(provider, workspaceId)).Items;
 
     private static async Task<List<WorkspaceInvitationDto>> ListInvitationsAsync(ServiceProvider provider, Guid workspaceId) =>
-        ((Result<List<WorkspaceInvitationDto>>)(await SendAsync(provider, new GetWorkspaceInvitationsQuery(workspaceId)))!).Data!;
+        ((Result<CursorPage<WorkspaceInvitationDto>>)(await SendAsync(provider, new GetWorkspaceInvitationsQuery(workspaceId)))!).Data!.Items.ToList();
 
     private static async Task<WorkspaceMemberDto> GetMyMembershipAsync(ServiceProvider provider, Guid workspaceId) =>
         ((Result<WorkspaceMemberDto>)(await SendAsync(provider, new GetMyWorkspaceMembershipQuery(workspaceId)))!).Data!;
@@ -527,7 +527,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         services.AddScoped<IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>, GetUserWorkspacesQueryHandler>();
         services.AddScoped<IRequestHandler<GetWorkspaceMembersQuery, Result<CursorPage<WorkspaceMemberDto>>>, GetWorkspaceMembersQueryHandler>();
         services.AddScoped<IRequestHandler<GetMyWorkspaceMembershipQuery, Result<WorkspaceMemberDto>>, GetMyWorkspaceMembershipQueryHandler>();
-        services.AddScoped<IRequestHandler<GetWorkspaceInvitationsQuery, Result<List<WorkspaceInvitationDto>>>, GetWorkspaceInvitationsQueryHandler>();
+        services.AddScoped<IRequestHandler<GetWorkspaceInvitationsQuery, Result<CursorPage<WorkspaceInvitationDto>>>, GetWorkspaceInvitationsQueryHandler>();
         services.AddScoped<IRequestHandler<UpdateWorkspaceProfileCommand, Result>, UpdateWorkspaceProfileCommandHandler>();
         services.AddScoped<IRequestHandler<UpdateWorkspaceSettingsCommand, Result>, UpdateWorkspaceSettingsCommandHandler>();
         services.AddScoped<IRequestHandler<ArchiveWorkspaceCommand, Result>, ArchiveWorkspaceCommandHandler>();

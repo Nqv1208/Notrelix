@@ -70,10 +70,10 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
         revoked.Revoke(TestUserId, TestNow.AddHours(1));
         SetupInvitations(pending, revoked);
 
-        var result = await new GetWorkspaceInvitationsQueryHandler(DbContextMock.Object)
+        var result = await new GetWorkspaceInvitationsQueryHandler(DbContextMock.Object, DateTimeProviderMock.Object)
             .Handle(new GetWorkspaceInvitationsQuery(TestWorkspaceId), CancellationToken.None);
 
-        result.Data!.Select(i => (i.Id, i.Status)).Should().BeEquivalentTo(new[]
+        result.Data!.Items.Select(i => (i.Id, i.Status)).Should().BeEquivalentTo(new[]
         {
             (pending.Id, "Pending"),
             (revoked.Id, "Revoked"),

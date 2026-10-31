@@ -407,8 +407,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<UpdateMemberRoleCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RemoveMemberCommand, Result>(services, Result.Success());
-            MockWorkspaceHandler<GetWorkspaceInvitationsQuery, Result<List<WorkspaceInvitationDto>>>(services,
-                Result<List<WorkspaceInvitationDto>>.Success(new List<WorkspaceInvitationDto>()));
+            MockWorkspaceHandler<GetWorkspaceInvitationsQuery, Result<CursorPage<WorkspaceInvitationDto>>>(services,
+                Result<CursorPage<WorkspaceInvitationDto>>.Success(new CursorPage<WorkspaceInvitationDto>([], null)));
             MockWorkspaceHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>(services,
                 Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>()));
             MockWorkspaceHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>(services,
@@ -492,8 +492,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<DeclineInvitationCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ChangeInvitationRoleCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<CreateSpaceCommand, Result<Guid>>(services, Result<Guid>.Success(Guid.NewGuid()));
-            MockWorkspaceHandler<GetWorkspaceSpacesQuery, Result<List<SpaceDto>>>(services,
-                Result<List<SpaceDto>>.Success(new List<SpaceDto>()));
+            MockWorkspaceHandler<GetWorkspaceSpacesQuery, Result<CursorPage<SpaceDto>>>(services,
+                Result<CursorPage<SpaceDto>>.Success(new CursorPage<SpaceDto>([], null)));
             MockWorkspaceHandler<GetSpaceQuery, Result<SpaceDto>>(services,
                 Result<SpaceDto>.Success(new SpaceDto(Guid.NewGuid(), "Mocked", null, "Workspace", "Folder", false, DateTime.UtcNow)));
             MockWorkspaceHandler<RenameSpaceCommand, Result>(services, Result.Success());
@@ -505,8 +505,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<DeleteSpaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreSpaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<CreateTeamCommand, Result<Guid>>(services, Result<Guid>.Success(Guid.NewGuid()));
-            MockWorkspaceHandler<GetWorkspaceTeamsQuery, Result<List<TeamDto>>>(services,
-                Result<List<TeamDto>>.Success(new List<TeamDto>()));
+            MockWorkspaceHandler<GetWorkspaceTeamsQuery, Result<CursorPage<TeamDto>>>(services,
+                Result<CursorPage<TeamDto>>.Success(new CursorPage<TeamDto>([], null)));
             MockWorkspaceHandler<GetTeamQuery, Result<TeamDto>>(services,
                 Result<TeamDto>.Success(new TeamDto(Guid.NewGuid(), "Mocked", null, "Active", 0, 1, DateTime.UtcNow)));
             MockWorkspaceHandler<GetTeamMembersQuery, IReadOnlyList<TeamMemberDto>>(services, new List<TeamMemberDto>());

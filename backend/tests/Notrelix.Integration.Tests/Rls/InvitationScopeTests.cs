@@ -104,6 +104,108 @@ public sealed class InvitationScopeTests : IAsyncLifetime
         (await GrantCountAsync(invitee.Id)).Should().Be("2", "nothing in tenant B");
     }
 
+    // ───────────────────────── The invitee's own list and answers by id ─────────────────────────
+
+    private Task<string> InvitationIdAsync(AppRoleTenant t) =>
+        OwnerScalarAsync("SELECT id FROM workspace.workspace_invitations WHERE token_hash = @h", ("h", t.InvitationTokenHash));
+
+    [Fact]
+    public async Task PendingList_ShowsTheInviteeOnlyTheirOwnInvitation()
+    {
+        var invitee = await AppRoleUsers.AddAsync(_fixture, _a.InvitationEmail, "Invitee", _hash);
+        var id = await InvitationIdAsync(_a);
+
+        var response = await CallAsync(c => c.GetAsync("/api/v1/invitations/pending"), invitee);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        var rows = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        rows.EnumerateArray().Select(r => r.GetProperty("id").GetString()).Should().Equal(id);
+        (await response.Content.ReadAsStringAsync()).Should().NotContain(_b.InvitationEmail, "tenant B's invitation is addressed to someone else");
+    }
+
+    [Fact]
+    public async Task PendingList_ForAPersonWithNoInvitation_IsEmpty()
+    {
+        var stranger = await AppRoleUsers.AddAsync(_fixture, "stranger-list@example.com", "Stranger", _hash);
+
+        var response = await CallAsync(c => c.GetAsync("/api/v1/invitations/pending"), stranger);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task PendingList_ForAnUnconfirmedAddress_NeverShowsTheInvitation()
+    {
+        var unconfirmed = await AppRoleUsers.AddAsync(_fixture, _a.InvitationEmail, "Unconfirmed", _hash, confirmEmail: false);
+
+        var response = await CallAsync(c => c.GetAsync("/api/v1/invitations/pending"), unconfirmed);
+
+        (await response.Content.ReadAsStringAsync()).Should().NotContain(_a.InvitationEmail);
+        if (response.IsSuccessStatusCode)
+            (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AcceptById_ByTheInvitee_WritesTheMembership()
+    {
+        var invitee = await AppRoleUsers.AddAsync(_fixture, _a.InvitationEmail, "Invitee", _hash);
+        var id = await InvitationIdAsync(_a);
+
+        var response = await CallAsync(c => c.PostAsync($"/api/v1/invitations/{id}/accept", null), invitee);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        (await InvitationStatusAsync(_a)).Should().Be("Accepted");
+        (await OwnerScalarAsync(
+            "SELECT count(*) FROM workspace.workspace_members WHERE user_id = @u AND workspace_id = @w AND status = 'Active'",
+            ("u", invitee.Id), ("w", _a.WorkspaceId))).Should().Be("1");
+    }
+
+    [Fact]
+    public async Task AcceptById_ByAnotherPerson_AnswersNotFound_AndWritesNothing()
+    {
+        var stranger = await AppRoleUsers.AddAsync(_fixture, "stranger-accept@example.com", "Stranger", _hash);
+        var id = await InvitationIdAsync(_a);
+
+        var response = await CallAsync(c => c.PostAsync($"/api/v1/invitations/{id}/accept", null), stranger);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await InvitationStatusAsync(_a)).Should().Be("Pending");
+        (await OwnerScalarAsync("SELECT count(*) FROM workspace.workspace_members WHERE user_id = @u", ("u", stranger.Id))).Should().Be("0");
+    }
+
+    [Fact]
+    public async Task AcceptById_WithAnUnconfirmedAddress_IsRefused_AndWritesNothing()
+    {
+        var unconfirmed = await AppRoleUsers.AddAsync(_fixture, _a.InvitationEmail, "Unconfirmed", _hash, confirmEmail: false);
+        var id = await InvitationIdAsync(_a);
+
+        var response = await CallAsync(c => c.PostAsync($"/api/v1/invitations/{id}/accept", null), unconfirmed);
+
+        response.IsSuccessStatusCode.Should().BeFalse();
+        (await InvitationStatusAsync(_a)).Should().Be("Pending");
+    }
+
+    [Fact]
+    public async Task DeclineById_ByTheInvitee_ClosesIt_AndAnotherPersonGetsNotFound()
+    {
+        var invitee = await AppRoleUsers.AddAsync(_fixture, _a.InvitationEmail, "Invitee", _hash);
+        var stranger = await AppRoleUsers.AddAsync(_fixture, "stranger-decline@example.com", "Stranger", _hash);
+        var id = await InvitationIdAsync(_a);
+
+        var refused = await CallAsync(c => c.PostAsync($"/api/v1/invitations/{id}/decline", null), stranger);
+        refused.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await InvitationStatusAsync(_a)).Should().Be("Pending");
+
+        var declined = await CallAsync(c => c.PostAsync($"/api/v1/invitations/{id}/decline", null), invitee);
+        declined.StatusCode.Should().Be(HttpStatusCode.NoContent, await declined.Content.ReadAsStringAsync());
+        (await InvitationStatusAsync(_a)).Should().Be("Declined");
+        (await InvitationStatusAsync(_b)).Should().Be("Pending");
+
+        var repeat = await CallAsync(c => c.PostAsync($"/api/v1/invitations/{id}/decline", null), invitee);
+        repeat.StatusCode.Should().Be(HttpStatusCode.NotFound, "a repeat answers like an unknown invitation");
+    }
+
     [Fact]
     public async Task Accept_ByAPersonTheInvitationIsNotAddressedTo_IsRefused_AndWritesNothing()
     {

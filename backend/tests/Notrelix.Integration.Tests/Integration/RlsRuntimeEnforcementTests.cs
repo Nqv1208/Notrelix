@@ -614,7 +614,11 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
             new WorkspaceOwnerUpdateLocker(context));
 
-        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId), default);
+        var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
+            .Select(m => m.Version)
+            .SingleAsync();
+        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId, memberVersion), default);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
 
@@ -657,7 +661,11 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
             new WorkspaceOwnerUpdateLocker(context));
 
-        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId), default);
+        var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
+            .Select(m => m.Version)
+            .SingleAsync();
+        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId, memberVersion), default);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
 

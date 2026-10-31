@@ -170,6 +170,8 @@ public class WorkspaceNamespaceArchitectureTests
     {
         ["AcceptInvitationCommand"] = new("AcceptInvitationCommand", AllowlistClassification.PublicCommand,
             "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
+        ["AcceptInvitationByIdCommand"] = new("AcceptInvitationByIdCommand", AllowlistClassification.Intentional,
+            "Invitee-side accept by invitation id: a Global request for the signed-in person with a confirmed email; the database policy of the invitee (RLS 019) and the stored-address check open one pending invitation addressed to that person, and anything else answers NotFound", "Keep as-is"),
         ["DeclineInvitationCommand"] = new("DeclineInvitationCommand", AllowlistClassification.PublicCommand,
             "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
         ["DeclineInvitationByTokenCommand"] = new("DeclineInvitationByTokenCommand", AllowlistClassification.PublicCommand,

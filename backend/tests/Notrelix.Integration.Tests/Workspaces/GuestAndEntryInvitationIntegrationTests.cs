@@ -133,7 +133,8 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
             new GuestResourceAccessActionsAdapter(context),
             new Mock<IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
-                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
+            SeatGates.AlwaysAdmit);
 
         try
         {

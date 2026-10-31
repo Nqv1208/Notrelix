@@ -78,6 +78,17 @@ public static class ExpectedVersionInventory
             ["ChangeTeamMemberRoleCommand"] = "workspaces.team",
             ["UpdateMemberJobTitleCommand"] = "workspaces.workspace-member",
             ["UpdateMyJobTitleCommand"] = "workspaces.workspace-member",
+            ["RenameSpaceCommand"] = "workspaces.space",
+            ["UpdateSpaceDescriptionCommand"] = "workspaces.space",
+            ["ChangeSpaceTypeCommand"] = "workspaces.space",
+            ["ChangeSpaceVisibilityCommand"] = "workspaces.space",
+            ["ArchiveSpaceCommand"] = "workspaces.space",
+            ["UnarchiveSpaceCommand"] = "workspaces.space",
+            ["SuspendMemberCommand"] = "workspaces.workspace-member",
+            ["ActivateMemberCommand"] = "workspaces.workspace-member",
+            ["RemoveMemberCommand"] = "workspaces.workspace-member",
+            ["UpdateMemberRoleCommand"] = "workspaces.workspace-member",
+            ["ChangeInvitationRoleCommand"] = "workspaces.workspace-invitation",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>

@@ -277,7 +277,7 @@ public sealed class SpacePlacementIntegrationTests : IAsyncLifetime
         using var owner = _host.CreateProvider(s.Stack.AccountId, s.Stack.OwnerId);
         await OrgTreeTestHost.QueryAsync(owner, new CreatePageCommand(s.Stack.WorkspaceId, "Brief", null, s.Marketing));
 
-        var act = () => OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(s.Stack.WorkspaceId, s.Marketing));
+        var act = async () => await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(s.Stack.WorkspaceId, s.Marketing, await _host.SpaceVersionAsync(s.Marketing)));
 
         await act.Should().ThrowAsync<DomainBusinessRuleException>();
     }

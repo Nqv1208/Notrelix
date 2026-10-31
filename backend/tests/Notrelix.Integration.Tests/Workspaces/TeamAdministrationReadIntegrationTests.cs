@@ -154,6 +154,9 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
     private static async Task<object?> SendAsync(ServiceProvider provider, object request)
     {
         using var scope = provider.CreateScope();
+        // Idempotent requests (a Team create) need the key a transport would bind.
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set(Guid.NewGuid().ToString("N"), IdempotencyExecutionSource.Internal);
         var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
         if (result is Result plain)
             plain.Succeeded.Should().BeTrue(string.Join("; ", plain.Errors));
@@ -167,7 +170,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         ((Result<TeamDto>)(await SendAsync(provider, new GetTeamQuery(workspaceId, teamId)))!).Data!;
 
     private static async Task<List<TeamDto>> ListTeamsAsync(ServiceProvider provider, Guid workspaceId) =>
-        ((Result<List<TeamDto>>)(await SendAsync(provider, new GetWorkspaceTeamsQuery(workspaceId)))!).Data!;
+        ((Result<CursorPage<TeamDto>>)(await SendAsync(provider, new GetWorkspaceTeamsQuery(workspaceId)))!).Data!.Items.ToList();
 
     private static async Task<IReadOnlyList<TeamMemberDto>> GetTeamMembersAsync(ServiceProvider provider, Guid workspaceId, Guid teamId) =>
         (IReadOnlyList<TeamMemberDto>)(await SendAsync(provider, new GetTeamMembersQuery(workspaceId, teamId)))!;
@@ -351,7 +354,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         services.AddScoped<IRequestHandler<AddTeamMemberCommand, Result>, AddTeamMemberCommandHandler>();
         services.AddScoped<IRequestHandler<RemoveTeamMemberCommand, Result>, RemoveTeamMemberCommandHandler>();
         services.AddScoped<IRequestHandler<GetTeamQuery, Result<TeamDto>>, GetTeamQueryHandler>();
-        services.AddScoped<IRequestHandler<GetWorkspaceTeamsQuery, Result<List<TeamDto>>>, GetWorkspaceTeamsQueryHandler>();
+        services.AddScoped<IRequestHandler<GetWorkspaceTeamsQuery, Result<CursorPage<TeamDto>>>, GetWorkspaceTeamsQueryHandler>();
         services.AddScoped<IRequestHandler<GetTeamMembersQuery, IReadOnlyList<TeamMemberDto>>, GetTeamMembersQueryHandler>();
 
         return services.BuildServiceProvider();

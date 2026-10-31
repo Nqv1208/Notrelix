@@ -48,6 +48,7 @@ public class SystemContextUsageTests
         "GetMyWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
         "InvitationTokenScope.cs",
+        "InviteeInvitations.cs",
     ];
 
     [Fact]

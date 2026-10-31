@@ -48,6 +48,8 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         system.SetSystem();
         await using var ctx = _fixture.CreateOwnerContext(system);
         ctx.AccountMembers.Add(AccountMember.Create(_a.AccountId, _a.User.Id, AccountRole.Owner, _a.User.Id, now));
+        // Bob belongs to the account (adding a member directly needs that) but to no workspace yet.
+        ctx.AccountMembers.Add(AccountMember.Create(_a.AccountId, _bob.Id, AccountRole.Member, _a.User.Id, now));
         ctx.AccessGrants.Add(new AccessGrant(
             accountId: _a.AccountId, workspaceId: null, userId: _a.User.Id, sourceContext: "Account",
             membershipStatus: "Active", roleCodes: ["Owner"], permissionCodes: [], isAccountAdmin: true,
@@ -85,6 +87,12 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         return Convert.ToString(await command.ExecuteScalarAsync()) ?? "";
     }
 
+    /// <summary>The member version an editor read before it writes.</summary>
+    private Task<string> MemberVersionAsync(Guid workspaceId, Guid userId) =>
+        OwnerScalarAsync(
+            "SELECT version FROM workspace.workspace_members WHERE workspace_id = @w AND user_id = @u",
+            ("w", workspaceId), ("u", userId));
+
     private Task<string> GrantOfAsync(Guid workspaceId, Guid userId, string column) =>
         OwnerScalarAsync(
             $"SELECT {column} FROM authz.access_grants WHERE workspace_id = @w AND user_id = @u",
@@ -117,23 +125,30 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         (await WorkspaceReadAsync(factory, _bob, _a.WorkspaceId)).Should().Be(HttpStatusCode.OK, "the new grant admits the member");
 
         // Change role
-        var role = await owner.PatchAsJsonAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}", new { role = "Admin" });
+        var role = await owner.PatchAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}",
+            new { role = "Admin", expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, _bob.Id)) });
         role.IsSuccessStatusCode.Should().BeTrue(await role.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "role_codes[1] || ':' || is_workspace_admin")).Should().Be("Admin:true");
 
         // Suspend
-        var suspend = await owner.PostAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/suspend", null);
+        var suspend = await owner.PostAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/suspend",
+            new { expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, _bob.Id)) });
         suspend.IsSuccessStatusCode.Should().BeTrue(await suspend.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "revoked_at IS NOT NULL")).Should().Be("True");
         (await WorkspaceReadAsync(factory, _bob, _a.WorkspaceId)).Should().NotBe(HttpStatusCode.OK, "a suspended member is out");
 
         // Activate
-        var activate = await owner.PostAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/activate", null);
+        var activate = await owner.PostAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/activate",
+            new { expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, _bob.Id)) });
         activate.IsSuccessStatusCode.Should().BeTrue(await activate.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "revoked_at IS NULL")).Should().Be("True");
 
         // Remove
-        var remove = await owner.DeleteAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}");
+        var remove = await owner.DeleteAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}?expectedVersion={await MemberVersionAsync(_a.WorkspaceId, _bob.Id)}");
         remove.IsSuccessStatusCode.Should().BeTrue(await remove.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "revoked_at IS NOT NULL")).Should().Be("True");
         (await WorkspaceReadAsync(factory, _bob, _a.WorkspaceId)).Should().NotBe(HttpStatusCode.OK);
@@ -159,8 +174,12 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
         using var client = ClientFor(factory, _a.User);
 
-        var response = await client.PostAsJsonAsync($"/api/v1/accounts/{_a.AccountId}/workspaces",
-            new { name = "Second Space", description = "d", isPersonal = false });
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/accounts/{_a.AccountId}/workspaces")
+        {
+            Content = JsonContent.Create(new { name = "Second Space", description = "d", isPersonal = false }),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        var response = await client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         var created = await response.Content.ReadFromJsonAsync<Guid>();
 
