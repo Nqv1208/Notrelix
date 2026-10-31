@@ -238,7 +238,11 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
 
         (await current.PostAsync($"/api/v1/auth/sessions/{other}/revoke", null)).StatusCode.Should().Be(HttpStatusCode.OK);
         // Ending every other device spends a single-use proof: no proof, no change.
-        (await current.PostAsync("/api/v1/auth/sessions/revoke-others", null)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var activeBefore = JsonDocument.Parse(await current.GetStringAsync("/api/v1/auth/sessions")).RootElement.GetArrayLength();
+        var refused = await current.PostAsJsonAsync("/api/v1/auth/sessions/revoke-others", new { });
+        refused.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed, await refused.Content.ReadAsStringAsync());
+        JsonDocument.Parse(await current.GetStringAsync("/api/v1/auth/sessions")).RootElement
+            .GetArrayLength().Should().Be(activeBefore, "a refused call must leave the other sessions active");
         var proof = await current.PostAsJsonAsync(
             "/api/v1/auth/security/step-up/complete-password",
             new { purpose = "RevokeOtherSessions", password = Password });
