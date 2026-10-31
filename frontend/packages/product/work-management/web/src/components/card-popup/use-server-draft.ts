@@ -58,7 +58,6 @@ export function useServerDraft(server: string, options: ServerDraftOptions) {
       if (clash.current) clear();
     } else raise();
     // The draft is read only to decide; a later edit must not re-run it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server]);
 
   // A draft typed after the notice shows is what "Keep my value" saves; once it matches theirs there is no clash.
@@ -66,7 +65,6 @@ export function useServerDraft(server: string, options: ServerDraftOptions) {
     if (!clash.current) return;
     if (draft === server) clear();
     else raise();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft]);
 
   useEffect(() => () => clearFieldConflict(latest.current.options.key), [clearFieldConflict]);

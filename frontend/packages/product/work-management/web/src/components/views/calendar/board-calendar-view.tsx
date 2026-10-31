@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -12,7 +12,6 @@ import {
   type Card,
 } from "@notrelix/work-management-core";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
-import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type { ItemSheetGroup } from "../../card-detail/task-detail-types";
 import { useBoardCapabilities } from "../../shared/board-capabilities";
 import {
@@ -107,7 +106,6 @@ export function BoardCalendarView({
   now: nowProp,
 }: BoardCalendarViewProps) {
   const copy = useCalendarCopy();
-  const header = useContext(BoardHeaderDataContext);
   const rootRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
   const now = useNow(nowProp);

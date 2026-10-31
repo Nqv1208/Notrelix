@@ -8,7 +8,6 @@ import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import {
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -56,7 +55,6 @@ import {
   type KanbanStatusLane,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
   ItemSheetLinkCandidate,
@@ -189,7 +187,6 @@ export function KanbanView({
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
   const statusFormCopy = useStatusOptionFormCopy();
-  const header = useContext(BoardHeaderDataContext);
 
   const [localFilter, setLocalFilter] = useState<string | undefined>();
   const [localGroupBy, setLocalGroupBy] = useState<string | undefined>();

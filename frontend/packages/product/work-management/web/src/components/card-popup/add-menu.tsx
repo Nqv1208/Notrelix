@@ -21,7 +21,7 @@ import { usePinnedFieldIds } from "./capabilities/use-pinned-fields";
 import { fillPopupCopy } from "./card-popup.copy";
 import { useCardPopup } from "./card-popup-context";
 import { AttachPanel } from "./pickers/attach-panel";
-import { PickerHead, SearchField } from "./pickers/picker-bits";
+import { PickerHead } from "./pickers/picker-bits";
 import { PanelBtn, PanelInput, PanelPopover, QuickBtn } from "./popup-ui";
 import { AddLinkPanel } from "./sections/links-section";
 import { fieldTypeIcon } from "./sections/add-field-panel";

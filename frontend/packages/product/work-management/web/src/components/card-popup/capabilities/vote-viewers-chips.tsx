@@ -1,6 +1,6 @@
 import { ThumbsUp, Eye } from "lucide-react";
 import { useState } from "react";
-import { PopoverTrigger, cn } from "@notrelix/ui-web";
+import { PopoverTrigger } from "@notrelix/ui-web";
 import {
   personInitials,
   type CardDetail,

@@ -5,7 +5,6 @@ import {
 } from "../kanban/use-kanban-collapsed-lanes";
 import {
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -42,7 +41,6 @@ import {
   type KanbanStatusLane,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type { ItemSheetGroup } from "../../card-detail/task-detail-types";
 import { findItemFields } from "../../card-detail/item-field-editors";
 import { useBoardCapabilities } from "../../shared/board-capabilities";
@@ -145,7 +143,6 @@ export function MainTableView({
   const [now] = useState(() => new Date());
   const copy = useMainTableCopy();
   const laneCopy = useKanbanLaneCopy();
-  const header = useContext(BoardHeaderDataContext);
 
   const [localFilter, setLocalFilter] = useState<string | undefined>();
   const [localGroupBy, setLocalGroupBy] = useState<string | undefined>();
