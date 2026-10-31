@@ -458,7 +458,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §73](../../product/governance.md) GOV-021; WGREQ079, WGREQ149.
 - Acceptance: Given a grant, When revoked, Then DELETE returns 204 and the subject gets NotFound on the resource unless another source applies.
 - Evidence: BE `DELETE /api/v1/resources/{resourceType}/{resourceId}/permissions/{permissionId}` (Governance.ResourcePermissions.Revoke, `RevokeResourcePermissionCommand`) · FE `board-share-dialog.tsx` · Tests as D01, `BoardMemberRemovalCeilingTests` · Real e2e `frontend/e2e/real/board-sharing.real.e2e.spec.ts` · Design `Final-Share`
-- State: HARDENING - Revoke repeated is NotFound, not an idempotent 204; realtime and cache convergence after revoke are not proven end to end.
+- State: HARDENING - Revoke repeated is NotFound, not an idempotent 204; realtime and cache convergence after revoke are not proven end to end. Real-stack check 2026-10-31: revoking or lowering a board grant signals the gateway at once (same path as UC-GOV-E09).
 
 ### UC-GOV-D05 List who holds explicit access on a resource
 - Capability: D Permission assignment (team spec, Governance list)
@@ -740,7 +740,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §59-§61](../../product/governance.md) GOV-018, GOV-011; WGREQ142.
 - Acceptance: Given a connected Guest, When their grant is revoked, Then no further Board events reach them without a reconnect.
 - Evidence: BE `Notrelix.API/Realtime/RealtimeAuthorization.cs` (authorizes at subscribe) · Tests `backend/tests/Notrelix.Application.Tests/Common/Realtime/RealtimeSubscriptionAuthorizationTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - Authorization at subscribe time is proven; revocation while connected is not found in source or tests.
+- State: IMPLEMENTING - Authorization at subscribe time is proven; revocation while connected is not found in source or tests. Real-stack check 2026-10-31 (two browser contexts, in-process and Redis transport): removing a Private-board member revoked their subscription 50 ms after the API answered and the page showed the board unavailable with no reload; making a Workspace-visible board Private did the same (37 ms); lowering a member to Viewer kept the read subscription and the UI dropped Add item (read only) with no reload; suspending a workspace member revoked the workspace and board subscriptions (94 and 146 ms). The 60 s pass stays as the backstop. Known: once in about twelve runs the page showed the generic 'This page could not open' boundary instead of the unavailable state. Team and Space handlers are wired the same way but were not driven in a browser, commit 655e9359c.
 
 ### UC-GOV-E10 Export, search and analytics keep source authorization
 - Capability: E Effective permission evaluation (team spec, Governance list)
