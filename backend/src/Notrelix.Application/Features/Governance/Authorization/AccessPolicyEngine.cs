@@ -23,7 +23,14 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         if (descriptor.Principal == ApplicationPrincipalKind.Anonymous
             || descriptor.Principal == ApplicationPrincipalKind.System)
         {
-            return AccessDecision.Allow();
+            // Public and system requests carry no permission contract (the descriptor validator and the
+            // architecture tests pin that). A request that does carry one is a misconfiguration: it must
+            // never be waved through here and skip the permission check it declares.
+            return descriptor.Access.RequiresPermission
+                ? AccessDecision.Deny(
+                    AccessDecisionKind.SecurityMisconfiguration,
+                    $"{descriptor.RequestType.Name} is {descriptor.Principal} but requires permission.")
+                : AccessDecision.Allow();
         }
 
         if (!context.UserId.HasValue || context.UserId == Guid.Empty)
