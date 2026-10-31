@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
@@ -16,22 +17,26 @@ public record UserPendingInvitationDto(
 
 /// <summary>
 /// The pending, unexpired invitations addressed to the signed-in person's own address, read through the
-/// invitee policy of the database (RLS 019); an address that is not confirmed gets none.
+/// invitee policy of the database (RLS 019); an address that is not confirmed gets none. The address comes from
+/// the stored user, never from the token claim.
 /// </summary>
-public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest;
+public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest, IRequireVerifiedEmail;
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {
     private readonly InviteeInvitations _invitees;
+    private readonly IIdentityUserFacts _identityUserFacts;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetUserPendingInvitationsQueryHandler(
         InviteeInvitations invitees,
+        IIdentityUserFacts identityUserFacts,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _invitees = invitees;
+        _identityUserFacts = identityUserFacts;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -43,8 +48,14 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
             return Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>());
         }
 
-        var userEmail = _requestContext.Email.Trim().ToLowerInvariant();
-        var pending = await _invitees.ListPendingAsync(userEmail, _dateTimeProvider.UtcNow, ct);
+        // The stored address, and only while it is confirmed: a claim in the token proves neither.
+        var user = await _identityUserFacts.FindByIdAsync(_requestContext.UserId, ct);
+        if (user is null || !user.CanParticipate || !user.EmailConfirmed)
+        {
+            return Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>());
+        }
+
+        var pending = await _invitees.ListPendingAsync(user.Email.Trim().ToLowerInvariant(), _dateTimeProvider.UtcNow, ct);
 
         var result = new List<UserPendingInvitationDto>();
 
