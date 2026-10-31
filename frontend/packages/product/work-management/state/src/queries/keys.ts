@@ -73,6 +73,15 @@ export const wmQueryKeys = {
     ),
   boardTemplates: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "work-management", "templates"),
+  boardArchive: (workspaceId: string, boardId: string, search = "") =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "boards",
+      "archive",
+      boardId,
+      search,
+    ),
   boardTrash: (workspaceId: string, boardId: string) =>
     workspaceQueryKey(
       workspaceId,

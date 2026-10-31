@@ -13,6 +13,8 @@ interface BoardLayoutShellProps {
   onOpenSettings?: () => void;
   /** Opens the board's deleted items; absent: no entry in the menu. */
   onOpenTrash?: () => void;
+  /** Opens the board's archived items; absent: no entry in the menu. */
+  onOpenArchive?: () => void;
   children: React.ReactNode;
 }
 
@@ -26,6 +28,7 @@ export function BoardLayoutShell({
   onAddView,
   onOpenSettings,
   onOpenTrash,
+  onOpenArchive,
   children,
 }: BoardLayoutShellProps) {
   return (
@@ -38,6 +41,7 @@ export function BoardLayoutShell({
         onAddView={onAddView}
         onOpenSettings={onOpenSettings}
         onOpenTrash={onOpenTrash}
+        onOpenArchive={onOpenArchive}
       />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>

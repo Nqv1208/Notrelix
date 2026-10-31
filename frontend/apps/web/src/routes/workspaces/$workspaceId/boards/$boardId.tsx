@@ -5,6 +5,7 @@ import {
   BoardHeaderCopyContext,
   BoardHeaderDataContext,
   BoardLayoutShell,
+  BoardArchiveHost,
   BoardTrashHost,
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
@@ -52,6 +53,7 @@ export function BoardPage() {
   // "Quyền truy cập" lands here); the dialog also opens from the header.
   const [shareOpen, setShareOpen] = useState(search.share === true);
   const [trashOpen, setTrashOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   useEffect(() => {
     if (search.share !== true) return;
     setShareOpen(true);
@@ -146,6 +148,7 @@ export function BoardPage() {
           savedViews={saved.views}
           onAddView={(layout) => void handleAddView(layout)}
           onOpenTrash={() => setTrashOpen(true)}
+          onOpenArchive={() => setArchiveOpen(true)}
           onOpenSettings={() =>
             navigate({
               to: "/workspaces/$workspaceId/boards/$boardId/settings",
@@ -170,6 +173,12 @@ export function BoardPage() {
             />
           </BoardViewSelectionProvider>
         </BoardLayoutShell>
+        <BoardArchiveHost
+          workspaceId={workspaceId}
+          boardId={boardId}
+          open={archiveOpen}
+          onClose={() => setArchiveOpen(false)}
+        />
         <BoardTrashHost
           workspaceId={workspaceId}
           boardId={boardId}

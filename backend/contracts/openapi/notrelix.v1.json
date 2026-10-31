@@ -9986,6 +9986,57 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/items/archived": {
+      "get": {
+        "tags": [
+          "WorkManagement.BoardItems",
+          "WorkManagement.BoardItems"
+        ],
+        "summary": "List the archived items of a board",
+        "operationId": "WorkManagement.BoardItems.Archived",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/board-items/{itemId}": {
       "get": {
         "tags": [
@@ -28785,6 +28836,41 @@
           "nextCursor": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "archivedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

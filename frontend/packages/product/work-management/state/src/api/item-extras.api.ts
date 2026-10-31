@@ -245,6 +245,17 @@ export interface MoveToBoardResultDto {
   readonly droppedAssignees: number;
 }
 
+/** An item in a board's archive. */
+export interface BoardArchivedEntryDto {
+  readonly id: string;
+  readonly name: string;
+  readonly itemKey: string | null;
+  readonly groupId: string;
+  readonly archivedAt: string;
+  readonly archivedBy: string | null;
+  readonly version: number;
+}
+
 /** An item in a board's trash. */
 export interface BoardTrashEntryDto {
   readonly id: string;
@@ -508,6 +519,18 @@ export function createItemExtrasApi(
     async listTrash(boardId: string): Promise<BoardTrashEntryDto[]> {
       const rows = await api.get<BoardTrashEntryDto[]>(
         `/boards/${boardId}/items/trash`,
+        quiet,
+      );
+      return rows ?? [];
+    },
+    /** `WorkManagement.BoardItems.Archived`: the board's archived items, newest first, optionally narrowed by name. */
+    async listArchived(
+      boardId: string,
+      search?: string,
+    ): Promise<BoardArchivedEntryDto[]> {
+      const q = search?.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
+      const rows = await api.get<BoardArchivedEntryDto[]>(
+        `/boards/${boardId}/items/archived${q}`,
         quiet,
       );
       return rows ?? [];

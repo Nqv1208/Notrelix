@@ -119,6 +119,8 @@ export interface BoardHeaderData {
   readonly onCopyLink?: () => void;
   /** Opens the board's deleted items; absent: no "Deleted items" entry. */
   readonly onOpenTrash?: () => void;
+  /** Opens the board's archived items; absent: no entry in the menu. */
+  readonly onOpenArchive?: () => void;
   /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
   readonly archived?: BoardHeaderArchived;
 }
@@ -370,6 +372,7 @@ export function BoardHeaderSurface({
   onOpenShare,
   onCopyLink,
   onOpenTrash,
+  onOpenArchive,
   archived,
 }: BoardHeaderSurfaceProps) {
   const shareReasonId = React.useId();
@@ -494,7 +497,7 @@ export function BoardHeaderSurface({
           </>
         ) : null}
 
-        {onCopyLink || canManage || (onOpenTrash && canEditItems) ? (
+        {onCopyLink || canManage || ((onOpenTrash || onOpenArchive) && canEditItems) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -524,6 +527,11 @@ export function BoardHeaderSurface({
                 <DropdownMenuItem onSelect={onCopyLink}>
                   <Link2 aria-hidden="true" />
                   {h.copyLink}
+                </DropdownMenuItem>
+              ) : null}
+              {onOpenArchive && canEditItems ? (
+                <DropdownMenuItem onSelect={onOpenArchive}>
+                  {h.archivedItems}
                 </DropdownMenuItem>
               ) : null}
               {onOpenTrash && canEditItems ? (

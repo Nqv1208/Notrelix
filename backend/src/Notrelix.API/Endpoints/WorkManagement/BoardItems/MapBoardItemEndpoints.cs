@@ -18,6 +18,7 @@ public static class MapBoardItemEndpoints
         boardItems.MapListBoardItems();
         boardItems.MapBulkUpdateBoardItems();
         boardItems.MapListBoardItemTrash();
+        boardItems.MapListArchivedBoardItems();
 
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}")

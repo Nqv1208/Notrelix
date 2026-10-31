@@ -2578,6 +2578,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/items/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the archived items of a board */
+        get: operations["WorkManagement.BoardItems.Archived"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{itemId}": {
         parameters: {
             query?: never;
@@ -7523,6 +7540,20 @@ export interface components {
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.WorkspaceInboxDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto"][] | null;
             nextCursor?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            itemKey?: string | null;
+            /** Format: uuid */
+            groupId?: string;
+            /** Format: date-time */
+            archivedAt?: string;
+            /** Format: uuid */
+            archivedBy?: string | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */
@@ -14534,6 +14565,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.Archived": {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"][];
                 };
             };
         };

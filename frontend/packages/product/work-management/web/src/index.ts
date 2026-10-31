@@ -11,6 +11,7 @@ export * from "./components/board-workspace-view-content";
 // Board layout
 export * from "./components/board-layout/board-layout-shell";
 export { BoardTrashHost } from "./components/item-lifecycle/board-trash-host";
+export { BoardArchiveHost } from "./components/item-lifecycle/board-archive-host";
 export { itemLifecycleCatalog } from "./components/item-lifecycle/item-lifecycle.catalog";
 export { itemActionsCatalog } from "./components/item-actions/item-actions.catalog";
 export * from "./components/board-layout/board-toolbar";

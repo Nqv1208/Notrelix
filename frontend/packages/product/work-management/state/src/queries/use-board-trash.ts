@@ -43,3 +43,44 @@ export function useBoardTrash(
     restoringId: restore.isPending ? restore.variables : undefined,
   };
 }
+
+/**
+ * The items archived on a board and the way back: unarchiving puts the item (and the sub-items archived with
+ * it) on the board again.
+ */
+export function useBoardArchive(
+  boardId: string,
+  workspaceId: string,
+  search: string,
+  enabled = true,
+) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: wmQueryKeys.boardArchive(workspaceId, boardId, search),
+    queryFn: () => itemExtras.listArchived(boardId, search),
+    enabled: enabled && Boolean(boardId && workspaceId),
+    staleTime: 0,
+  });
+  const unarchive = useMutation({
+    mutationFn: (itemId: string) => itemExtras.restoreItem(itemId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.boardArchive(workspaceId, boardId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(workspaceId, "work-management"),
+      });
+    },
+  });
+  return {
+    entries: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    unarchive: unarchive.mutateAsync,
+    unarchivingId: unarchive.isPending ? unarchive.variables : undefined,
+  };
+}

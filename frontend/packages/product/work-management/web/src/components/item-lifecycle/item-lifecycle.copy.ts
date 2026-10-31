@@ -68,6 +68,15 @@ export const en = {
   trashRestore: "Restore",
   trashUntil: "Can be restored until {{day}}",
   trashClose: "Close",
+  archiveListTitle: "Archived items",
+  archiveListBody: "Items archived on this board. Unarchive one to put it back.",
+  archiveListEmpty: "No item is archived on this board.",
+  archiveListLoading: "Loading archived items",
+  archiveListError: "Archived items couldn't be loaded.",
+  archiveListAction: "Unarchive",
+  archiveListSince: "Archived on {{day}}",
+  unarchived: "“{{title}}” was unarchived",
+  unarchiveFailed: "Couldn't unarchive “{{title}}”.",
 };
 
 export type ItemLifecycleCopy = typeof en;
@@ -137,6 +146,16 @@ export const vi: ItemLifecycleCopy = {
   trashRestore: "Khôi phục",
   trashUntil: "Khôi phục được đến {{day}}",
   trashClose: "Đóng",
+  archiveListTitle: "Việc đã lưu trữ",
+  archiveListBody:
+    "Các việc đã lưu trữ trên board này. Bỏ lưu trữ để đưa việc về lại board.",
+  archiveListEmpty: "Board này chưa có việc nào được lưu trữ.",
+  archiveListLoading: "Đang tải việc đã lưu trữ",
+  archiveListError: "Không tải được danh sách việc đã lưu trữ.",
+  archiveListAction: "Bỏ lưu trữ",
+  archiveListSince: "Lưu trữ ngày {{day}}",
+  unarchived: "Đã bỏ lưu trữ “{{title}}”",
+  unarchiveFailed: "Không bỏ lưu trữ được “{{title}}”.",
 };
 
 export function itemLifecycleCopy(locale: string): ItemLifecycleCopy {
