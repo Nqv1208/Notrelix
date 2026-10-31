@@ -65,6 +65,7 @@ describe("the workspace adapter", () => {
       departmentCount: null,
       isDefault: true,
       canLeave: false,
+      isArchived: false,
     });
     expect(toWorkspaceEntry({ id: "w2", role: "Guest" })).toMatchObject({
       role: "guest",

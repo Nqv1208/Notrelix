@@ -21,7 +21,9 @@ describe("workspace web pure surfaces", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Pending workspace invitations" }),
     );
-    const acceptButtons = screen.getAllByRole("button", { name: "Accept" });
+    const acceptButtons = screen.getAllByRole("button", {
+      name: /^Accept the invitation to /,
+    });
     fireEvent.click(acceptButtons[0]!);
 
     expect(onAccept).toHaveBeenCalledWith(

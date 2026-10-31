@@ -437,11 +437,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       role: "guest",
     });
     await invitations.revoke(workspaceId, revoked!);
-    const raw = await client.api.get<{ id: string; status: string }[]>(
-      endpoints.workspaces.invitations(workspaceId),
-    );
-    expect(raw.find((i) => i.id === kept)?.status).toBe("Pending");
-    expect(raw.find((i) => i.id === revoked)?.status).toBe("Revoked");
+    const raw = await client.api.get<{
+      items: { id: string; status: string }[];
+    }>(endpoints.workspaces.invitations(workspaceId));
+    expect(raw.items.find((i) => i.id === kept)?.status).toBe("Pending");
+    expect(raw.items.find((i) => i.id === revoked)?.status).toBe("Revoked");
     expect(
       (await invitations.getList(workspaceId)).map((i) => i.id),
     ).not.toContain(revoked);
@@ -451,9 +451,10 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       status: 412,
     });
     await settings.archive(workspaceId, 3);
-    await expect(workspaces.getDetail(workspaceId)).rejects.toMatchObject({
-      status: 404,
-    });
+    // A member still reads the archived workspace (read-only), flagged as archived.
+    expect(
+      await client.api.get(endpoints.workspaces.detail(workspaceId)),
+    ).toMatchObject({ isArchived: true });
 
     store.assertInvariants();
   });

@@ -278,13 +278,24 @@ describe("Teams service", () => {
 
   it("list returns archived teams too", async () => {
     const { api } = recorder({
-      "GET /w/ws/teams": [
-        { id: "a", name: "A", status: "Active" },
-        { id: "b", name: "B", status: "Archived" },
-      ],
+      "GET /w/ws/teams?limit=200": {
+        items: [
+          { id: "a", name: "A", status: "Active" },
+          { id: "b", name: "B", status: "Archived" },
+        ],
+        nextCursor: "page-2",
+      },
+      "GET /w/ws/teams?limit=200&cursor=page-2": {
+        items: [{ id: "c", name: "C", status: "Active" }],
+        nextCursor: null,
+      },
     });
     const teams = await createTeamsService(api, endpoints).list("ws");
-    expect(teams.map((item) => item.status)).toEqual(["Active", "Archived"]);
+    expect(teams.map((item) => item.status)).toEqual([
+      "Active",
+      "Archived",
+      "Active",
+    ]);
   });
 
   it("create returns the id from the 201 body", async () => {

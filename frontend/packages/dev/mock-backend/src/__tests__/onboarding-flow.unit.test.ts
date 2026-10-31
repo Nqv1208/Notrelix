@@ -14,7 +14,8 @@ function client() {
   return { store, api };
 }
 
-const KEY = { idempotencyKey: "test-key" } as const;
+/** Each create is its own attempt: a shared key would replay the first answer. */
+const key = () => ({ idempotencyKey: crypto.randomUUID() });
 const ACCOUNT = "account-x";
 const slugCheck = (slug: string) =>
   `/accounts/${ACCOUNT}/workspaces/slug-check?slug=${slug}`;
@@ -34,7 +35,7 @@ describe("workspace address", () => {
         size: "51-200",
         language: "vi",
       },
-      KEY,
+      key(),
     );
     expect(await api.get(slugCheck("saomai"))).toEqual({
       status: "taken",
@@ -49,7 +50,7 @@ describe("workspace address", () => {
       api.post(
         workspaces,
         { name: "Sao Mai 2", slug: "saomai", size: "1-10", language: "vi" },
-        KEY,
+        key(),
       ),
     ).rejects.toMatchObject({ status: 409 });
   });
@@ -89,7 +90,7 @@ describe("the setup through the client", () => {
         size: "51-200",
         language: "vi",
       },
-      KEY,
+      key(),
     ),
   });
 
@@ -100,7 +101,7 @@ describe("the setup through the client", () => {
       api.post<string>(
         `/workspaces/${made.id}/spaces`,
         { name, visibility: "Private", spaceType: "Department" },
-        KEY,
+        key(),
       );
     const sales = await space("Kinh doanh");
     const factory = await space("Sản xuất");
@@ -121,19 +122,19 @@ describe("the setup through the client", () => {
           role: "Member",
           initialEntries: targetId ? [{ kind: "Space", targetId, role }] : [],
         },
-        KEY,
+        key(),
       );
     await invite("khoa@saomaifood.vn", factory, "Admin");
     await invite("lan@saomaifood.vn", sales, "Member");
-    // The same address twice is refused the second time: the page counts it as skipped.
+    // The same address twice is refused the second time (a pending invitation exists): the page counts it as skipped.
     await expect(
       invite("khoa@saomaifood.vn", null, "Viewer"),
-    ).rejects.toMatchObject({ status: 422 });
+    ).rejects.toMatchObject({ status: 409 });
 
     const boardId = await api.post<string>(
       `/workspaces/${made.id}/boards`,
       { title: "Ra mắt nước chấm Sao Mai", spaceId: factory },
-      KEY,
+      key(),
     );
     expect(store.getBoard(boardId)?.title).toBe("Ra mắt nước chấm Sao Mai");
     expect(store.getBoard(boardId)?.spaceId).toBe(factory);
@@ -158,13 +159,13 @@ describe("the setup through the client", () => {
     await api.post(
       `/workspaces/${made.id}/members`,
       { email: "khoa@saomaifood.vn", role: "Member" },
-      KEY,
+      key(),
     );
     expect((await card()).items[1]).toMatchObject({
       key: "invite-more",
       done: true,
     });
-    await api.post(`/workspaces/${made.id}/getting-started/dismiss`, {}, KEY);
+    await api.post(`/workspaces/${made.id}/getting-started/dismiss`, {}, key());
     expect(await card()).toMatchObject({ visible: false, dismissed: true });
   });
 
@@ -201,10 +202,10 @@ describe("what an invited person sees", () => {
     expect(await api.get(`/workspaces/${id}/members/me`)).toMatchObject({
       role: expect.any(String),
     });
-    const tree = await api.get<{ parentSpaceId: string | null }[]>(
-      `/workspaces/${id}/spaces/tree`,
-    );
-    expect(tree.some((space) => !space.parentSpaceId)).toBe(true);
+    const tree = await api.get<{
+      items: { parentSpaceId: string | null }[];
+    }>(`/workspaces/${id}/spaces/tree?limit=200`);
+    expect(tree.items.some((space) => !space.parentSpaceId)).toBe(true);
     expect(
       (await api.get<unknown[]>(`/workspaces/${id}/boards`)).length,
     ).toBeGreaterThan(0);

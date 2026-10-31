@@ -728,6 +728,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "unarchiveWorkspace",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Workspaces.Workspaces.UnarchiveWorkspace",
+    operationId: "Workspaces.Workspaces.UnarchiveWorkspace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useMyWorkItems",
     consumerFile:
       "frontend/apps/web/src/shell/workspace/work-management-bridge.ts",
@@ -1524,6 +1534,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
     capability: "Workspaces.Spaces.GetSpaceTree",
     operationId: "Workspaces.Spaces.GetSpaceTree",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.GetSpace",
+    operationId: "Workspaces.Spaces.GetSpace",
     mutation: false,
   },
   {

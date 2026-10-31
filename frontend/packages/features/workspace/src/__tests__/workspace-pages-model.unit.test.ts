@@ -339,10 +339,18 @@ describe("Invitations", () => {
     await expect(
       service.create("ws", { email: " a@x.io ", role: "guest" }),
     ).resolves.toBe("inv-9");
-    expect(api.post).toHaveBeenCalledWith("/workspaces/ws/members", {
-      email: "a@x.io",
-      role: "Guest",
-    });
+    expect(api.post).toHaveBeenCalledWith(
+      "/workspaces/ws/members",
+      { email: "a@x.io", role: "Guest" },
+      undefined,
+    );
+    // A retry of the same attempt reuses its key, so no second email goes out.
+    await service.create("ws", { email: "a@x.io", role: "guest" }, "attempt-1");
+    expect(api.post).toHaveBeenLastCalledWith(
+      "/workspaces/ws/members",
+      { email: "a@x.io", role: "Guest" },
+      { idempotencyKey: "attempt-1" },
+    );
     await service.revoke("ws", "inv-9");
     expect(api.delete).toHaveBeenCalledWith("/workspaces/ws/invitations/inv-9");
   });
@@ -591,8 +599,19 @@ describe("Producer adapters", () => {
     const service = createWorkspaceService(api, WORKSPACE_ENDPOINTS);
     const input = { name: "Acme", slug: "acme", isPersonal: false };
     const made = await service.create("acc-1", input);
-    expect(api.post).toHaveBeenCalledWith("/accounts/acc-1/workspaces", input);
+    expect(api.post).toHaveBeenCalledWith(
+      "/accounts/acc-1/workspaces",
+      input,
+      undefined,
+    );
     expect(api.post).not.toHaveBeenCalledWith("/workspaces", expect.anything());
+    // The same attempt retried reuses its key, so one workspace is made.
+    await service.create("acc-1", input, "attempt-1");
+    expect(api.post).toHaveBeenLastCalledWith(
+      "/accounts/acc-1/workspaces",
+      input,
+      { idempotencyKey: "attempt-1" },
+    );
     expect(api.get).toHaveBeenCalledWith("/workspaces/w-new");
     expect(made).toMatchObject({ id: "w-new", name: "Acme" });
   });
