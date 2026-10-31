@@ -64,10 +64,10 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
-| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
+| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 3 | 36 | 112 | 0 | 1 |
+| | Total | | 170 | 18 | 3 | 31 | 117 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -337,11 +337,11 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-Q01 | Let an Automation rule act on items | Q | Rule executor identity | yes | yes | complete | automation | HARDENING | Loop-guard and executor-lost tests |
 | UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | IMPLEMENTING | live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
 | UC-WM-Q03 | Sync items with an external provider | Q | Integrations | no | no | not applicable | none | DEFINED | Integrations-owned; idempotent replay test when built |
-| UC-WM-R01 | Comment on an item | R | Commenter and above | yes | yes | partial | none | INTEGRATING | Design gaps; real e2e |
-| UC-WM-R02 | Reply, edit or delete a comment | R | Author; moderator separate | yes | yes | partial | none | INTEGRATING | Design edit/delete; real e2e |
-| UC-WM-R03 | Mention a person in an item comment | R | Commenter and above | yes | yes | complete | none | INTEGRATING | No-notify-for-no-access proof; Guest list |
-| UC-WM-R04 | Attach files to an item | R | Editor and above (upload); ViewBoard (view) | yes | yes | complete | none | INTEGRATING | Real e2e; Viewer upload refused test |
-| UC-WM-R05 | Link a Document from an item | R | Editor | yes | yes | complete | none | INTEGRATING | Typed client; no-title-for-unreadable proof; real e2e |
+| UC-WM-R01 | Comment on an item | R | Commenter and above | yes | yes | partial | none | HARDENING | Design gaps; real e2e |
+| UC-WM-R02 | Reply, edit or delete a comment | R | Author; moderator separate | yes | yes | partial | none | HARDENING | Design edit/delete; real e2e |
+| UC-WM-R03 | Mention a person in an item comment | R | Commenter and above | yes | yes | complete | none | HARDENING | No-notify-for-no-access proof; Guest list |
+| UC-WM-R04 | Attach files to an item | R | Editor and above (upload); ViewBoard (view) | yes | yes | complete | none | HARDENING | Real e2e; Viewer upload refused test |
+| UC-WM-R05 | Link a Document from an item | R | Editor | yes | yes | complete | none | HARDENING | Typed client; no-title-for-unreadable proof; real e2e |
 | UC-WM-R06 | Watch or unwatch an item | R | Any viewer | yes | yes | none | following, follow-notifications | HARDENING | Typed client; design; auto-watch decision open |
 | UC-WM-R07 | Notify and attend (assignment, mention, approval, overdue, watching) | R | Collaboration | partial | yes | complete | follow-notifications | HARDENING | Other types have no producer; decide set |
 | UC-WM-R08 | Reference items from Documents | R | Documents | partial | partial | not applicable | none | INTEGRATING | Private-board embed test |
@@ -2634,7 +2634,7 @@ Team capability WM-018.
 - Rules: product sections 108, 159; WMREQ129
 - Acceptance: Given a Commenter, when they post, then the comment shows for everyone with access. Given a Viewer, then the composer is disabled with the reason.
 - Evidence: BE POST/GET /board-items/{id}/comments (Collaboration, adjacent) · FE comment-thread/*, `frontend/packages/product/work-management/web/src/components/card-detail/task-updates-tab.tsx` · Design WM-Comments; Er, E, edit/delete, M missing · Tests none found · Real e2e none
-- State: INTEGRATING — Design gaps; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: commented on an item (201); a retry under the same key now answers the first comment instead of adding a second (was not idempotent, fixed); an empty and a too-long comment 400; a Guest 404; the card panel posts a comment and it is still there after reload, commit 23cee8fa7.
 
 ### UC-WM-R02 Reply, edit or delete a comment
 - Capability: R Collaboration handoff (WM-018)
@@ -2648,7 +2648,7 @@ Team capability WM-018.
 - Rules: product sections 108; D59, D60; WMREQ129
 - Acceptance: Given a reply to a reply, then it attaches to the top-level comment. Given a non-author, then Edit and Delete are absent.
 - Evidence: BE PATCH/DELETE /comments/{id}, reactions (Collaboration, adjacent) · FE comment-thread, useToggleCommentReaction · Design WM-Comments (reply, reactions) · Tests none found · Real e2e none
-- State: INTEGRATING — Design edit/delete; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: replied, edited as the author, another author's edit 403, the same content bumps nothing, deleted; editing a deleted comment 404, commit 23cee8fa7.
 
 ### UC-WM-R03 Mention a person in an item comment
 - Capability: R Collaboration handoff (WM-018)
@@ -2662,7 +2662,7 @@ Team capability WM-018.
 - Rules: product sections 108; D42; Q7
 - Acceptance: Given a person without board access, when mentioned, then no notification is sent. Given a Guest, then the list holds board members only.
 - Evidence: BE CreateComment mentions (Collaboration) · FE `frontend/packages/product/work-management/web/src/components/item-page/item-page-mention.tsx` · Design Final-Detail (mention) · Tests none found · Real e2e none
-- State: INTEGRATING — No-notify-for-no-access proof; Guest list
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a mention of a member reaches their inbox and shows as a chip; a Guest with no access gets no notification and no chip, commit 23cee8fa7.
 
 ### UC-WM-R04 Attach files to an item
 - Capability: R Collaboration handoff (WM-018)
@@ -2676,7 +2676,7 @@ Team capability WM-018.
 - Rules: product sections 108; WMREQ129
 - Acceptance: Given an Editor, when a file is added, then the item shows the file. Given a Viewer, then Add is disabled.
 - Evidence: BE attachments routes (Collaboration, adjacent) · FE ItemPageFiles, useItemFileUploads · Design WM-Sheet-Files · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; Viewer upload refused test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; file upload (not a link) was not driven; tests and owner check. Evidence: real-stack check 2026-10-31: added a link attachment (201) and listed it; an unsafe url 400; an Observer cannot add or delete (403) but can list; a Guest 404; deleted (204) and deleting again 404, commit 23cee8fa7.
 
 ### UC-WM-R05 Link a Document from an item
 - Capability: R Collaboration handoff (WM-018)
@@ -2690,7 +2690,7 @@ Team capability WM-018.
 - Rules: product sections 107, 157; WM-029
 - Acceptance: Given a linked page the viewer cannot read, then the item shows an 'unavailable' chip with no title.
 - Evidence: BE BoardItems.LinkPage = POST /board-items/{itemId:guid}/link-page -> LinkPageToBoardItemCommand (`BoardItems/Commands/LinkPageToBoardItem/LinkPageToBoardItem.cs`) [- / Idem]; BoardItems.UnlinkPage = DELETE /board-items/{itemId:guid}/link-page/{pageId:guid} -> UnlinkPageFromBoardItemCommand (`BoardItems/Commands/UnlinkPageFromBoardItem/UnlinkPageFromBoardItem.cs`) [- / Idem]; BoardItems.ListLinkedPages = GET /board-items/{itemId:guid}/linked-pages -> ListBoardItemPageLinksQuery (`BoardItems/Queries/ListBoardItemPageLinks/ListBoardItemPageLinks.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/item-actions/linked-docs-section.tsx` (raw paths) · Design WM-Actions-LinkedDocs · Tests `ItemPageLinkTests.cs` · Real e2e none
-- State: INTEGRATING — Typed client; no-title-for-unreadable proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a deleted page stays listed until it is purged (page delete answered 400 in the probe); tests and owner check. Evidence: real-stack check 2026-10-31: linked a page (200), the same page again and a retry under the same key add nothing, the list shows it once; an unknown page 404; an Observer 403; a Guest 404; a page in a Private Space is counted in hiddenCount and not named for a member while the admin sees its title; unlinking twice 204, commit 23cee8fa7.
 
 ### UC-WM-R06 Watch or unwatch an item
 - Capability: R Collaboration handoff (WM-018)
@@ -2732,7 +2732,7 @@ Team capability WM-018.
 - Rules: product sections 107; WM-029
 - Acceptance: Given a page embedding a Private board, when a non-member opens it, then the board shows no content.
 - Evidence: BE item link side owned by Documents · FE docs-web · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — Private-board embed test
+- State: INTEGRATING — real-stack check 2026-10-31: no Documents block embeds a board or an item yet, so there is nothing to drive; the linked-pages read already hides unreadable pages (R05); Documents owns the embed and its no-leak test, commit 23cee8fa7
 
 ## S. Billing and entitlement integration
 
