@@ -730,7 +730,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         ArchivedWithParent = false;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt, Version));
+        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt, Version));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
