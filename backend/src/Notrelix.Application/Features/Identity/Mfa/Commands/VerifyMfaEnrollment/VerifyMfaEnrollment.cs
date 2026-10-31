@@ -88,6 +88,16 @@ public sealed class VerifyMfaEnrollmentCommandHandler
                 ApplicationErrorType.Validation));
         }
 
+        // Two Starts can leave two pending methods; activating the second would give two active ones.
+        if (await _context.UserMfaMethods
+                .AnyAsync(m => m.UserId == userId && m.Status == MfaMethodStatus.Active, cancellationToken))
+        {
+            return Result<MfaEnrollmentActivationResult>.Failure(new ApplicationError(
+                "identity.mfa.already-enabled",
+                "MFA is already enabled for this account. Disable it before re-enrolling.",
+                ApplicationErrorType.Conflict));
+        }
+
         var now = _dateTimeProvider.UtcNow;
 
         string unprotectedSecret;
