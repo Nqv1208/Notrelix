@@ -51,12 +51,12 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
-| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
-| F | Ordering | WM-006 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
+| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 1 | 5 | 0 | 0 |
+| F | Ordering | WM-006 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | H | Query, filter and sort foundation | WM-008 | 19 | 2 | 5 | 7 | 5 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
-| J | Kanban view | WM-010 | 6 | 2 | 1 | 3 | 0 | 0 | 0 |
+| J | Kanban view | WM-010 | 6 | 2 | 1 | 2 | 1 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 21 | 14 | 76 | 58 | 0 | 1 |
+| | Total | | 170 | 21 | 14 | 71 | 63 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -280,13 +280,13 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-E01 | Create a group | E | Editor (CreateItem class) | yes | yes | partial | board-settings | HARDENING | Design for create flow; no-group notice proof |
 | UC-WM-E02 | Rename or edit a group | E | Editor | yes | yes | partial | board-settings | HARDENING | Design Er/P; no-op (same name) proof |
 | UC-WM-E03 | Archive or delete a group | E | Editor | yes | partial | none | work-board-management | HARDENING | Design; archive/unarchive UI or drop; dialog-open case |
-| UC-WM-E04 | Move an item between groups (Table) | E | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; status-unchanged proof |
+| UC-WM-E04 | Move an item between groups (Table) | E | Editor | yes | yes | complete | none | HARDENING | Real e2e; status-unchanged proof |
 | UC-WM-E05 | Collapse or expand a group (personal) | E | Any role (personal, client-side) | not applicable | partial | complete | none | INTEGRATING | proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence. |
-| UC-WM-E06 | Move an item between groups (Table) | E | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; two-user same-position test |
+| UC-WM-E06 | Move an item between groups (Table) | E | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; two-user same-position test |
 | UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | INTEGRATING | tests and owner check; concurrent reorder test; design. Personal Table column order is built (Alt+Arrow in the Cột menu, kept on the board preference). |
 | UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | INTEGRATING | Design; deterministic-order test |
-| UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | INTEGRATING | No-op move proof; real e2e |
-| UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | INTEGRATING | test of ten concurrent inserts into one ordering scope. |
+| UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | HARDENING | No-op move proof; real e2e |
+| UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | HARDENING | test of ten concurrent inserts into one ordering scope. |
 | UC-WM-G01 | Add and edit a checklist on an item | G | Editor and above | yes | yes | complete | none | HARDENING | Optional assignee and convert-to-sub-item (D69) proof; real e2e |
 | UC-WM-G02 | Complete, reorder and delete checklist items | G | Editor | yes | yes | complete | none | HARDENING | a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13). |
 | UC-WM-H01 | Create a view | H | Editor | yes | yes | none | saved-views | HARDENING | design for view create, edit and delete; proof that Calendar needs a date field. |
@@ -312,7 +312,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | tests and owner check; proof of the 200 cap; no selection across windows. |
 | UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; the checkbox on the card face is not on an artboard; the bar archives at once (no undo window as in the Table). |
-| UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | INTEGRATING | tests and owner check |
+| UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | HARDENING | tests and owner check |
 | UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof. |
 | UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
 | UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
@@ -1784,7 +1784,7 @@ Team capability WM-005.
 - Rules: product sections 38-41; WM-014, WM-043; WMREQ018-019, WMREQ044
 - Acceptance: Given an item dragged to another group, when the board reloads, then the item is in the new group and its status is unchanged.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE useMoveRow, table row reorder · Design BC-Table (drop onto empty group) · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; status-unchanged proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; drag in the Table, design. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); the pointer drag in the browser was not driven, commit 4d4c7b5fa.
 
 ### UC-WM-E05 Collapse or expand a group (personal)
 - Capability: E Groups and grouping (WM-005)
@@ -1812,7 +1812,7 @@ Team capability WM-005.
 - Rules: product sections 38-41, 42-43; WM-014, WM-016; WMREQ018-019, WMREQ042-044, WMREQ131, WMREQ139
 - Acceptance: Given two users drop different items into the same position, then both persist with distinct keys.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE useMoveRow, fractional-index · Design BC-Table · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; two-user same-position test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; two-user same-position test. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); the pointer drag in the browser was not driven, commit 4d4c7b5fa.
 
 ## F. Ordering
 
@@ -1858,7 +1858,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ041-044, WMREQ050-052, WMREQ114, WMREQ131, WMREQ139
 - Acceptance: Given an item dragged one place down, when the board reloads, then the order holds for everyone. Given two people dragging at once, then one gets a conflict and the other order stands.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem]; BoardItems.MoveChild = POST /board-items/{itemId:guid}/move-within-parent -> MoveChildItemCommand (`BoardItems/Commands/MoveChildItem/MoveChildItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts`, useMoveRow · Design BC-Table, BC-Kanban · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `SubItemTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: an archived item between two visible items (in a group or under a parent) no longer makes a drop between them stale; the key is generated in front of the archived item. Not built: the Table has no row drag (Kanban only), design for the conflict state.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; drag in the browser. Evidence: real-stack check 2026-10-31: reorder through the API: a card placed first took position 0 and the order followed, placing it where it is changed nothing, a sibling of another group answers 409 work.ordering.stale-placement, a stale version answers 412; the pointer drag was not driven, commit 4d4c7b5fa.
 
 ### UC-WM-F04 Resolve an ordering collision
 - Capability: F Ordering (WM-006)
@@ -1872,7 +1872,7 @@ Team capability WM-006.
 - Rules: product sections 130, 43; WM-016; WMREQ042, WMREQ050-052, WMREQ114
 - Acceptance: Given 10 concurrent inserts at one position, then 10 distinct keys and a deterministic order.
 - Evidence: BE fractional ordering/rebalance (Ordering 15 tests) · FE fractional-index (core) · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: nothing new in the scope lock or the unique-violation mapping (both present: stale placement and ordering conflict answer 409 with stable codes); the placement rule now ignores archived siblings when it checks neighbours so a reload does cure a stale drop.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; ten-insert test. Evidence: real-stack check 2026-10-31: six parallel creates into one group all answered 200 and took six distinct positions, commit 4d4c7b5fa.
 
 ## G. Checklists
 
@@ -2252,7 +2252,7 @@ Team capability WM-010.
 - Rules: product sections 40-41, 51; WM-015; D36-D40; WMREQ018, WMREQ044, WMREQ131
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given B is dragging a card, when A moves another card, then B's drag completes unaffected and the board re-reads after the drop. (3) Given a lane at its WIP limit, when a card is dropped in, then a warning shows and the drop is allowed; the server does not block (D37).
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts` + keyboard DnD (186 kanban tests) · Design BC-Kanban, Kanban-Card-States, WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; the WIP warning (D37) shows on the lane and on the drop target.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; pointer and keyboard drag in the browser, design measurement, tests. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); the pointer drag in the browser was not driven, commit 4d4c7b5fa.
 
 ### UC-WM-J03 Move an item across swimlanes
 - Capability: J Kanban view (WM-010)
