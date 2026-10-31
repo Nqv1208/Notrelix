@@ -147,35 +147,45 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
         // The board's own fields bound the scan to its values (ix_board_item_values_field_id); without it the
         // join read every value of every board, and the row-level security check ran for each of them.
         var boardFieldIds = fields.Select(f => f.Id).ToList();
-        var valueCounts = await _context.BoardItemValues
-            .AsNoTracking()
-            .Where(value => boardFieldIds.Contains(value.FieldId) && value.Value.Data != emptyValue)
-            .Join(
-                _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
-                value => value.ItemId,
-                item => item.Id,
-                (value, item) => value.FieldId)
-            .GroupBy(fieldId => fieldId)
-            .Select(group => new { FieldId = group.Key, Count = group.Count() })
-            .ToDictionaryAsync(row => row.FieldId, row => row.Count, cancellationToken);
-        // Live Items per option of Select/Status fields. shortcut: counted in memory from one projected read; push into SQL if boards grow past tens of thousands of Items.
-        var optionFieldIds = fields.Where(f => f.Type is FieldType.Select or FieldType.Status or FieldType.MultiSelect).Select(f => f.Id).ToList();
-        var multiFieldIds = fields.Where(f => f.Type is FieldType.MultiSelect).Select(f => f.Id).ToHashSet();
-        var optionValues = await _context.BoardItemValues
-            .AsNoTracking()
-            .Where(value => optionFieldIds.Contains(value.FieldId))
-            .Join(
-                _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
-                value => value.ItemId,
-                item => item.Id,
-                (value, item) => new { value.FieldId, value.Value })
-            .ToListAsync(cancellationToken);
-        var optionCounts = optionValues
-            .SelectMany(row => multiFieldIds.Contains(row.FieldId)
-                ? WorkItemSemanticFields.ReadOptionIds(row.Value)
-                : WorkItemSemanticFields.ReadOptionId(row.Value) is { } single ? [single] : Array.Empty<Guid>())
-            .GroupBy(id => id)
-            .ToDictionary(group => group.Key, group => group.Count());
+        // A paged read leaves these board-wide counts out (each scans every value under row-level security, which
+        // is what paging avoids); the settings read the whole board and still get them.
+        Dictionary<Guid, int> valueCounts = [];
+        Dictionary<Guid, int> optionCounts = [];
+        // The lane pass already counted the Status options.
+        foreach (var lane in lanes ?? []) if (lane.OptionId is { } laneOption) optionCounts[laneOption] = lane.ItemCount;
+        if (request.PageSize is null)
+        {
+            valueCounts = await _context.BoardItemValues
+                .AsNoTracking()
+                .Where(value => boardFieldIds.Contains(value.FieldId) && value.Value.Data != emptyValue)
+                .Join(
+                    _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
+                    value => value.ItemId,
+                    item => item.Id,
+                    (value, item) => value.FieldId)
+                .GroupBy(fieldId => fieldId)
+                .Select(group => new { FieldId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(row => row.FieldId, row => row.Count, cancellationToken);
+            // Live Items per option of Select/Status fields. shortcut: counted in memory from one projected read; push into SQL if boards grow past tens of thousands of Items.
+            var optionFieldIds = fields.Where(f => f.Type is FieldType.Select or FieldType.Status or FieldType.MultiSelect).Select(f => f.Id).ToList();
+            var multiFieldIds = fields.Where(f => f.Type is FieldType.MultiSelect).Select(f => f.Id).ToHashSet();
+            var optionValues = await _context.BoardItemValues
+                .AsNoTracking()
+                .Where(value => optionFieldIds.Contains(value.FieldId))
+                .Join(
+                    _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
+                    value => value.ItemId,
+                    item => item.Id,
+                    (value, item) => new { value.FieldId, value.Value })
+                .ToListAsync(cancellationToken);
+            optionCounts = optionValues
+                .SelectMany(row => multiFieldIds.Contains(row.FieldId)
+                    ? WorkItemSemanticFields.ReadOptionIds(row.Value)
+                    : WorkItemSemanticFields.ReadOptionId(row.Value) is { } single ? [single] : Array.Empty<Guid>())
+                .GroupBy(id => id)
+                .ToDictionary(group => group.Key, group => group.Count());
+        }
+
         var summaries = await _summaryBuilder.BuildAsync(fields, cards, cancellationToken);
         var groupOfCard = cards.ToDictionary(card => card.Id, card => card.GroupId);
         var cardsByListId = summaries
