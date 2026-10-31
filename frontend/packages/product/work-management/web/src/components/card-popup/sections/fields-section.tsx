@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock, Plus, SlidersHorizontal } from "lucide-react";
 import { FaceFieldsButton } from "../capabilities/face-fields-button";
 import { usePinnedFieldIds } from "../capabilities/use-pinned-fields";
@@ -84,21 +84,27 @@ export function FieldsSection() {
   const { filled, empty } = useSectionFields();
   const [revealed, setRevealed] = useState<readonly string[]>([]);
   const [open, setOpen] = useState(false);
+  // A picked or created field takes the cursor; the panel must not hand it back to "Add field".
+  const [restoreFocus, setRestoreFocus] = useState(true);
   // "+ Thêm › Thuộc tính / Tạo trường mới" lands here: the add panel opens.
   useEffect(() => {
     if (picker !== "fields") return;
     setOpen(true);
     openPicker(null);
   }, [picker, openPicker]);
-  // A revealed row takes the cursor so its value can be typed at once.
+  // A revealed row takes the cursor so its value can be typed at once. A field the person has just
+  // created shows up after the board is read again, so the effect also waits for the rows.
+  const focusedFor = useRef<string | null>(null);
   useEffect(() => {
     const id = revealed[revealed.length - 1];
-    if (!id) return;
+    if (!id || focusedFor.current === id) return;
     const row = document.querySelector<HTMLElement>(`[data-field-row="${id}"]`);
+    if (!row) return;
+    focusedFor.current = id;
     row
-      ?.querySelector<HTMLElement>("input, button")
+      .querySelector<HTMLElement>("input, button")
       ?.focus({ preventScroll: false });
-  }, [revealed]);
+  }, [revealed, filled.length, empty.length]);
 
   const shownIds = new Set(filled.map((f) => f.id));
   const rows = [
@@ -110,8 +116,10 @@ export function FieldsSection() {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
+        if (next) setRestoreFocus(true);
         if (!next) startNewField(null);
       }}
+      restoreFocus={restoreFocus}
       width={340}
       trigger={
         <PopoverTrigger asChild>
@@ -125,7 +133,13 @@ export function FieldsSection() {
       <AddFieldPanel
         empty={empty.filter((f) => !revealed.includes(f.id))}
         onPick={(field) => {
+          setRestoreFocus(false);
           setRevealed((ids) => [...ids, field.id]);
+          setOpen(false);
+        }}
+        onCreated={(fieldId) => {
+          setRestoreFocus(false);
+          setRevealed((ids) => [...ids, fieldId]);
           setOpen(false);
         }}
       />

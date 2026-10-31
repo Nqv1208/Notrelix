@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCopyChecklist } from "@notrelix/work-management-state";
 import { CHECKLIST_COPY_NONE } from "../capabilities/checklist-links-controls";
 import { useCardPopup } from "../card-popup-context";
+import { noteChecklistRequested } from "../sections/checklist-focus";
 import { FieldLabel, PickerHead } from "./picker-bits";
 import { PanelBtn, PanelInput } from "../popup-ui";
 
@@ -22,6 +23,7 @@ export function ChecklistPanel({ onClose }: { onClose: () => void }) {
   const add = () => {
     const name = title.trim() || t.defaultTitle;
     if (source === CHECKLIST_COPY_NONE) {
+      noteChecklistRequested();
       data.checklists?.addList(name);
       onClose();
       return;

@@ -459,43 +459,84 @@ export function KanbanView({
   };
 
   /** Writes a lane's value for a card: Status, or the grouping Select field. */
-  const writeLaneValue = (cardId: string, optionId: string) => {
+  const writeLaneValue = (
+    cardId: string,
+    optionId: string,
+    onSuccess?: () => void,
+  ) => {
     noteOrigin(cardId);
     if (isStatusGrouping) {
-      kanban.updateStatus.mutate({ cardId, statusOptionId: optionId });
+      kanban.updateStatus.mutate(
+        { cardId, statusOptionId: optionId },
+        { onSuccess },
+      );
       return;
     }
     if (!kanban.groupByField) return;
-    kanban.updateFieldValue.mutate({
-      cardId,
-      fieldDefinitionId: kanban.groupByField.id,
-      value: optionId,
-    });
+    kanban.updateFieldValue.mutate(
+      {
+        cardId,
+        fieldDefinitionId: kanban.groupByField.id,
+        value: optionId,
+      },
+      { onSuccess },
+    );
+  };
+
+  /**
+   * Once the server has kept the move, says where the card went and keeps "Hoàn tác" for a few seconds:
+   * it puts the lane's value back. A refused drop says nothing here (its failure toast does).
+   */
+  const announceLaneMove = (cardId: string, toOptionId: string) => {
+    const from = lanesByCard.get(cardId)?.optionId;
+    if (!from || from === toOptionId) return () => undefined;
+    const t = filtersCopy.lane.toast;
+    return () =>
+      toast(
+        fillFiltersCopy(t.movedColumn, {
+          title:
+            allCards.find((candidate) => candidate.id === cardId)?.title ?? "",
+          column: columnLabel(toOptionId),
+        }),
+        {
+          action: {
+            label: t.undo,
+            onClick: () => writeLaneValue(cardId, from),
+          },
+        },
+      );
   };
 
   const handleDrop = (drop: KanbanLaneDrop) => {
     if (!capabilities.canMoveCard) return;
     if (drop.kind === "status") {
-      writeLaneValue(drop.cardId, drop.optionId);
+      writeLaneValue(
+        drop.cardId,
+        drop.optionId,
+        announceLaneMove(drop.cardId, drop.optionId),
+      );
       return;
     }
     if (drop.kind === "place") {
       if (!kanban.groupByField) return;
       noteOrigin(drop.cardId);
-      kanban.dropItemInLane.mutate({
-        cardId: drop.cardId,
-        lane: {
-          fieldDefinitionId: kanban.groupByField.id,
-          optionId: drop.optionId,
-          viaStatusEndpoint: isStatusGrouping,
+      kanban.dropItemInLane.mutate(
+        {
+          cardId: drop.cardId,
+          lane: {
+            fieldDefinitionId: kanban.groupByField.id,
+            optionId: drop.optionId,
+            viaStatusEndpoint: isStatusGrouping,
+          },
+          placement: {
+            listId: drop.listId,
+            position: drop.position,
+            previousSiblingId: drop.previousSiblingId,
+            nextSiblingId: drop.nextSiblingId,
+          },
         },
-        placement: {
-          listId: drop.listId,
-          position: drop.position,
-          previousSiblingId: drop.previousSiblingId,
-          nextSiblingId: drop.nextSiblingId,
-        },
-      });
+        { onSuccess: announceLaneMove(drop.cardId, drop.optionId) },
+      );
       return;
     }
     noteOrigin(drop.cardId);

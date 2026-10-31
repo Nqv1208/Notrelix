@@ -17,6 +17,7 @@ import {
   ItemDueButton,
   itemDueText,
 } from "./checklist-item-controls";
+import { takeChecklistRequest } from "./checklist-focus";
 import {
   IconBtn,
   PersonMark,
@@ -166,10 +167,13 @@ function ChecklistBlock({
   list,
   model,
   writable,
+  startAdding,
 }: {
   list: Checklist;
   model: ItemChecklistsModel;
   writable: boolean;
+  /** The list this person has just created: its item box opens and takes focus. */
+  startAdding: boolean;
 }) {
   const { copy, board, card, data, timeZone } = useCardPopup();
   const t = copy.related.checklists;
@@ -184,7 +188,11 @@ function ChecklistBlock({
   }));
   const sheet = useChecklistCopy();
   const [hideDone, setHideDone] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(startAdding);
+  // The section learns that this list is the requested one after the block has mounted.
+  useEffect(() => {
+    if (startAdding) setAdding(true);
+  }, [startAdding]);
   const [editing, setEditing] = useState<string | null>(null);
   const { done, total } = listProgress(list);
   const percent = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -383,6 +391,22 @@ function ChecklistBlock({
 export function ChecklistsSection() {
   const { data, readOnly, capabilities } = useCardPopup();
   const model = data.checklists;
+  // The list this person has just asked for opens its item box; a list a colleague adds does not take their focus.
+  const known = useRef<ReadonlySet<string> | null>(null);
+  const [fresh, setFresh] = useState<string | null>(null);
+  const ids = (model?.checklists ?? []).map((list) => list.id);
+  const idsKey = ids.join("|");
+  useEffect(() => {
+    // The section itself mounts with the first list, so "nothing before" is an empty set.
+    const before = known.current ?? new Set<string>();
+    known.current = new Set(ids);
+    const added = ids.filter((id) => !before.has(id));
+    if (added.length === 0) return;
+    // The list shows as a pending one first, then under its server id: the box follows it.
+    const follows =
+      fresh !== null && isPendingChecklistId(fresh) && !ids.includes(fresh);
+    if (follows || takeChecklistRequest()) setFresh(added[added.length - 1]!);
+  }, [idsKey]);
   if (
     !model ||
     (model.checklists.length === 0 && !model.failure && !model.pendingDelete)
@@ -399,6 +423,7 @@ export function ChecklistsSection() {
           list={list}
           model={model}
           writable={writable}
+          startAdding={list.id === fresh}
         />
       ))}
     </>

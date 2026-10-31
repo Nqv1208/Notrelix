@@ -39,9 +39,12 @@ export function fieldTypeIcon(type: string): LucideIcon {
 export function AddFieldPanel({
   empty,
   onPick,
+  onCreated,
 }: {
   empty: readonly FieldDefinition[];
   onPick: (field: FieldDefinition) => void;
+  /** A field was just created on the board: its row opens on this card. */
+  onCreated: (fieldId: string) => void;
 }) {
   const { copy, callbacks, newFieldName } = useCardPopup();
   const t = copy.sections.fields;
@@ -107,7 +110,7 @@ export function AddFieldPanel({
             emptyFields={[]}
             onReveal={() => undefined}
             onCreate={callbacks.onCreateField}
-            onCreated={() => undefined}
+            onCreated={onCreated}
             triggerLabel={t.createField}
             initialName={newFieldName ?? undefined}
             triggerClassName="flex h-9 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] font-semibold text-brand-ink hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
