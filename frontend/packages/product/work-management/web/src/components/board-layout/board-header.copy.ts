@@ -41,6 +41,7 @@ export const en = {
     renameBoard: "Rename board…",
     archiveBoard: "Archive board…",
     deleteBoard: "Delete board…",
+    leaveBoard: "Leave board…",
     /** Access chip wording by board visibility. */
     scope: {
       space: "{{space}}",
@@ -129,6 +130,7 @@ export const vi: BoardHeaderCopy = {
     renameBoard: "Đổi tên board…",
     archiveBoard: "Lưu trữ board…",
     deleteBoard: "Xoá board…",
+    leaveBoard: "Rời board…",
     scope: {
       space: "{{space}}",
       workspace: "Cả workspace",

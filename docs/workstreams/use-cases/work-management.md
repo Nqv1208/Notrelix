@@ -207,6 +207,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-A24 | Copy item/board link | A | Any viewer | not applicable | yes | complete | none | INTEGRATING | non-member gets NotFound e2e |
 | UC-WM-A25 | Warn when an access change would strand assignees | A | Manager | partial | partial | none | none | INTEGRATING | Warning on visibility change and move-to-space; design |
 | UC-WM-A26 | Block removing or demoting the last board manager | A | Manager | partial | no | none | none | DEFINED | no last-manager guard in UpdateBoardMemberRole or RemoveBoardMember (verified in source); no design for the message. |
+| UC-WM-A27 | Leave a board | A | Any person with an explicit board role | yes | yes | none | board-share | HARDENING | tests and owner check; decided by the lead 2026-10-31. |
 | UC-WM-B01 | Create an item (full dialog) | B | Editor and above; Guest if Editor | yes | yes | complete | none | HARDENING | no real e2e; proof matrix for the create dialog (limits, retry, partial failure); sub-item mode; 'retry the missing part' check. |
 | UC-WM-B02 | Quick-add an item in a group or lane | B | Editor and above | yes | yes | complete | none | HARDENING | WIP warning on over-limit add (D37); scroll when outside window; real e2e |
 | UC-WM-B03 | Create a sub-item | B | Editor and above | yes | yes | partial | sub-items | HARDENING | Typed client; sheet add; Q3 create-dialog sub-item mode |
@@ -733,6 +734,20 @@ Team capability WM-001.
 - Acceptance: Given one Manager, when that person is demoted or removed, then it is refused and the role is unchanged.
 - Evidence: BE domain rule unverified on RemoveMember/UpdateMemberRole · FE none · Design none; needs last-manager blocked message · Tests none found · Real e2e none
 - State: HARDENING — tests and owner check. Built: `BoardManagerGuard` refuses lowering or removing the last person or Team at Manager level on the board (rule code `WorkManagement_Board_LastManager`, nothing changes; the problem now carries `ruleCode`). The share dialog locks lower levels and removal of the only Manager from the start with the reason and "Add a Manager", names the refusal at the head of the dialog when a stale list still tried, and tells a workspace admin managing through Governance. Not built: the own row stays fixed (no menu); leave board has no catalog use case (not built; the artboard draws it). Evidence: real-stack check 2026-10-31: lowering a grant Manager to Viewer and revoking the only grant Manager both answered 400 with the same ruleCode and nothing changed, a second Manager lets the first be lowered (Governance grant and revoke now run the guard); lowering the only board-member Manager answered 400 with ruleCode WorkManagement_Board_LastManager and the role stayed; the menu of a sole grant Manager drew lower levels and removal locked with the reasons, commit a4966637e.
+
+### UC-WM-A27 Leave a board
+- Capability: A Board lifecycle (WM-001)
+- Actors and permission: Any person who can read the board and holds an explicit board role (any role, Viewer included).
+- Preconditions: The person is a member of the board.
+- Input: Board id.
+- Output: The person's own board role ends; the access change is logged and audited. Permissions granted to them by name (Governance) are not touched. On a Workspace-visible board they still see it through the workspace; on a Private board they lose access.
+- Main flow: 1. Open the board menu, Leave board. 2. Read what changes. 3. Confirm; a Private board closes to the workspace home.
+- No-op / rejection / concurrency / retry: The last Owner (`WorkManagement_Board_LastOwner`) and the last Manager (`WorkManagement_Board_LastManager`) stay, 400, nothing changes. Leaving twice is a no-op (204). A person without access gets the identical NotFound. Assignments are kept as history.
+- UI states: confirm (private / workspace-visible), refused (last Manager, last owner, names the way out), no own role (confirm disabled), pending
+- Rules: WM-030; lead decision 2026-10-31
+- Acceptance: Given the only Manager, when they leave, then it is refused with the reason and the role is unchanged. Given a member leaves a Workspace-visible board twice, then the second call changes nothing and they still see the board.
+- Evidence: BE `POST /boards/{boardId}/members/leave` -> LeaveBoardCommand (`Boards/Commands/LeaveBoard/LeaveBoard.cs`) · FE `apps/web/src/shell/workspace/board-leave-dialog.tsx`, header menu entry · Design WM-LastManager (Rời board frames) · Tests none yet · Real e2e none
+- State: HARDENING — tests and owner check. Evidence: real-stack check 2026-10-31: the only Manager leaving was refused 400 with ruleCode WorkManagement_Board_LastManager and the dialog showed the reason; with a second Manager the leave answered 204 and the Private board closed to the workspace home (404 afterwards); a viewer leaving a Workspace-visible board answered 204, twice 204, and still read it (200). Not built: the menu entry is not locked up front for the only Manager (the dialog says so after the refusal); realtime cut for the leaver relies on the existing access-change signal; assignees are kept (no assignee-access rule exists to follow).
 
 ## B. BoardItem lifecycle
 

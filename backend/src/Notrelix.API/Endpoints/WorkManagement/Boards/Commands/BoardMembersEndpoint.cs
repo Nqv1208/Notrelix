@@ -1,6 +1,7 @@
 using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.LeaveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
@@ -18,6 +19,10 @@ public static class BoardMembersEndpoint
         group.MapResourcePost("/", HandleAddBoardMember)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.AddMember");
+        group.MapResourcePost("/leave", HandleLeaveBoard)
+            .WithIdempotencyKey()
+            .WithName("WorkManagement.Boards.Leave")
+            .WithSummary("Leave a board: end your own explicit membership");
         group.MapResourceDelete("/{userId:guid}", HandleRemoveBoardMember)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.RemoveMember");
@@ -55,6 +60,15 @@ public static class BoardMembersEndpoint
             role = parsed;
         }
         var result = await sender.Send(new AddBoardMemberCommand(boardId, body.UserId, role), cancellationToken);
+        return result.ToNoContentResult();
+    }
+
+    private static async Task<IResult> HandleLeaveBoard(
+        Guid boardId,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new LeaveBoardCommand(boardId), cancellationToken);
         return result.ToNoContentResult();
     }
 

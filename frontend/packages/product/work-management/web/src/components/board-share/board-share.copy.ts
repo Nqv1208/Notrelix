@@ -125,6 +125,27 @@ export const en = {
     keepGuest: "guest **{{name}}**",
     keepAnd: " and ",
   },
+  leave: {
+    title: "Leave board",
+    private:
+      "You will no longer see “{{board}}”: it is Private and your own role is the way in.",
+    open: "You only lose your own role on “{{board}}”. You still see it through the workspace.",
+    grants:
+      "Permissions given to you on the board by name are not changed when you leave; a manager changes them in Share.",
+    openShare: "Open Share",
+    noRole:
+      "You have no role of your own on this board, so there is nothing to leave.",
+    confirm: "Leave board",
+    cancel: "Cancel",
+    left: "You left “{{board}}”.",
+    failed: "Couldn't leave the board. Nothing changed.",
+    lastManagerTitle: "Couldn't leave the board",
+    lastManagerBody:
+      "You are the only Manager of “{{board}}”. A board needs at least one Manager, so you stay. Choose another Manager, then leave.",
+    lastOwnerBody:
+      "You are the only owner of “{{board}}”. A board needs an owner, so you stay. Make someone else an owner, then leave.",
+    chooseManager: "Choose another Manager",
+  },
   lastManager: {
     lowerTitle: "Couldn't change the permission of {{name}}",
     lowerBody:
@@ -278,6 +299,26 @@ export const vi: BoardShareCopy = {
     keepInSpace: "**{{names}}** (đã được thêm riêng)",
     keepGuest: "khách **{{name}}**",
     keepAnd: " và ",
+  },
+  leave: {
+    title: "Rời board",
+    private:
+      "Bạn sẽ không còn thấy “{{board}}”: board Riêng tư và vai trò riêng của bạn là lối vào duy nhất.",
+    open: "Bạn chỉ mất vai trò riêng của mình trên “{{board}}”. Bạn vẫn thấy board qua workspace.",
+    grants:
+      "Quyền được cấp riêng cho bạn trên board không đổi khi bạn rời; người quản lý đổi chúng ở hộp Chia sẻ.",
+    openShare: "Mở hộp Chia sẻ",
+    noRole: "Bạn không có vai trò riêng trên board này nên không có gì để rời.",
+    confirm: "Rời board",
+    cancel: "Huỷ",
+    left: "Bạn đã rời “{{board}}”.",
+    failed: "Chưa rời được board. Không có gì thay đổi.",
+    lastManagerTitle: "Chưa rời được board",
+    lastManagerBody:
+      "Bạn là người Quản lý duy nhất của “{{board}}”. Board cần ít nhất một Quản lý nên bạn vẫn ở lại. Chọn người khác làm Quản lý rồi rời board.",
+    lastOwnerBody:
+      "Bạn là chủ duy nhất của “{{board}}”. Board cần một chủ nên bạn vẫn ở lại. Chọn người khác làm chủ rồi rời board.",
+    chooseManager: "Chọn Quản lý khác",
   },
   lastManager: {
     lowerTitle: "Chưa đổi được quyền của {{name}}",

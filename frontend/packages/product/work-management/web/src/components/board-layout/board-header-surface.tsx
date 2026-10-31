@@ -121,6 +121,8 @@ export interface BoardHeaderData {
   readonly onOpenTrash?: () => void;
   /** Opens the board's archived items; absent: no entry in the menu. */
   readonly onOpenArchive?: () => void;
+  /** Opens the Leave board dialog; absent: no entry in the menu. */
+  readonly onLeave?: () => void;
   /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
   readonly archived?: BoardHeaderArchived;
 }
@@ -371,6 +373,7 @@ export function BoardHeaderSurface({
   onOpenSettings,
   onOpenShare,
   onCopyLink,
+  onLeave,
   onOpenTrash,
   onOpenArchive,
   archived,
@@ -497,7 +500,10 @@ export function BoardHeaderSurface({
           </>
         ) : null}
 
-        {onCopyLink || canManage || ((onOpenTrash || onOpenArchive) && canEditItems) ? (
+        {onCopyLink ||
+        onLeave ||
+        canManage ||
+        ((onOpenTrash || onOpenArchive) && canEditItems) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -553,6 +559,14 @@ export function BoardHeaderSurface({
                     onSelect={onOpenSettings}
                   >
                     {h.deleteBoard}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+              {onLeave ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onLeave}>
+                    {h.leaveBoard}
                   </DropdownMenuItem>
                 </>
               ) : null}

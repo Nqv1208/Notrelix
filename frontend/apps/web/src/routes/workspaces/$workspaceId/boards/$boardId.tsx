@@ -24,6 +24,7 @@ import {
   type BoardSearch,
 } from "../../../../router/schemas/board-search-schema";
 import { useRealtimeConnection } from "../../../../realtime/use-realtime-connection";
+import { BoardLeaveDialog } from "../../../../shell/workspace/board-leave-dialog";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
@@ -80,6 +81,7 @@ export function BoardPage() {
   // `share` in the address opens the share dialog (the settings page's
   // "Quyền truy cập" lands here); the dialog also opens from the header.
   const [shareOpen, setShareOpen] = useState(search.share === true);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   useEffect(() => {
@@ -90,8 +92,12 @@ export function BoardPage() {
       replace: true,
     });
   }, [navigate, search.share]);
-  const headerData = useBoardHeaderData(workspaceId, boardId, board, () =>
-    setShareOpen(true),
+  const headerData = useBoardHeaderData(
+    workspaceId,
+    boardId,
+    board,
+    () => setShareOpen(true),
+    () => setLeaveOpen(true),
   );
 
   const showView = (mode: BoardSearch["view"], savedView?: string) => {
@@ -221,6 +227,17 @@ export function BoardPage() {
           boardId={boardId}
           open={trashOpen}
           onClose={() => setTrashOpen(false)}
+        />
+        <BoardLeaveDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          board={board}
+          open={leaveOpen}
+          onClose={() => setLeaveOpen(false)}
+          onOpenShare={() => {
+            setLeaveOpen(false);
+            setShareOpen(true);
+          }}
         />
         <BoardShareDialog
           workspaceId={workspaceId}

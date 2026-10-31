@@ -211,6 +211,8 @@ export const endpoints = {
       `/boards/${boardId}/members/${userId}`,
     memberRole: (boardId: string, userId: string) =>
       `/boards/${boardId}/members/${userId}/role`,
+    // WorkManagement.Boards.Leave: ends the caller's own explicit membership.
+    leave: (boardId: string) => `/boards/${boardId}/members/leave`,
   },
   // Workspaces.Onboarding.* (draft and getting-started card).
   // Workspaces.Workspaces.* routes under an Account.
