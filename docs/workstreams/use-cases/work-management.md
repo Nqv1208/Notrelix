@@ -63,11 +63,11 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | N | Form input | WM-014 | 6 | 0 | 0 | 0 | 5 | 0 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
-| Q | Automation handoff | WM-017 | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
+| Q | Automation handoff | WM-017 | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 3 | 30 | 118 | 0 | 1 |
+| | Total | | 170 | 18 | 2 | 30 | 119 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -335,7 +335,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-P03 | Lose and regain the connection | P | Any viewer | yes | yes | partial | none | HARDENING | real e2e spec, reconnect and gap tests, the status measured in dark and at 1024, and owner check. |
 | UC-WM-P04 | Lose access or role while the board is open | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec, a test of the 60 s re-check, and owner check. |
 | UC-WM-Q01 | Let an Automation rule act on items | Q | Rule executor identity | yes | yes | complete | automation | HARDENING | Loop-guard and executor-lost tests |
-| UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | IMPLEMENTING | live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
+| UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | HARDENING | live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
 | UC-WM-Q03 | Sync items with an external provider | Q | Integrations | no | no | not applicable | none | DEFINED | Integrations-owned; idempotent replay test when built |
 | UC-WM-R01 | Comment on an item | R | Commenter and above | yes | yes | partial | none | HARDENING | Design gaps; real e2e |
 | UC-WM-R02 | Reply, edit or delete a comment | R | Author; moderator separate | yes | yes | partial | none | HARDENING | Design edit/delete; real e2e |
@@ -2588,7 +2588,7 @@ Team capability WM-017.
 - Rules: product sections 109, 118; WMREQ109, WMREQ127, WMREQ156
 - Acceptance: Given a rule that sets a field, then it runs under the executor, writes one activity line and does not re-trigger itself.
 - Evidence: BE IWorkItemActions via WorkItemActionAdapter · FE workspace-rule editor; board automations flag locked · Design Final-Automation · Tests none found · Real e2e `automation.real.e2e.spec.ts`
-- State: HARDENING — Loop-guard and executor-lost tests
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the executor-lost stop was not driven (the only executor is the rule's creator, who cannot be demoted here); tests and owner check. Evidence: real-stack check 2026-10-31: a board rule (moved to a group, then change the status and assign the member) ran under its executor on the real stack: both steps Succeeded, the item took the status and the assignee, the rule's own run list shows them; a second run of the same rule on a state it already set changed nothing (no history line, no frame, no version bump) so the rule does not re-trigger itself; a member cannot create a rule (403) and a Guest cannot list them; a stale move 412, commit 3b011817e.
 
 ### UC-WM-Q02 Show automation-caused changes on the board
 - Capability: Q Automation handoff (WM-017)
@@ -2601,8 +2601,8 @@ Team capability WM-017.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1])
 - Rules: product sections 109; D56; WMREQ127
 - Acceptance: Given an automation change, then a viewer sees it live and the history names the rule.
-- Evidence: BE history names rule/executor unproven · FE in open PR #193: live refresh · Design BC-Realtime · Tests none found · Real e2e none
-- State: IMPLEMENTING — live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor.
+- Evidence: BE ItemActivityRecorder names the rule (IAutomationActivityFacts), WorkItemActions notifies the board · FE card-detail activity-words · Design BC-Realtime · Tests none found · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the history actor is still the executor's name, followed by the rule; tests and owner check. Evidence: real-stack check 2026-10-31: a viewer with the board open saw the rule's status and assignee changes arrive live (a board frame per action, after the person's own move frame) and the board converged without a reload (the item left the not-done view); the item history reads 'set the status to X by the rule Q2 hand over' and 'assigned member by the rule Q2 hand over', in English and Vietnamese, commit 3b011817e.
 
 ### UC-WM-Q03 Sync items with an external provider
 - Capability: Q Automation handoff (WM-017)
