@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   Fragment,
   useState,
@@ -20,7 +21,12 @@ import {
   visibleTableColumns,
   type TableColumnWidths,
 } from "./table-columns";
-import { TableAddRow, TableGroupHeader } from "./table-group-section";
+import {
+  TABLE_GROUP_WINDOW,
+  TableAddRow,
+  TableGroupHeader,
+  TableShowMoreRow,
+} from "./table-group-section";
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { TableHeaderRow } from "./table-header-row";
 import type { TableGroupModel, TableStatusOption } from "./table-model";
@@ -215,8 +221,42 @@ export function MainTableSurface({
     ? { ...columnWidths, [preview.id]: clampColumnWidth(preview.width) }
     : (columnWidths ?? {});
 
+  // A group draws its first rows and a "Show more" row; the row that is open, being edited or holding the
+  // keyboard stays drawn wherever it sits.
+  const [shownByGroup, setShownByGroup] = useState<Record<string, number>>({});
+  const focusAfterReveal = useRef<string | null>(null);
+  const shownRows = (group: TableGroupModel) => {
+    const pinned = [openItemId, editingId, tabStopId].reduce(
+      (last, id) =>
+        id ? Math.max(last, group.rows.findIndex((row) => row.id === id)) : last,
+      -1,
+    );
+    return Math.min(
+      group.rows.length,
+      Math.max(shownByGroup[group.id] ?? TABLE_GROUP_WINDOW, pinned + 1),
+    );
+  };
+  const showMore = (group: TableGroupModel) => {
+    const shown = shownRows(group);
+    focusAfterReveal.current = group.rows[shown]?.id ?? null;
+    setShownByGroup((current) => ({
+      ...current,
+      [group.id]: shown + TABLE_GROUP_WINDOW,
+    }));
+  };
+  useEffect(() => {
+    const id = focusAfterReveal.current;
+    if (!id) return;
+    focusAfterReveal.current = null;
+    gridRef.current
+      ?.querySelector<HTMLElement>(`[data-row-id="${CSS.escape(id)}"]`)
+      ?.focus();
+  }, [shownByGroup]);
+
   const visibleRowIds = groups.flatMap((group) =>
-    collapsedGroupIds.has(group.id) ? [] : group.rows.map((row) => row.id),
+    collapsedGroupIds.has(group.id)
+      ? []
+      : group.rows.slice(0, shownRows(group)).map((row) => row.id),
   );
   const allRowIds = groups.flatMap((group) => group.rows.map((row) => row.id));
   const selectedCount = allRowIds.filter((id) => selectedIds.has(id)).length;
@@ -248,10 +288,19 @@ export function MainTableSurface({
     if (event.target !== event.currentTarget) return;
     const index = visibleRowIds.indexOf(rowId);
     switch (event.key) {
-      case "ArrowDown":
+      case "ArrowDown": {
         event.preventDefault();
+        // On the last drawn row of a group with more rows, the arrow draws the next page and moves into it.
+        const group = groups.find(
+          (candidate) => candidate.rows[shownRows(candidate) - 1]?.id === rowId,
+        );
+        if (group && shownRows(group) < group.rows.length) {
+          showMore(group);
+          break;
+        }
         focusRow(visibleRowIds[Math.min(index + 1, visibleRowIds.length - 1)]);
         break;
+      }
       case "ArrowUp":
         event.preventDefault();
         focusRow(visibleRowIds[Math.max(index - 1, 0)]);
@@ -364,7 +413,7 @@ export function MainTableSurface({
                 />
                 {collapsed
                   ? null
-                  : group.rows.map((row) => (
+                  : group.rows.slice(0, shownRows(group)).map((row) => (
                       <Fragment key={row.id}>
                         <TableRow
                           row={row}
@@ -451,6 +500,14 @@ export function MainTableSurface({
                         ) : null}
                       </Fragment>
                     ))}
+                {!collapsed && shownRows(group) < group.rows.length ? (
+                  <TableShowMoreRow
+                    copy={copy}
+                    shown={shownRows(group)}
+                    total={group.rows.length}
+                    onShowMore={() => showMore(group)}
+                  />
+                ) : null}
                 {collapsed || !canCreate ? null : (
                   <TableAddRow
                     copy={copy}

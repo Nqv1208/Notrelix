@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import { Button, cn } from "@notrelix/ui-web";
 import {
   fillTableCopy,
   pluralTableCopy,
@@ -70,6 +70,47 @@ export function TableGroupHeader({
         {menu ? (
           <TableGroupMenu copy={copy} name={group.name} menu={menu} />
         ) : null}
+      </span>
+    </div>
+  );
+}
+
+/** How many rows a group shows before "Show more", and how many each press adds. */
+export const TABLE_GROUP_WINDOW = 50;
+
+/**
+ * The foot of a group that shows only its first rows: how many are shown of the group's total, and the
+ * button that adds the next page. The rows stay in memory; only the ones shown are drawn, so a group of
+ * thousands keeps the page light.
+ */
+export function TableShowMoreRow({
+  copy,
+  shown,
+  total,
+  onShowMore,
+}: {
+  copy: MainTableCopy;
+  shown: number;
+  total: number;
+  onShowMore: () => void;
+}) {
+  const next = Math.min(TABLE_GROUP_WINDOW, total - shown);
+  return (
+    <div
+      role="row"
+      data-slot="table-show-more"
+      className="flex flex-wrap items-center justify-center gap-3 border-b border-border px-6 py-2.5 text-crumb text-muted-foreground"
+    >
+      <span role="cell">
+        {fillTableCopy(copy.group.shownOf, { shown, total })}
+      </span>
+      <span role="cell">
+        <Button type="button" variant="outline" size="sm" onClick={onShowMore}>
+          {pluralTableCopy(
+            { one: copy.group.showMore_one, other: copy.group.showMore_other },
+            next,
+          )}
+        </Button>
       </span>
     </div>
   );
