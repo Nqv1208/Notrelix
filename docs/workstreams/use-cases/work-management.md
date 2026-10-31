@@ -60,14 +60,14 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
-| N | Form input | WM-014 | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
+| N | Form input | WM-014 | 6 | 0 | 0 | 0 | 5 | 0 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 3 | 43 | 105 | 0 | 1 |
+| | Total | | 170 | 18 | 3 | 38 | 110 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -320,11 +320,11 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
-| UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
-| UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
-| UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | INTEGRATING | tests and owner check |
-| UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | INTEGRATING | tests and owner check; the form fill page refuses unsupported question types. |
-| UC-WM-N05 | Process, reject or mark spam on a submission | N | Editor (UpdateItem) | yes | yes | complete | none | INTEGRATING | tests and owner check. |
+| UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | HARDENING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
+| UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | HARDENING | tests and owner check; the form fill page refuses unsupported question types. |
+| UC-WM-N05 | Process, reject or mark spam on a submission | N | Editor (UpdateItem) | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal and abuse controls |
 | UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | INTEGRATING | Design E/L/Er; one-line-per-action proof; real e2e |
 | UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | INTEGRATING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
@@ -2380,7 +2380,7 @@ Team capability WM-014.
 - Rules: product sections 54-58; WM-019; D70
 - Acceptance: Given an Editor creates a form, then it is draft and invisible to submitters.
 - Evidence: BE Forms.Create = POST /boards/{boardId:guid}/forms -> CreateFormCommand (`Forms/Commands/CreateForm/CreateForm.cs`) [- / Idem]; Forms.List = GET /boards/{boardId:guid}/forms -> ListFormsQuery (`Forms/Queries/ListForms/ListForms.cs`) [- / -]; Forms.UpdateDetails = PATCH /forms/{formId:guid} -> UpdateFormDetailsCommand (`Forms/Commands/UpdateFormDetails/UpdateFormDetails.cs`) [EV / Idem]; Forms.AddQuestion = POST /forms/{formId:guid}/questions -> AddFormQuestionCommand (`Forms/Commands/AddFormQuestion/AddFormQuestion.cs`) [- / Idem]; Forms.Get = GET /forms/{formId:guid} -> GetFormQuery (`Forms/Queries/GetForm/GetForm.cs`) [- / -] · FE FormBuilderPage, `frontend/packages/product/work-management/web/src/components/forms/form-builder-surface.tsx` · Design WM-Forms-List, WM-Forms-Builder · Tests `BoardManagementLevelTests.cs`, `FormCommandTests.cs`, `FormPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: updating, publishing, closing and deleting a form, and adding, changing and removing a question, each name the form version the caller read (a missing one is a 400, a stale one a 409); the web client sends the version of the form it showed (the open form, else the row of the list, which now carries it), refuses a write that has none before sending it, and writes one at a time. The form endpoints sent no version before, so the pipeline refused every one of these writes.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design for the builder conflict state; tests and owner check. Built: updating, publishing, closing and deleting a form, and adding, changing and removing a question, each name the form version the caller read (a missing one is a 400, a stale one a 409); the web client sends the version of the form it showed (the open form, else the row of the list, which now carries it), refuses a write that has none before sending it, and writes one at a time. The form endpoints sent no version before, so the pipeline refused every one of these writes. Evidence: real-stack check 2026-10-31: created a form (201; a second form of the same title in any tenant answered 409 because the unique slug came from the title alone, fixed); an empty title 400; an Observer 403; renaming from the builder writes 204 and the reload keeps it; the same content bumps nothing; a stale version 412, commit 5cc3d5082.
 
 ### UC-WM-N02 Map form questions to fields
 - Capability: N Form input (WM-014)
@@ -2394,7 +2394,7 @@ Team capability WM-014.
 - Rules: product sections 57, 55; WM-019; D70
 - Acceptance: Given a Text question mapped to a Number field, then rejected.
 - Evidence: BE Forms.UpdateQuestion = PATCH /forms/{formId:guid}/questions/{questionId:guid} -> UpdateFormQuestionCommand (`Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs`) [- / Idem]; Forms.RemoveQuestion = DELETE /forms/{formId:guid}/questions/{questionId:guid} -> RemoveFormQuestionCommand (`Forms/Commands/RemoveFormQuestion/RemoveFormQuestion.cs`) [- / Idem] · FE builder; some question types 'Sắp có' · Design WM-Forms-Builder · Tests `SubmitFormCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: the three question writes carry the form version (UpdateFormQuestion now goes through the Form so the version moves, and a change to what the question already is moves nothing); UpdateFormQuestion has no test (defect B-14).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a question mapped to the system Title column does not prefill the item title (the builder offers none); tests and owner check. Built: the three question writes carry the form version (UpdateFormQuestion now goes through the Form so the version moves, and a change to what the question already is moves nothing); UpdateFormQuestion has no test (defect B-14). Evidence: real-stack check 2026-10-31: added a Short text question on the Title column and a Date question on Due Date; a duplicate key 400; a stale version 412; a Date question on a text field and a file or signature question are now refused (both were accepted); updating with the same content bumps nothing, commit 5cc3d5082.
 
 ### UC-WM-N03 Publish, close, delete or restore a form
 - Capability: N Form input (WM-014)
@@ -2408,7 +2408,7 @@ Team capability WM-014.
 - Rules: product sections 56, 54; D70
 - Acceptance: Given an Editor, when they publish, then 403.
 - Evidence: BE Forms.Publish = POST /forms/{formId:guid}/publish -> PublishFormCommand (`Forms/Commands/PublishForm/PublishForm.cs`) [EV / Idem]; Forms.Close = POST /forms/{formId:guid}/close -> CloseFormCommand (`Forms/Commands/CloseForm/CloseForm.cs`) [EV / Idem]; Forms.SoftDelete = DELETE /forms/{formId:guid} -> DeleteFormCommand (`Forms/Commands/DeleteForm/DeleteForm.cs`) [EV / Idem]; Forms.Restore = POST /forms/{formId:guid}/restore -> RestoreFormCommand (`Forms/Commands/RestoreForm/RestoreForm.cs`) [- / Idem] · FE forms list panel (no Mở lại) · Design WM-Forms-List (states) · Tests `FormCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: publish, close and delete name the form version (see UC-WM-N01); publishing a published form and updating a form with what it already holds change nothing.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Built: publish, close and delete name the form version (see UC-WM-N01); publishing a published form and updating a form with what it already holds change nothing. Evidence: real-stack check 2026-10-31: published (204; a stale version 412; an Observer 403; publishing again bumps nothing), closed (again bumps nothing), deleted (NotFound to a member) and restored; a form with a question on a deleted field cannot be published, commit 5cc3d5082.
 
 ### UC-WM-N04 Submit a form as an authenticated member
 - Capability: N Form input (WM-014)
@@ -2422,7 +2422,7 @@ Team capability WM-014.
 - Rules: product sections 55, 58; WM-019; D70, D77.1; WMREQ016
 - Acceptance: Given a submission, then exactly one Item exists with mapped values and the submission references it. Given a signed-in member submits, then the Item exists immediately with mapped values and the submission references it.
 - Evidence: BE Forms.Submit = POST /forms/{formId:guid}/submissions -> SubmitFormCommand (`Forms/Commands/SubmitForm/SubmitForm.cs`) [- / Idem] · FE FormFillPage · Design WM-Forms-Submit, WM-Forms-Submit-States · Tests `FormPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; the form fill page refuses unsupported question types.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the fill page uses a native date input; tests and owner check. Evidence: real-stack check 2026-10-31: a member filled the form: an empty required answer shows the inline error and writes nothing, a valid one answered 201 and shows the sent state; a retry under the same key replays; a bad date and an unknown question key 400; a Guest and an unknown form 404; a closed form refuses, commit 5cc3d5082.
 
 ### UC-WM-N05 Process, reject or mark spam on a submission
 - Capability: N Form input (WM-014)
@@ -2436,7 +2436,7 @@ Team capability WM-014.
 - Rules: product sections 58, 55; WM-019; D70, D77.1, D78.4
 - Acceptance: Given an Accepted submission, when Process is chosen, then the create-item dialog opens prefilled from the answers and saving links the submission to the new item. Given Reject or spam, then no item is created and the reason is kept. Given a person with ViewBoard only, then the inbox is refused.
 - Evidence: BE Forms.ListSubmissions = GET /forms/{formId:guid}/submissions -> ListFormSubmissionsQuery (`Forms/Queries/ListFormSubmissions/ListFormSubmissions.cs`) [- / -]; Forms.ProcessSubmission = POST /form-submissions/{submissionId:guid}/process -> ProcessFormSubmissionCommand (`Forms/Commands/ProcessFormSubmission/ProcessFormSubmission.cs`) [- / Idem]; Forms.RejectSubmission = POST /form-submissions/{submissionId:guid}/reject -> RejectFormSubmissionCommand (`Forms/Commands/RejectFormSubmission/RejectFormSubmission.cs`) [- / Idem]; Forms.MarkAsSpam = POST /form-submissions/{submissionId:guid}/spam -> MarkFormSubmissionAsSpamCommand (`Forms/Commands/MarkFormSubmissionAsSpam/MarkFormSubmissionAsSpam.cs`) [- / Idem]; Forms.DeleteSubmission = DELETE /form-submissions/{submissionId:guid} -> DeleteFormSubmissionCommand (`Forms/Commands/DeleteFormSubmission/DeleteFormSubmission.cs`) [- / Idem] · FE FormInboxPage · Design WM-Forms-Inbox(-States) · Tests `FormPipelineIntegrationTests.cs`, `FormSubmissionCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: ListSubmissions needs UpdateItem (D78.4), so a person with ViewBoard only is refused. Built: process, reject, mark spam and delete need UpdateItem as well (D78.4, owner decision 2026-10-30), so an Editor handles responses, a Viewer, Commenter or Observer is refused, and the inbox page opens for editors and managers; the form builder stays the manager's.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Built: ListSubmissions needs UpdateItem (D78.4), so a person with ViewBoard only is refused. Built: process, reject, mark spam and delete need UpdateItem as well (D78.4, owner decision 2026-10-30), so an Editor handles responses, a Viewer, Commenter or Observer is refused, and the inbox page opens for editors and managers; the form builder stays the manager's. Evidence: real-stack check 2026-10-31: the inbox lists the response; Create item from response opened the prefilled dialog and processing linked the item (the response moved to Processed and stays after reload); reject and spam 204; a handled response is refused; processing it into a second item was accepted and replaced the first, now refused; a viewer cannot list or handle, commit 5cc3d5082.
 
 ### UC-WM-N06 Submit a public (anonymous) form
 - Capability: N Form input (WM-014)
