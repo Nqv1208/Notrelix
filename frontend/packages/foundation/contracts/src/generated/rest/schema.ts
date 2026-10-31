@@ -6022,10 +6022,15 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.AssignBoardItemMemberRequest": {
             /** Format: uuid */
             userId?: string;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.BulkUpdateBoardItemsRequest": {
             operation?: string | null;
             itemIds?: string[] | null;
+            expectedVersions?: {
+                [key: string]: number;
+            } | null;
             status?: string | null;
             /** Format: date-time */
             dueDate?: string | null;
@@ -6034,6 +6039,8 @@ export interface components {
             priority?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CompleteBoardItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: date-time */
             completedAt?: string | null;
         };
@@ -6084,6 +6091,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemToBoardRequest": {
             /** Format: uuid */
             boardId?: string;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveChildItemRequest": {
             /** Format: int64 */
@@ -6106,6 +6115,8 @@ export interface components {
             dueDate?: string | null;
             /** Format: date-time */
             startDate?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemReminderRequest": {
             /** Format: int32 */
@@ -6150,6 +6161,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemStatusRequest": {
             status?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.CreateOrUpdateBoardPreferenceRequest": {
             filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
@@ -14549,7 +14562,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -14661,7 +14676,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.Unarchive": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -15077,7 +15094,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.UnassignMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -15382,7 +15401,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.Reopen": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;

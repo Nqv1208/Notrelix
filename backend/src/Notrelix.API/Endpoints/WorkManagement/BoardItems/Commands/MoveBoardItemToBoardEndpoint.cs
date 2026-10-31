@@ -22,7 +22,7 @@ public static class MoveBoardItemToBoardEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveBoardItemToBoardCommand(itemId, body.BoardId), cancellationToken);
+        var result = await sender.Send(new MoveBoardItemToBoardCommand(itemId, body.BoardId, body.ExpectedVersion), cancellationToken);
         return Results.Ok(result);
     }
 }

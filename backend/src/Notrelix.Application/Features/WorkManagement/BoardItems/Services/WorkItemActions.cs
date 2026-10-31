@@ -226,7 +226,7 @@ public sealed class WorkItemActions : IWorkItemActions
         WorkItemActionIdentity execution, Guid itemId, Guid userId, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeItemCommandAsync(
-            execution, itemId, new AssignBoardItemMemberCommand(itemId, userId), cancellationToken);
+            execution, itemId, new AssignBoardItemMemberCommand(itemId, userId, 0), cancellationToken);
 
         var item = await LoadItemAsync(execution, itemId, cancellationToken);
         await EnsureWorkspaceMemberAsync(execution.WorkspaceId, userId, cancellationToken);

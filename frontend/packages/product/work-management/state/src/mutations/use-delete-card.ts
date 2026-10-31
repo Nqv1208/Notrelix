@@ -11,7 +11,7 @@ export function useDeleteCard(boardId: string, workspaceId?: string) {
   const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
   return useMutation<void, Error, string, MutationContext>({
-    mutationFn: cards.deleteCard,
+    mutationFn: (cardId: string) => cards.deleteCard(cardId),
     onMutate: async (cardId) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey);

@@ -17,8 +17,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveB
 /// dropped is named in the result. Comments, links and time entries stay with the item.
 /// </summary>
 [IdempotencyOperation("work-management.board-items.move-board-item-to-board.v1")]
-public record MoveBoardItemToBoardCommand(Guid ItemId, Guid TargetBoardId)
-    : ICommand<MoveBoardItemToBoardResult>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+public record MoveBoardItemToBoardCommand(Guid ItemId, Guid TargetBoardId, long ExpectedVersion)
+    : ICommand<MoveBoardItemToBoardResult>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);

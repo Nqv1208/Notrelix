@@ -22,7 +22,7 @@ public static class UpdateBoardItemStatusEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateBoardItemStatusCommand(itemId, body.Status), cancellationToken);
+        var result = await sender.Send(new UpdateBoardItemStatusCommand(itemId, body.Status, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

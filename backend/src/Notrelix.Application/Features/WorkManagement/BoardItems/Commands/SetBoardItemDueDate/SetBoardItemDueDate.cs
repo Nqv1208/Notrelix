@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate;
 
 [IdempotencyOperation("work-management.board-items.set-board-item-due-date.v1")]
-public record SetBoardItemDueDateCommand(Guid BoardItemId, DateTime? DueDate, DateTime? StartDate) : ICommand<Result>, IWriteRequest, IIdempotentRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record SetBoardItemDueDateCommand(Guid BoardItemId, DateTime? DueDate, DateTime? StartDate, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IIdempotentRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

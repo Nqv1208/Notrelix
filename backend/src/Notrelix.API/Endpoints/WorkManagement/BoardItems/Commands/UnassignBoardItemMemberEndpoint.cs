@@ -18,10 +18,11 @@ public static class UnassignBoardItemMemberEndpoint
     private static async Task<IResult> HandleAsync(
         Guid itemId,
         Guid userId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UnassignBoardItemMemberCommand(itemId, userId), cancellationToken);
+        var result = await sender.Send(new UnassignBoardItemMemberCommand(itemId, userId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

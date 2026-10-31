@@ -10,8 +10,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Reope
 /// status that is not done. Completion (who, when) is cleared.
 /// </summary>
 [IdempotencyOperation("work-management.board-items.reopen-board-item.v1")]
-public record ReopenBoardItemCommand(Guid BoardItemId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ReopenBoardItemCommand(Guid BoardItemId, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

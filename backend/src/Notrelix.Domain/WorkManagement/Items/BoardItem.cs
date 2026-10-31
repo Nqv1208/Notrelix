@@ -203,6 +203,19 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
+    /// Records that the people in charge of the Item changed, so a write that was based on an older read of the
+    /// Item is refused. The assignee rows are their own entities; this is the version the Item answers for them.
+    /// </summary>
+    public void NoteAssigneesChanged(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>
     /// Records that <paramref name="senderUserId"/>, who waits on this Item, asked the people in charge for an
     /// update. The Item's own state does not change; the fact is what Collaboration turns into Inbox entries.
     /// The 24 hour limit on asking again is a durable rule of <see cref="BoardItemReminder"/>, claimed by the

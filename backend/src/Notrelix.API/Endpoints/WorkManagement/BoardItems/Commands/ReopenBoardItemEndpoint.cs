@@ -17,10 +17,11 @@ public static class ReopenBoardItemEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid itemId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ReopenBoardItemCommand(itemId), cancellationToken);
+        var result = await sender.Send(new ReopenBoardItemCommand(itemId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

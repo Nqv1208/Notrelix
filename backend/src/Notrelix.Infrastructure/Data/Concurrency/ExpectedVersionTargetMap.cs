@@ -18,7 +18,16 @@ using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChe
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DeleteBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItemToBoard;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ReopenBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemCover;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnarchiveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemReminder;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemRepeat;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetChecklistItemAssignee;
@@ -233,6 +242,15 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateBoardItemFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(UpdateBoardItemFieldValuesCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ClearFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(CompleteBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(ReopenBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(AssignBoardItemMemberCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UnassignBoardItemMemberCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UpdateBoardItemStatusCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemDueDateCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(MoveBoardItemToBoardCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(DeleteBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UnarchiveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(SetBoardItemCoverCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(SetBoardItemRepeatCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(SetBoardItemReminderCommand)] = new(BoardItemKind, typeof(BoardItem)),

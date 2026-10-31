@@ -60,6 +60,14 @@ function bucketOfCategory(category: string | null | undefined): WorkBucket {
   return BUCKET_OF_CATEGORY[key] ?? "todo";
 }
 
+/** The version the item has now: a feed write names it, so a stale one is refused. */
+async function versionOf(api: FeedApi, itemId: string): Promise<number> {
+  return (
+    (await api.get<{ version?: number | null }>(`/board-items/${itemId}`, QUIET))
+      .version ?? 0
+  );
+}
+
 function readBoard(api: FeedApi, boardId: string): Promise<FullBoardLike> {
   return api.get<FullBoardLike>(`/boards/${boardId}/full`, QUIET);
 }
@@ -90,7 +98,7 @@ async function setStatusOnBoard(
   if (!optionId) return "invalid";
   await api.patch<void>(
     `/board-items/${itemId}/status`,
-    { status: optionId },
+    { status: optionId, expectedVersion: await versionOf(api, itemId) },
     { idempotencyKey: newKey(), ...QUIET },
   );
   return "ok";
@@ -152,7 +160,7 @@ export async function createAssignedItem(
   );
   await api.post<void>(
     `/board-items/${created.id}/assignees`,
-    { userId: input.userId },
+    { userId: input.userId, expectedVersion: await versionOf(api, created.id) },
     { idempotencyKey: newKey(), ...QUIET },
   );
   await setStatusOnBoard(api, created.id, board, "todo");
@@ -192,14 +200,21 @@ export async function bulkEach(
       case "set-due":
         await api.patch<void>(
           `/board-items/${itemId}/due-date`,
-          { dueDate: action.dueAt, startDate: null },
+          {
+            dueDate: action.dueAt,
+            startDate: null,
+            expectedVersion: await versionOf(api, itemId),
+          },
           { idempotencyKey: newKey(), ...QUIET },
         );
         return "ok";
       case "assign":
         await api.post<void>(
           `/board-items/${itemId}/assignees`,
-          { userId: action.assigneeId },
+          {
+            userId: action.assigneeId,
+            expectedVersion: await versionOf(api, itemId),
+          },
           { idempotencyKey: newKey(), ...QUIET },
         );
         return "ok";

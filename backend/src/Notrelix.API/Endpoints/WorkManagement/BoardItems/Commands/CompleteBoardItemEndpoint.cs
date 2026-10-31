@@ -22,7 +22,7 @@ public static class CompleteBoardItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CompleteBoardItemCommand(itemId, body.CompletedAt), cancellationToken);
+        var result = await sender.Send(new CompleteBoardItemCommand(itemId, body.CompletedAt, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

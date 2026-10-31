@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Assig
 [IdempotencyOperation("work-management.board-items.assign-board-item-member.v1")]
 public record AssignBoardItemMemberCommand(
     Guid BoardItemId,
-    Guid UserId) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid UserId,
+    long ExpectedVersion) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.AssignItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -72,6 +73,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
             _dateTimeProvider.UtcNow);
 
         _context.BoardItemMembers.Add(member);
+        card.NoteAssigneesChanged(_requestContext.UserId, _dateTimeProvider.UtcNow);
         var response = Result.Success();
         if (_realtime is not null && _events is not null)
             _events.Add(_realtime.Map(request, response, card.Version));

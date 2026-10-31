@@ -6,8 +6,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Compl
 [IdempotencyOperation("work-management.board-items.complete-board-item.v1")]
 public record CompleteBoardItemCommand(
     Guid BoardItemId,
-    DateTimeOffset? CompletedAt)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    DateTimeOffset? CompletedAt,
+    long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

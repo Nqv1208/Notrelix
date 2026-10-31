@@ -10093,6 +10093,15 @@
             }
           },
           {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
@@ -10232,6 +10241,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -10950,6 +10968,15 @@
             }
           },
           {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
@@ -11473,6 +11500,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -24306,6 +24342,10 @@
           "userId": {
             "type": "string",
             "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -24322,6 +24362,14 @@
             "items": {
               "type": "string",
               "format": "uuid"
+            },
+            "nullable": true
+          },
+          "expectedVersions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64"
             },
             "nullable": true
           },
@@ -24349,6 +24397,10 @@
       "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CompleteBoardItemRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "completedAt": {
             "type": "string",
             "format": "date-time",
@@ -24484,6 +24536,10 @@
           "boardId": {
             "type": "string",
             "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -24543,6 +24599,10 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -24662,6 +24722,10 @@
           "status": {
             "type": "string",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

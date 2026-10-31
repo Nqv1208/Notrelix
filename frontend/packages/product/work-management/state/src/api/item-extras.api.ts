@@ -263,6 +263,10 @@ export function createItemExtrasApi(
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
+  // Every item write names the version it is based on; one that does not know it reads it just before.
+  const versionOf = async (itemId: string): Promise<number> =>
+    (await api.get<{ version?: number | null }>(`/board-items/${itemId}`))
+      .version ?? 0;
   // A backend without a plan producer is not asked at all (`planProduced: false`);
   // one that answers 404 anyway is asked once. The calendar and the timeline
   // then show the board's items alone.
@@ -417,7 +421,7 @@ export function createItemExtrasApi(
      */
     async reopenItem(itemId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/reopen`,
+        `/board-items/${itemId}/reopen?expectedVersion=${await versionOf(itemId)}`,
         {},
         { idempotencyKey: key(), ...quiet },
       );
@@ -425,7 +429,7 @@ export function createItemExtrasApi(
     /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
     async restoreItem(itemId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/unarchive`,
+        `/board-items/${itemId}/unarchive?expectedVersion=${await versionOf(itemId)}`,
         {},
         { idempotencyKey: key(), ...quiet },
       );
@@ -488,7 +492,7 @@ export function createItemExtrasApi(
     ): Promise<MoveToBoardResultDto> {
       const result = await api.post<Partial<MoveToBoardResultDto>>(
         `/board-items/${itemId}/move-to-board`,
-        { boardId },
+        { boardId, expectedVersion: await versionOf(itemId) },
         { idempotencyKey: key(), ...quiet },
       );
       return {
@@ -536,7 +540,7 @@ export function createItemExtrasApi(
     async completeItem(itemId: string): Promise<void> {
       await api.post<void>(
         `/board-items/${itemId}/complete`,
-        {},
+        { expectedVersion: await versionOf(itemId) },
         { idempotencyKey: key(), ...quiet },
       );
     },
@@ -595,12 +599,12 @@ export function createItemExtrasApi(
       if (done)
         await api.post<void>(
           `/board-items/${childId}/complete`,
-          {},
+          { expectedVersion: await versionOf(childId) },
           { idempotencyKey: key(), ...quiet },
         );
       else
         await api.post<void>(
-          `/board-items/${childId}/reopen`,
+          `/board-items/${childId}/reopen?expectedVersion=${await versionOf(childId)}`,
           {},
           { idempotencyKey: key(), ...quiet },
         );
