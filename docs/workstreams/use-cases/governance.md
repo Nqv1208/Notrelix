@@ -118,12 +118,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | INTEGRATING | No real e2e of the denied path; escalation tests are Application-level. |
 | UC-GOV-B04 | A Guest does not enumerate the workspace | B | Guest | Yes | Yes | Yes | Yes | HARDENING | Real spec covers boards only; the member-list 403 and Members page read-only state have no real e2e; no 1-px diff for the Guest view. |
 | UC-GOV-B05 | A Guest's resource level is capped at Editor | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | No real e2e; a Manager entry for a Guest is not refused at grant time (accepted by GOV-030). |
-| UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
-| UC-GOV-C02 | Change a custom role's name or actions | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
-| UC-GOV-C03 | Archive a custom role that has assignments | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
-| UC-GOV-C04 | Assign a custom role to a workspace member | C | Workspace Owner | Part | No | No | No | BLOCKED | Decision needed from the owner: at which step of the GOV-025 order a custom role's actions apply (as part of the workspace baseline ... |
-| UC-GOV-C05 | Remove a custom role from a member | C | Workspace Owner | Part | No | No | No | BLOCKED | Same decision as UC-GOV-C04. |
-| UC-GOV-C06 | List roles and the permission catalog | C | Workspace Owner, Admin | No | Part | No | No | DEFINED | No endpoint, no screen, no artboard. Package `features/governance` is not imported by any app. |
+| UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C02 | Change a custom role's name or actions | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C03 | Archive a custom role that has assignments | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C04 | Assign a custom role to a workspace member | C | Workspace Owner | Yes | Part | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C05 | Remove a custom role from a member | C | Workspace Owner | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C06 | List roles and the permission catalog | C | Account and workspace Owner, Admin | Yes | Part | No | No | HARDENING | Tests and owner check. |
 | UC-GOV-D01 | Give a workspace member access to a Board or Page | D | Board or Page manager | Yes | Yes | Yes | Yes | HARDENING | Real spec covers Board with a User subject only; Page share has no real e2e; cross-tenant negative test not named for grant; no 1-px ... |
 | UC-GOV-D02 | Give a Team access to a Board or Page | D | Board or Page manager | Yes | Part | Part | No | INTEGRATING | The share dialog cannot add a Team; no real e2e; Team subject membership check on grant is not proven. |
 | UC-GOV-D03 | Change the level of an existing grant | D | Board or Page manager | Yes | Yes | Yes | Yes | HARDENING | Competing changes have no expected version (README §7 line 1 fails). |
@@ -151,6 +151,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-E10 | Export, search and analytics keep source authorization | E | Any reader | Part | No | No | No | DEFINED | Export audit not built; owned per context, Governance supplies the rule. |
 | UC-GOV-E11 | Entitlement and permission stay separate | E | Server | Yes | No | No | No | IMPLEMENTING | Billing is not built; the port always allows. |
 | UC-GOV-E12 | Show permission state in the UI as a projection of the server | E | Any user | Yes | Yes | Part | No | INTEGRATING | No real e2e; no axe proof for the forbidden state. |
+| UC-GOV-E13 | Explain why a person can or cannot do an action | E | Workspace Owner, Admin | Yes | No | No | No | HARDENING | Tests, screen and owner check. |
 | UC-GOV-F01 | Declare the resource and action on every request | F | Developer | Yes | No | No | No | HARDENING | Release SHA evidence is recorded as partially verified in the certification. |
 | UC-GOV-F02 | Authorize background and system actions explicitly | F | System, Automation, Integration principal | Yes | No | No | No | IMPLEMENTING | Automation execution identity decided per context; no cross-context end-to-end proof. |
 | UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | Audit row has null subject, before and after; IP and user agent are taken from request metadata only; no read path (UC-GOV-H02). |
@@ -227,7 +228,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; server-only use case
 - Rules: [Governance §14-§15, §44.1, §85](../../product/governance.md) GOV-005; WGREQ050-WGREQ053, WGREQ172.
 - Acceptance: Given a new action with no baseline row, When tests run, Then they fail naming the action.
-- Evidence: BE `WorkspaceRoleBaseline` · Tests `backend/tests/Notrelix.Application.Tests/Features/Governance/WorkspaceRoleBaselineTests.cs`, `backend/tests/Notrelix.Architecture.Tests/Authorization/PermissionActionInventoryTests.cs` · Real e2e none · Design none
+- Evidence: BE `WorkspaceRoleBaseline` · Tests `backend/tests/Notrelix.Application.Tests/Features/Governance/WorkspaceRoleBaselineTests.cs`, `backend/tests/Notrelix.Architecture.Tests/Authorization/PermissionActionInventoryTests.cs` · Real e2e none · Design none · real-stack check 2026-10-31: three actions added (ManageAutomation Owner/Admin, ReadAudit Owner/Admin, ViewBilling Owner) and classified in `WorkspaceRoleBaseline` and `PermissionCatalog`; the six workspace-level automation requests moved from ManageWorkspaceSettings without changing who may act (Owner/Admin 200, Member/Guest 403); the two billing reads now need ViewBilling (owner-approved tightening: an Admin no longer reads billing), commit e27a07fcd
 - State: IMPLEMENTING - Stored-rule migration on rename is specified (§85) but has no test.
 
 ### UC-GOV-A04 Field-level permission (deferred)
@@ -320,7 +321,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 
 ### UC-GOV-C01 Create a custom role (enterprise baseline)
 - Capability: C Custom roles (team spec, Governance list)
-- Actors and permission: Workspace Owner; `ManageWorkspace` (Owner)
+- Actors and permission: Account Owner or Admin; `ManageAccount`
 - Preconditions: Workspace is active.
 - Input: Name (1-60 characters, unique per workspace after trim), description, a set of permission actions.
 - Output: A custom role in Active state; `CustomRoleCreated` fact after commit; audit entry.
@@ -329,12 +330,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, empty, validation error, permission denied, pending, success
 - Rules: [Governance §41-§47](../../product/governance.md) GOV-012, GOV-013; WGREQ063-WGREQ070, WGREQ147, WGREQ173; Lead decision L1, L2.
 - Acceptance: Given an Owner, When they create role 'Reviewer' with ViewBoard, Then the role is listed. Given an Admin, Then 403. Given a duplicate name, Then 409.
-- Evidence: BE `Notrelix.Domain/Governance/Roles/CustomRole.cs`, `CustomRolePermission.cs`, `MemberRoleAssignment.cs`, `IGovernanceDbContext.CustomRoles` (Domain and persistence only; no handler, no endpoint) · FE `frontend/packages/features/governance/src/core/api/governance.service.ts` calls role routes the backend does not have · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Roles/CustomRoleTests.cs` · Real e2e none · Design none
-- State: DEFINED - No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code).
+- Evidence: BE `Features/Governance/Roles/Commands/CustomRoleCommands.cs` (CreateCustomRole), `Notrelix.Domain/Governance/Roles/CustomRole.cs`, `POST /api/v1/accounts/roles` · FE none (Roles screens wait for the canvas) · Tests none yet (build phase) · Real e2e none · real-stack check 2026-10-31: Free plan 403 plan.feature_not_enabled, created 201 and reloaded in the list, retry under the same key returned the same role (1 row), same key with another body 409, duplicate name 409 name_taken, Owner-locked action, Guest-based add, resource-level add, action already in base, action not in base, empty set and unknown action each refused with its own ruleCode, a non-admin and an outsider 403, commit 3bdc36caf
+- State: HARDENING - tests and owner check.
 
 ### UC-GOV-C02 Change a custom role's name or actions
 - Capability: C Custom roles (team spec, Governance list)
-- Actors and permission: Workspace Owner; `ManageWorkspace` (Owner)
+- Actors and permission: Account Owner or Admin; `ManageAccount`
 - Preconditions: The role is Active.
 - Input: Role id, expected version, new name, new action set.
 - Output: New version; members of the role get the new set on the next evaluation; permission cache for the workspace is invalidated; audit entry.
@@ -343,12 +344,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: conflict, pending, destructive confirmation (action removed), validation error
 - Rules: [Governance §41-§47](../../product/governance.md) GOV-012, GOV-013; WGREQ063-WGREQ070, WGREQ147, WGREQ173; Lead decision L1, L2.
 - Acceptance: Given a stale version, When saved, Then 412 and the role is unchanged. Given the same set, Then the version is unchanged.
-- Evidence: BE `Notrelix.Domain/Governance/Roles/CustomRole.cs`, `CustomRolePermission.cs`, `MemberRoleAssignment.cs`, `IGovernanceDbContext.CustomRoles` (Domain and persistence only; no handler, no endpoint) · FE `frontend/packages/features/governance/src/core/api/governance.service.ts` calls role routes the backend does not have · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Roles/CustomRoleTests.cs` · Real e2e none · Design none
-- State: DEFINED - No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code).
+- Evidence: BE `CustomRoleCommands.cs` (UpdateCustomRole), `PATCH /api/v1/accounts/roles/{roleId}` · FE none · Tests none yet · Real e2e none · real-stack check 2026-10-31: stale version 412, identical content kept the version (no-op, no audit row), a real change bumped it, a non-admin 403, an unknown id 404, an archived role refused, a downgraded plan refused with plan.feature_not_enabled, commit 3bdc36caf
+- State: HARDENING - tests and owner check.
 
 ### UC-GOV-C03 Archive a custom role that has assignments
 - Capability: C Custom roles (team spec, Governance list)
-- Actors and permission: Workspace Owner; `ManageWorkspace` (Owner)
+- Actors and permission: Account Owner or Admin; `ManageAccount`
 - Preconditions: The role exists.
 - Input: Role id, expected version.
 - Output: Role Archived; its assignments stay visible but grant nothing from that instant; no hard delete is offered; Activate restores it.
@@ -357,8 +358,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: destructive confirmation, conflict, empty (no roles)
 - Rules: [Governance §47](../../product/governance.md); Lead decision L2.
 - Acceptance: Given a role with 3 holders, When archived, Then the 3 lose the role's actions on the next request and the list shows 'archived'.
-- Evidence: BE `Notrelix.Domain/Governance/Roles/CustomRole.cs`, `CustomRolePermission.cs`, `MemberRoleAssignment.cs`, `IGovernanceDbContext.CustomRoles` (Domain and persistence only; no handler, no endpoint) · FE `frontend/packages/features/governance/src/core/api/governance.service.ts` calls role routes the backend does not have · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Roles/CustomRoleTests.cs` · Real e2e none · Design none
-- State: DEFINED - No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code).
+- Evidence: BE `CustomRoleCommands.cs` (ArchiveCustomRole), `POST /api/v1/accounts/roles/{roleId}/archive` · FE none · Tests none yet · Real e2e none · real-stack check 2026-10-31: holders without a target refused (ArchiveNeedsTarget), stale version 412, the archived role as its own target refused, a non-admin 403, archive moved the holder to the target and the person's effective access followed on reload, archiving twice was a no-op, archive and remove stay allowed on a downgraded plan, commit 3bdc36caf
+- State: HARDENING - tests and owner check.
 
 ### UC-GOV-C04 Assign a custom role to a workspace member
 - Capability: C Custom roles (team spec, Governance list)
@@ -367,12 +368,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Input: Member id, role id.
 - Output: Assignment row; effective permissions change on the next evaluation; audit entry.
 - Main flow: 1. Open the member. 2. Pick roles. 3. Save.
-- No-op / rejection / concurrency / retry: Cross-workspace member or role id: NotFound. Already assigned: no-op. BLOCKED on where the role enters the decision order (see state).
+- No-op / rejection / concurrency / retry: Cross-workspace member or role id: NotFound. Already assigned: no-op. Decision order settled by the owner on 2026-10-31 (see state).
 - UI states: pending, permission denied, validation error
 - Rules: [Governance §46](../../product/governance.md) GOV-007, GOV-012, GOV-024; WGREQ066-WGREQ067.
 - Acceptance: Given a member and a role, When assigned, Then the member can do the role's actions on the next request. Given an id of another workspace, Then NotFound.
-- Evidence: BE `Notrelix.Domain/Governance/Roles/CustomRole.cs`, `CustomRolePermission.cs`, `MemberRoleAssignment.cs`, `IGovernanceDbContext.CustomRoles` (Domain and persistence only; no handler, no endpoint) · FE `frontend/packages/features/governance/src/core/api/governance.service.ts` calls role routes the backend does not have · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Roles/CustomRoleTests.cs` · Real e2e none · Design none
-- State: BLOCKED - Decision needed from the owner: at which step of the GOV-025 order a custom role's actions apply (as part of the workspace baseline only, or also able to reach Private Boards and Pages), and whether Deny rules outrank it. Lead proposal in Part 4 L1.
+- Evidence: BE `CustomRoleCommands.cs` (AssignCustomRole), `PUT /api/v1/workspaces/{workspaceId}/members/{userId}/custom-role`, engine `AccessPolicyEngine` (role replaces the built-in role) · FE `apps/web/src/shell/workspace/use-workspace-viewer.ts` hides what a role removes (library New board) · Tests none yet · Real e2e none · real-stack check 2026-10-31: a Member given a role that removes CreateBoard got 403 on board create and the person's page dropped New Board live within the poll (browser), the role returned it on removal; assigning again was a no-op; a Guest, a Member, an unknown role, an unknown member and a workspace Owner target were each refused; a Guest to a Member-based role with no free seat was refused (Governance_Role_NoSeat); a role adding ViewBilling and ManageAutomation opened billing and automations for a Member and nothing else; an archived role was refused; item matrix (3 people, 99 lines) and private-view matrix identical before and after, commit 3bdc36caf
+- State: HARDENING - tests and owner check. Owner decision 2026-10-31 (roles and the decision order): a custom role is defined once per Account on a fixed Admin, Member or Guest base, adds or removes actions, and is assigned per workspace; one role per person per workspace, replacing the built-in role; the role never reaches Private resources by itself, Deny outranks it, a Guest base stays Guest-capped, and an explicit grant still applies when the role removed the action.
 
 ### UC-GOV-C05 Remove a custom role from a member
 - Capability: C Custom roles (team spec, Governance list)
@@ -385,12 +386,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: pending, permission denied
 - Rules: [Governance §46-§47](../../product/governance.md); WGREQ147.
 - Acceptance: Given an assigned role, When removed, Then the member loses the role's actions on the next request.
-- Evidence: BE `Notrelix.Domain/Governance/Roles/CustomRole.cs`, `CustomRolePermission.cs`, `MemberRoleAssignment.cs`, `IGovernanceDbContext.CustomRoles` (Domain and persistence only; no handler, no endpoint) · FE `frontend/packages/features/governance/src/core/api/governance.service.ts` calls role routes the backend does not have · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Roles/CustomRoleTests.cs` · Real e2e none · Design none
-- State: BLOCKED - Same decision as UC-GOV-C04.
+- Evidence: BE `CustomRoleCommands.cs` (RemoveCustomRoleAssignment), `DELETE /api/v1/workspaces/{workspaceId}/members/{userId}/custom-role` · FE none · Tests none yet · Real e2e none · real-stack check 2026-10-31: removal returned the person to the built-in role on reload; removing when none is held was a no-op; an access signal went out on assign, remove, change and archive, commit 3bdc36caf
+- State: HARDENING - tests and owner check. Owner decision 2026-10-31 (roles and the decision order): a custom role is defined once per Account on a fixed Admin, Member or Guest base, adds or removes actions, and is assigned per workspace; one role per person per workspace, replacing the built-in role; the role never reaches Private resources by itself, Deny outranks it, a Guest base stays Guest-capped, and an explicit grant still applies when the role removed the action.
 
 ### UC-GOV-C06 List roles and the permission catalog
 - Capability: C Custom roles (team spec, Governance list)
-- Actors and permission: Workspace Owner, Admin; `ViewMembers` plus role read (Lead decision L1)
+- Actors and permission: Account Owner or Admin (`ManageAccount`) for definitions; workspace Owner or Admin (`ManageWorkspaceSettings`) for the workspace list
 - Preconditions: Workspace is active.
 - Input: Workspace id; paging.
 - Output: Built-in roles with their baseline, custom roles with member counts, and the action catalog with business descriptions.
@@ -399,8 +400,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, empty, permission denied, error
 - Rules: [Governance §43-§44, §100](../../product/governance.md); WGREQ064-WGREQ065.
 - Acceptance: Given an Admin, When they open Roles, Then they see built-in and custom roles; Given a Guest, Then 403.
-- Evidence: BE none · FE `frontend/packages/features/governance/src/core/types/governance.ts` (`GovernanceRole`, `GovernancePermission` types and service for routes that do not exist) · Tests `frontend/packages/features/governance/src/__tests__/governance.unit.test.ts` (service shape only) · Real e2e none · Design none
-- State: DEFINED - No endpoint, no screen, no artboard. Package `features/governance` is not imported by any app.
+- Evidence: BE `Features/Governance/Roles/Queries/CustomRoleQueries.cs`, `GET /api/v1/permissions/catalog`, `GET /api/v1/accounts/roles`, `GET /api/v1/workspaces/{workspaceId}/roles`, `GET /api/v1/workspaces/{workspaceId}/members/me/access` · FE words in `frontend/packages/features/governance/src/web/permission-labels.catalog.ts`; no screen · Tests none yet · Real e2e none · real-stack check 2026-10-31: catalog 200 with level, canAdd, canRemove and locked per action; the workspace list showed built-in and custom roles with the workspace's holder count; a Member got 403, commit 3bdc36caf
+- State: HARDENING - tests and owner check.
 
 ## Capability D: Permission assignment
 
@@ -783,6 +784,20 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Acceptance: Given a Viewer, When the board opens, Then edit controls are disabled with a reason.
 - Evidence: FE `frontend/packages/foundation/platform/src/permissions/ability.ts`, `core.ts`, `frontend/apps/web/src/router/guards/require-permission.ts`, `frontend/packages/ui/web/src/components/feedback/forbidden-state.tsx` · Tests `frontend/packages/foundation/platform/src/__tests__/platform-boundaries.unit.test.ts` · Real e2e none · Design `Final-States`
 - State: INTEGRATING - No real e2e; no axe proof for the forbidden state.
+
+### UC-GOV-E13 Explain why a person can or cannot do an action
+- Capability: E Effective permission evaluation (team spec, Governance list)
+- Actors and permission: Workspace Owner or Admin; `ReadAudit`
+- Preconditions: The target is an active member of the workspace.
+- Input: Workspace id, user id, action, optional resource kind and id.
+- Output: The decision (Allowed, Forbidden or NotFound), the stored and effective role, the custom role, the sources and the ordered steps; one audit line per check.
+- Main flow: 1. Pick a person and an action. 2. Read the decision, its sources and its steps.
+- No-op / rejection / concurrency / retry: A Member or Guest asking is refused (403); an unknown member is NotFound; an unknown action is a validation error. The decision is the engine's own result over the same facts a real request reads; the steps explain it and never decide.
+- UI states: loading, permission denied, error
+- Rules: owner decision 2026-10-31.
+- Acceptance: Given a Member with a role that removes CreateBoard, When an Owner asks about CreateBoard, Then the decision is Forbidden and a step names the role removal.
+- Evidence: BE `Features/Governance/Roles/Queries/ExplainAccessQuery.cs`, `GET /api/v1/workspaces/{workspaceId}/access-explanations` · FE none · Tests none yet · Real e2e none · real-stack check 2026-10-31: Allowed without a role, Forbidden with a role that removes CreateBoard (steps: membership, custom-role, baseline, role-removes, result), a resource-level question on a board returned its sources, a Member asking got 403, an unknown member 404, a bad action 400, 4 audit rows for 4 checks, commit b6f91c17f
+- State: HARDENING - tests, screen and owner check.
 
 ## Capability F: Protected operation integration
 
@@ -1241,6 +1256,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - State: DEFINED - No rehearsal test of a vocabulary migration.
 
 # 4. Product decisions applied
+
+- Owner decision 2026-10-31 (roles and the decision order): a custom role is defined once per Account on a fixed Admin, Member or Guest base, adds or removes actions, and is assigned per workspace; one role per person per workspace, replacing the built-in role; the role never reaches Private resources by itself, Deny outranks it, a Guest base stays Guest-capped, and an explicit grant still applies when the role removed the action. Three actions were added: Automation management (default Owner and Admin), Audit read (default Owner and Admin), Billing view (default Owner, owner-approved tightening of the billing reads); custom roles are an Enterprise capability (frozen after a downgrade: still effective, only lowering changes allowed); Guest to a Member-based role needs a free member seat.
 
 ## 4.1 Owner decisions relied on
 

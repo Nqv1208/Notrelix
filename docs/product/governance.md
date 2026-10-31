@@ -973,6 +973,29 @@ Cross-scope role assignment through raw IDs is forbidden.
 
 ---
 
+# 46.1. GOV-026 — Custom roles are Account definitions on a fixed built-in base (owner decision 2026-10-31)
+
+Three layers decide whether a person may act, and all must pass; Deny wins:
+
+1. the platform operator sets each tenant's plan, features and limits (entitlements);
+2. tenant admins own roles (built-in and custom), departments (Space and Team) and assignments;
+3. per-resource sharing.
+
+Rules for a custom role:
+
+- **Tenant = Account.** A custom role is defined once per Account (by an Account Owner or Admin) and assigned per workspace (by the workspace Owner). The permission catalog is product-defined in code; tenants compose roles from it and never invent a permission.
+- **One role per person per workspace.** A custom role replaces the person's built-in role while assigned; removing it returns the person to the built-in role. A workspace Owner never holds one.
+- **The base is fixed.** A role is built on Admin, Member or Guest when created and that never changes. A Guest-based role stays Guest-capped and cannot add actions.
+- **Adds and removes.** A role adds or removes workspace-level actions inside its base. An action decided on a Board or Page can only be removed. Owner-only actions (the GOV-013 list) are never carried. Reading (workspace, board, page) cannot be removed until collection reads honour a role.
+- **Private resources.** A custom role never reaches a Private resource by itself, Deny outranks it, and an explicit resource grant still applies when the role removed the action.
+- **New actions.** Automation management (default Owner and Admin, split from workspace settings without changing who may act), Audit read (default Owner and Admin) and Billing view (default Owner; the billing reads need it, so an Admin reads billing only when a role adds it). All three can be added to a role.
+- **Archiving** moves the role's holders to one chosen role of the account that is not above the archived one, never up to Admin; a role with no holder needs no target.
+- **Plan gate.** Custom roles are an Enterprise capability. After a downgrade they are frozen: still effective, only changes that lower privilege stay allowed (removing a role from a person, archiving); editing, renaming and new assignments are refused.
+- **Seats.** Giving a Guest a Member-or-higher based role needs a free member seat and is refused otherwise.
+- **Explaining.** "Why can X do Y?" is open to whoever may read the audit trail (Owner and Admin by default); each check is audited. The decision is the engine's result; the steps explain it.
+
+---
+
 # 47. Role deletion
 
 Deleting/deactivating a custom role must define what happens to assignments.
