@@ -200,9 +200,11 @@ function Banner({
 /** The notices at the top of the left column: someone else's save, or why nothing is editable. */
 export function PopupBanners({
   conflict,
+  staleSchema,
   onReload,
 }: {
   conflict?: boolean;
+  staleSchema?: { fieldName: string; byName: string | null } | null;
   onReload?: () => void;
 }) {
   const { copy, readOnly, fieldConflicts } = useCardPopup();
@@ -213,7 +215,10 @@ export function PopupBanners({
         <Banner
           key={c.key}
           tone="warn"
-          title={fillPopupCopy(t.fieldConflict.title, { field: c.field, value: c.theirs })}
+          title={fillPopupCopy(t.fieldConflict.title, {
+            field: c.field,
+            value: c.theirs,
+          })}
           body={fillPopupCopy(t.fieldConflict.body, { mine: c.mine })}
         >
           <div className="mt-2 flex flex-wrap gap-2">
@@ -226,7 +231,24 @@ export function PopupBanners({
           </div>
         </Banner>
       ))}
-      {conflict ? (
+      {staleSchema ? (
+        <Banner
+          tone="warn"
+          title={fillPopupCopy(t.staleSchema.deleted, {
+            who: staleSchema.byName ?? t.staleSchema.someone,
+            field: staleSchema.fieldName,
+          })}
+          body={t.staleSchema.body}
+        >
+          {onReload ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <PanelBtn small onClick={onReload}>
+                {t.staleSchema.reload}
+              </PanelBtn>
+            </div>
+          ) : null}
+        </Banner>
+      ) : conflict ? (
         <Banner tone="warn" title={t.conflict.title} body={t.conflict.body}>
           {onReload ? (
             <div className="mt-2 flex flex-wrap gap-2">

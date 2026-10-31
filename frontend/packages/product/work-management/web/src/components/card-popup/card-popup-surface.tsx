@@ -35,6 +35,8 @@ export interface CardPopupSurfaceProps {
   readonly footer?: ReactNode;
   /** Another person's save won: the notice shows and the fields are fresh. */
   readonly conflict?: boolean;
+  /** The conflict is a field the board no longer has (D12): names who changed it. */
+  readonly staleSchema?: { fieldName: string; byName: string | null } | null;
   readonly onReloadConflict?: () => void;
   /** Dialogs of the host that must sit inside the popup (the draft confirm). */
   readonly overlays?: ReactNode;
@@ -53,6 +55,7 @@ export function CardPopupSurface({
   onCloseAutoFocus,
   footer,
   conflict,
+  staleSchema,
   onReloadConflict,
   overlays,
 }: CardPopupSurfaceProps) {
@@ -116,7 +119,11 @@ export function CardPopupSurface({
                 data-popup-left=""
               >
                 {model.slots.coverBanner}
-                <PopupBanners conflict={conflict} onReload={onReloadConflict} />
+                <PopupBanners
+                  conflict={conflict}
+                  staleSchema={staleSchema}
+                  onReload={onReloadConflict}
+                />
                 <PopupTitleRow />
                 <PopupQuickRow />
                 <ChipsRow />
