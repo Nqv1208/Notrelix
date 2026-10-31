@@ -95,6 +95,8 @@ export const en = {
   },
   reschedule: {
     failed: "Could not move {{title}}",
+    conflict: "{{actor}} changed {{title}} first. Your move was not saved.",
+    someone: "Someone",
     beforeStart: "The due date of {{title}} cannot be before its start date",
   },
   fit: {
@@ -265,6 +267,8 @@ export const vi: TimelineCopy = {
   },
   reschedule: {
     failed: "Không dời được {{title}}",
+    conflict: "{{actor}} vừa sửa {{title}} trước bạn. Thay đổi của bạn chưa được lưu.",
+    someone: "Một người khác",
     beforeStart: "Hạn của {{title}} không thể trước ngày bắt đầu",
   },
   fit: {

@@ -300,13 +300,30 @@ export function BoardTimelineView({
         },
       },
       {
-        onError: () =>
-          toast.error(fill(copy.reschedule.failed, { title: card.title }), {
-            id: `timeline-write-${card.id}`,
-          }),
+        onError: (error: unknown) => {
+          const id = `timeline-write-${card.id}`;
+          if (!isStale(error)) {
+            toast.error(fill(copy.reschedule.failed, { title: card.title }), { id });
+            return;
+          }
+          // The refetch brings the other person's version, which says who changed it.
+          void Promise.resolve(kanban.refetch()).then(() =>
+            toast.error(
+              fill(copy.reschedule.conflict, {
+                actor: kanban.lastEditorOf(card.id) ?? copy.reschedule.someone,
+                title: card.title,
+              }),
+              { id },
+            ),
+          );
+        },
       },
     );
   };
+
+  const isStale = (error: unknown) =>
+    (error as { status?: number } | null)?.status === 412 ||
+    (error as { kind?: unknown } | null)?.kind === "conflict";
 
   const nameOfItem = (id: string) => {
     const card = cardsById.get(id);
