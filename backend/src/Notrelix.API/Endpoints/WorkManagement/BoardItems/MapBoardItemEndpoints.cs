@@ -16,6 +16,7 @@ public static class MapBoardItemEndpoints
 
         boardItems.MapCreateBoardItem();
         boardItems.MapListBoardItems();
+        boardItems.MapListBoardDependencies();
         boardItems.MapBulkUpdateBoardItems();
         boardItems.MapListBoardItemTrash();
         boardItems.MapListArchivedBoardItems();

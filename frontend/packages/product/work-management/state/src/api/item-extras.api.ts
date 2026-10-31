@@ -289,9 +289,8 @@ export function createItemExtrasApi(
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
   // Every item write names the version the person saw; the caller takes it from the cache, none reads a fresh one.
-  // A backend without a plan producer is not asked at all (`planProduced: false`);
-  // one that answers 404 anyway is asked once. The calendar and the timeline
-  // then show the board's items alone.
+  // A backend without a plan producer is not asked at all (`planProduced: false`) and gives the
+  // dependencies from the items; one that answers 404 anyway is asked once.
   let planProduced = options.planProduced ?? true;
   return {
     async getPlan(boardId: string): Promise<BoardPlanDto> {
@@ -307,6 +306,18 @@ export function createItemExtrasApi(
           if (status !== 404) throw error;
           planProduced = false;
         }
+      }
+      // The real backend has no plan producer; the board's dependencies are read from the items.
+      if (!planProduced) {
+        const read = await api
+          .get<{
+            dependencies?: readonly { from: string; to: string }[];
+          } | null>(`/boards/${boardId}/items/dependencies`, quiet)
+          .catch((error: unknown) => {
+            if ((error as { status?: number } | null)?.status === 404) return null;
+            throw error;
+          });
+        dto = { links: read?.dependencies ?? [] };
       }
       return {
         items: dto?.items ?? [],

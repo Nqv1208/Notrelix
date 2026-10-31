@@ -2578,6 +2578,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/items/dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the dependencies between the items of a board */
+        get: operations["WorkManagement.BoardItems.ListDependencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/items/bulk": {
         parameters: {
             query?: never;
@@ -7596,6 +7613,15 @@ export interface components {
             archivedBy?: string | null;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto": {
+            /** Format: uuid */
+            from?: string;
+            /** Format: uuid */
+            to?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyListDto": {
+            dependencies?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto"][] | null;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */
@@ -14619,6 +14645,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListDependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyListDto"];
+                };
             };
         };
     };
