@@ -311,12 +311,12 @@ export function BoardShareDialog({
           : undefined
       }
       onClaimOwner={
-        view.canManage && sharing.data && user?.id
+        view.canManage && sharing.data?.canAssignOwner && user?.id
           ? () => write(() => sharing.claimOwner(user.id))
           : undefined
       }
       onMakeOwner={
-        view.canManage && sharing.data
+        view.canManage && sharing.data?.canAssignOwner
           ? (rowId: string) => write(() => sharing.makeOwner(rowId))
           : undefined
       }

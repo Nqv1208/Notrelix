@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Services;
 /// A board always has an Owner: its creator, until ownership is handed over by promoting someone else first.
 /// The Owner role is the board's own access source, so a person who creates a Private board is never left
 /// without access to it, and the last Owner cannot be removed or lowered. No path adds an Owner row implicitly
-/// for someone else's board.
+/// for someone else's board. Only a board Owner, or a workspace Owner or Admin, hands the Owner role out or takes
+/// it away: a board Admin manages Members and Viewers but cannot make or unmake an Owner.
 /// </summary>
 public static class BoardOwnership
 {
@@ -24,7 +25,7 @@ public static class BoardOwnership
     /// or a time-limited grant, into a durable Owner row). Returns true when the Owner row was added.
     /// </summary>
     public static async Task<bool> EnsureOwnerForPrivateAsync(
-        IWorkManagementDbContext context, Guid boardId, Guid actorId, bool addActorAsOwner, DateTimeOffset now, CancellationToken ct)
+        IWorkManagementDbContext context, Guid boardId, Guid actorId, bool addActorAsOwner, bool actorMayAssignOwner, DateTimeOffset now, CancellationToken ct)
     {
         var hasOwner = await context.BoardMembers.AsNoTracking()
             .AnyAsync(m => m.BoardId == boardId && m.Role == BoardRole.Owner, ct);
@@ -42,8 +43,43 @@ public static class BoardOwnership
                 "This board has no owner. Add yourself as its owner, or ask a workspace owner or admin to assign one, before making it Private.");
         }
 
+        if (!actorMayAssignOwner)
+        {
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Board_OwnerChangeNeedsOwner,
+                "Only a workspace owner or admin can make themselves the owner of a board with no owner.");
+        }
+
         context.BoardMembers.Add(BoardMemberEntity.Create(boardId, actorId, BoardRole.Owner, now));
         return true;
+    }
+
+    /// <summary>
+    /// Making someone an Owner, lowering an Owner or removing one is for a board Owner or a workspace Owner or Admin.
+    /// Anyone else, a board Admin included, is refused with
+    /// <see cref="WorkManagementRuleCodes.WorkManagement_Board_OwnerChangeNeedsOwner"/> and nothing changes.
+    /// </summary>
+    public static async Task EnsureMayChangeOwnershipAsync(
+        IWorkManagementDbContext context, IWorkspaceAccessResolver workspaceAccess,
+        Guid workspaceId, Guid boardId, Guid actorId, CancellationToken ct)
+    {
+        if (await ActorMayAssignOwnerAsync(context, workspaceAccess, workspaceId, boardId, actorId, ct))
+        {
+            return;
+        }
+
+        throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+            WorkManagementRuleCodes.WorkManagement_Board_OwnerChangeNeedsOwner,
+            "Only a board owner or a workspace owner or admin can make someone an owner or change an owner.");
+    }
+
+    public static async Task<bool> ActorMayAssignOwnerAsync(
+        IWorkManagementDbContext context, IWorkspaceAccessResolver workspaceAccess,
+        Guid workspaceId, Guid boardId, Guid actorId, CancellationToken ct)
+    {
+        var actorIsOwner = await context.BoardMembers.AsNoTracking()
+            .AnyAsync(m => m.BoardId == boardId && m.UserId == actorId && m.Role == BoardRole.Owner, ct);
+        return actorIsOwner || (await workspaceAccess.ResolveAsync(workspaceId, actorId, ct)).IsOwnerOrAdmin;
     }
 
     /// <summary>Removing or lowering the last Owner is refused: hand ownership over by promoting someone else first.</summary>

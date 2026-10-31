@@ -7982,6 +7982,7 @@ export interface components {
             privateImpact?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto"];
             /** Format: int64 */
             version?: number;
+            canAssignOwner?: boolean;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto": {
             /** Format: uuid */

@@ -232,6 +232,8 @@ export interface BoardSharingData {
   readonly spaceName: string | null;
   readonly spacePeople: number | null;
   readonly canManage: boolean;
+  /** A board Owner or a workspace Owner or Admin: only they make someone an owner or change one. */
+  readonly canAssignOwner?: boolean;
   /** Only a Board manager or member is given the entries; others get the counts. */
   readonly entriesDisclosed: boolean;
   readonly peopleCount: number;
@@ -282,6 +284,7 @@ export interface BoardSharingData {
 export interface BoardSharingWire {
   readonly version?: number;
   readonly canManage?: boolean;
+  readonly canAssignOwner?: boolean;
   readonly entriesDisclosed?: boolean;
   readonly visibility?: string | null;
   readonly spaceName?: string | null;
@@ -367,6 +370,7 @@ export function toBoardSharingData(wire: BoardSharingWire): BoardSharingData {
     spaceName: wire.spaceName ?? null,
     spacePeople: wire.spacePeople ?? null,
     canManage: wire.canManage ?? false,
+    canAssignOwner: wire.canAssignOwner ?? false,
     entriesDisclosed: wire.entriesDisclosed ?? false,
     peopleCount: wire.peopleCount ?? 0,
     guestCount: wire.guestCount ?? 0,
@@ -593,6 +597,7 @@ export function buildSharingRows(
       viewer: entry.memberRole === "Observer" || entry.memberRole === "Guest",
       owner: entry.owner,
       ownable:
+        data.canAssignOwner === true &&
         entry.kind === "person" &&
         entry.memberRole !== null &&
         entry.memberRole !== "Owner" &&

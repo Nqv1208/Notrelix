@@ -531,7 +531,7 @@ function ShareBody({
                 ) : null}
               </div>
             ) : null}
-            {view.canManage && memberRows.length > 0 ? (
+            {view.canManage && memberRows.some((row) => row.ownable) ? (
               <p
                 data-f="ownerhint"
                 className="m-0 mt-1.5 text-xs leading-[1.45] text-meta-foreground"

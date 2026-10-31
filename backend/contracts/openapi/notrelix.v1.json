@@ -30117,6 +30117,9 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "canAssignOwner": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

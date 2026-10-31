@@ -3,6 +3,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardSharing;
@@ -27,6 +28,7 @@ public class GetBoardSharingQueryHandler : IRequestHandler<GetBoardSharingQuery,
     private readonly IActorLookupService _actors;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _clock;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public GetBoardSharingQueryHandler(
         IBoardSharingSummary sharing,
@@ -34,8 +36,10 @@ public class GetBoardSharingQueryHandler : IRequestHandler<GetBoardSharingQuery,
         IMemberEmailDisclosure emails,
         IActorLookupService actors,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IWorkspaceAccessResolver workspaceAccess)
     {
+        _workspaceAccess = workspaceAccess;
         _sharing = sharing;
         _context = context;
         _emails = emails;
@@ -111,7 +115,9 @@ public class GetBoardSharingQueryHandler : IRequestHandler<GetBoardSharingQuery,
             entries,
             log,
             impact,
-            boardVersion));
+            boardVersion,
+            sharing.CanManage && await BoardOwnership.ActorMayAssignOwnerAsync(
+                _context, _workspaceAccess, workspaceId, request.BoardId, _requestContext.UserId, ct)));
     }
 
     /// <summary>

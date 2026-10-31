@@ -76,6 +76,8 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         if (alreadyMember) return Result.Success();
 
         var role = request.Role ?? BoardRole.Member;
+        if (role == BoardRole.Owner)
+            await BoardOwnership.EnsureMayChangeOwnershipAsync(_context, _workspaceAccess, board.WorkspaceId, board.Id, _currentUser.UserId, ct);
         if (role.IsViewer())
             await BoardManagerGuard.EnsureNoHigherGrantAsync(_sharing, board.Id, request.UserId, ct);
 

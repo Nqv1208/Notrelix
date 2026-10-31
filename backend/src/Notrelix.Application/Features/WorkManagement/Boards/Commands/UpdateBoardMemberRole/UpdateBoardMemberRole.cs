@@ -31,6 +31,7 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IBoardSharingSummary _sharing;
     private readonly IAccessChangeSignal _access;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardMemberRoleCommandHandler(
@@ -40,8 +41,10 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         BoardAccessChangeLog changeLog,
         IBoardSharingSummary sharing,
         IAccessChangeSignal access,
+        IWorkspaceAccessResolver workspaceAccess,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _workspaceAccess = workspaceAccess;
         _access = access;
         _sharing = sharing;
         _realtime = realtime;
@@ -70,6 +73,9 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
 
         var previous = member.Role;
         if (previous == request.Role) return Result.Success();
+
+        if (previous == BoardRole.Owner || request.Role == BoardRole.Owner)
+            await BoardOwnership.EnsureMayChangeOwnershipAsync(_context, _workspaceAccess, board.WorkspaceId, board.Id, _currentUser.UserId, ct);
 
         if (previous == BoardRole.Owner)
             await BoardOwnership.EnsureAnotherOwnerAsync(_context, request.BoardId, request.UserId, ct);

@@ -335,6 +335,7 @@ export function boardSharing(
   return {
     boardId,
     canManage,
+    canAssignOwner: canManage,
     entriesDisclosed: disclosed,
     visibility: board.visibility === "private" ? "Private" : "Workspace",
     spaceId: space?.id ?? null,

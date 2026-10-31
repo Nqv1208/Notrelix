@@ -90,8 +90,10 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
         if (previous != board.Visibility)
         {
             // The board keeps an Owner. The actor becomes one only by choosing it (their own deliberate act, logged).
+            var addMe = request.AddMeAsOwner && !request.AddUserIds.Contains(_requestContext.UserId);
+            var mayAssign = addMe && (await _workspaceAccess.ResolveAsync(board.WorkspaceId, _requestContext.UserId, ct)).IsOwnerOrAdmin;
             if (await BoardOwnership.EnsureOwnerForPrivateAsync(
-                    _context, board.Id, _requestContext.UserId, request.AddMeAsOwner && !request.AddUserIds.Contains(_requestContext.UserId), _clock.UtcNow, ct))
+                    _context, board.Id, _requestContext.UserId, addMe, mayAssign, _clock.UtcNow, ct))
                 await _changeLog.MemberAddedAsync(board.Id, _requestContext.UserId, BoardRole.Owner, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
             _access.Board(board.Id);
