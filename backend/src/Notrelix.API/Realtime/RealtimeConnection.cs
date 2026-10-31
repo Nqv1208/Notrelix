@@ -433,6 +433,9 @@ public sealed class RealtimeConnection
             return ValueTask.CompletedTask;
         }
 
+        // The person's own client learns it at once, so buttons appear and disappear without waiting for a poll.
+        Enqueue(RealtimeProtocol.AccessChanged(signal.WorkspaceId));
+
         var boardOnly = string.Equals(signal.ResourceKind, RealtimeAccessSignal.BoardResource, StringComparison.Ordinal)
             ? signal.ResourceId
             : (Guid?)null;

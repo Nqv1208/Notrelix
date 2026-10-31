@@ -138,7 +138,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 permission = existingPermission;
                 if (isBoard)
                 {
-                    // A lowered level cuts live subscriptions that held the higher one.
+                    // A changed level cuts live subscriptions that held the higher one and tells the person's client.
                     if (subjectType == PermissionSubjectType.User) _access.BoardPerson(request.ResourceId, request.SubjectId);
                     else _access.Board(request.ResourceId);
                     await _changes.RecordAsync(
@@ -166,6 +166,9 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 await _changes.RecordAsync(
                     new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Added, subjectType.ToString(), request.SubjectId, null, LevelToken(level)),
                     cancellationToken);
+                // A new grant reaches the person's open client at once.
+                if (subjectType == PermissionSubjectType.User) _access.BoardPerson(request.ResourceId, request.SubjectId);
+                else _access.Board(request.ResourceId);
             }
         }
 

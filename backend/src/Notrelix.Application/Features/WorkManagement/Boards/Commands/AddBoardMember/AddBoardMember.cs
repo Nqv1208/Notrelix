@@ -1,6 +1,7 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
@@ -30,6 +31,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IBoardSharingSummary _sharing;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IAccessChangeSignal _access;
 
     public AddBoardMemberCommandHandler(
         IWorkManagementDbContext context,
@@ -38,8 +40,10 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
         IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _sharing = sharing;
         _realtime = realtime;
         _changeLog = changeLog;
@@ -85,6 +89,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         _context.BoardMembers.Add(member);
         board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberAddedAsync(board.Id, request.UserId, role, ct);
+        _access.BoardPerson(board.Id, request.UserId);
 
         return Result.Success();
     }

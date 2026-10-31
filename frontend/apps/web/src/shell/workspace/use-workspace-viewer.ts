@@ -34,8 +34,9 @@ export function useWorkspaceViewer(workspaceId: string) {
   const members = hooks.useMembers(workspaceId, { enabled: canListMembers });
 
   // What a custom role removes from the built-in role (owner decision 2026-10-31). Shapes the UI only; the
-  // producer authorizes every request. A role change reaches an open page on the next poll or focus, and the
-  // realtime access signal re-authorizes subscriptions at once.
+  // producer authorizes every request. A change to the person's access arrives as a realtime
+  // "access-changed" push that revalidates the workspace scope at once; the slow poll and the focus refetch
+  // only back it up (Redis pub/sub is at-most-once).
   const access = useQuery({
     queryKey: workspaceQueryKey(workspaceId, "workspace", "members", "me", "access"),
     queryFn: () =>
@@ -44,7 +45,7 @@ export function useWorkspaceViewer(workspaceId: string) {
       ),
     enabled: role !== null,
     retry: false,
-    refetchInterval: 10_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
   const removed = useMemo(

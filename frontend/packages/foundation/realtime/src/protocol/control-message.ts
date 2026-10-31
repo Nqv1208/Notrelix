@@ -37,6 +37,8 @@ export type RealtimeControlMessage =
       readonly streamKey: string;
     }
   | { readonly type: "unsubscribed"; readonly subscriptionId: string }
+  /** The signed-in person's own access in a workspace changed; no content beyond that. */
+  | { readonly type: "access-changed"; readonly workspaceId: string }
   | {
       readonly type: "subscription-error";
       readonly subscriptionId?: string;

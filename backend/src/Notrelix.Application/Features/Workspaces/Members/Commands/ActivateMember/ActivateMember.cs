@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Domain.Workspaces.Rules;
@@ -20,9 +21,11 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
+    private readonly IAccessChangeSignal _access;
 
-    public ActivateMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection)
+    public ActivateMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -57,6 +60,8 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
             _dateTimeProvider.UtcNow,
             ct);
 
+        // The person's own open client learns it is active again at once.
+        _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
     }
 }

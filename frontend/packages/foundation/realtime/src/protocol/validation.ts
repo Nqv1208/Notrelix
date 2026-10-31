@@ -164,6 +164,9 @@ function parseControlFrame(
     case "unsubscribed":
       if (!isNonEmptyString(record.subscriptionId)) return null;
       return { type: "unsubscribed", subscriptionId: record.subscriptionId };
+    case "access-changed":
+      if (!isNonEmptyString(record.workspaceId)) return null;
+      return { type: "access-changed", workspaceId: record.workspaceId };
     case "subscription-error":
       if (!isNonEmptyString(record.code)) return null;
       return {
@@ -188,6 +191,7 @@ const CONTROL_TYPES = new Set([
   "ready",
   "subscribed",
   "unsubscribed",
+  "access-changed",
   "subscription-error",
   "ping",
   "pong",
