@@ -11,6 +11,8 @@ import { FieldDeleteDialog } from "./board-settings-field-delete";
 import { FieldPanel } from "./board-settings-field-panel";
 import { ComputedFieldDialog } from "./board-settings-computed-dialog";
 import { FieldTypePicker } from "./board-settings-field-picker";
+import { DeletedFieldsList } from "./board-settings-deleted-fields";
+import type { DeletedFieldsPanelProps } from "./board-settings-types";
 import {
   fieldLabel,
   fillCopy,
@@ -40,14 +42,18 @@ export function FieldsSection({
   onSelectField,
   defaultPickerOpen,
   defaultArchiveFieldId,
+  deleted,
 }: {
   fieldId: string | null;
   onSelectField: (fieldId: string | null) => void;
   defaultPickerOpen?: boolean;
   defaultArchiveFieldId?: string | null;
+  /** The deleted fields: when given, a "Deleted" tab lists them. */
+  deleted?: DeletedFieldsPanelProps;
 }) {
   const { copy, settings, actions, run, timeZone } = useSettings();
   const t = copy.fields;
+  const [tab, setTab] = useState<"live" | "deleted">("live");
   const [pickerOpen, setPickerOpen] = useState(defaultPickerOpen ?? false);
   const [archiveId, setArchiveId] = useState<string | null>(
     defaultArchiveFieldId ?? null,
@@ -138,163 +144,223 @@ export function FieldsSection({
           }
         />
 
-        <SectionLine
-          title={t.boardFields}
-          count={liveCount}
-          note={t.dragNote}
-        />
-        <div
-          role="list"
-          aria-label={t.listLabel}
-          className="overflow-hidden rounded-[10px] border border-line bg-popover"
-        >
-          <div aria-hidden="true" className={cn(ROW_GRID, HEAD_ROW)}>
-            <span />
-            <span>{t.columns.name}</span>
-            <span>{t.columns.type}</span>
-            <span>{t.columns.key}</span>
-            <span>{t.columns.usage}</span>
+        {deleted ? (
+          <div
+            role="tablist"
+            aria-label={t.tabs.label}
+            className="mt-4 flex gap-1 border-b border-line"
+          >
+            {(["live", "deleted"] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                id={`bs-fields-tab-${key}`}
+                aria-selected={tab === key}
+                aria-controls="bs-fields-panel"
+                onClick={() => setTab(key)}
+                className={cn(
+                  "-mb-px inline-flex h-[38px] items-center gap-2 border-0 border-b-2 border-transparent bg-transparent px-3 text-[13.5px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                  tab === key && "border-primary font-semibold text-foreground",
+                )}
+              >
+                {t.tabs[key]}
+                <span className="text-xs font-medium text-meta-foreground">
+                  {key === "live"
+                    ? liveCount
+                    : deleted.status === "ready"
+                      ? deleted.fields.length
+                      : ""}
+                </span>
+              </button>
+            ))}
           </div>
-          {liveCount === 0 ? (
-            <div role="listitem" className="px-4 py-6 text-center">
-              <p className="m-0 text-item-small font-semibold">
-                {t.empty.title}
-              </p>
-              <p className="m-0 mt-1 text-metadata text-meta-foreground">
-                {t.empty.body}
-              </p>
+        ) : null}
+        <div
+          id="bs-fields-panel"
+          role={deleted ? "tabpanel" : undefined}
+          aria-labelledby={deleted ? `bs-fields-tab-${tab}` : undefined}
+        >
+          {deleted && tab === "deleted" ? (
+            <div className="mt-4">
+              <DeletedFieldsList
+                panel={deleted}
+                onOpenLive={(name) => {
+                  setTab("live");
+                  const live = settings.fields.find(
+                    (field) => field.name.toLowerCase() === name.toLowerCase(),
+                  );
+                  if (live) onSelectField(live.id);
+                }}
+              />
             </div>
           ) : (
-            <SortableList
-              ids={settings.fields.map((field) => field.id)}
-              onReorder={(ids) => run(() => actions.reorderFields(ids))}
-              announce={(id, position, total) =>
-                fillCopy(copy.common.moved, {
-                  name:
-                    settings.fields.find((entry) => entry.id === id)?.name ??
-                    "",
-                  position,
-                  total,
-                })
-              }
-            >
-              {(order) =>
-                order.map((id) => {
-                  const field = settings.fields.find(
-                    (entry) => entry.id === id,
-                  );
-                  if (!field) return null;
-                  return (
-                    <FieldRow
-                      key={field.id}
-                      field={field}
-                      selected={field.id === fieldId}
-                      onOpen={() => onSelectField(field.id)}
-                    />
-                  );
-                })
-              }
-            </SortableList>
-          )}
-        </div>
+            <>
+              <SectionLine
+                title={t.boardFields}
+                count={liveCount}
+                note={t.dragNote}
+              />
+              <div
+                role="list"
+                aria-label={t.listLabel}
+                className="overflow-hidden rounded-[10px] border border-line bg-popover"
+              >
+                <div aria-hidden="true" className={cn(ROW_GRID, HEAD_ROW)}>
+                  <span />
+                  <span>{t.columns.name}</span>
+                  <span>{t.columns.type}</span>
+                  <span>{t.columns.key}</span>
+                  <span>{t.columns.usage}</span>
+                </div>
+                {liveCount === 0 ? (
+                  <div role="listitem" className="px-4 py-6 text-center">
+                    <p className="m-0 text-item-small font-semibold">
+                      {t.empty.title}
+                    </p>
+                    <p className="m-0 mt-1 text-metadata text-meta-foreground">
+                      {t.empty.body}
+                    </p>
+                  </div>
+                ) : (
+                  <SortableList
+                    ids={settings.fields.map((field) => field.id)}
+                    onReorder={(ids) => run(() => actions.reorderFields(ids))}
+                    announce={(id, position, total) =>
+                      fillCopy(copy.common.moved, {
+                        name:
+                          settings.fields.find((entry) => entry.id === id)
+                            ?.name ?? "",
+                        position,
+                        total,
+                      })
+                    }
+                  >
+                    {(order) =>
+                      order.map((id) => {
+                        const field = settings.fields.find(
+                          (entry) => entry.id === id,
+                        );
+                        if (!field) return null;
+                        return (
+                          <FieldRow
+                            key={field.id}
+                            field={field}
+                            selected={field.id === fieldId}
+                            onOpen={() => onSelectField(field.id)}
+                          />
+                        );
+                      })
+                    }
+                  </SortableList>
+                )}
+              </div>
 
-        <SectionLine
-          title={t.system}
-          count={settings.systemFields.length}
-          note={t.systemNote}
-        />
-        <div
-          role="list"
-          className="overflow-hidden rounded-[10px] border border-line bg-popover"
-        >
-          {systemRows.map((row) => (
-            <div
-              key={row.id}
-              role="listitem"
-              className={cn(ROW_GRID, "border-t border-line first:border-t-0")}
-            >
-              <span />
-              <span className="flex min-w-0 items-center gap-[9px] font-medium">
-                <TypeMark icon={fieldIcon(row.first.type, row.first.key)} />
-                <span className="truncate">{row.name}</span>
-              </span>
-              <span className="text-muted-foreground">
-                {row.type}
-                {row.detail ? (
-                  <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
-                    {row.detail}
-                  </small>
-                ) : null}
-              </span>
-              <span className="truncate font-mono text-[12px] text-meta-foreground">
-                {row.key}
-              </span>
-              <span className="inline-flex items-center gap-[5px] text-metadata text-meta-foreground">
-                <Lock aria-hidden="true" className="size-3.5" />
-                {row.lock === "rename" ? t.renameOnly : t.locked}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {settings.unavailable?.fieldArchive ? null : (
-          <div ref={archivedRef} id="bs-archived">
-            <SectionLine
-              title={t.archived}
-              count={settings.archivedFields.length}
-              note={t.archivedNote}
-            />
-            {settings.archivedFields.length === 0 ? null : (
+              <SectionLine
+                title={t.system}
+                count={settings.systemFields.length}
+                note={t.systemNote}
+              />
               <div
                 role="list"
                 className="overflow-hidden rounded-[10px] border border-line bg-popover"
               >
-                {settings.archivedFields.map((field) => (
+                {systemRows.map((row) => (
                   <div
-                    key={field.id}
+                    key={row.id}
                     role="listitem"
                     className={cn(
                       ROW_GRID,
-                      "border-t border-line text-meta-foreground first:border-t-0",
+                      "border-t border-line first:border-t-0",
                     )}
                   >
                     <span />
                     <span className="flex min-w-0 items-center gap-[9px] font-medium">
-                      <TypeMark icon={fieldIcon(field.type, field.key)} />
-                      <span className="truncate">{field.name}</span>
+                      <TypeMark
+                        icon={fieldIcon(row.first.type, row.first.key)}
+                      />
+                      <span className="truncate">{row.name}</span>
                     </span>
                     <span className="text-muted-foreground">
-                      {typeName(copy, field.type)}
-                      <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
-                        {fillCopy(t.archivedMeta, {
-                          date: shortDay(field.archivedAt, timeZone),
-                          name: field.archivedByName,
-                        })}
-                      </small>
+                      {row.type}
+                      {row.detail ? (
+                        <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
+                          {row.detail}
+                        </small>
+                      ) : null}
                     </span>
                     <span className="truncate font-mono text-[12px] text-meta-foreground">
-                      {field.key}
+                      {row.key}
                     </span>
-                    <span>
-                      <button
-                        type="button"
-                        aria-label={fillCopy(t.restoreLabel, {
-                          name: field.name,
-                        })}
-                        onClick={() =>
-                          void run(() => actions.restoreField(field.id))
-                        }
-                        className={BUTTON_CLASS.ghostBrand}
-                      >
-                        {t.restore}
-                      </button>
+                    <span className="inline-flex items-center gap-[5px] text-metadata text-meta-foreground">
+                      <Lock aria-hidden="true" className="size-3.5" />
+                      {row.lock === "rename" ? t.renameOnly : t.locked}
                     </span>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        )}
+
+              {settings.unavailable?.fieldArchive ? null : (
+                <div ref={archivedRef} id="bs-archived">
+                  <SectionLine
+                    title={t.archived}
+                    count={settings.archivedFields.length}
+                    note={t.archivedNote}
+                  />
+                  {settings.archivedFields.length === 0 ? null : (
+                    <div
+                      role="list"
+                      className="overflow-hidden rounded-[10px] border border-line bg-popover"
+                    >
+                      {settings.archivedFields.map((field) => (
+                        <div
+                          key={field.id}
+                          role="listitem"
+                          className={cn(
+                            ROW_GRID,
+                            "border-t border-line text-meta-foreground first:border-t-0",
+                          )}
+                        >
+                          <span />
+                          <span className="flex min-w-0 items-center gap-[9px] font-medium">
+                            <TypeMark icon={fieldIcon(field.type, field.key)} />
+                            <span className="truncate">{field.name}</span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            {typeName(copy, field.type)}
+                            <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
+                              {fillCopy(t.archivedMeta, {
+                                date: shortDay(field.archivedAt, timeZone),
+                                name: field.archivedByName,
+                              })}
+                            </small>
+                          </span>
+                          <span className="truncate font-mono text-[12px] text-meta-foreground">
+                            {field.key}
+                          </span>
+                          <span>
+                            <button
+                              type="button"
+                              aria-label={fillCopy(t.restoreLabel, {
+                                name: field.name,
+                              })}
+                              onClick={() =>
+                                void run(() => actions.restoreField(field.id))
+                              }
+                              className={BUTTON_CLASS.ghostBrand}
+                            >
+                              {t.restore}
+                            </button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </section>
 
       {selected ? (

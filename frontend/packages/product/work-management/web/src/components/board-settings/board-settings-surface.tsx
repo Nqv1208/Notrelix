@@ -354,6 +354,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
         onSelectField={props.onSelectField}
         defaultPickerOpen={props.defaultPickerOpen}
         defaultArchiveFieldId={props.defaultArchiveFieldId}
+        deleted={props.deletedFields}
       />
     );
 

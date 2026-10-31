@@ -31,6 +31,10 @@ export type RetiredBoard = OperationResponse<
   "WorkManagement.Boards.ListArchived",
   200
 >[number];
+export type DeletedBoardField = OperationResponse<
+  "WorkManagement.BoardFields.Deleted",
+  200
+>[number];
 type OverviewField = NonNullable<Overview["columns"]>[number];
 type OverviewGroup = NonNullable<Overview["lists"]>[number];
 
@@ -486,6 +490,22 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         endpoints.boardFields.create(s.boardId),
         { name, type, ...(settings ? { settings } : {}) },
         quiet,
+      ),
+    /** The fields deleted in the last 30 days, newest first (a Manager reads it). */
+    listDeletedFields: (boardId: string) =>
+      api.get<DeletedBoardField[]>(
+        endpoints.boardFields.deleted(boardId),
+        quiet,
+      ),
+    /** Brings a deleted field and its values back; refused after 30 days or when its name is taken. */
+    restoreDeletedField: (boardId: string, fieldId: string) =>
+      api.post<void>(
+        endpoints.boardFields.restore(boardId, fieldId),
+        {},
+        {
+          ...quiet,
+          idempotencyKey: crypto.randomUUID(),
+        },
       ),
     deleteField: (s: BoardSettingsDto, fieldId: string) =>
       api.delete<void>(endpoints.boardFields.detail(s.boardId, fieldId), quiet),

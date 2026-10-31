@@ -269,12 +269,16 @@ export function BoardShareDialog({
   }, [open]);
 
   const write = useCallback(
-    (run: () => Promise<void>, subject?: { row: ShareRowView; removal: boolean }) => {
+    (
+      run: () => Promise<void>,
+      subject?: { row: ShareRowView; removal: boolean },
+    ) => {
       setRefused(null);
       run().catch((error: unknown) => {
         if (
           subject &&
-          (error as { ruleCode?: string } | null)?.ruleCode === LAST_MANAGER_RULE
+          (error as { ruleCode?: string } | null)?.ruleCode ===
+            LAST_MANAGER_RULE
         ) {
           setRefused(subject);
           return;
@@ -295,11 +299,19 @@ export function BoardShareDialog({
       return {
         kind: "refused" as const,
         title: fillBoardShareCopy(
-          team ? text.teamTitle : refused.removal ? text.removeTitle : text.lowerTitle,
+          team
+            ? text.teamTitle
+            : refused.removal
+              ? text.removeTitle
+              : text.lowerTitle,
           { name },
         ),
         body: fillBoardShareCopy(
-          team ? text.teamBody : refused.removal ? text.removeBody : text.lowerBody,
+          team
+            ? text.teamBody
+            : refused.removal
+              ? text.removeBody
+              : text.lowerBody,
           { name },
         ),
         addManager: true,

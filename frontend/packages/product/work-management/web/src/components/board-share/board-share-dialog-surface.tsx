@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   Building2,
   Check,
@@ -302,7 +308,8 @@ function ShareBody({
   const g = copy.general;
   // The only person or team at Manager level cannot be lowered or removed: lock it from the start.
   const managers = view.rows.filter((row) => row.level === "manage");
-  const lockedId = onChangeLevel && managers.length === 1 ? managers[0]!.id : null;
+  const lockedId =
+    onChangeLevel && managers.length === 1 ? managers[0]!.id : null;
   const general = view.general;
   const [expandedRows, setExpandedRows] = useState(false);
   return (
@@ -1094,7 +1101,8 @@ function LevelMenu({
       className="box-content w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 text-nav font-normal shadow-popover dark:bg-card"
     >
       {LEVELS.map((level) => {
-        const disabled = (level === "manage" && guest) || (locked && level !== "manage");
+        const disabled =
+          (level === "manage" && guest) || (locked && level !== "manage");
         const checked = row.level === level;
         return (
           <div
@@ -1155,7 +1163,11 @@ function LevelMenu({
         tabIndex={-1}
         onClick={locked ? undefined : (onRemove ?? undefined)}
         onKeyDown={(event) => {
-          if ((event.key === "Enter" || event.key === " ") && onRemove && !locked) {
+          if (
+            (event.key === "Enter" || event.key === " ") &&
+            onRemove &&
+            !locked
+          ) {
             event.preventDefault();
             event.stopPropagation();
             onRemove();

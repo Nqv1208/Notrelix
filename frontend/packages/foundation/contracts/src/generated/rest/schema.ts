@@ -5795,6 +5795,9 @@ export interface components {
             status?: number | null;
             detail?: string | null;
             instance?: string | null;
+            errorCode?: string | null;
+            ruleCode?: string | null;
+            traceId?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -7431,6 +7434,21 @@ export interface components {
             optionId?: string;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields.DeletedBoardFieldDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            fieldType?: string | null;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string;
+            /** Format: uuid */
+            deletedBy?: string | null;
+            deletedByName?: string | null;
+            /** Format: int32 */
+            valueCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
             /** Format: int32 */
@@ -14203,7 +14221,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields.DeletedBoardFieldDto"][];
                 };
             };
         };

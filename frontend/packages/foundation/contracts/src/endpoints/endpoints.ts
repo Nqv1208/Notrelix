@@ -309,6 +309,10 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}`,
     move: (boardId: string, fieldId: string) =>
       `/boards/${boardId}/fields/${fieldId}/move`,
+    // WorkManagement.BoardFields.Deleted / .Restore: a deleted field is kept 30 days.
+    deleted: (boardId: string) => `/boards/${boardId}/fields/deleted`,
+    restore: (boardId: string, fieldId: string) =>
+      `/boards/${boardId}/fields/${fieldId}/restore`,
     options: (boardId: string, fieldId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>

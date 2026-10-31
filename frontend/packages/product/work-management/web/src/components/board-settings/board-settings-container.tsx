@@ -3,6 +3,7 @@ import {
   useBoardAccess,
   useBoardLabels,
   useBoardLabelWrites,
+  useDeletedFields,
   useBoardTemplates,
   useBoardTemplateWrites,
   useBoardSettings,
@@ -12,6 +13,7 @@ import {
   useSavedViews,
   useWorkspaceAutomations,
 } from "@notrelix/work-management-state";
+import type { BoardSettingsFieldType } from "@notrelix/work-management-core";
 import {
   resolveKanbanSettings,
   type BoardSettingsDto,
@@ -29,6 +31,7 @@ import type {
   BoardSettingsSection,
   BoardSettingsSpace,
   BoardLabelsPanelProps,
+  DeletedFieldsPanelProps,
   BoardTemplatesPanelProps,
   WorkspaceRulesPanelProps,
 } from "./board-settings-types";
@@ -176,6 +179,51 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     [copy, savedViews.views, write],
   );
 
+  const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
+  const deletedFields = useMemo<DeletedFieldsPanelProps>(
+    () => ({
+      status: deletedList.isError
+        ? "error"
+        : deletedList.fields
+          ? "ready"
+          : "loading",
+      fields: (deletedList.fields ?? []).flatMap((field) =>
+        field.id && field.deletedAt && field.restorableUntil
+          ? [
+              {
+                id: field.id,
+                name: field.name ?? "",
+                type: (
+                  field.fieldType ?? "text"
+                ).toLowerCase() as BoardSettingsFieldType,
+                deletedAt: field.deletedAt,
+                restorableUntil: field.restorableUntil,
+                deletedByName: field.deletedByName ?? null,
+                valueCount: field.valueCount ?? 0,
+              },
+            ]
+          : [],
+      ),
+      restoringId: deletedList.restoringId,
+      onReload: () => void deletedList.refetch(),
+      onRestore: async (fieldId) => {
+        try {
+          await deletedList.restore(fieldId);
+          return "restored";
+        } catch (error) {
+          const failure = error as { code?: string; status?: number } | null;
+          if (failure?.code === "work-management.field.name-taken")
+            return "name-taken";
+          if (failure?.code === "work-management.field.restore-window-closed")
+            return "expired";
+          if (failure?.status === 403 || failure?.status === 404)
+            return "forbidden";
+          return "failed";
+        }
+      },
+    }),
+    [deletedList],
+  );
   const boardLabels = useBoardLabels(boardId, workspaceId);
   const labelWrites = useBoardLabelWrites(boardId, workspaceId);
   const labels = useMemo<BoardLabelsPanelProps>(() => {
@@ -316,6 +364,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       actions={actions}
       workspaceRules={workspaceRules}
       labels={labels}
+      deletedFields={deletedFields}
       forms={forms}
       templates={templates}
       kanbanSettings={

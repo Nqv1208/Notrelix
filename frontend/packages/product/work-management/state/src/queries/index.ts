@@ -23,3 +23,4 @@ export * from "./use-offline-writes";
 export * from "./use-board-preference";
 export * from "./use-item-capabilities";
 export * from "./board-read";
+export * from "./use-deleted-fields";
