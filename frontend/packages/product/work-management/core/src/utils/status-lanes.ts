@@ -64,8 +64,8 @@ export function findPriorityField(
 }
 
 /**
- * The item read keeps Status and Priority in their own columns, not in `fieldValues`; this puts them
- * back under the board's fields so an editor or a chip reads one place.
+ * The item read keeps Status, Priority and the name in their own columns, not in `fieldValues`; this
+ * puts them back under the board's fields so an editor or a chip reads one place.
  */
 export function withReservedFieldValues<T extends Card>(
   card: T,
@@ -73,7 +73,14 @@ export function withReservedFieldValues<T extends Card>(
 ): T {
   const statusField = findStatusField(fields);
   const priorityField = findPriorityField(fields);
+  const titleField = fields.find(
+    (field) =>
+      field.fieldType === "text" &&
+      ["title", "name", "task"].includes(field.name.trim().toLowerCase()),
+  );
   const fieldValues = { ...card.fieldValues };
+  // The item's name is the Title value: a rename leaves the stored field value behind.
+  if (titleField) fieldValues[titleField.id] = card.title;
   if (
     statusField &&
     card.statusOptionId &&

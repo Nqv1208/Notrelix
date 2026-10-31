@@ -357,10 +357,13 @@ export function FieldControl({
   // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
   useEffect(() => {
     if (openFieldId !== field.id) return;
-    if (["select", "multi_select", "date"].includes(field.fieldType)) {
+    if (!["select", "multi_select", "date"].includes(field.fieldType)) return;
+    // After the menu has closed and handed focus back to its button, or that would close this picker.
+    const id = window.setTimeout(() => {
       setOpen(true);
       clearOpenField();
-    }
+    }, 120);
+    return () => window.clearTimeout(id);
   }, [openFieldId, field.id, field.fieldType, clearOpenField]);
   const raw = card.fieldValues[field.id];
   const chip = variant === "chip";
@@ -525,7 +528,8 @@ export function FieldControl({
           <DateEditor
             field={field}
             value={typeof raw === "string" ? raw.slice(0, 10) : null}
-            onSave={write}
+            // The server keeps a date as an instant, like the item's own due date.
+            onSave={(day) => write(day === null ? null : `${day}T00:00:00.000Z`)}
             onClose={() => setOpen(false)}
           />
         ) : null}
@@ -751,8 +755,12 @@ function TypedControl({
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (openFieldId !== field.id) return;
-    input.current?.focus();
-    clearOpenField();
+    // After the menu has closed and handed focus back to its button, or the cursor would be taken again.
+    const id = window.setTimeout(() => {
+      input.current?.focus();
+      clearOpenField();
+    }, 120);
+    return () => window.clearTimeout(id);
   }, [openFieldId, field.id, clearOpenField]);
   const t = copy.sections.chips;
   const f = copy.sections.fields;
