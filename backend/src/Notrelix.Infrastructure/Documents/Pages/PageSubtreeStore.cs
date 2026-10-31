@@ -101,8 +101,8 @@ public sealed class PageSubtreeStore : IPageSubtreeStore
         while (depth <= PageTreeRules.MaxDepth)
         {
             var parents = frontier;
-            var children = await _context.Pages.AsNoTracking()
-                .Where(p => p.WorkspaceId == workspaceId && p.ParentId != null && parents.Contains(p.ParentId.Value))
+            var children = await PagesWithDeleted(workspaceId)
+                .Where(p => p.ParentId != null && parents.Contains(p.ParentId.Value))
                 .Select(p => p.Id)
                 .ToListAsync(cancellationToken);
             frontier = children.Where(seen.Add).ToList();

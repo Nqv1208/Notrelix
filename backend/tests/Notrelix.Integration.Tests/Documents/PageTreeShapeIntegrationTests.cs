@@ -183,6 +183,26 @@ public sealed class PageTreeShapeIntegrationTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task MovingAPage_CountsADeletedPageBelowIt_TowardsTheNestingLimit()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        Guid? deep = null;
+        for (var level = 1; level <= 8; level++) deep = await _host.SeedPageAsync(stack, $"T{level}", deep);
+        // S -> D (deleted) -> X: X still hangs below S, so S carries three levels down with it.
+        var root = await _host.SeedPageAsync(stack, "S");
+        var deleted = await _host.SeedPageAsync(stack, "D", root, page => page.Delete(stack.OwnerId, OrgTreeTestHost.BaseTime));
+        await _host.SeedPageAsync(stack, "X", deleted);
+
+        var version = await DocumentsFlows.PageVersionAsync(_host, root);
+        var act = () => OrgTreeTestHost.SendAsync(owner, new MovePageCommand(root, deep, version));
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode
+            .Should().Be(DocumentRuleCodes.Documents_PageTree_MaxDepthExceeded);
+        (await DocumentsFlows.ParentOfAsync(_host, root)).Should().BeNull();
+    }
+
     // ── An archived Space takes no page ───────────────────────────────────
 
     [Fact]

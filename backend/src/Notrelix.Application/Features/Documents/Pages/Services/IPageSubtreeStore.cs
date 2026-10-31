@@ -22,7 +22,7 @@ public interface IPageSubtreeStore
 
     /// <summary>
     /// Levels from the page down to its deepest descendant, the page itself counting as 1. Reads only the
-    /// shape (ids and parents), nothing is tracked; a trashed descendant keeps its place in the tree and counts.
+    /// shape (ids and parents), nothing is tracked; trashed and deleted pages keep their place in the tree and count, like the deleted ancestors the ancestry walk passes through.
     /// </summary>
     Task<int> SubtreeDepthAsync(Guid workspaceId, Guid pageId, CancellationToken cancellationToken);
 
