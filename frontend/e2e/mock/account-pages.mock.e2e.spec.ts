@@ -76,8 +76,8 @@ test("Account pages stay inside a 320 px viewport in Vietnamese (WX-QUAL-001)", 
     await expect(
       page.getByRole("heading", { level: 2, name: heading }),
     ).toBeVisible();
-    // The page has finished loading: no skeleton is left.
-    await expect(page.getByRole("status")).toHaveCount(0);
+    // The page has finished loading: no named loading region is left (an empty live region stays).
+    await expect(page.getByRole("status", { name: /\S/ })).toHaveCount(0);
     const result = await overflow(page);
     expect(result.controls, `${path} has controls`).toBeGreaterThan(0);
     expect(result.page, `${path} page overflow`).toBeLessThanOrEqual(0);
@@ -171,13 +171,18 @@ test("Security turns two-factor off and signs out the other devices", async ({
   await page
     .getByRole("button", { name: "Đăng xuất mọi thiết bị khác" })
     .click();
+  // Ending every other device spends its own proof.
+  await page.getByLabel("Mã", { exact: true }).fill("482931");
+  await page.getByRole("button", { name: "Xác nhận" }).click();
   await expect(page.getByText("1 phiên đang hoạt động")).toBeVisible();
   await page.getByRole("button", { name: "Tắt xác thực hai yếu tố" }).click();
   await page.getByLabel("Mã", { exact: true }).fill("482931");
   await page.getByRole("button", { name: "Xác nhận" }).click();
+  // Turning it off ends every session, this one too: the person is told and offered the sign-in.
   await expect(
-    page.getByRole("button", { name: "Bật xác thực hai yếu tố" }),
+    page.getByRole("region", { name: "Đã tắt xác thực hai lớp" }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeFocused();
 });
 
 test("Notification cells are named by event and channel, toggle with Space and save per workspace", async ({
