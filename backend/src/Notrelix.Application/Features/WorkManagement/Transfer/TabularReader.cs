@@ -137,17 +137,18 @@ public static class TabularReader
         try
         {
             using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
-            GuardPackage(zip);
-            var sheetPath = FirstSheetPath(zip);
-            var shared = ReadSharedStrings(zip);
-            var dateStyles = ReadDateStyles(zip);
-            return ReadSheet(zip, sheetPath, shared, dateStyles);
+            var budget = new Budget();
+            GuardPackage(zip, budget);
+            var sheetPath = FirstSheetPath(zip, budget);
+            var shared = ReadSharedStrings(zip, budget);
+            var dateStyles = ReadDateStyles(zip, budget);
+            return ReadSheet(zip, budget, sheetPath, shared, dateStyles);
         }
         catch (InvalidDataException) { throw new TabularFileException(UnsupportedType); }
         catch (XmlException) { throw new TabularFileException(Malformed); }
     }
 
-    private static void GuardPackage(ZipArchive zip)
+    private static void GuardPackage(ZipArchive zip, Budget budget)
     {
         if (zip.Entries.Count > 1_000 || zip.Entries.Sum(e => e.Length) > MaxUncompressedBytes) throw new TabularFileException(Unsafe);
         if (zip.GetEntry("[Content_Types].xml") is null || zip.GetEntry("xl/workbook.xml") is null)
@@ -161,7 +162,7 @@ public static class TabularReader
                 throw new TabularFileException(Unsafe);
             if (name.EndsWith(".rels"))
             {
-                using var rels = XmlReader.Create(entry.Open(), Secure);
+                using var rels = XmlReader.Create(budget.Open(entry), Secure);
                 while (rels.Read())
                 {
                     if (rels.NodeType != XmlNodeType.Element || rels.LocalName != "Relationship") continue;
@@ -173,18 +174,61 @@ public static class TabularReader
             }
         }
 
-        using var types = new StreamReader(zip.GetEntry("[Content_Types].xml")!.Open());
+        using var types = new StreamReader(budget.Open(zip.GetEntry("[Content_Types].xml")!));
         var typesXml = types.ReadToEnd();
         if (typesXml.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase) || typesXml.Contains("vbaProject", StringComparison.OrdinalIgnoreCase))
             throw new TabularFileException(Unsafe);
     }
 
+    /// <summary>
+    /// Counts the bytes an XLSX really inflates to. A zip header can declare small sizes and still inflate far past
+    /// them, so every entry is read through <see cref="Open"/>: the total across entries may not pass the cap and one
+    /// entry may not pass its own declared length.
+    /// </summary>
+    private sealed class Budget
+    {
+        private long used;
+
+        public Stream Open(ZipArchiveEntry entry) => new CountingStream(entry.Open(), entry.Length, n =>
+        {
+            used += n;
+            if (used > MaxUncompressedBytes) throw new TabularFileException(Unsafe);
+        });
+    }
+
+    private sealed class CountingStream(Stream inner, long declared, Action<int> total) : Stream
+    {
+        private long read;
+
+        public override int Read(byte[] buffer, int offset, int count) => Count(inner.Read(buffer, offset, count));
+        public override int Read(Span<byte> buffer) => Count(inner.Read(buffer));
+
+        private int Count(int n)
+        {
+            read += n;
+            if (read > declared) throw new TabularFileException(Unsafe);
+            total(n);
+            return n;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        protected override void Dispose(bool disposing) { if (disposing) inner.Dispose(); base.Dispose(disposing); }
+    }
+
     private static readonly XmlReaderSettings Secure = new() { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersFromEntities = 0 };
 
-    private static string FirstSheetPath(ZipArchive zip)
+    private static string FirstSheetPath(ZipArchive zip, Budget budget)
     {
         string? rid = null;
-        using (var wb = XmlReader.Create(zip.GetEntry("xl/workbook.xml")!.Open(), Secure))
+        using (var wb = XmlReader.Create(budget.Open(zip.GetEntry("xl/workbook.xml")!), Secure))
         {
             while (wb.Read())
                 if (wb.NodeType == XmlNodeType.Element && wb.LocalName == "sheet") { rid = wb.GetAttribute("id", "http://schemas.openxmlformats.org/officeDocument/2006/relationships"); break; }
@@ -192,7 +236,7 @@ public static class TabularReader
 
         var relsEntry = zip.GetEntry("xl/_rels/workbook.xml.rels");
         if (rid is null || relsEntry is null) throw new TabularFileException(Malformed);
-        using var rels = XmlReader.Create(relsEntry.Open(), Secure);
+        using var rels = XmlReader.Create(budget.Open(relsEntry), Secure);
         while (rels.Read())
         {
             if (rels.NodeType == XmlNodeType.Element && rels.LocalName == "Relationship" && rels.GetAttribute("Id") == rid)
@@ -205,12 +249,12 @@ public static class TabularReader
         throw new TabularFileException(Malformed);
     }
 
-    private static List<string> ReadSharedStrings(ZipArchive zip)
+    private static List<string> ReadSharedStrings(ZipArchive zip, Budget budget)
     {
         var list = new List<string>();
         var entry = zip.GetEntry("xl/sharedStrings.xml");
         if (entry is null) return list;
-        using var xml = XmlReader.Create(entry.Open(), Secure);
+        using var xml = XmlReader.Create(budget.Open(entry), Secure);
         var sb = new StringBuilder();
         var inSi = false;
         while (xml.Read())
@@ -224,14 +268,14 @@ public static class TabularReader
     }
 
     /// <summary>The cell style indexes whose number format shows a date.</summary>
-    private static HashSet<int> ReadDateStyles(ZipArchive zip)
+    private static HashSet<int> ReadDateStyles(ZipArchive zip, Budget budget)
     {
         var result = new HashSet<int>();
         var entry = zip.GetEntry("xl/styles.xml");
         if (entry is null) return result;
         var custom = new Dictionary<int, string>();
         var xfs = new List<int>();
-        using var xml = XmlReader.Create(entry.Open(), Secure);
+        using var xml = XmlReader.Create(budget.Open(entry), Secure);
         var inCellXfs = false;
         while (xml.Read())
         {
@@ -260,10 +304,10 @@ public static class TabularReader
         return stripped.IndexOfAny(['y', 'Y', 'd', 'D', 'h', 'H', 's', 'S']) >= 0 || stripped.Contains('m', StringComparison.OrdinalIgnoreCase) && !stripped.Contains('0');
     }
 
-    private static TabularData ReadSheet(ZipArchive zip, string path, List<string> shared, HashSet<int> dateStyles)
+    private static TabularData ReadSheet(ZipArchive zip, Budget budget, string path, List<string> shared, HashSet<int> dateStyles)
     {
         var entry = zip.GetEntry(path) ?? throw new TabularFileException(Malformed);
-        using var xml = XmlReader.Create(entry.Open(), Secure);
+        using var xml = XmlReader.Create(budget.Open(entry), Secure);
         var rows = new List<(int Number, string?[] Cells)>();
         string?[]? header = null;
         var total = 0;
