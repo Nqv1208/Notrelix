@@ -50,12 +50,15 @@ public class UpdateFormQuestionCommandHandler : IRequestHandler<UpdateFormQuesti
         var position = FractionalIndex.Create(request.Position ?? question.Position.Value);
         var config = FormQuestionConfig.FromConfig(question.QuestionType, request.ConfigJson);
 
-        if (request.BoardFieldId is { } fieldId
-            && !await (from f in _context.Forms.AsNoTracking()
-                       join bf in _context.BoardFields.AsNoTracking() on f.BoardId equals bf.BoardId
-                       where f.Id == request.FormId && bf.Id == fieldId && bf.DeletedAt == null
-                       select bf.Id).AnyAsync(ct))
-            throw new NotFoundException("BoardField", fieldId);
+        if (request.BoardFieldId is { } fieldId)
+        {
+            var target = await (from f in _context.Forms.AsNoTracking()
+                                join bf in _context.BoardFields.AsNoTracking() on f.BoardId equals bf.BoardId
+                                where f.Id == request.FormId && bf.Id == fieldId && bf.DeletedAt == null
+                                select (FieldType?)bf.Type).FirstOrDefaultAsync(ct);
+            if (target is null) throw new NotFoundException("BoardField", fieldId);
+            FormQuestionRules.EnsureFieldCompatible(question.QuestionType, target.Value);
+        }
 
         form.UpdateQuestion(question, request.Label, request.IsRequired, position, config, request.BoardFieldId, _requestContext.UserId, _dateTimeProvider.UtcNow);
 

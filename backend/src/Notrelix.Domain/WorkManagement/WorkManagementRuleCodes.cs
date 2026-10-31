@@ -130,6 +130,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Form_CannotSubmitToClosed = "WorkManagement_Form_CannotSubmitToClosed";
     public const string WorkManagement_Form_CannotAddQuestionToClosed = "WorkManagement_Form_CannotAddQuestionToClosed";
     public const string WorkManagement_Form_DuplicateQuestionKey = "WorkManagement_Form_DuplicateQuestionKey";
+    public const string WorkManagement_Form_QuestionTypeNotSupported = "WorkManagement_Form_QuestionTypeNotSupported";
+    public const string WorkManagement_Form_QuestionFieldMismatch = "WorkManagement_Form_QuestionFieldMismatch";
+    public const string WorkManagement_Form_QuestionFieldRemoved = "WorkManagement_Form_QuestionFieldRemoved";
 
     // ── FormQuestion ──────────────────────────────────────────────────────
     public const string WorkManagement_FormQuestion_InvalidConfigJson = "WorkManagement_FormQuestion_InvalidConfigJson";
