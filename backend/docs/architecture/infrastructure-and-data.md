@@ -886,6 +886,22 @@ never logged.
 
 ---
 
+# 34G. Access tightening (runs last in the pack)
+
+`RlsSqlScripts/019`–`024` only remove access (`019_policy_helpers_migrator_only`, `020_support_role_no_content`, `021_billing_and_account_writes`, `022_audit_append_only`, `023_custom_role_assignments`) or add the two bounded functions of the last bullet (`024_membership_end_access`), and run after every script that grants access (004/005 re-grant on each apply):
+
+- **Policy-DDL helpers are migrator-only.** `ops.create_policy`, `drop_all_policies_for_table`, `enable_rls_for_table` and every `ops.apply_*` are `SECURITY DEFINER` and edit policies; a function keeps EXECUTE for PUBLIC unless it is revoked, so any runtime login could have added an unconditional policy of its own. EXECUTE is revoked from PUBLIC and the four runtime roles. Moving the security helpers to another schema was considered and not done: grants are per function, so a move adds no stricter grant and would rewrite every policy expression.
+- **Support reads no tenant data and no credential.** `notrelix_support_readonly` keeps SELECT only on the shared catalogs (`billing.plans`, `plan_prices`, `plan_limits`, `automation.automation_templates`); its open `p_support_select` policy is dropped everywhere else so a grant added by mistake stays closed. Each support case type (billing, account/login, feature errors, data recovery) gets its own bounded grant when it is designed.
+- **Billing.** The application and auth roles have no INSERT/UPDATE/DELETE on `billing_customers`, `payment_methods`, `invoices`, `invoice_line_items`, `subscription_items`, `entitlements`, `billing_events`, `usage_metrics`, `usage_metric_history` or the plan catalog, and `feature_usage_ledger` is append-only for them. `subscriptions` and `workspace_feature_usages` stay writable because the development plan switch and capacity consumption still run as the application role (open decision, see the change record).
+- **Account plan and status.** UPDATE on `account.accounts` is column-granted to `name, legal_name, default_region_code, updated_at, updated_by, version`; plan, status and the deletion marker are the platform operator's (worker role).
+- **Audit is append-only** for the application, auth and support roles on every `audit` table; the worker keeps its retention sweep.
+- **Custom-role assignments.** `governance.member_role_assignments` is written only by a workspace administrator for an ACTIVE member of that workspace (`member_id` is the `workspace.workspace_members` row id); reading follows workspace access.
+- **Derived access ends with the membership.** `ops.revoke_account_grant_if_last_workspace` ends a person's account-level Member grant in the request transaction when they hold no other active workspace grant of the account (an account administrator's grant is never touched), and `ops.clear_member_custom_roles` deletes a member's assignments. Both are bounded to the `app` scope of the request's own account and workspace and to the person themself or a workspace administrator. `RemoveMember` and `LeaveWorkspace` call both; `ActivateMember` and a returning `AddMember` call the second (a reactivated member returns to their built-in role and is configured again). A suspension keeps the account grant: it is reversible and the person stays a member.
+
+Tests: `DatabaseAccessTighteningTests` (grants, policies, support, DDL helpers, assignments) and `AdminGrantWriteTests` (the lifecycle over HTTP as the application role).
+
+---
+
 # 35. Same physical connection
 
 ADR-002 relies on the same scoped DbContext/physical connection lifecycle between bootstrap and later full request scope.
