@@ -5829,6 +5829,10 @@ export interface components {
             /** Format: uuid */
             labelId?: string;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.ArchiveBoardItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.AssignBoardItemMemberRequest": {
             /** Format: uuid */
             userId?: string;
@@ -14345,7 +14349,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.ArchiveBoardItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

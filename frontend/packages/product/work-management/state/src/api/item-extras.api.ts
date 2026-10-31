@@ -616,6 +616,17 @@ export function classifyMoveError(
   return "error";
 }
 
+/** Why the server refused an archive: a newer edit, no right to, the item gone, or the network. */
+export function classifyArchiveError(
+  error: unknown,
+): "conflict" | "denied" | "gone" | "error" {
+  const { status } = failureOf(error);
+  if (status === 412 || status === 409) return "conflict";
+  if (status === 403) return "denied";
+  if (status === 404) return "gone";
+  return "error";
+}
+
 /** Why the server refused a reminder, and when it can be sent again when it says so. */
 export function classifyRemindError(
   error: unknown,

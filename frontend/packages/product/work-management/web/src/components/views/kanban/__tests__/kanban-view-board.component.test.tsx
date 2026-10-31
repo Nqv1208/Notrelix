@@ -75,6 +75,8 @@ function fakeServices(
     viewConfig?: Record<string, unknown>;
     /** A board just created: it has its statuses but no group yet. */
     noGroups?: boolean;
+    /** The archive write; absent: the fake server archives the item. */
+    archiveCard?: () => Promise<void>;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
@@ -114,6 +116,7 @@ function fakeServices(
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),
     archiveCard: vi.fn(async (id: string) => {
+      if (overrides.archiveCard) return overrides.archiveCard();
       board = {
         ...board,
         groups: board.groups.map((group) => ({
@@ -580,14 +583,105 @@ describe("KanbanView on the ERP board", () => {
     );
     fireEvent.keyDown(more, { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    // Archiving asks first, and names what it takes along.
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
     await waitFor(() =>
       expect(cards.archiveCard).toHaveBeenCalledWith(
         erpItemId("ERP-142"),
+        expect.any(Number),
         expect.objectContaining({ idempotencyKey: expect.any(String) }),
       ),
     );
     expect(cards.deleteCard).not.toHaveBeenCalled();
     await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
+  }, 20_000);
+
+  it("keeps listing the sub-items in the dialog while the archive is out", async () => {
+    let release = () => {};
+    const { cards } = renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-142") },
+      {
+        archiveCard: () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      },
+    );
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    const more = await waitFor(() =>
+      within(dialog).getByRole("button", { name: "Thêm" }),
+    );
+    fireEvent.keyDown(more, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    const listed = within(confirm).getByText(/việc con/).textContent;
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
+    await waitFor(() => expect(cards.archiveCard).toHaveBeenCalledTimes(1));
+    // The card has left the board read by now; the dialog still lists what it asked about.
+    expect(within(confirm).getByText(/việc con/).textContent).toBe(listed);
+    expect(
+      within(confirm).getByRole("button", { name: "Đang lưu trữ…" }),
+    ).toBeTruthy();
+    release();
+  }, 20_000);
+
+  it("says in the dialog that someone changed the item when the archive is refused as stale, and keeps the item", async () => {
+    const { cards } = renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-142") },
+      {
+        archiveCard: async () => {
+          throw Object.assign(new Error("stale"), { status: 412 });
+        },
+      },
+    );
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    const more = await waitFor(() =>
+      within(dialog).getByRole("button", { name: "Thêm" }),
+    );
+    fireEvent.keyDown(more, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
+    const alert = await within(confirm).findByRole("alert");
+    expect(alert.textContent).toContain("Có người vừa sửa việc này");
+    expect(cards.archiveCard).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("region", { name: "Đang làm", hidden: true }).dataset
+        .laneCount,
+    ).toBe("3");
+    expect(
+      within(confirm).getByRole("button", { name: "Thử lại" }),
+    ).toBeTruthy();
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.

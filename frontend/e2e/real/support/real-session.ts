@@ -37,15 +37,16 @@ export async function signIn(
   await page.goto("/sign-in");
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Email").fill(user.email);
+  // The password step re-renders when the identify answer arrives and would drop what was typed.
+  const identified = page.waitForResponse((response) =>
+    response.url().includes("/auth/identify"),
+  );
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  // The password step replaces the email step once the address is identified;
-  // typing before then lands in the step being replaced.
-  await expect(
-    page.getByRole("heading", { name: "Enter your password" }),
-  ).toBeVisible();
-  await page.locator('input[name="password"]').fill(user.password);
+  await identified;
+  await page.locator("#auth-password").fill(user.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/workspaces\/[^/]+/);
+  // The first sign-in after the backend starts is slow (cold start).
+  await expect(page).toHaveURL(/\/workspaces\/[^/]+/, { timeout: 20_000 });
 }
 
 interface Workspace {

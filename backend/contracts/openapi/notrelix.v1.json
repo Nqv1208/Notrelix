@@ -10141,6 +10141,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.ArchiveBoardItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -23442,6 +23452,16 @@
           "labelId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.ArchiveBoardItemRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

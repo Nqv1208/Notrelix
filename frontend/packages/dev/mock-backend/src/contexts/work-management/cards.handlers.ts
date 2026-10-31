@@ -498,7 +498,7 @@ export const cardsOperations = [
 
   // ─── POST /board-items/:id/archive ──────────────────────────────────────────────
 
-  defineMockOperation<{ id: string }, never, void>({
+  defineMockOperation<{ id: string }, { expectedVersion?: number }, void>({
     id: "wm.boardItems.archive",
     contract: {
       kind: "openapi",
@@ -506,12 +506,21 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/archive",
-    async handle({ params, store, request }) {
+    async handle({ params, body, store, request }) {
       const missingKey = missingIdempotencyKey(request);
       if (missingKey) return missingKey;
+      const expectedVersion = body?.expectedVersion;
+      if (!expectedVersion || expectedVersion <= 0) {
+        return badRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
+      }
       const item = store.getCard(params.id);
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      // An already archived item is a no-op whatever the version.
+      if (!item.isArchived && (item.version ?? 1) !== expectedVersion)
+        return preconditionFailed();
       store.archiveCard(params.id);
       return ok<void>(undefined);
     },
