@@ -101,7 +101,7 @@ public record BoardItemDto(
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);
-public record BoardItemLabelDto(Guid LabelId, string? Name, string Color);
+public record BoardItemLabelDto(Guid LabelId, string? Name, string Color, long? Version = null);
 
 public record BoardItemSlimDto(
     Guid Id,

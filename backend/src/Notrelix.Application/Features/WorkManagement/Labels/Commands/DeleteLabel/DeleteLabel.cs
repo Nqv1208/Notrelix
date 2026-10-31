@@ -4,8 +4,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel;
 
 [IdempotencyOperation("work-management.labels.delete-label.v1")]
-public record DeleteLabelCommand(Guid LabelId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DeleteLabelCommand(Guid LabelId, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     // A label is part of the Board schema: an Editor change, not Board management.
     public PermissionAction Action => PermissionAction.DeleteField;

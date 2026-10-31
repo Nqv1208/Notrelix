@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Delet
 /// checklist instead of being removed row by row.
 /// </summary>
 [IdempotencyOperation("work-management.checklists.delete-checklist.v1")]
-public record DeleteChecklistCommand(Guid ChecklistId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DeleteChecklistCommand(Guid ChecklistId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);

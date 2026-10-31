@@ -20,7 +20,7 @@ public class GetLabelsQueryHandler : IRequestHandler<GetLabelsQuery, Result<List
     {
         var labels = await _context.Labels.AsNoTracking()
             .Where(l => l.BoardId == request.BoardId)
-            .Select(l => new BoardItemLabelDto(l.Id, l.Name, l.Color.Hex))
+            .Select(l => new BoardItemLabelDto(l.Id, l.Name, l.Color.Hex, l.Version))
             .ToListAsync(ct);
 
         return Result<List<BoardItemLabelDto>>.Success(labels);

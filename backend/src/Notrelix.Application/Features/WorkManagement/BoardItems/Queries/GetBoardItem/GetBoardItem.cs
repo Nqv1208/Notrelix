@@ -56,7 +56,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
         var labels = await _context.BoardItemLabels.AsNoTracking()
             .Where(cl => cl.ItemId == card.Id)
             .Join(_context.Labels.AsNoTracking(), cl => cl.LabelId, l => l.Id,
-                (cl, l) => new BoardItemLabelDto(l.Id, l.Name, l.Color.Hex))
+                (cl, l) => new BoardItemLabelDto(l.Id, l.Name, l.Color.Hex, null))
             .ToListAsync(ct);
 
         var checklists = await _context.Checklists.AsNoTracking()

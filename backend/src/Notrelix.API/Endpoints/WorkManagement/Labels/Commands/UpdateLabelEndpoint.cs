@@ -22,7 +22,7 @@ public static class UpdateLabelEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateLabelCommand(labelId, body.Name, body.Color), cancellationToken);
+        var result = await sender.Send(new UpdateLabelCommand(labelId, body.Name, body.Color, body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
 }

@@ -14,6 +14,12 @@ function failure(error: unknown): BoardSettingsWriteResult {
     typeof error === "object" && error !== null && "kind" in error
       ? (error as { kind?: unknown }).kind
       : null;
+  // A stale label version answers 412: the page reloads the labels and says someone else changed it.
+  const status =
+    typeof error === "object" && error !== null && "status" in error
+      ? (error as { status?: unknown }).status
+      : null;
+  if (status === 412) return { ok: false, reason: "conflict" };
   return {
     ok: false,
     reason: kind === "validation" ? "invalid" : "failed",

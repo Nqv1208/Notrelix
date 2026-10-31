@@ -4,8 +4,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel;
 
 [IdempotencyOperation("work-management.labels.update-label.v1")]
-public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     // A label is part of the Board schema: an Editor change, not Board management.
     public PermissionAction Action => PermissionAction.UpdateField;

@@ -128,10 +128,11 @@ export function createChecklistApi(client: NotrelixClient) {
 
     async deleteChecklist(
       checklistId: string,
+      expectedVersion: number,
       options?: ApiRequestOptions,
     ): Promise<void> {
       await api.delete<void>(
-        endpoints.checklists.detail(checklistId),
+        `${endpoints.checklists.detail(checklistId)}?expectedVersion=${expectedVersion}`,
         quiet(options),
       );
     },

@@ -111,7 +111,8 @@ export function useChecklistWrites(
           checklistId,
           text: removed.title,
           apply: (lists) => lists.filter((list) => list.id !== checklistId),
-          send: () => api.deleteChecklist(checklistId),
+          send: (version) =>
+            api.deleteChecklist(checklistId, version ?? removed.version ?? 0),
         },
         {
           delayMs: CHECKLIST_UNDO_MS,
