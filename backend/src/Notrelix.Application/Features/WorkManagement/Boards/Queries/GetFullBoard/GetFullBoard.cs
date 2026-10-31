@@ -157,7 +157,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .Select(group => new { FieldId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(row => row.FieldId, row => row.Count, cancellationToken);
         // Live Items per option of Select/Status fields. shortcut: counted in memory from one projected read; push into SQL if boards grow past tens of thousands of Items.
-        var optionFieldIds = fields.Where(f => f.Type is FieldType.Select or FieldType.Status).Select(f => f.Id).ToList();
+        var optionFieldIds = fields.Where(f => f.Type is FieldType.Select or FieldType.Status or FieldType.MultiSelect).Select(f => f.Id).ToList();
+        var multiFieldIds = fields.Where(f => f.Type is FieldType.MultiSelect).Select(f => f.Id).ToHashSet();
         var optionValues = await _context.BoardItemValues
             .AsNoTracking()
             .Where(value => optionFieldIds.Contains(value.FieldId))
@@ -168,8 +169,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 (value, item) => new { value.FieldId, value.Value })
             .ToListAsync(cancellationToken);
         var optionCounts = optionValues
-            .Select(row => WorkItemSemanticFields.ReadOptionId(row.Value))
-            .OfType<Guid>()
+            .SelectMany(row => multiFieldIds.Contains(row.FieldId)
+                ? WorkItemSemanticFields.ReadOptionIds(row.Value)
+                : WorkItemSemanticFields.ReadOptionId(row.Value) is { } single ? [single] : Array.Empty<Guid>())
             .GroupBy(id => id)
             .ToDictionary(group => group.Key, group => group.Count());
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
@@ -337,7 +339,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
     }
 
     private static List<BoardFieldOptionDto>? OptionsOf(BoardField field, IReadOnlyDictionary<Guid, int> optionCounts) =>
-        field.Type is FieldType.Select or FieldType.Status
+        field.Type is FieldType.Select or FieldType.Status or FieldType.MultiSelect
             ? field.Options
                 .OrderBy(option => option.Position)
                 .ThenBy(option => option.Id)

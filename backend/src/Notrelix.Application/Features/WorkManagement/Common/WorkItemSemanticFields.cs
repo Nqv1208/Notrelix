@@ -28,6 +28,26 @@ public static class WorkItemSemanticFields
     public static BoardField? ResolvePriorityField(IEnumerable<BoardField> fields) =>
         Ordered(fields).FirstOrDefault(f => f.Type == FieldType.Select && PriorityNames.Contains(NormalizeName(f.Name)));
 
+    /// <summary>The option ids held by a MultiSelect value (a JSON array of option ids); empty for anything else.</summary>
+    public static IReadOnlyList<Guid> ReadOptionIds(FieldValue? value)
+    {
+        if (value is null || value.IsEmpty) return [];
+        try
+        {
+            using var document = JsonDocument.Parse(value.Data.Value);
+            return document.RootElement.ValueKind == JsonValueKind.Array
+                ? document.RootElement.EnumerateArray()
+                    .Select(element => element.ValueKind == JsonValueKind.String && Guid.TryParse(element.GetString(), out var id) ? id : Guid.Empty)
+                    .Where(id => id != Guid.Empty)
+                    .ToList()
+                : [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>The option id held by a single-option (Select/Status) value, or null.</summary>
     public static Guid? ReadOptionId(FieldValue? value)
     {
