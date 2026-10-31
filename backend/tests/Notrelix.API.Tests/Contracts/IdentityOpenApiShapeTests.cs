@@ -81,6 +81,7 @@ public class IdentityOpenApiShapeTests
     [InlineData("Identity.Auth.IssueCsrfToken", "CsrfTokenResponse")]
     [InlineData("Identity.Mfa.Status", "MfaStatusDto")]
     [InlineData("Identity.Sessions.List", "SessionInfoDto[]")]
+    [InlineData("Identity.Sessions.RevokeOthers", "RevokeOtherSessionsResult")]
     [InlineData("Identity.Profile.UpdateProfile", "UserDto")]
     [InlineData("Identity.Profile.GetPreferences", "AccountPreferencesDto")]
     [InlineData("Identity.Profile.UpdatePreferences", "AccountPreferencesDto")]
@@ -99,7 +100,6 @@ public class IdentityOpenApiShapeTests
     [InlineData("Identity.Auth.ChangePassword")]
     [InlineData("Identity.Mfa.Disable")]
     [InlineData("Identity.Sessions.Revoke")]
-    [InlineData("Identity.Sessions.RevokeOthers")]
     public void BodylessCommand_DeclaresAnEmpty200(string operationId)
     {
         var ok = Operation(operationId).GetProperty("responses").GetProperty("200");
