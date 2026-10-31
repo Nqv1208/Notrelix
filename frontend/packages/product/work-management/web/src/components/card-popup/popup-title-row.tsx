@@ -93,7 +93,7 @@ export function PopupTitleRow() {
           }
         }}
         className={cn(
-          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-10 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none",
+          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-10 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none read-only:focus:bg-transparent read-only:focus:ring-0",
           invalid && "bg-popover ring-2 ring-danger",
         )}
       />
