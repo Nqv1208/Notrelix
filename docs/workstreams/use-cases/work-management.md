@@ -59,7 +59,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
-| M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
+| M | Dashboard projection | WM-013 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 0 | 5 | 0 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 3 | 31 | 117 | 0 | 1 |
+| | Total | | 170 | 18 | 3 | 30 | 118 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -319,7 +319,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
-| UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
+| UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | HARDENING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
 | UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
 | UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | HARDENING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
 | UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | HARDENING | tests and owner check |
@@ -2362,7 +2362,7 @@ Team capability WM-013.
 - Rules: product sections 111; WM-030; WMREQ128
 - Acceptance: Given a Private board the caller cannot read, then it contributes to no figure.
 - Evidence: BE IBoardWorkSummaryFacts (port, not an endpoint) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/spaces/$spaceId.tsx` (space-page e2e 15) · Design Final-Space overview · Tests none found · Real e2e none
-- State: INTEGRATING — tests and owner check. Read through, nothing to build: the port keeps to the Board ids it is given (every figure, the member count, the top assignees and the open work per person start from them, in one workspace, Private boards left out for the member lens), and the overview passes the Governance-visible set. Open for the owner: the product section on published figures defines waiting review as a pending request that targets the Board or one of its unfinished Items, while `BoardWorkSummaryFactsAdapter` counts only Items (its comment cites an acceptance of 2026-10-24); archived boards are left out of the figures, pending the archived-board decision.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a Private board created by an admin shows 'only 0 people are added' (the creator has no board member row: owner decision pending); tests and owner check. Evidence: real-stack check 2026-10-31: the Space overview as the admin gives progress 1/5 done, 1 overdue, 1 waiting review (an item with a pending approval counts once) and 3 unclaimed on a fresh board, the top assignee and the open work per person; a Private board in the Space shows for the admin and is hidden from a member who is not on it and from the member lens (a non-admin asking for the member lens gets 403, a Guest 403); an archived board leaves every figure; the figures are the same after a reload of the Space page, commit b823844bd.
 
 ## N. Form input
 
