@@ -149,6 +149,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormSubmission_CannotRejectUnlessAccepted = "WorkManagement_FormSubmission_CannotRejectUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted = "WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotProcessUnlessAccepted = "WorkManagement_FormSubmission_CannotProcessUnlessAccepted";
+    public const string WorkManagement_FormSubmission_AlreadyProcessed = "WorkManagement_FormSubmission_AlreadyProcessed";
     public const string WorkManagement_FormSubmission_AlreadyDeleted = "WorkManagement_FormSubmission_AlreadyDeleted";
 
     // ── Reminder ──────────────────────────────────────────────────────────

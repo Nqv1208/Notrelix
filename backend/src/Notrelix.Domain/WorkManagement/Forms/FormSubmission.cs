@@ -100,6 +100,11 @@ public class FormSubmission : Entity, IWorkspaceScoped
         if (Status != FormSubmissionStatus.Accepted)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_CannotProcessUnlessAccepted, "Only accepted submissions can be processed.");
 
+        // Processing twice with the same item is a no-op; another item would hide the one already made.
+        if (CreatedItemId == createdItemId) return;
+        if (CreatedItemId is not null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_AlreadyProcessed, "This response was already processed into an item.");
+
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
         RaiseDomainEvent(new FormSubmissionProcessedDomainEvent(AccountId, WorkspaceId, Id, FormId, createdItemId, processedAt));
