@@ -14,7 +14,7 @@ public record GetWorkspaceAutomationsQuery(Guid WorkspaceId, Guid? BoardId = nul
     : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     // AU-6: with a board the caller is a board Manager (or workspace Owner/Admin) and sees that board's rules.
-    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageAutomation : PermissionAction.ManageBoard;
     public ResourceRef Resource => BoardId is { } board
         ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board, WorkspaceId)
         : ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);

@@ -23,7 +23,7 @@ public record UpdateAutomationRuleCommand(
     public ResourceRef Resource => BoardId is { } board
         ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board)
         : ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
-    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageAutomation : PermissionAction.ManageBoard;
 
     /// <summary>An integration action (Webhook, Slack) needs ManageIntegrations on the workspace path.</summary>
     public IReadOnlyList<string> AdditionalActionNames =>

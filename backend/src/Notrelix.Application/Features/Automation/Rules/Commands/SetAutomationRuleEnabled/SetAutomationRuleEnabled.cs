@@ -12,7 +12,7 @@ public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnab
     public ResourceRef Resource => BoardId is { } board
         ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board)
         : ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
-    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageAutomation : PermissionAction.ManageBoard;
 
     /// <summary>
     /// AUT-020: enabling makes a Rule executable, and the request cannot know the

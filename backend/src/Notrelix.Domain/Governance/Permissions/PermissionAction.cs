@@ -40,5 +40,8 @@ public enum PermissionAction
     CreateComment,
     ManageIntegrations,
     ManageMemberProfile,
-    ManageApiTokens
+    ManageApiTokens,
+    ManageAutomation,
+    ReadAudit,
+    ViewBilling
 }

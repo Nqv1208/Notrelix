@@ -78,7 +78,7 @@ No use case is DONE: none has a recorded owner check or a 1-px design diff. HARD
 ## 1.3 The ten most important gaps
 
 1. **The real product is mock-only.** Overview, comparison, invoices, seat quote and purchase, downgrade, contact sales and past due have no backend endpoint (UC-BIL-A02, B02, L01, R03, R10, R11).
-2. **No billing permission.** Reads and the plan switch use `ManageWorkspaceSettings`; billing managers and delegation do not exist (UC-BIL-J02, J05).
+2. **No billing permission.** The plan and capability reads now use `ViewBilling` (Owner only, a custom role may add it; owner-approved tightening 2026-10-31, an Admin no longer reads billing); the plan switch still uses `ManageWorkspaceSettings`; billing managers and delegation do not exist (UC-BIL-J02, J05).
 3. **No payment provider, no money path.** Payment methods, invoices, payments, checkout, webhooks and reconciliation are DEFINED only (capabilities K to Q). Decision 46 defers it; the domain is ready, the handlers are not.
 4. **No lifecycle worker.** Renewal, trial end, scheduled downgrade, cancellation and expiry never run (UC-BIL-B04 to B06, C02, R08).
 5. **Delinquency is not enforced.** Past due is a domain state with no trigger, and the seat gate ignores it (UC-BIL-S01, S02).
@@ -129,7 +129,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-BIL-A01 | See the current plan and the plan catalog | A | Workspace Owner and Admin (`ManageWorkspaceSettings` on the workspace, interim; see UC-BIL-J05) | Yes | Real | tong-quan | billing-plan | HARDENING | Catalog is a code constant (`BillingPlanCatalog`), not the Plan aggregate |
+| UC-BIL-A01 | See the current plan and the plan catalog | A | Workspace Owner (`ViewBilling` on the workspace; a custom role may add it; owner-approved tightening 2026-10-31, was Owner and Admin; see UC-BIL-J05) | Yes | Real | tong-quan | billing-plan | HARDENING | Catalog is a code constant (`BillingPlanCatalog`), not the Plan aggregate |
 | UC-BIL-A02 | Compare plans side by side | A | Billing managers (Owner, delegated manager) | No | Mock | so-sanh-goi | No | IMPLEMENTING | Mock-only (`backendCapabilities.billingPlans` equals the mock flag). Backend must serve plans with price rows |
 | UC-BIL-A03 | Maintain the plan catalog by revision | A | Platform catalog operator (system or admin) | Dom | No | No | No | DEFINED | Catalog is code-defined |
 | UC-BIL-A04 | Keep price history readable after a price change | A | System; read by billing managers on invoices | Dom | No | No | No | DEFINED | No price source exists |
@@ -235,7 +235,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 
 ### UC-BIL-A01 See the current plan and the plan catalog
 - Capability: A. BIL-001 Plan/catalog model
-- Actors and permission: Workspace Owner and Admin (`ManageWorkspaceSettings` on the workspace, interim; see UC-BIL-J05).
+- Actors and permission: Workspace Owner (`ViewBilling` on the workspace; a custom role may add it; owner-approved tightening 2026-10-31, was Owner and Admin; see UC-BIL-J05).
 - Preconditions: Caller is signed in and holds the workspace. The workspace belongs to an account.
 - Input: Workspace id from the route.
 - Output: Current plan code and name, its limits, the catalog (free, pro, enterprise) and `canChangePlan`.
@@ -747,7 +747,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Preconditions: Caller holds the workspace.
 - Input: Workspace id.
 - Output: Billing reads succeed for them; others get NotFound.
-- Main flow: 1. Pipeline checks `ManageWorkspaceSettings` on resource `billing.plan` or `billing.capability`. 2. Handler runs.
+- Main flow: 1. Pipeline checks `ViewBilling` on resource `billing.plan` or `billing.capability`. 2. Handler runs.
 - No-op / rejection / concurrency / retry: Not entitled and not authorized are different (UC-BIL-T03).
 - UI states: Permission denied hides the page and its nav.
 - Rules: Product §78, §79 BIL-028; spec BILREQ054, BILREQ055.
@@ -808,7 +808,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Permission denied, read-only.
 - Rules: Product §78, §79 BIL-028; spec BILREQ054, BILREQ055, BILREQ092; Part 5.
 - Acceptance: Given a person with a paid feature but no billing permission, when they read invoices, then NotFound.
-- Evidence: BE partial: requests reuse `PermissionAction.ManageWorkspaceSettings` (comment in `GetWorkspaceBillingCapabilities.cs` says no billing action yet) · FE none · Design none · Tests none · Real e2e none
+- Evidence: BE partial: the two billing reads use `PermissionAction.ViewBilling` (Owner only; custom roles may add it), the dev plan switch keeps `ManageWorkspaceSettings` · FE none · Design none · Tests none · Real e2e none
 - State: DEFINED — Owner of Governance permission list must add the actions.
 
 ## K. BIL-011 Payment-method lifecycle
