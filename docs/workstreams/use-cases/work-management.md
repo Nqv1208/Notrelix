@@ -49,7 +49,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 |---|---|---|---|---|---|---|---|---|---|
 | A | Board lifecycle | WM-001 | 26 | 4 | 2 | 16 | 4 | 0 | 0 |
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 2 | 1 | 5 | 14 | 0 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 22 | 13 | 76 | 58 | 0 | 1 |
+| | Total | | 170 | 21 | 14 | 76 | 58 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
