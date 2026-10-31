@@ -48,7 +48,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
 | A | Board lifecycle | WM-001 | 26 | 4 | 2 | 16 | 4 | 0 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 5 | 1 | 23 | 7 | 0 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 2 | 1 | 17 | 2 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 12 | 0 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 22 | 14 | 109 | 24 | 0 | 1 |
+| | Total | | 170 | 22 | 13 | 99 | 35 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -207,20 +207,20 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-A24 | Copy item/board link | A | Any viewer | not applicable | yes | complete | none | INTEGRATING | non-member gets NotFound e2e |
 | UC-WM-A25 | Warn when an access change would strand assignees | A | Manager | partial | partial | none | none | INTEGRATING | Warning on visibility change and move-to-space; design |
 | UC-WM-A26 | Block removing or demoting the last board manager | A | Manager | partial | no | none | none | DEFINED | no last-manager guard in UpdateBoardMemberRole or RemoveBoardMember (verified in source); no design for the message. |
-| UC-WM-B01 | Create an item (full dialog) | B | Editor and above; Guest if Editor | yes | yes | complete | none | INTEGRATING | no real e2e; proof matrix for the create dialog (limits, retry, partial failure); sub-item mode; 'retry the missing part' check. |
-| UC-WM-B02 | Quick-add an item in a group or lane | B | Editor and above | yes | yes | complete | none | INTEGRATING | WIP warning on over-limit add (D37); scroll when outside window; real e2e |
+| UC-WM-B01 | Create an item (full dialog) | B | Editor and above; Guest if Editor | yes | yes | complete | none | HARDENING | no real e2e; proof matrix for the create dialog (limits, retry, partial failure); sub-item mode; 'retry the missing part' check. |
+| UC-WM-B02 | Quick-add an item in a group or lane | B | Editor and above | yes | yes | complete | none | HARDENING | WIP warning on over-limit add (D37); scroll when outside window; real e2e |
 | UC-WM-B03 | Create a sub-item | B | Editor and above | yes | yes | partial | sub-items | HARDENING | Typed client; sheet add; Q3 create-dialog sub-item mode |
-| UC-WM-B04 | Edit the item title in place | B | Editor and above | partial | yes | complete | none | INTEGRATING | PATCH /board-items/{id} has expected version but no Idempotency-Key (see defect B-10). |
-| UC-WM-B05 | Assign people to an item | B | Editor and above (AssignItem) | partial | yes | complete | none | INTEGRATING | expected version on assign and unassign (D77.3; defect B-01); invite action in the 'share the board first' message; Guest picker with no emails; real e2e. |
+| UC-WM-B04 | Edit the item title in place | B | Editor and above | partial | yes | complete | none | HARDENING | PATCH /board-items/{id} has expected version but no Idempotency-Key (see defect B-10). |
+| UC-WM-B05 | Assign people to an item | B | Editor and above (AssignItem) | partial | yes | complete | none | HARDENING | expected version on assign and unassign (D77.3; defect B-01); invite action in the 'share the board first' message; Guest picker with no emails; real e2e. |
 | UC-WM-B06 | Complete, reopen, remind | B | Editor and above | partial | partial | partial | work-board-management | HARDENING | expected version on complete and reopen (D77.3; defect B-01); the Nhắc dialog calls a raw path and is not on the typed client (defect F-01); the real e2e proves only reopen. |
-| UC-WM-B07 | Duplicate an item | B | Editor and above (CreateItem) | partial | yes | partial | none | INTEGRATING | Prove copy set (incl. sub-items option) and exclusions; design Er/busy |
-| UC-WM-B08 | Move an item to another board | B | UpdateItem source + CreateItem target | partial | yes | partial | none | INTEGRATING | Old-key alias (D76.3); mapping notice proof (D50, D54); EV |
+| UC-WM-B07 | Duplicate an item | B | Editor and above (CreateItem) | partial | yes | partial | none | HARDENING | Prove copy set (incl. sub-items option) and exclusions; design Er/busy |
+| UC-WM-B08 | Move an item to another board | B | UpdateItem source + CreateItem target | partial | yes | partial | none | HARDENING | Old-key alias (D76.3); mapping notice proof (D50, D54); EV |
 | UC-WM-B09 | Archive an item | B | Editor and above | yes | yes | complete | sub-items, item-lifecycle | HARDENING | owner check |
-| UC-WM-B10 | Browse archived items and unarchive | B | Editor and above (UpdateItem) | partial | no | complete | item-lifecycle | IMPLEMENTING | BE paged archived list; FE panel; unarchive restores sub-items |
-| UC-WM-B11 | Delete an item (to Trash) | B | Editor and above | yes | yes | complete | none | INTEGRATING | Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e |
-| UC-WM-B12 | Restore an item from Trash | B | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; >30 days refusal proof |
-| UC-WM-B13 | Open the board Trash | B | Editor and above (UpdateItem) | partial | yes | complete | none | INTEGRATING | Paging; typed client; real e2e |
-| UC-WM-B14 | Bulk-edit items (Table and Kanban) | B | Editor and above | yes | partial | complete | none | INTEGRATING | Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e. |
+| UC-WM-B10 | Browse archived items and unarchive | B | Editor and above (UpdateItem) | partial | no | complete | item-lifecycle | HARDENING | BE paged archived list; FE panel; unarchive restores sub-items |
+| UC-WM-B11 | Delete an item (to Trash) | B | Editor and above | yes | yes | complete | none | HARDENING | Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e |
+| UC-WM-B12 | Restore an item from Trash | B | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; >30 days refusal proof |
+| UC-WM-B13 | Open the board Trash | B | Editor and above (UpdateItem) | partial | yes | complete | none | HARDENING | Paging; typed client; real e2e |
+| UC-WM-B14 | Bulk-edit items (Table and Kanban) | B | Editor and above | yes | partial | complete | none | HARDENING | Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e. |
 | UC-WM-B15 | Use the item action menu everywhere | B | Any viewer | not applicable | yes | complete | none | INTEGRATING | real e2e; proof that an item deleted while the menu is open is announced. |
 | UC-WM-B16 | See item face states (card and row) | B | Any viewer | yes | yes | complete | none | INTEGRATING | Non-colour marks proof; 99+ cap |
 | UC-WM-B17 | Purge items, boards and fields after their 30-day window | B | System (job); Manager restores before | no | partial | none | none | DEFINED | no purge job for items, boards or fields; decided in D78.10; needs the audit fact and tests. |
@@ -750,7 +750,7 @@ Team capability WM-002.
 - Rules: product sections 27.3, 28, 29; WM-011, WM-043, WM-044; D28, D30, Q2; WMREQ011-017, WMREQ020
 - Acceptance: (1) Given a Commenter or Viewer, when they look for "Add item", then no button, no quick add and no shortcut C exist. (2) Given the person edits any input after a failed attempt, when they submit again, then a new idempotency key is used. (3) Given an empty name, when submitting, then an inline error appears under the name, focus goes to it, and no request is sent.
 - Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem]; BoardItems.AssignMember = POST /board-items/{itemId:guid}/assignees -> AssignBoardItemMemberCommand (`BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs`) [- / Idem]; BoardItems.AddLabel = POST /board-items/{itemId:guid}/labels -> AddLabelToBoardItemCommand (`Labels/Commands/AddLabelToBoardItem/AddLabelToBoardItem.cs`) [- / Idem]; BoardItems.UpdateFieldValues = PATCH /board-items/{itemId:guid}/field-values -> UpdateBoardItemFieldValuesCommand (`BoardItems/Commands/UpdateBoardItemFieldValues/UpdateBoardItemFieldValues.cs`) [EV / Idem] · FE card popup create mode (`card-popup/create/*`), `frontend/packages/product/work-management/state/src/mutations/use-create-item-with-details.ts` · Design Kanban-CardPopup-Create, -Create-States, -M-Create · Tests `AddLabelToBoardItemTests.cs`, `AssignBoardItemMemberTests.cs`, `CreateBoardItemTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: create mode of the card popup replaces the Add item dialog (one locked submit, Idempotency-Key per attempt reused on retry, partial failure named, confirm on closing a draft, "Tạo tiếp thẻ khác", the new card stays open with comments active). Left: sub-item mode, "retry the missing part" action.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the full-dialog partial-failure proof. Evidence: real-stack check 2026-10-31: created through the API and the quick add in the browser; empty and 501-char title, 20,001-char description, inverted dates and a foreign group refused (400/404); a retry under one key made one item; a member created one; a non-member of a Private board got 404; reload kept the item, commit f812cc4ff.
 
 ### UC-WM-B02 Quick-add an item in a group or lane
 - Capability: B BoardItem lifecycle (WM-002)
@@ -764,7 +764,7 @@ Team capability WM-002.
 - Rules: product sections 27.3; WM-044; D30, D39; WMREQ016-017
 - Acceptance: (1) Given a quick add failing, when the write errors, then the typed name stays in the input with an inline error and "Thử lại". (2) Given a quick add or dialog create in a group that is scrolled away from its bottom, when it succeeds, then the new item is brought into view. (3) Given a quick add in a lane, when Enter is pressed with a name, then the item is appended to the bottom of that lane and the input stays focused for the next; with an empty name nothing happens (D39).
 - Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem] · FE KanbanAddCard, table row add; WIP warning not found · Design Kanban-Card-States, BC-Kanban (quick add) · Tests `CreateBoardItemTests.cs` · Real e2e none
-- State: INTEGRATING — WIP warning on over-limit add (D37); scroll when outside window; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; WIP warning on over-limit add. Evidence: real-stack check 2026-10-31: quick add in the Kanban 'No status' lane in the browser created the item and it stayed after reload, commit f812cc4ff.
 
 ### UC-WM-B03 Create a sub-item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -778,7 +778,7 @@ Team capability WM-002.
 - Rules: product sections 26, 27.1, 77.1; WM-041, WM-043; Q3; WMREQ012-013, WMREQ016
 - Acceptance: (1) Given the dialog opened from the item sheet's Sub-items "Add with details", when it opens, then the parent is fixed and shown, the Group is the parent's and not editable, and the created item is a sub-item (owner Q3). (2) Given a Member creates a sub-item from the sheet's Sub-items "Add with details" (owner Q3), when it is created, then its parent is the chosen item, one level only (a sub-item cannot be chosen as a parent), and it appears under the parent in Table sub-rows and in the sheet.
 - Evidence: BE BoardItems.CreateChild = POST /board-items/{itemId:guid}/child-items -> CreateChildItemCommand (`BoardItems/Commands/CreateChildItem/CreateChildItem.cs`) [- / Idem]; BoardItems.ListChildren = GET /board-items/{itemId:guid}/child-items -> ListChildItemsQuery (`BoardItems/Queries/ListChildItems/ListChildItems.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-sub-items.tsx`, ItemPageChildItems; raw /child-items path · Design BC-Create sub-item mode; sheet add/reorder not drawn · Tests `SubItemTests.cs` · Real e2e `sub-items.real.e2e.spec.ts`
-- State: HARDENING — Typed client; sheet add; Q3 create-dialog sub-item mode
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the sheet add and reorder design. Evidence: real-stack check 2026-10-31: child created through the API, a child of a child refused (400), the children list returned it, archive and delete of the parent took it along and restore brought it back, commit f812cc4ff.
 
 ### UC-WM-B04 Edit the item title in place
 - Capability: B BoardItem lifecycle (WM-002)
@@ -792,7 +792,7 @@ Team capability WM-002.
 - Rules: product sections 28; D63; WMREQ020, WMREQ110-113; LD1
 - Acceptance: Given an item title edited in the Table, when Enter is pressed, then the new title shows for everyone. Given Escape, then the old title stays. Given a stale version, then a conflict choice appears.
 - Evidence: BE BoardItems.Update = PATCH /board-items/{itemId:guid} -> UpdateBoardItemCommand (`BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs`) [EV / -] · FE table inline title (/Enter/double-click) · Design Final-Table `sua-o` · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — PATCH /board-items/{id} has expected version but no Idempotency-Key (see defect B-10).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version bumped the version once, the same title changed nothing, a stale version answered 412 and kept the title, a blank title was refused, commit f812cc4ff.
 
 ### UC-WM-B05 Assign people to an item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -806,7 +806,7 @@ Team capability WM-002.
 - Rules: product sections 68.2, 139; WM-040; D41; D78.1; WMREQ022, WMREQ110-113
 - Acceptance: (Guest picker), Given a user without ViewBoard, when assigned via API, then rejected with the rule and nothing changes. Given an assignee loses access later, then the item still shows them as assignee.
 - Evidence: BE BoardItems.AssignMember = POST /board-items/{itemId:guid}/assignees -> AssignBoardItemMemberCommand (`BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs`) [- / Idem]; BoardItems.UnassignMember = DELETE /board-items/{itemId:guid}/assignees/{userId:guid} -> UnassignBoardItemMemberCommand (`BoardItems/Commands/UnassignBoardItemMember/UnassignBoardItemMember.cs`) [- / Idem] · FE ItemAssigneePicker; 'share the board first' with invite action unproven · Design WM-Sheet-Full, BC-Create-320-Pickers · Tests `AssignBoardItemMemberTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — expected version on assign and unassign (D77.3; defect B-01); invite action in the 'share the board first' message; Guest picker with no emails; real e2e.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: assign and unassign carry the expected version (stale 412, nothing changed), an assignee who cannot see a Private board got 403 with the share-first message, assigning twice changed nothing, non-member 404, commit f812cc4ff.
 
 ### UC-WM-B06 Complete, reopen, remind
 - Capability: B BoardItem lifecycle (WM-002)
@@ -820,7 +820,7 @@ Team capability WM-002.
 - Rules: product sections 148.1; WM-042; D35, D77.2, D77.3; WMREQ014, WMREQ110-113
 - Acceptance: Given an open item, when Complete is used, then it moves to a done-category status. Given Nhắc pressed twice in an hour, then the second is refused with the time it is possible again.
 - Evidence: BE BoardItems.Complete = POST /board-items/{itemId:guid}/complete -> CompleteBoardItemCommand (`BoardItems/Commands/CompleteBoardItem/CompleteBoardItem.cs`) [- / Idem]; BoardItems.Reopen = POST /board-items/{itemId:guid}/reopen -> ReopenBoardItemCommand (`BoardItems/Commands/ReopenBoardItem/ReopenBoardItem.cs`) [- / Idem]; BoardItems.RemindOwners = POST /board-items/{itemId:guid}/remind (the Nhắc nudge, D35) · FE `frontend/packages/product/work-management/web/src/components/item-page/item-page-states.tsx`; `frontend/packages/product/work-management/web/src/components/item-actions/remind-dialog.tsx` raw /remind (nudge) · Design WM-Actions-Menu, WM-Actions-Remind; Er, M missing · Tests `ReopenBoardItemTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (reopen)
-- State: HARDENING — expected version on complete and reopen (D77.3; defect B-01); the Nhắc dialog calls a raw path and is not on the typed client (defect F-01); the real e2e proves only reopen.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: complete, reopen in the browser (POST complete 204, reopen 204 with the version) and through the API; a second complete or reopen changed nothing, a stale version answered 412, complete on an archived item was refused, commit f812cc4ff.
 
 ### UC-WM-B07 Duplicate an item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -834,7 +834,7 @@ Team capability WM-002.
 - Rules: product sections 27, 28; WM-043; D76.7; WMREQ049
 - Acceptance: Given a duplicate, then the new item has a new key and the original is unchanged. Given Duplicate with sub-items on (default), then the copy has title, description, field values, labels, checklist and sub-items, and no comments, activity, approvals, links or attachment files.
 - Evidence: BE BoardItems.Duplicate = POST /board-items/{itemId:guid}/duplicate -> DuplicateBoardItemCommand (`BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-actions/duplicate-item-dialog.tsx` · Design WM-Actions-Duplicate; Er, busy missing · Tests `CreateBoardItemTests.cs` · Real e2e none
-- State: INTEGRATING — Prove copy set (incl. sub-items option) and exclusions; design Er/busy
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: duplicate with sub-items copied the item and its sub-item, a retry under one key made one copy, an archived item was refused (400), commit f812cc4ff.
 
 ### UC-WM-B08 Move an item to another board
 - Capability: B BoardItem lifecycle (WM-002)
@@ -848,7 +848,7 @@ Team capability WM-002.
 - Rules: product sections 26, 27.1; WM-043, WM-040; D50, D54, D76.3; WMREQ018-019, WMREQ110-113
 - Acceptance: (1) Given a bulk Move, when the target lacks CreateItem for the person, then Move is disabled with the reason (D50). (2) Given Move board with a target where the person lacks CreateItem or the item has dependencies, when attempted, then the refusal names the reason (D50/D54).
 - Evidence: BE BoardItems.MoveToBoard = POST /board-items/{itemId:guid}/move-to-board -> MoveBoardItemToBoardCommand (`BoardItems/Commands/MoveBoardItemToBoard/MoveBoardItemToBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-actions/move-board-dialog.tsx` (raw move-to-board) · Design WM-Actions-Move (mapping preview); Er/partial missing · Tests `MoveBoardItemToBoardTests.cs` · Real e2e none
-- State: INTEGRATING — Old-key alias (D76.3); mapping notice proof (D50, D54); EV
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; mapping-notice proof. Evidence: real-stack check 2026-10-31: move to another board with the expected version (stale 412), the same board and an archived item refused (400), links followed the item, commit f812cc4ff.
 
 ### UC-WM-B09 Archive an item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -862,7 +862,7 @@ Team capability WM-002.
 - Rules: product sections 26, 123; WM-033; WMREQ014
 - Acceptance: Given an item with 2 sub-items, when archived, then all three leave the lists. Given an archived item, when a description edit is sent, then it is refused with the reason.
 - Evidence: BE BoardItems.Archive = POST /board-items/{itemId:guid}/archive -> ArchiveBoardItemCommand (`BoardItems/Commands/ArchiveBoardItem/ArchiveBoardItem.cs`) [EV / Idem] · FE useArchiveCard, `ArchiveItemDialog` (`item-lifecycle/archive-item-dialog.tsx`), ItemPageArchivedBanner · Design BC-Actions (confirm archive) · Tests `ArchiveBoardItemTests.cs`, `WorkMutationTransportRegressionTests.cs`, `archive-item-dialog` component tests, `card-commands.unit.test.ts` · Real e2e `item-lifecycle.real.e2e.spec.ts`, `sub-items.real.e2e.spec.ts`
-- State: HARDENING — owner check
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: archive from the card popup in the browser removed the item from the board and kept it after reload; archiving twice changed nothing, an archived item refused edits, its sub-items were archived with it, commit f812cc4ff.
 
 ### UC-WM-B10 Browse archived items and unarchive
 - Capability: B BoardItem lifecycle (WM-002)
@@ -876,7 +876,7 @@ Team capability WM-002.
 - Rules: product sections 123; WM-033; D51; Q6; WMREQ014; LD2
 - Acceptance: (1) Given a board's Archived items panel, when a Member opens it, then archived items are listed with search, each with Unarchive; a Viewer does not see the entry (owner Q6). (2) Given the Archived items panel (owner Q6), when a Member opens it, then archived items list with name, key, who archived and when, paged, each with Unarchive; unarchive returns the item and the sub-items archived with it to its group.
 - Evidence: BE BoardItems.Unarchive = POST /board-items/{itemId:guid}/unarchive -> UnarchiveBoardItemCommand (`BoardItems/Commands/UnarchiveBoardItem/UnarchiveBoardItem.cs`) [- / Idem] · FE none; no archive browse; unarchive via raw path · Design BC-Archive-Trash (archived list) · Tests `SubItemTests.cs` · Real e2e `item-lifecycle.real.e2e.spec.ts` (unarchive on item page only)
-- State: IMPLEMENTING — BE paged archived list; FE panel; unarchive restores sub-items
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design measurement against BC-Archive-Trash (the sheet reuses the Deleted items sheet). Evidence: real-stack check 2026-10-31: Archived items sheet in the board menu listed the archived item, Unarchive put it back and it stayed after reload; the read answers 404 to a non-member; search by name works, commit f812cc4ff.
 
 ### UC-WM-B11 Delete an item (to Trash)
 - Capability: B BoardItem lifecycle (WM-002)
@@ -890,7 +890,7 @@ Team capability WM-002.
 - Rules: product sections 123; WM-033; D51; Q10; WMREQ014
 - Acceptance: (1) Given the item was deleted by someone else while the menu was open, when an entry is chosen, then the person is told it was deleted and the row/card is gone. (2) Given the item is deleted while the sheet is open, when the change arrives, then the sheet shows "this item was deleted" with Restore for people who may and a link back to the board. (3) Given Delete, when chosen, then a confirmation names the item and the counts of sub-items and dependencies; confirming soft-deletes it; a toast offers Hoàn tác (restore); the item is listed in Trash for 30 days (D51).
 - Evidence: BE BoardItems.Delete = DELETE /board-items/{itemId:guid} -> DeleteBoardItemCommand (`BoardItems/Commands/DeleteBoardItem/DeleteBoardItem.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-lifecycle/use-item-removal.tsx`, undo toast · Design WM-Actions-Trash, BC-Archive-Trash · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: delete from the card popup in the browser asked for confirmation, the item went to Deleted items; a stale version answered 412; the sub-items went with the parent, commit f812cc4ff.
 
 ### UC-WM-B12 Restore an item from Trash
 - Capability: B BoardItem lifecycle (WM-002)
@@ -904,7 +904,7 @@ Team capability WM-002.
 - Rules: product sections 123; WM-033; D51, D54, Q10; WMREQ014
 - Acceptance: Given an item deleted yesterday, when restored, then it returns with its sub-items. Given one deleted 31 days ago, then restore is refused.
 - Evidence: BE BoardItems.Restore = POST /board-items/{itemId:guid}/restore -> RestoreBoardItemCommand (`BoardItems/Commands/RestoreBoardItem/RestoreBoardItem.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-lifecycle/board-trash-sheet.tsx`, `frontend/packages/product/work-management/state/src/cache/card-restore.ts` · Design BC-Archive-Trash (restore, >30 days, parent deleted) · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; >30 days refusal proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: restore from the Deleted items sheet in the browser put the item back and it stayed after reload; an item past 30 days is not listed and its restore answers 409, commit f812cc4ff.
 
 ### UC-WM-B13 Open the board Trash
 - Capability: B BoardItem lifecycle (WM-002)
@@ -918,7 +918,7 @@ Team capability WM-002.
 - Rules: product sections 123; D51; D54; WMREQ147
 - Acceptance: Given the board Trash, when a Member restores an item within 30 days, then it returns to its group; after 30 days restore is refused with the reason (D54).
 - Evidence: BE BoardItems.Trash = GET /boards/{boardId:guid}/items/trash -> ListBoardItemTrashQuery (`BoardItems/Queries/ListBoardItemTrash/ListBoardItemTrash.cs`) [- / -] · FE BoardTrashHost, useBoardTrash (raw trash path) · Design WM-Actions-Trash, BC-Archive-Trash · Tests `MoveBoardItemToBoardTests.cs` · Real e2e none
-- State: INTEGRATING — Paging; typed client; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: Deleted items sheet listed the deleted root items (at most 200), none past 30 days, 404 to a non-member, commit f812cc4ff.
 
 ### UC-WM-B14 Bulk-edit items (Table and Kanban)
 - Capability: B BoardItem lifecycle (WM-002)
@@ -932,7 +932,7 @@ Team capability WM-002.
 - Rules: product sections 34, 132; WM-012; WMREQ025, WMREQ110-113; D32, D43, D77.3, Q8
 - Acceptance: (1) Given a bulk Move, when the target lacks CreateItem for the person, then Move is disabled with the reason (D50). (2) Given a bulk network failure, when retried, then the retry carries the same idempotency key and does not apply twice. (3) Given 201 items selected, when the person tries an action, then it is disabled with the cap stated and the selection is not truncated.
 - Evidence: BE BoardItems.BulkUpdate = POST /boards/{boardId:guid}/items/bulk -> BulkUpdateBoardItemsCommand (`BoardItems/Commands/BulkUpdateBoardItems/BulkUpdateBoardItems.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-bulk-bar.tsx`; Kanban has no multi-select; no bulk move-to-board · Design BC-Bulk (Final-Table bar stale) · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; Kanban multi-select is not built (needs the BC-Bulk artboard states). Evidence: real-stack check 2026-10-31: bulk set-due-date and assign through the API with a version per item: one stale item refused the whole batch with 412 and named it, nothing changed; a retry under one key replayed; an empty list got 400 and an item of another board 404, commit f812cc4ff.
 
 ### UC-WM-B15 Use the item action menu everywhere
 - Capability: B BoardItem lifecycle (WM-002)
