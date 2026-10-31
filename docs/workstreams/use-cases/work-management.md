@@ -56,7 +56,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | H | Query, filter and sort foundation | WM-008 | 19 | 2 | 1 | 11 | 5 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
-| J | Kanban view | WM-010 | 6 | 0 | 0 | 5 | 1 | 0 | 0 |
+| J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 6 | 78 | 67 | 0 | 1 |
+| | Total | | 170 | 18 | 6 | 73 | 72 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -311,12 +311,12 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; virtualization (UC-WM-T01) |
 | UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | INTEGRATING | tests and owner check |
 | UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | tests and owner check; proof of the 200 cap; no selection across windows. |
-| UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; the checkbox on the card face is not on an artboard; the bar archives at once (no undo window as in the Table). |
+| UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; the checkbox on the card face is not on an artboard; the bar archives at once (no undo window as in the Table). |
 | UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | HARDENING | tests and owner check |
-| UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof. |
-| UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | INTEGRATING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
-| UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | tests and owner check |
-| UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | INTEGRATING | tests and owner check. |
+| UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check; Q13 multi-assignee proof. |
+| UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | HARDENING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
+| UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
 | UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
 | UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
@@ -1812,7 +1812,7 @@ Team capability WM-005.
 - Rules: product sections 38-41, 42-43; WM-014, WM-016; WMREQ018-019, WMREQ042-044, WMREQ131, WMREQ139
 - Acceptance: Given two users drop different items into the same position, then both persist with distinct keys.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE useMoveRow, fractional-index · Design BC-Table · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; two-user same-position test. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); the pointer drag in the browser was not driven, commit 4d4c7b5fa.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; two-user same-position test. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); pointer drag in the browser: a drop on an empty lane shows the target and keeps the move, Hoàn tác puts it back, a stale drop answers 412 with a toast that names who moved the card and to which lane (the item reads carry who last edited it), commit 2eed7b832.
 
 ## F. Ordering
 
@@ -2238,7 +2238,7 @@ Team capability WM-010.
 - Rules: product sections 51, 40-41; WM-015; views pack section 6
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given a quick add failing, when the write errors, then the typed name stays in the input with an inline error and "Thử lại". (3) Given Kanban, when a Member selects cards (Space, Shift+click, checkbox), then the same bulk bar as the Table appears (owner Q8).
 - Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -]; BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-view.tsx`, `kanban-selection.ts`, `kanban-bulk-bar.tsx` (the Table's bar over the picked cards), `kanban-card.tsx` (checkbox, Space, Shift+click) · Design BC-Kanban (Final-Board; Kanban-Board proposal, canonical unrecorded) · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: an editor picks cards with the checkbox, Space or Shift+click (range), Escape clears; the Table's bulk bar shows for the picked cards (status, assign, due date, priority, move to board, archive, delete; one request, all or none). Not built: an undo window for the bar's archive; the card checkbox is not on an artboard.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check; not built: an undo window for the bulk archive, the card checkbox is on no artboard. Evidence: real-stack check 2026-10-31: drop on an empty lane shows the target and keeps the move; a failed quick add keeps the typed name in the field with an inline error and Retry (retry created it); checkbox plus Shift+click picks cards and the bulk bar (BC-Bulk, dark bar at the bottom centre) set Hoàn thành for both in one request, commit 2eed7b832.
 
 ### UC-WM-J02 Move an item between Kanban lanes
 - Capability: J Kanban view (WM-010)
@@ -2252,7 +2252,7 @@ Team capability WM-010.
 - Rules: product sections 40-41, 51; WM-015; D36-D40; WMREQ018, WMREQ044, WMREQ131
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given B is dragging a card, when A moves another card, then B's drag completes unaffected and the board re-reads after the drop. (3) Given a lane at its WIP limit, when a card is dropped in, then a warning shows and the drop is allowed; the server does not block (D37).
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts` + keyboard DnD (186 kanban tests) · Design BC-Kanban, Kanban-Card-States, WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; pointer and keyboard drag in the browser, design measurement, tests. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); the pointer drag in the browser was not driven, commit 4d4c7b5fa.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; pointer and keyboard drag in the browser, design measurement, tests. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); pointer drag in the browser: a drop on an empty lane shows the target and keeps the move, Hoàn tác puts it back, a stale drop answers 412 with a toast that names who moved the card and to which lane (the item reads carry who last edited it), commit 2eed7b832.
 
 ### UC-WM-J03 Move an item across swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2266,7 +2266,7 @@ Team capability WM-010.
 - Rules: product sections 40-41; WM-015; D71; Q13
 - Acceptance: Given an item in lane A and swimlane X, when dropped in lane B and swimlane Y, then both fields hold the new values. Given a multi-assignee item, then other assignees are unchanged.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-swimlane-board.tsx` (a drop on a cell writes the column and the lane value that changed) · Design WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; Q13 multi-assignee proof.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check; the swimlane header is not sticky when the board scrolls. Evidence: real-stack check 2026-10-31: swimlanes by Assignee: a multi-assignee card shows in each assignee lane, a drop on another lane and column wrote the status and swapped only the source assignee (admin, member kept), the two writes run in turn and the column is put back when the lane write fails; a stale drop answers 412, commit 2eed7b832.
 
 ### UC-WM-J04 Use swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2280,7 +2280,7 @@ Team capability WM-010.
 - Rules: product sections 51; D71, D38
 - Acceptance: Given swimlanes by Assignee, then each swimlane header is sticky and collapses per person.
 - Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE `kanban-swimlane-board.tsx`, the swimlane field in the view bar (personal state, kept on the preference) · Design WM-Swimlanes · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check; the collapsed state is not kept across a reload; 320 snap-scroll design. Evidence: real-stack check 2026-10-31: Lane: Assignee is personal (no view write, Back to shared view offered); each lane header collapses on its own, commit 2eed7b832.
 
 ### UC-WM-J05 Choose fields shown on the card
 - Capability: J Kanban view (WM-010)
@@ -2294,7 +2294,7 @@ Team capability WM-010.
 - Rules: product sections 51; D39
 - Acceptance: Given a field ticked, then every card shows it formatted for its type.
 - Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE Kanban settings panel (card face columns) · Design WM-Card-Face · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check. Evidence: real-stack check 2026-10-31: Fields shown on the card: the panel opened without the crash it had, the switch wrote the view config and every card showed Points in its type format (5, or a dash when empty), commit 2eed7b832.
 
 ### UC-WM-J06 Set a WIP limit and see the warning
 - Capability: J Kanban view (WM-010)
@@ -2308,7 +2308,7 @@ Team capability WM-010.
 - Rules: product sections 51; D37
 - Acceptance: Given a lane limit of 3 holding 3 cards, when a fourth is dropped, then the drop succeeds and the lane shows the warning.
 - Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE the lane menu sets the limit (`kanban-column.tsx`, `kanban-view.tsx` writes `wipLimits` to the view config); the lane and the drop target warn · Design Kanban-Card-States (WIP warning) · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; the limit is kept in the Kanban view configuration and only warns.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; owner check. Evidence: real-stack check 2026-10-31: lane menu Set item limit 1 wrote the view config; dragging a second card in showed the over-limit warning while hovering, the drop was kept and the lane header showed 2 / 1, commit 2eed7b832.
 
 ## K. Calendar view
 
