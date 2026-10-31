@@ -9,14 +9,20 @@ import {
 } from "@notrelix/ui-web";
 import { ItemActionsMenuItems } from "../item-actions/item-actions-menu";
 import { useItemActionsCopy } from "../item-actions/use-item-actions-copy";
-import { STATUS_DOT_CLASS } from "../card-detail/item-field-editors";
+import {
+  STATUS_DOT_CLASS,
+  describeItemStatus,
+} from "../card-detail/item-field-editors";
 import { useCardPopup } from "./card-popup-context";
 import { IconBtn, PanelPopover } from "./popup-ui";
 
 const GROUP_BTN =
   "relative inline-flex h-9 items-center gap-2 rounded-[8px] border-0 bg-state-hover-strong py-0 pr-2.5 pl-3 text-[14px] font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
-/** The column of the card: shows where it is, and moving it is one pick. */
+/**
+ * The column of the card: the Kanban lane it sits in (its Status), and moving it is one pick. It writes
+ * the Status like a drag between lanes does; a board without a Status field keeps the board groups.
+ */
 function GroupPicker() {
   const {
     card,
@@ -28,25 +34,40 @@ function GroupPicker() {
     readOnly,
     capabilities,
     fields,
+    track,
   } = useCardPopup();
   const [open, setOpen] = useState(false);
   const t = copy.shell;
-  const current = groups.find((group) => group.id === card.listId);
-  // A column that mirrors a status shows that status's dot.
-  const mirrored = fields.status?.options.find(
-    (option) => option.label === current?.title,
-  );
-  const category = mirrored?.category ?? null;
-  const dot = category ? STATUS_DOT_CLASS[category] : null;
+  const status = fields.status;
+  const lanes = status
+    ? status.options.map((option) => ({
+        id: option.id,
+        title: option.label,
+        category: option.category ?? null,
+      }))
+    : groups.map((group) => ({ ...group, category: null }));
+  const currentId = status
+    ? (describeItemStatus(card, status).option?.id ?? null)
+    : card.listId;
+  const current = lanes.find((lane) => lane.id === currentId);
+  const dot = current?.category ? STATUS_DOT_CLASS[current.category] : null;
   const canMove =
     readOnly === null && (mode === "create" || capabilities.canMoveCard);
-  const move = (groupId: string) => {
+  const move = (laneId: string) => {
     setOpen(false);
-    if (groupId === card.listId) return;
-    if (mode === "create") actions.moveToGroup?.(groupId);
+    if (laneId === currentId) return;
+    if (status)
+      track(`field:${status.id}`, async () =>
+        callbacks.onUpdateFieldValue({
+          cardId: card.id,
+          fieldDefinitionId: status.id,
+          value: laneId,
+        }),
+      );
+    else if (mode === "create") actions.moveToGroup?.(laneId);
     else
       (actions.moveToGroup ?? ((id) => callbacks.onMoveToGroup?.(card.id, id)))(
-        groupId,
+        laneId,
       );
   };
   const label = (
@@ -58,7 +79,7 @@ function GroupPicker() {
           dot ?? "bg-meta-foreground",
         )}
       />
-      {current?.title ?? ""}
+      {current?.title ?? (status ? t.noLane : "")}
     </>
   );
   if (!canMove) return <span className={cn(GROUP_BTN, "pr-3")}>{label}</span>;
@@ -93,8 +114,8 @@ function GroupPicker() {
         aria-label={t.groupMenuTitle}
         className="flex flex-col"
       >
-        {groups.map((group) => {
-          const selected = group.id === card.listId;
+        {lanes.map((group) => {
+          const selected = group.id === currentId;
           return (
             <button
               key={group.id}
@@ -108,6 +129,15 @@ function GroupPicker() {
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
             >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "size-[9px] shrink-0 rounded-full",
+                  group.category
+                    ? STATUS_DOT_CLASS[group.category]
+                    : "bg-meta-foreground",
+                )}
+              />
               {group.title}
               {selected ? (
                 <Check aria-hidden="true" className="ml-auto size-4" />
