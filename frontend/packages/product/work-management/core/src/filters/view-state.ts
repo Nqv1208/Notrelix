@@ -134,7 +134,13 @@ export function buildFilterFields(input: FilterFieldInput): FilterField[] {
   const person = input.fieldDefinitions.find((f) => f.fieldType === "person");
   const due = input.fieldDefinitions.find((f) => f.fieldType === "date");
   const own = input.fieldDefinitions
-    .filter((f) => !f.isHidden && !UNFILTERABLE.has(f.fieldType))
+    // The system Title is the pseudo title field below; listing it too offered "Title" twice.
+    .filter(
+      (f) =>
+        !f.isHidden &&
+        !UNFILTERABLE.has(f.fieldType) &&
+        !(f.isSystemField && f.fieldType === "text"),
+    )
     .map<FilterField>((field) => ({
       id: field.id,
       name: field.name,
