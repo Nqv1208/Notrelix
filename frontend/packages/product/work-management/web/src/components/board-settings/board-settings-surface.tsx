@@ -297,7 +297,13 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
 
   let content: ReactNode;
   if (section === "general")
-    content = <GeneralSection onLeave={props.onLeave} space={props.space} />;
+    content = (
+      <GeneralSection
+        onLeave={props.onLeave}
+        space={props.space}
+        onMove={props.onMoveBoard}
+      />
+    );
   else if (section === "views")
     content = (
       <ViewsSection

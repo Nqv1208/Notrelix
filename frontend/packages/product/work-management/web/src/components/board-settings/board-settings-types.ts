@@ -245,6 +245,8 @@ export interface BoardSettingsSurfaceProps {
   onBack: () => void;
   /** Opens the board's access dialog. */
   onOpenAccess?: () => void;
+  /** Opens the move-to-Space dialog; absent = the move button stays locked. */
+  onMoveBoard?: () => void;
   /** The board was archived or deleted: leave the page. */
   onLeave?: (reason: "archived" | "deleted") => void;
   /** For stories and tests: start with the field-type picker open. */

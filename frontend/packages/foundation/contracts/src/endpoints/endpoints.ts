@@ -204,6 +204,8 @@ export const endpoints = {
     schema: (boardId: string) => `/boards/${boardId}/schema`,
     labels: (boardId: string) => `/boards/${boardId}/labels`,
     moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
+    // WorkManagement.Boards.GetMoveImpact: who gains and loses the board in another space (`?targetSpaceId=`).
+    moveImpact: (boardId: string) => `/boards/${boardId}/move-impact`,
     // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
     sharing: (boardId: string) => `/boards/${boardId}/sharing`,
     sharingPrivate: (boardId: string) => `/boards/${boardId}/sharing/private`,

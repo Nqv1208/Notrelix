@@ -52,9 +52,12 @@ const isGeneralScope = (scope: string | null) => scope === "general";
 export function GeneralSection({
   onLeave,
   space,
+  onMove,
 }: {
   onLeave?: (reason: "archived" | "deleted") => void;
   space?: BoardSettingsSpace;
+  /** Opens the move-to-Space dialog; absent keeps the button locked. */
+  onMove?: () => void;
 }) {
   const { copy, settings, actions, run } = useSettings();
   const t = copy.general;
@@ -361,16 +364,27 @@ export function GeneralSection({
                       })
                     : t.departmentNone}
                 </span>
-                <DisabledControl reason={t.moveUnavailable}>
+                {onMove ? (
                   <button
                     type="button"
-                    aria-disabled="true"
                     aria-haspopup="dialog"
+                    onClick={onMove}
                     className={BUTTON_CLASS.outline}
                   >
                     {t.move}
                   </button>
-                </DisabledControl>
+                ) : (
+                  <DisabledControl reason={t.moveUnavailable}>
+                    <button
+                      type="button"
+                      aria-disabled="true"
+                      aria-haspopup="dialog"
+                      className={BUTTON_CLASS.outline}
+                    >
+                      {t.move}
+                    </button>
+                  </DisabledControl>
+                )}
               </div>
               <span className={HINT_CLASS}>{t.moveHint}</span>
             </div>

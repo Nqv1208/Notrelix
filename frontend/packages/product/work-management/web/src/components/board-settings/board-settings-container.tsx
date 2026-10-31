@@ -44,6 +44,8 @@ export interface BoardSettingsHost {
   readonly onOpenAccess?: () => void;
   /** The board was archived or deleted: leave the page. */
   readonly onLeave?: (reason: "archived" | "deleted") => void;
+  /** Opens the dialog that places the board in another Space; absent when the host has none. */
+  readonly onMoveBoard?: () => void;
   /** Opens a form of the board in its builder. */
   readonly onOpenForm: (formId: string) => void;
   /** Opens the response inbox of a form. */
@@ -393,6 +395,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onBack={props.onBack}
       onOpenAccess={props.onOpenAccess}
       onLeave={props.onLeave}
+      onMoveBoard={props.onMoveBoard}
     />
   );
 }
