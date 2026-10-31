@@ -19,14 +19,16 @@ public record ActivityLogDto(
     ActivityChangeDto? Change = null
 );
 
-/// <summary>What changed, without sentences: names and short values only, never a document body or a secret.</summary>
+/// <summary>What changed, without sentences: names and short values only, never a document body or a secret.
+/// <paramref name="RuleName"/> is set when an Automation rule made the change, so the history says which rule.</summary>
 public record ActivityChangeDto(
     string? FieldName,
     string? From,
     string? To,
     Guid? PersonId,
     string? PersonName,
-    string? ItemKey
+    string? ItemKey,
+    string? RuleName = null
 );
 
 public record ResourceActivityPageDto(

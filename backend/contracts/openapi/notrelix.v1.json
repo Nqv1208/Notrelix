@@ -26922,6 +26922,10 @@
           "itemKey": {
             "type": "string",
             "nullable": true
+          },
+          "ruleName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Context;
 using Notrelix.Application.Events.WorkManagement;
 
 namespace Notrelix.Application.EventMappers.WorkManagement;
@@ -10,6 +11,13 @@ namespace Notrelix.Application.EventMappers.WorkManagement;
 public sealed class BoardItemMemberAssignedEventMapper
     : IntegrationEventMapperBase<Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent, BoardItemMemberAssignedIntegrationEvent>
 {
+    private readonly ICorrelationContext? _correlation;
+
+    public BoardItemMemberAssignedEventMapper(ICorrelationContext? correlation = null)
+    {
+        _correlation = correlation;
+    }
+
     public override BoardItemMemberAssignedIntegrationEvent Map(Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent domainEvent) =>
         new(
             EventId: Guid.CreateVersion7(),
@@ -20,7 +28,8 @@ public sealed class BoardItemMemberAssignedEventMapper
             AssignedBy: domainEvent.AssignedBy,
             CorrelationId: domainEvent.EventId,
             SourceEventId: domainEvent.EventId,
-            CausationId: null,
+            // The execution an Automation rule acts under; null for a person's own assignment.
+            CausationId: _correlation?.CausationId,
             OccurredAt: domainEvent.OccurredAt,
             BoardId: domainEvent.BoardId);
 }

@@ -6871,6 +6871,7 @@ export interface components {
             personId?: string | null;
             personName?: string | null;
             itemKey?: string | null;
+            ruleName?: string | null;
         };
         "Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityLogDto": {
             /** Format: uuid */

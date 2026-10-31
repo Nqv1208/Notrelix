@@ -23,4 +23,12 @@ public interface IBoardRealtimeNotifier
 
     /// <summary>Notifies one named Board, for a change that touches a Board other than the resource's own.</summary>
     Task NotifyBoardAsync(Guid boardId, string changeKind, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Notifies one named Board for a change made outside a request (an Automation rule acting as its
+    /// executor), where the execution context carries no scope: the caller names the scope and the actor.
+    /// </summary>
+    Task NotifyBoardAsync(
+        Guid boardId, string changeKind, Guid? accountId, Guid? workspaceId, Guid? actorUserId,
+        Guid? correlationId, Guid? causationId, CancellationToken cancellationToken);
 }
