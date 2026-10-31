@@ -984,7 +984,7 @@ function LevelMenu({
       className="box-content w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 text-nav font-normal shadow-popover dark:bg-card"
     >
       {LEVELS.map((level) => {
-        const disabled = level === "manage" && guest;
+        const disabled = level !== "view" && guest;
         const checked = row.level === level;
         return (
           <div
@@ -1019,7 +1019,7 @@ function LevelMenu({
                 className="block text-xs leading-[1.45] font-normal text-meta-foreground"
               >
                 {disabled
-                  ? copy.levelHints.guestManage
+                  ? copy.levelHints.guestViewOnly
                   : copy.levelHints[level]}
               </small>
             </span>

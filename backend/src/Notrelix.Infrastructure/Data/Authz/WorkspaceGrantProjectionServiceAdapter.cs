@@ -36,4 +36,19 @@ public sealed class WorkspaceGrantProjectionServiceAdapter : IWorkspaceGrantProj
         DateTimeOffset now,
         CancellationToken ct)
         => _projection.RevokeLeavingMemberGrantAsync(accountId, workspaceId, userId, now, ct);
+
+    public Task RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken ct)
+        => _projection.RevokeAccountGrantWhenLastWorkspaceLeftAsync(accountId, workspaceId, userId, now, ct);
+
+    public Task ClearCustomRoleAssignmentsAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        CancellationToken ct)
+        => _projection.ClearCustomRoleAssignmentsAsync(accountId, workspaceId, userId, ct);
 }

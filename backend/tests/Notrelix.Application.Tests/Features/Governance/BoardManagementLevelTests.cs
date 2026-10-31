@@ -99,7 +99,7 @@ public sealed class BoardManagementLevelTests
         Decide(action, kind, Editor()).Should().Be(AccessDecisionKind.Forbidden, $"an Editor cannot {command.Name}");
         Decide(action, kind, UnplacedMember()).Should().Be(AccessDecisionKind.Forbidden,
             "the Workspace default of an unplaced board is Editor, not Manager");
-        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Forbidden, "a Guest is capped at Editor");
+        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Forbidden, "a Guest is capped at Viewer");
         Decide(action, kind, Manager()).Should().Be(AccessDecisionKind.Allowed);
     }
 
@@ -112,7 +112,7 @@ public sealed class BoardManagementLevelTests
         action.Should().NotBe(PermissionAction.ManageBoard, $"{command.Name} edits content");
         Decide(action, kind, Editor()).Should().Be(AccessDecisionKind.Allowed);
         Decide(action, kind, UnplacedMember()).Should().Be(AccessDecisionKind.Allowed);
-        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Allowed, "a Guest edits content up to Editor");
+        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Forbidden, "a Guest is view-only (GOV-030)");
         Decide(action, kind, Commenter()).Should().Be(AccessDecisionKind.Forbidden);
     }
 
