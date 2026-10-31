@@ -27,6 +27,7 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.018_billing_usage.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.019_policy_helpers_migrator_only.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.020_support_role_no_content.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.021_billing_and_account_writes.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

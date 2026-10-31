@@ -18,3 +18,4 @@
 \i 018_billing_usage.sql
 \i 019_policy_helpers_migrator_only.sql
 \i 020_support_role_no_content.sql
+\i 021_billing_and_account_writes.sql
