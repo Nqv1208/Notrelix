@@ -94,7 +94,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             var code = request is IRequireFeature feature ? feature.FeatureCode : "unknown";
             return AccessDecision.Deny(
                 AccessDecisionKind.Forbidden,
-                $"Feature '{code}' is not enabled for this account or usage limit reached.");
+                $"Feature '{code}' is not enabled for this account or usage limit reached.",
+                AccessDenialCodes.FeatureNotEnabled);
         }
 
         return RefuseWriteOnArchived(facts, request) ?? AccessDecision.Allow();
@@ -202,12 +203,29 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
+        // Owner decision 2026-10-31: a custom role replaces the built-in workspace role (Owner is never
+        // replaced; the facts carry no role for an Owner). What the role adds or removes is applied where the
+        // decision reads the baseline; an explicit grant or Allow rule above/below still applies, and Deny
+        // outranks everything (decided above).
+        var custom = facts.CustomRole;
+        if (custom is not null)
+        {
+            role = custom.Base;
+        }
+
+        var actionName = permission.Action.ToString();
+        var removedByRole = custom is not null && custom.Removed.Contains(actionName);
+
         // GOV-028: Spaces are managed by workspace Owners/Admins anywhere, and by
         // an effective Space Admin within the Space's subtree. Creating a Board or
         // Page in a Space needs Editor level on that Space (GOV-027).
         if (permission.Resource?.Kind.Value == "workspaces.space")
         {
-            return EvaluateSpace(permission, facts, role);
+            var space = EvaluateSpace(permission, facts, role);
+            // A Space member entry is an explicit grant; only the baseline-derived level is removed.
+            return removedByRole && space.Kind == AccessDecisionKind.Allowed && facts.SpaceRole is null
+                ? AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.")
+                : space;
         }
 
         // Workspace deletion is never decided by a Board/Page/Space level: it is
@@ -240,6 +258,11 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
+            if (removedByRole && ExplicitRank(facts) < RequiredRank(permission.Action, boardDecided: true))
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
             return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
@@ -261,6 +284,11 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             // (DeletePage, only from the trash) needs Manager — see
             // RequiredRank. Both carry their own Governance vocabulary:
             // neither ManageBoard nor ManagePagePermission (ACL management).
+            if (removedByRole && ExplicitRank(facts) < RequiredRank(permission.Action, boardDecided: false))
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
             return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
@@ -283,6 +311,11 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
+            if (removedByRole && !facts.HasExplicitResourcePermission)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
             return GrantAwareAllow(request, facts, role, actorId);
         }
 
@@ -302,7 +335,26 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         // rules were evaluated first. A level-based cell has no level to read on another resource
         // kind and is denied, except that ViewBoard on a non-Board resource keeps its existing
         // member-wide read.
-        return WorkspaceRoleBaseline.Decide(role, permission.Action) switch
+        var baseline = WorkspaceRoleBaseline.Decide(role, permission.Action);
+        if (removedByRole)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
+        // An added action is a workspace-level one the base lacks; a Guest-based role is Guest-capped and
+        // an Owner-locked action is never carried (the role was validated on write, this keeps the rule
+        // even for stored data).
+        if (baseline == BaselineDecision.Deny
+            && custom is not null
+            && custom.Added.Contains(actionName)
+            && !string.Equals(custom.Base, "Guest", StringComparison.Ordinal)
+            && PermissionCatalog.TryGet(actionName, out var entry) && entry.CanAdd
+            && WorkspaceRoleBaseline.AppliesToResourceKind(permission.Action, permission.Resource?.Kind.Value))
+        {
+            return AccessDecision.Allow();
+        }
+
+        return baseline switch
         {
             BaselineDecision.Allow when WorkspaceRoleBaseline.AppliesToResourceKind(
                 permission.Action, permission.Resource?.Kind.Value) => AccessDecision.Allow(),
@@ -324,7 +376,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// </summary>
     public static EffectiveResourceAccess EvaluateEffectiveBoardAccess(AccessFacts facts)
     {
-        var role = facts.WorkspaceMemberRole;
+        var role = facts.CustomRole?.Base ?? facts.WorkspaceMemberRole;
         if (role is null || !facts.ResourceExists)
         {
             return EffectiveResourceAccess.None;
@@ -354,6 +406,18 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         }
 
         return best;
+    }
+
+    /// <summary>The level only explicit sources give (a resource grant, board membership); a role never removes these.</summary>
+    private static int ExplicitRank(AccessFacts facts)
+    {
+        var rank = 0;
+        if (facts.HasExplicitResourcePermission || facts.ActiveResourcePermissionRank > 0)
+        {
+            rank = Math.Max(facts.ActiveResourcePermissionRank ?? 0, ViewerRank);
+        }
+
+        return facts.ResourceMemberRole is { } boardRole ? Math.Max(rank, BoardRoleRank(boardRole)) : rank;
     }
 
     private static EffectiveResourceAccess Higher(EffectiveResourceAccess current, EffectiveResourceAccess candidate) =>

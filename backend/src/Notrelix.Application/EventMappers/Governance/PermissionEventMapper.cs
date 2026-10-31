@@ -4,8 +4,7 @@ namespace Notrelix.Application.EventMappers.Governance;
 
 public sealed class PermissionEventMapper :
     IntegrationEventMapperBase<ResourcePermissionGrantedDomainEvent, ResourcePermissionGrantedIntegrationEvent>,
-    IIntegrationEventMapper<ResourcePermissionRevokedDomainEvent, ResourcePermissionRevokedIntegrationEvent>,
-    IIntegrationEventMapper<CustomRoleAssignedDomainEvent, CustomRoleAssignedIntegrationEvent>
+    IIntegrationEventMapper<ResourcePermissionRevokedDomainEvent, ResourcePermissionRevokedIntegrationEvent>
 {
     public override ResourcePermissionGrantedIntegrationEvent? Map(ResourcePermissionGrantedDomainEvent domainEvent)
     {
@@ -44,22 +43,6 @@ public sealed class PermissionEventMapper :
         );
     }
 
-    public CustomRoleAssignedIntegrationEvent? Map(CustomRoleAssignedDomainEvent domainEvent)
-    {
-        return new CustomRoleAssignedIntegrationEvent(
-            EventId: Guid.CreateVersion7(),
-            AccountId: domainEvent.AccountId,
-            RoleId: domainEvent.RoleId,
-            WorkspaceId: domainEvent.WorkspaceId,
-            RoleName: string.Empty,
-            UserId: domainEvent.MemberId,
-            CorrelationId: domainEvent.EventId,
-            ActorUserId: domainEvent.AssignedBy,
-            CausationId: null,
-            OccurredAt: domainEvent.OccurredAt
-        );
-    }
-
     IReadOnlyList<IntegrationEventMapping> IIntegrationEventMapper.Map(IDomainEvent domainEvent)
     {
         if (domainEvent is ResourcePermissionGrantedDomainEvent e1)
@@ -70,11 +53,6 @@ public sealed class PermissionEventMapper :
         if (domainEvent is ResourcePermissionRevokedDomainEvent e2)
         {
             var mapped = Map(e2);
-            if (mapped is not null) return [new IntegrationEventMapping(mapped)];
-        }
-        if (domainEvent is CustomRoleAssignedDomainEvent e3)
-        {
-            var mapped = Map(e3);
             if (mapped is not null) return [new IntegrationEventMapping(mapped)];
         }
         return [];

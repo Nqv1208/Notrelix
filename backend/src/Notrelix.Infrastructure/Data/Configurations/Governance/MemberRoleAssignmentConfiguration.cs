@@ -18,6 +18,7 @@ public class MemberRoleAssignmentConfiguration : IEntityTypeConfiguration<Member
 
         builder.HasIndex(x => x.MemberId).HasDatabaseName("idx_member_role_assignments_member_id");
         builder.HasIndex(x => x.CustomRoleId).HasDatabaseName("idx_member_role_assignments_role_id");
-        builder.HasIndex(x => new { x.MemberId, x.CustomRoleId }).IsUnique().HasDatabaseName("idx_member_role_assignments_unique");
+        // One role per person per workspace (owner decision 2026-10-31).
+        builder.HasIndex(x => new { x.WorkspaceId, x.MemberId }).IsUnique().HasDatabaseName("idx_member_role_assignments_unique");
     }
 }

@@ -16,6 +16,9 @@ public enum AccessDecisionKind
 public static class AccessDenialCodes
 {
     public const string EmailNotConfirmed = "auth.email_not_confirmed";
+
+    /// <summary>The plan does not include the feature the request needs, or its limit is reached.</summary>
+    public const string FeatureNotEnabled = "plan.feature_not_enabled";
 }
 
 public sealed record AccessDecision(AccessDecisionKind Kind, string? Message = null, string? Code = null)

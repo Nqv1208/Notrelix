@@ -223,6 +223,7 @@ public partial class ApplicationDbContext
     public DbSet<CustomRole> CustomRoles => Set<CustomRole>();
     public DbSet<CustomRolePermission> CustomRolePermissions => Set<CustomRolePermission>();
     public DbSet<MemberRoleAssignment> MemberRoleAssignments => Set<MemberRoleAssignment>();
+    public DbSet<CustomRoleChange> CustomRoleChanges => Set<CustomRoleChange>();
     public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
     public DbSet<WorkspacePolicy> WorkspacePolicies => Set<WorkspacePolicy>();
     public DbSet<PermissionTemplate> PermissionTemplates => Set<PermissionTemplate>();

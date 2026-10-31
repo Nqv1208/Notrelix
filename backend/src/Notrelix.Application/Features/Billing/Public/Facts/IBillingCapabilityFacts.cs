@@ -11,8 +11,11 @@ public static class BillingCapabilityCode
     public const string GuestSeat = "GUEST_SEAT";
     public const string StorageGb = "STORAGE_GB";
 
+    /// <summary>Custom roles are an Enterprise capability (owner decision 2026-10-31).</summary>
+    public const string CustomRoles = "CUSTOM_ROLES";
+
     /// <summary>Every capability Billing currently defines.</summary>
-    public static readonly IReadOnlyList<string> All = [AutomationRule, MemberSeat, GuestSeat, StorageGb];
+    public static readonly IReadOnlyList<string> All = [AutomationRule, MemberSeat, GuestSeat, StorageGb, CustomRoles];
 }
 
 /// <summary>

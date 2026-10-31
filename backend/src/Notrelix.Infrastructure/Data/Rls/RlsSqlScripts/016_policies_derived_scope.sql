@@ -23,10 +23,14 @@ SELECT ops.apply_scope_expression_policies('billing', 'subscription_items',
 SELECT ops.apply_scope_expression_policies('billing', 'usage_metric_history',
     'EXISTS (SELECT 1 FROM billing.usage_metrics m WHERE m.id = usage_metric_history.metric_id AND ops.has_workspace_access(m.account_id, m.workspace_id))');
 
--- Governance: a custom role's permissions belong to the role; assignments carry their own tenant columns.
+-- Governance: a custom role is Account-scoped (custom_roles carries account_id only) and its permissions belong
+-- to the role. An assignment is workspace-scoped, and an Account Owner/Admin also reaches every assignment of
+-- their account so archiving a role can move its holders in workspaces they are not a member of.
 SELECT ops.apply_scope_expression_policies('governance', 'custom_role_permissions',
-    'EXISTS (SELECT 1 FROM governance.custom_roles r WHERE r.id = custom_role_permissions.custom_role_id AND ops.has_workspace_access(r.account_id, r.workspace_id))');
-SELECT ops.apply_scoped_business_policies('governance', 'member_role_assignments', true);
+    'EXISTS (SELECT 1 FROM governance.custom_roles r WHERE r.id = custom_role_permissions.custom_role_id AND ops.has_account_access(r.account_id))');
+SELECT ops.apply_scope_expression_policies('governance', 'member_role_assignments',
+    'ops.has_workspace_access(account_id, workspace_id) OR ops.is_account_admin(account_id)');
+SELECT ops.apply_scoped_business_policies('governance', 'custom_role_changes', true);
 
 -- Identity: recovery codes are the person's own; a code belongs to a batch.
 SELECT ops.apply_user_owned_policies('identity', 'mfa_recovery_batches', 'user_id', true, true);

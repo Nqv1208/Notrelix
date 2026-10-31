@@ -57,7 +57,8 @@ public static class BillingPlanCatalog
             [BillingCapabilityCode.AutomationRule] = null,
             [BillingCapabilityCode.MemberSeat] = null,
             [BillingCapabilityCode.StorageGb] = 1000,
-            [BillingCapabilityCode.GuestSeat] = null
+            [BillingCapabilityCode.GuestSeat] = null,
+            [BillingCapabilityCode.CustomRoles] = null
         });
 
     public static readonly IReadOnlyList<BillingPlanDefinition> All = [Free, Pro, Enterprise];

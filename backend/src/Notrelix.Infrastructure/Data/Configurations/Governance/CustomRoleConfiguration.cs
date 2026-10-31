@@ -11,7 +11,8 @@ public class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.BaseRole).HasColumnName("base_role").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(128);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(512);
         builder.Property(x => x.IsSystem).HasColumnName("is_system").IsRequired();
@@ -30,6 +31,8 @@ public class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_custom_roles_workspace_id");
+        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken().HasDefaultValue(1L);
+
+        builder.HasIndex(x => x.AccountId).HasDatabaseName("idx_custom_roles_account_id");
     }
 }

@@ -100,6 +100,8 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
             (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
 
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IWorkspaceMemberFacts, Notrelix.Application.Features.Workspaces.Members.Services.WorkspaceMemberFacts>();
+        services.AddScoped<Notrelix.Application.Features.Governance.Roles.CustomRoleChangeRecorder>();
         services.AddScoped<Notrelix.Application.Common.Realtime.IAccessChangeSignal, Notrelix.Application.Common.Realtime.AccessChangeSignal>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();
         // Integration event collector (scoped per request)

@@ -81,6 +81,19 @@ public sealed record AccessFacts(
     /// caller. It is invisible to the caller, whatever their level: every action is the identical NotFound.
     /// </summary>
     public bool PrivateToAnotherPerson { get; init; }
+
+    /// <summary>
+    /// The active custom role the person holds in the request's workspace (never for an Owner), or null.
+    /// It replaces the built-in workspace role for the decision (owner decision 2026-10-31).
+    /// </summary>
+    public AccessCustomRole? CustomRole { get; init; }
 }
+
+/// <summary>A custom role as access facts: its fixed built-in base and the actions it adds and removes.</summary>
+public sealed record AccessCustomRole(
+    Guid RoleId,
+    string Base,
+    IReadOnlySet<string> Added,
+    IReadOnlySet<string> Removed);
 
 public sealed record AccessPermissionRule(int Priority, string Effect);

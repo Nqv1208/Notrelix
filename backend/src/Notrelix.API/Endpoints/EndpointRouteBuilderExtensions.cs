@@ -20,6 +20,7 @@ using Notrelix.API.Endpoints.Integrations.Calendar;
 using Notrelix.API.Endpoints.Integrations.Connections;
 using Notrelix.API.Endpoints.Governance.ResourcePermissions;
 using Notrelix.API.Endpoints.Governance.ShareLinks;
+using Notrelix.API.Endpoints.Governance.Roles;
 using Notrelix.API.Endpoints.Health;
 using Notrelix.API.Endpoints.Identity.ApiTokens;
 using Notrelix.API.Endpoints.Identity.Auth;
@@ -140,6 +141,7 @@ public static class EndpointRouteBuilderExtensions
         // Governance
         app.MapResourcePermissionsEndpoints();
         app.MapShareLinksEndpoints();
+        app.MapCustomRoleEndpoints_();
 
         // Automation
         app.MapRulesEndpoints();

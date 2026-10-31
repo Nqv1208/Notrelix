@@ -41,7 +41,14 @@ public static class ResourceVisibilityQuery
           SELECT w.account_id FROM workspace.workspaces w
            WHERE w.id = @workspace_id AND w.deleted_at IS NULL),
         member AS MATERIALIZED (
-          SELECT wm.role FROM workspace.workspace_members wm JOIN ws ON ws.account_id = wm.account_id
+          SELECT COALESCE(
+                   CASE WHEN wm.role <> 'Owner' THEN (
+                     SELECT cr.base_role FROM governance.member_role_assignments a
+                       JOIN governance.custom_roles cr ON cr.id = a.custom_role_id
+                      WHERE a.account_id = wm.account_id AND a.workspace_id = @workspace_id AND a.member_id = @user_id
+                        AND cr.account_id = wm.account_id AND cr.status = 'Active' LIMIT 1) END,
+                   wm.role) AS role
+            FROM workspace.workspace_members wm JOIN ws ON ws.account_id = wm.account_id
            WHERE wm.workspace_id = @workspace_id AND wm.user_id = @user_id AND wm.status = 'Active'
            LIMIT 1),
         user_teams AS MATERIALIZED (
