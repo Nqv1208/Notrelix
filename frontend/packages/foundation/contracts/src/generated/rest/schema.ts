@@ -3465,6 +3465,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/move-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who gains and who loses a board if it is placed in another space, and who would be left with unfinished items */
+        get: operations["WorkManagement.Boards.GetMoveImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/sharing/private": {
         parameters: {
             query?: never;
@@ -6345,6 +6362,7 @@ export interface components {
             spaceId?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            addUserIds?: string[] | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardMemberRoleRequest": {
             role?: string | null;
@@ -7716,6 +7734,45 @@ export interface components {
             itemCount?: number;
             /** Format: int32 */
             filteredCount?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto": {
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            targetSpaceId?: string | null;
+            targetSpaceName?: string | null;
+            unchanged?: boolean;
+            /** Format: int32 */
+            losingCount?: number | null;
+            /** Format: int32 */
+            gainingCount?: number;
+            everyoneGains?: boolean;
+            everyoneLoses?: boolean;
+            /** Format: int32 */
+            targetPeople?: number;
+            stranded?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto"][] | null;
+            /** Format: int32 */
+            strandedCount?: number;
+            /** Format: int32 */
+            strandedItems?: number;
+            /** Format: int32 */
+            strandedOverdue?: number;
+            keptNames?: string[] | null;
+            /** Format: int32 */
+            keptCount?: number;
+            /** Format: int32 */
+            keptTeamCount?: number;
+            /** Format: int64 */
+            boardVersion?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            /** Format: int32 */
+            items?: number;
+            /** Format: int32 */
+            overdue?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto": {
             /** Format: uuid */
@@ -16951,6 +17008,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetMoveImpact": {
+        parameters: {
+            query?: {
+                targetSpaceId?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto"];
                 };
             };
         };

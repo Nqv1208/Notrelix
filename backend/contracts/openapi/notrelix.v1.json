@@ -13887,6 +13887,55 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/move-impact": {
+      "get": {
+        "tags": [
+          "WorkManagement.Boards",
+          "WorkManagement.Boards"
+        ],
+        "summary": "Who gains and who loses a board if it is placed in another space, and who would be left with unfinished items",
+        "operationId": "WorkManagement.Boards.GetMoveImpact",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "targetSpaceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/boards/{boardId}/sharing/private": {
       "post": {
         "tags": [
@@ -25385,6 +25434,14 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "addUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -29449,6 +29506,107 @@
             "format": "int32"
           },
           "filteredCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto": {
+        "type": "object",
+        "properties": {
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetSpaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "targetSpaceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "unchanged": {
+            "type": "boolean"
+          },
+          "losingCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "gainingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "everyoneGains": {
+            "type": "boolean"
+          },
+          "everyoneLoses": {
+            "type": "boolean"
+          },
+          "targetPeople": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stranded": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto"
+            },
+            "nullable": true
+          },
+          "strandedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "strandedItems": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "strandedOverdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "keptNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "keptCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "keptTeamCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "boardVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
             "type": "integer",
             "format": "int32"
           }

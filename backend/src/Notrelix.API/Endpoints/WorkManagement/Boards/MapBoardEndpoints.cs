@@ -27,6 +27,7 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoardAccess();
         boardGroup.MapGetBoardSharing();
         boardGroup.MapGetBoardLifecycleImpact();
+        boardGroup.MapGetBoardMoveImpact();
         boardGroup.MapMakeBoardPrivate();
         boardGroup.MapArchiveBoard();
         boardGroup.MapUnarchiveBoard();
