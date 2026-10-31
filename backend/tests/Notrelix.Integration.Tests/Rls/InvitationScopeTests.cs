@@ -141,9 +141,11 @@ public sealed class InvitationScopeTests : IAsyncLifetime
 
         var response = await CallAsync(c => c.GetAsync("/api/v1/invitations/pending"), unconfirmed);
 
-        (await response.Content.ReadAsStringAsync()).Should().NotContain(_a.InvitationEmail);
-        if (response.IsSuccessStatusCode)
-            (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetArrayLength().Should().Be(0);
+        // An empty list, not a refusal: the rail asks for this list on every load and must not show an error.
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().NotContain(_a.InvitationEmail);
+        System.Text.Json.JsonDocument.Parse(body).RootElement.GetArrayLength().Should().Be(0);
     }
 
     [Fact]

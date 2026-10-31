@@ -1,3 +1,5 @@
+using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -85,7 +87,45 @@ public class GetUserPendingInvitationsQueryHandlerTests : AcceptInvitationHandle
         IdentityUserFactsMock.Verify(f => f.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // An unconfirmed address is answered with an empty list by the handler, so the pipeline must not refuse the
+    // request first (a 403 would show the rail an error where it should show "nothing waiting").
     [Fact]
-    public void TheQuery_RequiresAVerifiedEmail() =>
-        new GetUserPendingInvitationsQuery().Should().BeAssignableTo<Notrelix.Application.Common.Requests.Security.IRequireVerifiedEmail>();
+    public void TheQuery_DoesNotRequireAVerifiedEmail() =>
+        new GetUserPendingInvitationsQuery().Should().NotBeAssignableTo<Notrelix.Application.Common.Requests.Security.IRequireVerifiedEmail>();
+
+    private static string Digest(int n) => new string('a', 62) + n.ToString("x2");
+
+    [Fact]
+    public async Task TheList_HoldsTheNewestMaxPending_AndNoMore()
+    {
+        StoredUser();
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
+        var all = Enumerable.Range(0, InviteeInvitations.MaxPending + 5)
+            .Select(n => CreateInvitation(tokenHash: Digest(n), createdAt: TestNow.AddHours(-1 - n)))
+            .ToArray();
+        SetupInvitations(all);
+
+        var result = await Read();
+
+        result.Data!.Select(d => d.Id).Should().Equal(all.Take(InviteeInvitations.MaxPending).Select(i => i.Id));
+    }
+
+    [Fact]
+    public async Task InvitationsToOneWorkspaceFromOnePerson_EnterTheScopeAndReadTheNamesOnce()
+    {
+        StoredUser();
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
+        SetupInvitations(Enumerable.Range(0, 3).Select(n => CreateInvitation(tokenHash: Digest(n), createdAt: TestNow.AddHours(-1 - n))).ToArray());
+        RlsMock.Setup(r => r.IsSessionContextEnabled).Returns(true);
+        RlsMock.Setup(r => r.EnterTokenScopeAsync(It.IsAny<TokenScopeRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TokenScopeBinding(TestAccountId, TestWorkspaceId));
+        _actors.Setup(a => a.FindAsync(TestUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ActorSnapshot(TestUserId, "Ada", null));
+
+        var result = await Read();
+
+        result.Data.Should().HaveCount(3).And.OnlyContain(d => d.InviterName == "Ada");
+        RlsMock.Verify(r => r.EnterTokenScopeAsync(It.IsAny<TokenScopeRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        _actors.Verify(a => a.FindAsync(TestUserId, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

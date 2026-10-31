@@ -17,10 +17,12 @@ public record UserPendingInvitationDto(
 
 /// <summary>
 /// The pending, unexpired invitations addressed to the signed-in person's own address, read through the
-/// invitee policy of the database (RLS 019); an address that is not confirmed gets none. The address comes from
-/// the stored user, never from the token claim.
+/// invitee policy of the database (RLS 019). An address that is not confirmed is not refused: it gets an empty
+/// list (the handler and the policy both read nothing for it), so the rail never shows an error for it. The
+/// address comes from the stored user, never from the token claim. At most
+/// <see cref="InviteeInvitations.MaxPending"/> invitations come back, the newest first.
 /// </summary>
-public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest, IRequireVerifiedEmail;
+public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest;
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {

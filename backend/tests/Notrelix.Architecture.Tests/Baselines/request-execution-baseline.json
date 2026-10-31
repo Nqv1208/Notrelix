@@ -7587,7 +7587,7 @@
       "IReadRequest"
     ],
     "requiresPermission": false,
-    "requiresVerifiedEmail": true,
+    "requiresVerifiedEmail": false,
     "requiresSubscription": false,
     "requiresFeature": false,
     "expectedVersion": false,

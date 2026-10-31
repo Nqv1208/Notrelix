@@ -7,8 +7,9 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineI
 
 /// <summary>
 /// The invited person declines a pending invitation they see in their own list. The invitation must be
-/// addressed to their confirmed address: another address, an unconfirmed address, a repeat and an unknown
-/// id all answer the same NotFound. An invitation that expired meanwhile cannot be declined.
+/// addressed to their confirmed address and the person must be able to take part (as when listing and
+/// accepting): another address, an unconfirmed address, an account that cannot take part, a repeat and an
+/// unknown id all answer the same NotFound. An invitation that expired meanwhile cannot be declined.
 /// </summary>
 public record DeclineInvitationCommand(
     Guid InvitationId
@@ -40,7 +41,7 @@ public class DeclineInvitationCommandHandler : IRequestHandler<DeclineInvitation
         var userId = _requestContext.UserId;
         var user = await _identityUserFacts.FindByIdAsync(userId, ct);
 
-        if (user is not { EmailConfirmed: true })
+        if (user is not { EmailConfirmed: true, CanParticipate: true })
             throw new NotFoundException(nameof(WorkspaceInvitation), request.InvitationId);
 
         var invitation = await _invitees.OpenAsync(

@@ -4313,7 +4313,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get pending invitations for the current logged-in user */
+        /**
+         * Get pending invitations for the current logged-in user
+         * @description The pending, unexpired invitations addressed to the person's own confirmed email, newest first. At most 50 are returned (the newest). A person whose email is not confirmed gets an empty list, not an error.
+         */
         get: operations["Workspaces.Invitations.GetUserPendingInvitations"];
         put?: never;
         post?: never;

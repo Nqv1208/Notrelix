@@ -21,6 +21,9 @@ public sealed record InviteePendingInvitation(
 /// </summary>
 public sealed class InviteeInvitations
 {
+    /// <summary>The most invitations one person's list holds.</summary>
+    public const int MaxPending = 50;
+
     private readonly IWorkspaceDbContext _context;
     private readonly InvitationTokenScope _tokenScope;
     private readonly IActorLookupService _actorLookup;
@@ -35,7 +38,12 @@ public sealed class InviteeInvitations
         _actorLookup = actorLookup;
     }
 
-    /// <summary>Pending, unexpired invitations to an active workspace, newest first.</summary>
+    /// <summary>
+    /// Pending, unexpired invitations to an active workspace, newest first, at most <see cref="MaxPending"/>
+    /// (the contract of the list: the newest ones; an older one is answered once the newer ones are).
+    /// Each distinct workspace and inviter is read once per call, inside the token scope of the first
+    /// invitation that needs it.
+    /// </summary>
     public async Task<IReadOnlyList<InviteePendingInvitation>> ListPendingAsync(
         string email, DateTimeOffset now, CancellationToken ct)
     {
@@ -44,26 +52,32 @@ public sealed class InviteeInvitations
                         && i.Status == WorkspaceInvitationStatus.Pending
                         && i.ExpiresAt > now)
             .OrderByDescending(i => i.CreatedAt)
+            .Take(MaxPending)
             .ToListAsync(ct);
 
+        var workspaces = new Dictionary<Guid, Workspace?>();
+        var inviters = new Dictionary<Guid, string?>();
         var result = new List<InviteePendingInvitation>();
         foreach (var row in rows)
         {
-            // One invitation at a time: its token scope is what lets the workspace and the inviter be read.
-            var scoped = await _tokenScope.FindAsync(
-                new ParsedOneTimeToken(row.Token.Value, row.HashVersion), track: false, ct);
-            if (scoped is null)
-                continue;
+            if (!workspaces.ContainsKey(row.WorkspaceId) || !inviters.ContainsKey(row.InvitedBy))
+            {
+                // The invitation's own token scope is what lets its workspace and inviter be read.
+                if (!await _tokenScope.EnterAsync(new ParsedOneTimeToken(row.Token.Value, row.HashVersion), ct))
+                    continue;
 
-            var workspace = await _context.Workspaces.IgnoreQueryFilters().AsNoTracking()
-                .FirstOrDefaultAsync(
-                    w => w.Id == row.WorkspaceId && w.DeletedAt == null && w.Status == WorkspaceStatus.Active,
-                    ct);
-            if (workspace is null)
-                continue;
+                if (!workspaces.ContainsKey(row.WorkspaceId))
+                    workspaces[row.WorkspaceId] = await _context.Workspaces.IgnoreQueryFilters().AsNoTracking()
+                        .FirstOrDefaultAsync(
+                            w => w.Id == row.WorkspaceId && w.DeletedAt == null && w.Status == WorkspaceStatus.Active,
+                            ct);
 
-            var inviter = await _actorLookup.FindAsync(row.InvitedBy, ct);
-            result.Add(new InviteePendingInvitation(row, workspace.Name, workspace.Slug, inviter?.Name));
+                if (!inviters.ContainsKey(row.InvitedBy))
+                    inviters[row.InvitedBy] = (await _actorLookup.FindAsync(row.InvitedBy, ct))?.Name;
+            }
+
+            if (workspaces[row.WorkspaceId] is { } workspace)
+                result.Add(new InviteePendingInvitation(row, workspace.Name, workspace.Slug, inviters[row.InvitedBy]));
         }
 
         return result;
@@ -72,7 +86,8 @@ public sealed class InviteeInvitations
     /// <summary>
     /// Opens one pending invitation for the person to answer: reads it by id (null when it is not pending
     /// or not addressed to <paramref name="email"/>: the same answer as an unknown id), then enters the
-    /// invitation token scope and binds the person as its invitee. Returns the tracked invitation.
+    /// invitation token scope and binds the person as its invitee (null when the database refuses the bind).
+    /// Returns the tracked invitation.
     /// </summary>
     public async Task<WorkspaceInvitation?> OpenAsync(
         Guid invitationId, Guid userId, string email, CancellationToken ct)
@@ -89,7 +104,7 @@ public sealed class InviteeInvitations
         if (invitation is null)
             return null;
 
-        await _tokenScope.AdoptAsync(invitation, userId, ct);
-        return invitation;
+        // The database must bind this person as the invitee; if it refuses, nothing was opened.
+        return await _tokenScope.AdoptAsync(invitation, userId, ct) ? invitation : null;
     }
 }
