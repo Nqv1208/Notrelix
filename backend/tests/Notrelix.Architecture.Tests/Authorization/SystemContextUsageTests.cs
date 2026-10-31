@@ -33,6 +33,7 @@ public class SystemContextUsageTests
         "RestoreApprovalRequest.cs",
         "RestoreSavedFilter.cs",
         "RestorePageVersion.cs",
+        "PageSubtreeStore.cs",
         "TenantBootstrapStore.cs",
         "ResourceLocator.cs",
         "PostgresPageAuthorizationFacts.cs",

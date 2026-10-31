@@ -15,10 +15,24 @@ namespace Notrelix.Infrastructure.Documents.Pages;
 public sealed class PageSubtreeStore : IPageSubtreeStore
 {
     private readonly ApplicationDbContext _context;
+    private readonly ICurrentTenantContext _tenant;
 
-    public PageSubtreeStore(ApplicationDbContext context)
+    public PageSubtreeStore(ApplicationDbContext context, ICurrentTenantContext tenant)
     {
         _context = context;
+        _tenant = tenant;
+    }
+
+    /// <summary>
+    /// Every page of the workspace, deleted ones too, not tracked. A deleted page still sits in the chain
+    /// between a page and its ancestors, so a walk that stopped at it would be blind to what is above. The
+    /// filter that is bypassed also holds the tenant, so the account and workspace are stated here.
+    /// </summary>
+    private IQueryable<Page> PagesWithDeleted(Guid workspaceId)
+    {
+        var accountId = _tenant.RequireAccountId();
+        return _context.Pages.AsNoTracking().IgnoreQueryFilters()
+            .Where(p => p.AccountId == accountId && p.WorkspaceId == workspaceId);
     }
 
     public async Task LockTreeAsync(Guid workspaceId, CancellationToken cancellationToken)
@@ -49,8 +63,8 @@ public sealed class PageSubtreeStore : IPageSubtreeStore
         Guid? current = pageId;
         while (current is { } id && depth <= PageTreeRules.MaxDepth)
         {
-            var row = await _context.Pages.AsNoTracking()
-                .Where(p => p.Id == id && p.WorkspaceId == workspaceId)
+            var row = await PagesWithDeleted(workspaceId)
+                .Where(p => p.Id == id)
                 .Select(p => new { p.ParentId })
                 .FirstOrDefaultAsync(cancellationToken);
             if (row is null) break;
@@ -68,8 +82,8 @@ public sealed class PageSubtreeStore : IPageSubtreeStore
         Guid? current = pageId;
         while (current is { } id && ancestry.Count < WalkLimit && !ancestry.ContainsKey(id))
         {
-            var row = await _context.Pages.AsNoTracking()
-                .Where(p => p.Id == id && p.WorkspaceId == workspaceId && p.DeletedAt == null)
+            var row = await PagesWithDeleted(workspaceId)
+                .Where(p => p.Id == id)
                 .Select(p => new { p.ParentId })
                 .FirstOrDefaultAsync(cancellationToken);
             if (row is null) break;
