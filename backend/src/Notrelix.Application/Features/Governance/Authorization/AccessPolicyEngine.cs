@@ -233,12 +233,6 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            if (permission.Action == PermissionAction.UpdateItem
-                && string.Equals(facts.ResourceMemberRole, "Observer", StringComparison.Ordinal))
-            {
-                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
-            }
-
             return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank, actorId);
         }
 
@@ -497,7 +491,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     ///   (every Board/Page action but permission management).</item>
     /// </list>
     /// A Workspace Guest's level is capped at Editor whatever the source
-    /// (GOV-030). No source → <see cref="EffectiveResourceAccess.None"/>.
+    /// (GOV-030), and a read-only board role (Observer, Guest) caps the level at
+    /// Viewer whatever the source (NRX-003). No source → <see cref="EffectiveResourceAccess.None"/>.
     /// </summary>
     private static EffectiveResourceAccess ResolveResourceLevel(AccessFacts facts, string? role)
     {
@@ -533,6 +528,14 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             {
                 best = Higher(best, new EffectiveResourceAccess(EditorRank, EffectiveAccessBasis.WorkspaceDefault));
             }
+        }
+
+        // A read-only board role (Observer, Guest) is authoritative: the person is a viewer of this Board,
+        // not a member, whatever the Workspace default, the Space level, a Team or an explicit grant
+        // would give. Only the Workspace Owner (decided before this point) and a Deny rule sit outside it.
+        if (BoardRoleLevels.RankOf(facts.ResourceMemberRole) is > 0 and <= ViewerRank && best.Rank > ViewerRank)
+        {
+            return new EffectiveResourceAccess(ViewerRank, EffectiveAccessBasis.BoardMembership);
         }
 
         return guest && best.Rank > EditorRank ? best with { Rank = EditorRank } : best;

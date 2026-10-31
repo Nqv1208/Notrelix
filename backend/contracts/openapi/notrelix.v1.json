@@ -30423,6 +30423,13 @@
           },
           "isArchived": {
             "type": "boolean"
+          },
+          "viewers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -29,7 +29,7 @@ internal static class BoardListProjection
         var boardIds = boards.Select(b => b.Id).ToList();
 
         var memberCounts = await context.BoardMembers.AsNoTracking()
-            .Where(m => boardIds.Contains(m.BoardId))
+            .Where(m => boardIds.Contains(m.BoardId) && !BoardRoles.Viewers.Contains(m.Role))
             .GroupBy(m => m.BoardId)
             .Select(g => new { BoardId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);

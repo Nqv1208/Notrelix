@@ -8079,6 +8079,7 @@ export interface components {
             spaceId?: string | null;
             itemKeyPrefix?: string | null;
             isArchived?: boolean;
+            viewers?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"][] | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto": {
             /** Format: uuid */

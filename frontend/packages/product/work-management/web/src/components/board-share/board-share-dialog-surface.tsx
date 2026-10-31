@@ -277,6 +277,9 @@ function ShareBody({
   const g = copy.general;
   const general = view.general;
   const [expandedRows, setExpandedRows] = useState(false);
+  // A board Viewer reads and is not a member: listed apart.
+  const memberRows = view.rows.filter((row) => row.viewer !== true);
+  const viewerRows = view.rows.filter((row) => row.viewer === true);
   return (
     <>
       <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
@@ -445,30 +448,32 @@ function ShareBody({
               data-f="lbl"
               className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground"
             >
-              {fill(copy.people.label, { count: view.rows.length })}
+              {fill(copy.people.label, { count: memberRows.length })}
             </div>
-            {view.rows.length === 0 ? (
-              <p className="m-0 text-compact leading-[1.45] text-meta-foreground">
-                {copy.people.empty}
-              </p>
+            {memberRows.length === 0 ? (
+              viewerRows.length === 0 ? (
+                <p className="m-0 text-compact leading-[1.45] text-meta-foreground">
+                  {copy.people.empty}
+                </p>
+              ) : null
             ) : (
               <div
                 data-f="pl"
                 role="group"
                 tabIndex={0}
                 aria-label={fill(copy.people.label, {
-                  count: view.rows.length,
+                  count: memberRows.length,
                 })}
                 className={cn(
                   "-mx-2 flex flex-col px-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [@media(max-height:820px)]:overflow-y-auto",
-                  expandedRows || view.rows.length <= VISIBLE_ROWS
+                  expandedRows || memberRows.length <= VISIBLE_ROWS
                     ? "max-h-[min(248px,max(120px,calc(100vh-573px)))]"
                     : "max-h-[min(250px,max(120px,calc(100vh-573px)))]",
                 )}
               >
                 {(expandedRows
-                  ? view.rows
-                  : view.rows.slice(0, VISIBLE_ROWS)
+                  ? memberRows
+                  : memberRows.slice(0, VISIBLE_ROWS)
                 ).map((row) => (
                   <PersonRow
                     key={row.id}
@@ -480,7 +485,7 @@ function ShareBody({
                     onRemove={onRemove}
                   />
                 ))}
-                {!expandedRows && view.rows.length > VISIBLE_ROWS ? (
+                {!expandedRows && memberRows.length > VISIBLE_ROWS ? (
                   <button
                     data-f="plmore"
                     type="button"
@@ -491,12 +496,41 @@ function ShareBody({
                     )}
                   >
                     {fill(copy.people.more, {
-                      count: view.rows.length - VISIBLE_ROWS,
+                      count: memberRows.length - VISIBLE_ROWS,
                     })}
                   </button>
                 ) : null}
               </div>
             )}
+            {viewerRows.length > 0 ? (
+              <div className="mt-3" data-f="viewers">
+                <div
+                  data-f="vlbl"
+                  className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground"
+                >
+                  {fill(copy.people.viewersLabel, { count: viewerRows.length })}
+                </div>
+                <div
+                  role="group"
+                  aria-label={fill(copy.people.viewersLabel, {
+                    count: viewerRows.length,
+                  })}
+                  className="-mx-2 flex flex-col px-2"
+                >
+                  {viewerRows.map((row) => (
+                    <PersonRow
+                      key={row.id}
+                      copy={copy}
+                      row={row}
+                      menuOpen={menuFor === row.id}
+                      setMenu={(open) => setMenuFor(open ? row.id : null)}
+                      onChangeLevel={onChangeLevel}
+                      onRemove={onRemove}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 

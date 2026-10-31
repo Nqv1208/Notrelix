@@ -52,6 +52,7 @@ export const en = {
   },
   people: {
     label: "Permissions on this Board · {{count}}",
+    viewersLabel: "Viewers (read only) · {{count}}",
     empty: "No one has been added to this Board on their own.",
     you: "(you)",
     owner: "Board owner",
@@ -186,6 +187,7 @@ export const vi: BoardShareCopy = {
   },
   people: {
     label: "Quyền riêng trên board này · {{count}}",
+    viewersLabel: "Người xem (chỉ đọc) · {{count}}",
     empty: "Chưa có ai được thêm riêng vào board này.",
     you: "(bạn)",
     owner: "Chủ board",

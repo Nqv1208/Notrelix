@@ -32,6 +32,8 @@ export interface ShareRowView {
   /** The level is the person's by role and cannot be changed (the owner). */
   readonly fixed: boolean;
   readonly badge: "guest" | "outside" | null;
+  /** A board Viewer (read-only role): listed apart from the members. */
+  readonly viewer?: boolean;
   /** "31/01/2027"; `null` when the entry does not expire or the read has none. */
 }
 
@@ -576,6 +578,7 @@ export function buildSharingRows(
       level: shareLevelOf(entry.level),
       fixed: entry.owner || entry.you,
       badge: entry.kind === "guest" ? "outside" : null,
+      viewer: entry.memberRole === "Observer" || entry.memberRole === "Guest",
     } satisfies ShareRowView;
   });
 }

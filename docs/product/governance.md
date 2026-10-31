@@ -536,7 +536,7 @@ Manager   : + Board management (ManageBoard on a Board: settings and title, visi
             ManageBoardPermission, ManagePagePermission, ArchivePage
 ```
 
-Board content commands declare the content action they perform (groups: CreateItem/UpdateItem; labels, forms, templates, relations: CreateField/UpdateField/DeleteField; default view and saved filters: UpdateBoardView/CreateBoardView); `ManageBoard` on a Board is Board management only. Board-member semantics still apply on top of the level (for example an Observer cannot update items).
+Board content commands declare the content action they perform (groups: CreateItem/UpdateItem; labels, forms, templates, relations: CreateField/UpdateField/DeleteField; default view and saved filters: UpdateBoardView/CreateBoardView); `ManageBoard` on a Board is Board management only. A read-only board role caps the level (NRX-003, decided 2026-10-31): a person who holds the explicit Observer (or Guest) role on a Board is a Viewer of it and acts on nothing, whatever the Workspace default, the Space level, a Team or an explicit grant would give. Only the Workspace Owner (who reaches every Board) and a Deny rule sit outside the cap; to give such a person more, change their board role. A Viewer is not a member of the Board: they are not counted or listed with its members (the Board read lists them apart as viewers), and they are never offered as an assignee, a checklist-step assignee or a person-field value (the write is refused with `WorkManagement_BoardItem_AssigneeIsViewer`).
 
 # 23.4. GOV-028 — Space and Team management authority
 
@@ -575,7 +575,7 @@ Decided 2026-10-13. Every resource that lives inside a Board — Items (and thei
 - an explicit grant on the child itself still counts as a source of access in addition to the Board's sources;
 - a child accepts only Board-child actions (read, comment, item, field and view changes, Board management); any other action on a child is refused.
 
-Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer. Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
+Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer, and a read-only role is a cap on every other source, not only one source among them (GOV-027). Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
 
 Saved filters are Board children too (they resolve to their Board): a personal filter is its creator's alone, so another principal gets NotFound for it; a shared filter is visible to everyone who can view the Board and is changed by whoever holds the view-edit right (UpdateBoardView), while only its creator changes who sees it.
 

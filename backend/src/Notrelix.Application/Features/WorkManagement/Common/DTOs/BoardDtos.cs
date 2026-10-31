@@ -34,7 +34,9 @@ public record FullBoardDto(
     // Prefix of the board's Item keys ("WEB" in "WEB-12"); null when keys are plain numbers.
     string? ItemKeyPrefix = null,
     // The board is archived: it reads, every write is refused until a Manager unarchives it.
-    bool IsArchived = false
+    bool IsArchived = false,
+    // The board's Viewers (read-only roles): listed apart, never among the members.
+    List<BoardMemberDto>? Viewers = null
 );
 
 /// <summary>

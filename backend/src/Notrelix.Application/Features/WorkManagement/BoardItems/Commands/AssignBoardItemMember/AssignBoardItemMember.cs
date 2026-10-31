@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
 
@@ -62,6 +63,8 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         var visibleBoards = await _visibility.VisibleBoardIdsAsync(card.WorkspaceId, request.UserId, ct);
         if (!visibleBoards.Contains(card.BoardId))
             throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao việc. Hãy chia sẻ board với họ trước.");
+
+        await BoardAssigneeGuard.EnsureNotViewerAsync(_context, card.BoardId, request.UserId, ct);
 
         var alreadyAssigned = await _context.BoardItemMembers
             .AnyAsync(m => m.ItemId == card.Id && m.UserId == request.UserId, ct);

@@ -65,7 +65,9 @@ public sealed partial class ResourceAccessSummaryService
             {
                 userGrants.TryGetValue(personId, out var grant);
                 memberById.TryGetValue(personId, out var member);
-                var rank = Math.Max(grant?.Rank ?? 0, BoardRoleLevels.RankOf(member?.Role));
+                // A read-only board role caps the person at Viewer whatever else they hold (NRX-003).
+                var roleRank = BoardRoleLevels.RankOf(member?.Role);
+                var rank = roleRank is > 0 and <= 1 ? roleRank : Math.Max(grant?.Rank ?? 0, roleRank);
                 var guest = guestIds.Contains(personId);
                 var capped = guest && rank > GuestRankCap;
                 var shownRank = capped ? GuestRankCap : rank;

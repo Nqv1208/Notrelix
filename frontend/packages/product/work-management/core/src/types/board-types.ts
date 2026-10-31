@@ -22,6 +22,8 @@ export interface Board {
   linkedPageId?: string;
   fieldDefinitions: FieldDefinition[];
   members: BoardMember[];
+  /** The board's Viewers (read-only roles): never among the members. */
+  viewers?: BoardMember[];
   createdAt: string;
   updatedAt?: string;
   /** The board version of the read: a lifecycle write sends it back (a stale one changes nothing). */
@@ -136,6 +138,7 @@ export interface FullBoardDtoApi {
   columns?: BoardColumnDtoApi[];
   lists: ListDtoApi[];
   members: BoardMemberDtoApi[];
+  viewers?: BoardMemberDtoApi[] | null;
   /** The board is archived: it reads, every write is refused until a Manager unarchives it. */
   isArchived?: boolean;
   version?: number;
