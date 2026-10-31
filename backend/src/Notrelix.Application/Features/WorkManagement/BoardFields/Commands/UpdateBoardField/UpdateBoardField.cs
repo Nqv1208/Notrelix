@@ -37,6 +37,14 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
 
         // Ordinary PATCH changes name and settings only; the field type is not
         // patchable (WMREQ030–031). Omitted values are unchanged.
+        if (request.Name is not null && request.Name.Trim() != column.Name)
+        {
+            // Status, Assignee, Due date and the title are what the board's views stand on: they keep their names.
+            if (column.IsSystem)
+                throw new ConflictException("A system field cannot be renamed.", FieldNameGuard.SystemLockedCode);
+            await FieldNameGuard.EnsureNameFreeAsync(_context, column.BoardId, column.Id, request.Name, ct);
+        }
+
         if (request.Name is not null)
         {
             column.Rename(request.Name, _currentUser.UserId, now);

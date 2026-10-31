@@ -64,6 +64,7 @@ export function AddPropertyPopover({
   const [choices, setChoices] = useState(["", ""]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [nameTaken, setNameTaken] = useState(false);
   const errorId = useId();
   const nameId = useId();
   const typeId = useId();
@@ -78,12 +79,15 @@ export function AddPropertyPopover({
     setType("select");
     setChoices(["", ""]);
     setFailed(false);
+    setNameTaken(false);
   }
 
   async function submit() {
     if (!canSubmit) return;
     setBusy(true);
     setFailed(false);
+    setNameTaken(false);
+    let taken = false;
     const id = await onCreate({
       name: name.trim(),
       fieldType: type,
@@ -93,13 +97,20 @@ export function AddPropertyPopover({
             color: OPTION_COLORS[index % OPTION_COLORS.length] ?? "",
           }))
         : [],
-    }).catch(() => null);
+    }).catch((error: unknown) => {
+      taken =
+        typeof error === "object" &&
+        error !== null &&
+        (error as { code?: unknown }).code === "work-management.field.name-taken";
+      return null;
+    });
     setBusy(false);
     if (id) {
       setOpen(false);
       reset();
       onCreated(id);
-    } else setFailed(true);
+    } else if (taken) setNameTaken(true);
+    else setFailed(true);
   }
 
   return (
@@ -142,8 +153,8 @@ export function AddPropertyPopover({
               autoFocus
               value={name}
               maxLength={100}
-              aria-invalid={failed ? true : undefined}
-              aria-describedby={failed ? errorId : undefined}
+              aria-invalid={failed || nameTaken ? true : undefined}
+              aria-describedby={failed || nameTaken ? errorId : undefined}
               onChange={(event) => {
                 setName(event.target.value);
                 setFailed(false);
@@ -207,6 +218,15 @@ export function AddPropertyPopover({
                   {t.addOption}
                 </button>
               </fieldset>
+            ) : null}
+            {nameTaken ? (
+              <p
+                id={errorId}
+                role="alert"
+                className="m-0 text-xs text-danger-text"
+              >
+                {t.createPropertyNameTaken}
+              </p>
             ) : null}
             {failed ? (
               <p

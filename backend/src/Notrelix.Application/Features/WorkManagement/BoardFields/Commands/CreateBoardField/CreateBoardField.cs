@@ -42,6 +42,9 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             return Result<Guid>.Failure(new ApplicationError(
                 "work.board-field.unknown-type", $"Unknown field type '{request.FieldType}'.", ApplicationErrorType.Validation));
 
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            await FieldNameGuard.EnsureNameFreeAsync(_context, board.Id, null, request.Name, ct);
+
         var now = _dateTimeProvider.UtcNow;
         var position = await _placement.ResolveAsync(
             new WorkOrderingScope(WorkOrderingScopeKind.BoardFields, board.Id),

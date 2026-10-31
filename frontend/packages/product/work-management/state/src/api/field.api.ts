@@ -50,6 +50,14 @@ export function createColumnApi(client: NotrelixClient) {
       );
     },
 
+    /** The version the field has now; a field write names it so a stale one is refused. */
+    async versionOf(boardId: string, columnId: string): Promise<number> {
+      const schema = await api.get<{
+        fields?: readonly { id: string; version?: number | null }[] | null;
+      }>(`/boards/${boardId}/schema`);
+      return schema?.fields?.find((field) => field.id === columnId)?.version ?? 0;
+    },
+
     async updateColumn(input: UpdateColumnInput): Promise<void> {
       // The field type is not patchable (SPEC WMREQ031); name and settings only.
       const body: UpdateFieldBody = {
@@ -57,6 +65,7 @@ export function createColumnApi(client: NotrelixClient) {
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
+        expectedVersion: await this.versionOf(input.boardId, input.columnId),
       };
       await api.patch<void>(
         endpoints.boardFields.detail(input.boardId, input.columnId),
@@ -67,7 +76,10 @@ export function createColumnApi(client: NotrelixClient) {
     },
 
     async deleteColumn(boardId: string, columnId: string): Promise<void> {
-      await api.delete<void>(endpoints.boardFields.detail(boardId, columnId));
+      const version = await this.versionOf(boardId, columnId);
+      await api.delete<void>(
+        `${endpoints.boardFields.detail(boardId, columnId)}?expectedVersion=${version}`,
+      );
     },
   };
 }

@@ -28,6 +28,15 @@ import type { TaskDetailCallbacks, TaskDetailData } from "./task-detail-types";
  * following, sub-items and the people a comment can mention. A host spreads
  * `detailData` and `callbacks` into the sheet's own.
  */
+/** True when the server refused a field name that another field of the board already has. */
+export function isFieldNameTaken(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "work-management.field.name-taken"
+  );
+}
+
 export function useItemSheetExtras(card: CardDetail): {
   readonly detailData: Pick<
     TaskDetailData,
@@ -118,7 +127,11 @@ export function useItemSheetExtras(card: CardDetail): {
       onCreateField: (input) =>
         createField(input).then(
           (id) => id,
-          () => null,
+          (error: unknown) => {
+            // A taken name is told inline in the form; any other failure is the generic retry.
+            if (isFieldNameTaken(error)) throw error;
+            return null;
+          },
         ),
     },
   };

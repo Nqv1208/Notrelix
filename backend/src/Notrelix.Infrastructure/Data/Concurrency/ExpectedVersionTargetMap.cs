@@ -14,10 +14,15 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveChild
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel;
+using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DeleteBoardItem;
@@ -168,6 +173,7 @@ public sealed class ExpectedVersionTargetMap
     private const string ApprovalRequestKind = "work-management.approval-request";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
+    private const string LabelKind = "work-management.label";
     private const string BoardGroupKind = "work-management.board-group";
     private const string BoardViewKind = "work-management.board-view";
     private const string BoardItemKind = "work-management.board-item";
@@ -217,6 +223,9 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateBoardVisibilityCommand)] = new(BoardKind, typeof(Board)),
         [typeof(RemoveBoardMemberCommand)] = new(BoardKind, typeof(Board)),
         [typeof(UpdateBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(DeleteBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(UpdateLabelCommand)] = new(LabelKind, typeof(Label)),
+        [typeof(DeleteLabelCommand)] = new(LabelKind, typeof(Label)),
         [typeof(MoveBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(AddFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(MoveFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
@@ -256,6 +265,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(SetBoardItemReminderCommand)] = new(BoardItemKind, typeof(BoardItem)),
         // Work Management — checklists; item mutations are guarded by the owning Checklist
         [typeof(UpdateChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
+        [typeof(DeleteChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(MoveChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(CreateChecklistItemCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(MoveChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
