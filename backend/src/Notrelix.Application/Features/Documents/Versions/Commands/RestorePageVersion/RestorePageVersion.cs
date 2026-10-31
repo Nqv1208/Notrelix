@@ -97,7 +97,7 @@ public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersi
             }
 
             existing.Edit(block.Type, content, properties, userId, now);
-            set.Place(existing, block.ParentId, null, block.Position, userId, now);
+            set.PlaceAtCapturedKey(existing, block.ParentId, block.Position, userId, now);
         }
 
         foreach (var extra in live.Where(b => !keep.Contains(b.Id)))

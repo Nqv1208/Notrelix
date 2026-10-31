@@ -162,6 +162,23 @@ internal sealed class PageBlockSet
         return true;
     }
 
+    /// <summary>
+    /// Puts a block under <paramref name="parentId"/> at the key a stored version captured. Restoring a version
+    /// replays an authoritative tree, so the key is kept as it is (no sibling to name); a block already there is
+    /// a no-op. Returns whether the block moved.
+    /// </summary>
+    public bool PlaceAtCapturedKey(Block block, Guid? parentId, string position, Guid userId, DateTimeOffset now)
+    {
+        if (block.ParentId == parentId && block.Position.Value == position) return false;
+
+        var key = FractionalIndex.Create(position);
+        if (parentId is { } parent)
+            block.MoveUnder(PathTo(parent), key, userId, now);
+        else
+            block.MoveToRoot(key, userId, now);
+        return true;
+    }
+
     public static BlockContent? ContentOf(JsonElement? content) =>
         content is { } value ? BlockContent.Create(JsonValue.Create(value.GetRawText())) : null;
 
