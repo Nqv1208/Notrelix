@@ -2,6 +2,7 @@ using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Exceptions;
+using Notrelix.Application.Common.Idempotency;
 using Notrelix.Infrastructure.Data.Concurrency;
 
 namespace Notrelix.Infrastructure.Data;
@@ -21,6 +22,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
     private readonly Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? _orderingMetrics;
     private readonly IRequestRollbackCompensations? _compensations;
+    private readonly IIdempotencyExecutionContext? _idempotency;
 
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
@@ -30,8 +32,10 @@ public sealed class EfRequestDataSession : IRequestDataSession
         ExpectedVersionTargetMap? expectedVersionTargets = null,
         PipelineMetrics? metrics = null,
         Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null,
-        IRequestRollbackCompensations? compensations = null)
+        IRequestRollbackCompensations? compensations = null,
+        IIdempotencyExecutionContext? idempotency = null)
     {
+        _idempotency = idempotency;
         _compensations = compensations;
         _orderingMetrics = orderingMetrics;
         _dbContext = dbContext;
@@ -86,7 +90,10 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
             if (options.Access == RequestDataAccess.Transactional)
             {
-                ApplyExpectedVersion(options.ExpectedVersion);
+                // A replayed response ran no handler, so no aggregate is tracked and nothing changes:
+                // the version the first run carried no longer describes the resource.
+                if (_idempotency?.IsReplay != true)
+                    ApplyExpectedVersion(options.ExpectedVersion);
                 _logger.LogTrace("Saving changes");
                 using var saveChanges = PipelineActivitySource.Instance.StartActivity("data_session.save_changes");
                 try
