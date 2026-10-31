@@ -1016,7 +1016,10 @@ function PersonRow({
               )?.focus({ preventScroll: true });
             }}
             onFocusOutside={(event) => event.preventDefault()}
-            className="w-[300px] gap-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0"
+            className={cn(
+              "gap-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0",
+              locked ? "w-[340px]" : "w-[300px]",
+            )}
           >
             {onChangeLevel && row.level ? (
               <LevelMenu
@@ -1090,7 +1093,7 @@ function LevelMenu({
     }
   };
   const itemClass =
-    "mx-1 flex items-start gap-2.5 rounded-[7px] px-3 py-2 outline-none hover:bg-state-hover-strong focus-visible:bg-state-hover-strong";
+    "flex items-start gap-2.5 rounded-[7px] px-2.5 py-[7px] outline-none hover:bg-state-hover-strong focus-visible:bg-state-hover-strong";
   return (
     <div
       ref={menu}
@@ -1098,7 +1101,10 @@ function LevelMenu({
       role="menu"
       aria-label={fill(copy.menu.label, { name: row.name })}
       onKeyDown={onKeyDown}
-      className="box-content w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 text-nav font-normal shadow-popover dark:bg-card"
+      className={cn(
+        "box-border rounded-[12px] border border-line-strong bg-popover p-1 text-nav font-normal shadow-popover dark:bg-card",
+        locked ? "w-[340px]" : "w-[300px]",
+      )}
     >
       {LEVELS.map((level) => {
         const disabled =
@@ -1134,7 +1140,7 @@ function LevelMenu({
               </b>
               <small
                 data-f="loh"
-                className="block text-xs leading-[1.45] font-normal text-meta-foreground"
+                className="block text-xs leading-[1.4] font-normal text-meta-foreground"
               >
                 {locked
                   ? checked
@@ -1155,7 +1161,7 @@ function LevelMenu({
           </div>
         );
       })}
-      <div data-f="lsep" role="separator" className="my-1 h-px bg-line" />
+      <div data-f="lsep" role="separator" className="mx-0 my-1 h-px bg-line" />
       <div
         data-f="lo"
         role="menuitem"
@@ -1188,7 +1194,7 @@ function LevelMenu({
           </b>
           <small
             data-f="loh"
-            className="block text-xs leading-[1.45] font-normal text-meta-foreground"
+            className="block text-xs leading-[1.4] font-normal text-meta-foreground"
           >
             {locked
               ? copy.menu.removeLast
@@ -1200,16 +1206,20 @@ function LevelMenu({
       </div>
       {locked ? (
         <>
-          <div data-f="lsep" role="separator" className="my-1 h-px bg-line" />
+          <div
+            data-f="lsep"
+            role="separator"
+            className="mx-0 my-1 h-px bg-line"
+          />
           <div
             data-f="lnote"
-            className="flex flex-col gap-2 px-3 pt-2 pb-1.5 text-xs leading-[1.45] text-muted-foreground"
+            className="flex flex-col gap-2 px-2.5 pt-2 pb-1.5 text-[12.5px] leading-[1.45] text-muted-foreground"
           >
             <span>{copy.menu.lastNote}</span>
             <button
               type="button"
               onClick={onAddManager}
-              className={cn(BTN, "h-7 self-start px-2.5 text-xs", FOCUS)}
+              className={cn(BTN, "h-7 self-start px-2.5 text-[12.5px]", FOCUS)}
             >
               <Plus aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
               {copy.menu.addManager}
