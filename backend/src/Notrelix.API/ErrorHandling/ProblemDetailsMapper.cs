@@ -176,6 +176,13 @@ public static class ProblemDetailsMapper
         problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
 
+        // The stable rule that refused the request, additive to the category in errorCode, so a client
+        // branches on it instead of reading the detail text.
+        if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: var ruleCode })
+        {
+            problemDetails.Extensions["ruleCode"] = ruleCode;
+        }
+
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
         {
             foreach (var (key, value) in stale.Extensions)

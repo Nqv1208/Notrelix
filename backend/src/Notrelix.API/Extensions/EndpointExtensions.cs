@@ -165,6 +165,12 @@ public static class EndpointExtensions
         pd.Extensions["errorCode"] = errorCode;
         pd.Extensions["traceId"] = Activity.Current?.Id ?? "unknown";
 
+        // The specific refusal code, additive to the category in errorCode (see ProblemDetailsMapper).
+        if (!string.IsNullOrWhiteSpace(primary.Code) && !string.Equals(primary.Code, errorCode, StringComparison.Ordinal))
+        {
+            pd.Extensions["ruleCode"] = primary.Code;
+        }
+
         if (primary.RetryAfter is { } retryAfter)
         {
             var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));

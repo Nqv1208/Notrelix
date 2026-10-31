@@ -319,10 +319,12 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
 
       console.log("FAILED URL:", url, options.method);
       const problemCode = (data as Record<string, unknown> | null)?.errorCode;
+      const problemRule = (data as Record<string, unknown> | null)?.ruleCode;
       throw new AppError({
         kind,
         status: response.status,
         ...(typeof problemCode === "string" ? { code: problemCode } : {}),
+        ...(typeof problemRule === "string" ? { ruleCode: problemRule } : {}),
         message,
         details: data,
         validationErrors,
@@ -413,6 +415,9 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
         ...(typeof problem.errorCode === "string"
           ? { code: problem.errorCode }
           : {}),
+        ...(typeof problem.ruleCode === "string"
+          ? { ruleCode: problem.ruleCode }
+          : {}),
         message: extractErrorMessage(data),
         details: data,
         correlationId,
@@ -466,6 +471,9 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
         status: response.status,
         ...(typeof problem.errorCode === "string"
           ? { code: problem.errorCode }
+          : {}),
+        ...(typeof problem.ruleCode === "string"
+          ? { ruleCode: problem.ruleCode }
           : {}),
         message: extractErrorMessage(data),
         details: data,
