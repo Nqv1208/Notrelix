@@ -28,6 +28,8 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoardSharing();
         boardGroup.MapGetBoardLifecycleImpact();
         boardGroup.MapGetBoardMoveImpact();
+        boardGroup.MapGetBoardDuplicatePreview();
+        boardGroup.MapDuplicateBoard();
         boardGroup.MapMakeBoardPrivate();
         boardGroup.MapArchiveBoard();
         boardGroup.MapUnarchiveBoard();

@@ -64,5 +64,22 @@ public sealed partial class ResourceAccessSummaryService
             KeptTeams(entries));
     }
 
+    public async Task<NewBoardAudience> GetNewBoardAudienceAsync(Guid? spaceId, CancellationToken cancellationToken)
+    {
+        var context = _executionContext.Snapshot
+            ?? throw new SecurityMisconfigurationException("Execution context is not resolved for the new board audience.");
+        if (context.AccountId is not { } accountId || context.WorkspaceId is not { } workspaceId)
+            throw new SecurityMisconfigurationException("The new board audience requires account and workspace context.");
+        if (spaceId is null)
+            return new NewBoardAudience(true, new HashSet<Guid>());
+
+        var request = new ResourceAccessEntriesRequest(
+            accountId, workspaceId, BoardKind, Guid.NewGuid(), spaceId, [], nameof(PermissionAction.ViewBoard));
+        var entries = await _entries.ReadAsync(request, cancellationToken);
+        var admins = await _entries.ReadWorkspaceAdminsAsync(request, cancellationToken);
+        var people = entries.Reach.Where(r => r.Source == AccessReachSources.Space && !r.IsGuest).Select(r => r.UserId).Concat(admins).ToHashSet();
+        return new NewBoardAudience(false, people);
+    }
+
     private static int KeptTeams(ResourceAccessEntries entries) => entries.Grants.Count(g => g.SubjectType == "Team");
 }

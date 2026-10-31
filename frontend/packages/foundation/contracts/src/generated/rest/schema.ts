@@ -3482,6 +3482,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/duplicate-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count the items a copy would carry and the assignees it would drop */
+        get: operations["WorkManagement.Boards.GetDuplicatePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a board into a new one, with its items when asked
+         * @description Copies settings, fields, groups, labels and views; root items only when includeItems is true (at most 500, otherwise refused). Members and automations are not copied. Assignees without access to the copy are dropped from the copied items. All or nothing; a retry with the same idempotency key creates one copy.
+         */
+        post: operations["WorkManagement.Boards.Duplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/sharing/private": {
         parameters: {
             query?: never;
@@ -6354,6 +6391,12 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.DuplicateBoardRequest": {
+            name?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+            includeItems?: boolean;
+        };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest": {
             addUserIds?: string[] | null;
         };
@@ -7734,6 +7777,23 @@ export interface components {
             itemCount?: number;
             /** Format: int32 */
             filteredCount?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard.DuplicateBoardResult": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            droppedAssignees?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardDuplicatePreview.BoardDuplicatePreviewDto": {
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            maxItems?: number;
+            overLimit?: boolean;
+            /** Format: int32 */
+            assigneeCount?: number;
+            /** Format: int32 */
+            droppedAssignees?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto": {
             /** Format: uuid */
@@ -17033,6 +17093,75 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto"];
                 };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetDuplicatePreview": {
+        parameters: {
+            query?: {
+                spaceId?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardDuplicatePreview.BoardDuplicatePreviewDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.Duplicate": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.DuplicateBoardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard.DuplicateBoardResult"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

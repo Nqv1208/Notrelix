@@ -20,6 +20,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_PublicLinkNotSupported = "WorkManagement_Board_PublicLinkNotSupported";
     public const string WorkManagement_Board_LastManager = "WorkManagement_Board_LastManager";
     public const string WorkManagement_Board_MoveAddNotAffected = "WorkManagement_Board_MoveAddNotAffected";
+    public const string WorkManagement_Board_DuplicateTooManyItems = "WorkManagement_Board_DuplicateTooManyItems";
     public const string WorkManagement_Board_MoveAddGuest = "WorkManagement_Board_MoveAddGuest";
     public const string WorkManagement_Board_LastOwner = "WorkManagement_Board_LastOwner";
     public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";

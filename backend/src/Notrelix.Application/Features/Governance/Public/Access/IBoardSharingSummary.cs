@@ -23,7 +23,17 @@ public interface IBoardSharingSummary
     /// caller needs when the Workspace's members are not enumerated (a Board at the root).
     /// </summary>
     Task<BoardPlacementReach?> GetBoardPlacementReachAsync(Guid boardId, Guid? targetSpaceId, IReadOnlyCollection<Guid> candidateUserIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Who would reach a new, Workspace-visible Board placed in <paramref name="spaceId"/> with no entries of its own:
+    /// the people of that Space and the Workspace's Owners and Admins; at the root (null) every member who is not a Guest.
+    /// </summary>
+    Task<NewBoardAudience> GetNewBoardAudienceAsync(Guid? spaceId, CancellationToken cancellationToken);
 }
+
+/// <param name="EveryMember">Every Workspace member who is not a Guest reaches the Board (the Workspace root).</param>
+/// <param name="UserIds">The people reached through the Space, and Owners and Admins; empty when <paramref name="EveryMember"/>.</param>
+public sealed record NewBoardAudience(bool EveryMember, IReadOnlySet<Guid> UserIds);
 
 /// <param name="Everyone">The target is the Workspace root, which every member who is not a Guest reaches, so no list of who gains is kept.</param>
 /// <param name="EveryoneLoses">The Board sits at the Workspace root today, so every member not reached by the target or by an entry of the Board loses it; only the candidates are listed.</param>
