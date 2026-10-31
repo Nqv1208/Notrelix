@@ -69,7 +69,7 @@ public sealed class BlockEditingHandlerTests
     {
         var pageId = Guid.CreateVersion7();
         var create = new CreateBlockCommand(pageId, null, "Text", null, null, null, null);
-        var update = new Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock.DeleteBlockCommand(pageId, Guid.CreateVersion7());
+        var update = new Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock.DeleteBlockCommand(pageId, Guid.CreateVersion7(), null);
 
         create.Action.Should().Be(PermissionAction.UpdatePage);
         create.Action.Should().Be(update.Action);
