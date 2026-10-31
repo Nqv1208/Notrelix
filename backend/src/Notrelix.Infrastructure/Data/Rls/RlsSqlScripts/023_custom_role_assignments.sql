@@ -4,13 +4,13 @@
 -- Replaces the generic tenant write policies of member_role_assignments.
 -- =============================================================================
 
--- 6. A custom-role assignment attaches a role to an ACTIVE member of the workspace (member_id is the
--- workspace.workspace_members row id). Reading follows workspace access; writing needs a workspace
+-- 6. A custom-role assignment attaches a role to an ACTIVE member of the workspace (member_id is the person's
+-- user id: the Governance event that carries it is mapped to the integration event's UserId). Reading follows workspace access; writing needs a workspace
 -- administrator. Removing or reactivating a member clears their assignments through ops.clear_member_custom_roles (024).
 DO $$
 DECLARE
     v_admin text := 'ops.is_workspace_admin(account_id, workspace_id)';
-    v_target text := 'EXISTS (SELECT 1 FROM workspace.workspace_members m WHERE m.id = member_role_assignments.member_id '
+    v_target text := 'EXISTS (SELECT 1 FROM workspace.workspace_members m WHERE m.user_id = member_role_assignments.member_id '
         || 'AND m.account_id = member_role_assignments.account_id AND m.workspace_id = member_role_assignments.workspace_id '
         || 'AND m.status = ''Active'')';
 BEGIN

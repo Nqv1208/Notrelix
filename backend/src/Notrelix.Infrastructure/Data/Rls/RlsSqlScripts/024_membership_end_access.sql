@@ -25,11 +25,9 @@ BEGIN
         RAISE EXCEPTION 'Custom role clearing denied for the current scope' USING ERRCODE = '42501';
     END IF;
 
+    -- member_id is the person's user id (see 023).
     DELETE FROM governance.member_role_assignments a
-     USING workspace.workspace_members m
-     WHERE a.account_id = p_account AND a.workspace_id = p_workspace
-       AND m.account_id = p_account AND m.workspace_id = p_workspace AND m.user_id = p_user
-       AND a.member_id = m.id;
+     WHERE a.account_id = p_account AND a.workspace_id = p_workspace AND a.member_id = p_user;
 END;
 $$;
 

@@ -244,12 +244,9 @@ public sealed class AccessGrantProjectionService
             return;
         }
 
-        var memberRowIds = await _context.WorkspaceMembers
-            .Where(m => m.AccountId == accountId && m.WorkspaceId == workspaceId && m.UserId == userId)
-            .Select(m => m.Id)
-            .ToListAsync(ct);
+        // MemberId is the person's user id.
         var assignments = await _context.MemberRoleAssignments
-            .Where(a => a.AccountId == accountId && a.WorkspaceId == workspaceId && memberRowIds.Contains(a.MemberId))
+            .Where(a => a.AccountId == accountId && a.WorkspaceId == workspaceId && a.MemberId == userId)
             .ToListAsync(ct);
         _context.MemberRoleAssignments.RemoveRange(assignments);
     }

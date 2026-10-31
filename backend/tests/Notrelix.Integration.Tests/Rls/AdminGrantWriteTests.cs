@@ -273,13 +273,13 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
 
     private Task<string> AssignmentCountAsync(Guid userId) =>
         OwnerScalarAsync(
-            "SELECT count(*) FROM governance.member_role_assignments a JOIN workspace.workspace_members m ON m.id = a.member_id " +
-            "WHERE m.user_id = @u AND m.workspace_id = @w", ("u", userId), ("w", _a.WorkspaceId));
+            "SELECT count(*) FROM governance.member_role_assignments WHERE member_id = @u AND workspace_id = @w",
+            ("u", userId), ("w", _a.WorkspaceId));
 
     private Task AssignAsync(Guid userId) =>
         OwnerScalarAsync(
             "INSERT INTO governance.member_role_assignments (id, account_id, workspace_id, member_id, custom_role_id, assigned_at) " +
-            "SELECT gen_random_uuid(), account_id, workspace_id, id, gen_random_uuid(), now() FROM workspace.workspace_members " +
+            "SELECT gen_random_uuid(), account_id, workspace_id, user_id, gen_random_uuid(), now() FROM workspace.workspace_members " +
             "WHERE user_id = @u AND workspace_id = @w RETURNING 1", ("u", userId), ("w", _a.WorkspaceId));
 
     [Fact]
