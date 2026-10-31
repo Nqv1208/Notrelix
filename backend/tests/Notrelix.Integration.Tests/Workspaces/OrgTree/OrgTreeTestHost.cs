@@ -173,6 +173,8 @@ internal sealed class OrgTreeTestHost
             Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
+            Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
 
         services.AddScoped<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts, Notrelix.Application.Features.Identity.Users.Services.IdentityUserFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Domains.IAccountDomainFacts, Notrelix.Application.Features.Accounts.Members.AccountDomainFactsProvider>();
