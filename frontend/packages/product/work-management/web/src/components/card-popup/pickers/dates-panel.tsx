@@ -8,7 +8,7 @@ import {
   Clock,
   TriangleAlert,
 } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import { cn, useMediaQuery } from "@notrelix/ui-web";
 import { calendarParts } from "../../shared/item-display";
 import { zonedInstant } from "../../item-page/item-pickers";
 import { fillPopupCopy } from "../card-popup.copy";
@@ -96,6 +96,8 @@ function TimeSelect({
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // The phone artboard draws the time and its chevron only.
+  const phone = useMediaQuery("(max-width: 767px)");
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -124,10 +126,12 @@ function TimeSelect({
           "-mx-3 flex w-[calc(100%+24px)] items-center gap-2 pr-2.5 text-left disabled:opacity-60",
         )}
       >
-        <Clock
-          aria-hidden="true"
-          className="hidden size-4 shrink-0 text-meta-foreground md:block"
-        />
+        {phone ? null : (
+          <Clock
+            aria-hidden="true"
+            className="size-4 shrink-0 text-meta-foreground"
+          />
+        )}
         {disabled && placeholder ? (
           <span className="text-meta-foreground">{placeholder}</span>
         ) : (
