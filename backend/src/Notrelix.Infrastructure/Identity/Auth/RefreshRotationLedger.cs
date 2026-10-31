@@ -25,7 +25,12 @@ public sealed class RefreshRotationLedger : IRefreshRotationLedger
     }
 
     public async Task<bool> TryClaimAsync(string presentedHash, CancellationToken ct) =>
-        await _cache.IncrementAsync($"identity:refresh:claim:{presentedHash}", HoldTtl, ct) == 1;
+        await _cache.IncrementAsync(ClaimKey(presentedHash), HoldTtl, ct) == 1;
+
+    public Task ReleaseClaimAsync(string presentedHash, CancellationToken ct) =>
+        _cache.RemoveAsync(ClaimKey(presentedHash), ct);
+
+    private static string ClaimKey(string presentedHash) => $"identity:refresh:claim:{presentedHash}";
 
     public Task RecordSuccessorAsync(string presentedRefreshToken, string newRefreshToken, CancellationToken ct)
     {

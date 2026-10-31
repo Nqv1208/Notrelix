@@ -13,6 +13,9 @@ public interface IRefreshRotationLedger
     /// <returns><c>true</c> for the first claim of this credential: that request does the rotation.</returns>
     Task<bool> TryClaimAsync(string presentedHash, CancellationToken ct = default);
 
+    /// <summary>Frees the claim of a credential whose rotation never landed, so a retry can take it.</summary>
+    Task ReleaseClaimAsync(string presentedHash, CancellationToken ct = default);
+
     /// <summary>Holds the credential that replaced <paramref name="presentedRefreshToken"/> for the grace window.</summary>
     Task RecordSuccessorAsync(string presentedRefreshToken, string newRefreshToken, CancellationToken ct = default);
 

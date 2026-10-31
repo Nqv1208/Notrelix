@@ -100,7 +100,27 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         // the new credential once that rotation is committed.
         if (!await _ledger.TryClaimAsync(presentedHash, cancellationToken))
         {
-            return await ServeRacedRotationAsync(request.RefreshToken, presentedHash, cancellationToken);
+            var served = await ServeRacedRotationAsync(request.RefreshToken, presentedHash, cancellationToken);
+            if (served is not null)
+            {
+                return served;
+            }
+
+            // No rotation landed. When the session still holds this credential, the request that took the
+            // claim failed before its commit (a version conflict, say), so the person's retry must not
+            // wait on a claim nobody will complete: take it over. A late commit of the first request
+            // loses on the session's version, so two rotations cannot both land.
+            if (!await HoldsCredentialAsync(presentedHash, cancellationToken))
+            {
+                return Result<AuthResult>.Failure(InvalidRefreshTokenError);
+            }
+
+            await _ledger.ReleaseClaimAsync(presentedHash, cancellationToken);
+            if (!await _ledger.TryClaimAsync(presentedHash, cancellationToken))
+            {
+                return await ServeRacedRotationAsync(request.RefreshToken, presentedHash, cancellationToken)
+                    ?? Result<AuthResult>.Failure(InvalidRefreshTokenError);
+            }
         }
 
         var newRefreshToken = _jwtService.GenerateRefreshToken();
@@ -135,7 +155,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         return Result<AuthResult>.Failure(InvalidRefreshTokenError);
     }
 
-    private async Task<Result<AuthResult>> ServeRacedRotationAsync(string presentedToken, string presentedHash, CancellationToken cancellationToken)
+    /// <returns>The served credential, or <c>null</c> when no rotation of the presented one landed in time.</returns>
+    private async Task<Result<AuthResult>?> ServeRacedRotationAsync(string presentedToken, string presentedHash, CancellationToken cancellationToken)
     {
         for (var attempt = 0; attempt < RacePolls; attempt++)
         {
@@ -154,8 +175,13 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             }
         }
 
-        return Result<AuthResult>.Failure(InvalidRefreshTokenError);
+        return null;
     }
+
+    private async Task<bool> HoldsCredentialAsync(string presentedHash, CancellationToken cancellationToken) =>
+        await _context.Sessions
+            .AsNoTracking()
+            .AnyAsync(s => s.RefreshTokenHash.Hash == presentedHash && s.Status == SessionStatus.Active, cancellationToken);
 
     /// <summary>Answers a retry with the credential that replaced the presented one, if it is still the current one.</summary>
     private async Task<Result<AuthResult>> ServeGraceAsync(
