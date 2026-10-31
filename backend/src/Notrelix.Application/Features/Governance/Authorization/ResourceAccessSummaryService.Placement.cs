@@ -21,7 +21,12 @@ public sealed partial class ResourceAccessSummaryService
         var accountId = _executionContext.Snapshot?.AccountId
             ?? throw new SecurityMisconfigurationException("The placement reach requires the account context.");
 
-        var keepIds = entries.Reach.Where(r => r.Source != AccessReachSources.Space).Select(r => r.UserId).ToHashSet();
+        // Workspace Owners and Admins reach every Workspace-visible Board whatever its Space.
+        var adminIds = await _entries.ReadWorkspaceAdminsAsync(
+            new ResourceAccessEntriesRequest(
+                accountId, workspaceId, BoardKind, board.BoardId, spaceId, board.MemberUserIds, nameof(PermissionAction.ViewBoard)),
+            cancellationToken);
+        var keepIds = entries.Reach.Where(r => r.Source != AccessReachSources.Space).Select(r => r.UserId).Concat(adminIds).ToHashSet();
         var kept = keepIds.OrderBy(id => id).ToList();
         if (!workspaceVisible || spaceId == targetSpaceId)
             return new BoardPlacementReach(false, false, null, 0, 0, [], 0, kept, KeptTeams(entries));
@@ -39,10 +44,11 @@ public sealed partial class ResourceAccessSummaryService
             : targetEntries.Reach.Where(r => r.Source == AccessReachSources.Space && !r.IsGuest).Select(r => r.UserId).ToHashSet();
         var reachToday = entries.Reach.Select(r => r.UserId).ToHashSet();
         var currentSpace = entries.Reach.Where(r => r.Source == AccessReachSources.Space && !r.IsGuest).Select(r => r.UserId).ToHashSet();
+        var guestIds = entries.Reach.Where(r => r.IsGuest).Select(r => r.UserId).ToHashSet();
 
         var losing = everyone
             ? []
-            : (everyoneLoses ? candidateUserIds.Distinct() : currentSpace)
+            : (everyoneLoses ? candidateUserIds.Distinct().Where(id => !guestIds.Contains(id)) : currentSpace)
                 .Where(id => !keepIds.Contains(id) && !target.Contains(id))
                 .OrderBy(id => id)
                 .ToList();

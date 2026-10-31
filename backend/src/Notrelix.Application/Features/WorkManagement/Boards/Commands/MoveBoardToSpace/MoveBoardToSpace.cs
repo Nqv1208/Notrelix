@@ -38,6 +38,7 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardSharingSummary _sharing;
 
     public MoveBoardToSpaceCommandHandler(
         IWorkManagementDbContext context,
@@ -46,8 +47,10 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
+        IBoardSharingSummary sharing,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _sharing = sharing;
         _workspaceAccess = workspaceAccess;
         _changeLog = changeLog;
         _realtime = realtime;
@@ -80,16 +83,36 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
             .Where(m => m.BoardId == board.Id)
             .Select(m => m.UserId)
             .ToListAsync(ct)).ToHashSet();
-        foreach (var userId in (request.AddUserIds ?? []).Distinct().Where(id => !already.Contains(id)))
+        var toAdd = (request.AddUserIds ?? []).Distinct().Where(id => !already.Contains(id)).ToList();
+        if (toAdd.Count > 0)
         {
-            var access = await _workspaceAccess.ResolveAsync(board.WorkspaceId, userId, ct);
-            if (!access.CanAccess)
-                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
-                    "BoardMemberMustBelongToWorkspace",
-                    "Board member must belong to the same workspace.");
+            // Not a side door for granting access: only people this very move would cost the Board, who are
+            // active Workspace members and not Guests, are added; the set is recomputed here, not taken
+            // from the client's earlier read. The level and the log are those of adding a Board member.
+            var reach = await _sharing.GetBoardPlacementReachAsync(board.Id, request.SpaceId, toAdd, ct)
+                ?? throw new NotFoundException(nameof(BoardEntity), board.Id);
+            var losing = reach.LosingUserIds.ToHashSet();
+            foreach (var userId in toAdd)
+            {
+                var access = await _workspaceAccess.ResolveAsync(board.WorkspaceId, userId, ct);
+                if (!access.CanAccess)
+                    throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                        "BoardMemberMustBelongToWorkspace",
+                        "Board member must belong to the same workspace.");
+                if (access.IsGuest)
+                    throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                        Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Board_MoveAddGuest,
+                        "A guest cannot be added in a move.");
+                if (!losing.Contains(userId))
+                    throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                        Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Board_MoveAddNotAffected,
+                        "Only people who would lose the board in this move can be added.");
 
-            _context.BoardMembers.Add(BoardMemberEntity.Create(board.Id, userId, BoardRole.Member, _dateTimeProvider.UtcNow));
-            await _changeLog.MemberAddedAsync(board.Id, userId, BoardRole.Member, ct);
+                _context.BoardMembers.Add(BoardMemberEntity.Create(board.Id, userId, BoardRole.Member, _dateTimeProvider.UtcNow));
+                await _changeLog.MemberAddedAsync(board.Id, userId, BoardRole.Member, ct);
+            }
+
+            board.RecordAccessChange(_requestContext.UserId, _dateTimeProvider.UtcNow);
         }
 
         board.PlaceInSpace(request.SpaceId, _requestContext.UserId, _dateTimeProvider.UtcNow);

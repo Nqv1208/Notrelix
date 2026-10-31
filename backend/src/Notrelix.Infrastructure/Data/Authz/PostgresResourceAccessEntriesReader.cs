@@ -63,6 +63,13 @@ public sealed class PostgresResourceAccessEntriesReader : IResourceAccessEntries
         return new ResourceAccessEntries(grants, reach, spaceName, hasReadRules, spaceRoles);
     }
 
+    public async Task<IReadOnlyList<Guid>> ReadWorkspaceAdminsAsync(ResourceAccessEntriesRequest request, CancellationToken cancellationToken)
+    {
+        var admins = new List<Guid>();
+        await ReadAsync(ResourceAccessEntriesQuery.WorkspaceAdminsSql, request, reader => admins.Add(reader.GetGuid(0)), cancellationToken);
+        return admins;
+    }
+
     private async Task ReadAsync(
         string sql,
         ResourceAccessEntriesRequest request,
