@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
 
@@ -6,11 +7,20 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 
 public class RefreshTokenTests : IdentityHandlerTestBase
 {
+    private readonly Mock<IRefreshRotationLedger> _ledger = new();
+
+    public RefreshTokenTests()
+    {
+        _ledger.Setup(l => l.TryClaimAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+    }
+
     private RefreshTokenCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
         JwtServiceMock.Object,
-        DateTimeProviderMock.Object,
-        ClientMetadataMock.Object);
+        JwtBlacklistMock.Object,
+        _ledger.Object,
+        ActivityMock.Object,
+        DateTimeProviderMock.Object);
 
     [Fact]
     public async Task Handle_WhenValidSession_ReturnsNewTokens()
@@ -29,7 +39,10 @@ public class RefreshTokenTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         result.Data!.AccessToken.Should().Be("new-access-token");
         result.Data!.RefreshToken.Should().Be("new-refresh-token");
-        session.Status.Should().Be(SessionStatus.Revoked);
+        // The session keeps its id and stays active; only its credential is replaced.
+        session.Status.Should().Be(SessionStatus.Active);
+        session.RefreshTokenHash.Should().Be(RefreshTokenHash.Create("new-refresh-token"));
+        session.PreviousRefreshTokenHash.Should().Be(RefreshTokenHash.Create(TestRefreshToken).Hash);
     }
 
     [Fact]
