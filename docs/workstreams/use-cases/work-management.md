@@ -61,13 +61,13 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 0 | 5 | 0 | 1 |
-| O | Activity and event production | WM-015 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
+| O | Activity and event production | WM-015 | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 3 | 38 | 110 | 0 | 1 |
+| | Total | | 170 | 18 | 3 | 36 | 112 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -326,10 +326,10 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | HARDENING | tests and owner check; the form fill page refuses unsupported question types. |
 | UC-WM-N05 | Process, reject or mark spam on a submission | N | Editor (UpdateItem) | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal and abuse controls |
-| UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | INTEGRATING | Design E/L/Er; one-line-per-action proof; real e2e |
+| UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | HARDENING | Design E/L/Er; one-line-per-action proof; real e2e |
 | UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | INTEGRATING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
 | UC-WM-O03 | Expose events and projections to Analytics | O | Analytics (consumer) | partial | not applicable | not applicable | none | INTEGRATING | 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13). |
-| UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | INTEGRATING | Single-logical-event proof under retry |
+| UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | HARDENING | Single-logical-event proof under retry |
 | UC-WM-P01 | See a colleague's change live | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec for two users on one board and card, tests of the notifier and the adapter, and owner check. |
 | UC-WM-P02 | Keep editing safe while others edit | P | Editor | not applicable | yes | complete | none | HARDENING | real e2e spec, tests that an unsaved draft and a drag survive a frame, the table cell choice driven live, and owner check. |
 | UC-WM-P03 | Lose and regain the connection | P | Any viewer | yes | yes | partial | none | HARDENING | real e2e spec, reconnect and gap tests, the status measured in dark and at 1024, and owner check. |
@@ -2468,7 +2468,7 @@ Team capability WM-015.
 - Rules: product sections 113; D56; WMREQ118-119
 - Acceptance: Given a status change, then a history line shows who, what and when, newest first. Given an item the person cannot view, then the read is NotFound.
 - Evidence: BE GET /board-items/{id}/activity (Collaboration, adjacent) · FE `frontend/packages/product/work-management/web/src/components/card-detail/task-activity-tab.tsx`, `frontend/packages/product/work-management/web/src/components/card-detail/activity-words.ts` · Design Final-Detail `lich-su`; E, L, Er missing · Tests none found · Real e2e none
-- State: INTEGRATING — Design E/L/Er; one-line-per-action proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a due-date change and a field value other than status add no history line (no integration event for the dates); the page cap of 100 was not driven; design E, L and Er; tests and owner check. Evidence: real-stack check 2026-10-31: the card popup lists the history newest first, one line per action by name (created, renamed, status, assigned, checklist, archived, restored, deleted); a same-value write adds no line; a person without access and an unknown id get NotFound; a member reads; the archive line was missing because the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
 
 ### UC-WM-O02 Provide first-work-item facts for getting-started
 - Capability: O Activity and event production (WM-015)
@@ -2510,7 +2510,7 @@ Team capability WM-015.
 - Rules: product sections 113-114; WM-031; WMREQ118-123
 - Acceptance: Given a value set to the same value, then no event; given a retry, then one logical event.
 - Evidence: BE domain/integration events (38 contracts); no-op suppression tests exist per command · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — Single-logical-event proof under retry
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a replayed versioned write answers 204 where the first answered 200 with the version; the date change publishes no integration event; tests and owner check. Evidence: real-stack check 2026-10-31: a status write enrolled one logical event; a retry under the same key and a same-value write enrolled none; the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
 
 ## P. Realtime synchronization
 
