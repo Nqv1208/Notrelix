@@ -168,6 +168,13 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
         }
 
+        // One person's own view or saved filter is invisible to everyone else, the workspace Owner
+        // included: the identical NotFound for every action, decided before any level can differ.
+        if (facts.PrivateToAnotherPerson)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
         if (string.Equals(role, "Owner", StringComparison.Ordinal))
         {
             return AccessDecision.Allow();

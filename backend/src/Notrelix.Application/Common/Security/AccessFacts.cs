@@ -75,6 +75,12 @@ public sealed record AccessFacts(
     /// readable and read-only.
     /// </summary>
     public bool ChildInArchivedGroup { get; init; }
+
+    /// <summary>
+    /// The resource is one person's own (a Private view or saved filter) and that person is not the
+    /// caller. It is invisible to the caller, whatever their level: every action is the identical NotFound.
+    /// </summary>
+    public bool PrivateToAnotherPerson { get; init; }
 }
 
 public sealed record AccessPermissionRule(int Priority, string Effect);

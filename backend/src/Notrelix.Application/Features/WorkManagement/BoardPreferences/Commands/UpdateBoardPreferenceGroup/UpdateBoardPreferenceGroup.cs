@@ -11,7 +11,9 @@ public record UpdateBoardPreferenceGroupCommand(
     : ICommand<Result>, IWriteRequest, IPersonalBoardRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
+    // A person's own settings of a view are decided on the view (a Board child): a view that is not there, or
+    // is another person's private one, is the identical NotFound.
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
 }
 
 public class UpdateBoardPreferenceGroupCommandHandler : IRequestHandler<UpdateBoardPreferenceGroupCommand, Result>

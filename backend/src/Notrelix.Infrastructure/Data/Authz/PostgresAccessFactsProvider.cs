@@ -146,6 +146,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 BoardArchived = reader.GetBoolean(19),
                 BoardDeleted = reader.GetBoolean(20),
                 ChildInArchivedGroup = boardChild.InArchivedGroup,
+                PrivateToAnotherPerson = boardChild.PrivateToUserId is { } owner && owner != context.UserId,
             };
         }
 
