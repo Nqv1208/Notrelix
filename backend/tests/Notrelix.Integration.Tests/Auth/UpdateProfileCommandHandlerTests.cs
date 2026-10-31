@@ -127,7 +127,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
             CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain("User not found");
+        result.Errors.Should().Contain("Session is invalid or expired");
 
         await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Users.CountAsync()).Should().Be(0);

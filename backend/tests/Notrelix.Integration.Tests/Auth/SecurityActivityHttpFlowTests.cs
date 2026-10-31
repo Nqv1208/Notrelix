@@ -237,7 +237,14 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
         var other = sessions.EnumerateArray().First(s => !s.GetProperty("isCurrent").GetBoolean()).GetProperty("id").GetGuid();
 
         (await current.PostAsync($"/api/v1/auth/sessions/{other}/revoke", null)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await current.PostAsync("/api/v1/auth/sessions/revoke-others", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        // Ending every other device spends a single-use proof: no proof, no change.
+        (await current.PostAsync("/api/v1/auth/sessions/revoke-others", null)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var proof = await current.PostAsJsonAsync(
+            "/api/v1/auth/security/step-up/complete-password",
+            new { purpose = "RevokeOtherSessions", password = Password });
+        proof.StatusCode.Should().Be(HttpStatusCode.OK);
+        var token = JsonDocument.Parse(await proof.Content.ReadAsStringAsync()).RootElement.GetProperty("proofToken").GetString();
+        (await current.PostAsJsonAsync("/api/v1/auth/sessions/revoke-others", new { stepUpToken = token })).StatusCode.Should().Be(HttpStatusCode.OK);
 
         var page = await ActivityAsync(current);
         var types = Types(page);

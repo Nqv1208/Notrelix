@@ -121,7 +121,7 @@ public sealed class CredentialScopeTests : IAsyncLifetime
         var ok = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: raw);
         ok.StatusCode.Should().Be(HttpStatusCode.OK, await ok.Content.ReadAsStringAsync());
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", _a.User.Id))).Should().Be("1");
-        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status <> 'Active'", ("u", _a.User.Id))).Should().Be("1", "the old session was revoked");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status <> 'Active'", ("u", _a.User.Id))).Should().Be("0", "the session keeps its id and stays active; only its credential is replaced");
 
         var unknown = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: "refresh-unknown");
         unknown.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
