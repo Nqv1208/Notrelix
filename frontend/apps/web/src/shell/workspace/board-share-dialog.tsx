@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useCurrentUser } from "@notrelix/features-auth";
 import {
-  describeWorkspaceFailure,
   buildSpaceIndex,
   initialsFor,
   markToneFor,
@@ -275,7 +274,7 @@ export function BoardShareDialog({
       run().catch((error: unknown) => {
         if (
           subject &&
-          describeWorkspaceFailure(error).ruleCode === LAST_MANAGER_RULE
+          (error as { ruleCode?: string } | null)?.ruleCode === LAST_MANAGER_RULE
         ) {
           setRefused(subject);
           return;
