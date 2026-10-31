@@ -55,7 +55,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | H | Query, filter and sort foundation | WM-008 | 19 | 2 | 1 | 11 | 5 | 0 | 0 |
-| I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
+| I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 18 | 6 | 70 | 75 | 0 | 1 |
+| | Total | | 170 | 18 | 6 | 67 | 78 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -308,9 +308,9 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | IMPLEMENTING | BoardItems.List has no q parameter; search runs on the client. |
 | UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | INTEGRATING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
 | UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | DEFINED | label operators are in open PR #201, not on develop; no server-side label filter. |
-| UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | INTEGRATING | tests and owner check; virtualization (UC-WM-T01) |
-| UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | INTEGRATING | tests and owner check |
-| UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | tests and owner check; proof of the 200 cap; no selection across windows. |
+| UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; virtualization (UC-WM-T01) |
+| UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | HARDENING | tests and owner check; proof of the 200 cap; no selection across windows. |
 | UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; the checkbox on the card face is not on an artboard; the bar archives at once (no undo window as in the Table). |
 | UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | HARDENING | tests and owner check |
 | UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check; Q13 multi-assignee proof. |
@@ -2192,7 +2192,7 @@ Team capability WM-009.
 - Rules: product sections 50, 152; views pack section 5; WM-017; WMREQ139
 - Acceptance: (1) Given a Viewer or Commenter, when they select any cell, then no editor opens and the header lock explains why. (2) Given a title cell, when or double-click or Enter is pressed, then the title edits in place; single click opens the item (D63). (3) Given a column header, when sorted, then the registry comparator and null rule apply (empty last ascending, first descending) for every field type.
 - Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE `table-columns.ts`, `table-field-cell.tsx`, `table-field-editors.tsx` (custom-field columns, in-cell editors), `table-toolbar.tsx` · Design Final-Table, BC-Table, WM-Toolbar-Table · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; virtualization (UC-WM-T01). Built: every visible custom field of a type the table can show is a column with its type's cell editor, a lock in the header for calculated or uneditable types and for a viewer, and sorting by the type's rules.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; virtualization is UC-WM-T01. Built: every visible custom field of a type the table can show is a column with its type's cell editor, a lock in the header for calculated or uneditable types and for a viewer, and sorting by the type's rules. Evidence: real-stack check 2026-10-31: a board Observer sees locked headers that say 'Read only, you can't edit this field', a double click opens the card whose inputs are read-only with 'You can only view this card'; for an editor a double click edits the title in place (one PATCH) and a single click opens the item; the sort menu orders by Points with empty last ascending and first descending, commit 8240660a5.
 
 ### UC-WM-I02 Arrange columns (personal) and save to the shared view
 - Capability: I Table view (WM-009)
@@ -2206,7 +2206,7 @@ Team capability WM-009.
 - Rules: product sections 46, 153; Q5, D73
 - Acceptance: Given a hidden column, then only this person loses it. Given a Viewer, then 'Lưu vào view chung' is disabled with the reason.
 - Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE Cột menu with Alt+Arrow, "Lưu vào view chung" and "Về cột của view chung" (`table-toolbar.tsx`), personal hide, order and width in `use-board-table.ts` over the preference `columns` (`board-preference.api.ts`) · Design WM-Table-Columns, BC-View-Personal · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check. Built: hidden columns, column order and widths are kept per member on the board preference (opaque JSON up to 4 KB, migration `AddBoardPreferenceColumns`) and replace the shared view's for that member alone; an editor's "Lưu vào view chung" writes them to the shared view (with its version) and drops the personal copy only once that write went through, a viewer sees it disabled with the reason; "Về cột của view chung" drops them; a failed save keeps them with "Thử lại".
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: hidden columns, column order and widths are kept per member on the board preference (opaque JSON up to 4 KB, migration `AddBoardPreferenceColumns`) and replace the shared view's for that member alone; an editor's "Lưu vào view chung" writes them to the shared view (with its version) and drops the personal copy only once that write went through, a viewer sees it disabled with the reason; "Về cột của view chung" drops them; a failed save keeps them with "Thử lại". Evidence: real-stack check 2026-10-31: hiding Notes in the Columns menu is personal (the member kept it, a fresh browser context of the admin did not show it); Save to shared view wrote the shared view (POST views); for the Observer the item is disabled with 'Only editors can change the columns of the shared view', commit 8240660a5.
 
 ### UC-WM-I03 Select items across views and windows
 - Capability: I Table view (WM-009)
@@ -2220,7 +2220,7 @@ Team capability WM-009.
 - Rules: product sections 34; D32; Q8
 - Acceptance: Given 201 items in a group, when select all is pressed, then 200 are selected and the cap is stated. Given a refetch, then the selection holds.
 - Evidence: BE not applicable (client selection) · FE Table only; no Kanban selection; no window-spanning selection · Design BC-Bulk, BC-Large · Tests none found · Real e2e none
-- State: INTEGRATING — Kanban selection is missing; proof of the 200 cap.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the selection kept across a refetch and the over-200 lock were not driven. Evidence: real-stack check 2026-10-31: Select all on a 205-row group picked 200 and said 'At most 200 at a time. 5 more are not selected.'; a selection past 200 locks the actions and names the limit (built, not driven); the Kanban selection now exists (checkbox, Shift+click) and reuses the bar, commit 8240660a5.
 
 ## J. Kanban view
 
