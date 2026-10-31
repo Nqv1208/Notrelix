@@ -40,6 +40,9 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (source is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
+        if (source.IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_CannotModifyArchived, "Unarchive the item before duplicating it.");
+
         // A sub-item is copied with its parent, never alone: its parent path would point at the original parent.
         if (source.ParentItemId is not null)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_SubItemFollowsParentGroup, "Duplicate the parent item to copy a sub-item.");

@@ -32,7 +32,15 @@ public class DeleteBoardItemCommandHandler : IRequestHandler<DeleteBoardItemComm
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        item.Delete(_currentUser.UserId, _timeProvider.UtcNow);
+        var now = _timeProvider.UtcNow;
+        item.Delete(_currentUser.UserId, now);
+
+        // A parent takes its sub-items to the Trash with it, at the same instant, so a restore can bring back
+        // exactly those and not a sub-item deleted on its own earlier.
+        var children = await _context.BoardItems
+            .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null)
+            .ToListAsync(ct);
+        foreach (var child in children) child.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

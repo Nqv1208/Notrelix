@@ -59,7 +59,19 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
                 ct);
         }
 
+        var deletedWithItem = item.DeletedAt;
         item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow, replacement);
+
+        // The sub-items that went to the Trash with it come back with it; one deleted on its own earlier stays.
+        if (deletedWithItem is not null)
+        {
+            var children = await _context.BoardItems
+                .IgnoreQueryFilters()
+                .Where(child => child.AccountId == accountId && child.WorkspaceId == workspaceId
+                    && child.ParentItemId == item.Id && child.DeletedAt == deletedWithItem)
+                .ToListAsync(ct);
+            foreach (var child in children) child.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        }
         return Result.Success();
     }
 }
