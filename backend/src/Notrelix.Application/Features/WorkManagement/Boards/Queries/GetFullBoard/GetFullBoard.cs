@@ -147,9 +147,12 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .ToListAsync(cancellationToken);
         var emptyValue = JsonValue.Null();
         // One grouped count for the whole Board: live Items holding a non-empty value, by field.
+        // The board's own fields bound the scan to its values (ix_board_item_values_field_id); without it the
+        // join read every value of every board, and the row-level security check ran for each of them.
+        var boardFieldIds = fields.Select(f => f.Id).ToList();
         var valueCounts = await _context.BoardItemValues
             .AsNoTracking()
-            .Where(value => value.Value.Data != emptyValue)
+            .Where(value => boardFieldIds.Contains(value.FieldId) && value.Value.Data != emptyValue)
             .Join(
                 _context.BoardItems.AsNoTracking().Where(item => item.BoardId == request.BoardId && item.DeletedAt == null && !item.IsArchived),
                 value => value.ItemId,
