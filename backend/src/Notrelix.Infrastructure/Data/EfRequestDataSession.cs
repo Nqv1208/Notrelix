@@ -138,7 +138,16 @@ public sealed class EfRequestDataSession : IRequestDataSession
         {
             _logger.LogWarning("Rolling back data session");
             await RunCompensationsAsync(commitStarted);
-            await transaction.RollbackAsync(cancellationToken);
+            try
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            catch (InvalidOperationException) when (commitStarted)
+            {
+                // The commit itself failed (a deferred constraint, for one) and the provider already ended the
+                // transaction: there is nothing to roll back, and the original failure is the one to report.
+            }
+
             throw;
         }
     }
