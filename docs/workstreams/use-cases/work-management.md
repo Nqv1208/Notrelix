@@ -49,7 +49,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 |---|---|---|---|---|---|---|---|---|---|
 | A | Board lifecycle | WM-001 | 26 | 4 | 2 | 16 | 4 | 0 | 0 |
 | B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 2 | 1 | 17 | 2 | 0 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 2 | 1 | 5 | 14 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 3 | 9 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 22 | 13 | 90 | 44 | 0 | 1 |
+| | Total | | 170 | 22 | 13 | 78 | 56 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -243,28 +243,28 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B34 | Item deleted or archived by someone else while open | B | Any viewer (see UC-) | partial | yes | complete | none | INTEGRATING | actor name on the deleted notice needs the Q12 contract addition; live delivery needs open PR #193; real e2e. |
 | UC-WM-B35 | Recover from a target lost during commit | B | System | partial | not applicable | not applicable | none | INTEGRATING | the race is not covered by a test. |
 | UC-WM-B36 | See a bulk failure | B | Editor | yes | yes | complete | none | INTEGRATING | real e2e; proof that the failing item is named and the selection stays. |
-| UC-WM-C01 | Add a custom field | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; DateTime and file types deferred; design Er/T/M |
-| UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; stale-schema conflict proof |
+| UC-WM-C01 | Add a custom field | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; DateTime and file types deferred; design Er/T/M |
+| UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; stale-schema conflict proof |
 | UC-WM-C03 | Change a field default | C | Editor | yes | partial | complete | none | INTEGRATING | Test existing values unchanged; UI proof |
 | UC-WM-C04 | Archive or delete a custom field | C | Editor | partial | yes | none | work-board-management | HARDENING | Soft delete with 30-day restore (D76.5); dependents rejection; EV; design |
 | UC-WM-C05 | Restore an archived field | C | Editor | no | no | none | none | DEFINED | no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive. |
-| UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | INTEGRATING | API test: delete/edit system field refused |
+| UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | HARDENING | API test: delete/edit system field refused |
 | UC-WM-C07 | Manage Select / Status / Priority options | C | Editor (statusManageRoles on views) | yes | yes | partial | board-settings | HARDENING | design for the replacement picker; live refresh needs open PR #193. |
-| UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | INTEGRATING | API test 'last Done option'; e2e |
-| UC-WM-C09 | Define Text and Long text fields | C | Editor | yes | partial | complete | none | INTEGRATING | tests and owner check; Table cell editing is built. |
-| UC-WM-C10 | Define a Number field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; normalized-value proof |
-| UC-WM-C11 | Define Date and DateTime fields | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; tz-independent day proof; DateTime deferred |
-| UC-WM-C12 | Define Select and Multi-select fields | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; +N display |
-| UC-WM-C13 | Define a Person (People) field | C | Editor | yes | yes | complete | none | INTEGRATING | Guest picker no-email proof; real e2e |
-| UC-WM-C14 | Define a Link (and file) field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; absolute http(s) rule proof |
-| UC-WM-C15 | Define a Checkbox field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e |
+| UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | HARDENING | API test 'last Done option'; e2e |
+| UC-WM-C09 | Define Text and Long text fields | C | Editor | yes | partial | complete | none | HARDENING | tests and owner check; Table cell editing is built. |
+| UC-WM-C10 | Define a Number field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; normalized-value proof |
+| UC-WM-C11 | Define Date and DateTime fields | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; tz-independent day proof; DateTime deferred |
+| UC-WM-C12 | Define Select and Multi-select fields | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; +N display |
+| UC-WM-C13 | Define a Person (People) field | C | Editor | yes | yes | complete | none | HARDENING | Guest picker no-email proof; real e2e |
+| UC-WM-C14 | Define a Link (and file) field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; absolute http(s) rule proof |
+| UC-WM-C15 | Define a Checkbox field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e |
 | UC-WM-C16 | Status and Priority as specialized select types | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; status per board proof |
 | UC-WM-C17 | Keep one semantic contract per field type | C | Engineering (acceptance gate) | yes | yes | not applicable | none | INTEGRATING | fixed-dataset parity test (client vs server) for 12 types |
 | UC-WM-C18 | Relation field: reference items of another board | C | Editor | partial | no | none | none | IMPLEMENTING | Relations.* endpoints exist (create, list, delete, pause, resume) with no tests and no UI; no Relation field type exists. |
 | UC-WM-C19 | Mark a field required | C | Editor | no | no | none | none | DEFINED | no required flag, no enforcement on any write path; decided in D78.7. |
 | UC-WM-C20 | Define a Formula field | C | Editor | yes | yes | partial | none | INTEGRATING | Cycle error design; formula Er; real e2e |
 | UC-WM-C21 | Define a Rollup field | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e |
-| UC-WM-C22 | Create, rename, recolor and delete a label | C | Editor | partial | yes | complete | none | INTEGRATING | EV on update/delete; real e2e |
+| UC-WM-C22 | Create, rename, recolor and delete a label | C | Editor | partial | yes | complete | none | HARDENING | EV on update/delete; real e2e |
 | UC-WM-D01 | Validate a value against the current schema | D | System (every write path) | yes | partial | not applicable | none | HARDENING | Cross-board field-id rejection test |
 | UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | HARDENING | tests and owner check; conflict copy names no actor until the API carries one (Q12). |
 | UC-WM-D03 | Clear a value (explicit clear) | D | Editor | partial | partial | partial | none | HARDENING | Wire clear in UI; test omitted-date means unchanged |
@@ -1258,7 +1258,7 @@ Team capability WM-003.
 - Rules: product sections 15-22; WM-006, WM-007, WM-008; WMREQ026-028, WMREQ030
 - Acceptance: Given an Editor, when they add a Select field with 3 options, then the field shows as a column for everyone and each option has a stable id. Given an invalid default for a Number with a maximum, when saved, then it is rejected with the reason. Given a Viewer, then Add field is absent.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-fields.tsx`, useCreateItemField · Design Final-Settings `truong`/`them-truong`, WM-Field-Sheet(-Dem) · Tests `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; DateTime and file types deferred; design Er/T/M
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; field names are not unique on a board and formulas read by name (owner decision: unique names per board). Evidence: real-stack check 2026-10-31: fields of nine types created through the API, an empty name, a 101-char name and an unknown type refused (400); an Editor member created one, commit 6e59c53bb.
 
 ### UC-WM-C02 Rename a field or change its settings
 - Capability: C BoardField definitions (WM-003)
@@ -1272,7 +1272,7 @@ Team capability WM-003.
 - Rules: product sections 16, 20; WM-006; WMREQ026, WMREQ030-032, WMREQ110-113
 - Acceptance: Given a field renamed, then views, filters and automation referring to its key still work. Given an existing field, when the person looks for change type, then the UI says to create a new field.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE field panel; 'change type' says create new field · Design Final-Settings `truong`; WM-Field-Sheet · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; stale-schema conflict proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version, the same name changed nothing, a stale version answers 412 and kept the name, commit 6e59c53bb.
 
 ### UC-WM-C03 Change a field default
 - Capability: C BoardField definitions (WM-003)
@@ -1300,7 +1300,7 @@ Team capability WM-003.
 - Rules: product sections 124, 25; WM-009; D76.5; WMREQ035, WMREQ040, WMREQ110-113
 - Acceptance: Given a formula that references field F, when F is deleted, then the action is rejected naming the formula. Given a field deleted 5 days ago, when an Editor restores it, then its values return; after 30 days restore is refused.
 - Evidence: BE BoardFields.Delete = DELETE /boards/{boardId:guid}/fields/{fieldId:guid} -> DeleteBoardFieldCommand (`BoardFields/Commands/DeleteBoardField/DeleteBoardField.cs`) [- / Idem] · FE board-settings-field-delete; fieldArchive flag locked · Design none; needs delete-field confirm listing dependents (formula, view, form) · Tests `DeleteBoardFieldTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete field)
-- State: HARDENING — Soft delete with 30-day restore (D76.5); dependents rejection; EV; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; restore of a deleted field (UC-WM-C05) is not built. Evidence: real-stack check 2026-10-31: delete of a field answered 204 and the field left the schema; deleting a field a formula reads is refused (400) naming the formula, commit 6e59c53bb.
 
 ### UC-WM-C05 Restore an archived field
 - Capability: C BoardField definitions (WM-003)
@@ -1328,7 +1328,7 @@ Team capability WM-003.
 - Rules: product sections 23-24; WM-009; WMREQ029
 - Acceptance: Given a Created-at system field, when a Manager attempts delete via API, then refused.
 - Evidence: BE domain rule (Fields 102 tests); no API refusal test · FE read-only column header lock · Design WM-Field-Editors (locked, ƒx header lock) · Tests none found · Real e2e none
-- State: INTEGRATING — API test: delete/edit system field refused
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; renaming a system field is allowed, the catalog says edit is refused (owner decision: may Status, Assignee and Due date be renamed). Evidence: real-stack check 2026-10-31: deleting a system field is refused (400); renaming one is allowed today, commit 6e59c53bb.
 
 ### UC-WM-C07 Manage Select / Status / Priority options
 - Capability: C BoardField definitions (WM-003)
@@ -1342,7 +1342,7 @@ Team capability WM-003.
 - Rules: product sections 142-143, 148; WM-037, WM-038; D55; D65; WMREQ034-035, WMREQ074-075, WMREQ141
 - Acceptance: Given option "In Progress" renamed, then 40 items keep the option and show the new label.
 - Evidence: BE BoardFields.AddFieldOption = POST /boards/{boardId:guid}/fields/{fieldId:guid}/options -> AddFieldOptionCommand (`BoardFields/Commands/AddFieldOption/AddFieldOption.cs`) [EV / Idem]; BoardFields.RemoveFieldOption = DELETE /boards/{boardId:guid}/fields/{fieldId:guid}/options/{optionId:guid} -> RemoveFieldOptionCommand (`BoardFields/Commands/RemoveFieldOption/RemoveFieldOption.cs`) [EV / Idem]; BoardFields.UpdateFieldOption = PATCH /boards/{boardId:guid}/fields/{fieldId:guid}/options/{optionId:guid} -> UpdateFieldOptionCommand (`BoardFields/Commands/UpdateFieldOption/UpdateFieldOption.cs`) [EV / Idem]; BoardFields.MoveFieldOption = POST /boards/{boardId:guid}/fields/{fieldId:guid}/options/{optionId:guid}/move -> MoveFieldOptionCommand (`BoardFields/Commands/MoveFieldOption/MoveFieldOption.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/state/src/cache/field-option.ts`, StatusOptionForm (16 tests) · Design Final-Settings status/select; where-items-go dialog not drawn · Tests `FieldOptionCategoryTests.cs`, `RemoveFieldOptionTests.cs`, `WorkItemPlacementIntegrationTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (adds option)
-- State: HARDENING — design for the replacement picker; live refresh needs open PR #193.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: option added, renamed, moved; a duplicate name, a non-hex colour and an empty name refused; removing an option moved the items to the replacement, a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C08 Set a Status option's category
 - Capability: C BoardField definitions (WM-003)
@@ -1356,7 +1356,7 @@ Team capability WM-003.
 - Rules: product sections 148.1; WM-042; WMREQ034
 - Acceptance: Given a board with one Done option, when an Editor changes it to Review, then rejected with "last Done option".
 - Evidence: BE RemoveFieldOption/UpdateFieldOption (last Todo/Done rule) · FE menu entry disabled with reason (D55) · Design Final-Settings status (category) · Tests none found · Real e2e none
-- State: INTEGRATING — API test 'last Done option'; e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: changing the category of the last Done option is refused, commit 6e59c53bb.
 
 ### UC-WM-C09 Define Text and Long text fields
 - Capability: C BoardField definitions (WM-003)
@@ -1370,7 +1370,7 @@ Team capability WM-003.
 - Rules: product sections 19, 31; WM-007; WMREQ027-028, WMREQ037
 - Acceptance: Given a Text field with a limit of 10, when someone saves 11 characters, then the cell shows an inline reason and nothing is stored. Given the same text saved twice, then the version does not change.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem]; BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE sheet/page on develop; Table cell editors in PR #204 · Design WM-Field-Editors(-Dem) · Tests `BulkUpdateBoardItemsTests.cs`, `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — tests and owner check; Table cell editing is built.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C10 Define a Number field
 - Capability: C BoardField definitions (WM-003)
@@ -1384,7 +1384,7 @@ Team capability WM-003.
 - Rules: product sections 145; WM-007; WMREQ027-028
 - Acceptance: Given a Number field with range 0 to 100, when someone enters 101, then an inline error appears and nothing is stored. Given a display format of 2 decimals, then the stored value is not rounded.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE sheet/page; Table cells in PR #204 · Design WM-Field-Editors(-Dem) · Tests `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; normalized-value proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C11 Define Date and DateTime fields
 - Capability: C BoardField definitions (WM-003)
@@ -1398,7 +1398,7 @@ Team capability WM-003.
 - Rules: product sections 146, 138; WM-007; D76.5; WMREQ028
 - Acceptance: Given a Date field, when a day is saved, then the same day reads back in every time zone. Given an inverted start and due range, then it is rejected inline.
 - Evidence: BE Date field (UTC days) · FE ItemDatePicker; Table date cell in PR #204 (calendar only) · Design WM-Field-Editors(-Dem) (Date) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; tz-independent day proof; DateTime deferred
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C12 Define Select and Multi-select fields
 - Capability: C BoardField definitions (WM-003)
@@ -1412,7 +1412,7 @@ Team capability WM-003.
 - Rules: product sections 142-144; WM-037; WMREQ034
 - Acceptance: Given a Select option renamed, when the board is read, then items keep the same option id and show the new name. Given a Multi-select, when the same option is added twice, then the set holds it once.
 - Evidence: BE field options + UpdateFieldValue · FE sheet/page; Table cells in PR #204 · Design WM-Field-Editors(-Dem) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; +N display
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412; the board read now lists the options of a multi-select field, commit 6e59c53bb.
 
 ### UC-WM-C13 Define a Person (People) field
 - Capability: C BoardField definitions (WM-003)
@@ -1426,7 +1426,7 @@ Team capability WM-003.
 - Rules: product sections 139; WM-036, WM-040; D41; Q7; WMREQ022
 - Acceptance: Given a person without access to the board, when they are picked, then the write is refused with 'share the board first'. Given a Guest, then the picker lists only people on this board and no emails.
 - Evidence: BE UpdateFieldValue + AssignMember (view-access check) · FE ItemAssigneePicker; Guest board-only list unproven · Design WM-Field-Editors; BC-Create-320-Pickers (1000 people) · Tests none found · Real e2e none
-- State: INTEGRATING — Guest picker no-email proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C14 Define a Link (and file) field
 - Capability: C BoardField definitions (WM-003)
@@ -1440,7 +1440,7 @@ Team capability WM-003.
 - Rules: product sections 141; WM-007; D76.5; WMREQ027-028
 - Acceptance: Given a Link field, when a non-URL or a non-http scheme is entered, then it is rejected inline. Given a valid URL, then the cell shows the host.
 - Evidence: BE field value validation · FE link editor; file field deferred · Design WM-Field-Editors (Link) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; absolute http(s) rule proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C15 Define a Checkbox field
 - Capability: C BoardField definitions (WM-003)
@@ -1454,7 +1454,7 @@ Team capability WM-003.
 - Rules: product sections 19; WM-007
 - Acceptance: Given a Checkbox cell, when a person presses Space, then the value flips and saves once. Given a group-by on a Checkbox field, then two groups appear.
 - Evidence: BE UpdateFieldValue · FE sheet/page; Table cell in PR #204 · Design WM-Field-Editors (Checkbox) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C16 Status and Priority as specialized select types
 - Capability: C BoardField definitions (WM-003)
@@ -1552,7 +1552,7 @@ Team capability WM-003.
 - Rules: product sections 78-79; WM-024; D61; WMREQ023
 - Acceptance: Given a label renamed, then items show the new name.
 - Evidence: BE Labels.Create = POST /boards/{boardId:guid}/labels -> CreateLabelCommand (`Labels/Commands/CreateLabel/CreateLabel.cs`) [- / Idem]; Labels.Update = PATCH /labels/{labelId:guid} -> UpdateLabelCommand (`Labels/Commands/UpdateLabel/UpdateLabel.cs`) [- / Idem]; Labels.Delete = DELETE /labels/{labelId:guid} -> DeleteLabelCommand (`Labels/Commands/DeleteLabel/DeleteLabel.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-labels.tsx` · Design WM-Labels; Er missing · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — EV on update/delete; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; expected version on label update and delete is not built. Evidence: real-stack check 2026-10-31: label created, renamed, recoloured and deleted through the API; a non-hex colour is refused; deleting it removed it from the item, commit 6e59c53bb.
 
 ## D. Field values
 
