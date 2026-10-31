@@ -125,7 +125,7 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task OnlyAManagerManagesTheBoard_EditorsAndGuestsEditContentOnly()
+    public async Task OnlyAManagerManagesTheBoard_EditorsEditContentOnly_AndGuestsOnlyRead()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
@@ -150,7 +150,15 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
             await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Observer)))
                 .Should().ThrowAsync<AppForbidden>("managing members is a Manager action");
 
-            await UpdateItemAsync(provider, item, $"Edited by {editor}");
+            if (editor == guest)
+            {
+                await FluentActions.Awaiting(() => UpdateItemAsync(provider, item, "Edited by the guest"))
+                    .Should().ThrowAsync<AppForbidden>("a guest is view-only (GOV-030)");
+            }
+            else
+            {
+                await UpdateItemAsync(provider, item, $"Edited by {editor}");
+            }
         }
 
         var unchanged = await _host.ReadAsync(async c =>

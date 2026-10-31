@@ -94,6 +94,12 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
             _dateTimeProvider.UtcNow,
             ct);
 
+        // Derived access ends with the membership, in the same transaction.
+        await _grantProjection.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            workspace.AccountId, workspace.Id, userId, _dateTimeProvider.UtcNow, ct);
+        await _grantProjection.ClearCustomRoleAssignmentsAsync(
+            workspace.AccountId, workspace.Id, userId, ct);
+
         await _defaultWorkspace.ClearIfAsync(userId, workspace.Id, ct);
 
         return Result.Success();
