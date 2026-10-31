@@ -444,7 +444,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §21, §23.3, §30.1](../../product/governance.md) GOV-027, GOV-030; WGREQ079.
 - Acceptance: Given a grant at Viewer, When changed to Editor, Then the subject can edit. When the call fails, Then the row returns to Viewer.
 - Evidence: BE `POST /api/v1/resources/{resourceType}/{resourceId}/permissions` (Governance.ResourcePermissions.Grant, `GrantResourcePermissionCommand`) · FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx`, `use-board-sharing.ts`, `frontend/packages/foundation/contracts/src/endpoints/endpoints.ts` (`resourcePermissions`) · Design `Final-Share`, `Final-M-Share` · Tests `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Governance/GrantResourcePermissionWorkspaceMembershipTests.cs`, `GrantResourcePermissionCommandValidatorTests.cs`, `backend/tests/Notrelix.Domain.Tests/Governance/Permissions/ResourcePermissionTests.cs` · Real e2e `frontend/e2e/real/board-sharing.real.e2e.spec.ts`
-- State: HARDENING - Competing changes have no expected version (README §7 line 1 fails). Real-stack check 2026-10-31: the sharing read shows a person with an Observer role as Viewer even with an explicit higher grant, commit be9ce0348.
+- State: HARDENING - Competing changes have no expected version (README §7 line 1 fails). Real-stack check 2026-10-31: the sharing read shows a person with an Observer role as Viewer even with an explicit higher grant, commit be9ce0348. Real-stack check 2026-10-31: an explicit grant above Viewer to a person whose board role is read-only is refused (Governance_ResourcePermission_ViewerRoleCapsGrant); lowering a person to viewer while a higher grant stands is refused (WorkManagement_Board_ViewerHoldsGrant); the dialog orders grant and role writes so both directions work, commit bfe80a6e4.
 
 ### UC-GOV-D04 Remove someone's access to a Board or Page
 - Capability: D Permission assignment (team spec, Governance list)
@@ -528,7 +528,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23.1, §44.3](../../product/governance.md) GOV-025; Work Management owns Board visibility ([Work Management use cases](work-management.md)).
 - Acceptance: Given a public-to-workspace Board, When made Private, Then non-members get NotFound.
 - Evidence: BE `POST /api/v1/boards/{boardId}/sharing/private` (WorkManagement.Boards.MakePrivate) · FE `board-share-dialog.tsx` · Tests `ResourceAccessSummaryServiceTests` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING - No real e2e; endpoint is served by Work Management.
+- State: INTEGRATING - No real e2e; endpoint is served by Work Management. Real-stack check 2026-10-31: the actor who makes a board Private stays on it as Owner, commit 2eced51cb.
 
 ### UC-GOV-D10 Read the sharing and access summary of a Board
 - Capability: D Permission assignment (team spec, Governance list)
