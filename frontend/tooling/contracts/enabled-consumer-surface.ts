@@ -3376,6 +3376,15 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Documents",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createPageApi",
+    consumerFile: "frontend/packages/product/docs/state/src/api/page.api.ts",
+    capability: "Documents.Pages.Move",
+    operationId: "Documents.Pages.Move",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createPageExtrasApi",
     consumerFile:
       "frontend/packages/product/docs/state/src/api/page-extras.api.ts",

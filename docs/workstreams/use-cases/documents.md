@@ -122,10 +122,10 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A01 | Create a page | A | Editor of the parent or space, workspace member | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-A02 | Rename a page | A | Editor | partial | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-A03 | Set a page icon | A | Editor | partial | partial | Final-Docs-2 | none | IMPLEMENTING | API drops icon; no endpoint field |
-| UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Tests and owner check |
+| UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
+| UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
+| UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
+| UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Owner check |
 | UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
@@ -139,15 +139,15 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | INTEGRATING | Owner check |
 | UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | INTEGRATING | Owner check |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
 | UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
+| UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | real | INTEGRATING | Owner check |
 | UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
@@ -160,7 +160,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E09 | Open a block type this client does not know | E | Any viewer | partial | partial | none | none | DEFINED | No placeholder behaviour |
 | UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | INTEGRATING | Owner check |
 | UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
 | UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
