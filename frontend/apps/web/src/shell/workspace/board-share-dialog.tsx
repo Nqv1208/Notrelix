@@ -310,6 +310,11 @@ export function BoardShareDialog({
           ? (rowId: string) => write(() => sharing.remove(rowId))
           : undefined
       }
+      onClaimOwner={
+        view.canManage && sharing.data && user?.id
+          ? () => write(() => sharing.claimOwner(user.id))
+          : undefined
+      }
       onMakeOwner={
         view.canManage && sharing.data
           ? (rowId: string) => write(() => sharing.makeOwner(rowId))
@@ -320,7 +325,8 @@ export function BoardShareDialog({
       }
       onConfirmPrivate={
         view.canManage && sharing.data
-          ? (ids: readonly string[]) => write(() => sharing.makePrivate(ids))
+          ? (ids: readonly string[], addMeAsOwner: boolean) =>
+              write(() => sharing.makePrivate(ids, addMeAsOwner))
           : undefined
       }
     />

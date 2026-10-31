@@ -34,6 +34,8 @@ export interface ShareRowView {
   readonly badge: "guest" | "outside" | null;
   /** A board Viewer (read-only role): listed apart from the members. */
   readonly viewer?: boolean;
+  /** The person holds the Owner role of the board. */
+  readonly owner?: boolean;
   /** A board member who is not the owner and not the caller: ownership may be handed to them. */
   readonly ownable?: boolean;
   /** "31/01/2027"; `null` when the entry does not expire or the read has none. */
@@ -589,6 +591,7 @@ export function buildSharingRows(
       fixed: entry.owner || entry.you,
       badge: entry.kind === "guest" ? "outside" : null,
       viewer: entry.memberRole === "Observer" || entry.memberRole === "Guest",
+      owner: entry.owner,
       ownable:
         entry.kind === "person" &&
         entry.memberRole !== null &&

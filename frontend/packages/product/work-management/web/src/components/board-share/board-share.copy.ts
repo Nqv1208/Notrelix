@@ -53,6 +53,9 @@ export const en = {
   people: {
     label: "Permissions on this Board · {{count}}",
     viewersLabel: "Viewers (read only) · {{count}}",
+    noOwner:
+      "No owner: this board has none. Make a member the owner, or take it yourself if you are a workspace owner.",
+    claimOwner: "Make me owner",
     ownerHint:
       "A board always keeps an owner. To hand it over, make someone else the owner first.",
     viewersHint:
@@ -122,6 +125,9 @@ export const en = {
     cancel: "Cancel",
     switchOnly: "Switch, add no one",
     switchAdd: "Add {{count}} people, then switch",
+    addMeOwner: "Add me as an owner of this Board",
+    addMeOwnerHint:
+      "This Board has no owner, and a Private board needs one. Choose to become its owner (kept in the permission history), or ask a workspace owner or admin to assign one.",
     keepInSpace: "**{{names}}** (already added on their own)",
     keepGuest: "guest **{{name}}**",
     keepAnd: " and ",
@@ -194,6 +200,9 @@ export const vi: BoardShareCopy = {
   people: {
     label: "Quyền riêng trên board này · {{count}}",
     viewersLabel: "Người xem (chỉ đọc) · {{count}}",
+    noOwner:
+      "Chưa có chủ: board này chưa có chủ. Hãy giao quyền chủ cho một thành viên, hoặc tự nhận nếu bạn là chủ workspace.",
+    claimOwner: "Nhận làm chủ",
     ownerHint:
       "Board luôn có một chủ. Muốn trao lại, hãy giao quyền chủ cho người khác trước.",
     viewersHint:
@@ -263,6 +272,9 @@ export const vi: BoardShareCopy = {
     cancel: "Huỷ",
     switchOnly: "Chuyển, không thêm ai",
     switchAdd: "Thêm {{count}} người rồi chuyển",
+    addMeOwner: "Thêm tôi làm chủ board này",
+    addMeOwnerHint:
+      "Board này chưa có chủ, mà board riêng tư cần một chủ. Hãy chọn làm chủ board (được ghi vào lịch sử quyền), hoặc nhờ chủ hay quản trị viên workspace chỉ định một người.",
     keepInSpace: "**{{names}}** (đã được thêm riêng)",
     keepGuest: "khách **{{name}}**",
     keepAnd: " và ",

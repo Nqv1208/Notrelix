@@ -25201,6 +25201,9 @@
               "format": "uuid"
             },
             "nullable": true
+          },
+          "addMeAsOwner": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

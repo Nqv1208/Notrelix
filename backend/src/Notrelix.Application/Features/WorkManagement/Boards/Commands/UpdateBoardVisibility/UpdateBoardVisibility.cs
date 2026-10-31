@@ -54,10 +54,10 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
         board.ChangeVisibility(request.Visibility, _requestContext.UserId, _dateTimeProvider.UtcNow);
         if (previous != board.Visibility)
         {
-            // Going Private ends every Space and workspace source: the person who does it stays on the board.
-            if (board.Visibility == BoardVisibility.Private
-                && await BoardOwnership.EnsureActorStaysAsync(_context, board.Id, _requestContext.UserId, _dateTimeProvider.UtcNow, ct))
-                await _changeLog.MemberAddedAsync(board.Id, _requestContext.UserId, BoardRole.Owner, ct);
+            // Going Private ends every Space and workspace source, so the board must already have an Owner
+            // (the share flow offers an explicit "Add me as owner" through Make Private).
+            if (board.Visibility == BoardVisibility.Private)
+                await BoardOwnership.EnsureOwnerForPrivateAsync(_context, board.Id, _requestContext.UserId, false, _dateTimeProvider.UtcNow, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
         }
         return Result.Success();

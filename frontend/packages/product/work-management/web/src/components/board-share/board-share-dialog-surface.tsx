@@ -113,12 +113,17 @@ export interface BoardShareDialogSurfaceProps {
   /** Change a person's permission; absent: the level buttons are inert. */
   readonly onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   readonly onRemove?: (rowId: string) => void;
+  /** The caller becomes the board's Owner when it has none (workspace Owner); absent: no such action. */
+  readonly onClaimOwner?: () => void;
   /** Hands the board's ownership to the person (a board keeps at least one owner); absent: no such action. */
   readonly onMakeOwner?: (rowId: string) => void;
   /** Switch who can open the Board; absent: "Đổi" is inert. */
   readonly onChangeGeneral?: (target: "private") => void;
   /** Confirms the switch to Private, adding the chosen people first; absent: inert. */
-  readonly onConfirmPrivate?: (addIds: readonly string[]) => void;
+  readonly onConfirmPrivate?: (
+    addIds: readonly string[],
+    addMeAsOwner: boolean,
+  ) => void;
   /** Workspace members the Board is not shared with yet; with `onInvite` the add field is live. */
   readonly candidates?: readonly ShareCandidate[];
   /** Gives the person the chosen permission on the Board; absent: the add field is inert. */
@@ -266,6 +271,7 @@ function ShareBody({
   onChangeLevel,
   onRemove,
   onMakeOwner,
+  onClaimOwner,
   onChangeGeneral,
   candidates,
   onInvite,
@@ -506,6 +512,25 @@ function ShareBody({
                 ) : null}
               </div>
             )}
+            {view.canManage &&
+            !view.rows.some((row) => row.owner === true) ? (
+              <div
+                data-f="noowner"
+                role="status"
+                className="mt-1.5 flex items-start gap-2.5 rounded-[10px] border border-warning-text/40 bg-warning-subtle p-3 text-compact leading-normal text-warning-text"
+              >
+                <span className="flex-1">{copy.people.noOwner}</span>
+                {onClaimOwner && !view.rows.some((row) => row.isYou) ? (
+                  <button
+                    type="button"
+                    onClick={onClaimOwner}
+                    className={cn(BTN, FOCUS)}
+                  >
+                    {copy.people.claimOwner}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             {view.canManage && memberRows.length > 0 ? (
               <p
                 data-f="ownerhint"
@@ -1179,8 +1204,16 @@ function PrivateBody({
   const [chosen, setChosen] = useState<ReadonlySet<string>>(
     () => new Set((impact?.people ?? []).map((person) => person.id)),
   );
+  // A Private board keeps an Owner. When it has none and the caller holds no board role, becoming its Owner is
+  // the caller's own explicit choice: nothing adds it for them.
+  const needsOwner =
+    !view.hiddenCounts &&
+    !view.rows.some((row) => row.owner === true || row.isYou);
+  const [addMe, setAddMe] = useState(false);
+  const blocked = needsOwner && !addMe;
   const confirm = (ids: readonly string[]) => {
-    onConfirmPrivate?.(ids);
+    if (blocked) return;
+    onConfirmPrivate?.(ids, needsOwner && addMe);
     setScreen("share");
     onClose();
   };
@@ -1339,6 +1372,27 @@ function PrivateBody({
             </p>
           </div>
         ) : null}
+        {needsOwner ? (
+          <label
+            data-f="ownchoice"
+            className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-line p-3 text-compact leading-normal"
+          >
+            <input
+              type="checkbox"
+              checked={addMe}
+              onChange={(event) => setAddMe(event.target.checked)}
+              className="m-0 mt-0.5 size-4 shrink-0 accent-primary"
+            />
+            <span>
+              <b className="block font-semibold text-foreground">
+                {c.addMeOwner}
+              </b>
+              <small className="block text-xs leading-[1.45] text-meta-foreground">
+                {c.addMeOwnerHint}
+              </small>
+            </span>
+          </label>
+        ) : null}
       </div>
       <div
         data-f="df"
@@ -1359,9 +1413,15 @@ function PrivateBody({
         <button
           data-f="btn"
           type="button"
-          aria-disabled={onConfirmPrivate ? undefined : true}
-          title={onConfirmPrivate ? undefined : copy.general.changeUnavailable}
-          onClick={onConfirmPrivate ? () => confirm([]) : undefined}
+          aria-disabled={onConfirmPrivate && !blocked ? undefined : true}
+          title={
+            blocked
+              ? c.addMeOwnerHint
+              : onConfirmPrivate
+                ? undefined
+                : copy.general.changeUnavailable
+          }
+          onClick={onConfirmPrivate && !blocked ? () => confirm([]) : undefined}
           className={cn(BTN, FOCUS)}
         >
           {c.switchOnly}
@@ -1369,9 +1429,17 @@ function PrivateBody({
         <button
           data-f="btn-pri"
           type="button"
-          aria-disabled={onConfirmPrivate ? undefined : true}
-          title={onConfirmPrivate ? undefined : copy.general.changeUnavailable}
-          onClick={onConfirmPrivate ? () => confirm([...chosen]) : undefined}
+          aria-disabled={onConfirmPrivate && !blocked ? undefined : true}
+          title={
+            blocked
+              ? c.addMeOwnerHint
+              : onConfirmPrivate
+                ? undefined
+                : copy.general.changeUnavailable
+          }
+          onClick={
+            onConfirmPrivate && !blocked ? () => confirm([...chosen]) : undefined
+          }
           className={cn(BTN_PRIMARY, FOCUS)}
         >
           {fill(c.switchAdd, { count: chosen.size })}

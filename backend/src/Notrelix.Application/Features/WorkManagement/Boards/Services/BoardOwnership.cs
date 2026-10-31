@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Services;
 /// <summary>
 /// A board always has an Owner: its creator, until ownership is handed over by promoting someone else first.
 /// The Owner role is the board's own access source, so a person who creates a Private board is never left
-/// without access to it, and the last Owner cannot be removed or lowered.
+/// without access to it, and the last Owner cannot be removed or lowered. No path adds an Owner row implicitly
+/// for someone else's board.
 /// </summary>
 public static class BoardOwnership
 {
@@ -16,16 +17,29 @@ public static class BoardOwnership
         context.BoardMembers.Add(BoardMemberEntity.Create(boardId, creatorId, BoardRole.Owner, now));
 
     /// <summary>
-    /// Making a board Private ends every Space or workspace source, so the person who does it stays on
-    /// it as Owner when they hold no board role yet. Returns true when the Owner row was added.
+    /// A Private board is reached only through its own members and grants, so it must keep an Owner. When it
+    /// has none, making it Private is refused with <see cref="WorkManagementRuleCodes.WorkManagement_Board_PrivateNeedsOwner"/>,
+    /// unless the person who does it explicitly chooses to be its Owner and holds no board role yet: that row is
+    /// their own deliberate act (never added implicitly, because it would turn indirect access, such as a Space level
+    /// or a time-limited grant, into a durable Owner row). Returns true when the Owner row was added.
     /// </summary>
-    public static async Task<bool> EnsureActorStaysAsync(
-        IWorkManagementDbContext context, Guid boardId, Guid actorId, DateTimeOffset now, CancellationToken ct)
+    public static async Task<bool> EnsureOwnerForPrivateAsync(
+        IWorkManagementDbContext context, Guid boardId, Guid actorId, bool addActorAsOwner, DateTimeOffset now, CancellationToken ct)
     {
-        var isMember = await context.BoardMembers.AnyAsync(m => m.BoardId == boardId && m.UserId == actorId, ct);
-        if (isMember)
+        var hasOwner = await context.BoardMembers.AsNoTracking()
+            .AnyAsync(m => m.BoardId == boardId && m.Role == BoardRole.Owner, ct);
+        if (hasOwner)
         {
             return false;
+        }
+
+        var actorHasRole = await context.BoardMembers.AsNoTracking()
+            .AnyAsync(m => m.BoardId == boardId && m.UserId == actorId, ct);
+        if (!addActorAsOwner || actorHasRole)
+        {
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Board_PrivateNeedsOwner,
+                "This board has no owner. Add yourself as its owner, or ask a workspace owner or admin to assign one, before making it Private.");
         }
 
         context.BoardMembers.Add(BoardMemberEntity.Create(boardId, actorId, BoardRole.Owner, now));

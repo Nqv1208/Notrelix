@@ -6305,6 +6305,7 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest": {
             addUserIds?: string[] | null;
+            addMeAsOwner?: boolean;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest": {
             /** Format: uuid */
