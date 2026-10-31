@@ -79,15 +79,28 @@ internal sealed class OutboxDispatcher : BackgroundService
         var claimMs = pollTimer.ElapsedMilliseconds;
 
         // Phase 2: Publish outside database transaction
-        if (claim.Unordered.Count > 0)
+        var startedRuns = 0;
+        try
         {
-            await DispatchUnorderedAsync(claim.Unordered, claim.LockId, cancellationToken);
-        }
+            if (claim.Unordered.Count > 0)
+            {
+                await DispatchUnorderedAsync(claim.Unordered, claim.LockId, cancellationToken);
+            }
 
-        // Ordered streams: each run is dispatched strictly in stream version order, stopping at its first failure.
-        foreach (var run in claim.StreamRuns)
+            // Ordered streams: each run is dispatched strictly in stream version order, stopping at its first failure.
+            foreach (var run in claim.StreamRuns)
+            {
+                startedRuns++;
+                await DispatchStreamRunAsync(run, claim.LockId, cancellationToken);
+            }
+        }
+        finally
         {
-            await DispatchStreamRunAsync(run, claim.LockId, cancellationToken);
+            // A failure in an earlier part must not hold the runs that never started until the lease expires.
+            foreach (var run in claim.StreamRuns.Skip(startedRuns))
+            {
+                await ReleaseAsync(run, claim.LockId);
+            }
         }
 
         _logger.LogDebug(
