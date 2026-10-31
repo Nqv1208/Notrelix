@@ -178,7 +178,16 @@ export interface TaskDetailData {
 export interface ItemSheetNewField {
   readonly name: string;
   readonly fieldType:
-    "text" | "number" | "checkbox" | "select" | "multi_select";
+    | "text"
+    | "long_text"
+    | "number"
+    | "checkbox"
+    | "select"
+    | "multi_select"
+    | "date"
+    | "person"
+    | "link"
+    | "vote";
   /** Select and MultiSelect only: the first choices, each with its colour. */
   readonly options: readonly {
     readonly name: string;

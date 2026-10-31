@@ -236,6 +236,7 @@ const CUSTOM_FIELD_TYPES: readonly FieldDefinition["fieldType"][] = [
   "long_text",
   "link",
   "date",
+  "person",
   "formula",
   "rollup",
 ];

@@ -8,10 +8,15 @@ import type { ItemSheetNewField } from "./task-detail-types";
 
 const TYPES = [
   "text",
+  "long_text",
   "number",
   "checkbox",
   "select",
   "multi_select",
+  "date",
+  "person",
+  "link",
+  "vote",
 ] as const satisfies readonly ItemSheetNewField["fieldType"][];
 
 const OPTION_COLORS = Object.values(ITEM_LABEL_COLORS);

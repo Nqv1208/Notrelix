@@ -22,7 +22,7 @@ import {
 } from "../popup-ui";
 import { Caption, Hint, PickerHead } from "../pickers/picker-bits";
 import { useCardPopup } from "../card-popup-context";
-import { fillCapabilityCopy } from "./capabilities.copy";
+import { pluralCapabilityCopy } from "./capabilities.copy";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
 
 function stamp(iso: string, locale: string): string {
@@ -90,9 +90,11 @@ export function VoteChip({
           trigger={
             <PopoverTrigger asChild>
               <ChipBtn
-                aria-label={fillCapabilityCopy(copy.vote.count, {
-                  count: shown.count,
-                })}
+                aria-label={pluralCapabilityCopy(
+                  copy.vote.count_one,
+                  copy.vote.count_other,
+                  shown.count,
+                )}
                 className="min-w-9 justify-center px-2.5 font-semibold tabular-nums"
               >
                 {shown.count}
@@ -116,7 +118,11 @@ export function VoteChip({
           <Caption>
             {shown.count === 0
               ? copy.vote.none
-              : fillCapabilityCopy(copy.vote.people, { count: shown.count })}
+              : pluralCapabilityCopy(
+                  copy.vote.people_one,
+                  copy.vote.people_other,
+                  shown.count,
+                )}
           </Caption>
           {(voters.data?.voters ?? []).map((voter) => (
             <div
@@ -163,7 +169,11 @@ export function ViewersChip({
         trigger={
           <PopoverTrigger asChild>
             <ChipBtn
-              aria-label={fillCapabilityCopy(copy.viewers.count, { count })}
+              aria-label={pluralCapabilityCopy(
+                copy.viewers.count_one,
+                copy.viewers.count_other,
+                count,
+              )}
               className="px-2.5 font-semibold tabular-nums"
             >
               <Eye className="size-[13px]" aria-hidden="true" />
@@ -176,7 +186,11 @@ export function ViewersChip({
         <Caption className="mt-0">
           {count === 0
             ? copy.viewers.none
-            : fillCapabilityCopy(copy.viewers.people, { count })}
+            : pluralCapabilityCopy(
+                copy.viewers.people_one,
+                copy.viewers.people_other,
+                count,
+              )}
         </Caption>
         {(viewers.data?.viewers ?? []).map((viewer) => (
           <div

@@ -61,19 +61,23 @@ export const en = {
   vote: {
     toggle: "Vote",
     voted: "Voted",
-    count: "{{count}} people voted",
+    count_one: "{{count}} person voted",
+    count_other: "{{count}} people voted",
     panel: "Vote",
     title: "Vote on this card",
-    people: "{{count}} people voted",
+    people_one: "{{count}} person voted",
+    people_other: "{{count}} people voted",
     none: "Nobody has voted yet",
     note: "One vote each. Board members can see who voted.",
     failed: "The vote could not be saved.",
   },
   viewers: {
     label: "Viewed",
-    count: "{{count}} people viewed",
+    count_one: "{{count}} person viewed",
+    count_other: "{{count}} people viewed",
     title: "Who viewed this card",
-    people: "{{count}} people opened this card",
+    people_one: "{{count}} person opened this card",
+    people_other: "{{count}} people opened this card",
     you: "You · just now",
     none: "Nobody has viewed this card yet",
     note: "Counted when the card opens. Guests are not counted.",
@@ -98,13 +102,16 @@ export const en = {
   checklist: {
     copyFrom: "Copy items from…",
     none: "(none)",
-    entry: "{{item}} · {{count}} items",
+    entry_one: "{{item}} · {{count}} item",
+    entry_other: "{{item}} · {{count}} items",
     thisCard: "In this card",
     failed: "The checklist could not be copied.",
   },
   links: {
     clearAll: "Remove all links",
-    confirm:
+    confirm_one:
+      "Remove the {{count}} link from this card? The linked card stays.",
+    confirm_other:
       "Remove all {{count}} links from this card? The linked cards stay.",
     confirmAction: "Remove all",
     cancel: "Cancel",
@@ -192,19 +199,23 @@ export const vi: CardCapabilitiesCopy = {
   vote: {
     toggle: "Bình chọn",
     voted: "Đã bình chọn",
-    count: "{{count}} người đã bình chọn",
+    count_one: "{{count}} người đã bình chọn",
+    count_other: "{{count}} người đã bình chọn",
     panel: "Bình chọn",
     title: "Bình chọn thẻ này",
-    people: "{{count}} người đã bình chọn",
+    people_one: "{{count}} người đã bình chọn",
+    people_other: "{{count}} người đã bình chọn",
     none: "Chưa có ai bình chọn",
     note: "Mỗi người một phiếu. Thành viên của board thấy ai đã bình chọn.",
     failed: "Chưa lưu được bình chọn.",
   },
   viewers: {
     label: "Đã xem",
-    count: "{{count}} người đã xem",
+    count_one: "{{count}} người đã xem",
+    count_other: "{{count}} người đã xem",
     title: "Ai đã xem thẻ này",
-    people: "{{count}} người đã mở thẻ này",
+    people_one: "{{count}} người đã mở thẻ này",
+    people_other: "{{count}} người đã mở thẻ này",
     you: "Bạn · vừa xong",
     none: "Chưa có ai xem thẻ này",
     note: "Tính khi mở thẻ. Không tính khách.",
@@ -229,13 +240,16 @@ export const vi: CardCapabilitiesCopy = {
   checklist: {
     copyFrom: "Chép mục từ…",
     none: "(không)",
-    entry: "{{item}} · {{count}} mục",
+    entry_one: "{{item}} · {{count}} mục",
+    entry_other: "{{item}} · {{count}} mục",
     thisCard: "Trong thẻ này",
     failed: "Chưa chép được checklist.",
   },
   links: {
     clearAll: "Gỡ tất cả liên kết",
-    confirm:
+    confirm_one:
+      "Gỡ cả {{count}} liên kết khỏi thẻ này? Các thẻ được liên kết vẫn còn.",
+    confirm_other:
       "Gỡ cả {{count}} liên kết khỏi thẻ này? Các thẻ được liên kết vẫn còn.",
     confirmAction: "Gỡ tất cả",
     cancel: "Huỷ",
@@ -277,4 +291,14 @@ export function fillCapabilityCopy(
   return message.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
     key in values ? String(values[key]) : match,
   );
+}
+
+/** Picks the `_one` form for exactly 1 and `_other` otherwise, then fills it. */
+export function pluralCapabilityCopy(
+  one: string,
+  other: string,
+  count: number,
+  values: Readonly<Record<string, string | number>> = {},
+): string {
+  return fillCapabilityCopy(count === 1 ? one : other, { ...values, count });
 }

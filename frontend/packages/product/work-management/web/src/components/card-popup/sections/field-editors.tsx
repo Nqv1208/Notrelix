@@ -13,6 +13,7 @@ import {
   Minus,
   Sigma,
   Type,
+  UserRound,
   X,
 } from "lucide-react";
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
@@ -346,7 +347,15 @@ export function FieldControl({
   field: FieldDefinition;
   variant: "chip" | "ctl";
 }) {
-  const { card, copy, fields, openFieldId, clearOpenField } = useCardPopup();
+  const { card, board, data, copy, fields, openFieldId, clearOpenField } =
+    useCardPopup();
+  // The people who can see the board, as the assignee picker lists them.
+  const people = [
+    ...board.members.map((m) => ({ userId: m.userId, name: m.name })),
+    ...(data.people?.people ?? [])
+      .filter((p) => p.onBoard)
+      .map((p) => ({ userId: p.userId, name: p.name })),
+  ].filter((p, i, all) => all.findIndex((q) => q.userId === p.userId) === i);
   const priorityId = fields.priority?.id;
   const t = copy.sections.chips;
   const f = copy.sections.fields;
@@ -357,7 +366,8 @@ export function FieldControl({
   // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
   useEffect(() => {
     if (openFieldId !== field.id) return;
-    if (!["select", "multi_select", "date"].includes(field.fieldType)) return;
+    if (!["select", "multi_select", "date", "person"].includes(field.fieldType))
+      return;
     // After the menu has closed and handed focus back to its button, or that would close this picker.
     const id = window.setTimeout(() => {
       setOpen(true);
@@ -531,6 +541,80 @@ export function FieldControl({
             onSave={write}
             onClose={() => setOpen(false)}
           />
+        ) : null}
+      </PanelPopover>
+    );
+  }
+
+  if (field.fieldType === "person") {
+    // A custom Person field holds one board member; the item's own Assignee is the people picker.
+    const current = people.find((person) => person.userId === raw);
+    return (
+      <PanelPopover
+        open={open}
+        onOpenChange={setOpen}
+        width={240}
+        trigger={trigger(
+          <>
+            <UserRound aria-hidden="true" className="size-[13px]" />
+            {wrapChip(
+              current?.name ??
+                (typeof raw === "string" && raw !== ""
+                  ? raw
+                  : chip
+                    ? t.notSet
+                    : f.selectEmpty),
+            )}
+            {tail}
+          </>,
+          { haspopup: "listbox" },
+        )}
+      >
+        <PanelHead
+          title={field.name}
+          onClose={() => setOpen(false)}
+          closeLabel={t.close}
+          icons={CLOSE_ICONS}
+        />
+        <div role="listbox" aria-label={field.name}>
+          {people.map((person) => (
+            <button
+              key={person.userId}
+              type="button"
+              role="option"
+              aria-selected={person.userId === raw}
+              onClick={() => {
+                write(person.userId);
+                setOpen(false);
+              }}
+              className={cn(
+                OPT,
+                person.userId === raw &&
+                  "bg-brand-subtle font-semibold text-brand-subtle-foreground",
+              )}
+            >
+              {person.name}
+              {person.userId === raw ? (
+                <Check aria-hidden="true" className="ml-auto size-4" />
+              ) : null}
+            </button>
+          ))}
+        </div>
+        {raw ? (
+          <>
+            <div className="-mx-3 my-2 h-px bg-line" />
+            <button
+              type="button"
+              className={OPT}
+              onClick={() => {
+                write(null);
+                setOpen(false);
+              }}
+            >
+              <X aria-hidden="true" className="size-4" />
+              {t.clearValue}
+            </button>
+          </>
         ) : null}
       </PanelPopover>
     );

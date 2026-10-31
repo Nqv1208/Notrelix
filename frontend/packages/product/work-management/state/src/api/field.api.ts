@@ -33,9 +33,8 @@ export function createColumnApi(client: NotrelixClient) {
     async createColumn(input: CreateColumnInput): Promise<string> {
       const body: CreateFieldBody = {
         name: input.name,
-        // The domain enum is `MultiSelect`; the read model says `multi_select`.
-        type:
-          input.fieldType === "multi_select" ? "multiselect" : input.fieldType,
+        // The domain enum is `MultiSelect` / `LongText`; the read model says `multi_select` / `long_text`.
+        type: input.fieldType.replaceAll("_", ""),
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,

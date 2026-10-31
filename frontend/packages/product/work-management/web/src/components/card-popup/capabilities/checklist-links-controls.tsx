@@ -20,7 +20,7 @@ import {
   useItemLinks,
 } from "@notrelix/work-management-state";
 import { SmallBtn } from "../popup-ui";
-import { fillCapabilityCopy } from "./capabilities.copy";
+import { pluralCapabilityCopy } from "./capabilities.copy";
 import { useCapabilitiesCopy } from "./use-capabilities-copy";
 
 export const CHECKLIST_COPY_NONE = "none";
@@ -88,13 +88,17 @@ export function ChecklistCopyFrom({
               <span className="flex flex-col leading-[1.3]">
                 <span>{entry.title}</span>
                 <small className="text-[12.5px] text-meta-foreground">
-                  {fillCapabilityCopy(copy.checklist.entry, {
-                    item:
-                      entry.itemId === card.id
-                        ? copy.checklist.thisCard
-                        : (entry.itemKey ?? entry.itemName),
-                    count: entry.itemCount,
-                  })}
+                  {pluralCapabilityCopy(
+                    copy.checklist.entry_one,
+                    copy.checklist.entry_other,
+                    entry.itemCount,
+                    {
+                      item:
+                        entry.itemId === card.id
+                          ? copy.checklist.thisCard
+                          : (entry.itemKey ?? entry.itemName),
+                    },
+                  )}
                 </small>
               </span>
             </SelectItem>
@@ -146,7 +150,11 @@ export function ClearAllLinks({
         <AlertDialogContent>
           <AlertDialogTitle>{copy.links.clearAll}</AlertDialogTitle>
           <AlertDialogDescription>
-            {fillCapabilityCopy(copy.links.confirm, { count: linkCount })}
+            {pluralCapabilityCopy(
+              copy.links.confirm_one,
+              copy.links.confirm_other,
+              linkCount,
+            )}
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>{copy.links.cancel}</AlertDialogCancel>

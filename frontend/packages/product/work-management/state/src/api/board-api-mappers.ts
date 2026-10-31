@@ -575,7 +575,9 @@ function mapCardSummaryDto(
         return [field.id, priorityOptionId ?? undefined];
       const semantic = getSemanticField(field);
       if (semantic === "title") return [field.id, title];
-      if (semantic === "person") return [field.id, personUserIds];
+      // Only the item's own Assignee field mirrors its members; a custom Person field holds its own value.
+      if (semantic === "person" && field.id === personField?.id)
+        return [field.id, personUserIds];
       if (semantic === "due_date") return [field.id, dueDate ?? undefined];
       if (semantic === "linked_page") return [field.id, undefined];
       if (semantic === "progress") return [field.id, progress];
