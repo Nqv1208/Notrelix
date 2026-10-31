@@ -48,7 +48,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
 | A | Board lifecycle | WM-001 | 26 | 4 | 0 | 3 | 19 | 0 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 13 | 18 | 0 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 11 | 20 | 0 | 0 |
 | C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 0 | 12 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 16 | 2 | 25 | 126 | 0 | 1 |
+| | Total | | 170 | 16 | 2 | 23 | 128 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
@@ -226,13 +226,13 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B17 | Purge items, boards and fields after their 30-day window | B | System (job); Manager restores before | no | partial | none | none | DEFINED | no purge job for items, boards or fields; decided in D78.10; needs the audit fact and tests. |
 | UC-WM-B18 | Open an item (side sheet or full page) | B | Viewer and above; Guest per grant | yes | yes | complete | item-page | INTEGRATING | paged comments, history and sub-items; replace the 'not available yet' fallback copy (defect F-10); proof of the section order and the sheet behaviours. |
 | UC-WM-B19 | Edit the item description | B | Editor and above | partial | yes | complete | none | INTEGRATING | no actor name on the conflict response (Q12 needs a contract addition); PATCH has no Idempotency-Key. |
-| UC-WM-B20 | Link two items (waits on / related) | B | Editor | partial | partial | partial | none | INTEGRATING | Server acyclic check (D76.8); cross-board; typed client; design for sheet |
+| UC-WM-B20 | Link two items (waits on / related) | B | Editor | partial | partial | partial | none | HARDENING | Server acyclic check (D76.8); cross-board; typed client; design for sheet |
 | UC-WM-B21 | Change or remove an item link | B | Editor | partial | partial | partial | none | INTEGRATING | Dangling-link policy (D76.8); typed client |
 | UC-WM-B22 | See sub-items and derived progress in the item | B | Any viewer | yes | yes | partial | sub-items | HARDENING | the progress rule of D76.10 is partly built (see UC-WM-D09); design for the progress bar. |
 | UC-WM-B23 | Recover from item deleted/archived/moved while open | B | Any viewer | partial | yes | complete | none | INTEGRATING | Actor in API/realtime frames (Q12); real e2e |
 | UC-WM-B24 | Request an approval on an item or board | B | Requester with Editor | yes | yes | partial | approvals | HARDENING | One approver per request validation (D76.11); typed client; no mock handler |
 | UC-WM-B25 | Decide (approve or reject) a request | B | Named approver (team: any member) | partial | yes | none | approvals | HARDENING | ApproverTeamId is ignored so team approvers can never decide; two decide paths exist (board-scoped with version, workspace without) (defect B-08). |
-| UC-WM-B26 | Cancel a request | B | Requester or manager | yes | yes | none | none | INTEGRATING | Race test; real e2e; design |
+| UC-WM-B26 | Cancel a request | B | Requester or manager | yes | yes | none | none | HARDENING | Race test; real e2e; design |
 | UC-WM-B27 | Re-request after rejection or cancel | B | Requester | partial | partial | none | none | INTEGRATING | no link from the new request to the previous one (verified: no previous-request field in the Approvals domain); no design. |
 | UC-WM-B28 | See approval state and waiting-review figures | B | ViewBoard | yes | yes | partial | approvals | HARDENING | Tests for List; waiting-review count-once proof |
 | UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | no | no | none | none | DEFINED | Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE |
@@ -1016,7 +1016,7 @@ Team capability WM-002.
 - Rules: product sections 68, 68.1; WM-039; D76.8; WMREQ113
 - Acceptance: Given A waits on B, when B waits on A is attempted, then rejected naming the path A to B. Given a target the viewer cannot read, then the link shows no title. Given a link to an archived item, then it stays and shows archived; given a link to a trashed item, then it is hidden while in trash and removed on purge.
 - Evidence: BE BoardItems.ListLinks = GET /board-items/{itemId:guid}/links -> ListBoardItemLinksQuery (`BoardItems/Queries/ListBoardItemLinks/ListBoardItemLinks.cs`) [- / -]; BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE ItemPageLinks (raw /links); blocks/blocked-by wording · Design WM-TL-Interactions (timeline only); Table/sheet link edit missing · Server cycle check: CreateBoardItemLinkCommandHandler loads the board's waits-on rows, then `DependencyRules.EnsureNoCycle`; rejection is a Domain BusinessRuleException, rule code `WorkManagement_Dependency_CannotCreateCycle`, HTTP 400 business-rule violation with the ordered path (titles and ids) in the message; blocks is stored as the inverse waits-on row, related never forms a cycle · Tests `CreateBoardItemLinkTests.cs` (direct, transitive with path, blocks inverse, related, self), `V4DomainRulesTests.cs`, `ListBoardItemLinksTests.cs` · Real e2e none, no integration test for item links
-- State: INTEGRATING — Cycle check done (D76.8); open: cross-board, typed client, design for sheet, integration test of the real pipeline
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a link to an archived item stays but its row carries no archived mark; no typed client check; tests and owner check. Evidence: real-stack check 2026-10-31: A blocks B linked (200) and read back as blocked-by on B; B blocks A refused naming the path A to B to A (400); a self link refused (400); a retry under the same key answered the same link; a trashed target left the list at once and a removed link answered 204 then 404, commit 820baf039.
 
 ### UC-WM-B21 Change or remove an item link
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1100,7 +1100,7 @@ Team capability WM-002.
 - Rules: product sections 86-88; WM-026; D62
 - Acceptance: Given decide and cancel at the same time, then exactly one wins and the other gets conflict.
 - Evidence: BE Approvals.Cancel = POST /approvals/{requestId:guid}/cancel -> CancelApprovalRequestCommand (`Approvals/Commands/CancelApprovalRequest/CancelApprovalRequest.cs`) [EV / Idem] · FE cancel in `frontend/packages/product/work-management/web/src/components/item-page/item-page-approval.tsx` (raw) · Design none; needs cancel, race conflict · Tests `ApprovalRequestCommandTests.cs` · Real e2e none
-- State: INTEGRATING — Race test; real e2e; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; cancel after a decision answers 400 where the spec asks for a conflict, and decide against cancel racing was not driven; tests and owner check. Evidence: real-stack check 2026-10-31: a pending request cancelled with its version (204) and listed as Cancelled; a stale version answered 412; cancelling a request that is no longer pending answered 400, commit 820baf039.
 
 ### UC-WM-B27 Re-request after rejection or cancel
 - Capability: B BoardItem lifecycle (WM-002)
