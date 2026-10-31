@@ -39,14 +39,17 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
+    private readonly IBoardSharingSummary _sharing;
 
     public RevokeResourcePermissionCommandHandler(
         IGovernanceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
-        IResourceAccessChangeRecorder changes)
+        IResourceAccessChangeRecorder changes,
+        IBoardSharingSummary sharing)
     {
+        _sharing = sharing;
         _changes = changes;
         _context = context;
         _requestContext = requestContext;
@@ -73,6 +76,12 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
         }
 
         var actorId = _requestContext.UserId;
+
+        if (kind.Value == "work-management.board")
+        {
+            await BoardManagerFloor.EnsureAnotherManagerAsync(
+                _sharing, request.ResourceId, permission.SubjectType, permission.SubjectId, cancellationToken);
+        }
 
         permission.Revoke(actorId, _dateTimeProvider.UtcNow);
 
