@@ -86,7 +86,7 @@ describe("useBoardSharing", () => {
     });
     expect(data.entries.map((entry) => entry.name)).toContain("Đặng Minh Tuấn");
     expect(data.entries.find((entry) => entry.kind === "guest")).toMatchObject({
-      level: "editor",
+      level: "viewer",
       levelCapped: false,
     });
   });

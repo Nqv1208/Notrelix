@@ -1,5 +1,5 @@
 -- =============================================================================
--- 019_invitee_invitations.sql — A signed-in person reads the invitations addressed to them
+-- 025_invitee_invitations.sql — A signed-in person reads the invitations addressed to them
 -- =============================================================================
 -- The person's own list of pending invitations and the answer to one of them (decline or accept by id)
 -- are Global requests: they run in the user scope, which carries the verified user and no workspace, so

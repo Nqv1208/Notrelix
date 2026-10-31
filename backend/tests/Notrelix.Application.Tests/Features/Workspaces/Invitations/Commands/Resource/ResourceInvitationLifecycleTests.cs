@@ -52,7 +52,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
     private WorkspaceInvitation ResourceInvitation(Guid? invitedBy = null, Guid? boardId = null) =>
         WorkspaceInvitation.CreateForResource(
             TestAccountId, TestWorkspaceId, "guest@example.com",
-            new WorkspaceInvitationResourceGrant(BoardKind, boardId ?? BoardId, "Editor"),
+            new WorkspaceInvitationResourceGrant(BoardKind, boardId ?? BoardId, "Viewer"),
             InvitationTokenHash.Create(Hash), 1, invitedBy ?? TestUserId, TestNow.AddDays(-1));
 
     private ResendResourceInvitationCommandHandler ResendHandler() => new(
@@ -268,7 +268,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
             _encryptor.Object, _events.Object, _audit.Object, _actors.Object, _facts.Object);
 
         var result = await handler.Handle(
-            new InviteGuestToResourceCommand(BoardKind, BoardId, "Guest@Example.com", "Editor"), CancellationToken.None);
+            new InviteGuestToResourceCommand(BoardKind, BoardId, "Guest@Example.com", "Viewer"), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         var published = _published.Single().Should().BeOfType<WorkspaceInvitationDeliveryRequestedIntegrationEventV1>().Subject;

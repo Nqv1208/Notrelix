@@ -13,7 +13,7 @@ public sealed record InviteePendingInvitation(
 /// <summary>
 /// The invitations addressed to the signed-in person. Their requests are Global (the invited workspace is
 /// not known until the invitation is read), so the tenant query filter would hide every row. The database
-/// policy (RLS 019) is what limits the read to the pending invitations addressed to the person's own
+/// policy (RLS 025) is what limits the read to the pending invitations addressed to the person's own
 /// confirmed address; the address test here repeats it, so a stale or foreign address finds nothing even
 /// where no policy runs. The invitation row is all that policy opens: the workspace name and the inviter's
 /// display name are read inside the invitation token scope of that one invitation, entered from the digest

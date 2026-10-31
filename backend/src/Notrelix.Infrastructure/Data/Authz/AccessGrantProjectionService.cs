@@ -197,4 +197,57 @@ public sealed class AccessGrantProjectionService
         await _context.SaveChangesAsync(ct);
         await RevokeTrackedGrantAsync(accountId, workspaceId, userId, now, ct);
     }
+
+    /// <summary>
+    /// Ends the account-level Member grant of a person who holds no active grant in any other Workspace of
+    /// the Account. The bounded function decides under the request's scope (the person themself or a
+    /// workspace administrator); a service without a session context writes the tracked rows directly.
+    /// An account administrator's grant is never touched.
+    /// </summary>
+    public async Task RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
+        if (UsesBoundedGrantWrite)
+        {
+            var revokedAt = now.ToUniversalTime();
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT ops.revoke_account_grant_if_last_workspace({accountId}, {workspaceId}, {userId}, {revokedAt})", ct);
+            return;
+        }
+
+        var stillMember = await _context.AccessGrants.AnyAsync(
+            g => g.AccountId == accountId && g.UserId == userId && g.WorkspaceId != null && g.WorkspaceId != workspaceId
+                && g.RevokedAt == null && g.MembershipStatus == MembershipActive, ct);
+        if (stillMember) return;
+
+        var accountGrant = await _context.AccessGrants.FirstOrDefaultAsync(
+            g => g.AccountId == accountId && g.UserId == userId && g.WorkspaceId == null
+                && g.RevokedAt == null && !g.IsAccountAdmin, ct);
+        accountGrant?.Revoke(now);
+    }
+
+    /// <summary>Ends the custom-role assignments of one member of the Workspace (removed or reactivated).</summary>
+    public async Task ClearCustomRoleAssignmentsAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        CancellationToken ct)
+    {
+        if (UsesBoundedGrantWrite)
+        {
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT ops.clear_member_custom_roles({accountId}, {workspaceId}, {userId})", ct);
+            return;
+        }
+
+        // MemberId is the person's user id.
+        var assignments = await _context.MemberRoleAssignments
+            .Where(a => a.AccountId == accountId && a.WorkspaceId == workspaceId && a.MemberId == userId)
+            .ToListAsync(ct);
+        _context.MemberRoleAssignments.RemoveRange(assignments);
+    }
 }

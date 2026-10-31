@@ -417,9 +417,9 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         var (stack, _, _, guest) = await SeedAsync();
         var board = await _host.SeedBoardAsync(stack, "Shared");
         var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Deliverable");
-        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, guest, PermissionLevel.Commenter);
+        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, guest, PermissionLevel.Viewer);
 
-        using var asGuest = _host.CreateProvider(stack.AccountId, guest, services =>
+        void RegisterGuestReads(IServiceCollection services)
         {
             RegisterServices(services);
             services.AddScoped<Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
@@ -428,14 +428,18 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
                 Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
             services.AddScoped<Notrelix.Application.Features.WorkManagement.Ports.Collaboration.IWorkManagementCollaborationReadPort,
                 Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration.WorkManagementCollaborationReadAdapter>();
-        });
+        }
 
-        await OrgTreeTestHost.SendAsync(asGuest, CreateCommentCommand.ForBoardItem(item, "Looks good", null));
+        // A guest is view-only (cannot comment), so a member writes the comment and the guest reads it.
+        using (var asOwner = _host.CreateProvider(stack.AccountId, stack.OwnerId, RegisterGuestReads))
+            await OrgTreeTestHost.SendAsync(asOwner, CreateCommentCommand.ForBoardItem(item, "Looks good", null));
+        using var asGuest = _host.CreateProvider(stack.AccountId, guest, RegisterGuestReads);
+
         var detail = await OrgTreeTestHost.QueryAsync(asGuest, new GetBoardItemQuery(item));
         var comments = await OrgTreeTestHost.QueryAsync(asGuest, GetCommentsQuery.ForBoardItem(item));
 
         detail.Members.Should().ContainSingle().Which.Name.Should().Be("Org Owner");
-        comments.Should().ContainSingle().Which.UserName.Should().Be("Org Guest");
+        comments.Should().ContainSingle().Which.UserName.Should().Be("Org Owner");
         await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(asGuest, new GetWorkspaceMembersQuery(stack.WorkspaceId)))
             .Should().ThrowAsync<AppForbidden>();
     }

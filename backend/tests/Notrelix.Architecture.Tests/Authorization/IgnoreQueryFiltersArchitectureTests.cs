@@ -115,7 +115,7 @@ public class IgnoreQueryFiltersArchitectureTests
             "Invitation-token requests carry only the one-time secret: the invitation is located by the hash of the secret across tenants, then the request adopts that invitation's own Account and Workspace scope",
             "Keep as InfrastructureBootstrap — token locator runs before a tenant scope exists (same pattern as CalendarWebhookBindingResolver)"),
         ["InviteeInvitations.cs"] = new("InviteeInvitations.cs", AllowlistClassification.Intentional,
-            "The invitee's own invitations are read by Global requests (the invited workspace is not known until the invitation is read), so the tenant query filter would hide every row; the invitee database policy (RLS 019) limits the read to pending invitations addressed to the person's confirmed email and the stored address is repeated in the query",
+            "The invitee's own invitations are read by Global requests (the invited workspace is not known until the invitation is read), so the tenant query filter would hide every row; the invitee database policy (RLS 025) limits the read to pending invitations addressed to the person's confirmed email and the stored address is repeated in the query",
             "Keep as Intentional — invitee reads cannot carry a tenant scope; same pattern as InvitationTokenScope"),
         ["CalendarWebhookBindingResolver.cs"] = new("CalendarWebhookBindingResolver.cs", AllowlistClassification.InfrastructureBootstrap,
             "Webhook binding resolver bypasses EF query filter to resolve the owning calendar binding across tenant boundaries before the derived tenant can be adopted",

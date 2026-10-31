@@ -64,6 +64,34 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         target.Status.Should().Be(WorkspaceMemberStatus.Removed);
     }
 
+    [Fact]
+    public async Task Removing_AMember_EndsTheirDerivedAccess_InTheSameRequest()
+    {
+        var target = Target(WorkspaceRole.Member);
+        Arrange(WorkspaceRole.Admin, target);
+
+        await Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
+
+        GrantProjectionMock.Verify(g => g.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            TestAccountId, TestWorkspaceId, _targetId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
+        GrantProjectionMock.Verify(g => g.ClearCustomRoleAssignmentsAsync(
+            TestAccountId, TestWorkspaceId, _targetId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Reactivating_AMember_ClearsTheirCustomRoleAssignments_ButKeepsTheAccountGrant()
+    {
+        var target = Target(WorkspaceRole.Member, suspended: true);
+        Arrange(WorkspaceRole.Admin, target);
+
+        await Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
+
+        GrantProjectionMock.Verify(g => g.ClearCustomRoleAssignmentsAsync(
+            TestAccountId, TestWorkspaceId, _targetId, It.IsAny<CancellationToken>()), Times.Once);
+        GrantProjectionMock.Verify(g => g.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Theory]
     [MemberData(nameof(ProtectedTargets))]
     public async Task Admin_CannotRemove_OwnerOrAdminTarget(WorkspaceRole targetRole)

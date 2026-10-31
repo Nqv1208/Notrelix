@@ -137,14 +137,16 @@ test.describe("Board share dialog (owner)", () => {
       .click();
     await page.getByRole("menuitemradio", { name: /Có thể sửa/ }).click();
     await expect(rows.nth(1)).toContainText("Có thể sửa");
-    // A guest cannot be a manager.
+    // A guest is view-only: every level above view is disabled.
     await rows
       .nth(3)
-      .getByRole("button", { name: /Có thể sửa/ })
+      .getByRole("button", { name: /Có thể xem/ })
       .click();
-    await expect(
-      page.getByRole("menuitemradio", { name: /Quản lý/ }),
-    ).toHaveAttribute("aria-disabled", "true");
+    for (const level of [/Có thể bình luận/, /Có thể sửa/, /Quản lý/]) {
+      await expect(
+        page.getByRole("menuitemradio", { name: level }),
+      ).toHaveAttribute("aria-disabled", "true");
+    }
     await page.getByRole("menuitem", { name: /Gỡ quyền/ }).click();
     await expect(dialog.getByText("Đặng Minh Tuấn")).toHaveCount(0);
     await expect(
@@ -166,7 +168,7 @@ test.describe("Board share dialog (owner)", () => {
     const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
     await dialog.getByText("Nhật ký thay đổi quyền").click();
     await expect(
-      dialog.getByText("Nguyễn Thu Hà thêm Đặng Minh Tuấn (khách, Có thể sửa)"),
+      dialog.getByText("Nguyễn Thu Hà thêm Đặng Minh Tuấn (khách, Có thể xem)"),
     ).toBeVisible();
     await expect(dialog.getByText("08/10 · 14:12")).toBeVisible();
     // The history has only what the producer records: no expiry, no "created".

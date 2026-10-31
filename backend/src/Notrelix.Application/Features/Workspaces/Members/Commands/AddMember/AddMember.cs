@@ -105,6 +105,13 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
             _dateTimeProvider.UtcNow,
             ct);
 
+        if (existingMember is not null)
+        {
+            // A returning member comes back to the built-in role they were given and is configured again.
+            await _grantProjection.ClearCustomRoleAssignmentsAsync(
+                workspace.AccountId, request.WorkspaceId, request.UserId, ct);
+        }
+
         return Result.Success();
     }
 }
