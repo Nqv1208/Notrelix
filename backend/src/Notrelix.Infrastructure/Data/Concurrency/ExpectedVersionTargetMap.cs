@@ -18,6 +18,11 @@ using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChe
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemCover;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemReminder;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemRepeat;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetChecklistItemAssignee;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetChecklistItemDue;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 using Notrelix.Domain.WorkManagement.Checklists;
@@ -221,6 +226,9 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateBoardItemFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(UpdateBoardItemFieldValuesCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ClearFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemCoverCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemRepeatCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemReminderCommand)] = new(BoardItemKind, typeof(BoardItem)),
         // Work Management — checklists; item mutations are guarded by the owning Checklist
         [typeof(UpdateChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(MoveChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
@@ -229,6 +237,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(ToggleChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(DeleteChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(SetChecklistItemDueCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(SetChecklistItemAssigneeCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
 
         // Work Management — forms
         [typeof(UpdateFormDetailsCommand)] = new(FormKind, typeof(Form)),
