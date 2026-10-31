@@ -411,7 +411,7 @@ Team capability WM-001.
 - Rules: product sections 101-102; WM-003, WM-040; WMREQ002, WMREQ005
 - Acceptance: Given a Manager moves a board to another Space, when confirmed, then the board remains in the same Workspace and a person with only the old Space's access receives NotFound. Given assignees would lose access, then a warning lists them and offers to grant access.
 - Evidence: BE Boards.MoveToSpace = POST /boards/{boardId:guid}/move-to-space -> MoveBoardToSpaceCommand (`Boards/Commands/MoveBoardToSpace/MoveBoardToSpace.cs`) [EV / Idem] · FE `frontend/apps/web/src/shell/workspace/use-move-to-space.tsx`, `frontend/apps/web/src/shell/workspace/board-placement-bridge.ts`; no impact warning · Design none; needs move-board dialog, access-impact warning list, error · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: HARDENING — real e2e spec, tests, design measurement and owner check; access-impact warning with grant offer (UC-WM-A25), move dialog design; tests and owner check. Evidence: real-stack check 2026-10-31: moved a board to a department from the Library dialog and the reload shows the new location; the same Space is a no-op; a member 403; an unknown Space 404, commit 33ed8c465.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; access-impact warning with grant offer (UC-WM-A25), move dialog design; tests and owner check. Evidence: real-stack check 2026-10-31: moved a board to a department from the Library dialog and the reload shows the new location; the same Space is a no-op; a member 403; an unknown Space 404, commit 33ed8c465. Real-stack check 2026-10-31: the board settings 'Chuyển sang phòng khác' and the Library dialog read GET /boards/{id}/move-impact for the picked place and list who loses, who gains, who keeps and who would be left with unfinished items; 'Thêm N người rồi chuyển' adds them as editors and moves in one transaction; the same Space bumps nothing, a stale version 412, a member 403, an unknown Space 404, a repeated idempotency key moves once, commit b3c9198af. Deviation: the picker is the generic Space tree, not the WM-MoveBoard card list (no people count per Space); a Workspace admin who is not on the board can be listed as left behind.
 
 ### UC-WM-A04 Archive a board
 - Capability: A Board lifecycle (WM-001)
@@ -719,7 +719,7 @@ Team capability WM-001.
 - Rules: product sections 68.2, 103; WM-040; D78.11
 - Acceptance: Given Private visibility is chosen and 4 assignees lack access, then the warning names them with a "grant access" action.
 - Evidence: BE privateImpact on MakePrivate only; none on Visibility/MoveToSpace · FE list inside make-private only · Design none; needs assignee-impact warning with Grant access action · Tests none found · Real e2e none
-- State: INTEGRATING — Warning on visibility change and move-to-space; design
+- State: INTEGRATING — Warning on visibility change and move-to-space; design Move-to-Space half built: the impact read is authorized (ManageBoard plus create-a-board on the target), identical NotFound, bounded (50 people), commit b3c9198af. Visibility-change impact stays later (decision 11).
 
 ### UC-WM-A26 Block removing or demoting the last board manager
 - Capability: A Board lifecycle (WM-001)
