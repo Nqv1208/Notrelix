@@ -1,4 +1,3 @@
-using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Application.Features.Identity.Mfa.Queries.GetMfaStatus;
 using Notrelix.Domain.Identity.Mfa;
