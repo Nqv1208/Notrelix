@@ -178,4 +178,66 @@ public class UserSessionTests
 
         session.Should().BeAssignableTo<AggregateRoot>();
     }
+
+    [Fact]
+    public void Rotate_KeepsTheSessionAndRemembersTheReplacedCredentialForTheGraceWindowOnly()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        var next = RefreshTokenHash.Create("next-refresh-token");
+
+        session.Rotate(next, now.AddMinutes(5));
+
+        session.Status.Should().Be(SessionStatus.Active);
+        session.RefreshTokenHash.Hash.Should().Be(next.Hash);
+        var rotatedAt = now.AddMinutes(5);
+        // A retry of the lost response inside the window is not a replay.
+        session.IsWithinRotationGrace(ValidTokenHash.Hash, rotatedAt.AddSeconds(10)).Should().BeTrue();
+        // After the window the same credential is a replay.
+        session.IsWithinRotationGrace(ValidTokenHash.Hash, rotatedAt.AddSeconds(11)).Should().BeFalse();
+        // Only the credential the last rotation replaced is recognised.
+        session.IsWithinRotationGrace(RefreshTokenHash.Create("never-issued").Hash, rotatedAt).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Rotate_SetsTheIdleExpiryFromNow_AndNeverPastTheAbsoluteLimit()
+    {
+        var created = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, created.AddDays(30), created);
+
+        var early = created.AddDays(10);
+        session.Rotate(RefreshTokenHash.Create("a"), early);
+        session.ExpiresAt.Should().Be(early + SessionLifetimePolicy.IdleLifetime);
+
+        // Used daily for almost the whole absolute life: the cap wins over the idle period.
+        var late = created.AddDays(85);
+        session.Rotate(RefreshTokenHash.Create("b"), late);
+        session.ExpiresAt.Should().Be(created + SessionLifetimePolicy.AbsoluteLifetime);
+    }
+
+    [Fact]
+    public void Rotate_AfterTheAbsoluteLimit_IsRefusedAndChangesNothing()
+    {
+        var created = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, created.AddDays(30), created);
+        var version = session.Version;
+
+        var act = () => session.Rotate(RefreshTokenHash.Create("late"), created.AddDays(91));
+
+        act.Should().Throw<BusinessRuleException>();
+        session.RefreshTokenHash.Hash.Should().Be(ValidTokenHash.Hash);
+        session.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public void Rotate_OfARevokedSession_IsRefused()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        session.Revoke(now.AddMinutes(1));
+
+        var act = () => session.Rotate(RefreshTokenHash.Create("x"), now.AddMinutes(2));
+
+        act.Should().Throw<BusinessRuleException>();
+    }
 }
