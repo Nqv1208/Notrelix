@@ -24,7 +24,6 @@ import { AuthVerifyEmailSurface } from "../auth-verify-email-surface";
 
 const copy = authCopy("vi");
 const NEW_PASSWORD = `Pw-${"a".repeat(12)}`;
-const NEW_PASSWORD = `Pw-${"a".repeat(12)}`;
 
 describe("auth sign-in surface", () => {
   it("FUI[auth.sign-in:email] asks for the email, rejects a malformed one and continues with a good one", () => {
