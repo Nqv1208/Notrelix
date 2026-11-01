@@ -88,6 +88,22 @@ public class SpacePlacementDomainTests
     }
 
     [Fact]
+    public void Page_FollowRootSpace_WhenArchived_FollowsTheSpaceButKeepsItsTrashTime()
+    {
+        var space = Guid.NewGuid();
+        var trashed = Page.Create(AccountId, WorkspaceId, "Chapter", Actor, T0, parentId: Guid.NewGuid());
+        trashed.Archive(Actor, T0.AddMinutes(1));
+        var trashedAt = trashed.UpdatedAt;
+        var version = trashed.Version;
+
+        trashed.FollowRootSpace(space, Actor, T0.AddMinutes(9));
+
+        trashed.SpaceId.Should().Be(space);
+        trashed.Version.Should().Be(version + 1);
+        trashed.UpdatedAt.Should().Be(trashedAt, "a restore finds the pages trashed together by this time");
+    }
+
+    [Fact]
     public void Page_PlaceInSpace_WhenArchived_IsRejected()
     {
         var page = Page.Create(AccountId, WorkspaceId, "Playbook", Actor, T0);

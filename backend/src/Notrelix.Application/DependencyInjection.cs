@@ -161,6 +161,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,

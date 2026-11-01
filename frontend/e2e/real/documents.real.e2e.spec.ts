@@ -36,22 +36,16 @@ test("an owner writes a document, renames it, reloads it and shares it with a me
   await page.goto(`/workspaces/${workspace.id}/docs/${docId}`);
   await expect(page.locator("article h1")).toHaveText(title);
 
-  // Write a line: it is saved as a block of the page.
-  const added = page.waitForResponse(
-    (response) =>
-      response.request().method() === "POST" &&
-      /\/pages\/[^/]+\/blocks$/.test(response.url()),
-  );
-  await page.getByRole("button", { name: /^Type \/ to add/ }).click();
-  expect((await added).status()).toBe(201);
-  const block = page.locator("[data-block]").first();
-  await block.click();
-  await page.keyboard.type(line);
+  // Write a line: the editor saves it as a block of the page (one batch).
   const saved = page.waitForResponse(
     (response) =>
-      response.request().method() === "PATCH" &&
-      /\/pages\/[^/]+\/blocks\/[^/]+$/.test(response.url()),
+      response.request().method() === "POST" &&
+      /\/pages\/[^/]+\/blocks\/batch$/.test(response.url()),
   );
+  await page
+    .getByRole("textbox", { name: /Type \/ to insert a block/ })
+    .click();
+  await page.keyboard.type(line);
   await page.locator("article h1").click();
   expect((await saved).status()).toBeLessThan(300);
 
@@ -65,7 +59,7 @@ test("an owner writes a document, renames it, reloads it and shares it with a me
   await heading.click();
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type(renamed);
-  await page.locator("[data-block]").first().click();
+  await page.getByRole("textbox").first().click();
   expect((await renameSent).status()).toBeLessThan(300);
 
   // After a reload the title and the line are still there.

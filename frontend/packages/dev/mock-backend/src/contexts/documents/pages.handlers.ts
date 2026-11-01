@@ -10,6 +10,7 @@
  *   pages.restore    — POST /pages/:id/restore
  *   pages.trash      — GET /workspaces/:workspaceId/pages/trash
  *   pages.delete     — DELETE /pages/:id (a trashed page only)
+ *   pages.move       — POST /pages/:pageId/move (Documents.Pages.Move)
  *   pages.moveToSpace — POST /pages/:pageId/move-to-space (Documents.Pages.MoveToSpace)
  *   pages.breadcrumb — GET /pages/:id/breadcrumb
  *   pages.blocks     — GET /pages/:id/blocks
@@ -135,7 +136,11 @@ export const pagesOperations = [
 
   // ─── GET /workspaces/:workspaceId/pages/trash ─────────────────────────────
 
-  defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
+  defineMockOperation<
+    { workspaceId: string },
+    never,
+    { items: PageDtoApi[]; nextCursor: string | null }
+  >({
     id: "pages.trash",
     contract: {
       kind: "openapi",
@@ -143,14 +148,19 @@ export const pagesOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/pages/trash",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId))
         return notFound("Workspace not found");
-      return ok<PageDtoApi[]>(
-        store
-          .getTrashedPages(params.workspaceId)
+      // The producer's cursor is opaque; here it is the offset of the next row.
+      const limit = Math.min(Number(query.limit) || 50, 200);
+      const from = Number(query.cursor) || 0;
+      const rows = store.getTrashedPages(params.workspaceId);
+      return ok({
+        items: rows
+          .slice(from, from + limit)
           .map((page) => mapPageDto(page, store)),
-      );
+        nextCursor: from + limit < rows.length ? String(from + limit) : null,
+      });
     },
   }),
 
@@ -227,7 +237,7 @@ export const pagesOperations = [
 
   defineMockOperation<
     { id: string },
-    { title?: string; icon?: string; parentId?: string },
+    { title?: string; expectedVersion?: number },
     PageDtoApi
   >({
     id: "pages.update",
@@ -235,10 +245,30 @@ export const pagesOperations = [
     method: "PATCH",
     route: "/pages/:id",
     async handle({ params, body, store }) {
-      const updated = store.updatePage(params.id, body ?? {});
-      if (!updated) return notFound("Page not found");
-      const page = store.getPage(params.id)!;
-      return ok<PageDtoApi>(mapPageDto(page));
+      const page = store.getPage(params.id);
+      if (!page || page.trashedAt) return notFound("Page not found");
+      // UpdatePage needs an Editor: guests never rename here.
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return notFound("Page not found");
+      // The producer requires the version the editor read.
+      if (typeof body?.expectedVersion !== "number")
+        return {
+          status: 400,
+          body: {
+            message: "Validation failed",
+            code: "VALIDATION_ERROR",
+            errors: { ExpectedVersion: ["ExpectedVersion is required."] },
+          },
+        };
+      const { title } = body;
+      switch (store.updatePage(params.id, { title }, body.expectedVersion)) {
+        case "not-found":
+          return notFound("Page not found");
+        case "stale":
+          return preconditionFailed();
+        case "ok":
+          return ok<PageDtoApi>(mapPageDto(store.getPage(params.id)!));
+      }
     },
   }),
 
@@ -300,6 +330,50 @@ export const pagesOperations = [
         };
       store.deletePage(params.id);
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /pages/:pageId/move ─────────────────────────────────────────────
+
+  defineMockOperation<
+    { pageId: string },
+    { parentId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "pages.move",
+    contract: { kind: "openapi", operationId: "Documents.Pages.Move" },
+    method: "POST",
+    route: "/pages/:pageId/move",
+    async handle({ params, body, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page || !store.isCurrentMemberOf(page.workspaceId))
+        return notFound("Page not found");
+      // UpdatePage on the page (guests never move pages here).
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return notFound("Page not found");
+      switch (
+        store.movePage(page.id, body?.parentId ?? null, body?.expectedVersion)
+      ) {
+        case "ok":
+          return noContent();
+        case "not-found":
+          return notFound("Page not found");
+        case "stale":
+          return preconditionFailed();
+        case "invalid":
+          // The producer's Documents_PageTree_* rules (cycle, nesting limit).
+          return {
+            status: 400,
+            body: {
+              type: "https://docs.notrelix.com/problems/business_rule-violation",
+              title: "Business rule violation",
+              status: 400,
+              detail:
+                "A page cannot go inside itself or nest deeper than 10 levels.",
+              errorCode: "business_rule.violation",
+            },
+          };
+      }
     },
   }),
 

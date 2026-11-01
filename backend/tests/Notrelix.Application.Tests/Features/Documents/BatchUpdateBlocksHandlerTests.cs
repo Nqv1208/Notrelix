@@ -301,7 +301,7 @@ public sealed class BatchUpdateBlocksHandlerTests
         context.Setup(c => c.Blocks).Returns(blockSet.Object);
         var requestContext = new FakeCurrentRequestContext().AsUser(UserId);
         requestContext.Tenant.SetWorkspace(AccountId, WorkspaceId, UserId);
-        return (new BatchUpdateBlocksCommandHandler(context.Object, requestContext, new FixedClock()), page, blocks, added);
+        return (new BatchUpdateBlocksCommandHandler(context.Object, new NoPageBlockWriteLock(), requestContext, new FixedClock()), page, blocks, added);
     }
 
     private sealed class FixedClock : IDateTimeProvider

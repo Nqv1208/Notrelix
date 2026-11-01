@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Documents.Pages.Services;
 using Notrelix.Application.Features.Documents.Versions.Services;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Domain.Documents.Templates;
+using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.Documents.Templates.Commands.CreatePageFromTemplate;
@@ -16,7 +17,8 @@ namespace Notrelix.Application.Features.Documents.Templates.Commands.CreatePageF
 /// Images, files and videos are not copied: an attachment belongs to the page it was uploaded to, so a copy
 /// would point at content the new page's readers cannot open. The result says how many blocks were left out.
 /// </summary>
-public record CreatePageFromTemplateCommand(Guid WorkspaceId, Guid TemplateId, string? Title, Guid? ParentId, Guid? SpaceId = null) : ICommand<Result<PageFromTemplateDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+[IdempotencyOperation("documents.templates.create-page-from-template.v1")]
+public record CreatePageFromTemplateCommand(Guid WorkspaceId, Guid TemplateId, string? Title, Guid? ParentId, Guid? SpaceId = null) : ICommand<Result<PageFromTemplateDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreatePage;
 
@@ -32,6 +34,7 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
 
     private readonly IDocumentDbContext _context;
     private readonly IPageSpacePlacement _placement;
+    private readonly IPageSubtreeStore _tree;
     private readonly IResourceCreatorGrant _creatorGrant;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -39,12 +42,14 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
     public CreatePageFromTemplateCommandHandler(
         IDocumentDbContext context,
         IPageSpacePlacement placement,
+        IPageSubtreeStore tree,
         IResourceCreatorGrant creatorGrant,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _placement = placement;
+        _tree = tree;
         _creatorGrant = creatorGrant;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -59,12 +64,14 @@ public class CreatePageFromTemplateCommandHandler : IRequestHandler<CreatePageFr
         var spaceId = request.SpaceId;
         if (request.ParentId is { } parentId)
         {
+            await _tree.LockTreeAsync(request.WorkspaceId, ct);
             var parent = await _context.Pages.AsNoTracking()
                 .Where(p => p.Id == parentId && p.WorkspaceId == request.WorkspaceId && p.Status != PageStatus.Archived && p.DeletedAt == null)
                 .Select(p => new { p.SpaceId })
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException(nameof(Page), parentId);
             spaceId = parent.SpaceId;
+            PageTreeRules.EnsureCanNestUnder(await _tree.DepthOfAsync(request.WorkspaceId, parentId, ct));
         }
         else if (spaceId is { } target)
         {

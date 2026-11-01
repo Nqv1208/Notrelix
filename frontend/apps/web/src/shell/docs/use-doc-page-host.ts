@@ -547,7 +547,13 @@ export const useDocPageHost: UseDocPageHost = (
     convertBoards,
     convertGroups,
     spaceNameFor,
-    notify: (message: string) => void toast.warning(message),
+    notify: (message, action) =>
+      void toast.warning(
+        message,
+        action
+          ? { action: { label: action.label, onClick: action.run } }
+          : undefined,
+      ),
     leaveDoc: () =>
       void navigate({
         to: "/workspaces/$workspaceId/home",

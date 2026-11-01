@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Blocks.Services;
 using Notrelix.Application.Features.Documents.Common;
 using Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Domain.Documents.Rules;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 
@@ -45,9 +46,10 @@ public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Res
         var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.PageId == request.PageId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
-        PageBlockSet.EnsureVersion(block, request.ExpectedVersion);
         var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(Page), request.PageId);
+        PageRules.EnsureCanEdit(page.Status);
+        PageBlockSet.EnsureVersion(block, request.ExpectedVersion);
         var tracker = new BlockSaveTracker();
         tracker.Before(block);
 

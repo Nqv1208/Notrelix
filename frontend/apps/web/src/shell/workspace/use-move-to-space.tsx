@@ -107,6 +107,14 @@ export function useMoveToSpace() {
 
   const onFailure = useCallback(
     (failure: unknown) => {
+      // Some page below the page being moved is not the caller's to change.
+      if (
+        (failure as { code?: unknown } | null)?.code ===
+        "documents.page.subtree-not-permitted"
+      ) {
+        setError(copy.toasts.pageSubtreeRefused);
+        return;
+      }
       const described = describeWorkspaceFailure(failure);
       setError(
         described.kind === "rule" || described.kind === "validation"

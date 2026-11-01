@@ -1242,7 +1242,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
 
-        var act = () => SendAsync<Result>(provider, new UpdatePageCommand(pageId, "Renamed"));
+        var act = () => SendAsync<Result>(provider, new UpdatePageCommand(pageId, "Renamed", version));
         await act.Should().ThrowAsync<AppNotFound>(
             "a trashed page accepts no edits");
 
@@ -1266,8 +1266,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         using var provider = CreateProvider(accountId, editor);
         (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue("an Editor moves a page to the trash");
 
-        var listed = await SendAsync<Result<List<PageDto>>>(provider, new GetTrashedPagesQuery(workspaceId));
-        listed.Data!.Select(p => p.Id).Should().Contain(pageId, "the trash lists the page for someone who can see it");
+        var listed = await SendAsync<Result<CursorPage<PageDto>>>(provider, new GetTrashedPagesQuery(workspaceId));
+        listed.Data!.Items.Select(p => p.Id).Should().Contain(pageId, "the trash lists the page for someone who can see it");
 
         var delete = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
         await delete.Should().ThrowAsync<AppForbidden>("deleting for good is Manager only");
@@ -1692,6 +1692,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         where T : class
     {
         using var scope = provider.CreateScope();
+        // Idempotent commands (page creation) need the key a transport would bind.
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set(Guid.NewGuid().ToString("N"), IdempotencyExecutionSource.Internal);
         var response = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
         return (response as T)!;
     }
@@ -1795,6 +1798,12 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             global::Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             global::Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
+            global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,
+            global::Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
+            global::Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
 
         services.AddScoped<Notrelix.Application.Common.Context.ExecutionContext>();
@@ -1850,7 +1859,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             IRequestHandler<UpdatePageCommand, Result>,
             UpdatePageCommandHandler>();
         services.AddScoped<
-            IRequestHandler<GetTrashedPagesQuery, Result<List<PageDto>>>,
+            IRequestHandler<GetTrashedPagesQuery, Result<CursorPage<PageDto>>>,
             GetTrashedPagesQueryHandler>();
         services.AddScoped<
             IRequestHandler<CreateBlockCommand, Result<BlockDto>>,

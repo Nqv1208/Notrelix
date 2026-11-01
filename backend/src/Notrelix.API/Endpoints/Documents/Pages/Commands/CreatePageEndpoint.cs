@@ -9,6 +9,7 @@ public static class CreatePageEndpoint
     public static IEndpointRouteBuilder MapCreatePage(this IEndpointRouteBuilder group)
     {
         group.MapWorkspacePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("Documents.Pages.CreatePage")
             .WithTags("Documents.Pages")
             .WithSummary("Create a new page");
