@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
@@ -23,16 +24,31 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
+/** The invitations entry lives in the dark system rail: its light label needs that ground to be legible. */
+function OnRail({ children }: { children: ReactNode }) {
+  return (
+    <div className="inline-flex bg-rail text-rail-foreground [--focus-ring:var(--rail-focus-ring)]">
+      {children}
+    </div>
+  );
+}
+
 export const InvitationsDefault: Story = {
   render: () => (
-    <PendingInvitationsMenuSurface invitations={invitationsDefaultScenario()} />
+    <OnRail>
+      <PendingInvitationsMenuSurface
+        invitations={invitationsDefaultScenario()}
+      />
+    </OnRail>
   ),
   tags: ["fui-surface--workspace.pending-invitations", "fui-state--Default"],
 };
 
 export const InvitationsEmpty: Story = {
   render: () => (
-    <PendingInvitationsMenuSurface invitations={invitationsEmptyScenario()} />
+    <OnRail>
+      <PendingInvitationsMenuSurface invitations={invitationsEmptyScenario()} />
+    </OnRail>
   ),
   tags: ["fui-surface--workspace.pending-invitations", "fui-state--Empty"],
 };

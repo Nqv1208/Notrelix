@@ -29,7 +29,11 @@ export interface WorkspaceMember {
   avatarUrl?: string;
   /** ISO date-time the member joined. */
   joinedAt?: string;
+  /** The person's title in this workspace, when they or an admin set one. */
+  jobTitle?: string;
   membership?: WorkspaceMembershipStatus;
+  /** The member's version; every role, suspend, activate and remove write quotes it. */
+  version?: number;
   /**
    * @deprecated Presence fields of the retired mock shape; read only by the
    * unmounted Phase 2 shell files (`apps/web/src/shell/sidebar/*`).
@@ -59,11 +63,27 @@ export interface WorkspaceInvitation {
   expiresAt: string;
   isAccepted: boolean;
   isExpired?: boolean;
+  /** The invitation's version; changing its role quotes it. */
+  version?: number;
   createdAt: string;
   workspaceId?: string;
   workspaceSlug?: string;
   workspaceName?: string;
   inviterName?: string;
+}
+
+/**
+ * An invitation waiting for the signed-in person (`GetUserPendingInvitations`): addressed to their own
+ * confirmed address, so it holds no email and no token; answering it quotes only its id.
+ */
+export interface PendingInvitation {
+  id: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  /** The inviter's display name; empty when the producer has none to show. */
+  inviterName: string;
+  role: WorkspaceRole;
+  expiresAt: string;
 }
 
 export interface WorkspaceSummary {
@@ -166,7 +186,8 @@ export interface UpdateWorkspaceViewInput {
 
 export interface CreateWorkspaceInput {
   name: string;
-  slug: string;
+  /** The address the caller chose; when absent the producer derives a free one from the name. */
+  slug?: string;
   isPersonal: boolean;
 }
 

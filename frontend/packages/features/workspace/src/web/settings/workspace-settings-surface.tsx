@@ -72,7 +72,7 @@ export interface WorkspaceSettingsSurfaceProps {
   readonly onRetryDefaults: () => void;
 }
 
-const NAME_MAX = 200;
+const NAME_MAX = 160;
 const DESCRIPTION_MAX = 1024;
 
 function SettingsSection({

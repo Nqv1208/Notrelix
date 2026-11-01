@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
 
@@ -17,9 +18,10 @@ public static class ActivateMemberEndpoint
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         Guid userId,
+        MemberVersionRequest body,
         ISender sender)
     {
-        var result = await sender.Send(new ActivateMemberCommand(workspaceId, userId));
+        var result = await sender.Send(new ActivateMemberCommand(workspaceId, userId, body.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

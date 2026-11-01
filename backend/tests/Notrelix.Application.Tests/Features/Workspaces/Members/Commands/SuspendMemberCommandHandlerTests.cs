@@ -11,9 +11,10 @@ public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
     public async Task Handle_WhenMemberExists_SuspendsSuccessfully()
     {
         SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
-        SetupMembers(CreateMember());
+        var member = CreateMember();
+        SetupMembers(member);
         var sut = CreateSut();
-        var result = await sut.Handle(new SuspendMemberCommand(TestWorkspaceId, TestUserId), CancellationToken.None);
+        var result = await sut.Handle(new SuspendMemberCommand(TestWorkspaceId, TestUserId, member.Version), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
     }
 
@@ -23,7 +24,7 @@ public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
         SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
         SetupMembers();
         var sut = CreateSut();
-        Func<Task> act = () => sut.Handle(new SuspendMemberCommand(TestWorkspaceId, TestUserId), CancellationToken.None);
+        Func<Task> act = () => sut.Handle(new SuspendMemberCommand(TestWorkspaceId, TestUserId, 1), CancellationToken.None);
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
@@ -31,10 +32,11 @@ public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
     public async Task Handle_WhenMemberSuspended_RevokesWorkspaceGrant()
     {
         SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
-        SetupMembers(CreateMember());
+        var member = CreateMember();
+        SetupMembers(member);
         var sut = CreateSut();
 
-        await sut.Handle(new SuspendMemberCommand(TestWorkspaceId, TestUserId), CancellationToken.None);
+        await sut.Handle(new SuspendMemberCommand(TestWorkspaceId, TestUserId, member.Version), CancellationToken.None);
 
         GrantProjectionMock.Verify(
             p => p.RevokeWorkspaceMemberGrantAsync(

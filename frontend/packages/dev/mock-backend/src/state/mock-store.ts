@@ -114,6 +114,7 @@ import {
 } from "./mock-item-detail";
 import { MockAuthDirectory } from "./mock-auth-directory";
 import { MockAccountPages } from "./mock-account-pages";
+import { MockInviteeInvitations } from "./mock-invitee-invitations";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
@@ -167,6 +168,8 @@ export interface MockInvitationRecord {
   createdAt: string;
   expiresAt: string;
   status: "pending" | "accepted" | "revoked";
+  /** Moves with every real change (role, resend, revoke); a role change quotes it. */
+  version: number;
 }
 
 export interface MockWorkspaceSettingsRecord {
@@ -243,6 +246,7 @@ export class MockStore {
   /** Setup drafts, getting-started lists and welcome profiles (gap `CTR-GAP-ONBOARD-FLOW`). */
   readonly onboarding = new MockOnboarding();
   readonly accountPages = new MockAccountPages();
+  readonly inviteeInvitations = new MockInviteeInvitations();
   readonly reports = new MockReports();
   readonly billing = new MockBilling();
   readonly integrations = new MockIntegrations();
@@ -1814,6 +1818,7 @@ export class MockStore {
     this.auth.reset();
     this.onboarding.reset();
     this.accountPages.reset();
+    this.inviteeInvitations.reset();
     this.reports.reset();
     this.billing.reset();
     this.integrations.reset();
@@ -2088,6 +2093,35 @@ export class MockStore {
       joinedAt: this.clock.isoNow(),
     };
 
+    this.insertMembership(membership);
+    return { workspace, membership };
+  }
+
+  /** The current user joins a workspace they were invited to: a new workspace and a membership with the invited role. */
+  joinWorkspaceForCurrentUser(input: {
+    name: string;
+    slug: string;
+    role: MockMembershipRecord["role"];
+  }): { workspace: MockWorkspaceRecord; membership: MockMembershipRecord } {
+    const workspace: MockWorkspaceRecord = {
+      id: this.nextId("ws"),
+      name: input.name,
+      slug: input.slug,
+      plan: "free",
+      icon: "Layout",
+      isPersonal: false,
+    };
+    this.insertWorkspace(workspace);
+    const membership: MockMembershipRecord = {
+      id: this.nextId("mem"),
+      workspaceId: workspace.id,
+      userId: this.getCurrentUser().id,
+      role: input.role,
+      status: "active",
+      workload: 0,
+      color: "#1E90FF",
+      joinedAt: this.clock.isoNow(),
+    };
     this.insertMembership(membership);
     return { workspace, membership };
   }
@@ -3810,8 +3844,19 @@ export class MockStore {
       createdAt: this.clock.offsetSeconds(this.navigationTick),
       expiresAt: this.clock.offsetDays(days),
       status: "pending",
+      version: 1,
     });
     return id;
+  }
+
+  getInvitation(
+    workspaceId: string,
+    invitationId: string,
+  ): MockInvitationRecord | null {
+    const invitation = this.invitationsById.get(invitationId);
+    return invitation && invitation.workspaceId === workspaceId
+      ? invitation
+      : null;
   }
 
   /** Changes the role a waiting invitation offers; `null` when it is not found. */
@@ -3823,26 +3868,36 @@ export class MockStore {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
-    invitation.role = role;
+    if (invitation.role !== role) {
+      invitation.role = role;
+      invitation.version += 1;
+    }
     return true;
   }
 
   /**
-   * A resend re-issues the link: the invitation keeps its id and waits seven
-   * more days. Only an invitation that waits or has run out can be sent again.
+   * A resend re-issues the link: the invitation keeps its id and waits as long
+   * as a new one does (the workspace's invitation expiry setting). Only an
+   * invitation that waits or has run out can be sent again.
    */
   resendInvitation(workspaceId: string, invitationId: string): boolean | null {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
-    invitation.expiresAt = this.clock.offsetDays(7);
+    invitation.expiresAt = this.clock.offsetDays(
+      this.getWorkspaceSettings(workspaceId).invitationExpiryDays,
+    );
+    invitation.version += 1;
     return true;
   }
 
   revokeInvitation(workspaceId: string, invitationId: string): boolean {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return false;
-    if (invitation.status === "pending") invitation.status = "revoked";
+    if (invitation.status === "pending") {
+      invitation.status = "revoked";
+      invitation.version += 1;
+    }
     return true;
   }
 
@@ -3928,6 +3983,23 @@ export class MockStore {
     return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
       this.archivedWorkspaceIds.add(workspaceId);
     });
+  }
+
+  /** Brings an archived workspace back; one that is already active stays as it is (no version step). */
+  unarchiveWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    if (!this.getWorkspace(workspaceId)) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    if (!this.archivedWorkspaceIds.has(workspaceId)) return "ok";
+    this.archivedWorkspaceIds.delete(workspaceId);
+    this.workspaceVersionById.set(
+      workspaceId,
+      this.getWorkspaceVersion(workspaceId) + 1,
+    );
+    return "ok";
   }
 
   // ─── My work (WX-BE-005) ─────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Data.Rls;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Application.Features.Identity.Public.Facts;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -27,6 +28,7 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
     protected readonly Mock<IOneTimeTokenService> OneTimeTokenServiceMock = new();
     protected readonly Mock<ICurrentTenantContext> TenantMock = new();
     protected readonly Mock<IRlsSessionContext> RlsMock = new();
+    protected readonly Mock<IBillingSeatGate> SeatGateMock = new();
 
     /// <summary>The token bootstrap: locates the invitation across tenants, then adopts its Workspace scope.</summary>
     protected InvitationTokenScope CreateTokenScope() => new(DbContextMock.Object, TenantMock.Object, RlsMock.Object);
@@ -47,6 +49,10 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
         IdentityUserFactsMock
             .Setup(f => f.FindByIdAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateUserFact());
+
+        SeatGateMock
+            .Setup(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         AccountMembershipFactsMock
             .Setup(f => f.GetAdmissionAsync(TestAccountId, It.IsAny<CancellationToken>()))
@@ -107,6 +113,7 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
                 DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
             new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions>().Object,
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
-            CreateTokenScope());
+            CreateTokenScope(),
+            SeatGateMock.Object);
     }
 }

@@ -327,6 +327,7 @@ describe("workspaces of the member", () => {
         "canLeave",
         "departmentCount",
         "id",
+        "isArchived",
         "isDefault",
         "memberCount",
         "name",

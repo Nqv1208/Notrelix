@@ -21,6 +21,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
+using Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspaceMembership;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
@@ -55,8 +56,11 @@ namespace Notrelix.Integration.Tests.Workspaces;
 ///   version is what profile, settings and archive writes accept; a stale one is
 ///   rejected (412) and leaves the workspace unchanged;
 /// - ListMembers reports each member's status and never lists a removed member
-///   (removal ends participation, docs/product/workspaces.md §13, §20), and the
-///   member count agrees with the list;
+///   (removal ends participation, docs/product/workspaces.md §13, §20), the member
+///   count agrees with the list, it pages by cursor so every member is listed
+///   exactly once even when they joined at the same instant, and it is refused to a
+///   person who is not an active member of that workspace;
+/// - GetMyMembership returns the caller's own row and nobody else's;
 /// - ListWorkspaceInvitations reports each invitation's status, so a revoked or
 ///   expired invitation is not presented as pending.
 /// </summary>
@@ -156,6 +160,109 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         await list.Should().ThrowAsync<AppForbidden>();
     }
 
+    [Fact]
+    public async Task ListMembers_WalksEveryMemberOnceThroughCursorPages_AndNeverReachesAnotherWorkspace()
+    {
+        // Everyone below joined at the same instant, so only the user id orders them.
+        var stack = await SeedWorkspaceStackAsync();
+        var other = await SeedWorkspaceStackAsync();
+        var added = new[]
+        {
+            await AddMemberAsync(stack, _ => { }),
+            await AddMemberAsync(stack, _ => { }),
+            await AddMemberAsync(stack, _ => { }),
+        };
+        await AddMemberAsync(stack, member => member.Remove(activeOwnerCount: 1, stack.OwnerId, BaseTime));
+        using var owner = CreateProvider(stack.AccountId, stack.OwnerId);
+
+        var seen = new List<Guid>();
+        var sizes = new List<int>();
+        string? cursor = null;
+        do
+        {
+            var page = await ListMembersPageAsync(owner, stack.WorkspaceId, cursor, limit: 2);
+            sizes.Add(page.Items.Length);
+            seen.AddRange(page.Items.Select(m => m.UserId));
+            cursor = page.NextCursor;
+        }
+        while (cursor is not null);
+
+        sizes.Should().Equal(2, 2, 1);
+        seen.Should().BeEquivalentTo(new[] { stack.OwnerId, stack.MemberId }.Concat(added), "each person once, the removed one never");
+        seen.Should().NotContain(other.OwnerId).And.NotContain(other.MemberId);
+    }
+
+    [Fact]
+    public async Task ListMembers_DefaultsToFiftyPerPage()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        using var owner = CreateProvider(stack.AccountId, stack.OwnerId);
+
+        var page = await ListMembersPageAsync(owner, stack.WorkspaceId);
+
+        page.Items.Should().HaveCount(2);
+        page.NextCursor.Should().BeNull("a short list is one page");
+    }
+
+    [Fact]
+    public async Task ListMembers_IsDeniedToASuspendedMember_AndToOneWhoWasRemoved()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        var suspended = await AddMemberAsync(stack, member => member.Suspend(stack.OwnerId, BaseTime, activeOwnerCount: 1));
+        var removed = await AddMemberAsync(stack, member => member.Remove(activeOwnerCount: 1, stack.OwnerId, BaseTime));
+
+        foreach (var user in new[] { suspended, removed })
+        {
+            using var provider = CreateProvider(stack.AccountId, user);
+            var list = () => ListMembersAsync(provider, stack.WorkspaceId);
+            await list.Should().ThrowAsync<AppForbidden>();
+        }
+    }
+
+    [Fact]
+    public async Task ListMembers_IsDeniedToAMemberOfAnotherWorkspace()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        var other = await SeedWorkspaceStackAsync();
+        using var asOtherOwner = CreateProvider(other.AccountId, other.OwnerId);
+
+        var intoOther = () => ListMembersAsync(asOtherOwner, stack.WorkspaceId);
+
+        await intoOther.Should().ThrowAsync<AppForbidden>();
+        (await ListMembersAsync(asOtherOwner, other.WorkspaceId)).Select(m => m.UserId)
+            .Should().BeEquivalentTo(new[] { other.OwnerId, other.MemberId });
+    }
+
+    [Fact]
+    public async Task GetMyMembership_ReturnsTheCallersOwnRow_AndNobodyElses()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        using var asMember = CreateProvider(stack.AccountId, stack.MemberId);
+
+        var mine = await GetMyMembershipAsync(asMember, stack.WorkspaceId);
+
+        mine.UserId.Should().Be(stack.MemberId);
+        mine.Role.Should().Be("Member");
+        mine.Status.Should().Be("Active");
+        mine.Version.Should().Be(await PersistedMemberVersionAsync(stack.WorkspaceId, stack.MemberId), "the read reports the version a member write carries");
+    }
+
+    [Fact]
+    public async Task GetMyMembership_IsDeniedToAMemberOfAnotherWorkspace_AndToASuspendedMember()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        var other = await SeedWorkspaceStackAsync();
+        var suspended = await AddMemberAsync(stack, member => member.Suspend(stack.OwnerId, BaseTime, activeOwnerCount: 1));
+        using var asOtherOwner = CreateProvider(other.AccountId, other.OwnerId);
+        using var asSuspended = CreateProvider(stack.AccountId, suspended);
+
+        var fromOther = () => GetMyMembershipAsync(asOtherOwner, stack.WorkspaceId);
+        var whileSuspended = () => GetMyMembershipAsync(asSuspended, stack.WorkspaceId);
+
+        await fromOther.Should().ThrowAsync<AppForbidden>();
+        await whileSuspended.Should().ThrowAsync<AppForbidden>();
+    }
+
     // ── Invitations ───────────────────────────────────────────────────────
 
     [Fact]
@@ -194,11 +301,23 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
     private static async Task<List<WorkspaceDto>> ListUserWorkspacesAsync(ServiceProvider provider) =>
         ((Result<List<WorkspaceDto>>)(await SendAsync(provider, new GetUserWorkspacesQuery()))!).Data!;
 
-    private static async Task<List<WorkspaceMemberDto>> ListMembersAsync(ServiceProvider provider, Guid workspaceId) =>
-        ((Result<List<WorkspaceMemberDto>>)(await SendAsync(provider, new GetWorkspaceMembersQuery(workspaceId)))!).Data!;
+    private static async Task<CursorPage<WorkspaceMemberDto>> ListMembersPageAsync(ServiceProvider provider, Guid workspaceId, string? cursor = null, int? limit = null) =>
+        ((Result<CursorPage<WorkspaceMemberDto>>)(await SendAsync(provider, new GetWorkspaceMembersQuery(workspaceId, cursor, limit)))!).Data!;
+
+    private static async Task<WorkspaceMemberDto[]> ListMembersAsync(ServiceProvider provider, Guid workspaceId) =>
+        (await ListMembersPageAsync(provider, workspaceId)).Items;
 
     private static async Task<List<WorkspaceInvitationDto>> ListInvitationsAsync(ServiceProvider provider, Guid workspaceId) =>
-        ((Result<List<WorkspaceInvitationDto>>)(await SendAsync(provider, new GetWorkspaceInvitationsQuery(workspaceId)))!).Data!;
+        ((Result<CursorPage<WorkspaceInvitationDto>>)(await SendAsync(provider, new GetWorkspaceInvitationsQuery(workspaceId)))!).Data!.Items.ToList();
+
+    private static async Task<WorkspaceMemberDto> GetMyMembershipAsync(ServiceProvider provider, Guid workspaceId) =>
+        ((Result<WorkspaceMemberDto>)(await SendAsync(provider, new GetMyWorkspaceMembershipQuery(workspaceId)))!).Data!;
+
+    private async Task<long> PersistedMemberVersionAsync(Guid workspaceId, Guid userId)
+    {
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        return await verify.WorkspaceMembers.Where(m => m.WorkspaceId == workspaceId && m.UserId == userId).Select(m => m.Version).SingleAsync();
+    }
 
     private async Task<long> PersistedVersionAsync(Guid workspaceId)
     {
@@ -406,8 +525,9 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
 
         services.AddScoped<IRequestHandler<GetWorkspaceQuery, Result<WorkspaceDto>>, GetWorkspaceQueryHandler>();
         services.AddScoped<IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>, GetUserWorkspacesQueryHandler>();
-        services.AddScoped<IRequestHandler<GetWorkspaceMembersQuery, Result<List<WorkspaceMemberDto>>>, GetWorkspaceMembersQueryHandler>();
-        services.AddScoped<IRequestHandler<GetWorkspaceInvitationsQuery, Result<List<WorkspaceInvitationDto>>>, GetWorkspaceInvitationsQueryHandler>();
+        services.AddScoped<IRequestHandler<GetWorkspaceMembersQuery, Result<CursorPage<WorkspaceMemberDto>>>, GetWorkspaceMembersQueryHandler>();
+        services.AddScoped<IRequestHandler<GetMyWorkspaceMembershipQuery, Result<WorkspaceMemberDto>>, GetMyWorkspaceMembershipQueryHandler>();
+        services.AddScoped<IRequestHandler<GetWorkspaceInvitationsQuery, Result<CursorPage<WorkspaceInvitationDto>>>, GetWorkspaceInvitationsQueryHandler>();
         services.AddScoped<IRequestHandler<UpdateWorkspaceProfileCommand, Result>, UpdateWorkspaceProfileCommandHandler>();
         services.AddScoped<IRequestHandler<UpdateWorkspaceSettingsCommand, Result>, UpdateWorkspaceSettingsCommandHandler>();
         services.AddScoped<IRequestHandler<ArchiveWorkspaceCommand, Result>, ArchiveWorkspaceCommandHandler>();

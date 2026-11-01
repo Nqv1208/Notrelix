@@ -139,7 +139,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
         else
         {
             _active = RlsBoundedScope.Token;
-            _logger?.LogWarning(
+            _logger?.LogInformation(
                 "Token scope entered: {Purpose} | {Category}: {Description} | account {AccountId} workspace {WorkspaceId}",
                 purpose, request.Reason.Category, request.Reason.Description, binding.AccountId, binding.WorkspaceId);
         }

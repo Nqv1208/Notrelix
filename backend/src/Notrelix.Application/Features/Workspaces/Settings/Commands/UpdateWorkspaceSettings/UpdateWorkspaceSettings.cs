@@ -29,12 +29,14 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAuditService _auditService;
 
-    public UpdateWorkspaceSettingsCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public UpdateWorkspaceSettingsCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAuditService auditService)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _auditService = auditService;
     }
 
     public async Task<Result> Handle(UpdateWorkspaceSettingsCommand request, CancellationToken ct)
@@ -59,7 +61,26 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
             request.TimeZone ?? workspace.Settings.TimeZone,
             request.WeekStart ?? workspace.Settings.WeekStart);
 
+        var before = workspace.Settings;
+        var versionBefore = workspace.Version;
         workspace.UpdateSettings(settings, _requestContext.UserId, _dateTimeProvider.UtcNow);
+
+        // A settings change is recorded for Governance; an unchanged write is a no-op and records nothing.
+        // Opening sharing or dropping MFA enforcement weakens the workspace's posture, so it is a warning.
+        if (workspace.Version != versionBefore)
+        {
+            var weakened = (settings.AllowPublicSharing && !before.AllowPublicSharing)
+                || (before.EnforceMfa && !settings.EnforceMfa);
+            await _auditService.RecordAsync(
+                workspace.Id,
+                _requestContext.UserId,
+                "UpdateWorkspaceSettings",
+                ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), workspace.Id, workspace.Id),
+                AuditMetadata.Create(),
+                weakened ? AuditSeverity.Warning : AuditSeverity.Info,
+                cancellationToken: ct);
+        }
+
         return Result.Success();
     }
 }

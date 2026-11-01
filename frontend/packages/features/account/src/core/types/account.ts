@@ -123,6 +123,8 @@ export interface AccountWorkspaceEntry {
   readonly isDefault: boolean;
   /** `false` for the last owner, who has to hand the ownership over first. */
   readonly canLeave: boolean;
+  /** Read-only for every member; listed only to its owners and admins, who open it from here. */
+  readonly isArchived: boolean;
 }
 
 /** Why a profile photo was not changed. */

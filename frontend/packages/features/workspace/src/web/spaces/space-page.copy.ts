@@ -217,7 +217,7 @@ export const spacePageEn = {
       "The server refused: this department still has departments, Boards or Docs inside, some of which you may not see. Ask a workspace admin.",
     archiveConfirmTitle: "Archive {{name}}?",
     archiveConfirmDescription:
-      "People can still open it from links, but it leaves the sidebar. You can unarchive it later.",
+      "People can still open it from links, but it leaves the sidebar of {{workspace}}. You can unarchive it later.",
     archiveConfirmAction: "Archive",
     cancel: "Cancel",
     deleteTitle: "Delete the department",
@@ -450,7 +450,7 @@ export const spacePageVi: SpacePageCopy = {
       "Máy chủ từ chối: phòng ban này còn phòng ban, board hoặc tài liệu bên trong, có thể có cái bạn không thấy. Hãy hỏi quản trị workspace.",
     archiveConfirmTitle: "Lưu trữ {{name}}?",
     archiveConfirmDescription:
-      "Mọi người vẫn mở được từ liên kết, nhưng phòng ban rời khỏi thanh bên. Bạn bỏ lưu trữ lại được.",
+      "Mọi người vẫn mở được từ liên kết, nhưng phòng ban rời khỏi thanh bên của {{workspace}}. Bạn bỏ lưu trữ lại được.",
     archiveConfirmAction: "Lưu trữ",
     cancel: "Huỷ",
     deleteTitle: "Xoá phòng ban",

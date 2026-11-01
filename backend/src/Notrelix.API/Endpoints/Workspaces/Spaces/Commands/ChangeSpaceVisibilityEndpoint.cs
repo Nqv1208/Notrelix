@@ -21,7 +21,7 @@ public static class ChangeSpaceVisibilityEndpoint
         ChangeSpaceVisibilityRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new ChangeSpaceVisibilityCommand(workspaceId, spaceId, request.Visibility));
+        var result = await sender.Send(new ChangeSpaceVisibilityCommand(workspaceId, spaceId, request.Visibility, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

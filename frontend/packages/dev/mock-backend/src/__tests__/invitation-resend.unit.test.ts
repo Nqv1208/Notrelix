@@ -44,15 +44,28 @@ describe("Resending a workspace invitation in the mock world", () => {
       "member",
     )!;
     const path = `/workspaces/${workspaceId}/invitations/${id}/role`;
-    await client.api.patch(path, { newRole: "Guest" });
+    const version = () => store.getInvitation(workspaceId, id)!.version;
+    await client.api.patch(path, {
+      newRole: "Guest",
+      expectedVersion: version(),
+    });
     expect(store.getInvitations(workspaceId)[0]!.role).toBe("guest");
     await expect(
-      client.api.patch(path, { newRole: "Admin" }),
+      client.api.patch(path, { newRole: "Admin", expectedVersion: version() }),
     ).rejects.toBeTruthy();
     expect(store.getInvitations(workspaceId)[0]!.role).toBe("guest");
+    // A version read before the change is stale: the role stays.
+    await expect(
+      client.api.patch(path, { newRole: "Member", expectedVersion: 1 }),
+    ).rejects.toMatchObject({ status: 412 });
+    expect(store.getInvitations(workspaceId)[0]!.role).toBe("guest");
+    const lastVersion = version();
     store.revokeInvitation(workspaceId, id);
     await expect(
-      client.api.patch(path, { newRole: "Member" }),
+      client.api.patch(path, {
+        newRole: "Member",
+        expectedVersion: lastVersion,
+      }),
     ).rejects.toBeTruthy();
   });
 

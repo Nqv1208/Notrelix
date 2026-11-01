@@ -441,9 +441,11 @@ export class MockSpaceState {
     patch: Partial<
       Pick<MockSpaceRecord, "name" | "description" | "type" | "visibility">
     >,
+    expectedVersion: unknown,
   ): MockSpaceWrite {
     const space = this.manageable(workspaceId, spaceId, viewer);
     if ("kind" in space) return space;
+    if (expectedVersion !== space.version) return { kind: "stale" };
     if (space.archived)
       return { kind: "rule", message: "Cannot change an archived space." };
     try {
@@ -476,9 +478,11 @@ export class MockSpaceState {
     spaceId: string,
     viewer: MockSpaceViewer,
     placed: { boards: number; pages: number },
+    expectedVersion: unknown,
   ): MockSpaceWrite {
     const space = this.manageable(workspaceId, spaceId, viewer);
     if ("kind" in space) return space;
+    if (expectedVersion !== space.version) return { kind: "stale" };
     if (space.archived) return { kind: "ok" };
     const activeChildren = this.siblings(workspaceId, space.id).filter(
       (child) => !child.archived,
@@ -499,9 +503,11 @@ export class MockSpaceState {
     workspaceId: string,
     spaceId: string,
     viewer: MockSpaceViewer,
+    expectedVersion: unknown,
   ): MockSpaceWrite {
     const space = this.manageable(workspaceId, spaceId, viewer);
     if ("kind" in space) return space;
+    if (expectedVersion !== space.version) return { kind: "stale" };
     if (!space.archived) return { kind: "ok" };
     const parent = space.parentId ? this.spaces.get(space.parentId) : null;
     if (parent?.archived)

@@ -103,7 +103,7 @@ describe("WorkspaceTeamsSurface", () => {
   it("FUI[workspace.teams:archive] confirms before archiving and says who loses access", () => {
     const { props } = renderTeams(teamsArchiveScenario());
     const dialog = screen.getByRole("dialog", {
-      name: "Lưu trữ Nhóm Kỹ sư ERP?",
+      name: "Lưu trữ Nhóm Kỹ sư ERP trong Minh An Group?",
     });
     expect(
       within(dialog).getByText(/3 người sẽ mất quyền vào Phòng Công nghệ/),

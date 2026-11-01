@@ -95,6 +95,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         Notrelix.Application.Common.Models.Result<Guid> result;
         using (var scope = provider.CreateScope())
         {
+            BindIdempotencyKey(scope);
             result = await scope.ServiceProvider.GetRequiredService<ISender>()
                 .Send(new CreateWorkspaceCommand("Telemetry Workspace", null, false));
         }
@@ -138,9 +139,13 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         using var recorder = new ActivityRecorder();
         using var provider = CreateAccountScopedProvider(accountId, userId);
 
-        Func<Task> act = () => provider.CreateScope().ServiceProvider
-            .GetRequiredService<ISender>()
-            .Send(new CreateWorkspaceCommand("Denied Workspace", null, false));
+        Func<Task> act = () =>
+        {
+            var scope = provider.CreateScope();
+            BindIdempotencyKey(scope);
+            return scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new CreateWorkspaceCommand("Denied Workspace", null, false));
+        };
 
         await act.Should().ThrowAsync<AppForbidden>();
 
@@ -565,6 +570,10 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             resourceId: Guid.NewGuid(), streamKey: $"telemetry:{Guid.NewGuid():N}", streamVersion: 1,
             changeKind: "updated", payloadContract: "test.v1",
             System.Text.Json.JsonDocument.Parse("{}").RootElement);
+
+    private static void BindIdempotencyKey(IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set($"telemetry-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
     private static bool IsRootFor(Activity activity, string requestName) =>
         activity.OperationName == "pipeline.request"

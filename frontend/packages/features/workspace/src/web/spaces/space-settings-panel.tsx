@@ -553,7 +553,9 @@ export function SpaceSettingsPanel({
               {formatCopy(s.archiveConfirmTitle, { name: space.name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {s.archiveConfirmDescription}
+              {formatCopy(s.archiveConfirmDescription, {
+                workspace: workspaceName,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -92,6 +92,87 @@ function memberWire(store: MockStore, m: MockMembershipRecord) {
   };
 }
 
+const MEMBERS_DEFAULT_LIMIT = 50;
+const MEMBERS_MAX_LIMIT = 200;
+
+/** What each store made for an `Idempotency-Key`: a retry answers with the same invitation. */
+const invitedUnderKey = new WeakMap<MockStore, Map<string, string>>();
+
+/** A 409 with a stable code, as the producer's ProblemDetails. */
+function codedConflict(
+  detail: string,
+  errorCode: string,
+): MockHttpResult<never> {
+  const result: MockHttpResult<unknown> = {
+    status: 409,
+    body: {
+      type: "https://docs.notrelix.com/problems/conflict",
+      title: "Conflict",
+      status: 409,
+      detail,
+      errorCode,
+    },
+  };
+  return result as MockHttpResult<never>;
+}
+
+/**
+ * A member write quotes the member's version. `null` when it is current (or the member does not
+ * exist, which the write itself answers); a 412 when it moved.
+ */
+function staleMemberVersion(
+  store: MockStore,
+  workspaceId: string,
+  userId: string,
+  expected: unknown,
+): MockHttpResult<never> | null {
+  const member = store
+    .getWorkspaceMembers(workspaceId)
+    .find((m) => m.userId === userId);
+  if (!member) return null;
+  return expected ===
+    store.accountPages.memberProfileOf(workspaceId, userId).version
+    ? null
+    : preconditionFailed();
+}
+
+/** A write that changed the member moves its version (a no-op does not). */
+function bumpMemberVersion(
+  store: MockStore,
+  workspaceId: string,
+  userId: string,
+): void {
+  store.accountPages.memberProfileOf(workspaceId, userId).version += 1;
+}
+
+/** Suspend or activate: refused when the version moved, and the version moves only when the state flips. */
+function suspendedChange(
+  store: MockStore,
+  params: { workspaceId: string; userId: string },
+  expected: unknown,
+  suspended: boolean,
+): MockHttpResult<never> {
+  const stale = staleMemberVersion(
+    store,
+    params.workspaceId,
+    params.userId,
+    expected,
+  );
+  if (stale) return stale;
+  const member = store
+    .getWorkspaceMembers(params.workspaceId)
+    .find((m) => m.userId === params.userId);
+  const wasSuspended = member ? store.isMembershipSuspended(member.id) : false;
+  const change = store.setMemberSuspended(
+    params.workspaceId,
+    params.userId,
+    suspended,
+  );
+  if (change === "ok" && wasSuspended !== suspended)
+    bumpMemberVersion(store, params.workspaceId, params.userId);
+  return memberChangeResult(change);
+}
+
 /** `ManageMembers` is held by owners and admins. */
 function canManageMembers(store: MockStore, workspaceId: string): boolean {
   const role = store.getCurrentMemberRole(workspaceId);
@@ -172,7 +253,7 @@ function workspaceDto(store: MockStore, workspaceId: string) {
           space.type === "Department" && !space.parentId && !space.archived,
       ).length,
     isPersonal: w.isPersonal,
-    isArchived: false,
+    isArchived: store.isWorkspaceArchived(w.id),
     version: store.getWorkspaceVersion(w.id),
   };
 }
@@ -254,7 +335,11 @@ export const workspaceOperations = [
     route: "/workspaces/:id",
     async handle({ params, store }) {
       const w = store.getWorkspace(params.id);
-      if (!w || store.isWorkspaceArchived(w.id))
+      // An archived workspace is still read by its members (read-only); anyone else finds nothing.
+      if (
+        !w ||
+        (store.isWorkspaceArchived(w.id) && !store.isCurrentMemberOf(w.id))
+      )
         return notFound(`Workspace "${params.id}" not found`);
       return ok(workspaceDto(store, w.id) as WorkspaceSummary);
     },
@@ -414,10 +499,31 @@ export const workspaceOperations = [
     },
   }),
 
+  defineMockOperation<
+    { workspaceId: string },
+    { expectedVersion?: number },
+    void
+  >({
+    id: "workspace.unarchive",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.UnarchiveWorkspace",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/archive/unarchive",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return versionedWriteResult(
+        store.unarchiveWorkspace(params.workspaceId, body?.expectedVersion),
+      );
+    },
+  }),
+
   // ─── Members (Workspaces.Members.*, WX-MEM-001) ────────────────────────────
   // Shapes mirror the producer: `WorkspaceMemberDto` (userId, name, avatar,
-  // role and status as enum names, joinedAt; removed members are not listed)
-  // and ProblemDetails failures.
+  // role and status as enum names, joinedAt; removed members are not listed),
+  // the list as a cursor page (`items`, `nextCursor`), and ProblemDetails
+  // failures.
 
   defineMockOperation<{ id: string }, never, unknown>({
     id: "workspace.members.list",
@@ -427,14 +533,30 @@ export const workspaceOperations = [
     },
     method: "GET",
     route: "/workspaces/:id/members",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!store.isCurrentMemberOf(params.id)) return notFound();
       // `ViewMembers` is denied to a Guest (WG-DEBT-002): the Guest reads only
       // their own row through `members/me`.
       if (store.getCurrentMemberRole(params.id) === "guest") return forbidden();
-      return ok(
-        store.getWorkspaceMembers(params.id).map((m) => memberWire(store, m)),
+      // A cursor page like the producer's (LD-06): default 50, at most 200.
+      const requested = Number(
+        request.searchParams.get("limit") ?? MEMBERS_DEFAULT_LIMIT,
       );
+      const limit = Number.isFinite(requested)
+        ? Math.min(MEMBERS_MAX_LIMIT, Math.max(1, Math.floor(requested)))
+        : MEMBERS_DEFAULT_LIMIT;
+      const cursor = request.searchParams.get("cursor");
+      const start = cursor ? Math.max(0, Number(cursor) || 0) : 0;
+      const all = store.getWorkspaceMembers(params.id);
+      const items = all
+        .slice(start, start + limit)
+        .map((m) => memberWire(store, m));
+      const next = start + items.length;
+      return ok({
+        items,
+        nextCursor: next < all.length ? String(next) : null,
+        hasNextPage: next < all.length,
+      });
     },
   }),
 
@@ -513,8 +635,15 @@ export const workspaceOperations = [
     },
     method: "DELETE",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const stale = staleMemberVersion(
+        store,
+        params.workspaceId,
+        params.userId,
+        Number(request.searchParams.get("expectedVersion")),
+      );
+      if (stale) return stale;
       return memberChangeResult(
         store.removeMember(params.workspaceId, params.userId),
       );
@@ -523,7 +652,7 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string; userId: string },
-    { role?: unknown },
+    { role?: unknown; expectedVersion?: number },
     void
   >({
     id: "workspace.members.update",
@@ -537,13 +666,32 @@ export const workspaceOperations = [
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
       const role = parseRole(body?.role);
       if (!role) return validationError({ role: ["Unknown role."] });
-      return memberChangeResult(
-        store.changeMemberRole(params.workspaceId, params.userId, role),
+      const stale = staleMemberVersion(
+        store,
+        params.workspaceId,
+        params.userId,
+        body?.expectedVersion,
       );
+      if (stale) return stale;
+      const before = store
+        .getWorkspaceMembers(params.workspaceId)
+        .find((m) => m.userId === params.userId)?.role;
+      const change = store.changeMemberRole(
+        params.workspaceId,
+        params.userId,
+        role,
+      );
+      if (change === "ok" && before !== role)
+        bumpMemberVersion(store, params.workspaceId, params.userId);
+      return memberChangeResult(change);
     },
   }),
 
-  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+  defineMockOperation<
+    { workspaceId: string; userId: string },
+    { expectedVersion?: number },
+    void
+  >({
     id: "workspace.members.suspend",
     contract: {
       kind: "openapi",
@@ -551,15 +699,17 @@ export const workspaceOperations = [
     },
     method: "POST",
     route: "/workspaces/:workspaceId/members/:userId/suspend",
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
-      return memberChangeResult(
-        store.setMemberSuspended(params.workspaceId, params.userId, true),
-      );
+      return suspendedChange(store, params, body?.expectedVersion, true);
     },
   }),
 
-  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+  defineMockOperation<
+    { workspaceId: string; userId: string },
+    { expectedVersion?: number },
+    void
+  >({
     id: "workspace.members.activate",
     contract: {
       kind: "openapi",
@@ -567,11 +717,9 @@ export const workspaceOperations = [
     },
     method: "POST",
     route: "/workspaces/:workspaceId/members/:userId/activate",
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
-      return memberChangeResult(
-        store.setMemberSuspended(params.workspaceId, params.userId, false),
-      );
+      return suspendedChange(store, params, body?.expectedVersion, false);
     },
   }),
 
@@ -589,8 +737,15 @@ export const workspaceOperations = [
     },
     method: "POST",
     route: "/workspaces/:workspaceId/members",
-    async handle({ params, body, store }) {
+    async handle({ params, body, store, request }) {
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      const replay = invitedUnderKey.get(store)?.get(key);
+      if (replay) return created(replay);
       const email = (body?.email ?? "").trim();
       const role = parseRole(body?.role);
       if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
@@ -620,10 +775,14 @@ export const workspaceOperations = [
       }
       const id = store.createInvitation(params.workspaceId, email, role);
       if (!id) {
-        return validationError({
-          "": ["A pending invitation already exists for this email address."],
-        });
+        return codedConflict(
+          "A pending invitation already exists for this email address.",
+          "workspaces.invitation.pending-exists",
+        );
       }
+      const made = invitedUnderKey.get(store) ?? new Map<string, string>();
+      made.set(key, id);
+      invitedUnderKey.set(store, made);
       return created(id);
     },
   }),
@@ -636,20 +795,35 @@ export const workspaceOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/invitations",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      // Like the producer's DTO, each invitation carries its status.
-      return ok(
-        store.getInvitations(params.workspaceId).map((invitation) => ({
-          id: invitation.id,
-          email: invitation.email,
-          role: ROLE_NAME[invitation.role],
-          expiresAt: invitation.expiresAt,
-          isAccepted: invitation.status === "accepted",
-          createdAt: invitation.createdAt,
-          status: INVITATION_STATUS[invitation.status],
-        })),
+      // A cursor page like the producer's (LD-06): default 50, at most 200, newest first.
+      const requested = Number(
+        request.searchParams.get("limit") ?? MEMBERS_DEFAULT_LIMIT,
       );
+      const limit = Number.isFinite(requested)
+        ? Math.min(MEMBERS_MAX_LIMIT, Math.max(1, Math.floor(requested)))
+        : MEMBERS_DEFAULT_LIMIT;
+      const cursor = request.searchParams.get("cursor");
+      const start = cursor ? Math.max(0, Number(cursor) || 0) : 0;
+      const all = store.getInvitations(params.workspaceId);
+      // Like the producer's DTO, each invitation carries its status and version.
+      const items = all.slice(start, start + limit).map((invitation) => ({
+        id: invitation.id,
+        email: invitation.email,
+        role: ROLE_NAME[invitation.role],
+        expiresAt: invitation.expiresAt,
+        isAccepted: invitation.status === "accepted",
+        createdAt: invitation.createdAt,
+        status: INVITATION_STATUS[invitation.status],
+        version: invitation.version,
+      }));
+      const next = start + items.length;
+      return ok({
+        items,
+        nextCursor: next < all.length ? String(next) : null,
+        hasNextPage: next < all.length,
+      });
     },
   }),
 
@@ -675,7 +849,7 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string; invitationId: string },
-    { newRole?: string },
+    { newRole?: string; expectedVersion?: number },
     void
   >({
     id: "workspace.invitations.changeRole",
@@ -696,6 +870,12 @@ export const workspaceOperations = [
           "A workspace invitation offers Member or Guest only; promote the member after they join.",
         );
       }
+      const current = store.getInvitation(
+        params.workspaceId,
+        params.invitationId,
+      );
+      if (current && body?.expectedVersion !== current.version)
+        return preconditionFailed();
       const changed = store.changeInvitationRole(
         params.workspaceId,
         params.invitationId,
@@ -704,6 +884,78 @@ export const workspaceOperations = [
       if (changed === null) return notFound();
       if (!changed)
         return ruleViolation("Only a waiting invitation can change its role.");
+      return noContent();
+    },
+  }),
+
+  // ─── The signed-in person's own invitations ─────────────────────────────
+  defineMockOperation<Record<string, never>, never, unknown>({
+    id: "workspace.invitations.mine",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.GetUserPendingInvitations",
+    },
+    method: "GET",
+    route: "/invitations/pending",
+    async handle({ store }) {
+      const user = store.getCurrentUser();
+      // Newest first, like the producer; the address is the person's own, so none is sent.
+      return ok(
+        store.inviteeInvitations
+          .pendingOf(user.id)
+          .map((invitation) => ({
+            id: invitation.id,
+            workspaceName: invitation.workspaceName,
+            workspaceSlug: invitation.workspaceSlug,
+            inviterName: invitation.inviterName,
+            email: user.email,
+            role: invitation.role,
+            expiresAt: store.getClock().offsetDays(invitation.expiresInDays),
+          }))
+          .reverse(),
+      );
+    },
+  }),
+
+  defineMockOperation<{ invitationId: string }, never, unknown>({
+    id: "workspace.invitations.acceptById",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.AcceptInvitationById",
+    },
+    method: "POST",
+    route: "/invitations/:invitationId/accept",
+    async handle({ params, store }) {
+      const user = store.getCurrentUser();
+      // An unknown, answered or foreign invitation answers the same 404.
+      const invitation = store.inviteeInvitations.findPending(
+        user.id,
+        params.invitationId,
+      );
+      if (!invitation) return notFound();
+      const { workspace } = store.joinWorkspaceForCurrentUser({
+        name: invitation.workspaceName,
+        slug: invitation.workspaceSlug,
+        role: invitation.role === "Guest" ? "guest" : "member",
+      });
+      store.inviteeInvitations.answer(user.id, invitation.id, "accepted");
+      return ok({ workspaceSlug: workspace.slug, workspaceId: workspace.id });
+    },
+  }),
+
+  defineMockOperation<{ invitationId: string }, never, void>({
+    id: "workspace.invitations.decline",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.DeclineInvitation",
+    },
+    method: "POST",
+    route: "/invitations/:invitationId/decline",
+    async handle({ params, store }) {
+      const user = store.getCurrentUser();
+      if (!store.inviteeInvitations.findPending(user.id, params.invitationId))
+        return notFound();
+      store.inviteeInvitations.answer(user.id, params.invitationId, "declined");
       return noContent();
     },
   }),

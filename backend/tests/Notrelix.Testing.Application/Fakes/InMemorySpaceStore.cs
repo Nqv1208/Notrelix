@@ -75,9 +75,12 @@ public sealed class InMemorySpaceStore : ISpaceStore
     public Task<bool> IsActiveTeamAsync(Guid workspaceId, Guid teamId, CancellationToken cancellationToken) =>
         Task.FromResult(ActiveTeams.Contains((workspaceId, teamId)));
 
-    public Task<IReadOnlyList<SpaceTreeRow>> ListTreeAsync(Guid workspaceId, IReadOnlyList<Guid> spaceIds, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<SpaceTreeRow>> ListTreeAsync(Guid workspaceId, IReadOnlyList<Guid> spaceIds, Guid? afterId, int take, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<SpaceTreeRow>>(Spaces
             .Where(s => s.WorkspaceId == workspaceId && spaceIds.Contains(s.Id) && !s.IsDeleted)
+            .Where(s => afterId is null || s.Id.CompareTo(afterId.Value) > 0)
+            .OrderBy(s => s.Id)
+            .Take(take)
             .Select(s => new SpaceTreeRow(s.Id, s.ParentSpaceId, s.Name, s.Description, s.SpaceType, s.Visibility, s.Status, s.Position, s.Version, s.CreatedAt))
             .ToList());
 

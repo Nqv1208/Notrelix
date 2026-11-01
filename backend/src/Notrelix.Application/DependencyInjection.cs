@@ -142,6 +142,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationAcceptanceService>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InviteeInvitations>();
         services.AddScoped<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions,
             Notrelix.Application.Features.Identity.Registration.Services.InvitedUserRegistrationActions>();
 

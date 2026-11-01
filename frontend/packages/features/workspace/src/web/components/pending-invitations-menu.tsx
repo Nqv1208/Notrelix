@@ -1,198 +1,138 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import {
-  UserPlus,
-  Loader2,
-  Check,
-  X,
-  Calendar,
-  User,
-  Briefcase,
-} from "lucide-react";
-import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@notrelix/ui-web";
+import { useCallback, useMemo, useState } from "react";
+import { useLocale } from "@notrelix/i18n";
 import { createUsePendingInvitations } from "../query/hooks/use-pending-invitations";
 import { createUseAcceptInvitation } from "../hooks/mutations/use-accept-invitation";
+import { createUseDeclineInvitation } from "../hooks/mutations/use-decline-invitation";
 import type {
-  WorkspaceInvitation,
-  WorkspaceApiClient,
+  AcceptedInvitation,
   InvitationsEndpoints,
+  PendingInvitation,
+  WorkspaceApiClient,
 } from "../../core";
-import { cn } from "@notrelix/ui-web";
+import { formatCopy } from "../shell/shell-models";
+import { PendingInvitationsMenuSurface } from "./workspace-pending-invitations-surface";
+import { usePendingInvitationsCopy } from "./use-pending-invitations-copy";
 
 interface PendingInvitationsMenuProps {
   api: WorkspaceApiClient;
   endpoints: InvitationsEndpoints;
+  /** The person accepted an invitation: the host leads them to the workspace. */
+  onAccepted?: (accepted: AcceptedInvitation) => void;
 }
 
+/** What a refused answer carries: the HTTP status and the producer's reason. */
+function refusalOf(error: unknown): { status?: number; message: string } {
+  const e = error as { status?: number; message?: unknown } | null;
+  return {
+    status: e?.status,
+    message: typeof e?.message === "string" ? e.message : "",
+  };
+}
+
+/**
+ * The signed-in person's own invitations, mounted in the system rail next to the workspaces: the list
+ * reads `GET /invitations/pending`, Accept answers `POST /invitations/{id}/accept` (the rules of
+ * accepting by link: seat, suspended or removed member) and Decline `POST /invitations/{id}/decline`.
+ * An invitation that is gone answers 404: the list is read again and says so.
+ */
 export function PendingInvitationsMenu({
   api,
   endpoints,
+  onAccepted,
 }: PendingInvitationsMenuProps) {
-  const navigate = useNavigate();
+  const copy = usePendingInvitationsCopy();
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  const usePendingInvitations = useMemo(
-    () => createUsePendingInvitations({ api, endpoints }),
+  const hooks = useMemo(
+    () => ({
+      usePending: createUsePendingInvitations({ api, endpoints }),
+      useAccept: createUseAcceptInvitation({ api, endpoints }),
+      useDecline: createUseDeclineInvitation({ api, endpoints }),
+    }),
     [api, endpoints],
   );
+  const pending = hooks.usePending();
+  const accept = hooks.useAccept();
+  const decline = hooks.useDecline();
 
-  const useAcceptInvitation = useMemo(
-    () => createUseAcceptInvitation({ api, endpoints }),
-    [api, endpoints],
+  const formatDate = useMemo(() => {
+    const format = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+    return (iso: string) => {
+      const date = new Date(iso);
+      return Number.isNaN(date.getTime()) ? iso : format.format(date);
+    };
+  }, [locale]);
+
+  const refused = useCallback(
+    (error: unknown, accepting: boolean) => {
+      const { status, message } = refusalOf(error);
+      if (status === 404) setFeedback(copy.errors.gone);
+      else if (accepting && status === 400 && message)
+        setFeedback(formatCopy(copy.errors.refused, { reason: message }));
+      else setFeedback(copy.errors.failed);
+    },
+    [copy],
   );
 
-  const { data: invitations, isLoading, refetch } = usePendingInvitations();
-  const acceptMutation = useAcceptInvitation();
-  const [acceptingToken, setAcceptingToken] = useState<string | null>(null);
+  const onAccept = useCallback(
+    (invitation: PendingInvitation) => {
+      setFeedback(null);
+      setBusyId(invitation.id);
+      accept.mutate(invitation.id, {
+        onSuccess: (accepted) => {
+          setOpen(false);
+          onAccepted?.(accepted);
+        },
+        onError: (error) => refused(error, true),
+        onSettled: () => setBusyId(null),
+      });
+    },
+    [accept, onAccepted, refused],
+  );
 
-  const hasInvitations = invitations && invitations.length > 0;
-
-  const handleAccept = (token: string) => {
-    setAcceptingToken(token);
-    acceptMutation.mutate(token, {
-      onSuccess: () => {
-        setOpen(false);
-        setAcceptingToken(null);
-        refetch();
-        navigate({ to: "/home" });
-      },
-      onError: () => {
-        setAcceptingToken(null);
-      },
-    });
-  };
+  const onDecline = useCallback(
+    (invitation: PendingInvitation) => {
+      setFeedback(null);
+      setBusyId(invitation.id);
+      decline.mutate(invitation.id, {
+        onError: (error) => refused(error, false),
+        onSettled: () => setBusyId(null),
+      });
+    },
+    [decline, refused],
+  );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "relative rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            hasInvitations && "text-link animate-pulse",
-          )}
-          aria-label="Pending workspace invitations"
-        >
-          <UserPlus className="size-[18px]" />
-          {hasInvitations && (
-            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-success text-caption font-bold text-success-foreground shadow-sm animate-bounce">
-              {invitations.length}
-            </span>
-          )}
-        </button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        align="end"
-        className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden"
-      >
-        <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
-          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <UserPlus className="size-4 text-link" />
-            Invitations ({invitations?.length || 0})
-          </h4>
-          {isLoading && (
-            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-          )}
-        </div>
-
-        <div className="max-h-80 overflow-y-auto divide-y divide-border/40">
-          {isLoading && !invitations ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-muted-foreground gap-2">
-              <Loader2 className="size-6 animate-spin text-link" />
-              <span>Loading invitations...</span>
-            </div>
-          ) : !hasInvitations ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-xs text-muted-foreground gap-2">
-              <div className="rounded-full bg-muted p-2 text-muted-foreground/60">
-                <UserPlus className="size-5" />
-              </div>
-              <p className="font-medium text-foreground/80">
-                No pending invitations
-              </p>
-              <p className="text-caption leading-normal text-muted-foreground/80 max-w-[200px]">
-                When someone invites you to their workspace, it will appear
-                here.
-              </p>
-            </div>
-          ) : (
-            invitations.map((invite: WorkspaceInvitation) => {
-              const isAccepting = acceptingToken === invite.token;
-              return (
-                <div
-                  key={invite.id}
-                  className="p-4 hover:bg-muted/10 transition-colors space-y-3"
-                >
-                  <div className="space-y-1.5">
-                    <h5 className="text-sm font-bold text-foreground leading-snug">
-                      Workspace: {invite.workspaceName}
-                    </h5>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <User className="size-3.5 text-link/75" />
-                        <span>
-                          Invited by:{" "}
-                          <strong className="text-foreground/90 font-medium">
-                            {invite.inviterName}
-                          </strong>
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Briefcase className="size-3.5 text-link/75" />
-                        <span>
-                          Role:{" "}
-                          <strong className="text-foreground/90 font-medium capitalize">
-                            {invite.role}
-                          </strong>
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="size-3.5 text-link/75" />
-                        <span>
-                          Expires:{" "}
-                          {new Date(invite.expiresAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => invite.token && handleAccept(invite.token)}
-                      disabled={
-                        isAccepting || acceptMutation.isPending || !invite.token
-                      }
-                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-success hover:bg-success/90 text-success-foreground shadow-sm"
-                    >
-                      {isAccepting ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        <Check className="size-3" />
-                      )}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setOpen(false)}
-                      disabled={isAccepting || acceptMutation.isPending}
-                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                    >
-                      <X className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <PendingInvitationsMenuSurface
+      invitations={pending.data ?? []}
+      status={
+        pending.data
+          ? "idle"
+          : pending.isError
+            ? "error"
+            : pending.isPending
+              ? "loading"
+              : "idle"
+      }
+      busyId={busyId}
+      feedback={feedback}
+      copy={copy}
+      formatDate={formatDate}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        // Opening reads the list again: an invitation may have been answered elsewhere.
+        if (next) {
+          setFeedback(null);
+          void pending.refetch();
+        }
+      }}
+      onAccept={onAccept}
+      onDecline={onDecline}
+      onRetry={() => void pending.refetch()}
+    />
   );
 }

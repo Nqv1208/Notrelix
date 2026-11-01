@@ -27,11 +27,12 @@ public class GetMyWorkspacesHandlerTests : WorkspaceHandlerTestBase
         WorkspaceMember.Create(workspace.AccountId, workspace.Id, userId, role, userId, TestNow);
 
     [Fact]
-    public async Task ListsOnlyTheCallersActiveMembershipsOfActiveWorkspaces_OrderedByName()
+    public async Task ListsOnlyTheCallersActiveMemberships_ArchivedOnlyForOwnersAndAdmins_OrderedByName()
     {
         var beta = Workspace("Beta");
         var alpha = Workspace("Alpha");
         var archived = Workspace("Zeta", archived: true);
+        var archivedAsMember = Workspace("Omega", archived: true);
         var foreign = Workspace("Foreign");
         var left = Workspace("Left");
         var suspendedIn = Workspace("Suspended");
@@ -41,12 +42,13 @@ public class GetMyWorkspacesHandlerTests : WorkspaceHandlerTestBase
         var suspendedMe = Member(suspendedIn, TestUserId, WorkspaceRole.Member);
         suspendedMe.Suspend(_otherUserId, TestNow, 2);
 
-        SetupWorkspaces(beta, alpha, archived, foreign, left, suspendedIn);
+        SetupWorkspaces(beta, alpha, archived, archivedAsMember, foreign, left, suspendedIn);
         SetupMembers(
             Member(beta, TestUserId, WorkspaceRole.Member),
             Member(alpha, TestUserId, WorkspaceRole.Owner),
             Member(alpha, _otherUserId, WorkspaceRole.Owner),
             Member(archived, TestUserId, WorkspaceRole.Owner),
+            Member(archivedAsMember, TestUserId, WorkspaceRole.Member),
             Member(foreign, _otherUserId, WorkspaceRole.Owner),
             leftMe,
             suspendedMe);
@@ -54,7 +56,8 @@ public class GetMyWorkspacesHandlerTests : WorkspaceHandlerTestBase
         var result = await Sut().Handle(new GetMyWorkspacesQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.Data!.Select(w => w.Name).Should().Equal("Alpha", "Beta");
+        result.Data!.Select(w => w.Name).Should().Equal("Alpha", "Beta", "Zeta");
+        result.Data!.Select(w => (w.Name, w.IsArchived)).Should().Equal(("Alpha", false), ("Beta", false), ("Zeta", true));
     }
 
     [Fact]

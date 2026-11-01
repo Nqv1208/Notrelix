@@ -83,7 +83,8 @@ public sealed class ResendInvitationCommandHandler
             InvitationTokenHash.Create(issued.TokenHash),
             issued.HashVersion,
             now,
-            TimeSpan.FromDays(7),
+            // A resend waits as long as a new invitation does: the workspace's invitation expiry setting.
+            TimeSpan.FromDays(workspace.Settings.InvitationExpiryDays),
             _requestContext.UserId);
 
         // A resource invitation keeps its resource-invitation email when a workspace

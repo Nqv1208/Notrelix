@@ -103,6 +103,26 @@ export function AccountWorkspacesPage() {
     [list, queryClient, accountId, showNotice, copy],
   );
 
+  const unarchive = useCallback(
+    async (id: string, name: string) => {
+      setBusy(true);
+      setActionError(null);
+      try {
+        await list.unarchive(id);
+        // It is back in the rail and the switcher.
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
+        showNotice(copy.notice.unarchived.replace("{{name}}", name));
+      } catch {
+        setActionError("failed");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [list, queryClient, accountId, showNotice, copy],
+  );
+
   const leave = useCallback(
     async (id: string, name: string) => {
       setBusy(true);
@@ -116,8 +136,12 @@ export function AccountWorkspacesPage() {
           // Leaving the workspace this page is shown in is a scope
           // transition: go to another one first, then drop what the old
           // scope still has in flight so a late answer cannot land anywhere.
+          // An archived workspace is read-only: it is not where to land.
+          const openable = remaining.filter(
+            (workspace) => !workspace.isArchived,
+          );
           const next =
-            remaining.find((workspace) => workspace.isDefault) ?? remaining[0];
+            openable.find((workspace) => workspace.isDefault) ?? openable[0];
           await router.navigate({
             to: next ? `/workspaces/${next.id}` : "/onboarding",
           });
@@ -155,6 +179,7 @@ export function AccountWorkspacesPage() {
         onNavigate: () => void router.navigate({ to: "/onboarding" }),
       }}
       onSetDefault={(id) => void setDefault(id, nameOf(id))}
+      onUnarchive={(id) => void unarchive(id, nameOf(id))}
       onLeave={(id) => void leave(id, nameOf(id))}
       onRetry={() => void list.refetch()}
     />

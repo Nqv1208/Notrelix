@@ -53,7 +53,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         IGuestResourceAccessActions guestResourceAccess,
         IAuditService auditService,
         InvitationTokenScope tokenScope,
-        Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate? seatGate = null)
+        Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate seatGate)
     {
         _tokenScope = tokenScope;
         _workspaceContext = workspaceContext;

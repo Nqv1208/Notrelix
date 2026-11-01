@@ -13,7 +13,7 @@ public static class SetDefaultWorkspaceEndpoint
             .WithName("Workspaces.Members.SetDefaultWorkspace")
             .WithTags("Workspaces.Members")
             .WithSummary("Choose the workspace that opens with the app")
-            .WithDescription("The caller must be an active member of the workspace; a workspace the caller cannot open answers 404. Choosing the current default succeeds and changes nothing.")
+            .WithDescription("The caller must be an active member of the workspace; a workspace the caller cannot open answers 404, and an archived workspace is refused with 400 (a business-rule failure). Choosing the current default succeeds and changes nothing.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)

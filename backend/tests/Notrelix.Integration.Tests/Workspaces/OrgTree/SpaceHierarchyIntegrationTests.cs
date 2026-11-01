@@ -181,9 +181,9 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
 
         var tree = await OrgTreeTestHost.QueryAsync(owner, new GetSpaceTreeQuery(stack.WorkspaceId));
 
-        tree.Where(n => n.ParentSpaceId == it).OrderBy(n => n.Position, StringComparer.Ordinal).Select(n => n.Id)
+        tree.Items.Where(n => n.ParentSpaceId == it).OrderBy(n => n.Position, StringComparer.Ordinal).Select(n => n.Id)
             .Should().Equal(security, network);
-        tree.Single(n => n.Id == it).ParentSpaceId.Should().BeNull();
+        tree.Items.Single(n => n.Id == it).ParentSpaceId.Should().BeNull();
     }
 
     // ── Archive / delete never cascade (WSP-022) ──────────────────────────
@@ -198,14 +198,14 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         var finance = await CreateAsync(owner, stack, "Finance");
         await _host.SeedBoardAsync(stack, "Budget", spaceId: finance);
 
-        var archiveParent = () => OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, it));
+        var archiveParent = async () => await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, it, await _host.SpaceVersionAsync(it)));
         (await archiveParent.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Space_CannotArchiveWithActiveContent);
 
-        var archiveWithBoard = () => OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, finance));
+        var archiveWithBoard = async () => await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, finance, await _host.SpaceVersionAsync(finance)));
         (await archiveWithBoard.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Space_CannotArchiveWithActiveContent);
 
-        await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, security));
-        await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, it));
+        await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, security, await _host.SpaceVersionAsync(security)));
+        await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, it, await _host.SpaceVersionAsync(it)));
         (await SpaceAsync(it)).Status.Should().Be(SpaceStatus.Archived, "only archived children remain");
 
         var deleteWithArchivedChild = () => OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, it));

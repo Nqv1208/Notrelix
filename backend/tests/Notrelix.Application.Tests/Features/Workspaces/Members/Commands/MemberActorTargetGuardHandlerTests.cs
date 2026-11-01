@@ -43,7 +43,9 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object);
 
     private ActivateMemberCommandHandler Activate() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object,
+        Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g =>
+            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
 
     [Theory]
     [MemberData(nameof(OrdinaryTargets))]
@@ -52,22 +54,23 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         var target = Target(targetRole);
         Arrange(WorkspaceRole.Admin, target);
 
-        (await Suspend().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await Suspend().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None)).Succeeded.Should().BeTrue();
         target.Status.Should().Be(WorkspaceMemberStatus.Suspended);
 
-        (await Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None)).Succeeded.Should().BeTrue();
         target.Status.Should().Be(WorkspaceMemberStatus.Active);
 
-        (await Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None)).Succeeded.Should().BeTrue();
         target.Status.Should().Be(WorkspaceMemberStatus.Removed);
     }
 
     [Fact]
     public async Task Removing_AMember_EndsTheirDerivedAccess_InTheSameRequest()
     {
-        Arrange(WorkspaceRole.Admin, Target(WorkspaceRole.Member));
+        var target = Target(WorkspaceRole.Member);
+        Arrange(WorkspaceRole.Admin, target);
 
-        await Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None);
+        await Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
 
         GrantProjectionMock.Verify(g => g.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
             TestAccountId, TestWorkspaceId, _targetId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
@@ -78,9 +81,10 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
     [Fact]
     public async Task Reactivating_AMember_ClearsTheirCustomRoleAssignments_ButKeepsTheAccountGrant()
     {
-        Arrange(WorkspaceRole.Admin, Target(WorkspaceRole.Member, suspended: true));
+        var target = Target(WorkspaceRole.Member, suspended: true);
+        Arrange(WorkspaceRole.Admin, target);
 
-        await Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None);
+        await Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
 
         GrantProjectionMock.Verify(g => g.ClearCustomRoleAssignmentsAsync(
             TestAccountId, TestWorkspaceId, _targetId, It.IsAny<CancellationToken>()), Times.Once);
@@ -95,7 +99,7 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         var target = Target(targetRole);
         Arrange(WorkspaceRole.Admin, target);
 
-        Func<Task> act = () => Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None);
+        Func<Task> act = () => Remove().Handle(new RemoveMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
 
         await AssertRejectedAsync(act, target);
     }
@@ -107,7 +111,7 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         var target = Target(targetRole);
         Arrange(WorkspaceRole.Admin, target);
 
-        Func<Task> act = () => Suspend().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None);
+        Func<Task> act = () => Suspend().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
 
         await AssertRejectedAsync(act, target);
     }
@@ -119,7 +123,7 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         var target = Target(targetRole, suspended: true);
         Arrange(WorkspaceRole.Admin, target);
 
-        Func<Task> act = () => Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None);
+        Func<Task> act = () => Activate().Handle(new ActivateMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None);
 
         await AssertRejectedAsync(act, target, WorkspaceMemberStatus.Suspended);
     }
@@ -131,7 +135,7 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         var target = Target(targetRole);
         Arrange(WorkspaceRole.Owner, target);
 
-        (await Suspend().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await Suspend().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId, target.Version), CancellationToken.None)).Succeeded.Should().BeTrue();
         target.Status.Should().Be(WorkspaceMemberStatus.Suspended);
     }
 

@@ -156,7 +156,14 @@ export const en = {
     cancel: "Cancel",
     submit: "Create workspace",
     submitting: "Creating…",
+    nameTooLong: "Use 160 characters or fewer for the name.",
     error: "The workspace couldn't be created. Try again.",
+    errorOffline:
+      "You appear to be offline. Check your connection, then try again; nothing was created twice.",
+    errorForbidden:
+      "You can't create a workspace in this account. Ask an account owner.",
+    errorEmailNotConfirmed:
+      "Confirm your email first. We sent you a link when you signed up; open it, then try again.",
   },
   landing: {
     loadingTitle: "Loading your workspaces",
@@ -321,7 +328,14 @@ export const vi: WorkspaceShellCopy = {
     cancel: "Hủy",
     submit: "Tạo không gian làm việc",
     submitting: "Đang tạo…",
+    nameTooLong: "Tên tối đa 160 ký tự.",
     error: "Không tạo được không gian làm việc. Hãy thử lại.",
+    errorOffline:
+      "Có vẻ bạn đang ngoại tuyến. Kiểm tra kết nối rồi thử lại; sẽ không tạo trùng.",
+    errorForbidden:
+      "Bạn không thể tạo không gian làm việc trong tài khoản này. Hãy nhờ chủ tài khoản.",
+    errorEmailNotConfirmed:
+      "Hãy xác nhận email trước. Chúng tôi đã gửi liên kết khi bạn đăng ký; mở nó rồi thử lại.",
   },
   landing: {
     loadingTitle: "Đang tải các không gian làm việc",

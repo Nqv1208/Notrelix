@@ -143,6 +143,33 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// A removed member returns: the same row becomes Active again with the given role. It is a new
+    /// participation, so a member-added fact is raised. Only a removed member can rejoin (a suspended one
+    /// is activated by an admin) and ownership is never assigned this way.
+    /// </summary>
+    public void Rejoin(WorkspaceRole role, Guid addedBy, DateTimeOffset rejoinedAt)
+    {
+        Guard.NotEmpty(addedBy);
+
+        if (Status != WorkspaceMemberStatus.Removed)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotRejoinNonRemoved, "Only a removed member can rejoin.");
+
+        if (role == WorkspaceRole.Owner)
+        {
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
+                "Ownership must be transferred through the ownership transfer workflow.");
+        }
+
+        var audit = PrepareAuditUpdate(addedBy, rejoinedAt);
+        Status = WorkspaceMemberStatus.Active;
+        Role = role;
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new WorkspaceMemberAddedDomainEvent(AccountId, WorkspaceId, Id, UserId, role, addedBy, rejoinedAt));
+    }
+
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
     {
         Guard.NotEmpty(removedBy);

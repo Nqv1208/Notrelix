@@ -50,18 +50,22 @@ const ROLE_NAME = {
   guest: "Guest",
 } as const;
 
-/** The caller's own active memberships of active workspaces, ordered by name. */
+/**
+ * The caller's own active memberships of active workspaces, ordered by name; an archived workspace is
+ * listed (`isArchived`) only to its owners and admins.
+ */
 function myWorkspaces(store: MockStore) {
   const user = store.getCurrentUser();
-  const mine = store
-    .getWorkspaces()
-    .filter(
-      (workspace) =>
-        !store.isWorkspaceArchived(workspace.id) &&
-        store.isCurrentMemberOf(workspace.id),
-    );
+  const mine = store.getWorkspaces().filter((workspace) => {
+    if (!store.isCurrentMemberOf(workspace.id)) return false;
+    if (!store.isWorkspaceArchived(workspace.id)) return true;
+    const role = store.getCurrentMemberRole(workspace.id);
+    return role === "owner" || role === "admin";
+  });
   const defaultId =
-    store.accountPages.defaultWorkspaceOf(user.id) ?? mine[0]?.id ?? null;
+    store.accountPages.defaultWorkspaceOf(user.id) ??
+    mine.find((workspace) => !store.isWorkspaceArchived(workspace.id))?.id ??
+    null;
   return mine
     .map((workspace) => {
       const role = store.getCurrentMemberRole(workspace.id) ?? "member";
@@ -82,8 +86,11 @@ function myWorkspaces(store: MockStore) {
               .spacesOf(workspace.id)
               .filter((space) => !space.parentId && !space.archived).length
           : null,
-        isDefault: workspace.id === defaultId,
+        isDefault:
+          workspace.id === defaultId &&
+          !store.isWorkspaceArchived(workspace.id),
         canLeave: !soleOwner,
+        isArchived: store.isWorkspaceArchived(workspace.id),
       };
     })
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
@@ -165,6 +172,12 @@ export const accountPagesOperations = [
             404,
             "workspaces.member.not-found",
             "You are not a member of this workspace.",
+          );
+        if (store.isWorkspaceArchived(id))
+          return problem(
+            400,
+            "business_rule.violation",
+            "An archived workspace cannot be the default workspace.",
           );
         store.accountPages.setDefaultWorkspace(store.getCurrentUser().id, id);
         return noContent();

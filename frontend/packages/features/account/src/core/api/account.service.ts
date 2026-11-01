@@ -77,6 +77,8 @@ export interface AccountEndpoints {
     leaveWorkspace: (workspaceId: string) => string;
   };
   workspaces: {
+    detail: (workspaceId: string) => string;
+    unarchive: (workspaceId: string) => string;
     myJobTitle: (workspaceId: string) => string;
     myMembership: (workspaceId: string) => string;
   };
@@ -114,6 +116,7 @@ interface WorkspaceEntryWire {
   readonly departmentCount?: number | null;
   readonly isDefault?: boolean;
   readonly canLeave?: boolean;
+  readonly isArchived?: boolean;
 }
 
 const WORKSPACE_ROLES: readonly AccountWorkspaceRole[] = [
@@ -136,6 +139,7 @@ export function toWorkspaceEntry(
     departmentCount: wire.departmentCount ?? null,
     isDefault: wire.isDefault ?? false,
     canLeave: wire.canLeave ?? false,
+    isArchived: wire.isArchived ?? false,
   };
 }
 
@@ -373,10 +377,42 @@ export function createAccountService(
       );
     },
 
-    /** Answers 204; the last owner is refused with `workspaces.member.last-owner-cannot-leave`. */
+    /**
+     * Answers 204; the last owner is refused with `workspaces.member.last-owner-cannot-leave`. Leaving
+     * is not idempotent on the producer (a second attempt answers 404), so a 404 means the person is
+     * already out, which is what they asked for: it is done, not a failure.
+     */
     async leaveWorkspace(workspaceId: string): Promise<void> {
-      await api.delete<void>(
-        endpoints.account.leaveWorkspace(workspaceId),
+      try {
+        await api.delete<void>(
+          endpoints.account.leaveWorkspace(workspaceId),
+          PAGE_QUIET,
+        );
+      } catch (error) {
+        const { kind, status } = (error ?? {}) as {
+          kind?: unknown;
+          status?: unknown;
+        };
+        if (status !== 404 && kind !== "not_found") throw error;
+      }
+    },
+
+    /**
+     * Brings an archived workspace back (Owner or Admin). The write quotes the workspace version read
+     * just before it; a version that is not a positive number sends nothing. Answers 204; a version
+     * that moved meanwhile answers 412 and the list is read again.
+     */
+    async unarchiveWorkspace(workspaceId: string): Promise<void> {
+      const workspace = await api.get<{ version?: unknown }>(
+        endpoints.workspaces.detail(workspaceId),
+        PAGE_QUIET,
+      );
+      const expectedVersion = workspace?.version;
+      if (typeof expectedVersion !== "number" || expectedVersion <= 0)
+        throw new Error("The workspace version is not known");
+      await api.post<void>(
+        endpoints.workspaces.unarchive(workspaceId),
+        { expectedVersion },
         PAGE_QUIET,
       );
     },

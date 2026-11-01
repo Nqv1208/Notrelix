@@ -181,10 +181,17 @@ public sealed class SpaceStore : ISpaceStore
             .AsNoTracking()
             .AnyAsync(t => t.Id == teamId && t.WorkspaceId == workspaceId && t.Status == TeamStatus.Active, cancellationToken);
 
-    public async Task<IReadOnlyList<SpaceTreeRow>> ListTreeAsync(Guid workspaceId, IReadOnlyList<Guid> spaceIds, CancellationToken cancellationToken) =>
-        await _context.Spaces
+    public async Task<IReadOnlyList<SpaceTreeRow>> ListTreeAsync(Guid workspaceId, IReadOnlyList<Guid> spaceIds, Guid? afterId, int take, CancellationToken cancellationToken)
+    {
+        var query = _context.Spaces
             .AsNoTracking()
-            .Where(s => s.WorkspaceId == workspaceId && spaceIds.Contains(s.Id))
+            .Where(s => s.WorkspaceId == workspaceId && spaceIds.Contains(s.Id));
+        if (afterId is { } after)
+            query = query.Where(s => s.Id.CompareTo(after) > 0);
+
+        return await query
+            .OrderBy(s => s.Id)
+            .Take(take)
             .Select(s => new SpaceTreeRow(
                 s.Id,
                 s.ParentSpaceId,
@@ -197,6 +204,7 @@ public sealed class SpaceStore : ISpaceStore
                 s.Version,
                 s.CreatedAt))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<SpaceMemberRow>> ListMembersAsync(Guid workspaceId, Guid spaceId, CancellationToken cancellationToken) =>
         await (

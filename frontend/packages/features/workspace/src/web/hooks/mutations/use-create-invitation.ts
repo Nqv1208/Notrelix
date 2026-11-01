@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import {
   createWorkspaceInvitationsService,
   type WorkspaceInvitationsEndpoints,
@@ -12,7 +13,11 @@ interface InvitationMutationDeps {
   endpoints: WorkspaceInvitationsEndpoints;
 }
 
-/** Invites by e-mail. Not retried: the producer rejects a second pending invite. */
+/**
+ * Invites by e-mail. Not retried automatically. One key per invitation the person asked for: sending
+ * the same address and role again after a failure reuses it, so the producer returns the first
+ * invitation instead of sending a second email; a different address or role is a new request.
+ */
 export function createUseCreateInvitation({
   api,
   endpoints,
@@ -21,11 +26,23 @@ export function createUseCreateInvitation({
 
   return function useCreateInvitation(workspaceId: string) {
     const queryClient = useQueryClient();
+    const attempt = useRef<{ signature: string; key: string } | null>(null);
 
     return useMutation({
-      mutationFn: (input: CreateWorkspaceInvitationInput) =>
-        service.create(workspaceId, input),
+      mutationFn: (input: CreateWorkspaceInvitationInput) => {
+        const signature = JSON.stringify([
+          workspaceId,
+          input.email.trim().toLowerCase(),
+          input.role,
+        ]);
+        if (attempt.current?.signature !== signature)
+          attempt.current = { signature, key: crypto.randomUUID() };
+        return service.create(workspaceId, input, attempt.current.key);
+      },
       retry: false,
+      onSuccess: () => {
+        attempt.current = null;
+      },
       onSettled: () =>
         queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.invitations(workspaceId),
@@ -48,7 +65,14 @@ export function createUseChangeInvitationRole({
       mutationFn: (input: {
         invitationId: string;
         role: CreateWorkspaceInvitationInput["role"];
-      }) => service.changeRole(workspaceId, input.invitationId, input.role),
+        expectedVersion: number | undefined;
+      }) =>
+        service.changeRole(
+          workspaceId,
+          input.invitationId,
+          input.role,
+          input.expectedVersion,
+        ),
       retry: false,
       onSettled: () =>
         queryClient.invalidateQueries({
