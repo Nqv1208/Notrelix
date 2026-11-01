@@ -204,7 +204,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-A21 | Change board visibility (Workspace or Private) | A | Manager | partial | partial | partial | none | HARDENING | Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility |
 | UC-WM-A22 | Make a board private with impact preview and bulk add | A | Manager | yes | yes | complete | none | HARDENING | Direct handler tests; real e2e; one-transaction proof |
 | UC-WM-A23 | Open a shared board as a Guest | A | Guest with explicit access | yes | partial | none | guest-permission | INTEGRATING | design for the Guest board view; proof that pickers show no emails (Q7); positive guest journey e2e. |
-| UC-WM-A24 | Copy item/board link | A | Any viewer | not applicable | yes | complete | none | INTEGRATING | non-member gets NotFound e2e |
+| UC-WM-A24 | Copy item/board link | A | Any viewer | not applicable | yes | complete | none | HARDENING | owner check and design measurement |
 | UC-WM-A25 | Warn when an access change would strand assignees | A | Manager | partial | partial | none | none | INTEGRATING | Warning on visibility change and move-to-space; design |
 | UC-WM-A26 | Block removing or demoting the last board manager | A | Manager | partial | no | none | none | DEFINED | no last-manager guard in UpdateBoardMemberRole or RemoveBoardMember (verified in source); no design for the message. |
 | UC-WM-A27 | Leave a board | A | Any person with an explicit board role | yes | yes | none | board-share | HARDENING | tests and owner check; decided by the lead 2026-10-31. |
@@ -222,10 +222,10 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B12 | Restore an item from Trash | B | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; >30 days refusal proof |
 | UC-WM-B13 | Open the board Trash | B | Editor and above (UpdateItem) | partial | yes | complete | none | HARDENING | Paging; typed client; real e2e |
 | UC-WM-B14 | Bulk-edit items (Table and Kanban) | B | Editor and above | yes | partial | complete | none | HARDENING | Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e. |
-| UC-WM-B15 | Use the item action menu everywhere | B | Any viewer | not applicable | yes | complete | none | INTEGRATING | real e2e; proof that an item deleted while the menu is open is announced. |
-| UC-WM-B16 | See item face states (card and row) | B | Any viewer | yes | yes | complete | none | INTEGRATING | Non-colour marks proof; 99+ cap |
+| UC-WM-B15 | Use the item action menu everywhere | B | Any viewer | not applicable | yes | complete | none | HARDENING | owner check and design measurement |
+| UC-WM-B16 | See item face states (card and row) | B | Any viewer | yes | yes | complete | none | HARDENING | owner check and design measurement |
 | UC-WM-B17 | Purge items, boards and fields after their 30-day window | B | System (job); Manager restores before | no | partial | none | none | DEFINED | no purge job for items, boards or fields; decided in D78.10; needs the audit fact and tests. |
-| UC-WM-B18 | Open an item (side sheet or full page) | B | Viewer and above; Guest per grant | yes | yes | complete | item-page | INTEGRATING | paged comments, history and sub-items; replace the 'not available yet' fallback copy (defect F-10); proof of the section order and the sheet behaviours. |
+| UC-WM-B18 | Open an item (side sheet or full page) | B | Viewer and above; Guest per grant | yes | yes | complete | item-page | HARDENING | owner check and design measurement |
 | UC-WM-B19 | Edit the item description | B | Editor and above | partial | yes | complete | none | INTEGRATING | no actor name on the conflict response (Q12 needs a contract addition); PATCH has no Idempotency-Key. |
 | UC-WM-B20 | Link two items (waits on / related) | B | Editor | partial | partial | partial | none | HARDENING | Server acyclic check (D76.8); cross-board; typed client; design for sheet |
 | UC-WM-B21 | Change or remove an item link | B | Editor | partial | partial | partial | none | INTEGRATING | Dangling-link policy (D76.8); typed client |
@@ -242,8 +242,8 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B32 | Provider/migration import | B | Integrations | no | no | none | none | DEFINED | Integrations-owned migration path; no WM work scheduled |
 | UC-WM-B33 | Handle a stale-version write conflict | B | Editor | partial | yes | complete | none | INTEGRATING | Actor on conflict (Q12 contract); EV gaps; real e2e |
 | UC-WM-B34 | Item deleted or archived by someone else while open | B | Any viewer (see UC-) | partial | yes | complete | none | INTEGRATING | actor name on the deleted notice needs the Q12 contract addition; live delivery needs open PR #193; real e2e. |
-| UC-WM-B35 | Recover from a target lost during commit | B | System | partial | not applicable | not applicable | none | INTEGRATING | the race is not covered by a test. |
-| UC-WM-B36 | See a bulk failure | B | Editor | yes | yes | complete | none | INTEGRATING | real e2e; proof that the failing item is named and the selection stays. |
+| UC-WM-B35 | Recover from a target lost during commit | B | System | partial | not applicable | not applicable | none | HARDENING | owner check and design measurement |
+| UC-WM-B36 | See a bulk failure | B | Editor | yes | yes | complete | none | HARDENING | owner check and design measurement |
 | UC-WM-C01 | Add a custom field | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; DateTime and file types deferred; design Er/T/M |
 | UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; stale-schema conflict proof |
 | UC-WM-C03 | Change a field default | C | Editor | yes | partial | complete | none | INTEGRATING | Test existing values unchanged; UI proof |
@@ -259,7 +259,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-C13 | Define a Person (People) field | C | Editor | yes | yes | complete | none | HARDENING | Guest picker no-email proof; real e2e |
 | UC-WM-C14 | Define a Link (and file) field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; absolute http(s) rule proof |
 | UC-WM-C15 | Define a Checkbox field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e |
-| UC-WM-C16 | Status and Priority as specialized select types | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; status per board proof |
+| UC-WM-C16 | Status and Priority as specialized select types | C | Editor | yes | yes | complete | none | HARDENING | owner check and design measurement |
 | UC-WM-C17 | Keep one semantic contract per field type | C | Engineering (acceptance gate) | yes | yes | not applicable | none | INTEGRATING | fixed-dataset parity test (client vs server) for 12 types |
 | UC-WM-C18 | Relation field: reference items of another board | C | Editor | partial | no | none | none | IMPLEMENTING | Relations.* endpoints exist (create, list, delete, pause, resume) with no tests and no UI; no Relation field type exists. |
 | UC-WM-C19 | Mark a field required | C | Editor | no | no | none | none | DEFINED | no required flag, no enforcement on any write path; decided in D78.7. |
