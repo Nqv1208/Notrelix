@@ -47,7 +47,8 @@ type EmailError =
   | "provider-denied"
   | "provider-email-in-use"
   | "provider-email-unverified"
-  | "session-ended";
+  | "session-ended"
+  | "password-reset";
 
 /** What the sign-in page says for each code the backend puts on `?error=`; any other code reads as a plain failure. */
 const PROVIDER_ERROR: Readonly<Record<string, EmailError>> = {
@@ -98,6 +99,7 @@ export function SignInFlow({
   initialEmail = "",
   providerError = null,
   sessionEnded = false,
+  passwordReset = false,
   initialStep = null,
 }: {
   service: AuthFlowService;
@@ -109,6 +111,8 @@ export function SignInFlow({
   providerError?: string | null;
   /** The page opened because the person's session ended: it says so above the form. */
   sessionEnded?: boolean;
+  /** The page opened after a password reset: it says so above the form. */
+  passwordReset?: boolean;
   /**
    * `"mfa"` when the backend sent the browser here after a provider sign-in that needs a second
    * step: the challenge is in its httpOnly cookie, so the page asks for the code alone.
@@ -132,9 +136,11 @@ export function SignInFlow({
           kind: "email",
           error: providerError
             ? (PROVIDER_ERROR[providerError] ?? "provider-failed")
-            : sessionEnded
-              ? "session-ended"
-              : null,
+            : passwordReset
+              ? "password-reset"
+              : sessionEnded
+                ? "session-ended"
+                : null,
         },
   );
   const [typedEmail, setTypedEmail] = useState(initialEmail);

@@ -8,9 +8,12 @@ import { authCopy } from "../../copy/auth.copy";
 import type { AuthFlowService } from "../../../core";
 import type { AuthFlowNavigation } from "../flow-navigation";
 import { InviteFlow } from "../invite-flow";
+import { ResetFlow } from "../reset-flow";
+import { VerifyEmailFlow } from "../verify-email-flow";
 import { SignInFlow } from "../sign-in-flow";
 
 const copy = authCopy("vi");
+const NEW_PASSWORD = `Pw-${"a".repeat(12)}`;
 
 function Providers({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -243,7 +246,7 @@ function fillAndAccept() {
     target: { value: "Tuấn" },
   });
   fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
-    target: { value: "mot-mat-khau-du-dai" },
+    target: { value: NEW_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: copy.invite.accept }));
 }
@@ -396,5 +399,120 @@ describe("invite flow", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.invite.decline }));
     expect(await screen.findByText(copy.invite.declined.title)).toBeTruthy();
     expect(service.declineInvite).toHaveBeenCalledWith("tok");
+  });
+});
+
+describe("reset flow: the code and the new password", () => {
+  const fill = (code = "123456") => {
+    fireEvent.change(screen.getByLabelText(copy.reset.codeLabel), {
+      target: { value: code },
+    });
+    fireEvent.change(screen.getByLabelText(copy.reset.passwordLabel), {
+      target: { value: NEW_PASSWORD },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.submit }));
+  };
+  const open = (resetPassword: ReturnType<typeof vi.fn>) => {
+    const nav = navigation();
+    renderPureUi(
+      <Providers>
+        <ResetFlow
+          service={asService({ resetPassword })}
+          navigation={nav}
+          initialEmail="ten@congty.vn"
+        />
+      </Providers>,
+    );
+    return nav;
+  };
+
+  it("sends the email, the code and the password, then goes to sign-in with a notice", async () => {
+    const resetPassword = vi.fn().mockResolvedValue(undefined);
+    const nav = open(resetPassword);
+    fill();
+    await waitFor(() =>
+      expect(nav.navigate).toHaveBeenCalledWith({
+        to: "/sign-in",
+        search: { reason: "password-reset" },
+        replace: true,
+      }),
+    );
+    expect(resetPassword).toHaveBeenCalledWith({
+      email: "ten@congty.vn",
+      code: "123456",
+      newPassword: NEW_PASSWORD,
+    });
+  });
+
+  it.each([
+    [
+      { status: 400, details: { errorCode: "identity.auth.invalid-code" } },
+      "rejected",
+    ],
+    [
+      {
+        status: 409,
+        details: { errorCode: "identity.auth.too-many-attempts" },
+      },
+      "tooMany",
+    ],
+    [{ status: 429, details: {} }, "limited"],
+    [{ status: 503, details: {} }, "unreachable"],
+  ] as const)(
+    "says what went wrong for %j and stays on the page",
+    async (failure, key) => {
+      const nav = open(vi.fn().mockRejectedValue(failure));
+      fill();
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toContain(copy.reset[key]);
+      expect(nav.navigate).not.toHaveBeenCalled();
+    },
+  );
+
+  it("goes back to the request step with the email when a new code is asked for", () => {
+    const nav = open(vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.sendAgain }));
+    expect(nav.navigate).toHaveBeenCalledWith({
+      to: "/forgot-password",
+      search: { email: "ten@congty.vn" },
+    });
+  });
+});
+
+describe("sign-in flow: after a password reset", () => {
+  it("says the password changed and every device signed out", () => {
+    renderPureUi(
+      <Providers>
+        <SignInFlow
+          service={asService({})}
+          navigation={navigation()}
+          passwordReset
+        />
+      </Providers>,
+    );
+    expect(screen.getByText(copy.email.passwordReset)).toBeTruthy();
+  });
+});
+
+describe("verify email flow: the single-use link", () => {
+  it("spends the token once however many times the page mounts, and says the address is confirmed", async () => {
+    const confirmEmail = vi.fn().mockResolvedValue(undefined);
+    const service = asService({ confirmEmail });
+    const tree = (
+      <Providers>
+        <VerifyEmailFlow
+          service={service}
+          navigation={navigation()}
+          token="v1.one-time-token"
+        />
+      </Providers>
+    );
+    const first = renderPureUi(tree);
+    first.unmount();
+    renderPureUi(tree);
+    expect(
+      await screen.findByRole("heading", { name: copy.verifyEmail.doneTitle }),
+    ).toBeTruthy();
+    expect(confirmEmail).toHaveBeenCalledTimes(1);
   });
 });

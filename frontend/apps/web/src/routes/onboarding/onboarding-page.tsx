@@ -50,6 +50,9 @@ function readSaved(
 }
 
 /** The company setup: four steps and a last page, at `/onboarding`. */
+/** Seconds before another confirmation link can be asked for. */
+const RESEND_CONFIRMATION_SECONDS = 60;
+
 export function OnboardingPage() {
   return (
     <AuthGuard>
@@ -326,10 +329,42 @@ function SetupFlow() {
       }
     });
 
-  const onResendConfirmation = () =>
-    void run(async () => {
-      await runtimeClient.api.post("/auth/email-verification/request", {});
-    });
+  // The notice stays where it is while a new link goes out: it says so, then waits before the next.
+  const [resend, setResend] = useState<{
+    status: "idle" | "sending" | "sent" | "limited" | "failed";
+    until: number | null;
+  }>({ status: "idle", until: null });
+  const [resendLeft, setResendLeft] = useState(0);
+  useEffect(() => {
+    if (resend.until === null) {
+      setResendLeft(0);
+      return;
+    }
+    const tick = () =>
+      setResendLeft(
+        Math.max(0, Math.ceil(((resend.until ?? 0) - Date.now()) / 1000)),
+      );
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [resend.until]);
+  const onResendConfirmation = () => {
+    setResend({ status: "sending", until: null });
+    runtimeClient.api
+      .post("/auth/email-verification/request", {})
+      .then(() =>
+        setResend({
+          status: "sent",
+          until: Date.now() + RESEND_CONFIRMATION_SECONDS * 1000,
+        }),
+      )
+      .catch((failure: { status?: number }) =>
+        setResend({
+          status: failure.status === 429 ? "limited" : "failed",
+          until: null,
+        }),
+      );
+  };
 
   const onBack = () => {
     if (step === "departments") setStep("workspace");
@@ -418,6 +453,7 @@ function SetupFlow() {
       onSkip={onSkip}
       onExit={onExit}
       onResendConfirmation={onResendConfirmation}
+      resend={{ status: resend.status, secondsLeft: resendLeft }}
       onEnterHome={() =>
         void navigate({
           to: "/workspaces/$workspaceId",
