@@ -3254,6 +3254,28 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
+    capability: "Collaboration.Comments.GetBoardItemCommentsPage",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "Collaboration.Comments.GetBoardItemCommentsPage",
+    method: "GET", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Boards.GetMoveImpact",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/apps/web/src/shell/workspace/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Boards.GetMoveImpact",
+    method: "GET", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
     capability: "Collaboration.Comments.CreateBoardItemComment",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",
