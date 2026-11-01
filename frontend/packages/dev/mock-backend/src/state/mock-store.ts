@@ -3767,6 +3767,17 @@ export class MockStore {
     return "ok";
   }
 
+  /** Whether the address is an Active, non-Guest member of the workspace (the producer's refusal to invite them). */
+  isActiveMemberEmail(workspaceId: string, email: string): boolean {
+    const clean = email.trim().toLowerCase();
+    return this.getWorkspaceMembers(workspaceId).some(
+      (member) =>
+        member.role !== "guest" &&
+        !this.suspendedMembershipIds.has(member.id) &&
+        this.usersById.get(member.userId)?.email.toLowerCase() === clean,
+    );
+  }
+
   getInvitations(workspaceId: string): MockInvitationRecord[] {
     return Array.from(this.invitationsById.values())
       .filter((invitation) => invitation.workspaceId === workspaceId)

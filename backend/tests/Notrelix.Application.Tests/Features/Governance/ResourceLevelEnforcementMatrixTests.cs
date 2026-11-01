@@ -8,7 +8,7 @@ namespace Notrelix.Application.Tests.Features.Governance;
 /// reads, Commenter also comments, Editor does every other Board/Page action,
 /// Manager also manages permissions and archives Pages) whatever the source:
 /// explicit User/Team grant, board membership, Space role, Workspace default.
-/// A Workspace Guest is capped at Editor whatever the source. The reported
+/// A Workspace Guest is capped at Viewer whatever the source. The reported
 /// effective level equals what the engine enforces.
 /// </summary>
 public sealed class ResourceLevelEnforcementMatrixTests
@@ -73,10 +73,10 @@ public sealed class ResourceLevelEnforcementMatrixTests
         { "workspace Admin, unplaced", "Admin", 3 },
         { "explicit Viewer in a Space where the caller is Space Member", "Member", 3 },
         { "workspace Owner", "Owner", 5 },
-        { "guest with explicit Manager", "Guest", 3 },
-        { "guest board Admin", "Guest", 3 },
-        { "guest Space Admin", "Guest", 3 },
-        { "guest with explicit Commenter", "Guest", 2 },
+        { "guest with explicit Manager", "Guest", 1 },
+        { "guest board Admin", "Guest", 1 },
+        { "guest Space Admin", "Guest", 1 },
+        { "guest with explicit Commenter", "Guest", 1 },
     };
 
     [Theory]
@@ -105,7 +105,7 @@ public sealed class ResourceLevelEnforcementMatrixTests
         { "Space Viewer", "Member", 1 },
         { "Space Member", "Member", 3 },
         { "workspace default, unplaced", "Member", 3 },
-        { "guest with explicit Manager", "Guest", 3 },
+        { "guest with explicit Manager", "Guest", 1 },
     };
 
     [Theory]

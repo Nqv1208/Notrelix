@@ -133,7 +133,7 @@ describe("invitations", () => {
       workspaceName: "Minh An Group",
       resourceKind: "work-management.board",
       resourceTitle: "Triển khai ERP Q4",
-      resourceLevel: "Editor",
+      resourceLevel: "Viewer",
       expiresOn: "2027-01-31",
       email: "tuan@doitac-erp.vn",
       hasAccount: false,

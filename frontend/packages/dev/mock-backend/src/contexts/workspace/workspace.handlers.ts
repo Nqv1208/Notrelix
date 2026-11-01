@@ -606,6 +606,18 @@ export const workspaceOperations = [
           "A workspace invitation offers Member or Guest only; promote the member after they join.",
         );
       }
+      if (store.isActiveMemberEmail(params.workspaceId, email)) {
+        return {
+          status: 409,
+          body: {
+            type: "https://docs.notrelix.com/problems/conflict",
+            title: "Conflict",
+            status: 409,
+            detail: "This person is already a member of this workspace.",
+            errorCode: "workspaces.invitation.already-member",
+          },
+        };
+      }
       const id = store.createInvitation(params.workspaceId, email, role);
       if (!id) {
         return validationError({

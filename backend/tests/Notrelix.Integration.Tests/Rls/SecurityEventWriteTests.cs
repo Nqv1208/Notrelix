@@ -167,10 +167,10 @@ public sealed class SecurityEventWriteTests : IAsyncLifetime
         {
             await ScalarAsync(c, tx, Record, Event());
             (await ScalarAsync(c, tx, "SELECT count(*) FROM audit.security_events")).Should().Be("0", "a tenantless event is readable by nobody on the application role");
-            await using (var update = new NpgsqlCommand("UPDATE audit.security_events SET severity = 'Info'", c, tx))
-                (await update.ExecuteNonQueryAsync()).Should().Be(0);
-            await using (var delete = new NpgsqlCommand("DELETE FROM audit.security_events", c, tx))
-                (await delete.ExecuteNonQueryAsync()).Should().Be(0);
+            // The trail is append-only: the role holds no UPDATE or DELETE privilege at all.
+            (await ScalarAsync(c, tx,
+                "SELECT has_table_privilege(current_user, 'audit.security_events', 'UPDATE') " +
+                "OR has_table_privilege(current_user, 'audit.security_events', 'DELETE')")).Should().Be("False");
             await tx.CommitAsync();
         }
 

@@ -57,6 +57,10 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
             _dateTimeProvider.UtcNow,
             ct);
 
+        // A reactivated member returns to their built-in role and is configured again.
+        await _grantProjection.ClearCustomRoleAssignmentsAsync(
+            workspace.AccountId, workspace.Id, request.UserId, ct);
+
         return Result.Success();
     }
 }
