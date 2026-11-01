@@ -231,17 +231,17 @@ function MemberRow({
               ) : null}
             </span>
             {member.jobTitle ? (
-              <span className="truncate text-metadata text-muted-foreground">
+              <span className="truncate text-metadata text-muted-foreground max-md:whitespace-normal max-md:break-words">
                 {member.jobTitle}
               </span>
             ) : null}
             {blockedReason ? (
               <span
                 id={reasonId}
-                className="flex items-center gap-1 text-metadata text-muted-foreground"
+                className="flex items-start gap-1 text-metadata text-muted-foreground"
               >
-                <Info aria-hidden="true" className="size-3.5 shrink-0" />
-                <span className="truncate">{blockedReason}</span>
+                <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                <span className="min-w-0 break-words">{blockedReason}</span>
               </span>
             ) : null}
           </span>
@@ -799,7 +799,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                       )}
                     >
                       <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle max-md:min-w-24">
-                        <span className="block truncate text-label">
+                        <span className="block break-all text-label">
                           {invitation.email}
                         </span>
                         <span className="block truncate text-metadata tabular-nums text-muted-foreground sm:hidden">
