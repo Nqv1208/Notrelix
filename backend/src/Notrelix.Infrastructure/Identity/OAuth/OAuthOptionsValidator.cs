@@ -1,3 +1,5 @@
+using Notrelix.Domain.Identity.OAuth;
+
 namespace Notrelix.Infrastructure.Identity.OAuth;
 
 public sealed class OAuthOptionsValidator : IValidateOptions<OAuthOptions>
@@ -32,6 +34,17 @@ public sealed class OAuthOptionsValidator : IValidateOptions<OAuthOptions>
 
             if (config.Scopes.Length == 0)
                 return ValidateOptionsResult.Fail($"OAuth provider '{key}': at least one Scope is required.");
+
+            // An OpenID Connect provider's ID token is checked at every sign-in, so it must be asked for
+            // and its issuer must be known.
+            if (Enum.TryParse<OAuthProvider>(key, ignoreCase: true, out var provider) && OidcIdTokenValidator.IsOidc(provider))
+            {
+                if (!config.Scopes.Contains("openid", StringComparer.OrdinalIgnoreCase))
+                    return ValidateOptionsResult.Fail($"OAuth provider '{key}': the 'openid' Scope is required.");
+
+                if (OidcIdTokenValidator.IssuersOf(provider, config).Count == 0)
+                    return ValidateOptionsResult.Fail($"OAuth provider '{key}': Issuer is required when enabled.");
+            }
         }
 
         return ValidateOptionsResult.Success;

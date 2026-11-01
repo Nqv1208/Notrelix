@@ -32,6 +32,16 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
+    [Theory]
+    [InlineData("limit=0")]
+    [InlineData("limit=201")]
+    [InlineData("cursor=not-a-cursor")]
+    public async Task ListMembers_WithAPageThatIsNotValid_ReturnsBadRequest(string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/members?{query}");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Fact]
     public async Task InviteMember_WithValidData_ReturnsSuccess()
     {
@@ -59,7 +69,7 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateMemberRole_WithValidRole_ReturnsSuccess()
     {
-        var body = new { Role = "Admin" };
+        var body = new { Role = "Admin", ExpectedVersion = 1 };
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -67,7 +77,7 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateMemberRole_WithNonexistentMember_ReturnsNotFound()
     {
-        var body = new { Role = "Admin" };
+        var body = new { Role = "Admin", ExpectedVersion = 1 };
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -75,7 +85,7 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateMemberRole_WithNonexistentWorkspace_ReturnsNotFound()
     {
-        var body = new { Role = "Admin" };
+        var body = new { Role = "Admin", ExpectedVersion = 1 };
         var response = await _client.PatchAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members/22222222-2222-2222-2222-222222222222", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -83,21 +93,21 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RemoveMember_WithExistingMember_ReturnsSuccess()
     {
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}");
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task RemoveMember_WithNonexistentMember_ReturnsNotFound()
     {
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999");
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task RemoveMember_WithNonexistentWorkspace_ReturnsNotFound()
     {
-        var response = await _client.DeleteAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members/22222222-2222-2222-2222-222222222222");
+        var response = await _client.DeleteAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members/22222222-2222-2222-2222-222222222222?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

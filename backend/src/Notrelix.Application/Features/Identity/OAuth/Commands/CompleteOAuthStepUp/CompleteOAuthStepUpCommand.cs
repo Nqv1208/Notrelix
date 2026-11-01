@@ -66,7 +66,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         if (!string.IsNullOrWhiteSpace(request.Error))
         {
             _logger.LogInformation("OAuth step-up callback error: {Error} ({ErrorDescription})",
-                request.Error, request.ErrorDescription);
+                OAuthCallbackLog.Sanitize(request.Error), OAuthCallbackLog.Sanitize(request.ErrorDescription));
             return Result<StepUpProofResult>.Failure("OAuth provider returned an error.");
         }
 

@@ -6,8 +6,9 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceTy
 public record ChangeSpaceTypeCommand(
     Guid WorkspaceId,
     Guid SpaceId,
-    string SpaceType
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    string SpaceType,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     // GOV-028: ManageSpaces on the Space itself (workspace Owner/Admin, or an
     // effective Space Admin of the Space or one of its ancestors).

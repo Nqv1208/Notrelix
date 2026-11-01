@@ -70,6 +70,7 @@ public sealed class ResourceInvitationIssuerIntegrationTests : IAsyncLifetime
         using var asIssuer = _host.CreateProvider(stack.AccountId, issuer, RegisterInvitationServices);
         var invitationId = ((Result<Guid>)(await OrgTreeTestHost.SendAsync(
             asIssuer, new InviteGuestToResourceCommand(BoardKind, boardId, "guest@example.com", "Viewer")))!).Data;
+        await _host.AgeInvitationAsync(invitationId);
         return new Seed(stack, boardId, issuer, other, invitationId);
     }
 

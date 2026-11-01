@@ -9,7 +9,7 @@ import type {
   DepartmentColor,
   InviteRole,
   OnboardingStepId,
-} from "@notrelix/features-workspace/web";
+} from "./onboarding-models";
 
 /** `api` is the runtime client; every call is quiet: the pages say what went wrong themselves. */
 export interface OnboardingApiClient {
@@ -167,6 +167,18 @@ const isRowRefusal = (failure: unknown): boolean =>
  */
 export function createOnboardingApi(api: OnboardingApiClient) {
   const key = () => crypto.randomUUID();
+  // A create keeps its key while the same request is retried, so a retry after a lost answer returns what the
+  // first attempt made (workspace, department, invitation, Board) instead of a second one. A request that
+  // succeeded or was refused for good forgets its key.
+  const attempts = new Map<string, string>();
+  const attemptKey = (signature: string) => {
+    let existing = attempts.get(signature);
+    if (!existing) {
+      existing = key();
+      attempts.set(signature, existing);
+    }
+    return existing;
+  };
   // The member's Account, read once from the bootstrap (a failure is not kept).
   let account: Promise<string> | null = null;
   const accountId = (): Promise<string> => {
@@ -182,6 +194,22 @@ export function createOnboardingApi(api: OnboardingApiClient) {
     );
     return account;
   };
+  /** Every page of the caller's Space tree, 200 Spaces per request. */
+  async function readSpaceTree(workspaceId: string) {
+    const nodes: NonNullable<SpaceTreeOutput["items"]> = [];
+    let cursor: string | null = null;
+    do {
+      const query: string = `limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const page: SpaceTreeOutput = await api.get<SpaceTreeOutput>(
+        `${endpoints.workspaces.spaceTree(workspaceId)}?${query}`,
+        QUIET,
+      );
+      nodes.push(...(page.items ?? []));
+      cursor = page.nextCursor ?? null;
+    } while (cursor);
+    return nodes;
+  }
+
   return {
     async slugCheck(slug: string): Promise<SlugCheckDto> {
       const checked = await api.get<SlugCheckOutput>(
@@ -234,11 +262,13 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         size: SIZE_BAND[input.size],
         language: input.locale,
       };
+      const signature = JSON.stringify(["workspace", body]);
       const id = await api.post<string>(
         endpoints.accounts.workspaces(await accountId()),
         body,
-        { ...QUIET, idempotencyKey: key() },
+        { ...QUIET, idempotencyKey: attemptKey(signature) },
       );
+      attempts.delete(signature);
       return { id, slug: input.slug };
     },
     /**
@@ -256,11 +286,13 @@ export function createOnboardingApi(api: OnboardingApiClient) {
           visibility: "Private",
           spaceType: "Department",
         };
+        const signature = JSON.stringify(["space", workspaceId, body]);
         const id = await api.post<string>(
           endpoints.workspaces.spaces(workspaceId),
           body,
-          QUIET,
+          { ...QUIET, idempotencyKey: attemptKey(signature) },
         );
+        attempts.delete(signature);
         made.push({ id, name: department.name, color: department.color });
       }
       return { departments: made };
@@ -284,17 +316,19 @@ export function createOnboardingApi(api: OnboardingApiClient) {
             ? [{ kind: "Space", targetId: invite.spaceId, role: invite.role }]
             : [],
         };
+        const signature = JSON.stringify(["invite", workspaceId, body]);
         try {
           await api.post<string>(
             endpoints.workspaces.members(workspaceId),
             body,
-            QUIET,
+            { ...QUIET, idempotencyKey: attemptKey(signature) },
           );
           sent += 1;
         } catch (failure) {
           if (!isRowRefusal(failure)) throw failure;
           skipped.push(invite.email.toLowerCase());
         }
+        attempts.delete(signature);
       }
       return { sent, skipped };
     },
@@ -307,11 +341,13 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         title: input.name,
         ...(input.spaceId ? { spaceId: input.spaceId } : {}),
       };
+      const signature = JSON.stringify(["board", workspaceId, body]);
       const id = await api.post<unknown>(
         endpoints.boards.listByWorkspaceId(workspaceId),
         body,
-        { ...QUIET, idempotencyKey: key() },
+        { ...QUIET, idempotencyKey: attemptKey(signature) },
       );
+      attempts.delete(signature);
       return {
         id: typeof id === "string" ? id : "",
         templateId: input.templateId,
@@ -328,10 +364,7 @@ export function createOnboardingApi(api: OnboardingApiClient) {
             endpoints.workspaces.myMembership(workspaceId),
             QUIET,
           ),
-          api.get<SpaceTreeOutput>(
-            endpoints.workspaces.spaceTree(workspaceId),
-            QUIET,
-          ),
+          readSpaceTree(workspaceId),
           api.get<BoardsOutput>(
             endpoints.boards.listByWorkspaceId(workspaceId),
             QUIET,

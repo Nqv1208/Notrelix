@@ -4,6 +4,7 @@ public class UpdateLabelCommandValidator : AbstractValidator<UpdateLabelCommand>
 {
     public UpdateLabelCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.LabelId)
             .NotEmpty();
 

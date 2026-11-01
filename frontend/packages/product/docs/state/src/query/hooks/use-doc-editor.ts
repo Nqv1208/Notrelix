@@ -4,6 +4,7 @@ import {
   convertBlockProperties,
   type Block,
   type CreateBlockPayload,
+  type PageDetail,
   type UpdateBlockPayload,
   type UpdatePagePayload,
 } from "@notrelix/docs-core";
@@ -17,11 +18,22 @@ import { docsQueryKeys } from "../keys";
 
 export type DocSaveState = "saved" | "saving" | "error";
 
+/** The producer refused a rename because the page changed meanwhile (412). */
+class PageVersionConflict extends Error {
+  constructor(readonly current: PageDetail) {
+    super("The page changed since it was read.");
+    this.name = "PageVersionConflict";
+  }
+}
+
 /**
  * Edits of one open document: block text and type, new and removed blocks and
  * the title, with the save state the document bar shows. A failed write keeps
  * the state at `error` until `retry` (or a later write) succeeds; nothing is
  * rolled back locally, the next read shows the authoritative document.
+ * A rename carries the page version it read: if the page changed meanwhile
+ * the title shows the stored one again and `titleConflict` is set until
+ * `clearTitleConflict`, so the screen can tell the person.
  */
 export function createUseDocEditor(
   api: DocsApiClient,
@@ -33,6 +45,7 @@ export function createUseDocEditor(
   return function useDocEditor(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     const [failed, setFailed] = useState(false);
+    const [titleConflict, setTitleConflict] = useState(false);
     const pendingRetry = useRef<(() => void) | null>(null);
 
     /** The version of a block as the page cache last read it. */
@@ -77,16 +90,48 @@ export function createUseDocEditor(
         void refreshBlocks();
       },
     });
+    // The block goes with the blocks under it, against the version this page
+    // last read. A block that is already gone, or changed meanwhile, is not a
+    // failed save: the page shows what is stored (409/412 here would only
+    // repeat the same stale request).
     const remove = useMutation({
-      mutationFn: (blockId: string) => blockApi.delete(pageId, blockId),
+      mutationFn: async (blockId: string) => {
+        const version =
+          cachedVersion(blockId) ??
+          (await blockApi.getList(pageId)).find((block) => block.id === blockId)
+            ?.version;
+        if (version === undefined) return;
+        try {
+          await blockApi.delete(pageId, blockId, version);
+        } catch (error) {
+          const status = (error as { status?: unknown }).status;
+          if (status !== 404 && status !== 412) throw error;
+        }
+      },
       onSuccess: () => {
         setFailed(false);
         void refreshBlocks();
       },
     });
     const rename = useMutation({
-      mutationFn: (payload: UpdatePagePayload) =>
-        pageApi.update(pageId, payload),
+      mutationFn: async (payload: UpdatePagePayload) => {
+        const cached = queryClient.getQueryData<PageDetail>(
+          docsQueryKeys.detail(workspaceId, pageId),
+        );
+        try {
+          return await pageApi.update(pageId, {
+            ...payload,
+            expectedVersion:
+              cached?.version ?? (await pageApi.getDetail(pageId)).version,
+          });
+        } catch (error) {
+          if ((error as { status?: unknown }).status !== 412) throw error;
+          const current = await pageApi.getDetail(pageId);
+          // The same rename already went through (a retry after success).
+          if (current.title === payload.title?.trim()) return current;
+          throw new PageVersionConflict(current);
+        }
+      },
       onSuccess: () => {
         setFailed(false);
         refreshPage();
@@ -177,12 +222,23 @@ export function createUseDocEditor(
     const updateTitle = useCallback(
       (title: string) => {
         const attempt = () =>
-          rename.mutate({ title }, { onError: () => setFailed(true) });
+          rename.mutate(
+            { title },
+            {
+              onError: (error) => {
+                if (error instanceof PageVersionConflict) {
+                  setTitleConflict(true);
+                  refreshPage();
+                } else setFailed(true);
+              },
+            },
+          );
         run(attempt);
         attempt();
       },
       [rename, run],
     );
+    const clearTitleConflict = useCallback(() => setTitleConflict(false), []);
     const retry = useCallback(() => {
       setFailed(false);
       pendingRetry.current?.();
@@ -207,6 +263,8 @@ export function createUseDocEditor(
       convertBlock,
       deleteBlock,
       updateTitle,
+      titleConflict,
+      clearTitleConflict,
       retry,
     };
   };

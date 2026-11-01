@@ -41,7 +41,11 @@ export function DocRecoverySurface({
             {r.title}
           </p>
           <p className="text-crumb text-meta-foreground">
-            {entry.text ? r.body : r.removed}
+            {entry.table && entry.text
+              ? r.bodyTable
+              : entry.text
+                ? r.body
+                : r.removed}
           </p>
           {entry.text ? (
             <blockquote

@@ -19,7 +19,7 @@ public static class CompleteOAuthLoginEndpoint
             .ProducesProblems(StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Complete OAuth login callback")
-            .WithDescription("Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.")
+            .WithDescription("Handles the OAuth provider callback, validates state, exchanges code, checks the provider ID token, and sets auth cookies. Every failure redirects to the sign-in page with one normalized error code: identity.oauth.failed, state-invalid, denied, email-unverified, email-in-use, mfa-required or provider-unavailable.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
 
         return group;
@@ -36,9 +36,11 @@ public static class CompleteOAuthLoginEndpoint
         IOAuthStateStore stateStore,
         IOptions<OAuthRedirectOptions> redirectOptions)
     {
-        if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider))
+        if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider)
+            || !Enum.IsDefined(oauthProvider))
         {
-            return Results.Redirect(redirectOptions.Value.FrontendFailureUrl);
+            return Results.Redirect(AppendErrorCode(
+                redirectOptions.Value.FrontendFailureUrl, OAuthLoginErrorCodes.ProviderUnavailable));
         }
 
         OAuthLoginState? storedState = null;
@@ -67,9 +69,12 @@ public static class CompleteOAuthLoginEndpoint
 
         var result = await sender.Send(command);
 
+        // Every failure lands on the sign-in page with one normalized code (never the raw message).
         if (!result.Succeeded || result.Data is null)
         {
-            return Results.Redirect(redirectOptions.Value.FrontendFailureUrl);
+            return Results.Redirect(AppendErrorCode(
+                redirectOptions.Value.FrontendFailureUrl,
+                OAuthLoginErrorCodes.Normalize(result.TypedErrors.FirstOrDefault()?.Code)));
         }
 
         // An MFA-enabled user has no session yet: the result carries a challenge, not tokens. The
@@ -99,7 +104,7 @@ public static class CompleteOAuthLoginEndpoint
         return Results.Redirect(AppendReturnTo(redirectOptions.Value.FrontendSuccessUrl, returnTo));
     }
 
-    internal const string MfaRequiredErrorCode = "identity.oauth.mfa-required";
+    internal const string MfaRequiredErrorCode = OAuthLoginErrorCodes.MfaRequired;
 
     internal static string AppendReturnTo(string baseUrl, string? safeReturnTo) =>
         safeReturnTo is null

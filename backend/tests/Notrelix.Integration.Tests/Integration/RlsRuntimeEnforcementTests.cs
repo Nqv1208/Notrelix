@@ -562,7 +562,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var workspaceId = created.Data;
 
         var addHandler = new AddMemberCommandHandler(
-            context, requestContext.Object, clock.Object, projection);
+            context, requestContext.Object, clock.Object, projection, Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)), Mock.Of<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts>(f => f.IsActiveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
         var added = await addHandler.Handle(new AddMemberCommand(workspaceId, memberId, WorkspaceRole.Member), default);
         added.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
@@ -614,7 +614,11 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
             new WorkspaceOwnerUpdateLocker(context));
 
-        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId), default);
+        var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
+            .Select(m => m.Version)
+            .SingleAsync();
+        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId, memberVersion), default);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
 
@@ -657,7 +661,11 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
             new WorkspaceOwnerUpdateLocker(context));
 
-        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId), default);
+        var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
+            .Select(m => m.Version)
+            .SingleAsync();
+        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId, memberVersion), default);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
 

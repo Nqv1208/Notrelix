@@ -4,6 +4,7 @@ public class UpdateBoardItemStatusCommandValidator : AbstractValidator<UpdateBoa
 {
     public UpdateBoardItemStatusCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
         RuleFor(x => x.Status).NotEmpty().MaximumLength(200);
     }

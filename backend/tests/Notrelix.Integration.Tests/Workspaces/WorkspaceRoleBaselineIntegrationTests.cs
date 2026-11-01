@@ -78,7 +78,13 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         services.AddSingleton(encryptor.Object);
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<InvitationInitialEntries>();
+        services.AddSingleton(AlwaysAdmitSeatGate);
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts, Notrelix.Application.Features.Accounts.Members.AccountMembershipFactsProvider>();
     }
+
+    private static readonly Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate AlwaysAdmitSeatGate =
+        Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g =>
+            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true));
 
     private async Task<(OrgStack Stack, Guid Admin, Guid Member, Guid Guest)> SeedAsync()
     {
@@ -117,6 +123,39 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, user, role));
 
         (await MemberRowAsync(stack, user)).Role.Should().Be(role);
+    }
+
+    [Fact]
+    public async Task Admin_CannotAddUserOfAnotherAccountOrUnknownUser_AndNothingIsPersisted()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        var otherAccountUser = (await _host.SeedWorkspaceAsync()).OwnerId;
+        using var asAdmin = As(stack, admin);
+
+        foreach (var target in new[] { otherAccountUser, Guid.CreateVersion7() })
+        {
+            var act = () => OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, target, WorkspaceRole.Member));
+
+            (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+                .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_NotInAccount);
+            (await HasMemberRowAsync(stack, target)).Should().BeFalse();
+        }
+    }
+
+    [Fact]
+    public async Task Admin_CannotAddMember_WhenNoSeatIsAvailable_AndNothingIsPersisted()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        var user = await NewUserAsync(stack);
+        var noSeat = Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g =>
+            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(false));
+        using var asAdmin = _host.CreateProvider(stack.AccountId, admin, s => { RegisterServices(s); s.AddSingleton(noSeat); });
+
+        var act = () => OrgTreeTestHost.SendAsync(asAdmin, new AddMemberCommand(stack.WorkspaceId, user, WorkspaceRole.Member));
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_SeatUnavailable);
+        (await HasMemberRowAsync(stack, user)).Should().BeFalse();
     }
 
     [Theory]
@@ -174,13 +213,13 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
 
         foreach (var target in new[] { member, guest })
         {
-            await OrgTreeTestHost.SendAsync(asAdmin, new SuspendMemberCommand(stack.WorkspaceId, target));
+            await OrgTreeTestHost.SendAsync(asAdmin, new SuspendMemberCommand(stack.WorkspaceId, target, (await MemberRowAsync(stack, target)).Version));
             (await MemberRowAsync(stack, target)).Status.Should().Be(WorkspaceMemberStatus.Suspended);
 
-            await OrgTreeTestHost.SendAsync(asAdmin, new ActivateMemberCommand(stack.WorkspaceId, target));
+            await OrgTreeTestHost.SendAsync(asAdmin, new ActivateMemberCommand(stack.WorkspaceId, target, (await MemberRowAsync(stack, target)).Version));
             (await MemberRowAsync(stack, target)).Status.Should().Be(WorkspaceMemberStatus.Active);
 
-            await OrgTreeTestHost.SendAsync(asAdmin, new RemoveMemberCommand(stack.WorkspaceId, target));
+            await OrgTreeTestHost.SendAsync(asAdmin, new RemoveMemberCommand(stack.WorkspaceId, target, (await MemberRowAsync(stack, target)).Version));
             (await MemberRowAsync(stack, target)).Status.Should().Be(WorkspaceMemberStatus.Removed);
         }
     }
@@ -194,11 +233,12 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
 
         foreach (var target in new[] { stack.OwnerId, otherAdmin })
         {
+            var version = (await MemberRowAsync(stack, target)).Version;
             foreach (var request in new object[]
             {
-                new RemoveMemberCommand(stack.WorkspaceId, target),
-                new SuspendMemberCommand(stack.WorkspaceId, target),
-                new ActivateMemberCommand(stack.WorkspaceId, target),
+                new RemoveMemberCommand(stack.WorkspaceId, target, version),
+                new SuspendMemberCommand(stack.WorkspaceId, target, version),
+                new ActivateMemberCommand(stack.WorkspaceId, target, version),
             })
             {
                 var act = () => OrgTreeTestHost.SendAsync(asAdmin, request);
@@ -216,10 +256,11 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         var (stack, admin, _, _) = await SeedAsync();
         using var asOwner = As(stack, stack.OwnerId);
 
-        await OrgTreeTestHost.SendAsync(asOwner, new SuspendMemberCommand(stack.WorkspaceId, admin));
+        await OrgTreeTestHost.SendAsync(asOwner, new SuspendMemberCommand(stack.WorkspaceId, admin, (await MemberRowAsync(stack, admin)).Version));
         (await MemberRowAsync(stack, admin)).Status.Should().Be(WorkspaceMemberStatus.Suspended);
 
-        var act = () => OrgTreeTestHost.SendAsync(asOwner, new RemoveMemberCommand(stack.WorkspaceId, stack.OwnerId));
+        var ownerVersion = (await MemberRowAsync(stack, stack.OwnerId)).Version;
+        var act = () => OrgTreeTestHost.SendAsync(asOwner, new RemoveMemberCommand(stack.WorkspaceId, stack.OwnerId, ownerVersion));
         (await act.Should().ThrowAsync<DomainBusinessRuleException>())
             .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner);
     }
@@ -230,14 +271,15 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         var (stack, _, member, guest) = await SeedAsync();
         var target = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Target");
 
+        var targetVersion = (await MemberRowAsync(stack, target)).Version;
         foreach (var actor in new[] { member, guest })
         {
             using var asActor = As(stack, actor);
             foreach (var request in new object[]
             {
-                new RemoveMemberCommand(stack.WorkspaceId, target),
-                new SuspendMemberCommand(stack.WorkspaceId, target),
-                new ActivateMemberCommand(stack.WorkspaceId, target),
+                new RemoveMemberCommand(stack.WorkspaceId, target, targetVersion),
+                new SuspendMemberCommand(stack.WorkspaceId, target, targetVersion),
+                new ActivateMemberCommand(stack.WorkspaceId, target, targetVersion),
             })
             {
                 var act = () => OrgTreeTestHost.SendAsync(asActor, request);
@@ -315,7 +357,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         foreach (var reader in new[] { admin, member })
         {
             using var provider = As(stack, reader);
-            (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Should().HaveCount(4);
+            ((await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Items).Should().HaveCount(4);
         }
     }
 
@@ -338,7 +380,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         {
             using var provider = As(stack, reader);
             var rows = await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceInvitationsQuery(stack.WorkspaceId));
-            rows.Should().ContainSingle().Which.Email.Should().Be("invited@example.com");
+            rows.Items.Should().ContainSingle().Which.Email.Should().Be("invited@example.com");
         }
     }
 

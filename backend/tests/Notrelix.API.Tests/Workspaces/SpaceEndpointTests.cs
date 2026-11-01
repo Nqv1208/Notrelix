@@ -49,7 +49,7 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RenameSpace_WithValidName_ReturnsSuccess()
     {
-        var body = new { Name = "Renamed Space" };
+        var body = new { Name = "Renamed Space", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -57,7 +57,7 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateSpaceDescription_WithValidData_ReturnsSuccess()
     {
-        var body = new { Description = "Updated description" };
+        var body = new { Description = "Updated description", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/description", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -65,7 +65,7 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ChangeSpaceVisibility_WithValidData_ReturnsSuccess()
     {
-        var body = new { Visibility = "Public" };
+        var body = new { Visibility = "Public", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/visibility", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -73,7 +73,7 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ChangeSpaceType_WithValidData_ReturnsSuccess()
     {
-        var body = new { SpaceType = "Project" };
+        var body = new { SpaceType = "Project", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/type", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -81,14 +81,14 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveSpace_ReturnsSuccess()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/archive", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/archive", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task UnarchiveSpace_ReturnsSuccess()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/unarchive", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}/unarchive", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

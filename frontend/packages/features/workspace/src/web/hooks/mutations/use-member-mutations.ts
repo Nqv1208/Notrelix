@@ -11,8 +11,13 @@ interface MemberMutationDeps {
   api: WorkspaceApiClient;
 }
 
-export interface UpdateMemberRoleInput {
+/** The member a write acts on, with the version it was read at. */
+export interface MemberWriteTarget {
   readonly userId: string;
+  readonly expectedVersion: number | undefined;
+}
+
+export interface UpdateMemberRoleInput extends MemberWriteTarget {
   readonly role: WorkspaceRole;
 }
 
@@ -20,6 +25,8 @@ export interface UpdateMemberRoleInput {
  * Member writes (WX-MEM-001). Role change is applied optimistically to the
  * member list and rolled back on failure; remove, suspend and activate wait
  * for the producer (destructive or not reflected in the list). Every write
+ * quotes the member's version, so a decision made on a stale row is refused
+ * (conflict) instead of overwriting another admin's change, and every write
  * re-reads the list afterwards: the producer is authoritative.
  */
 export function createUseMemberMutations({ api }: MemberMutationDeps) {
@@ -31,8 +38,8 @@ export function createUseMemberMutations({ api }: MemberMutationDeps) {
     const refresh = () => queryClient.invalidateQueries({ queryKey: key });
 
     const updateRole = useMutation({
-      mutationFn: ({ userId, role }: UpdateMemberRoleInput) =>
-        service.updateRole(workspaceId, userId, role),
+      mutationFn: ({ userId, role, expectedVersion }: UpdateMemberRoleInput) =>
+        service.updateRole(workspaceId, userId, role, expectedVersion),
       onMutate: async ({ userId, role }: UpdateMemberRoleInput) => {
         await queryClient.cancelQueries({ queryKey: key });
         const previous = queryClient.getQueryData<WorkspaceMember[]>(key);
@@ -53,17 +60,20 @@ export function createUseMemberMutations({ api }: MemberMutationDeps) {
     });
 
     const remove = useMutation({
-      mutationFn: (userId: string) => service.removeMember(workspaceId, userId),
+      mutationFn: ({ userId, expectedVersion }: MemberWriteTarget) =>
+        service.removeMember(workspaceId, userId, expectedVersion),
       onSettled: refresh,
     });
 
     const suspend = useMutation({
-      mutationFn: (userId: string) => service.suspend(workspaceId, userId),
+      mutationFn: ({ userId, expectedVersion }: MemberWriteTarget) =>
+        service.suspend(workspaceId, userId, expectedVersion),
       onSettled: refresh,
     });
 
     const activate = useMutation({
-      mutationFn: (userId: string) => service.activate(workspaceId, userId),
+      mutationFn: ({ userId, expectedVersion }: MemberWriteTarget) =>
+        service.activate(workspaceId, userId, expectedVersion),
       onSettled: refresh,
     });
 

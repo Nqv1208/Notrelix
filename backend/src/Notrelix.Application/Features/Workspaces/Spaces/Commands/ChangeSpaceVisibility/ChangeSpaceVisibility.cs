@@ -6,8 +6,9 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVi
 public record ChangeSpaceVisibilityCommand(
     Guid WorkspaceId,
     Guid SpaceId,
-    string Visibility
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    string Visibility,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     // GOV-028: ManageSpaces on the Space itself (workspace Owner/Admin, or an
     // effective Space Admin of the Space or one of its ancestors).

@@ -1,5 +1,5 @@
 -- =============================================================================
--- 025_authz_access_helpers_static.sql — Static-SQL access helpers
+-- 026_authz_access_helpers_static.sql — Static-SQL access helpers
 -- =============================================================================
 -- Supersedes the definitions of the same five signatures in 003_authz_access_helpers.sql (003 stays as the
 -- history of the schema-aware version; this file runs after it, so the static body is the one left installed).

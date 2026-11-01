@@ -45,7 +45,7 @@ public class LabelsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteLabel_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/labels/{LabelId}");
+        var response = await _client.DeleteAsync($"/api/v1/labels/{LabelId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

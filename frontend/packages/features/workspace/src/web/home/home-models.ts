@@ -13,8 +13,15 @@ import type {
 /** One independently loaded section of a page (DESIGN.md §31–34). */
 export type SectionState<T> =
   | { readonly status: "loading" }
-  | { readonly status: "error" }
+  | {
+      readonly status: "error";
+      /** Why, when the producer or the network said so; a surface may word it. */
+      readonly reason?: SectionErrorReason;
+    }
   | { readonly status: "ready"; readonly data: T };
+
+/** `forbidden`: the producer refused the read; `offline`: it could not be reached. */
+export type SectionErrorReason = "forbidden" | "offline";
 
 type DateInput = Date | number | string;
 

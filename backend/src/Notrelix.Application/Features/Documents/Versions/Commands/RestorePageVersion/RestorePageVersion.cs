@@ -26,13 +26,15 @@ public record RestorePageVersionCommand(Guid PageId, Guid VersionId, List<SeenBl
 public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersionCommand, Result<RestorePageVersionResultDto>>
 {
     private readonly IDocumentDbContext _context;
+    private readonly IPageBlockWriteLock _writeLock;
     private readonly IPageVersionRecorder _recorder;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public RestorePageVersionCommandHandler(IDocumentDbContext context, IPageVersionRecorder recorder, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public RestorePageVersionCommandHandler(IDocumentDbContext context, IPageBlockWriteLock writeLock, IPageVersionRecorder recorder, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _writeLock = writeLock;
         _recorder = recorder;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -40,6 +42,7 @@ public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersi
 
     public async Task<Result<RestorePageVersionResultDto>> Handle(RestorePageVersionCommand request, CancellationToken ct)
     {
+        await _writeLock.AcquireAsync(request.PageId, ct);
         var page = await _context.Pages
             .FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
             ?? throw new NotFoundException(nameof(Page), request.PageId);
@@ -54,7 +57,13 @@ public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersi
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
 
-        var all = await _context.Blocks.Where(b => b.PageId == request.PageId).ToListAsync(ct);
+        // The soft-delete filter hides deleted blocks, and a block deleted since the entry is exactly what a restore
+        // brings back (its id is taken, so it cannot be created again). The tenant filter goes with it, so the
+        // account and workspace of the page are stated here.
+        var all = await _context.Blocks
+            .IgnoreQueryFilters()
+            .Where(b => b.PageId == request.PageId && b.AccountId == page.AccountId && b.WorkspaceId == page.WorkspaceId)
+            .ToListAsync(ct);
         var live = all.Where(b => !b.IsDeleted).ToList();
         EnsureSeen(live, request.CurrentBlocks);
 
@@ -97,7 +106,7 @@ public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersi
             }
 
             existing.Edit(block.Type, content, properties, userId, now);
-            set.Place(existing, block.ParentId, null, block.Position, userId, now);
+            set.PlaceAtCapturedKey(existing, block.ParentId, block.Position, userId, now);
         }
 
         foreach (var extra in live.Where(b => !keep.Contains(b.Id)))

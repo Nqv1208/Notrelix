@@ -16,6 +16,7 @@ import type {
   StepUpFactor,
   StepUpPurpose,
   StepUpRequirement,
+  TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
 } from "../types/account";
@@ -77,6 +78,8 @@ export interface AccountEndpoints {
     leaveWorkspace: (workspaceId: string) => string;
   };
   workspaces: {
+    detail: (workspaceId: string) => string;
+    unarchive: (workspaceId: string) => string;
     myJobTitle: (workspaceId: string) => string;
     myMembership: (workspaceId: string) => string;
   };
@@ -114,6 +117,7 @@ interface WorkspaceEntryWire {
   readonly departmentCount?: number | null;
   readonly isDefault?: boolean;
   readonly canLeave?: boolean;
+  readonly isArchived?: boolean;
 }
 
 const WORKSPACE_ROLES: readonly AccountWorkspaceRole[] = [
@@ -136,6 +140,7 @@ export function toWorkspaceEntry(
     departmentCount: wire.departmentCount ?? null,
     isDefault: wire.isDefault ?? false,
     canLeave: wire.canLeave ?? false,
+    isArchived: wire.isArchived ?? false,
   };
 }
 
@@ -312,14 +317,19 @@ export function toActivityPage(wire: ActivityPageWire): AccountActivityPage {
   return { items, nextCursor: wire.nextCursor ?? null };
 }
 
-const FACTORS: readonly StepUpFactor[] = ["mfa", "password", "oauth"];
+/** The producer names the factor (`StepUpRequiredFactor`, serialized as a string). */
+const FACTORS: Readonly<Record<string, StepUpFactor>> = {
+  MfaChallenge: "mfa",
+  Password: "password",
+  OAuth: "oauth",
+};
 
 export function toStepUpRequirement(wire: {
-  readonly requiredFactor?: number;
+  readonly requiredFactor?: string;
   readonly challengeToken?: string | null;
 }): StepUpRequirement {
   return {
-    factor: FACTORS[wire.requiredFactor ?? 1] ?? "password",
+    factor: FACTORS[wire.requiredFactor ?? ""] ?? "password",
     challengeToken: wire.challengeToken ?? null,
   };
 }
@@ -375,10 +385,42 @@ export function createAccountService(
       );
     },
 
-    /** Answers 204; the last owner is refused with `workspaces.member.last-owner-cannot-leave`. */
+    /**
+     * Answers 204; the last owner is refused with `workspaces.member.last-owner-cannot-leave`. Leaving
+     * is not idempotent on the producer (a second attempt answers 404), so a 404 means the person is
+     * already out, which is what they asked for: it is done, not a failure.
+     */
     async leaveWorkspace(workspaceId: string): Promise<void> {
-      await api.delete<void>(
-        endpoints.account.leaveWorkspace(workspaceId),
+      try {
+        await api.delete<void>(
+          endpoints.account.leaveWorkspace(workspaceId),
+          PAGE_QUIET,
+        );
+      } catch (error) {
+        const { kind, status } = (error ?? {}) as {
+          kind?: unknown;
+          status?: unknown;
+        };
+        if (status !== 404 && kind !== "not_found") throw error;
+      }
+    },
+
+    /**
+     * Brings an archived workspace back (Owner or Admin). The write quotes the workspace version read
+     * just before it; a version that is not a positive number sends nothing. Answers 204; a version
+     * that moved meanwhile answers 412 and the list is read again.
+     */
+    async unarchiveWorkspace(workspaceId: string): Promise<void> {
+      const workspace = await api.get<{ version?: unknown }>(
+        endpoints.workspaces.detail(workspaceId),
+        PAGE_QUIET,
+      );
+      const expectedVersion = workspace?.version;
+      if (typeof expectedVersion !== "number" || expectedVersion <= 0)
+        throw new Error("The workspace version is not known");
+      await api.post<void>(
+        endpoints.workspaces.unarchive(workspaceId),
+        { expectedVersion },
         PAGE_QUIET,
       );
     },
@@ -450,16 +492,23 @@ export function createAccountService(
       await api.post<void>(endpoints.auth.sessionRevoke(sessionId), {}, QUIET);
     },
 
-    async revokeOtherSessions(): Promise<void> {
-      await api.post<void>(endpoints.auth.sessionsRevokeOthers, {}, QUIET);
+    /** Needs a `RevokeOtherSessions` proof; answers how many other devices were signed out. */
+    async revokeOtherSessions(stepUpToken: string): Promise<number> {
+      const wire = await api.post<{ revokedCount?: number } | null>(
+        endpoints.auth.sessionsRevokeOthers,
+        { stepUpToken },
+        QUIET,
+      );
+      return wire?.revokedCount ?? 0;
     },
 
-    async startTwoFactor(): Promise<TwoFactorEnrollment> {
+    /** Needs an `EnrollMfa` proof (single use). */
+    async startTwoFactor(stepUpToken: string): Promise<TwoFactorEnrollment> {
       const wire = await api.post<{
         mfaMethodId?: string;
         secret?: string | null;
         otpAuthUri?: string | null;
-      }>(endpoints.auth.mfaEnrollmentStart, {}, QUIET);
+      }>(endpoints.auth.mfaEnrollmentStart, { stepUpToken }, QUIET);
       return {
         methodId: wire.mfaMethodId ?? "",
         secret: wire.secret ?? "",
@@ -467,17 +516,27 @@ export function createAccountService(
       };
     },
 
-    /** Activates the authenticator; the recovery codes are shown once. */
+    /**
+     * Activates the authenticator with its own `EnrollMfa` proof (single use); the
+     * recovery codes are shown once, and every other device was signed out.
+     */
     async verifyTwoFactor(
       methodId: string,
       code: string,
-    ): Promise<readonly string[]> {
-      const wire = await api.post<{ recoveryCodes?: string[] | null }>(
+      stepUpToken: string,
+    ): Promise<TwoFactorActivation> {
+      const wire = await api.post<{
+        recoveryCodes?: string[] | null;
+        otherSessionsEnded?: number;
+      }>(
         endpoints.auth.mfaEnrollmentVerify,
-        { mfaMethodId: methodId, code },
+        { mfaMethodId: methodId, code, stepUpToken },
         QUIET,
       );
-      return wire.recoveryCodes ?? [];
+      return {
+        recoveryCodes: wire.recoveryCodes ?? [],
+        otherSessionsEnded: wire.otherSessionsEnded ?? 0,
+      };
     },
 
     async getStepUpRequirement(

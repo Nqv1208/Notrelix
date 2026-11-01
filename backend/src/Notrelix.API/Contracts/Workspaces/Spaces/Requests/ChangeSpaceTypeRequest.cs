@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.Workspaces.Spaces.Requests;
 
-public sealed record ChangeSpaceTypeRequest(string SpaceType);
+public sealed record ChangeSpaceTypeRequest(string SpaceType, long ExpectedVersion);

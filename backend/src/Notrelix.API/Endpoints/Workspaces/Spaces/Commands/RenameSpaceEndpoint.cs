@@ -21,7 +21,7 @@ public static class RenameSpaceEndpoint
         RenameSpaceRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new RenameSpaceCommand(workspaceId, spaceId, request.Name));
+        var result = await sender.Send(new RenameSpaceCommand(workspaceId, spaceId, request.Name, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

@@ -26,14 +26,10 @@ public sealed class OAuthStateStore : IOAuthStateStore
 
     public async Task<OAuthLoginState?> ConsumeAsync(string state, CancellationToken ct)
     {
-        var key = GetKey(state);
-        var value = await _cache.GetAsync<string>(key);
+        // One atomic read-and-remove: two callbacks racing with the same state cannot both get it.
+        var value = await _cache.GetDeleteAsync<string>(GetKey(state), ct);
 
-        if (value is null)
-            return null;
-
-        await _cache.RemoveAsync(key);
-        return JsonSerializer.Deserialize<OAuthLoginState>(value);
+        return value is null ? null : JsonSerializer.Deserialize<OAuthLoginState>(value);
     }
 
     public async Task<OAuthLoginState?> PeekAsync(string state, CancellationToken ct)

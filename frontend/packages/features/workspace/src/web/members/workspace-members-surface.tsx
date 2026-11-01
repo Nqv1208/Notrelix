@@ -114,7 +114,20 @@ export interface WorkspaceMembersSurfaceProps {
 
 type Confirmation =
   | { readonly type: "remove" | "suspend"; readonly member: WorkspaceMember }
+  | {
+      readonly type: "demote";
+      readonly member: WorkspaceMember;
+      readonly role: WorkspaceRole;
+    }
   | { readonly type: "revoke"; readonly invitation: WorkspaceInvitation };
+
+/** A role that gives fewer permissions asks first; raising one does not. */
+const ROLE_RANK: Record<WorkspaceRole, number> = {
+  owner: 3,
+  admin: 2,
+  member: 1,
+  guest: 0,
+};
 
 const DATE_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
 
@@ -125,7 +138,8 @@ function SectionError({
 }: {
   message: string;
   retry: string;
-  onRetry: () => void;
+  /** Absent when trying again cannot help (the read was refused). */
+  onRetry?: () => void;
 }) {
   return (
     <div
@@ -133,9 +147,11 @@ function SectionError({
       className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-panel px-4 py-3"
     >
       <p className="text-body text-muted-foreground">{message}</p>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        {retry}
-      </Button>
+      {onRetry ? (
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          {retry}
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -212,6 +228,11 @@ function MemberRow({
                 </Badge>
               ) : null}
             </span>
+            {member.jobTitle ? (
+              <span className="truncate text-metadata text-muted-foreground">
+                {member.jobTitle}
+              </span>
+            ) : null}
             {blockedReason ? (
               <span
                 id={reasonId}
@@ -231,7 +252,10 @@ function MemberRow({
             disabled={pending}
             onValueChange={(value) => {
               const role = value as WorkspaceRole;
-              if (role !== member.role) onChangeRole(member, role);
+              if (role === member.role) return;
+              if (ROLE_RANK[role] < ROLE_RANK[member.role])
+                onConfirm({ type: "demote", member, role });
+              else onChangeRole(member, role);
             }}
           >
             <SelectTrigger
@@ -534,6 +558,9 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
       case "suspend":
         props.onSuspend(confirmation.member);
         break;
+      case "demote":
+        props.onChangeRole(confirmation.member, confirmation.role);
+        break;
       case "revoke":
         props.onRevoke(confirmation.invitation);
         break;
@@ -544,14 +571,22 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
   const confirmText = (() => {
     if (!confirmation) return null;
     if (confirmation.type === "revoke") {
-      const values = { email: confirmation.invitation.email };
+      const values = { email: confirmation.invitation.email, workspace };
       return {
         title: formatCopy(copy.confirm.revokeTitle, values),
-        description: copy.confirm.revokeDescription,
+        description: formatCopy(copy.confirm.revokeDescription, values),
         action: copy.confirm.revokeAction,
       };
     }
     const values = { name: confirmation.member.name, workspace };
+    if (confirmation.type === "demote") {
+      const demoted = { ...values, role: copy.roles[confirmation.role] };
+      return {
+        title: formatCopy(copy.confirm.demoteTitle, demoted),
+        description: formatCopy(copy.confirm.demoteDescription, demoted),
+        action: copy.confirm.demoteAction,
+      };
+    }
     return confirmation.type === "remove"
       ? {
           title: formatCopy(copy.confirm.removeTitle, values),
@@ -570,16 +605,24 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
       {!admin && members.status === "ready" ? (
         <p className="flex items-center gap-2 rounded-md bg-info-subtle px-3 py-2 text-metadata text-info-subtle-foreground">
           <Info aria-hidden="true" className="size-4 shrink-0" />
-          {copy.readOnly}
+          {viewer.role === "guest" ? copy.guestOwnRowOnly : copy.readOnly}
         </p>
       ) : null}
       {members.status === "loading" ? (
         <RowsSkeleton label={copy.tabs.members} />
       ) : members.status === "error" ? (
         <SectionError
-          message={copy.error.members}
+          message={
+            members.reason === "forbidden"
+              ? copy.error.membersForbidden
+              : members.reason === "offline"
+                ? copy.error.membersOffline
+                : copy.error.members
+          }
           retry={copy.error.retry}
-          onRetry={props.onRetryMembers}
+          onRetry={
+            members.reason === "forbidden" ? undefined : props.onRetryMembers
+          }
         />
       ) : (
         <>
@@ -657,6 +700,11 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
               </table>
             </div>
           )}
+          {memberList.length <= 1 && !needle && viewer.role !== "guest" ? (
+            <p className="px-1 text-body text-muted-foreground">
+              {admin ? copy.onlyYouAdmin : copy.onlyYou}
+            </p>
+          ) : null}
         </>
       )}
     </div>

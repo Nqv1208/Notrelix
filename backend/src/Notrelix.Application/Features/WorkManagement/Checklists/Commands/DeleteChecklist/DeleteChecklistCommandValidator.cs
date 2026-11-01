@@ -4,6 +4,7 @@ public class DeleteChecklistCommandValidator : AbstractValidator<DeleteChecklist
 {
     public DeleteChecklistCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ChecklistId)
             .NotEmpty();
     }

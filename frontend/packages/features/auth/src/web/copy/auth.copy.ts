@@ -36,6 +36,19 @@ export const en = {
       "This account uses a second step, so it signs in with its email and password and then the authenticator code.",
     providerFailed:
       "Signing in with the provider did not work. Try again, or use your email and password.",
+    providerUnavailable:
+      "Signing in with that provider isn't available right now. Use your email and password.",
+    providerExpired:
+      "That sign-in took too long or was already used. Start again, or use your email and password.",
+    providerDenied:
+      "You stopped signing in at the provider. Start again, or use your email and password.",
+    providerEmailInUse:
+      "An account with that email already exists. Sign in with your email and password, then link the provider from your account's Security page.",
+    providerEmailUnverified:
+      "The provider hasn't verified that email yet, so it can't create an account. Verify it there, or use your email and password.",
+    sessionEnded:
+      "Your session ended, so you were signed out. Sign in again to pick up where you left off.",
+    redirecting: "Taking you to {{provider}}…",
   },
   password: {
     title: "Enter your password",
@@ -86,7 +99,8 @@ export const en = {
     backupPlaceholder: "XXXX-XXXX-XXXX",
     useApp: "Use the authenticator app",
     back: "Back to sign-in",
-    wrong: "That code is not right. Check the app and try again.",
+    wrong:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
     expired: "This verification expired. Sign in again.",
     inactive:
       "This account cannot sign in right now. Contact your administrator.",
@@ -104,6 +118,7 @@ export const en = {
     invalid: "Enter an email like name@company.com.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    limited: "Too many requests for this email. Try again in a little while.",
   },
   sent: {
     title: "Check your email",
@@ -115,6 +130,9 @@ export const en = {
     resendWaitLabel: ", available in {{seconds}} seconds",
     back: "Back to sign-in",
     other: "Use another email",
+    limited: "Too many requests for this email. Try again in a little while.",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
   },
   verifyEmail: {
     confirmingTitle: "Confirming your email",
@@ -220,6 +238,19 @@ export const vi: AuthCopy = {
       "Tài khoản này có xác minh hai bước, nên đăng nhập bằng email và mật khẩu rồi nhập mã từ ứng dụng xác thực.",
     providerFailed:
       "Đăng nhập bằng nhà cung cấp chưa được. Thử lại, hoặc dùng email và mật khẩu.",
+    providerUnavailable:
+      "Hiện chưa đăng nhập được bằng nhà cung cấp này. Hãy dùng email và mật khẩu.",
+    providerExpired:
+      "Lần đăng nhập đó đã quá lâu hoặc đã được dùng. Hãy bắt đầu lại, hoặc dùng email và mật khẩu.",
+    providerDenied:
+      "Bạn đã dừng việc đăng nhập tại nhà cung cấp. Hãy bắt đầu lại, hoặc dùng email và mật khẩu.",
+    providerEmailInUse:
+      "Đã có tài khoản dùng email này. Hãy đăng nhập bằng email và mật khẩu, rồi liên kết nhà cung cấp trong trang Bảo mật của tài khoản.",
+    providerEmailUnverified:
+      "Nhà cung cấp chưa xác minh email đó nên chưa tạo được tài khoản. Hãy xác minh ở đó, hoặc dùng email và mật khẩu.",
+    sessionEnded:
+      "Phiên của bạn đã kết thúc nên bạn đã bị đăng xuất. Hãy đăng nhập lại để tiếp tục.",
+    redirecting: "Đang chuyển đến {{provider}}…",
   },
   password: {
     title: "Nhập mật khẩu",
@@ -267,7 +298,8 @@ export const vi: AuthCopy = {
     backupPlaceholder: "XXXX-XXXX-XXXX",
     useApp: "Dùng ứng dụng xác thực",
     back: "Quay lại đăng nhập",
-    wrong: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    wrong:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     expired: "Phiên xác minh đã hết hạn. Hãy đăng nhập lại.",
     inactive:
       "Tài khoản này tạm thời không đăng nhập được. Hãy liên hệ quản trị viên.",
@@ -284,6 +316,7 @@ export const vi: AuthCopy = {
     back: "Quay lại đăng nhập",
     invalid: "Nhập email dạng ten@congty.vn.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    limited: "Đã yêu cầu quá nhiều lần cho email này. Bạn thử lại sau ít phút.",
   },
   sent: {
     title: "Kiểm tra email của bạn",
@@ -295,6 +328,8 @@ export const vi: AuthCopy = {
     resendWaitLabel: ", dùng được sau {{seconds}} giây",
     back: "Quay lại đăng nhập",
     other: "Dùng email khác",
+    limited: "Đã yêu cầu quá nhiều lần cho email này. Bạn thử lại sau ít phút.",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
   },
   verifyEmail: {
     confirmingTitle: "Đang xác nhận email của bạn",

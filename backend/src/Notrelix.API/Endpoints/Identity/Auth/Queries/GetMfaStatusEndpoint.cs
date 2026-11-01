@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Mfa.Queries.GetMfaStatus;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Queries;
@@ -11,9 +12,11 @@ public static class GetMfaStatusEndpoint
         group.MapAuthenticatedGet("/mfa/status", HandleAsync)
             .WithName("Identity.Mfa.Status")
             .Produces<MfaStatusDto>(StatusCodes.Status200OK, "application/json")
-            .ProducesProblems(StatusCodes.Status401Unauthorized)
+            .ProducesProblems(StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Mfa")
-            .WithSummary("Get MFA status for the authenticated user");
+            .WithSummary("Get MFA status for the authenticated user")
+            .WithDescription("The caller's own status only: whether a factor is on, its method and how many recovery codes are left. Never a secret or a code.")
+            .WithMetadata(new RateLimitPolicyAttribute("GeneralAuthenticated"));
         return group;
     }
 

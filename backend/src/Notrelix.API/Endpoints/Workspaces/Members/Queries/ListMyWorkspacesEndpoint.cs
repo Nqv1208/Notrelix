@@ -12,7 +12,7 @@ public static class ListMyWorkspacesEndpoint
             .WithName("Workspaces.Members.ListMyWorkspaces")
             .WithTags("Workspaces.Members")
             .WithSummary("List the workspaces you belong to, with your role and the default")
-            .WithDescription("Only the caller's own active memberships of active workspaces, ordered by name. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.")
+            .WithDescription("Only the caller's own active memberships of active workspaces, ordered by name; an archived workspace is listed (isArchived true) only to its Owners and Admins. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.")
             .Produces<List<AccountWorkspaceDto>>(StatusCodes.Status200OK, "application/json")
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         return group;

@@ -24,6 +24,8 @@ public static class ExpectedVersionInventory
             ["UpdateBoardCommand"] = "work-management.board",
             ["MoveBoardToSpaceCommand"] = "work-management.board",
             ["MovePageToSpaceCommand"] = "documents.page",
+            ["UpdatePageCommand"] = "documents.page",
+            ["MovePageCommand"] = "documents.page",
             ["UpdateBoardFieldCommand"] = "work-management.board-field",
             ["DeleteBoardGroupCommand"] = "work-management.board-group",
             ["UpdateBoardItemCommand"] = "work-management.board-item",
@@ -116,6 +118,17 @@ public static class ExpectedVersionInventory
             ["UpdateBoardVisibilityCommand"] = "work-management.board",
             ["UpdateFormQuestionCommand"] = "work-management.form",
             ["UpdateLabelCommand"] = "work-management.label",
+            ["RenameSpaceCommand"] = "workspaces.space",
+            ["UpdateSpaceDescriptionCommand"] = "workspaces.space",
+            ["ChangeSpaceTypeCommand"] = "workspaces.space",
+            ["ChangeSpaceVisibilityCommand"] = "workspaces.space",
+            ["ArchiveSpaceCommand"] = "workspaces.space",
+            ["UnarchiveSpaceCommand"] = "workspaces.space",
+            ["SuspendMemberCommand"] = "workspaces.workspace-member",
+            ["ActivateMemberCommand"] = "workspaces.workspace-member",
+            ["RemoveMemberCommand"] = "workspaces.workspace-member",
+            ["UpdateMemberRoleCommand"] = "workspaces.workspace-member",
+            ["ChangeInvitationRoleCommand"] = "workspaces.workspace-invitation",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>

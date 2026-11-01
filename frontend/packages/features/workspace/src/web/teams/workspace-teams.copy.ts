@@ -140,7 +140,7 @@ export const en = {
     removeMember: "Remove {{name}}",
   },
   archiveDialog: {
-    title: "Archive {{team}}?",
+    title: "Archive {{team}} in {{workspace}}?",
     lose: "{{count}} people will lose access to {{where}}.{{keep}}",
     loseNone: "Nobody loses access: the Team is not used anywhere.",
     keep: " {{name}} keeps it because they were added directly.",
@@ -489,7 +489,7 @@ export const vi: WorkspaceTeamsCopy = {
     removeMember: "Bỏ {{name}}",
   },
   archiveDialog: {
-    title: "Lưu trữ {{team}}?",
+    title: "Lưu trữ {{team}} trong {{workspace}}?",
     lose: "{{count}} người sẽ mất quyền vào {{where}}.{{keep}}",
     loseNone: "Không ai mất quyền: nhóm chưa được dùng ở đâu.",
     keep: " {{name}} vẫn còn vì được thêm trực tiếp.",

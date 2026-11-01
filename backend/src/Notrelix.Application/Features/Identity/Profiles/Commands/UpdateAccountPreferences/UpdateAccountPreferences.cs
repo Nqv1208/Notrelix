@@ -69,8 +69,7 @@ public sealed class UpdateAccountPreferencesCommandHandler
                 .AnyAsync(u => u.Id == userId, cancellationToken);
             if (!userExists)
             {
-                return Result<AccountPreferencesDto>.Failure(new ApplicationError(
-                    "identity.auth.user-not-found", "User not found.", ApplicationErrorType.NotFound));
+                return Result<AccountPreferencesDto>.Failure(SessionErrors.SessionUserMissing);
             }
 
             profile = UserProfile.Create(userId, now);

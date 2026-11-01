@@ -27,6 +27,15 @@ export const IDENTITY_ERROR = {
   accountInactive: "identity.mfa.account-inactive",
   /** The provider sign-in is for an account with a second factor: no session was issued. */
   oauthMfaRequired: "identity.oauth.mfa-required",
+  /** The provider is unknown, switched off or not set up: the start made no redirect to it. */
+  oauthProviderUnavailable: "identity.oauth.provider-unavailable",
+  /** The sign-in took too long or was already used: the state is gone. */
+  oauthStateInvalid: "identity.oauth.state-invalid",
+  /** The person stopped at the provider. */
+  oauthDenied: "identity.oauth.denied",
+  oauthEmailUnverified: "identity.oauth.email-unverified",
+  /** The provider's verified email belongs to an account that is not linked to it. */
+  oauthEmailInUse: "identity.oauth.email-in-use",
 } as const;
 
 /** The API's volume limit (HTTP 429): the answer carries how long to wait. */

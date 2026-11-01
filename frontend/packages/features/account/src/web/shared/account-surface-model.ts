@@ -15,7 +15,9 @@ export type AccountSaveStatus =
   | { readonly state: "idle" }
   | { readonly state: "saving" }
   | { readonly state: "saved" }
-  | { readonly state: "error" };
+  | { readonly state: "error" }
+  /** Another device saved first: nothing was written and the page shows what is stored now. */
+  | { readonly state: "conflict" };
 
 type DateInput = Date | number | string;
 

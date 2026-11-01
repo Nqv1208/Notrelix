@@ -162,7 +162,7 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
             listed.Should().BeEquivalentTo(singles, $"{who}: the Board list equals the single-read decision (GOV-029)");
             listed.Should().BeEquivalentTo(boards, $"{who}: visible Boards");
 
-            var tree = (await OrgTreeTestHost.QueryAsync(provider, new GetSpaceTreeQuery(org.Stack.WorkspaceId))).Select(n => n.Id).ToList();
+            var tree = (await OrgTreeTestHost.QueryAsync(provider, new GetSpaceTreeQuery(org.Stack.WorkspaceId))).Items.Select(n => n.Id).ToList();
             var singleSpaces = new List<Guid>();
             foreach (var space in allSpaces)
             {
@@ -184,7 +184,7 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
         {
             var update = () => UpdateBoardAsync(guest, org.AccountingBoard, "Viewer cannot rename");
             await update.Should().ThrowAsync<AppForbidden>("a Space Viewer only reads (GOV-027)");
-            (await OrgTreeTestHost.QueryAsync(guest, new GetSpaceTreeQuery(org.Stack.WorkspaceId)))
+            (await OrgTreeTestHost.QueryAsync(guest, new GetSpaceTreeQuery(org.Stack.WorkspaceId))).Items
                 .Single(n => n.Id == org.Accounting).AccessLevel.Should().Be("Viewer");
         }
 
@@ -194,7 +194,7 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
             // Member is an Editor (content only). Previously this rename passed.
             var rename = () => UpdateBoardAsync(member, org.AccountingBoard, "Ledger 2027");
             await rename.Should().ThrowAsync<AppForbidden>("a Space Member edits content, not the Board's settings");
-            (await OrgTreeTestHost.QueryAsync(member, new GetSpaceTreeQuery(org.Stack.WorkspaceId)))
+            (await OrgTreeTestHost.QueryAsync(member, new GetSpaceTreeQuery(org.Stack.WorkspaceId))).Items
                 .Single(n => n.Id == org.Accounting).AccessLevel.Should().Be("Editor");
         }
 
@@ -217,20 +217,20 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
         var ws = org.Stack.WorkspaceId;
 
         using var accountingAdmin = _host.CreateProvider(org.Stack.AccountId, org.AccountingAdmin);
-        await OrgTreeTestHost.SendAsync(accountingAdmin, new RenameSpaceCommand(ws, org.Payroll, "Payroll & benefits"));
+        await OrgTreeTestHost.SendAsync(accountingAdmin, new RenameSpaceCommand(ws, org.Payroll, "Payroll & benefits", await _host.SpaceVersionAsync(org.Payroll)));
         (await OrgTreeTestHost.QueryAsync(accountingAdmin, new CreateSpaceCommand(ws, "Tax", ParentSpaceId: org.Accounting))).Should().NotBeEmpty(
             "a Space Admin creates child Spaces in its subtree");
-        var outsideSubtree = () => OrgTreeTestHost.SendAsync(accountingAdmin, new RenameSpaceCommand(ws, org.It, "Mine now"));
+        var outsideSubtree = async () => await OrgTreeTestHost.SendAsync(accountingAdmin, new RenameSpaceCommand(ws, org.It, "Mine now", await _host.SpaceVersionAsync(org.It)));
         await outsideSubtree.Should().ThrowAsync<AppNotFound>("a Space outside the subtree is invisible, not merely forbidden");
         var rootSpace = () => OrgTreeTestHost.SendAsync(accountingAdmin, new CreateSpaceCommand(ws, "Legal"));
         await rootSpace.Should().ThrowAsync<AppForbidden>("root Spaces are a workspace Owner/Admin capability");
 
         using var teamMember = _host.CreateProvider(org.Stack.AccountId, org.TeamMember);
-        var memberRename = () => OrgTreeTestHost.SendAsync(teamMember, new RenameSpaceCommand(ws, org.Accounting, "Not allowed"));
+        var memberRename = async () => await OrgTreeTestHost.SendAsync(teamMember, new RenameSpaceCommand(ws, org.Accounting, "Not allowed", await _host.SpaceVersionAsync(org.Accounting)));
         await memberRename.Should().ThrowAsync<AppForbidden>("a Space Member sees but does not manage the Space");
 
         using var admin = _host.CreateProvider(org.Stack.AccountId, org.Admin);
-        await OrgTreeTestHost.SendAsync(admin, new RenameSpaceCommand(ws, org.It, "Information Technology"));
+        await OrgTreeTestHost.SendAsync(admin, new RenameSpaceCommand(ws, org.It, "Information Technology", await _host.SpaceVersionAsync(org.It)));
         (await OrgTreeTestHost.QueryAsync(admin, new CreateSpaceCommand(ws, "Legal", SpaceType: "Department"))).Should().NotBeEmpty();
         (await OrgTreeTestHost.QueryAsync(admin, new CreateTeamCommand(ws, "Auditors", null))).Should().NotBeEmpty("workspace Admins manage Teams");
 

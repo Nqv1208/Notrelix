@@ -119,6 +119,8 @@ export const en = {
     conflict:
       "Someone changed this Space at the same time. The latest version is loaded; try again.",
     forbidden: "You don't have permission to do that here.",
+    pageSubtreeRefused:
+      "You cannot change some of the pages under this page, so nothing was moved.",
     notFound: "That Space or item is no longer available.",
     network: "Couldn't reach the server. Nothing was changed; try again.",
     unknown: "The server ran into a problem. Nothing was changed; try again.",
@@ -242,6 +244,8 @@ export const vi: WorkspaceSpacesCopy = {
     conflict:
       "Có người vừa thay đổi Không gian này cùng lúc. Phiên bản mới nhất đã được tải; hãy thử lại.",
     forbidden: "Bạn không có quyền làm việc này ở đây.",
+    pageSubtreeRefused:
+      "Bạn không có quyền với một số trang bên dưới, nên chưa di chuyển gì cả.",
     notFound: "Không gian hoặc mục đó không còn khả dụng.",
     network: "Không kết nối được máy chủ. Chưa có gì thay đổi; hãy thử lại.",
     unknown: "Máy chủ gặp sự cố. Chưa có gì thay đổi; hãy thử lại.",

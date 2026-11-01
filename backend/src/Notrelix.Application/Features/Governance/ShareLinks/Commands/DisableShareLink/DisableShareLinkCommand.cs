@@ -3,12 +3,21 @@ using Notrelix.Application.Features.Governance.Abstractions;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 
+/// <summary>
+/// Turns a share link off. It is authorized on the shared resource named by the route, with the same
+/// action that creating a link there needs (a Board manager may turn off a link on their board), so
+/// the link must belong to that resource.
+/// </summary>
 public record DisableShareLinkCommand(
+    string ResourceKind,
+    Guid ResourceId,
     Guid ShareLinkId) : ICommand<Result>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
 {
-    PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspace;
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceKind.Create("governance.share-link"), ShareLinkId);
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("governance.share-link"), ShareLinkId);
+    internal ResourceKind Kind => ShareLinkResources.ParseKind(ResourceKind);
+
+    PermissionAction IRequirePermission.Action => ShareLinkResources.ActionFor(Kind);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
 }
 
 public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCommand, Result>
@@ -34,7 +43,8 @@ public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCo
         var shareLink = await _context.ShareLinks
             .FirstOrDefaultAsync(s => s.Id == request.ShareLinkId, cancellationToken);
 
-        if (shareLink == null)
+        // A link of another resource answers the same NotFound as a link that does not exist.
+        if (shareLink == null || shareLink.ResourceKind != request.Kind || shareLink.ResourceId != request.ResourceId)
         {
             throw new NotFoundException(nameof(ShareLink), request.ShareLinkId);
         }

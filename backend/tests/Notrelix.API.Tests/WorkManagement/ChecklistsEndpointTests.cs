@@ -46,7 +46,7 @@ public class ChecklistsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteChecklist_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/checklists/{ChecklistId}");
+        var response = await _client.DeleteAsync($"/api/v1/checklists/{ChecklistId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

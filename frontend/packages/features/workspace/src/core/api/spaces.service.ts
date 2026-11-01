@@ -18,13 +18,9 @@ import {
 } from "../model/spaces";
 import { rememberMarkTone } from "../model/navigation";
 
-type SpaceTreeNodeDto =
-  OperationResponse<
-    "Workspaces.Spaces.GetSpaceTree",
-    200
-  > extends readonly (infer Item)[]
-    ? Item
-    : never;
+type SpaceTreePage = OperationResponse<"Workspaces.Spaces.GetSpaceTree", 200>;
+type SpaceTreeNodeDto = NonNullable<SpaceTreePage["items"]>[number];
+type SpaceDetailDto = OperationResponse<"Workspaces.Spaces.GetSpace", 200>;
 type SpaceMemberDto =
   OperationResponse<
     "Workspaces.Spaces.GetSpaceMembers",
@@ -35,6 +31,7 @@ type SpaceMemberDto =
 type CreateSpaceBody = OperationRequestBody<"Workspaces.Spaces.CreateSpace">;
 type MoveSpaceBody = OperationRequestBody<"Workspaces.Spaces.MoveSpace">;
 type RenameSpaceBody = OperationRequestBody<"Workspaces.Spaces.RenameSpace">;
+type SpaceVersionBody = OperationRequestBody<"Workspaces.Spaces.ArchiveSpace">;
 type DescriptionBody =
   OperationRequestBody<"Workspaces.Spaces.UpdateSpaceDescription">;
 type VisibilityBody =
@@ -46,7 +43,11 @@ type ChangeRoleBody =
 
 export interface SpacesApiClient {
   get<T>(url: string): Promise<T>;
-  post<T>(url: string, body: unknown): Promise<T>;
+  post<T>(
+    url: string,
+    body: unknown,
+    options?: { idempotencyKey?: string },
+  ): Promise<T>;
   put<T>(url: string, body: unknown): Promise<T>;
   patch<T>(url: string, body: unknown): Promise<T>;
   delete<T>(url: string): Promise<T>;
@@ -74,7 +75,10 @@ export interface SpacesEndpoints {
 }
 
 /** Rows missing an identity or a known type are dropped, never guessed. */
-export function parseSpaceTree(items: unknown): SpaceNode[] {
+export function parseSpaceTree(page: unknown): SpaceNode[] {
+  const items = Array.isArray(page)
+    ? page
+    : (page as { items?: unknown } | null)?.items;
   if (!Array.isArray(items)) return [];
   const nodes: SpaceNode[] = [];
   for (const raw of items as SpaceTreeNodeDto[]) {
@@ -136,6 +140,9 @@ export interface MoveSpaceInput {
   readonly expectedVersion: number;
 }
 
+/** The tree is read 200 Spaces at a time (the producer's largest page). */
+const TREE_PAGE_SIZE = 200;
+
 export interface SpaceDetailsInput {
   readonly name?: string;
   readonly description?: string | null;
@@ -154,8 +161,19 @@ export function createSpacesService(
 ) {
   const e = endpoints.workspaces;
   return {
+    /** Reads every page: the tree is whole to the client, bounded per request. */
     async getTree(workspaceId: string): Promise<SpaceNode[]> {
-      return parseSpaceTree(await api.get<unknown>(e.spaceTree(workspaceId)));
+      const nodes: SpaceNode[] = [];
+      let cursor: string | null = null;
+      do {
+        const query: string = `limit=${TREE_PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+        const page: SpaceTreePage = await api.get<SpaceTreePage>(
+          `${e.spaceTree(workspaceId)}?${query}`,
+        );
+        nodes.push(...parseSpaceTree(page));
+        cursor = page?.nextCursor ?? null;
+      } while (cursor);
+      return nodes;
     },
 
     async getMembers(
@@ -167,10 +185,14 @@ export function createSpacesService(
       );
     },
 
-    /** Returns the new Space id (201 with the id). */
+    /**
+     * Returns the new Space id (201 with the id). A retry under the same
+     * `idempotencyKey` returns the Space the first attempt made.
+     */
     async create(
       workspaceId: string,
       input: CreateSpaceInput,
+      idempotencyKey?: string,
     ): Promise<string | null> {
       const body: CreateSpaceBody = {
         name: input.name,
@@ -181,7 +203,11 @@ export function createSpacesService(
         previousSiblingId: input.previousSiblingId,
         nextSiblingId: input.nextSiblingId,
       };
-      const id = await api.post<unknown>(e.spaces(workspaceId), body);
+      const id = await api.post<unknown>(
+        e.spaces(workspaceId),
+        body,
+        idempotencyKey ? { idempotencyKey } : undefined,
+      );
       return typeof id === "string" ? id : null;
     },
 
@@ -195,36 +221,76 @@ export function createSpacesService(
       await api.post<void>(e.spaceMove(workspaceId, input.spaceId), body);
     },
 
-    /** Writes only the fields that changed, one producer call each. */
+    /**
+     * Writes only the fields that changed, one producer call each. Every
+     * write that takes effect moves the Space version, so the first carries
+     * `expectedVersion` and each later one carries the version re-read from
+     * the producer. A stale version is rejected and nothing is retried.
+     */
     async updateDetails(
       workspaceId: string,
       spaceId: string,
       input: SpaceDetailsInput,
+      expectedVersion: number,
     ): Promise<void> {
+      let version = expectedVersion;
+      let wrote = false;
+      const nextVersion = async () => {
+        if (wrote) {
+          const fresh = await api.get<SpaceDetailDto>(
+            e.space(workspaceId, spaceId),
+          );
+          if (typeof fresh?.version === "number") version = fresh.version;
+        }
+        wrote = true;
+        return version;
+      };
       if (input.name !== undefined) {
-        const body: RenameSpaceBody = { name: input.name };
+        const body: RenameSpaceBody = {
+          name: input.name,
+          expectedVersion: await nextVersion(),
+        };
         await api.put<void>(e.space(workspaceId, spaceId), body);
       }
       if (input.description !== undefined) {
-        const body: DescriptionBody = { description: input.description };
+        const body: DescriptionBody = {
+          description: input.description,
+          expectedVersion: await nextVersion(),
+        };
         await api.put<void>(e.spaceDescription(workspaceId, spaceId), body);
       }
       if (input.type !== undefined) {
-        const body: TypeBody = { spaceType: input.type };
+        const body: TypeBody = {
+          spaceType: input.type,
+          expectedVersion: await nextVersion(),
+        };
         await api.put<void>(e.spaceType(workspaceId, spaceId), body);
       }
       if (input.visibility !== undefined) {
-        const body: VisibilityBody = { visibility: input.visibility };
+        const body: VisibilityBody = {
+          visibility: input.visibility,
+          expectedVersion: await nextVersion(),
+        };
         await api.put<void>(e.spaceVisibility(workspaceId, spaceId), body);
       }
     },
 
-    async archive(workspaceId: string, spaceId: string): Promise<void> {
-      await api.post<void>(e.spaceArchive(workspaceId, spaceId), {});
+    async archive(
+      workspaceId: string,
+      spaceId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      const body: SpaceVersionBody = { expectedVersion };
+      await api.post<void>(e.spaceArchive(workspaceId, spaceId), body);
     },
 
-    async unarchive(workspaceId: string, spaceId: string): Promise<void> {
-      await api.post<void>(e.spaceUnarchive(workspaceId, spaceId), {});
+    async unarchive(
+      workspaceId: string,
+      spaceId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      const body: SpaceVersionBody = { expectedVersion };
+      await api.post<void>(e.spaceUnarchive(workspaceId, spaceId), body);
     },
 
     async addMember(

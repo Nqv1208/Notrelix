@@ -172,6 +172,11 @@ optimistic concurrency, an unchanged title is a no-op, a removed member's profil
 title is never visible outside the Workspace. It does not change role, status or any permission. The member
 list and the Team member list expose it.
 
+The member list (`GET /workspaces/{workspaceId}/members`) pages by cursor: oldest member first, the user id
+breaking a tie, 50 people a page by default and at most 200. A removed member is never listed and never counts
+toward a page. A caller who is not an active member, and a Guest (section 82, `ViewMembers`), is refused; a Guest
+reads only their own row through `GET /workspaces/{workspaceId}/members/me`, which every active member may read.
+
 # 12. WSP-005 — Workspace membership is a security boundary
 
 A principal must not read/write a Workspace-scoped resource merely because:
@@ -203,6 +208,8 @@ A pending Workspace invitation is not active access.
 Acceptance creates/resolves membership through explicit workflow.
 
 Revoked/expired invitations must not authorize access.
+
+A signed-in person sees the pending invitations addressed to their own confirmed email, and may accept or decline them by id; accepting follows the same rules as accepting from the link (email, seat, Suspended and Removed members). An invitation that is unknown, not pending or addressed to another email answers the same NotFound (confirmed 2026-10-30).
 
 # 15. Membership role
 
@@ -273,12 +280,15 @@ The signed-in person has an account-level list of the Workspaces they take part 
 Workspaces, one row each with the person's own role, whether it is their default, and whether they may
 leave. The member count is shown to every role except Guest; the department count (active Department
 Spaces) is shown only to an Owner or Admin. A Workspace the person left, was removed or suspended from, or
-that is archived or deleted, never appears.
+that is deleted, never appears. An archived Workspace is read-only for every member and is listed, flagged
+`isArchived`, only to its Owners and Admins, in an "Archived" group where they can unarchive it; it is never
+the default and never offered to leave or open from there.
 
 The default Workspace is the person's choice of the Workspace that opens with the app. Workspaces validates
 that the person is an active member before the choice is stored; Identity stores only the Workspace id on
-the person's profile and a reader treats a default the person cannot open as absent. Choosing the current
-default changes nothing.
+the person's profile and a reader treats a default the person cannot open as absent. Choosing an archived
+Workspace as the default is refused with a business-rule failure, and an archived default that was chosen
+earlier reads as absent. Choosing the current default changes nothing.
 
 # 20. Remove Member
 
@@ -320,7 +330,7 @@ Principal with ManageBoardPermission / ManagePagePermission on a resource
 - a Workspace invitation offers `member` or `guest` only (decided 2026-10-23): `admin` is granted by changing the role of an existing member after they join, never by an invitation. Creating an invitation or changing a pending invitation's role to `admin` is rejected with rule code `Workspaces_Invitation_CannotInviteAsAdmin`. An Admin invitation issued before this rule stays as stored: it can still be accepted, resent or revoked, and its role can be lowered to member or guest, but never kept or raised to admin through a role change; no data migration is needed;
 - the issuer of a resource invitation may resend and revoke their own: `POST /api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}/resend` and `DELETE /api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}`. They are authorized as `ManageBoardPermission` / `ManagePagePermission` on the resource, so an issuer who lost that permission is denied, and they act only on an invitation they issued for that exact resource (another member's invitation, or one for another resource, is not found). A Workspace Owner/Admin resends or revokes any invitation through the workspace endpoints. A resend replaces the token (the old link stops working) and a revoked invitation can no longer be accepted or resent;
 - a resource invitation is delivered with its own email template (`resource-invitation`) that names the Board or Page and the inviter instead of "a workspace"; the delivery event carries the resource fields additively (`ResourceKind`, `ResourceId`, `ResourceName`, `InviterName`), absent for a Workspace invitation, so the workspace template and existing consumers are unchanged;
-- acceptance applies the membership, the entries and the resource entry in one transaction; if a named Team or Space is no longer active, or the resource is gone, acceptance fails closed and changes nothing, and the issuer must invite again; accepting reuses an existing membership and an existing entry (an entry is raised to the invited level, never lowered); a removed or suspended member cannot accept an invitation that carries entries or a resource entry.
+- acceptance applies the membership, the entries and the resource entry in one transaction; if a named Team or Space is no longer active, or the resource is gone, acceptance fails closed and changes nothing, and the issuer must invite again; accepting reuses an existing membership and an existing entry (an entry is raised to the invited level, never lowered); accepting a plain invitation (one with no entries and no resource entry) re-activates a removed member with the invited role, after the same Billing seat check as a direct add, and is refused with `Workspaces_Member_SeatUnavailable` when no seat is free; an invitation never overrides an administrator's suspension, so a suspended member who accepts is refused ("Your membership in this workspace is not active") and stays suspended; a removed or suspended member cannot accept an invitation that carries entries or a resource entry.
 
 ---
 
@@ -408,6 +418,8 @@ Billing does not own membership or Workspace lifecycle.
 A Workspace Member may be valid while a capability is not commercially entitled.
 
 A paid plan does not automatically grant a principal membership.
+
+A direct add of an existing user takes the same Billing seat as accepting an invitation: a Guest takes a guest seat, every other role a member seat, and the add is refused with `Workspaces_Member_SeatUnavailable` when none is free. A direct add also requires the person to be an active member of the Workspace's Account (WSP-004), checked first and refused with `Workspaces_Member_NotInAccount` without revealing whether the person exists; anyone else is invited.
 
 # 33. Work Management relation
 
@@ -555,6 +567,13 @@ role:    Admin | Member | Viewer
 
 Existing Spaces created before membership existed receive their creator as Space Admin during migration.
 
+Every write to a Space (rename, description, type, visibility, archive, unarchive, move and the membership writes) carries the
+Space `version` the client last read; a version that moved is refused with 412 and nothing changes. A write that changes
+nothing bumps nothing. Creating a Space takes an `Idempotency-Key`: a retry returns the Space the first attempt made, and a
+different body under the same key is refused. The Space tree (`GET .../spaces/tree`) and the list (`GET .../spaces`) page by
+cursor, 50 a page by default and at most 200; the tree pages in Space id order and the client reads every page and orders
+siblings by position.
+
 # 45. Teams
 
 A Team can group Workspace members for collaboration/organization.
@@ -562,6 +581,10 @@ A Team can group Workspace members for collaboration/organization.
 Current source includes Team and TeamMember concepts.
 
 Team membership is distinct from Workspace membership.
+
+Creating a Team takes an `Idempotency-Key`: a retry returns the Team the first attempt made, and a different body under
+the same key is refused. The Team list (`GET .../teams`) pages by cursor in name order (id on ties), 50 a page by default
+and at most 200, and includes archived Teams.
 
 # 46. WSP-014 — Team membership requires Workspace membership compatibility
 
@@ -819,6 +842,13 @@ Examples:
 # 72. WSP-019 — Membership and invitation races resolve deterministically
 
 Retry/concurrent acceptance/removal must not produce duplicate active memberships or violate owner invariants.
+
+A write that changes an existing member (role change, suspend, activate, remove) quotes the version of the
+member it was decided on. A version that has moved is refused with a precondition failure and nothing changes,
+so two administrators who read the same member cannot overwrite each other; a request that leaves the member as
+it is (same role, already suspended, already active, already removed) changes nothing and does not move the
+version. Activating a suspended member takes a seat again, so it asks Billing like admitting a new member and is
+refused when no seat is free.
 
 # 73. Idempotency
 

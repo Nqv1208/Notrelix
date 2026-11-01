@@ -4714,9 +4714,17 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
 
+                    b.Property<string>("PreviousRefreshTokenHash")
+                        .HasColumnType("text")
+                        .HasColumnName("previous_refresh_token_hash");
+
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
+
+                    b.Property<DateTimeOffset?>("RotatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rotated_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -4753,6 +4761,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("idx_user_sessions_expires");
+
+                    b.HasIndex("PreviousRefreshTokenHash")
+                        .HasDatabaseName("idx_user_sessions_previous_refresh_token_hash");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_user_sessions_user_id");
@@ -12687,6 +12698,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnName("refresh_token_hash");
 
                             b1.HasKey("UserSessionId");
+
+                            b1.HasIndex("Hash")
+                                .HasDatabaseName("idx_user_sessions_refresh_token_hash");
 
                             b1.ToTable("user_sessions", "identity");
 

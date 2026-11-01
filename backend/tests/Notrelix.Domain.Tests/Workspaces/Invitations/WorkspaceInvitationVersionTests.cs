@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces;
 using FluentAssertions;
 
 namespace Notrelix.Domain.Tests.Workspaces;
@@ -88,6 +89,26 @@ public class WorkspaceInvitationVersionTests
     }
 
     [Fact]
+    public void Resend_WithinTheCooldown_IsRefused_AndChangesNothing()
+    {
+        var invitation = CreatePendingInvitation();
+        var version = invitation.Version;
+        var token = invitation.Token;
+
+        FluentActions.Invoking(() => invitation.Resend(
+                InvitationTokenHash.Create("b1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+                1,
+                _now.AddSeconds(30),
+                TimeSpan.FromDays(7),
+                _actorId))
+            .Should().Throw<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_ResendTooSoon);
+
+        invitation.Version.Should().Be(version);
+        invitation.Token.Should().Be(token);
+    }
+
+    [Fact]
     public void Resend_ShouldIncrementVersion()
     {
         var invitation = CreatePendingInvitation();
@@ -97,7 +118,7 @@ public class WorkspaceInvitationVersionTests
         invitation.Resend(
             InvitationTokenHash.Create("b1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
             1,
-            _now,
+            _now.AddMinutes(2),
             TimeSpan.FromDays(7),
             _actorId);
 

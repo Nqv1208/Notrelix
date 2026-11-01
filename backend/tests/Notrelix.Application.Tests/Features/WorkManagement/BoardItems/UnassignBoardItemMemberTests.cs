@@ -8,7 +8,9 @@ public class UnassignBoardItemMemberTests : WorkManagementHandlerTestBase
 
     public UnassignBoardItemMemberTests()
     {
-        _handler = new UnassignBoardItemMemberCommandHandler(DbContextMock.Object, new Mock<ICurrentUser>().Object, DateTimeProviderMock.Object);
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.SetupGet(u => u.UserId).Returns(TestUserId);
+        _handler = new UnassignBoardItemMemberCommandHandler(DbContextMock.Object, currentUser.Object, DateTimeProviderMock.Object);
     }
 
     [Fact]

@@ -203,7 +203,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         // Handler A wins the race: it acquires the workspace row lock, observes
         // two owners, demotes ownerA, and holds the lock until we commit below.
         var demoteA = await handlerA.Handle(
-            new UpdateMemberRoleCommand(workspace.Id, ownerAId, WorkspaceRole.Member),
+            new UpdateMemberRoleCommand(workspace.Id, ownerAId, WorkspaceRole.Member, memberA.Version),
             CancellationToken.None);
         demoteA.Succeeded.Should().BeTrue();
 
@@ -211,7 +211,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         // block until transaction A commits, so its later owner count cannot be
         // stale. Run it on a separate task while A is still open.
         var removeBTask = handlerB.Handle(
-            new RemoveMemberCommand(workspace.Id, ownerBId),
+            new RemoveMemberCommand(workspace.Id, ownerBId, memberB.Version),
             CancellationToken.None);
 
         await contextA.SaveChangesAsync();
@@ -274,7 +274,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1), CancellationToken.None))
             .Succeeded.Should().BeTrue();
 
-        var removeTask = remove.Handle(new RemoveMemberCommand(workspace.Id, newOwnerId), CancellationToken.None);
+        var removeTask = remove.Handle(new RemoveMemberCommand(workspace.Id, newOwnerId, 1), CancellationToken.None);
 
         await contextA.SaveChangesAsync();
         await txA.CommitAsync();

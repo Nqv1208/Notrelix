@@ -32,7 +32,7 @@ async function createDoc(
 }
 
 async function openFileMenu(page: Page) {
-  await page.getByRole("button", { name: FILE_MENU }).click();
+  await page.getByRole("menuitem", { name: FILE_MENU }).click();
 }
 
 test("a page moves to the trash, is restored from it, then deleted for good from the trash list", async ({
@@ -122,7 +122,7 @@ test("a page reference names another page, and that page lists the referrer as a
     `/pages/${referrer}/blocks`,
     {
       type: "PageReference",
-      properties: JSON.stringify({ linkedPageId: target }),
+      properties: { pageId: target },
     },
   );
   expect(block.status).toBe(201);
@@ -143,23 +143,30 @@ test("a page reference names another page, and that page lists the referrer as a
   await expect(page.getByText(`Referrer ${stamp}`)).toBeVisible();
 
   // Retyping a block keeps its id and content carries over between text types.
-  const text = await apiWrite<string>(page, "POST", `/pages/${target}/blocks`, {
-    type: "Text",
-    properties: JSON.stringify({ text: "Keep this text" }),
-  });
-  const blockId = text.data as string;
+  const text = await apiWrite<{ id: string; version: number }>(
+    page,
+    "POST",
+    `/pages/${target}/blocks`,
+    {
+      type: "Text",
+      content: { v: 1, runs: [{ text: "Keep this text", marks: [] }] },
+    },
+  );
+  expect(text.status).toBe(201);
+  const blockId = text.data?.id as string;
   const retyped = await apiWrite(
     page,
     "PATCH",
     `/pages/${target}/blocks/${blockId}`,
-    { type: "callout" },
+    { type: "callout", expectedVersion: text.data?.version },
   );
   expect(retyped.status).toBeLessThan(300);
-  const blocks = await apiRead<{ id: string; type: string; content: string }[]>(
-    page,
-    `/pages/${target}/blocks`,
-  );
+  const blocks = await apiRead<
+    { id: string; type: string; content: { runs: { text: string }[] } }[]
+  >(page, `/pages/${target}/blocks`);
   const kept = blocks.find((entry) => entry.id === blockId);
   expect(kept?.type).toBe("Callout");
-  expect(JSON.parse(kept?.content ?? "{}").text).toBe("Keep this text");
+  expect(kept?.content.runs.map((run) => run.text).join("")).toBe(
+    "Keep this text",
+  );
 });

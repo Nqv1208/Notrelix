@@ -5,6 +5,11 @@ using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 
+/// <summary>
+/// Creates a workspace in the Account with the caller as its first Owner. A retry under the same
+/// Idempotency-Key returns the workspace the first attempt created; a different body under that key is refused.
+/// </summary>
+[IdempotencyOperation("workspaces.workspace.create-workspace.v1")]
 public record CreateWorkspaceCommand(
     string Name,
     string? Description,
@@ -12,7 +17,7 @@ public record CreateWorkspaceCommand(
     string? Slug = null,
     string? Size = null,
     string? Language = null
-) : ICommand<Result<Guid>>, IAuthenticatedRequest, IAccountRequest, IRequirePermission, IRequireVerifiedEmail, IWriteRequest
+) : ICommand<Result<Guid>>, IAuthenticatedRequest, IAccountRequest, IRequirePermission, IRequireVerifiedEmail, IWriteRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateWorkspace;
     public ResourceRef? Resource => null;

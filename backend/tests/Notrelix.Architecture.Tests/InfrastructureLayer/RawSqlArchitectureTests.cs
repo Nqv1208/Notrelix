@@ -25,6 +25,10 @@ public class RawSqlArchitectureTests
 
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs",
+
+        // Reason: delete Board access-change rows past retention_until in bounded batches, claimed with
+        // FOR UPDATE SKIP LOCKED so several instances can sweep at once (off by default)
+        "src/Notrelix.Infrastructure/BackgroundJobs/ResourceAccessChangeRetention.cs",
         
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/EmailDispatcher.cs",
@@ -45,6 +49,10 @@ public class RawSqlArchitectureTests
         // WM-V3-ORDER-001: transaction-scoped advisory lock (pg_advisory_xact_lock)
         // serializing one Work ordering scope inside the request transaction.
         "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresWorkOrderingScopeLock.cs",
+        // Documents: transaction-scoped advisory locks (pg_advisory_xact_lock) serializing the block
+        // writes of one page and the page-tree shape writes of one workspace inside the request transaction.
+        "src/Notrelix.Infrastructure/Documents/Blocks/PostgresPageBlockWriteLock.cs",
+        "src/Notrelix.Infrastructure/Documents/Pages/PageSubtreeStore.cs",
         // Attachment cap: transaction-scoped advisory lock (pg_advisory_xact_lock)
         // taken only at the commit point of an attachment upload/link, serializing
         // the per-item cap recount with the row insert inside the request transaction.

@@ -26,10 +26,19 @@ export type PageDtoApi = {
   people?: { id: string; name: string }[];
 };
 
+/** `Documents.Pages.ListTrashedPages`: one cursor page of the trash. */
+export type TrashPageDtoApi = {
+  items?: PageDtoApi[] | null;
+  /** Opaque; sent back as `cursor` for the next page, absent on the last one. */
+  nextCursor?: string | null;
+};
+
 export type BreadcrumbDtoApi = {
-  id: string;
-  title: string;
+  /** Absent on a crumb the viewer may not see (`unavailable`). */
+  id?: string | null;
+  title?: string | null;
   icon?: string | null;
+  unavailable?: boolean;
 };
 
 export type CommentDtoApi = {

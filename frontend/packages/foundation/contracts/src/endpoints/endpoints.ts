@@ -44,9 +44,13 @@ export const endpoints = {
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
     invitationByToken: (token: string) =>
       `/workspaces/invitations/by-token/${token}`,
-    acceptInvitation: (token: string) =>
-      `/workspaces/invitations/accept/${token}`,
-    pendingInvitations: "/workspaces/invitations/pending",
+    // The signed-in person's own invitations (Workspaces.Invitations.GetUserPendingInvitations,
+    // AcceptInvitationById, DeclineInvitation).
+    pendingInvitations: "/invitations/pending",
+    acceptInvitationById: (invitationId: string) =>
+      `/invitations/${encodeURIComponent(invitationId)}/accept`,
+    declineInvitation: (invitationId: string) =>
+      `/invitations/${encodeURIComponent(invitationId)}/decline`,
     // Per-member navigation state (WX-BE-001/002): references only.
     recents: (workspaceId: string) => `/workspaces/${workspaceId}/recents`,
     pins: (workspaceId: string) => `/workspaces/${workspaceId}/pins`,
@@ -61,6 +65,8 @@ export const endpoints = {
       `/workspaces/${workspaceId}/members/me`,
     settings: (workspaceId: string) => `/workspaces/${workspaceId}/settings`,
     archive: (workspaceId: string) => `/workspaces/${workspaceId}/archive`,
+    unarchive: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/archive/unarchive`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,

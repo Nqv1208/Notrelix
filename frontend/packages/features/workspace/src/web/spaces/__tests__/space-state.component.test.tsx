@@ -147,22 +147,28 @@ describe("Space state (OT-5)", () => {
       get: vi.fn((url: string) =>
         Promise.resolve(
           url.includes("ws-a")
-            ? [
-                {
-                  id: "a1",
-                  name: "A",
-                  spaceType: "Folder",
-                  visibility: "Workspace",
-                },
-              ]
-            : [
-                {
-                  id: "b1",
-                  name: "B",
-                  spaceType: "Folder",
-                  visibility: "Workspace",
-                },
-              ],
+            ? {
+                items: [
+                  {
+                    id: "a1",
+                    name: "A",
+                    spaceType: "Folder",
+                    visibility: "Workspace",
+                  },
+                ],
+                nextCursor: null,
+              }
+            : {
+                items: [
+                  {
+                    id: "b1",
+                    name: "B",
+                    spaceType: "Folder",
+                    visibility: "Workspace",
+                  },
+                ],
+                nextCursor: null,
+              },
         ),
       ),
       post: vi.fn(),
@@ -179,7 +185,9 @@ describe("Space state (OT-5)", () => {
     await waitFor(() => expect(result.current.data?.[0]?.id).toBe("a1"));
     rerender({ ws: "ws-b" });
     await waitFor(() => expect(result.current.data?.[0]?.id).toBe("b1"));
-    expect(api.get).toHaveBeenCalledWith("/workspaces/ws-b/spaces/tree");
+    expect(api.get).toHaveBeenCalledWith(
+      "/workspaces/ws-b/spaces/tree?limit=200",
+    );
   });
 
   it("persists expansion per member and workspace and survives blocked storage", () => {

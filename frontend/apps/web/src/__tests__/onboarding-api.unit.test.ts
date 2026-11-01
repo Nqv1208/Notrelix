@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createOnboardingApi,
   type OnboardingApiClient,
-} from "../routes/onboarding/onboarding-api";
+} from "@notrelix/features-workspace/web";
 
 const WS = "w1";
 
@@ -18,40 +18,43 @@ function stub(overrides: Record<string, unknown> = {}) {
   const answers: Record<string, unknown> = {
     [`/workspaces/${WS}`]: { id: WS, name: "Minh An Group", memberCount: 86 },
     [`/workspaces/${WS}/members/me`]: { role: "Member" },
-    [`/workspaces/${WS}/spaces/tree`]: [
-      {
-        id: "s1",
-        parentSpaceId: null,
-        name: "Công nghệ",
-        visibility: "Private",
-        isArchived: false,
-        accessLevel: "Editor",
-      },
-      {
-        id: "s2",
-        parentSpaceId: null,
-        name: "Marketing",
-        visibility: "Workspace",
-        isArchived: false,
-        accessLevel: null,
-      },
-      {
-        id: "s3",
-        parentSpaceId: "s1",
-        name: "Nhóm Hạ tầng",
-        visibility: "Private",
-        isArchived: false,
-        accessLevel: "Editor",
-      },
-      {
-        id: "s4",
-        parentSpaceId: null,
-        name: "Cũ",
-        visibility: "Private",
-        isArchived: true,
-        accessLevel: "Manager",
-      },
-    ],
+    [`/workspaces/${WS}/spaces/tree?limit=200`]: {
+      items: [
+        {
+          id: "s1",
+          parentSpaceId: null,
+          name: "Công nghệ",
+          visibility: "Private",
+          isArchived: false,
+          accessLevel: "Editor",
+        },
+        {
+          id: "s2",
+          parentSpaceId: null,
+          name: "Marketing",
+          visibility: "Workspace",
+          isArchived: false,
+          accessLevel: null,
+        },
+        {
+          id: "s3",
+          parentSpaceId: "s1",
+          name: "Nhóm Hạ tầng",
+          visibility: "Private",
+          isArchived: false,
+          accessLevel: "Editor",
+        },
+        {
+          id: "s4",
+          parentSpaceId: null,
+          name: "Cũ",
+          visibility: "Private",
+          isArchived: true,
+          accessLevel: "Manager",
+        },
+      ],
+      nextCursor: null,
+    },
     [`/workspaces/${WS}/boards`]: [
       {
         id: "b1",

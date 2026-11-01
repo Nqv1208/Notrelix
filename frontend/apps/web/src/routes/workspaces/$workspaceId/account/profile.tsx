@@ -8,6 +8,7 @@ import {
   createUseProfile,
   createUseProfilePhoto,
   createUseUpdateProfile,
+  isPreferencesConflict,
   photoFailureOf,
   useAccountProfileCopy,
   accountQueryKeys,
@@ -146,9 +147,11 @@ export function AccountProfilePage() {
           await updateJobTitle.mutateAsync(values.jobTitle);
         setDateFormat(values.dateFormat);
         setSave({ state: "saved" });
-      } catch {
-        // A stale version has refetched the authoritative values.
-        setSave({ state: "error" });
+      } catch (error) {
+        // A stale version has refetched the authoritative values: say nothing was saved because of it.
+        setSave({
+          state: isPreferencesConflict(error) ? "conflict" : "error",
+        });
       }
     },
     [
@@ -194,6 +197,7 @@ export function AccountProfilePage() {
       profile={section}
       save={save}
       photoError={photoError}
+      photoBusy={photo.isBusy}
       onSave={(values) => void handleSave(values)}
       onRetry={() => {
         void refetch();

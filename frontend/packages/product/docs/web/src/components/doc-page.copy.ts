@@ -8,6 +8,7 @@
  */
 export const vi = {
   crumbLabel: "Đường dẫn",
+  crumbUnavailable: "Trang không khả dụng",
   loading: "Đang tải tài liệu",
   notFound: "Không tìm thấy tài liệu hoặc bạn không có quyền xem.",
   untitled: "Tài liệu chưa đặt tên",
@@ -22,6 +23,8 @@ export const vi = {
     saving: "Đang lưu…",
     stats: "{{words}} từ · {{characters}} ký tự",
     saveFailed: "Chưa lưu được ·",
+    titleConflict:
+      "Tên tài liệu vừa được người khác đổi. Đang hiện tên mới nhất.",
     retry: "Thử lại",
     presence: "Đang xem: {{names}}",
     share: "Chia sẻ",
@@ -163,8 +166,11 @@ export const vi = {
     saveVersion: "Lưu phiên bản…",
     saveTemplate: "Lưu thành mẫu…",
     rename: "Đổi tên",
+    move: "Chuyển đến…",
     copyTitle: "{{title}} (bản sao)",
-    makeCopyDone: "Đã tạo bản sao. Ảnh và tệp đính kèm không được sao chép.",
+    makeCopyDone: "Đã tạo bản sao.",
+    makeCopyDropped:
+      "Đã tạo bản sao. {{count}} khối ảnh, tệp hoặc video chưa được sao chép.",
     makeCopyFailed: "Chưa tạo được bản sao.",
     importPage: "Nhập từ Markdown hoặc Word…",
   },
@@ -401,7 +407,7 @@ export const vi = {
     close: "Đóng thùng rác",
     loading: "Đang tải thùng rác",
     empty: "Thùng rác trống.",
-    note: "Trang trong thùng rác không hiện trong cây tài liệu. Khôi phục để dùng lại, hoặc xoá vĩnh viễn.",
+    note: "Trang trong thùng rác không hiện trong cây tài liệu. Khôi phục một trang sẽ đưa cả các trang đã vào thùng rác cùng nó trở lại; xoá vĩnh viễn cũng xoá cả các trang đó.",
     restore: "Khôi phục",
     restoreNamed: "Khôi phục: {{title}}",
     deleteForever: "Xoá vĩnh viễn",
@@ -410,6 +416,34 @@ export const vi = {
     cancel: "Huỷ",
     untitled: "Tài liệu chưa đặt tên",
     failed: "Không thực hiện được. Thử lại.",
+    loadMore: "Tải thêm",
+    loadingMore: "Đang tải thêm",
+    loadFailed: "Chưa tải được thùng rác.",
+    retry: "Thử lại",
+    moved: "Đã chuyển “{{title}}” vào thùng rác.",
+    movedWithPages:
+      "Đã chuyển “{{title}}” và {{count}} trang bên dưới vào thùng rác.",
+    undo: "Hoàn tác",
+    moveTitle: "Chuyển vào thùng rác?",
+    moveBody:
+      "“{{title}}” và {{count}} trang bên dưới sẽ vào thùng rác cùng nhau. Khôi phục “{{title}}” sẽ đưa cả nhóm trở lại.",
+    moveConfirm: "Chuyển vào thùng rác",
+    subtreeRefused:
+      "Bạn không có quyền với một số trang bên dưới, nên chưa có gì thay đổi.",
+  },
+  movePage: {
+    title: "Chuyển trang đến",
+    close: "Đóng",
+    search: "Tìm trang theo tên",
+    topLevel: "Cấp cao nhất của khu vực",
+    none: "Không có trang nào khớp.",
+    untitled: "Tài liệu chưa đặt tên",
+    moved: "Đã chuyển “{{title}}”.",
+    conflict: "Trang vừa được người khác thay đổi. Đã tải lại, hãy thử lại.",
+    subtree:
+      "Bạn không có quyền với một số trang bên dưới, nên chưa di chuyển gì cả.",
+    rule: "Không thể đặt trang vào đó (trang không thể nằm trong chính nó, và cây trang chỉ sâu tối đa 10 cấp).",
+    failed: "Không chuyển được trang. Thử lại.",
   },
   picker: {
     title: "Liên kết tới trang",
@@ -438,6 +472,10 @@ export const vi = {
     busy: "Đang tạo…",
     cancel: "Huỷ",
     failed: "Chưa tạo được việc. Thử lại.",
+    failedLink:
+      "Đã tạo việc nhưng chưa gắn được trang vào việc. Thử lại, sẽ không tạo thêm việc.",
+    failedLine:
+      "Đã tạo việc và gắn trang nhưng chưa đổi được dòng. Thử lại, sẽ không tạo thêm việc.",
   },
   slash: {
     label: "Chèn khối",
@@ -718,6 +756,8 @@ export const vi = {
   recovery: {
     title: "Khối này vừa được người khác sửa",
     body: "Tài liệu đang hiển thị bản mới nhất. Chỉnh sửa chưa lưu của bạn được giữ ở đây.",
+    bodyTable:
+      "Một bảng là một khối, nên hai người sửa ô khác nhau vẫn xung đột. Bảng đang hiển thị bản mới nhất; các ô bạn đã sửa được giữ ở đây.",
     yourEdit: "Chỉnh sửa chưa lưu của bạn",
     removed:
       "Bạn đã xoá khối này nhưng người khác vừa sửa nó, nên khối được giữ lại.",
@@ -739,6 +779,7 @@ export type DocPageCopy = typeof vi;
 
 export const en: DocPageCopy = {
   crumbLabel: "Breadcrumb",
+  crumbUnavailable: "Page unavailable",
   loading: "Loading document",
   notFound: "Document not found, or you do not have permission to view it.",
   untitled: "Untitled document",
@@ -753,6 +794,8 @@ export const en: DocPageCopy = {
     saving: "Saving…",
     stats: "{{words}} words · {{characters}} characters",
     saveFailed: "Not saved ·",
+    titleConflict:
+      "Someone else just renamed this document. Showing the latest name.",
     retry: "Retry",
     presence: "Viewing: {{names}}",
     share: "Share",
@@ -894,8 +937,11 @@ export const en: DocPageCopy = {
     saveVersion: "Save version…",
     saveTemplate: "Save as template…",
     rename: "Rename",
+    move: "Move to…",
     copyTitle: "{{title}} (copy)",
-    makeCopyDone: "Copy created. Images and attached files are not copied.",
+    makeCopyDone: "Copy created.",
+    makeCopyDropped:
+      "Copy created. {{count}} image, file or video blocks were not copied.",
     makeCopyFailed: "The copy could not be created.",
     importPage: "Import from Markdown or Word…",
   },
@@ -1133,7 +1179,7 @@ export const en: DocPageCopy = {
     close: "Close trash",
     loading: "Loading trash",
     empty: "The trash is empty.",
-    note: "A page in the trash is not in the document tree. Restore it to use it again, or delete it for good.",
+    note: "A page in the trash is not in the document tree. Restoring a page brings back the pages that went to the trash with it; deleting it for good deletes them too.",
     restore: "Restore",
     restoreNamed: "Restore: {{title}}",
     deleteForever: "Delete permanently",
@@ -1142,6 +1188,35 @@ export const en: DocPageCopy = {
     cancel: "Cancel",
     untitled: "Untitled document",
     failed: "That did not work. Try again.",
+    loadMore: "Load more",
+    loadingMore: "Loading more",
+    loadFailed: "The trash could not be loaded.",
+    retry: "Try again",
+    moved: "Moved “{{title}}” to the trash.",
+    movedWithPages:
+      "Moved “{{title}}” and {{count}} pages under it to the trash.",
+    undo: "Undo",
+    moveTitle: "Move to the trash?",
+    moveBody:
+      "“{{title}}” and {{count}} pages under it go to the trash together. Restoring “{{title}}” brings them all back.",
+    moveConfirm: "Move to the trash",
+    subtreeRefused:
+      "You cannot change some of the pages under this page, so nothing was changed.",
+  },
+  movePage: {
+    title: "Move page to",
+    close: "Close",
+    search: "Search pages by name",
+    topLevel: "Top level of the space",
+    none: "No page matches.",
+    untitled: "Untitled document",
+    moved: "Moved “{{title}}”.",
+    conflict:
+      "The page was changed by someone else. It was reloaded, try again.",
+    subtree:
+      "You cannot change some of the pages under this page, so nothing was moved.",
+    rule: "The page cannot go there (it cannot sit inside itself, and pages nest at most 10 levels).",
+    failed: "The page could not be moved. Try again.",
   },
   picker: {
     title: "Link to a page",
@@ -1170,6 +1245,10 @@ export const en: DocPageCopy = {
     busy: "Creating…",
     cancel: "Cancel",
     failed: "The task was not created. Try again.",
+    failedLink:
+      "The task was created, but the page was not linked to it. Try again; no second task is made.",
+    failedLine:
+      "The task was created and linked, but the line was not updated. Try again; no second task is made.",
   },
   slash: {
     label: "Insert block",
@@ -1449,6 +1528,8 @@ export const en: DocPageCopy = {
   recovery: {
     title: "Someone else just changed this block",
     body: "The document shows the latest version. Your unsaved edit is kept here.",
+    bodyTable:
+      "A table is one block, so two people editing different cells still conflict. The table shows the latest version; your edited cells are kept here.",
     yourEdit: "Your unsaved edit",
     removed:
       "You removed this block, but someone else just changed it, so it was kept.",

@@ -29,7 +29,9 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, R
 
         if (user is null)
         {
-            return Result<UserDto>.Failure("User not found");
+            // A valid session of a person who no longer exists ends like any other dead session (401),
+            // so the client signs out instead of showing a validation error.
+            return Result<UserDto>.Failure(SessionErrors.SessionUserMissing);
         }
 
         return Result<UserDto>.Success(new UserDto

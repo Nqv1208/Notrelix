@@ -20,12 +20,13 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 /// member of the Workspace is refused with a coded conflict (409) and nothing is created or sent;
 /// someone who was removed or suspended may be invited again.
 /// </summary>
+[IdempotencyOperation("workspaces.invitation.invite-member.v1")]
 public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role,
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest
 {
     private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
         InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;
@@ -47,6 +48,9 @@ public record InviteMemberCommand(
 
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
 {
+    /// <summary>The stable public code of the refusal when a pending invitation already exists for the address.</summary>
+    public const string PendingInvitationExistsErrorCode = "workspaces.invitation.pending-exists";
+
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IActorLookupService _actorLookup;
     private readonly ICurrentRequestContext _requestContext;
@@ -109,7 +113,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
                            && i.ExpiresAt > now, ct);
 
         if (hasActiveInvitation)
-            return Result<Guid>.Failure("A pending invitation already exists for this email address.");
+            throw new ConflictException(
+                "A pending invitation already exists for this email address.", PendingInvitationExistsErrorCode);
 
         var issuedToken = _oneTimeTokenService.Generate(TokenPurpose.WorkspaceInvitation);
         var invitationTokenHash = InvitationTokenHash.Create(issuedToken.TokenHash);
@@ -123,6 +128,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             issuedToken.HashVersion,
             _requestContext.UserId,
             now,
+            // The workspace setting decides how long an invitation waits.
+            expiry: TimeSpan.FromDays(workspace.Settings.InvitationExpiryDays),
             initialEntries: entries);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);

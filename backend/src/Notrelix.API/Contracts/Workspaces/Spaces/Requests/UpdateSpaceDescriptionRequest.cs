@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.Workspaces.Spaces.Requests;
 
-public sealed record UpdateSpaceDescriptionRequest(string? Description);
+public sealed record UpdateSpaceDescriptionRequest(string? Description, long ExpectedVersion);

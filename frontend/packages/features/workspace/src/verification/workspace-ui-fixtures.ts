@@ -1,4 +1,5 @@
 import type {
+  PendingInvitation,
   WorkspaceActivityItem,
   WorkspaceInvitation,
 } from "../core/types/workspace";
@@ -30,27 +31,27 @@ export function workspaceActivityItem(
   };
 }
 
-export function invitationsDefaultScenario(): WorkspaceInvitation[] {
+export function invitationsDefaultScenario(): PendingInvitation[] {
   return [
-    workspaceInvitation({
+    {
       id: "invite-1",
-      token: "tok-1",
-      email: "ada@notrelix.dev",
-      role: "admin",
       workspaceName: "Product",
+      workspaceSlug: "product",
       inviterName: "Grace Hopper",
-    }),
-    workspaceInvitation({
-      id: "invite-2",
-      token: "tok-2",
-      email: "alan@notrelix.dev",
       role: "member",
+      expiresAt: "2026-02-15T10:30:00.000Z",
+    },
+    {
+      id: "invite-2",
       workspaceName: "Design",
+      workspaceSlug: "design",
       inviterName: "Ada Lovelace",
-    }),
+      role: "guest",
+      expiresAt: "2026-02-20T10:30:00.000Z",
+    },
   ];
 }
 
-export function invitationsEmptyScenario(): WorkspaceInvitation[] {
+export function invitationsEmptyScenario(): PendingInvitation[] {
   return [];
 }

@@ -42,6 +42,8 @@ export interface CreatePageFromTemplatePayload {
   title?: string;
   parentId?: ID | null;
   spaceId?: ID | null;
+  /** One per user action; the same key only to retry that action. */
+  idempotencyKey?: string;
 }
 
 /** A page made from a template; `droppedBlockCount` blocks (images, files, videos) were not copied. */

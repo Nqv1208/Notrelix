@@ -125,7 +125,7 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
         var invitation = LegacyAdminInvitation();
         var user = Guid.NewGuid();
 
-        invitation.Resend(InvitationTokenHash.Create(new string('b', 64)), 1, Now, TimeSpan.FromDays(7), Guid.NewGuid());
+        invitation.Resend(InvitationTokenHash.Create(new string('b', 64)), 1, Now.AddMinutes(2), TimeSpan.FromDays(7), Guid.NewGuid());
         invitation.Accept(user, Now.AddDays(1));
 
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Accepted);

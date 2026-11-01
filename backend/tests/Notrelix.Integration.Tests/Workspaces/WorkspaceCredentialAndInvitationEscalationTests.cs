@@ -166,6 +166,7 @@ public sealed class WorkspaceCredentialAndInvitationEscalationTests : IAsyncLife
             c.WorkspaceInvitations.Add(invitation);
             return Task.CompletedTask;
         });
+        await _host.AgeInvitationAsync(invitation.Id);
         return invitation.Id;
     }
 

@@ -27,7 +27,7 @@ export const en = {
     nameLabel: "Workspace name",
     nameHelp: "Shown in the sidebar, switcher and invitations.",
     nameRequired: "Enter a name for the workspace.",
-    nameTooLong: "Use 200 characters or fewer.",
+    nameTooLong: "Use 160 characters or fewer.",
     descriptionLabel: "Description",
     descriptionHelp: "What this workspace is for. Up to 1,024 characters.",
     descriptionPlaceholder: "e.g. Planning and delivery for the product team",
@@ -125,7 +125,7 @@ export const vi: WorkspaceSettingsCopy = {
     nameLabel: "Tên không gian làm việc",
     nameHelp: "Hiển thị ở thanh bên, bộ chuyển đổi và lời mời.",
     nameRequired: "Nhập tên cho không gian làm việc.",
-    nameTooLong: "Dùng tối đa 200 ký tự.",
+    nameTooLong: "Dùng tối đa 160 ký tự.",
     descriptionLabel: "Mô tả",
     descriptionHelp:
       "Không gian làm việc này dùng để làm gì. Tối đa 1.024 ký tự.",

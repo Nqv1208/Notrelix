@@ -248,7 +248,7 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
         {
             using var provider = _host.CreateProvider(stack.AccountId, principal);
             var listed = await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceSpacesQuery(stack.WorkspaceId));
-            listed.Select(s => s.Id).Should().BeEquivalentTo(visible, $"principal {principal} lists only visible Spaces");
+            listed.Items.Select(s => s.Id).Should().BeEquivalentTo(visible, $"principal {principal} lists only visible Spaces");
 
             var single = new List<Guid>();
             foreach (var spaceId in new[] { open, department })

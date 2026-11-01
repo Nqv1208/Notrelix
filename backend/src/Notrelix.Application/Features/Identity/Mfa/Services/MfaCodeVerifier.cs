@@ -13,15 +13,18 @@ public sealed class MfaCodeVerifier : IMfaCodeVerifier
     private readonly IIdentityDbContext _context;
     private readonly IMfaTotpService _totp;
     private readonly IMfaRecoveryCodeGenerator _recoveryGenerator;
+    private readonly IMfaCodeUseGuard _useGuard;
 
     public MfaCodeVerifier(
         IIdentityDbContext context,
         IMfaTotpService totp,
-        IMfaRecoveryCodeGenerator recoveryGenerator)
+        IMfaRecoveryCodeGenerator recoveryGenerator,
+        IMfaCodeUseGuard useGuard)
     {
         _context = context;
         _totp = totp;
         _recoveryGenerator = recoveryGenerator;
+        _useGuard = useGuard;
     }
 
     public async Task<bool> VerifyAsync(Guid userId, string code, DateTimeOffset now, CancellationToken cancellationToken)
@@ -59,7 +62,14 @@ public sealed class MfaCodeVerifier : IMfaCodeVerifier
             return false;
         }
 
-        return _totp.VerifyCode(unprotectedSecret, code, now);
+        var timeStep = _totp.FindMatchingTimeStep(unprotectedSecret, code, now);
+        if (timeStep is null)
+        {
+            return false;
+        }
+
+        // A code that already opened something in its time step is a replay: refused.
+        return await _useGuard.TryClaimTotpStepAsync(userId, timeStep.Value, cancellationToken);
     }
 
     private async Task<bool> TryVerifyRecoveryCodeAsync(
@@ -77,6 +87,17 @@ public sealed class MfaCodeVerifier : IMfaCodeVerifier
         }
 
         var hash = _recoveryGenerator.Hash(code);
+        if (!batch.Codes.Any(c => c.ConsumedAt is null && string.Equals(c.CodeHash, hash, StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        // Two requests presenting the same code at once both see it unused: only the first claim goes on.
+        if (!await _useGuard.TryClaimRecoveryCodeAsync(userId, hash, cancellationToken))
+        {
+            return false;
+        }
+
         return batch.TryConsume(hash, now, userId);
     }
 }

@@ -254,7 +254,7 @@ public sealed class PageTemplateHandlerTests
         context.Setup(c => c.Pages).Returns(pageSet.Object);
         context.Setup(c => c.Blocks).Returns(blockSet.Object);
         context.Setup(c => c.PageTemplates).Returns(TestDbSet.Create(f.Templates).Object);
-        var sut = new CreatePageFromTemplateCommandHandler(context.Object, new Mock<IPageSpacePlacement>().Object, f.Grant.Object, f.Request(), new Clock());
+        var sut = new CreatePageFromTemplateCommandHandler(context.Object, new Mock<IPageSpacePlacement>().Object, new InMemoryPageSubtreeStore(), f.Grant.Object, f.Request(), new Clock());
         return (sut, added, pagesAdded);
     }
 }

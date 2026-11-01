@@ -1,72 +1,74 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
-using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.Documents.Blocks.Services;
+using Notrelix.Application.Features.Documents.Common;
+using Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Domain.Documents.Rules;
+
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.ReorderBlocks;
 
+/// <summary>
+/// Moves blocks of one page, in order, as one change: it all applies or none of it does. Each item names the
+/// version the editor read, the parent and the sibling it goes next to; the server makes the sort key (a client key
+/// is kept only when it lies between the siblings named). An item that leaves a block where it already is changes
+/// nothing, and a request that moved something announces one page save.
+/// </summary>
 public record ReorderBlocksCommand(
     Guid PageId,
     List<ReorderBlockItem> Items
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+) : ICommand<Result<List<BlockDto>>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
-public record ReorderBlockItem(Guid BlockId, string NewPosition, Guid? NewParentBlockId);
+/// <param name="ParentBlockId">The new parent; the page root when left out.</param>
+/// <param name="AfterBlockId">The sibling the block goes right after; with <paramref name="BeforeBlockId"/> also named they must be neighbours.</param>
+/// <param name="BeforeBlockId">The sibling the block goes right before (to move to the top); neither named puts it last.</param>
+/// <param name="Position">A client key, kept only when it lies strictly between the siblings named.</param>
+public record ReorderBlockItem(Guid BlockId, long? ExpectedVersion, Guid? ParentBlockId, Guid? AfterBlockId, Guid? BeforeBlockId, string? Position);
 
-public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand, Result>
+public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand, Result<List<BlockDto>>>
 {
     private readonly IDocumentDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly IPageBlockWriteLock _writeLock;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public ReorderBlocksCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+
+    public ReorderBlocksCommandHandler(IDocumentDbContext context, IPageBlockWriteLock writeLock, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _writeLock = writeLock;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result> Handle(ReorderBlocksCommand request, CancellationToken ct)
+    public async Task<Result<List<BlockDto>>> Handle(ReorderBlocksCommand request, CancellationToken ct)
     {
-        var blockIds = request.Items.Select(item => item.BlockId).ToHashSet();
-        var blocks = await _context.Blocks
-            .Where(block => block.PageId == request.PageId && blockIds.Contains(block.Id) && block.DeletedAt == null)
-            .ToDictionaryAsync(block => block.Id, ct);
+        await _writeLock.AcquireAsync(request.PageId, ct);
+        var page = await _context.Pages.FirstOrDefaultAsync(p => p.Id == request.PageId && p.DeletedAt == null, ct)
+            ?? throw new NotFoundException(nameof(Page), request.PageId);
+        PageRules.EnsureCanEdit(page.Status);
 
+        var live = await _context.Blocks
+            .Where(b => b.PageId == request.PageId && b.DeletedAt == null)
+            .ToListAsync(ct);
+        var set = new PageBlockSet(_requestContext.RequireAccountId(), page.WorkspaceId, request.PageId, live);
+        var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
+
+        var tracker = new BlockSaveTracker();
+        var answered = new List<Block>();
         foreach (var item in request.Items)
         {
-            if (!blocks.TryGetValue(item.BlockId, out var block))
-                return Result.Failure(new ApplicationError("docs.block.not-found", $"Block '{item.BlockId}' was not found on page '{request.PageId}'.", ApplicationErrorType.NotFound));
-
-            var newPosition = FractionalIndex.Create(item.NewPosition);
-            if (item.NewParentBlockId is null)
-            {
-                block.MoveToRoot(newPosition, _currentUser.UserId, now);
-            }
-            else
-            {
-                var parentBlock = await _context.Blocks
-                    .FirstOrDefaultAsync(b => b.Id == item.NewParentBlockId.Value && b.PageId == request.PageId && b.DeletedAt == null, ct);
-                if (parentBlock is null)
-                    return Result.Failure(new ApplicationError("docs.block.parent-not-found", $"Parent block '{item.NewParentBlockId}' was not found on page '{request.PageId}'.", ApplicationErrorType.NotFound));
-
-                var ancestorIds = new List<Guid>();
-                var currentParentId = parentBlock.ParentId;
-                while (currentParentId.HasValue)
-                {
-                    ancestorIds.Add(currentParentId.Value);
-                    var ancestor = await _context.Blocks
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(b => b.Id == currentParentId.Value && b.PageId == request.PageId, ct);
-                    currentParentId = ancestor?.ParentId;
-                }
-
-                var parentPath = BlockAncestorPath.Create(parentBlock.AccountId, parentBlock.WorkspaceId, parentBlock.PageId, parentBlock.Id, ancestorIds);
-                block.MoveUnder(parentPath, newPosition, _currentUser.UserId, now);
-            }
+            var block = set.Find(item.BlockId) ?? throw new NotFoundException(nameof(Block), item.BlockId);
+            PageBlockSet.EnsureVersion(block, item.ExpectedVersion);
+            tracker.Before(block);
+            set.Place(block, item.ParentBlockId, item.AfterBlockId, item.Position, userId, now, item.BeforeBlockId);
+            answered.Add(block);
         }
 
-        return Result.Success();
+        tracker.Complete(page, answered, userId, now);
+        return Result<List<BlockDto>>.Success(answered.Select(DocumentDtoMapper.ToBlockDto).ToList());
     }
 }

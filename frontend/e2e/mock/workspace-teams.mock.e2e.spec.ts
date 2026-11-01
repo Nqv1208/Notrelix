@@ -49,18 +49,20 @@ test.describe("Teams (owner)", () => {
     ).toBeVisible();
     const rows = table(page).getByRole("row");
     await expect(rows).toHaveCount(5);
-    await expect(rows.nth(1)).toContainText("Nhóm Kỹ sư ERP");
-    await expect(rows.nth(1)).toContainText("4 người");
-    await expect(rows.nth(1)).toContainText("Trần Minh Quân");
-    await expect(rows.nth(1)).toContainText("Phòng Công nghệ · Thành viên");
-    await expect(rows.nth(2)).toContainText("Ban giám đốc");
-    await expect(rows.nth(2)).toContainText("Phòng Kế toán · Người xem");
+    // The list is ordered by Team name, as the producer returns it.
+    await expect(rows.nth(1)).toContainText("Ban giám đốc");
+    await expect(rows.nth(1)).toContainText("Phòng Kế toán · Người xem");
+    await expect(rows.nth(2)).toContainText("Nhóm Kiểm thử QA");
+    await expect(rows.nth(2)).toContainText("Chưa dùng ở đâu");
     await expect(rows.nth(3)).toContainText("Nhóm Kế toán tổng hợp");
     await expect(rows.nth(3)).toContainText("6 người");
     await expect(rows.nth(3)).toContainText(
       "Board Triển khai ERP Q4 · Có thể xem",
     );
-    await expect(rows.nth(4)).toContainText("Chưa dùng ở đâu");
+    await expect(rows.nth(4)).toContainText("Nhóm Kỹ sư ERP");
+    await expect(rows.nth(4)).toContainText("4 người");
+    await expect(rows.nth(4)).toContainText("Trần Minh Quân");
+    await expect(rows.nth(4)).toContainText("Phòng Công nghệ · Thành viên");
     await expect(page.getByText("Đã lưu trữ 1")).toBeVisible();
     const archived = page.getByRole("table", { name: "Nhóm đã lưu trữ" });
     await expect(archived).toContainText("Lưu trữ 20/09 · Nguyễn Thu Hà");
@@ -149,7 +151,9 @@ test.describe("Teams (owner)", () => {
     // Archive with a confirmation, find it among the archived, restore it.
     await page.getByRole("button", { name: "Lưu trữ nhóm" }).click();
     await page
-      .getByRole("dialog", { name: "Lưu trữ Nhóm Triển khai kho?" })
+      .getByRole("dialog", {
+        name: "Lưu trữ Nhóm Triển khai kho trong Minh An Group?",
+      })
       .getByRole("button", { name: "Lưu trữ nhóm" })
       .click();
     await expect(
@@ -175,7 +179,7 @@ test.describe("Teams (owner)", () => {
       .click();
     await page.getByRole("menuitem", { name: "Lưu trữ nhóm" }).click();
     const dialog = page.getByRole("dialog", {
-      name: "Lưu trữ Nhóm Kỹ sư ERP?",
+      name: "Lưu trữ Nhóm Kỹ sư ERP trong Minh An Group?",
     });
     await expect(
       dialog.getByText(/3 người sẽ mất quyền vào Phòng Công nghệ/),

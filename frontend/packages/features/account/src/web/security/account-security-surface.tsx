@@ -67,18 +67,24 @@ export type AccountSecurityFlow =
       readonly kind: "enroll";
       readonly secret: string;
       readonly otpAuthUri: string;
-      readonly error: "wrong" | "wait" | "failed" | null;
+      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
       readonly wait?: number;
     }
   | {
       readonly kind: "stepUp";
-      /** What the proof is for: turning two-factor off, or fresh backup codes. */
-      readonly purpose: "disable" | "renew";
+      /** What the proof is for: two-factor on or off, fresh backup codes, or ending every other device. */
+      readonly purpose: "enroll" | "disable" | "renew" | "others";
       readonly factor: "code" | "password";
-      readonly error: "wrong" | "wait" | "failed" | null;
+      /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. */
+      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
       readonly wait?: number;
     }
-  | { readonly kind: "codes"; readonly codes: readonly string[] }
+  | {
+      readonly kind: "codes";
+      readonly codes: readonly string[];
+      /** Turning two-factor on signed out this many other devices; absent for fresh codes alone. */
+      readonly othersEnded?: number;
+    }
   | {
       /** Changing the password; `needsCode` while two-factor is on. */
       readonly kind: "password";
@@ -87,7 +93,11 @@ export type AccountSecurityFlow =
       readonly wait?: number;
     }
   /** The password changed and every session, this one too, was ended. */
-  | { readonly kind: "passwordChanged" };
+  | { readonly kind: "passwordChanged" }
+  /** Two-factor is off and every session, this one too, was ended. */
+  | { readonly kind: "twoFactorOff" }
+  /** Asking before this device is signed out. */
+  | { readonly kind: "signOutThis" };
 
 export interface AccountSecurityData {
   /** The single sign-on provider that owns the password; `null` = none. */
@@ -121,12 +131,14 @@ export interface AccountSecuritySurfaceProps {
   readonly onSubmitNewPassword?: (
     submission: AccountPasswordSubmission,
   ) => void;
-  /** After a change of password: leaves for the sign-in page. */
+  /** After a change of password or turning two-factor off: leaves for the sign-in page. */
   readonly onPasswordChangedContinue?: () => void;
   /** Answers the open step: the authenticator's digits or a backup code. */
   readonly onSubmitCode?: (code: string) => void;
   readonly onSubmitPassword?: (password: string) => void;
   readonly onCloseFlow?: () => void;
+  /** Signs this device out after the confirmation. */
+  readonly onConfirmSignOutThis?: () => void;
   readonly onLoadMoreActivity?: () => void;
   readonly onRenewBackupCodes: () => void;
   readonly onSignOut: (sessionId: string) => void;
@@ -251,7 +263,10 @@ function FlowPanel({
   copy: AccountSecurityCopy;
   flow: Exclude<
     AccountSecurityFlow,
-    { kind: "password" } | { kind: "passwordChanged" }
+    | { kind: "password" }
+    | { kind: "passwordChanged" }
+    | { kind: "twoFactorOff" }
+    | { kind: "signOutThis" }
   >;
   busy: boolean;
   onSubmitCode?: (code: string) => void;
@@ -260,7 +275,17 @@ function FlowPanel({
 }) {
   const [value, setValue] = React.useState("");
   const inputId = React.useId();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const doneRef = React.useRef<HTMLButtonElement>(null);
   const t = copy.flow;
+  // The step opens in place: focus lands on what the person does next (the code field, or the
+  // button that confirms the backup codes were saved).
+  const focusKey =
+    flow.kind === "stepUp" ? `stepUp-${flow.purpose}` : flow.kind;
+  const confirmsCodes = flow.kind === "codes";
+  React.useEffect(() => {
+    (confirmsCodes ? doneRef : inputRef).current?.focus();
+  }, [focusKey, confirmsCodes]);
   if (flow.kind === "codes")
     return (
       <section
@@ -273,12 +298,26 @@ function FlowPanel({
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
           {t.codesText}
         </p>
+        {flow.othersEnded === undefined ? null : (
+          <p
+            role="status"
+            className="m-0 mt-1 text-crumb text-muted-foreground"
+          >
+            {flow.othersEnded > 0
+              ? pluralCopy(
+                  { one: t.codesOthers_one, other: t.codesOthers_other },
+                  flow.othersEnded,
+                )
+              : copy.others.nobody}
+          </p>
+        )}
         <ul className="m-0 mt-2.5 grid list-none grid-cols-2 gap-1.5 p-0 font-mono text-nav">
           {flow.codes.map((code) => (
             <li key={code}>{code}</li>
           ))}
         </ul>
         <button
+          ref={doneRef}
           type="button"
           onClick={onClose}
           className={cn(BTN_SM, FOCUS, "mt-3")}
@@ -293,17 +332,23 @@ function FlowPanel({
       ? usesPassword
         ? t.wrongPassword
         : t.wrongCode
-      : flow.error === "wait"
-        ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
-        : flow.error === "failed"
-          ? copy.actionError
-          : null;
+      : flow.error === "expired"
+        ? t.expired
+        : flow.error === "wait"
+          ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
+          : flow.error === "failed"
+            ? copy.actionError
+            : null;
   const title =
     flow.kind === "enroll"
       ? t.enrollTitle
-      : flow.purpose === "disable"
-        ? t.disableTitle
-        : t.renewTitle;
+      : flow.purpose === "enroll"
+        ? t.enrollProofTitle
+        : flow.purpose === "disable"
+          ? t.disableTitle
+          : flow.purpose === "others"
+            ? t.othersTitle
+            : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -334,6 +379,8 @@ function FlowPanel({
         </>
       ) : (
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
+          {flow.purpose === "disable" ? `${t.disableText} ` : null}
+          {flow.purpose === "enroll" ? `${t.enrollProofText} ` : null}
           {usesPassword ? t.passwordText : t.codeText}
         </p>
       )}
@@ -353,6 +400,7 @@ function FlowPanel({
             {usesPassword ? t.passwordLabel : t.codeLabel}
           </label>
           <input
+            ref={inputRef}
             id={inputId}
             type={usesPassword ? "password" : "text"}
             autoComplete={usesPassword ? "current-password" : "one-time-code"}
@@ -366,7 +414,12 @@ function FlowPanel({
         <button
           type="submit"
           disabled={busy || !value || flow.error === "wait"}
-          className={cn(BTN_PRIMARY, FOCUS)}
+          className={cn(
+            flow.kind === "stepUp" && flow.purpose === "disable"
+              ? BTN_DANGER
+              : BTN_PRIMARY,
+            FOCUS,
+          )}
         >
           {t.confirm}
         </button>
@@ -379,6 +432,92 @@ function FlowPanel({
           {failure}
         </p>
       ) : null}
+    </section>
+  );
+}
+
+/** Two-factor is off; the producer ended every session, this one too, so the next step is signing in again. */
+function TwoFactorOffPanel({
+  copy,
+  onContinue,
+}: {
+  copy: AccountSecurityCopy;
+  onContinue?: () => void;
+}) {
+  const t = copy.flow;
+  const continueRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    continueRef.current?.focus();
+  }, []);
+  return (
+    <section
+      aria-label={t.disabledTitle}
+      className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+    >
+      <b className="block text-body font-semibold text-foreground">
+        {t.disabledTitle}
+      </b>
+      <p role="status" className="m-0 mt-1 text-crumb text-muted-foreground">
+        {t.disabledText}
+      </p>
+      <button
+        ref={continueRef}
+        type="button"
+        onClick={onContinue}
+        className={cn(BTN_PRIMARY, FOCUS, "mt-3")}
+      >
+        {t.signInAgain}
+      </button>
+    </section>
+  );
+}
+
+/** Signing out of the device in hand ends the session at once: ask first, with the safe answer focused. */
+function SignOutThisPanel({
+  copy,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  copy: AccountSecurityCopy;
+  busy: boolean;
+  onConfirm?: () => void;
+  onClose?: () => void;
+}) {
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+  const t = copy.flow;
+  return (
+    <section
+      aria-label={t.signOutThisTitle}
+      className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+    >
+      <b className="block text-body font-semibold text-foreground">
+        {t.signOutThisTitle}
+      </b>
+      <p className="m-0 mt-1 text-crumb text-muted-foreground">
+        {t.signOutThisText}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onConfirm}
+          className={cn(BTN_DANGER, FOCUS)}
+        >
+          {t.signOutThisConfirm}
+        </button>
+        <button
+          ref={cancelRef}
+          type="button"
+          onClick={onClose}
+          className={cn(BTN_SM, FOCUS)}
+        >
+          {t.cancel}
+        </button>
+      </div>
     </section>
   );
 }
@@ -397,6 +536,7 @@ function SecurityBody({
   onSubmitCode,
   onSubmitPassword,
   onCloseFlow,
+  onConfirmSignOutThis,
   onLoadMoreActivity,
   onRenewBackupCodes,
   onSignOut,
@@ -558,6 +698,15 @@ function SecurityBody({
         <AccountPasswordChangedPanel
           copy={copy}
           onContinue={onPasswordChangedContinue}
+        />
+      ) : flow?.kind === "twoFactorOff" ? (
+        <TwoFactorOffPanel copy={copy} onContinue={onPasswordChangedContinue} />
+      ) : flow?.kind === "signOutThis" ? (
+        <SignOutThisPanel
+          copy={copy}
+          busy={busy}
+          onConfirm={onConfirmSignOutThis}
+          onClose={onCloseFlow}
         />
       ) : flow ? (
         <FlowPanel

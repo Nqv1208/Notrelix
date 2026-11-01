@@ -40,6 +40,8 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         SetupBoardGroups(_sourceGroup, _destinationGroup);
         SetupBoardFields(_sourceStatus, _destinationStatus);
         SetupBoardItems(_item);
+        // The handler reads the held values from the value set before it deletes them.
+        DbContextMock.Setup(c => c.BoardItemValues).Returns(CreateAsyncDbSet(_item.FieldValues.ToList()));
     }
 
     private BoardField StatusField(Guid boardId, params string[] options)

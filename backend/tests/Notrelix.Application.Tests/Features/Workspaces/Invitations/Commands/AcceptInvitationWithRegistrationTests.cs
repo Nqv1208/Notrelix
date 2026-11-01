@@ -30,7 +30,8 @@ public class AcceptInvitationWithRegistrationTests : AcceptInvitationHandlerTest
             new InvitationInitialEntries(
                 DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
             new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions>().Object,
-            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object));
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
+            SeatGateMock.Object));
 
     private AcceptInvitationWithRegistrationCommand Command() => new(ValidInviteToken, "Thu Ha", "a-long-enough-password");
 

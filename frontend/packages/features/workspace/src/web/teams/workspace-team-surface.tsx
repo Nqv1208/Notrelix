@@ -937,6 +937,7 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
         copy={copy}
         open={archiveOpen}
         teamName={t.name}
+        workspaceName={props.frame.workspaceName}
         loss={props.lossFor}
         pending={props.saving}
         onClose={() => setArchiveOpen(false)}

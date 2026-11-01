@@ -61,12 +61,17 @@ export interface AccountProfileSurfaceProps {
   readonly save: AccountSaveStatus;
   /** Why the photo was not changed; `null` = nothing to say. */
   readonly photoError?: AccountPhotoFailure | null;
+  /** A photo upload or removal is running: its buttons wait. */
+  readonly photoBusy?: boolean;
   readonly onSave: (values: AccountProfileValues) => void;
   readonly onRetry: () => void;
   readonly onPhotoChange: (file: File) => void;
   /** Takes the photo away; offered only while there is one. */
   readonly onPhotoRemove?: () => void;
 }
+
+/** The producer's `User.MaxNameLength`. */
+const NAME_MAX_LENGTH = 200;
 
 const TIMEZONES = ["UTC", "Asia/Ho_Chi_Minh", "Asia/Tokyo", "Europe/Paris"];
 const DATE_FORMATS = ["dd/mm/yyyy", "yyyy-mm-dd"];
@@ -140,6 +145,7 @@ function ProfileBody({
   data,
   save,
   photoError,
+  photoBusy,
   onSave,
   onPhotoChange,
   onPhotoRemove,
@@ -149,6 +155,7 @@ function ProfileBody({
   data: AccountProfileData;
   save: AccountSaveStatus;
   photoError: AccountPhotoFailure | null;
+  photoBusy: boolean;
   onSave: (values: AccountProfileValues) => void;
   onPhotoChange: (file: File) => void;
   onPhotoRemove: (() => void) | undefined;
@@ -176,6 +183,19 @@ function ProfileBody({
     phoneVisibleHint: React.useId(),
   };
   const fileInput = React.useRef<HTMLInputElement>(null);
+  // Taking the photo away asks first, in place; the safe answer is focused and focus comes back.
+  const [confirmRemove, setConfirmRemove] = React.useState(false);
+  const keepButton = React.useRef<HTMLButtonElement>(null);
+  const removeButton = React.useRef<HTMLButtonElement>(null);
+  const askedBefore = React.useRef(false);
+  React.useEffect(() => {
+    if (confirmRemove) {
+      askedBefore.current = true;
+      keepButton.current?.focus();
+    } else if (askedBefore.current) {
+      removeButton.current?.focus();
+    }
+  }, [confirmRemove]);
 
   // A refetch after a save brings the stored values back into the draft.
   React.useEffect(() => {
@@ -229,7 +249,12 @@ function ProfileBody({
     timezone: copy.timezoneLabel,
     dateFormat: copy.dateFormatLabel,
   };
-  const nameError = values.name.trim() === "" ? copy.nameRequired : null;
+  const nameError =
+    values.name.trim() === ""
+      ? copy.nameRequired
+      : values.name.trim().length > NAME_MAX_LENGTH
+        ? fillCopy(copy.nameTooLong, { count: NAME_MAX_LENGTH })
+        : null;
   const phoneCheck = checkPhone(values.phone);
   const phoneError =
     phoneCheck.kind !== "invalid"
@@ -308,22 +333,59 @@ function ProfileBody({
         <button
           type="button"
           aria-label={copy.changePhotoLabel}
+          disabled={photoBusy}
           onClick={() => fileInput.current?.click()}
           className={cn(BTN, FOCUS)}
         >
           {copy.changePhoto}
         </button>
         {data.avatarUrl && onPhotoRemove ? (
-          <button
-            type="button"
-            aria-label={copy.removePhotoLabel}
-            onClick={onPhotoRemove}
-            className={cn(LINK_BUTTON_DANGER, FOCUS)}
-          >
-            {copy.removePhoto}
-          </button>
+          confirmRemove ? (
+            <span
+              role="group"
+              aria-label={copy.removePhotoConfirm}
+              className="flex items-center gap-2"
+            >
+              <span className="text-crumb text-foreground">
+                {copy.removePhotoConfirm}
+              </span>
+              <button
+                type="button"
+                disabled={photoBusy}
+                onClick={() => {
+                  setConfirmRemove(false);
+                  onPhotoRemove();
+                }}
+                className={cn(LINK_BUTTON_DANGER, FOCUS)}
+              >
+                {copy.removePhotoYes}
+              </button>
+              <button
+                ref={keepButton}
+                type="button"
+                onClick={() => setConfirmRemove(false)}
+                className={cn(BTN, FOCUS)}
+              >
+                {copy.removePhotoKeep}
+              </button>
+            </span>
+          ) : (
+            <button
+              ref={removeButton}
+              type="button"
+              aria-label={copy.removePhotoLabel}
+              disabled={photoBusy}
+              onClick={() => setConfirmRemove(true)}
+              className={cn(LINK_BUTTON_DANGER, FOCUS)}
+            >
+              {copy.removePhoto}
+            </button>
+          )
         ) : null}
       </div>
+      <p role="status" className="sr-only">
+        {photoBusy ? copy.photoWorking : null}
+      </p>
       {photoError ? (
         <p role="alert" className="m-0 text-crumb text-danger-text">
           {photoError === "unsupported"
@@ -552,12 +614,12 @@ function ProfileBody({
         </Field>
       </form>
 
-      {save.state === "error" ? (
+      {save.state === "error" || save.state === "conflict" ? (
         <p
           role="alert"
           className="m-0 rounded-md bg-danger-subtle px-3 py-2 text-metadata text-danger-subtle-foreground"
         >
-          {copy.saveError}
+          {save.state === "conflict" ? copy.saveConflict : copy.saveError}
         </p>
       ) : null}
 
@@ -619,6 +681,7 @@ export function AccountProfileSurface({
   profile,
   save,
   photoError = null,
+  photoBusy = false,
   onSave,
   onRetry,
   onPhotoChange,
@@ -649,6 +712,7 @@ export function AccountProfileSurface({
           data={profile.data}
           save={save}
           photoError={photoError}
+          photoBusy={photoBusy}
           onSave={onSave}
           onPhotoChange={onPhotoChange}
           onPhotoRemove={onPhotoRemove}

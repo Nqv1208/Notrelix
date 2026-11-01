@@ -121,12 +121,23 @@ public sealed class CredentialScopeTests : IAsyncLifetime
         var ok = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: raw);
         ok.StatusCode.Should().Be(HttpStatusCode.OK, await ok.Content.ReadAsStringAsync());
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", _a.User.Id))).Should().Be("1");
-        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status <> 'Active'", ("u", _a.User.Id))).Should().Be("1", "the old session was revoked");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status <> 'Active'", ("u", _a.User.Id))).Should().Be("0", "the session keeps its id and stays active; only its credential is replaced");
 
         var unknown = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: "refresh-unknown");
         unknown.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        // The replaced credential answers with its successor for a short grace window (two tabs refreshing
+        // together, a lost response retried); past it, presenting it again ends the session. The rotation
+        // time is set by hand so the test does not depend on how fast the calls run.
+        await OwnerScalarAsync("UPDATE identity.user_sessions SET rotated_at = @t WHERE user_id = @u",
+            ("t", DateTimeOffset.UtcNow), ("u", _a.User.Id));
+        var retry = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: raw);
+        retry.StatusCode.Should().Be(HttpStatusCode.OK, "a retry inside the grace window is answered, not treated as theft");
+
+        await OwnerScalarAsync("UPDATE identity.user_sessions SET rotated_at = @t WHERE user_id = @u",
+            ("t", DateTimeOffset.UtcNow.AddMinutes(-1)), ("u", _a.User.Id));
         var replay = await CallAsync(c => c.PostAsync("/api/v1/auth/refresh", null), refreshCookie: raw);
-        replay.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "a rotated refresh token cannot be used again");
+        replay.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "a replaced refresh token presented after the grace window ends the session");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", _a.User.Id))).Should().Be("0");
     }
 
     [Fact]

@@ -42,6 +42,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<SecurityActivityRetentionSweeper>();
         services.AddHostedService<SecurityActivityRetentionService>();
 
+        // Governance: delete Board access-change rows past their 90-day retention (reads already hide them).
+        services.AddOptions<ResourceAccessChangeRetentionOptions>()
+            .Bind(configuration.GetSection(ResourceAccessChangeRetentionOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ResourceAccessChangeRetentionOptions>, ResourceAccessChangeRetentionOptionsValidator>();
+        services.AddScoped<ResourceAccessChangeRetentionSweeper>();
+        services.AddHostedService<ResourceAccessChangeRetentionService>();
+
         // Workspaces: delete onboarding drafts past their 30-day expiry (reads already treat them as absent).
         services.AddOptions<OnboardingDraftSweepOptions>()
             .Bind(configuration.GetSection(OnboardingDraftSweepOptions.SectionName))

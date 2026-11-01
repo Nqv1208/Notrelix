@@ -420,8 +420,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const viewerId = store.getCurrentUser().id;
     const others = listed.filter((m) => m.userId !== viewerId);
     expect(others.length).toBeGreaterThanOrEqual(2);
-    await members.suspend(workspaceId, others[0]!.userId);
-    await members.removeMember(workspaceId, others[1]!.userId);
+    await members.suspend(workspaceId, others[0]!.userId, others[0]!.version);
+    await members.removeMember(
+      workspaceId,
+      others[1]!.userId,
+      others[1]!.version,
+    );
     const relisted = await members.getList(workspaceId);
     expect(relisted.every((m) => m.membership !== undefined)).toBe(true);
     expect(
@@ -443,11 +447,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       role: "guest",
     });
     await invitations.revoke(workspaceId, revoked!);
-    const raw = await client.api.get<{ id: string; status: string }[]>(
-      endpoints.workspaces.invitations(workspaceId),
-    );
-    expect(raw.find((i) => i.id === kept)?.status).toBe("Pending");
-    expect(raw.find((i) => i.id === revoked)?.status).toBe("Revoked");
+    const raw = await client.api.get<{
+      items: { id: string; status: string }[];
+    }>(endpoints.workspaces.invitations(workspaceId));
+    expect(raw.items.find((i) => i.id === kept)?.status).toBe("Pending");
+    expect(raw.items.find((i) => i.id === revoked)?.status).toBe("Revoked");
     expect(
       (await invitations.getList(workspaceId)).map((i) => i.id),
     ).not.toContain(revoked);
@@ -457,9 +461,10 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       status: 412,
     });
     await settings.archive(workspaceId, 3);
-    await expect(workspaces.getDetail(workspaceId)).rejects.toMatchObject({
-      status: 404,
-    });
+    // A member still reads the archived workspace (read-only), flagged as archived.
+    expect(
+      await client.api.get(endpoints.workspaces.detail(workspaceId)),
+    ).toMatchObject({ isArchived: true });
 
     store.assertInvariants();
   });
@@ -573,7 +578,13 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const board = listed.find((b) => b.id === boardId)!;
     expect(board.spaceId).toBe(id);
     // A Space with a placed Board cannot be archived (WSP-022).
-    await expect(spaces.archive(workspaceId, id!)).rejects.toMatchObject({
+    await expect(
+      spaces.archive(
+        workspaceId,
+        id!,
+        (await spaces.getTree(workspaceId)).find((s) => s.id === id)!.version,
+      ),
+    ).rejects.toMatchObject({
       status: 400,
     });
     await expect(
@@ -615,7 +626,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const moved = (await spaces.getTree(workspaceId)).find((s) => s.id === id)!;
     expect(moved.parentId).toBe(mockIds.spaces.engineering);
     // The now-empty Space archives.
-    await spaces.archive(workspaceId, id!);
+    await spaces.archive(workspaceId, id!, moved.version);
 
     // A guest sees only what Space access gives them, with placement masked.
     const guest = new MockStore({ ...store.getConfig(), persona: "viewer" });

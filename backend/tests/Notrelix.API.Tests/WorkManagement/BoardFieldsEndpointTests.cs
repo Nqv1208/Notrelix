@@ -38,7 +38,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteField_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}");
+        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

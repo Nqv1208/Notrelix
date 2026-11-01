@@ -12,8 +12,12 @@ import type {
 } from "../types/workspace";
 
 export interface WorkspaceApiClient {
-  get<T>(url: string): Promise<T>;
-  post<T>(url: string, body: unknown): Promise<T>;
+  get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
+  post<T>(
+    url: string,
+    body: unknown,
+    options?: { idempotencyKey?: string; skipGlobalErrorToast?: boolean },
+  ): Promise<T>;
   put<T>(url: string, body: unknown): Promise<T>;
   patch<T>(url: string, body: unknown): Promise<T>;
   delete<T>(url: string): Promise<T>;
@@ -117,15 +121,19 @@ export function createWorkspaceService(
 
     /**
      * Creates the workspace in the Account (the producer answers with its id),
-     * then reads it back so the caller has the summary the lists draw.
+     * then reads it back so the caller has the summary the lists draw. The
+     * same `idempotencyKey` replays the first attempt, so a retry never makes a
+     * second workspace.
      */
     async create(
       accountId: string,
       input: CreateWorkspaceInput,
+      idempotencyKey?: string,
     ): Promise<WorkspaceSummary> {
       const id = await api.post<string>(
         endpoints.accounts.workspaces(accountId),
         input,
+        idempotencyKey ? { idempotencyKey } : undefined,
       );
       return parseWorkspaceSummary(
         await api.get<unknown>(endpoints.workspaces.detail(id)),

@@ -53,6 +53,7 @@ public sealed record SpaceRoleEntry(Guid UserId, int RoleRank);
 /// <param name="PermissionId">The resource permission row, for a write by id.</param>
 /// <param name="GrantedAt">When the entry was created.</param>
 /// <param name="TeamPeople">Active members of a Team subject; null for a User.</param>
+/// <param name="PermissionVersion">The row's version, which a change of its level must name.</param>
 public sealed record ResourceGrantEntry(
     string SubjectType,
     Guid SubjectId,
@@ -61,7 +62,8 @@ public sealed record ResourceGrantEntry(
     string? TeamName,
     Guid? PermissionId = null,
     DateTimeOffset? GrantedAt = null,
-    int? TeamPeople = null);
+    int? TeamPeople = null,
+    long? PermissionVersion = null);
 
 /// <summary>One active Workspace member reached by one explicit source.</summary>
 /// <param name="Source">One of <see cref="AccessReachSources"/>.</param>

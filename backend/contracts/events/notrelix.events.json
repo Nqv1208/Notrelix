@@ -5200,7 +5200,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "ItemDatesChangedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "work-management.board-item-deleted",

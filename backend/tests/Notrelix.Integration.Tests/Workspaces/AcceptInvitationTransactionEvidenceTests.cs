@@ -137,7 +137,8 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
-                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
+            SeatGates.AlwaysAdmit);
 
         return (session, context, handler, requestContext);
     }
@@ -224,7 +225,8 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
-                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
+            SeatGates.AlwaysAdmit);
 
         var result = await RunInTransactionAsync(session, handler, graph.RawToken);
 
@@ -314,7 +316,8 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
-                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
+            SeatGates.AlwaysAdmit);
 
         var result = await handler.Handle(new AcceptInvitationCommand(graph.RawToken), CancellationToken.None);
         await context.SaveChangesAsync();

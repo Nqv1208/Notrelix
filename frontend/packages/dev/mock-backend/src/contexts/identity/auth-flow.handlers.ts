@@ -24,6 +24,7 @@ import type { MockStore } from "../../state/mock-store";
 const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 /** The provider whose mock account has an authenticator app: its sign-in goes through the second step. */
 const MFA_PROVIDER = "microsoft";
+const MOCK_PROVIDERS = ["google", "microsoft", "microsoft-entra"];
 
 function hasControlCharacter(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
@@ -216,6 +217,14 @@ export const authFlowOperations = [
       // second step. A return path travels only when it is an internal one.
       const returnTo = isInternalPath(query.returnUrl) ? query.returnUrl : null;
       const suffix = returnTo ? `returnTo=${encodeURIComponent(returnTo)}` : "";
+      // An unknown or switched-off provider makes no redirect to it: the backend sends the
+      // browser back to the sign-in page with the code. `microsoft-entra` is the mock-only
+      // company sign-in path (the real backend cannot serve it yet).
+      if (!MOCK_PROVIDERS.includes(params.provider)) {
+        return ok({
+          redirectTo: "/sign-in?error=identity.oauth.provider-unavailable",
+        });
+      }
       if (params.provider === MFA_PROVIDER) {
         store.auth.startProviderMfa();
         return ok({

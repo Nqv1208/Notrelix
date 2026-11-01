@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { DialogFrame, FIELD, OUTLINE, PRIMARY } from "./doc-dialogs-surface";
+import { IMPORT_MAX_BYTES } from "../import/read-import-file";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
   DocHistoryActionView,
@@ -8,8 +9,8 @@ import type {
   DocTemplateActionView,
 } from "./doc-page-models";
 
-/** The accepted size of an imported file (a page holds at most this much text). */
-export const IMPORT_MAX_MB = 5;
+/** The accepted size of an imported file, in MB. */
+export const IMPORT_MAX_MB = IMPORT_MAX_BYTES / (1024 * 1024);
 
 const ACCEPT = ".md,.markdown,.txt,.docx";
 

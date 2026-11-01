@@ -38,6 +38,9 @@ public class SystemContextUsageTests
         "RestoreForm.cs",
         "RestoreApprovalRequest.cs",
         "RestoreSavedFilter.cs",
+        "RevokeResourcePermissionCommand.cs",
+        "RestorePageVersion.cs",
+        "PageSubtreeStore.cs",
         "TenantBootstrapStore.cs",
         "ResourceLocator.cs",
         "PostgresPageAuthorizationFacts.cs",
@@ -54,6 +57,7 @@ public class SystemContextUsageTests
         "GetMyWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
         "InvitationTokenScope.cs",
+        "InviteeInvitations.cs",
     ];
 
     [Fact]

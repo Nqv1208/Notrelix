@@ -782,8 +782,17 @@ How they work together:
   inside the invited account/workspace for that request (`ops.has_workspace_access`/`has_account_access`
   honour `ops.has_invitee_scope`, never as admin), so the acceptance can read what it validates and every
   grant-derived policy applies unchanged.
+- A signed-in person's own list of pending invitations and their answer by id (a Global request in the user
+  scope) read the invitation row through ONE policy, `p_app_select_invitee_pending`
+  (`025_invitee_invitations.sql`): the invitation is `Pending` and addressed to the confirmed address of the
+  person the user scope names (`ops.is_invited_caller`). It is a read only; nothing else is opened. The invited
+  workspace's name and the inviter's display name are read inside that one invitation's token scope, entered
+  from the digest of the row the person was allowed to read (`InviteeInvitations`), and an answer (decline or
+  accept by id) runs in the token and invitee scopes above, so the events of the answer and the acceptance
+  writes use the policies they already have. Deploy: run `--rls-apply`; the script is additive and the policy is
+  unused by the previous runtime, so it can go before the API that reads through it. No schema migration.
 - The five grant helpers (`has_account_access`, `has_workspace_access`, `is_account_admin`, `is_workspace_admin`,
-  `has_permission`) are static `LANGUAGE sql` bodies in `RlsSqlScripts/025_authz_access_helpers_static.sql`, which
+  `has_permission`) are static `LANGUAGE sql` bodies in `RlsSqlScripts/026_authz_access_helpers_static.sql`, which
   runs after the schema-aware `003` versions and leaves its bodies installed. A row policy calls them once per row, so
   they must not build SQL or probe the catalog per call (the dynamic versions cost about 0.18 ms per row). An active
   grant is `revoked_at IS NULL AND membership_status = 'Active'`; a column of `authz.access_grants` that goes missing

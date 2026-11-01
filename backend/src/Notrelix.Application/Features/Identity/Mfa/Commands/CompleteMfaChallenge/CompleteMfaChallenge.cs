@@ -124,6 +124,14 @@ public sealed class CompleteMfaChallengeCommandHandler
             _logger.LogWarning("MFA challenge failed verification for {UserId} (purpose {Purpose})",
                 user.Id, challenge.Purpose);
 
+            // The last allowed try failed: the challenge dies now, not at the next attempt, so no
+            // later code (right or wrong) can open it and the person signs in again.
+            if (attempt.Attempts >= MfaPolicy.ChallengeMaxAttempts)
+            {
+                await _challengeStore.ConsumeAsync(request.ChallengeToken, cancellationToken);
+                return InvalidChallenge();
+            }
+
             return Result<AuthResult>.Failure(new ApplicationError(
                 "identity.mfa.invalid-code",
                 "Invalid MFA code.",

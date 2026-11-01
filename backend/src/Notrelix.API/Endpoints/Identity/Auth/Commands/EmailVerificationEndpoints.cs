@@ -14,8 +14,9 @@ public static class EmailVerificationEndpoints
         group.MapPublicPost("/email-verification/confirm", ConfirmAsync)
             .WithName("Identity.Auth.ConfirmEmail")
             .Produces<ConfirmEmailResultDto>(StatusCodes.Status200OK, "application/json")
-            .ProducesProblems(StatusCodes.Status400BadRequest)
-            .WithSummary("Confirm an email address with a one-time token");
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
+            .WithSummary("Confirm an email address with a one-time token")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
 
         group.MapPublicPost("/email-verification/resend", ResendAsync)
             .WithName("Identity.Auth.ResendEmailVerification")
@@ -27,8 +28,9 @@ public static class EmailVerificationEndpoints
         group.MapAuthenticatedPost("/email-verification/request", RequestAsync)
             .WithName("Identity.Auth.RequestEmailVerification")
             .Produces(StatusCodes.Status200OK)
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized)
-            .WithSummary("Request an email verification message for the current user");
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
+            .WithSummary("Request an email verification message for the current user")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
         return group;
     }

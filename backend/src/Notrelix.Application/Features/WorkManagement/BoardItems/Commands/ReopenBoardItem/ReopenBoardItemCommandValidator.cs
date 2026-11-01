@@ -4,6 +4,7 @@ public class ReopenBoardItemCommandValidator : AbstractValidator<ReopenBoardItem
 {
     public ReopenBoardItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
     }
 }
