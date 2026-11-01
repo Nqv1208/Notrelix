@@ -54,6 +54,7 @@ export {
   AuthInviteSurface,
   SignInFlow,
   ForgotFlow,
+  ResetFlow,
   InviteFlow,
   VerifyEmailFlow,
   authCatalog,

@@ -8,10 +8,10 @@ import {
 } from "../components/auth-forgot-surface";
 import type { AuthFlowNavigation } from "./flow-navigation";
 
-/** Seconds before the reset link can be sent again. */
+/** Seconds before the reset code can be sent again. */
 export const RESEND_SECONDS = 60;
 
-/** Password reset: ask for the email, then say a link went out. */
+/** Password reset: ask for the email, then say a code went out. */
 export function ForgotFlow({
   service,
   navigation,
@@ -74,6 +74,9 @@ export function ForgotFlow({
       initialEmail={startEmail}
       onSend={(email) => send.mutate(email)}
       onResend={() => step.kind === "sent" && send.mutate(step.email)}
+      onEnterCode={(email) =>
+        navigation.navigate({ to: "/reset-password", search: { email } })
+      }
       onBack={() => navigation.navigate({ to: "/sign-in" })}
       onOtherEmail={() => {
         setSentError(null);

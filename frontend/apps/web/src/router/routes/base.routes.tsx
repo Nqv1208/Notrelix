@@ -10,6 +10,7 @@ import { SignInPage } from "../../routes/sign-in";
 import { SignUpPage } from "../../routes/sign-up";
 import { AuthCallbackPage } from "../../routes/auth-callback";
 import { ForgotPasswordPage } from "../../routes/forgot-password";
+import { ResetPasswordPage } from "../../routes/reset-password";
 import { VerifyEmailPage } from "../../routes/verify-email";
 import { HomePage } from "../../routes/home";
 import { InvitePage } from "../../routes/invite/$token";
@@ -50,6 +51,12 @@ export const forgotPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/forgot-password",
   component: ForgotPasswordPage,
+});
+
+export const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password",
+  component: ResetPasswordPage,
 });
 
 export const verifyEmailRoute = createRoute({

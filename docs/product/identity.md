@@ -243,6 +243,8 @@ It must define:
 - replay rejection;
 - resulting session/credential invalidation policy.
 
+Accepted policy (2026-10-30): the reset message carries a one-time code of six digits that works for ten minutes, and a new request replaces the earlier code. The person enters the email, the code and a new password. A wrong, used or expired code is refused the same way, and five wrong codes kill the code, so the person asks for a new one. At most three codes are sent per email per hour, and the answer to a request is the same for an address with no account.
+
 Accepted policy (2026-10-23): a successful reset proves control of the account, so it (a) revokes every active session and every access token issued before it, exactly as a password change does, and (b) lifts the account's sign-in lockout. It does not lift the lockout of the client address, which also protects other accounts. A reset is recorded in the person's security activity.
 
 # 14. Email verification
@@ -283,6 +285,8 @@ A revoked/expired session must not silently become valid again.
 Refresh-token rotation must avoid accidentally creating two independent long-lived valid authorities unless a bounded overlap window is explicitly designed.
 
 Replay of a rotated/revoked refresh credential must fail according to security policy.
+
+Accepted policy (2026-10-30): a rotated refresh credential stays usable for 10 seconds so two tabs may refresh together or a lost response can be retried; the answer in that window is the new credential. A use after the window revokes every session of that chain. A session chain lives at most 90 days and at most 30 days idle; an Account policy may shorten both.
 
 # 19. Session revocation
 

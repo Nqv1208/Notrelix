@@ -30,14 +30,14 @@ describe("how an email signs in", () => {
 });
 
 describe("password sign-in", () => {
-  it("counts wrong passwords, throttles on the fifth for a minute and opens again", () => {
+  it("counts wrong passwords, throttles on the tenth for 15 minutes and opens again", () => {
     const { auth, advance } = directory();
-    const outcomes = Array.from({ length: 5 }, () =>
+    const outcomes = Array.from({ length: 10 }, () =>
       auth.login(MOCK_AUTH.personalEmail, "sai"),
     );
-    expect(outcomes.slice(0, 4)).toEqual(Array(4).fill({ kind: "invalid" }));
+    expect(outcomes.slice(0, 9)).toEqual(Array(9).fill({ kind: "invalid" }));
     // No answer says how many tries are left.
-    expect(outcomes[4]).toEqual({
+    expect(outcomes[9]).toEqual({
       kind: "locked",
       retryAfterSeconds: MOCK_AUTH.lockSeconds,
     });

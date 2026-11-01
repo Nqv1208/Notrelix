@@ -29,6 +29,7 @@ export const AUTH_FLOW_PATHS = {
   oauthStart: (provider: string) =>
     `/auth/oauth/${encodeURIComponent(provider)}/start`,
   forgotPassword: "/auth/forgot-password",
+  resetPassword: "/auth/reset-password",
   confirmEmail: "/auth/email-verification/confirm",
   resendEmailVerification: "/auth/email-verification/resend",
   invitationPreview: "/invitations/preview",
@@ -303,6 +304,13 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
     },
     forgotPassword(email: string) {
       return api.post<void>(AUTH_FLOW_PATHS.forgotPassword, { email }, QUIET);
+    },
+    /**
+     * `Identity.Auth.ResetPassword`: a wrong, used or expired code answers the same 400;
+     * five wrong codes answer `identity.auth.too-many-attempts`.
+     */
+    resetPassword(value: { email: string; code: string; newPassword: string }) {
+      return api.post<void>(AUTH_FLOW_PATHS.resetPassword, value, QUIET);
     },
     /** `Identity.Auth.ConfirmEmail`: a token that is used up or expired answers 400. */
     confirmEmail(token: string) {
