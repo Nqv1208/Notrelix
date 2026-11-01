@@ -156,8 +156,8 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
 
     /// <summary>
     /// WG-TST-CONC-OWNER-001 (WG-TEST-GAP-002 / WG-CONC-001, P2B-CERT-002,
-    /// CERT-CONC-001): two concurrent last-owner races — demote one owner while
-    /// removing another — must never leave the workspace with zero active owners.
+    /// CERT-CONC-001): two concurrent last-owner races — each of two owners demoting
+    /// themself — must never leave the workspace with zero active owners.
     /// Each transaction runs the production handler path, which takes a
     /// <c>SELECT ... FOR UPDATE</c> row lock on the workspace row that is held
     /// until commit (EfRequestDataSession owns the request transaction). The
@@ -166,7 +166,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
     /// last-owner rule instead of committing a stale count-based demotion/removal.
     /// </summary>
     [Fact]
-    public async Task ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners()
+    public async Task ConcurrentDemoteOfBothOwners_NeverLeavesZeroActiveOwners()
     {
         var accountId = Guid.CreateVersion7();
         var ownerAId = Guid.CreateVersion7();
@@ -198,7 +198,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         var handlerA = new UpdateMemberRoleCommandHandler(
             contextA, RequestContext(ownerAId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA),
             new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
-        var handlerB = new RemoveMemberCommandHandler(
+        var handlerB = new UpdateMemberRoleCommandHandler(
             contextB, RequestContext(ownerBId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB),
             new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
@@ -212,8 +212,8 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         // Handler B starts concurrently. Its workspace read (FOR UPDATE) must
         // block until transaction A commits, so its later owner count cannot be
         // stale. Run it on a separate task while A is still open.
-        var removeBTask = handlerB.Handle(
-            new RemoveMemberCommand(workspace.Id, ownerBId, memberB.Version),
+        var demoteBTask = handlerB.Handle(
+            new UpdateMemberRoleCommand(workspace.Id, ownerBId, WorkspaceRole.Member, memberB.Version),
             CancellationToken.None);
 
         await contextA.SaveChangesAsync();
@@ -221,11 +221,11 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
 
         // With the workspace row locked and now committed (ownerA is a member),
         // handler B's count sees exactly one active owner and must fail closed.
-        var removingOwnerB = async () => await removeBTask;
-        (await removingOwnerB.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+        var demotingOwnerB = async () => await demoteBTask;
+        (await demotingOwnerB.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(
-                WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner,
-                "removing the last remaining owner must be rejected after the demote commits");
+                WorkspaceRuleCodes.Workspaces_Owner_CannotDowngradeLastOwner,
+                "demoting the last remaining owner must be rejected after the first demote commits");
 
         var verify = await _db.CreateOwnerContext(SystemTenant()).WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active);

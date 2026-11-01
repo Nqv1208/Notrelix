@@ -42,6 +42,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Member_CannotDirectlyAssignOwner = "Workspaces_Member_CannotDirectlyAssignOwner";
     public const string Workspaces_Member_ActorCannotAssignRole = "Workspaces_Member_ActorCannotAssignRole";
     public const string Workspaces_Member_ActorCannotActOnMember = "Workspaces_Member_ActorCannotActOnMember";
+    public const string Workspaces_Member_CannotActOnSelf = "Workspaces_Member_CannotActOnSelf";
     public const string Workspaces_Member_NotInAccount = "Workspaces_Member_NotInAccount";
     public const string Workspaces_Member_SeatUnavailable = "Workspaces_Member_SeatUnavailable";
     public const string Workspaces_Member_CannotSuspendRemoved = "Workspaces_Member_CannotSuspendRemoved";
