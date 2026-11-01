@@ -790,6 +790,250 @@ describe("AccountSecurityPage container", () => {
     expect(text()).not.toContain("signed out of every device, including");
   });
 
+  /** The button of the device row that is not this device. */
+  const otherDeviceSignOut = () =>
+    Array.from(
+      host?.querySelectorAll<HTMLButtonElement>(
+        'button[aria-label^="Sign out "]',
+      ) ?? [],
+    ).find((b) => !b.getAttribute("aria-label")?.includes("(this device)"));
+  const thisDeviceSignOut = () =>
+    Array.from(
+      host?.querySelectorAll<HTMLButtonElement>(
+        'button[aria-label^="Sign out "]',
+      ) ?? [],
+    ).find((b) => b.getAttribute("aria-label")?.includes("(this device)"));
+
+  it("signs out another device, says when it was already gone, and shows a failure as a failure", async () => {
+    let revoke: () => unknown = () => undefined;
+    const post = vi.fn((url: string) =>
+      url.endsWith("/revoke") ? revoke() : undefined,
+    );
+    const get = vi.fn(reads(table));
+    runtime.get = get;
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Active sessions"));
+
+    await act(async () => otherDeviceSignOut()?.click());
+    await until(() => expect(text()).toContain("Signed out."));
+    expect(post).toHaveBeenCalledWith("/auth/sessions/s-2/revoke", {});
+
+    // The producer answers 404 for a session already gone or not the caller's: the list is read again and says so.
+    const reads404 = get.mock.calls.filter(
+      ([url]) => url === "/auth/sessions",
+    ).length;
+    revoke = () => {
+      throw Object.assign(new Error("gone"), { status: 404 });
+    };
+    await act(async () => otherDeviceSignOut()?.click());
+    await until(() =>
+      expect(text()).toContain("That device was already signed out."),
+    );
+    await until(() =>
+      expect(
+        get.mock.calls.filter(([url]) => url === "/auth/sessions").length,
+      ).toBeGreaterThan(reads404),
+    );
+    expect(host?.querySelector('[role="alert"]')).toBeNull();
+
+    revoke = () => {
+      throw Object.assign(new Error("boom"), { status: 500 });
+    };
+    await act(async () => otherDeviceSignOut()?.click());
+    await until(() =>
+      expect(host?.querySelector('[role="alert"]')).not.toBeNull(),
+    );
+  });
+
+  it("asks before signing this device out, keeps it on Cancel, and ends it only after the confirmation", async () => {
+    const post = vi.fn(() => undefined);
+    runtime.get = reads(table);
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Active sessions"));
+
+    await act(async () => thisDeviceSignOut()?.click());
+    await until(() => expect(text()).toContain("Sign out of this device?"));
+    expect(post).not.toHaveBeenCalled();
+    await clickButton("Cancel");
+    expect(text()).not.toContain("Sign out of this device?");
+    expect(post).not.toHaveBeenCalled();
+
+    await act(async () => thisDeviceSignOut()?.click());
+    await until(() => expect(text()).toContain("Sign out of this device?"));
+    await clickButton("Sign out");
+    await until(() =>
+      expect(post).toHaveBeenCalledWith("/auth/sessions/s-1/revoke", {}),
+    );
+  });
+
+  it("turns two-factor off after a code, then says every session ended", async () => {
+    const post = vi.fn((url: string) =>
+      url === "/auth/security/step-up/requirement"
+        ? { requiredFactor: "MfaChallenge", challengeToken: "challenge-1" }
+        : url === "/auth/security/step-up/complete-mfa"
+          ? { proofToken: "proof-1" }
+          : undefined,
+    );
+    runtime.get = reads(table);
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Two-factor authentication"));
+    await clickButton("Turn off two-factor authentication");
+    await until(() =>
+      expect(text()).toContain("Confirm to turn off two-factor authentication"),
+    );
+    await typeInFirstField("123456");
+    await clickButton("Confirm");
+    await until(() =>
+      expect(text()).toContain("Two-factor authentication is off"),
+    );
+    expect(post).toHaveBeenCalledWith("/auth/security/step-up/requirement", {
+      purpose: "DisableMfa",
+    });
+    expect(post).toHaveBeenCalledWith("/auth/mfa/disable", {
+      stepUpToken: "proof-1",
+    });
+  });
+
+  it("answers a wrong code, a throttled step and an expired verification in words, and opens a fresh challenge when it expired", async () => {
+    let complete: () => unknown = () => ({ proofToken: "proof-1" });
+    let requirements = 0;
+    const post = vi.fn((url: string) => {
+      if (url === "/auth/security/step-up/requirement") {
+        requirements += 1;
+        return {
+          requiredFactor: "MfaChallenge",
+          challengeToken: `challenge-${requirements}`,
+        };
+      }
+      if (url === "/auth/security/step-up/complete-mfa") return complete();
+      return { recoveryCodes: ["AAAA-1111"] };
+    });
+    runtime.get = reads(table);
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Backup codes"));
+    await clickButton("Create new codes");
+    await until(() =>
+      expect(text()).toContain("Confirm to create new backup codes"),
+    );
+
+    complete = () => {
+      throw Object.assign(new Error("wrong"), {
+        status: 400,
+        code: "identity.security.step-up-invalid-code",
+      });
+    };
+    await typeInFirstField("000000");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("That code is not right"));
+    expect(requirements).toBe(1);
+
+    complete = () => {
+      throw Object.assign(new Error("slow down"), {
+        status: 429,
+        details: { retryAfterSeconds: 42 },
+      });
+    };
+    await typeInFirstField("000001");
+    await clickButton("Confirm");
+    await until(() =>
+      expect(text()).toContain("Too many tries. Try again in 42 seconds."),
+    );
+    expect(
+      (
+        Array.from(host?.querySelectorAll("button") ?? []).find(
+          (b) => b.textContent === "Confirm",
+        ) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    // Out of tries or too old: a fresh challenge opens for the same step and the page says so.
+    runtime.post = vi.fn((url: string) => {
+      if (url === "/auth/security/step-up/requirement") {
+        requirements += 1;
+        return { requiredFactor: "MfaChallenge", challengeToken: "fresh" };
+      }
+      throw Object.assign(new Error("expired"), {
+        status: 400,
+        code: "identity.security.step-up-invalid",
+      });
+    });
+    await clickButton("Cancel");
+    await clickButton("Create new codes");
+    await until(() =>
+      expect(text()).toContain("Confirm to create new backup codes"),
+    );
+    await typeInFirstField("000002");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("That verification expired"));
+    expect(requirements).toBeGreaterThanOrEqual(3);
+  });
+
+  it("refuses a wrong password at the proof step, and a wrong first code at the activation, without losing the setup", async () => {
+    let proofs = 0;
+    const verify: () => unknown = () => {
+      throw Object.assign(new Error("wrong"), {
+        status: 400,
+        code: "identity.mfa.invalid-verification-code",
+      });
+    };
+    let password: () => unknown = () => {
+      throw Object.assign(new Error("wrong"), {
+        status: 400,
+        code: "identity.security.step-up-invalid-password",
+      });
+    };
+    const post = vi.fn((url: string) =>
+      url === "/auth/security/step-up/requirement"
+        ? { requiredFactor: "Password", challengeToken: null }
+        : url === "/auth/security/step-up/complete-password"
+          ? (password(), { proofToken: `proof-${++proofs}` })
+          : url === "/auth/mfa/enrollment/start"
+            ? {
+                mfaMethodId: "method-1",
+                secret: "JBSWY3DPEHPK3PXP",
+                otpAuthUri: "",
+              }
+            : verify(),
+    );
+    runtime.get = reads({
+      ...table,
+      "/auth/security/summary": {
+        ...summary,
+        mfa: { isEnabled: false, recoveryCodesRemaining: 0 },
+      },
+    });
+    runtime.post = post;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() =>
+      expect(text()).toContain("Turn on two-factor authentication"),
+    );
+    await clickButton("Turn on two-factor authentication");
+    await until(() =>
+      expect(text()).toContain("Confirm to turn on two-factor authentication"),
+    );
+    await typeInFirstField("wrong-password");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("That password is not right."));
+    expect(post).not.toHaveBeenCalledWith(
+      "/auth/mfa/enrollment/start",
+      expect.anything(),
+    );
+
+    password = () => undefined;
+    await typeInFirstField("old-password-1");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("JBSWY3DPEHPK3PXP"));
+    await typeInFirstField("000000");
+    await clickButton("Confirm");
+    await until(() => expect(text()).toContain("That code is not right"));
+    // The key stays on screen so the person can try the next code.
+    expect(text()).toContain("JBSWY3DPEHPK3PXP");
+  });
+
   it("shows the localized error with a retry when the settings cannot load", async () => {
     runtime.get = reads({
       ...table,
