@@ -87,7 +87,7 @@ public class ApplicationDbContextInitialiser
         _context.OperatorAccounts.Add(OperatorAccount.Create(
             seed.Email, seed.DisplayName, _passwordHasher.HashPassword(seed.Password), DateTimeOffset.UtcNow));
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Seeded the operator account '{Email}'.", email);
+        _logger.LogInformation("Seeded the configured operator account.");
     }
 
     public async Task SeedAsync()
