@@ -32,7 +32,7 @@ import {
 import { SortableList, SortableRow } from "./board-settings-sortable";
 
 const ROW_GRID =
-  "grid grid-cols-[22px_minmax(0,1fr)_150px_132px_104px] items-center gap-2.5 min-h-[45px] first:min-h-[44px] pr-3 pl-2 text-item-small max-md:grid-cols-[22px_minmax(0,1fr)_84px_minmax(0,72px)] max-md:[&>:nth-child(4)]:hidden";
+  "grid grid-cols-[22px_minmax(0,1fr)_150px_132px_104px] items-center gap-2.5 min-h-[45px] first:min-h-[44px] pr-3 pl-2 text-item-small max-xl:grid-cols-[22px_minmax(0,1fr)_96px_minmax(0,96px)] max-md:grid-cols-[22px_minmax(0,1fr)_84px_minmax(0,72px)] max-xl:[&>:nth-child(4)]:hidden";
 const HEAD_ROW =
   "min-h-[34px] first:min-h-[34px] bg-background text-metadata font-semibold text-meta-foreground";
 
