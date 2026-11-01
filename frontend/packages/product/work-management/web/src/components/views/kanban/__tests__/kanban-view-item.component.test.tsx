@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  WorkManagementTestScope,
+  type WorkManagementServices,
+} from "@notrelix/work-management-state";
 import { I18nProvider } from "@notrelix/i18n";
 import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
 import {
+  itemCapabilitiesStub,
   boardGroupFixture,
   cardDetailFixture,
   cardFixture,
@@ -88,6 +93,21 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       remove: vi.fn(),
       restore: vi.fn(),
     }),
+    // The member's own view state: nothing saved, nothing persisted by these tests.
+    useBoardPreference: () => ({
+      criteria: undefined,
+      isLoading: false,
+      persistent: false,
+      save: vi.fn(),
+      saving: false,
+      saveFailed: false,
+      retry: vi.fn(),
+      columns: {},
+      saveColumns: vi.fn(),
+      columnsSaving: false,
+      columnsFailed: false,
+      retryColumns: vi.fn(),
+    }),
     useBoardView: () => ({
       viewConfig: actual.defaultTableViewConfig,
     }),
@@ -97,6 +117,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       statusField: undefined,
       groupByField: undefined,
       groupByFields: [],
+      filterFields: [],
+      memberName: (userId: string) => userId,
       allLanes: lanes(),
       lanes: lanes(),
       visibleCount: columns.current[0]!.cards.length,
@@ -137,7 +159,16 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       answerError: null,
     }),
     usePeopleDirectory: () => ({ directory: null }),
-    useWorkManagementServices: () => ({ cards: {}, itemExtras: {} }),
+    useWorkManagementServices: () => ({
+      cards: {},
+      itemExtras: {},
+      itemCapabilities: {
+        recordView: async () => undefined,
+        getViewers: async () => ({ count: 0, viewers: [] }),
+        getVotes: async () => ({ count: 0, voted: false, voters: [] }),
+        getBoardChecklists: async () => [],
+      },
+    }),
     useItemFileUploads: () => ({
       uploads: [],
       start: vi.fn(),
@@ -164,6 +195,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       board: undefined,
       groups: [],
       fieldDefinitions: [],
+      archivedGroupIds: [] as string[],
       isLoading: false,
       error: null,
     }),
@@ -178,6 +210,14 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useRemoveFieldOption: mutation,
     useArchiveCard: () => ({ mutate: cardQuery.deleteMutate }),
     useSeenItemVersion: () => () => 7,
+    useItemConflict: () => ({
+      conflict: false,
+      staleSchema: null,
+      clear: vi.fn(),
+      report: vi.fn(),
+    }),
+    useBoardLabelWrites: () => ({ update: vi.fn(), remove: vi.fn() }),
+    useCardAttachmentWrites: () => ({ addWebLink: vi.fn(), linkPage: vi.fn() }),
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,
@@ -235,20 +275,37 @@ function view(props: {
   );
 }
 
+/** The popup reads its own queries (viewers, votes), so it needs a query client. */
+function scoped(children: ReactNode) {
+  return (
+    <WorkManagementTestScope
+      services={
+        {
+          itemCapabilities: itemCapabilitiesStub(),
+        } as unknown as WorkManagementServices
+      }
+    >
+      {children}
+    </WorkManagementTestScope>
+  );
+}
+
 function renderView(props: {
   selectedItemId?: string;
   onSelectedItemChange?: ItemChange;
 }) {
-  return renderPureUi(view(props));
+  return renderPureUi(scoped(view(props)));
 }
 
 /** Holds the selection like the route does, so close really unmounts the sheet. */
 function StatefulView({ initial }: { initial?: string }) {
   const [item, setItem] = useState<string | undefined>(initial);
-  return view({ selectedItemId: item, onSelectedItemChange: setItem });
+  return scoped(view({ selectedItemId: item, onSelectedItemChange: setItem }));
 }
 
 const REPLACE = { replace: true };
+const GONE = () =>
+  screen.queryByText("The card is gone, or you no longer have access");
 
 describe("KanbanView item detail through selectedItemId", () => {
   beforeEach(() => {
@@ -264,7 +321,11 @@ describe("KanbanView item detail through selectedItemId", () => {
     const dialog = screen.getByRole("dialog", { name: "Item card" });
     expect(dialog).toBeTruthy();
     expect(
-      screen.getByRole("textbox", { name: "Edit title" }).textContent,
+      (
+        screen.getByRole("textbox", {
+          name: "Card title",
+        }) as HTMLTextAreaElement
+      ).value,
     ).toBe("Item card");
   });
 
@@ -280,17 +341,17 @@ describe("KanbanView item detail through selectedItemId", () => {
         onSelectedItemChange: vi.fn(),
       }),
     ).not.toThrow();
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByText("Could not load the card")).toBeTruthy();
   });
 
-  it("renders no sheet for a card that belongs to another board", () => {
+  it("says the card is gone for a card that belongs to another board", () => {
     cardQuery.current = {
       card: { ...existingCard(), boardId: "another-board" },
       isLoading: false,
       error: null,
     };
     renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(GONE()).toBeTruthy();
   });
 
   it("renders no sheet when no item is selected", () => {
@@ -303,7 +364,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     cardQuery.current = { card: existingCard(), isLoading: false, error: null };
     const onSelectedItemChange = vi.fn();
     renderView({ selectedItemId: "card-item", onSelectedItemChange });
-    fireEvent.click(screen.getByRole("button", { name: "Close (Esc)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
   });
 
@@ -334,27 +395,27 @@ describe("KanbanView item detail through selectedItemId", () => {
     );
   });
 
-  it("renders no sheet when the card's board matches but its workspace differs", () => {
+  it("says the card is gone when the card's board matches but its workspace differs", () => {
     cardQuery.current = {
       card: { ...existingCard(), workspaceId: "another-workspace" },
       isLoading: false,
       error: null,
     };
     renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(GONE()).toBeTruthy();
   });
 
-  it("clears a stale item with history replace when the card cannot be loaded", async () => {
+  it("clears a gone item with history replace from the way back to the board", () => {
     cardQuery.current = {
       card: undefined,
       isLoading: false,
-      error: new Error("not found"),
+      error: Object.assign(new Error("not found"), { kind: "not_found" }),
     };
     const onSelectedItemChange = vi.fn();
     renderView({ selectedItemId: "missing-card", onSelectedItemChange });
-    await waitFor(() =>
-      expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE),
-    );
+    expect(GONE()).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Back to the board" }));
+    expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
   });
 
   it("does not clear the item while the card is still loading", () => {
@@ -371,7 +432,7 @@ describe("KanbanView item detail through selectedItemId", () => {
       selectedItemId: "card-item",
       onSelectedItemChange,
     });
-    fireEvent.keyDown(screen.getByRole("button", { name: "More" }), {
+    fireEvent.keyDown(screen.getByRole("button", { name: "Card actions" }), {
       key: "Enter",
     });
     fireEvent.click(screen.getByRole("menuitem", { name: "Archive…" }));
@@ -390,13 +451,13 @@ describe("KanbanView item detail through selectedItemId", () => {
     cardQuery.current = {
       card: undefined,
       isLoading: false,
-      error: new Error("not found"),
+      error: Object.assign(new Error("not found"), { kind: "not_found" }),
     };
-    rerender(view({ selectedItemId: "card-item", onSelectedItemChange }));
-    expect(screen.queryByRole("dialog")).toBeNull();
-    await waitFor(() =>
-      expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE),
+    rerender(
+      scoped(view({ selectedItemId: "card-item", onSelectedItemChange })),
     );
+    expect(screen.queryByRole("dialog", { name: "Item card" })).toBeNull();
+    expect(GONE()).toBeTruthy();
   });
 
   describe("focus return", () => {
@@ -410,9 +471,7 @@ describe("KanbanView item detail through selectedItemId", () => {
       const opener = screen.getByRole("button", { name: "Item card" });
       opener.focus();
       fireEvent.click(opener);
-      fireEvent.click(
-        await screen.findByRole("button", { name: "Close (Esc)" }),
-      );
+      fireEvent.click(await screen.findByRole("button", { name: "Close" }));
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       await waitFor(() => expect(document.activeElement).toBe(opener));
     });
@@ -442,9 +501,7 @@ describe("KanbanView item detail through selectedItemId", () => {
       };
       boardState.showCards = false;
       renderPureUi(<StatefulView initial="card-item" />);
-      fireEvent.click(
-        await screen.findByRole("button", { name: "Close (Esc)" }),
-      );
+      fireEvent.click(await screen.findByRole("button", { name: "Close" }));
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       await waitFor(() =>
         expect(

@@ -333,13 +333,13 @@ describe("item status write", () => {
     ]);
   });
 
-  it("returns the created item id so a lane can set its status next", async () => {
+  it("returns the created item id and its first version so a lane can set its status next", async () => {
     const { client } = recordingClient({ id: "item-new", groupId: "g-1" });
     const id = await createCardApi(client).createCard("board-1", {
       listId: "g-1",
       title: "Việc mới",
     });
-    expect(id).toBe("item-new");
+    expect(id).toEqual({ id: "item-new", version: 1 });
   });
 });
 

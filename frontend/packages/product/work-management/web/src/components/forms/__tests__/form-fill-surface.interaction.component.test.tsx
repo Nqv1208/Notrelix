@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "@notrelix/i18n";
 import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
 import {
   BOARD_FIELDS,
@@ -30,7 +31,12 @@ function render(
     onSubmit: vi.fn(async () => ({ ok: true }) as const),
     ...overrides,
   };
-  renderPureUi(<FormFillSurface {...props} />);
+  renderPureUi(
+    // The date answer reads its copy from the host locale provider.
+    <I18nProvider catalogs={[]} initialLocale={locale}>
+      <FormFillSurface {...props} />
+    </I18nProvider>,
+  );
   return props;
 }
 
@@ -69,8 +75,9 @@ describe.each(["vi", "en"] as const)("form fill page (%s)", (locale) => {
     fireEvent.change(screen.getByRole("combobox", { name: /Mức độ ưu tiên/ }), {
       target: { value: "p-high" },
     });
+    // The date is typed as dd/mm/yyyy in the house date field; the answer is the day as yyyy-mm-dd.
     fireEvent.change(screen.getByLabelText(/Hạn mong muốn/), {
-      target: { value: "2026-10-16" },
+      target: { value: "16/10/2026" },
     });
     fireEvent.click(screen.getByRole("button", { name: f.submit }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());

@@ -144,6 +144,7 @@ describe("runDropItemInLane", () => {
     expect(writer.updateStatus).toHaveBeenCalledWith(
       "a",
       "o-doing",
+      6,
       expect.objectContaining({
         idempotencyKey: expect.stringMatching(/^item-status:a:/),
       }),
@@ -153,7 +154,7 @@ describe("runDropItemInLane", () => {
   it("writes a Select lane through its field value", async () => {
     const { queryClient } = seeded();
     const writer = {
-      moveCard: vi.fn(async () => ({})),
+      moveCard: vi.fn(async () => ({ version: 6 })),
       updateStatus: vi.fn(),
       updateFieldValue: vi.fn(async () => undefined),
     };
@@ -162,11 +163,14 @@ describe("runDropItemInLane", () => {
       lane: { ...variables.lane, viaStatusEndpoint: false },
     });
     expect(writer.updateStatus).not.toHaveBeenCalled();
-    expect(writer.updateFieldValue).toHaveBeenCalledWith({
-      cardId: "a",
-      fieldDefinitionId: FIELD,
-      value: "o-doing",
-    });
+    expect(writer.updateFieldValue).toHaveBeenCalledWith(
+      {
+        cardId: "a",
+        fieldDefinitionId: FIELD,
+        value: "o-doing",
+      },
+      { expectedVersion: 6 },
+    );
   });
 
   it("moves the card back to its old place on the server when the status write fails after the move", async () => {
@@ -200,7 +204,7 @@ describe("runDropItemInLane", () => {
   it("puts the card back in its lane and place when the status write fails", async () => {
     const { queryClient, key } = seeded();
     const writer = {
-      moveCard: vi.fn(async () => ({})),
+      moveCard: vi.fn(async () => ({ version: 6 })),
       updateStatus: vi.fn(async () => {
         throw new Error("403");
       }),

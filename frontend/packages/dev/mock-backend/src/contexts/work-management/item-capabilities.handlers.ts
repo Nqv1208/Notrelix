@@ -13,6 +13,7 @@ import {
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
+import { addUtcMonthsMs, isoOfMs, utcWeekdayOfMs } from "../../state/clock";
 import { erpItemId } from "../../state/mock-erp-board";
 import {
   ERP_VIEWERS,
@@ -145,19 +146,19 @@ function bump(store: MockStore, itemId: string) {
   store.updateCard(itemId, { version: (item?.version ?? 1) + 1 });
 }
 
-/** The first occurrence of a repeat rule after `due` that is also after `after` (the producer's `ItemRepeat.NextDue`). */
-function nextDue(due: Date, rule: string, after: Date): Date {
-  let next = new Date(due);
+/** The first occurrence of a repeat rule after `dueMs` that is also after `afterMs` (the producer's `ItemRepeat.NextDue`). */
+function nextDue(dueMs: number, rule: string, afterMs: number): number {
+  const day = 86_400_000;
+  let next = dueMs;
   do {
-    const day = next.getUTCDay();
-    if (rule === "daily") next.setUTCDate(next.getUTCDate() + 1);
+    const weekday = utcWeekdayOfMs(next);
+    if (rule === "daily") next += day;
     else if (rule === "weekdays")
-      next.setUTCDate(next.getUTCDate() + (day === 5 ? 3 : day === 6 ? 2 : 1));
-    else if (rule === "weekly") next.setUTCDate(next.getUTCDate() + 7);
-    else if (rule === "biweekly") next.setUTCDate(next.getUTCDate() + 14);
-    else next.setUTCMonth(next.getUTCMonth() + 1);
-    next = new Date(next);
-  } while (next <= after);
+      next += (weekday === 5 ? 3 : weekday === 6 ? 2 : 1) * day;
+    else if (rule === "weekly") next += 7 * day;
+    else if (rule === "biweekly") next += 14 * day;
+    else next = addUtcMonthsMs(next, 1);
+  } while (next <= afterMs);
   return next;
 }
 
@@ -183,17 +184,13 @@ export function rollRepeatOnCompletion(
   const current = store.getFieldValues(itemId)[statusColumn?.id ?? ""];
   if (optionId !== undefined && category(optionId) !== "done") return false;
   if (category(current as string | undefined) === "done") return false;
-  const previousDue = new Date(item.dueAt);
-  const due = nextDue(previousDue, rule, new Date(store.getClock().isoNow()));
-  const shift = due.getTime() - previousDue.getTime();
+  const previousDue = Date.parse(item.dueAt);
+  const due = nextDue(previousDue, rule, Date.parse(store.getClock().isoNow()));
+  const shift = due - previousDue;
   store.updateCard(itemId, {
-    dueAt: due.toISOString(),
+    dueAt: isoOfMs(due),
     ...(item.startedAt
-      ? {
-          startedAt: new Date(
-            new Date(item.startedAt).getTime() + shift,
-          ).toISOString(),
-        }
+      ? { startedAt: isoOfMs(Date.parse(item.startedAt) + shift) }
       : {}),
     version: (item.version ?? 1) + 1,
   });
@@ -357,7 +354,7 @@ export const itemCapabilitiesOperations = [
       const key = `${params.id}:${params.fieldId}`;
       const voters = votes.get(key) ?? new Map<string, string>();
       if (body?.voted) {
-        if (!voters.has(me)) voters.set(me, new Date().toISOString());
+        if (!voters.has(me)) voters.set(me, store.getClock().isoNow());
       } else voters.delete(me);
       votes.set(key, voters);
       return ok({ count: voters.size, voted: voters.has(me) });
@@ -401,8 +398,9 @@ export const itemCapabilitiesOperations = [
       const row = views.get(params.id) ?? new Map<string, string>();
       const me = store.getCurrentUser().id;
       const last = row.get(me);
-      if (!last || Date.now() - Date.parse(last) >= 5 * 60_000)
-        row.set(me, new Date().toISOString());
+      const now = store.getClock().isoNow();
+      if (!last || Date.parse(now) - Date.parse(last) >= 5 * 60_000)
+        row.set(me, now);
       views.set(params.id, row);
       return noContent();
     },

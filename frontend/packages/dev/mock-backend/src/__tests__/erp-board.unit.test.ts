@@ -308,7 +308,7 @@ describe("ERP board in the mock world", () => {
       body: JSON.stringify(body),
     });
 
-    it("status: 204 with a key, 400 without one, 403 for a commenter", async () => {
+    it("status: 200 with the new version when sent with a key, 400 without one, 403 for a commenter", async () => {
       const owner = rawFetch();
       const item = erpCard(owner.store, "ERP-149");
       const url = `${BASE}/board-items/${item.id}/status`;
@@ -321,7 +321,9 @@ describe("ERP board in the mock world", () => {
         url,
         json({ status: "mock-erp-status-doing" }, "status-key-1"),
       );
-      expect(done.status).toBe(204);
+      // The write answers the item's new version, the one the next write names.
+      expect(done.status).toBe(200);
+      expect(await done.json()).toEqual({ version: expect.any(Number) });
 
       const commenter = rawFetch("commenter");
       const theirs = erpCard(commenter.store, "ERP-149");

@@ -22,6 +22,7 @@ import {
   erpCommenterAccess,
   erpItemId,
   erpOwnerAccess,
+  itemCapabilitiesStub,
 } from "@notrelix/work-management-testing";
 import { cardPopupCatalog } from "../../../card-popup/card-popup.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
@@ -77,7 +78,7 @@ function fakeServices(
     getCardFiles: vi.fn(async () => []),
     getCardActivity: vi.fn(async () => []),
     updateStatus: vi.fn(async () => undefined),
-    createCard: vi.fn(async () => "item-new"),
+    createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(overrides.updateCard ?? (async () => undefined)),
@@ -94,6 +95,7 @@ function fakeServices(
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemCapabilities: itemCapabilitiesStub(),
     itemExtras: {
       ...extras,
       getPlan: vi.fn(async () => ({
@@ -226,17 +228,13 @@ describe("BoardTimelineView on the ERP board", () => {
     const { cards } = renderTimeline();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
-    const start = (await screen.findByLabelText(
-      "Ngày bắt đầu",
-    )) as HTMLInputElement;
-    expect(start.value).toBe("12/10/2026");
-    expect(
-      (screen.getByLabelText("Hạn hoàn thành") as HTMLInputElement).value,
-    ).toBe("12/10/2026");
-    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
+    // The card form opens with the shown day as its date.
+    const form = await screen.findByRole("dialog", { name: "Thẻ" });
+    expect(within(form).getByRole("button", { name: /^12\/10/ })).toBeTruthy();
+    fireEvent.change(within(form).getByRole("textbox", { name: "Tên thẻ" }), {
       target: { value: "Dựng khung kế hoạch" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
+    fireEvent.click(within(form).getByRole("button", { name: "Tạo thẻ" }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
   });
 

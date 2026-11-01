@@ -469,7 +469,7 @@ const BOARD_VALUES: Record<"light" | "dark", Record<string, string>> = {
 };
 
 describe("board lane, label and priority colours", () => {
-  it("names the six label tones in mockup order", () => {
+  it("names the ten label tones in mockup order, the card popup's four last", () => {
     expect(LABEL_TONE_IDS).toEqual([
       "data",
       "security",
@@ -477,6 +477,10 @@ describe("board lane, label and priority colours", () => {
       "report",
       "doc",
       "test",
+      "orange",
+      "green",
+      "indigo",
+      "red",
     ]);
   });
 

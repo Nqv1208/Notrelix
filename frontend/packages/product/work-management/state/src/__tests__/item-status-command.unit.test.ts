@@ -34,6 +34,7 @@ const baseCard = {
   workspaceId: "ws-1",
   title: "Việc",
   position: 1,
+  version: 1,
   status: "o-todo",
   statusOptionId: "o-todo",
   statusCategory: "todo" as const,
@@ -131,12 +132,14 @@ describe("runItemStatusCommand", () => {
     const call = updateStatus.mock.calls[0] as unknown as [
       string,
       string,
+      number,
       { idempotencyKey: string },
     ];
     expect(call[0]).toBe("i-1");
     expect(call[1]).toBe("o-doing");
-    expect(call[2].idempotencyKey.length).toBeGreaterThanOrEqual(8);
-    expect(call[2].idempotencyKey.length).toBeLessThanOrEqual(128);
+    expect(call[2]).toBe(1);
+    expect(call[3].idempotencyKey.length).toBeGreaterThanOrEqual(8);
+    expect(call[3].idempotencyKey.length).toBeLessThanOrEqual(128);
   });
 
   it("rolls the board and the item detail back when the write fails", async () => {
@@ -173,8 +176,14 @@ describe("runItemStatusCommand", () => {
     await runItemStatusCommand(queryClient, { updateStatus }, variables);
     const keys = updateStatus.mock.calls.map(
       (call) =>
-        (call as unknown as [string, string, { idempotencyKey: string }])[2]
-          .idempotencyKey,
+        (
+          call as unknown as [
+            string,
+            string,
+            number,
+            { idempotencyKey: string },
+          ]
+        )[3].idempotencyKey,
     );
     expect(new Set(keys).size).toBe(2);
   });
@@ -215,6 +224,7 @@ describe("runCreateItemInLane", () => {
     expect(services.updateStatus).toHaveBeenCalledWith(
       "i-new",
       "o-doing",
+      1,
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
@@ -259,11 +269,14 @@ describe("runCreateItemInLane", () => {
     });
     expect(optimisticValue).toBe("p-high");
     expect(services.updateStatus).not.toHaveBeenCalled();
-    expect(services.updateFieldValue).toHaveBeenCalledWith({
-      cardId: "i-new",
-      fieldDefinitionId: "field-priority",
-      value: "p-high",
-    });
+    expect(services.updateFieldValue).toHaveBeenCalledWith(
+      {
+        cardId: "i-new",
+        fieldDefinitionId: "field-priority",
+        value: "p-high",
+      },
+      { expectedVersion: 1 },
+    );
   });
 
   it("removes the optimistic card when the create fails", async () => {

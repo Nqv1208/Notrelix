@@ -186,8 +186,8 @@ describe("KanbanCard top row", () => {
   it.each([
     ["#579bfc", "data"],
     ["#e2445c", "security"],
-    ["#00c875", "training"],
-    ["#fdab3d", "report"],
+    ["#00c875", "green"],
+    ["#fdab3d", "orange"],
     ["#a25ddc", "test"],
     ["#c4c4c4", "doc"],
     ["not-a-colour", "doc"],
@@ -496,8 +496,8 @@ describe("KanbanCard assignee", () => {
     const group = within(article).getByRole("group", {
       name: "Assigned to Trần Minh Quân and 3 more",
     });
-    // Changed on purpose: two avatars then a +N chip (4 people: MQ, M2, +2).
-    expect(group.textContent).toBe("MQM2+2");
+    // Three avatars then a +N chip (4 people: MQ, M2, M3, +1).
+    expect(group.textContent).toBe("MQM2M3+1");
   });
 
   it("shows no assignee for a card without members", () => {

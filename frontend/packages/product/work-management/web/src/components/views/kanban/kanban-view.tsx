@@ -451,6 +451,19 @@ export function KanbanView({
     () => kanban.allLanes.flatMap((lane) => lane.cards),
     [kanban.allLanes],
   );
+  // Hooks sit above the loading and error returns below, so the order never changes between renders.
+  const faceFieldDefinitions = useMemo(
+    () =>
+      kanban.filterFields
+        .filter((entry) => !entry.builtin)
+        .map((entry) => entry.field),
+    [kanban.filterFields],
+  );
+  const orderedCardIds = useMemo(
+    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
+    [kanban.lanes],
+  );
+  const picking = useKanbanSelection(orderedCardIds);
   const lanesReady = !kanban.isLoading && Boolean(board);
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -577,13 +590,6 @@ export function KanbanView({
 
   // Swimlanes: rows of a second field under the columns. The lane field can
   // never be the column field.
-  const faceFieldDefinitions = useMemo(
-    () =>
-      kanban.filterFields
-        .filter((entry) => !entry.builtin)
-        .map((entry) => entry.field),
-    [kanban.filterFields],
-  );
   const columnFields = groupableFields(kanban.filterFields).filter((field) =>
     kanban.groupByFields.some((candidate) => candidate.id === field.id),
   );
@@ -850,11 +856,6 @@ export function KanbanView({
   /** The hover and focus actions of a card, each only when the viewer may do it. */
   const personField = board ? findItemFields(board).person : undefined;
   // Picking cards: only an editor can change several items at once.
-  const orderedCardIds = useMemo(
-    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
-    [kanban.lanes],
-  );
-  const picking = useKanbanSelection(orderedCardIds);
   const cardSelection = capabilities.canEditFields
     ? picking.selection
     : undefined;

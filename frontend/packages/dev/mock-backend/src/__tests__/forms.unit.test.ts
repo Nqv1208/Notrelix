@@ -151,8 +151,13 @@ describe("Forms in the mock world (WorkManagement.Forms.*)", () => {
       { title: "Yêu cầu cấp quyền" },
       key(),
     );
+    // Every form write names the version it read: 1 when new, one more after each change.
     await expect(
-      client.api.post(endpoints.forms.publish(id), {}, key()),
+      client.api.post(
+        `${endpoints.forms.publish(id)}?expectedVersion=1`,
+        {},
+        key(),
+      ),
     ).rejects.toMatchObject({ status: 409 });
     await client.api.post(
       endpoints.forms.questions(id),
@@ -163,11 +168,16 @@ describe("Forms in the mock world (WorkManagement.Forms.*)", () => {
         isRequired: true,
         configJson: '{"required":true}',
         position: "a0",
+        expectedVersion: 1,
       },
       key(),
     );
-    await client.api.post(endpoints.forms.publish(id), {}, key());
-    await client.api.delete(endpoints.forms.detail(id));
+    await client.api.post(
+      `${endpoints.forms.publish(id)}?expectedVersion=2`,
+      {},
+      key(),
+    );
+    await client.api.delete(`${endpoints.forms.detail(id)}?expectedVersion=3`);
     expect(
       (await client.api.get<unknown[]>(endpoints.forms.forBoard(BOARD))).length,
     ).toBe(3);
