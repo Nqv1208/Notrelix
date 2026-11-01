@@ -114,6 +114,28 @@ function summariseReactions(
   }));
 }
 
+/** The comments of an item as the comment routes answer them. */
+function commentDtos(store: MockStore, cardId: string): CommentDtoApi[] {
+  const me = store.getCurrentUser().id;
+  return store.getCardComments(cardId).map((cmt) => {
+    const user = store.getUser(cmt.userId);
+    return {
+      id: cmt.id,
+      cardId: cmt.cardId,
+      userId: cmt.userId,
+      userName: user?.name ?? "User",
+      userAvatar: user?.avatarUrl ?? null,
+      contentMd: cmt.contentMd,
+      createdAt: cmt.createdAt,
+      updatedAt: cmt.updatedAt ?? null,
+      isEdited: Boolean(cmt.updatedAt),
+      attachmentIds: cmt.attachmentIds ?? [],
+      parentCommentId: cmt.parentId ?? null,
+      reactions: summariseReactions(cmt.reactions ?? [], me, store),
+    };
+  });
+}
+
 /** The pages linked to each item, per store. */
 const pageLinks = new WeakMap<MockStore, Map<string, Set<string>>>();
 function linksOf(store: MockStore, itemId: string): Set<string> {
@@ -1694,29 +1716,32 @@ export const cardsOperations = [
     method: "GET",
     route: "/board-items/:cardId/comments",
     async handle({ params, store }) {
-      const c = store.getCard(params.cardId);
-      if (!c) return notFound("Card not found");
-      const comments = store.getCardComments(params.cardId);
-      const me = store.getCurrentUser().id;
-      return ok<CommentDtoApi[]>(
-        comments.map((cmt) => {
-          const user = store.getUser(cmt.userId);
-          return {
-            id: cmt.id,
-            cardId: cmt.cardId,
-            userId: cmt.userId,
-            userName: user?.name ?? "User",
-            userAvatar: user?.avatarUrl ?? null,
-            contentMd: cmt.contentMd,
-            createdAt: cmt.createdAt,
-            updatedAt: cmt.updatedAt ?? null,
-            isEdited: Boolean(cmt.updatedAt),
-            attachmentIds: cmt.attachmentIds ?? [],
-            parentCommentId: cmt.parentId ?? null,
-            reactions: summariseReactions(cmt.reactions ?? [], me, store),
-          };
-        }),
-      );
+      if (!store.getCard(params.cardId)) return notFound("Card not found");
+      return ok<CommentDtoApi[]>(commentDtos(store, params.cardId));
+    },
+  }),
+
+  // ─── GET /board-items/:cardId/comments/page ─────────────────────────────────────
+
+  // The popup reads comments in pages; the mock's thread is short, so one page holds it all.
+  defineMockOperation<
+    { cardId: string },
+    never,
+    { items: CommentDtoApi[]; nextCursor: string | null }
+  >({
+    id: "comments.page",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.GetBoardItemCommentsPage",
+    },
+    method: "GET",
+    route: "/board-items/:cardId/comments/page",
+    async handle({ params, store }) {
+      if (!store.getCard(params.cardId)) return notFound("Card not found");
+      return ok({
+        items: commentDtos(store, params.cardId),
+        nextCursor: null,
+      });
     },
   }),
 

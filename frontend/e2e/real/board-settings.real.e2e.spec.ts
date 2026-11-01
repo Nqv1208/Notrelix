@@ -10,7 +10,7 @@ function written(page: Page, method: string, route: RegExp) {
   );
 }
 
-test("a board manager renames the board, adds and renames a group and adds a field option from the settings page", async ({
+test("a board manager renames the board, adds and renames a group, and adds and renames a field option from the settings page", async ({
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -60,6 +60,11 @@ test("a board manager renames the board, adds and renames a group and adds a fie
   // Fields: add an option to the Status field.
   await page.getByRole("button", { name: /^Data fields/ }).click();
   await page.getByRole("button", { name: "Edit the field Status" }).click();
+  const optionInputs = page.getByRole("textbox", {
+    name: "Name of the option",
+  });
+  await expect(optionInputs.first()).toBeVisible();
+  const optionsBefore = await optionInputs.count();
   const optionName = `Option ${unique}`;
   await page.getByRole("button", { name: "Add option" }).click();
   const optionAdded = written(
@@ -73,4 +78,33 @@ test("a board manager renames the board, adds and renames a group and adds a fie
     .fill(optionName);
   await page.keyboard.press("Enter");
   expect((await optionAdded).status()).toBeLessThan(300);
+
+  // Fields: rename that option. The add row stays open (and is a textbox too) until the option is in:
+  // the "Add option" button is back only then, so only then is the last textbox the new option.
+  await expect(page.getByRole("button", { name: "Add option" })).toBeVisible();
+  await expect(optionInputs).toHaveCount(optionsBefore + 1);
+  const newOption = optionInputs.last();
+  await expect(newOption).toHaveValue(optionName);
+  const renamedOption = `${optionName} renamed`;
+  const optionRenamed = written(
+    page,
+    "PATCH",
+    /\/boards\/[^/]+\/fields\/[^/]+\/options\/[^/]+$/,
+  );
+  await newOption.fill(renamedOption);
+  await page.keyboard.press("Enter");
+  const renameResponse = await optionRenamed;
+  expect(renameResponse.status()).toBeLessThan(300);
+  expect(renameResponse.request().postDataJSON()).toMatchObject({
+    name: renamedOption,
+    expectedVersion: expect.any(Number),
+  });
+
+  // The new name is the server's: it is still there after a reload.
+  await page.reload();
+  await page.getByRole("button", { name: /^Data fields/ }).click();
+  await page.getByRole("button", { name: "Edit the field Status" }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Name of the option" }).last(),
+  ).toHaveValue(renamedOption);
 });

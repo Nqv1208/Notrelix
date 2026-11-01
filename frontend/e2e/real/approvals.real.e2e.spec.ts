@@ -264,10 +264,7 @@ test("an approver can reject with a comment and the requester hears it", async (
   await approverContext.close();
 });
 
-// The item page held the approval section and its "Request approval" menu entry; an item has no page
-// of its own any more (f2897fe9e) and the card popup has no approval block yet, so this journey has
-// no screen to drive. It stays, fixed up for the members read, until the lead places the section.
-test.fixme("a requester asks a board member to approve from the item page, sees it waiting, then sees the decision", async ({
+test("a requester asks a board member to approve from the card popup, the approver answers there, and the requester sees each answer", async ({
   browser,
   page,
 }) => {
@@ -299,19 +296,22 @@ test.fixme("a requester asks a board member to approve from the item page, sees 
   const itemId = (
     await apiWrite<{ id: string }>(page, "POST", `/boards/${board.id}/items`, {
       groupId,
-      title: `Ask from the page ${unique}`,
+      title: `Ask from the popup ${unique}`,
     })
   ).data!.id;
 
-  const itemPage = `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`;
-  await page.goto(itemPage);
-  const approval = page.locator('[data-f="item-approval"]');
-  // Nothing was asked yet: the rail has no approval block.
+  const popup = `/workspaces/${workspace.id}/boards/${board.id}?item=${itemId}`;
+  await page.goto(popup);
+  const approval = page.getByRole("region", { name: "Approval" });
+  // Nothing was asked yet: the side column has no approval block.
+  await expect(
+    page.getByRole("button", { name: "Card actions" }),
+  ).toBeVisible();
   await expect(approval).toHaveCount(0);
 
-  // The item menu offers the board members, not the person who asks.
+  // The card menu offers the board members, not the person who asks.
   const ask = async () => {
-    await page.getByRole("button", { name: "More", exact: true }).click();
+    await page.getByRole("button", { name: "Card actions" }).click();
     await page.getByRole("menuitem", { name: "Request approval" }).click();
   };
   await ask();
@@ -326,6 +326,13 @@ test.fixme("a requester asks a board member to approve from the item page, sees 
   await page.getByRole("menuitem", { name: approverName }).click();
   expect((await sent).status()).toBeLessThan(300);
   await expect(approval.getByText(`Waiting for ${approverName}`)).toBeVisible();
+  // The requester cannot decide their own request, only cancel it.
+  await expect(approval.getByRole("button", { name: "Approve" })).toHaveCount(
+    0,
+  );
+  await expect(
+    approval.getByRole("button", { name: "Cancel request" }),
+  ).toBeVisible();
 
   // Asking the same person again is refused with a notice, not a second request.
   await ask();
@@ -335,29 +342,53 @@ test.fixme("a requester asks a board member to approve from the item page, sees 
   );
   await expect(approval.getByRole("listitem")).toHaveCount(1);
 
-  // The approver decides; the item page shows the outcome.
-  const requests = await apiRead<{ id: string }[]>(
-    approver,
-    `/board-items/${itemId}/approval-requests`,
+  // The approver opens the same popup, is asked to decide, and rejects with a reason.
+  await approver.goto(
+    `/workspaces/${approverWorkspace.id}/boards/${board.id}?item=${itemId}`,
   );
-  expect(requests).toHaveLength(1);
-  expect(
-    (
-      await apiWrite(
-        approver,
-        "POST",
-        `/workspaces/${workspace.id}/approvals/${requests[0]!.id}/decision`,
-        { decision: "approve", comment: `Go ahead ${unique}` },
-      )
-    ).status,
-  ).toBeLessThan(300);
+  const approverBlock = approver.getByRole("region", { name: "Approval" });
+  await expect(approverBlock.getByText(/asked you to approve/)).toBeVisible();
+  await approverBlock
+    .getByRole("button", { name: "Reject", exact: true })
+    .click();
+  await approverBlock
+    .getByRole("textbox", { name: "Reason for rejecting (optional)" })
+    .fill(`Needs a budget ${unique}`);
+  const rejected = approver.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith("/decision"),
+  );
+  await approverBlock.getByRole("button", { name: "Reject request" }).click();
+  expect((await rejected).status()).toBeLessThan(300);
+  await expect(
+    approverBlock.getByText(`Rejected by ${approverName}`),
+  ).toBeVisible();
+  await expect(
+    approverBlock.getByRole("button", { name: "Approve" }),
+  ).toHaveCount(0);
+
+  // The requester reads the refusal and its reason, asks again, and the approver approves.
   await page.reload();
-  await expect(
-    page
-      .locator('[data-f="item-approval"]')
-      .getByText(`Approved by ${approverName}`),
-  ).toBeVisible();
-  await expect(
-    page.locator('[data-f="item-approval"]').getByText(`Go ahead ${unique}`),
-  ).toBeVisible();
+  await expect(approval.getByText(`Rejected by ${approverName}`)).toBeVisible();
+  await expect(approval.getByText(`Needs a budget ${unique}`)).toBeVisible();
+  await ask();
+  await page.getByRole("menuitem", { name: approverName }).click();
+  await expect(approval.getByText(`Waiting for ${approverName}`)).toBeVisible();
+  await expect(approval.getByRole("listitem")).toHaveCount(2);
+
+  await approver.reload();
+  const decided = approver.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith("/decision"),
+  );
+  await approver
+    .getByRole("region", { name: "Approval" })
+    .getByRole("button", { name: "Approve", exact: true })
+    .click();
+  expect((await decided).status()).toBeLessThan(300);
+  await page.reload();
+  await expect(approval.getByText(`Approved by ${approverName}`)).toBeVisible();
+  await approverContext.close();
 });

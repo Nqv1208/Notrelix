@@ -210,162 +210,181 @@ function MemberRow({
   const hasActions = caps.canRemove || caps.canSuspend || caps.canActivate;
 
   return (
-    <tr className="border-t border-border first:border-t-0 hover:bg-state-hover">
-      <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle">
-        <span className="flex min-w-0 items-center gap-3">
-          <IdentityMark
-            name={member.name}
-            tone={identityToneFor(member.userId)}
-            shape="round"
-            imageUrl={member.avatarUrl}
-          />
-          <span className="flex min-w-0 flex-col">
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-label text-foreground max-md:line-clamp-2 max-md:whitespace-normal max-md:break-words">
-                {member.name}
+    <>
+      <tr className="border-t border-border first:border-t-0 hover:bg-state-hover">
+        <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle">
+          <span className="flex min-w-0 items-center gap-3">
+            <IdentityMark
+              name={member.name}
+              tone={identityToneFor(member.userId)}
+              shape="round"
+              imageUrl={member.avatarUrl}
+            />
+            <span className="flex min-w-0 flex-col">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-label text-foreground max-md:line-clamp-2 max-md:whitespace-normal max-md:break-words">
+                  {member.name}
+                </span>
+                {isSelf ? (
+                  <Badge variant="secondary" className="shrink-0">
+                    {copy.you}
+                  </Badge>
+                ) : null}
               </span>
-              {isSelf ? (
-                <Badge variant="secondary" className="shrink-0">
-                  {copy.you}
-                </Badge>
+              {member.jobTitle ? (
+                <span className="truncate text-metadata text-muted-foreground max-md:whitespace-normal max-md:break-words">
+                  {member.jobTitle}
+                </span>
+              ) : null}
+              {blockedReason ? (
+                <span
+                  id={reasonId}
+                  className="flex items-start gap-1 text-metadata text-muted-foreground max-md:hidden"
+                >
+                  <Info
+                    aria-hidden="true"
+                    className="mt-0.5 size-3.5 shrink-0"
+                  />
+                  <span className="min-w-0 break-words">{blockedReason}</span>
+                </span>
               ) : null}
             </span>
-            {member.jobTitle ? (
-              <span className="truncate text-metadata text-muted-foreground">
-                {member.jobTitle}
-              </span>
-            ) : null}
-            {blockedReason ? (
-              <span
-                id={reasonId}
-                className="flex items-center gap-1 text-metadata text-muted-foreground"
-              >
-                <Info aria-hidden="true" className="size-3.5 shrink-0" />
-                <span className="truncate">{blockedReason}</span>
-              </span>
-            ) : null}
           </span>
-        </span>
-      </td>
-      <td className="px-2 py-2.5 align-middle whitespace-nowrap">
-        {caps.assignableRoles.length > 0 ? (
-          <Select
-            value={member.role}
-            disabled={pending}
-            onValueChange={(value) => {
-              const role = value as WorkspaceRole;
-              if (role === member.role) return;
-              if (ROLE_RANK[role] < ROLE_RANK[member.role])
-                onConfirm({ type: "demote", member, role });
-              else onChangeRole(member, role);
-            }}
-          >
-            <SelectTrigger
-              size="sm"
-              className="w-24 focus-visible:ring-focus-ring max-md:h-touch! sm:w-36"
-              aria-label={formatCopy(
-                pending ? copy.roleUpdating : copy.roleSelect,
-                { name: member.name },
-              )}
+        </td>
+        <td className="px-2 py-2.5 align-middle whitespace-nowrap">
+          {caps.assignableRoles.length > 0 ? (
+            <Select
+              value={member.role}
+              disabled={pending}
+              onValueChange={(value) => {
+                const role = value as WorkspaceRole;
+                if (role === member.role) return;
+                if (ROLE_RANK[role] < ROLE_RANK[member.role])
+                  onConfirm({ type: "demote", member, role });
+                else onChangeRole(member, role);
+              }}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {caps.assignableRoles.map((role) => (
-                <SelectItem
-                  key={role}
-                  value={role}
-                  description={copy.roleHelp[role]}
-                >
-                  {copy.roles[role]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <span
-            className="text-body text-foreground"
-            aria-describedby={blockedReason ? reasonId : undefined}
-          >
-            {copy.roles[member.role]}
-          </span>
-        )}
-      </td>
-      <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground md:table-cell">
-        {member.joinedAt ? formatters.date(member.joinedAt, DATE_FORMAT) : "—"}
-      </td>
-      <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap sm:table-cell">
-        {member.membership === "suspended" ? (
-          <Badge
-            variant="outline"
-            className="border-warning-subtle bg-warning-subtle text-warning-subtle-foreground"
-          >
-            {copy.status.suspended}
-          </Badge>
-        ) : member.membership === "active" ? (
-          <span className="text-metadata text-muted-foreground">
-            {copy.status.active}
-          </span>
-        ) : (
-          <span
-            className="text-metadata text-muted-foreground"
-            title={copy.status.unknownHint}
-          >
-            <span aria-hidden="true">{copy.status.unknown}</span>
-            <span className="sr-only">{copy.status.unknownHint}</span>
-          </span>
-        )}
-      </td>
-      <td className="w-12 px-2 py-2.5 text-right align-middle">
-        {pending ? (
-          <span className="inline-flex size-8 items-center justify-center">
-            <Spinner aria-hidden="true" />
-            <span className="sr-only">
-              {formatCopy(copy.roleUpdating, { name: member.name })}
-            </span>
-          </span>
-        ) : hasActions ? (
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={formatCopy(copy.rowMenu, { name: member.name })}
-                className="focus-visible:ring-focus-ring max-md:size-touch"
+              <SelectTrigger
+                size="sm"
+                className="w-24 focus-visible:ring-focus-ring max-md:h-touch! sm:w-36"
+                aria-label={formatCopy(
+                  pending ? copy.roleUpdating : copy.roleSelect,
+                  { name: member.name },
+                )}
               >
-                <MoreHorizontal aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {caps.canActivate ? (
-                <DropdownMenuItem onSelect={() => onActivate(member)}>
-                  {copy.actions.activate}
-                </DropdownMenuItem>
-              ) : null}
-              {caps.canSuspend ? (
-                <DropdownMenuItem
-                  onSelect={() => onConfirm({ type: "suspend", member })}
-                >
-                  {copy.actions.suspend}
-                </DropdownMenuItem>
-              ) : null}
-              {caps.canRemove ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={() => onConfirm({ type: "remove", member })}
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {caps.assignableRoles.map((role) => (
+                  <SelectItem
+                    key={role}
+                    value={role}
+                    description={copy.roleHelp[role]}
                   >
-                    <Trash2 aria-hidden="true" />
-                    {copy.actions.remove}
+                    {copy.roles[role]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span
+              className="text-body text-foreground"
+              aria-describedby={blockedReason ? reasonId : undefined}
+            >
+              {copy.roles[member.role]}
+            </span>
+          )}
+        </td>
+        <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground md:table-cell">
+          {member.joinedAt
+            ? formatters.date(member.joinedAt, DATE_FORMAT)
+            : "—"}
+        </td>
+        <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap sm:table-cell">
+          {member.membership === "suspended" ? (
+            <Badge
+              variant="outline"
+              className="border-warning-subtle bg-warning-subtle text-warning-subtle-foreground"
+            >
+              {copy.status.suspended}
+            </Badge>
+          ) : member.membership === "active" ? (
+            <span className="text-metadata text-muted-foreground">
+              {copy.status.active}
+            </span>
+          ) : (
+            <span
+              className="text-metadata text-muted-foreground"
+              title={copy.status.unknownHint}
+            >
+              <span aria-hidden="true">{copy.status.unknown}</span>
+              <span className="sr-only">{copy.status.unknownHint}</span>
+            </span>
+          )}
+        </td>
+        <td className="w-12 px-2 py-2.5 text-right align-middle">
+          {pending ? (
+            <span className="inline-flex size-8 items-center justify-center">
+              <Spinner aria-hidden="true" />
+              <span className="sr-only">
+                {formatCopy(copy.roleUpdating, { name: member.name })}
+              </span>
+            </span>
+          ) : hasActions ? (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={formatCopy(copy.rowMenu, { name: member.name })}
+                  className="focus-visible:ring-focus-ring max-md:size-touch"
+                >
+                  <MoreHorizontal aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {caps.canActivate ? (
+                  <DropdownMenuItem onSelect={() => onActivate(member)}>
+                    {copy.actions.activate}
                   </DropdownMenuItem>
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-      </td>
-    </tr>
+                ) : null}
+                {caps.canSuspend ? (
+                  <DropdownMenuItem
+                    onSelect={() => onConfirm({ type: "suspend", member })}
+                  >
+                    {copy.actions.suspend}
+                  </DropdownMenuItem>
+                ) : null}
+                {caps.canRemove ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => onConfirm({ type: "remove", member })}
+                    >
+                      <Trash2 aria-hidden="true" />
+                      {copy.actions.remove}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </td>
+      </tr>
+      {blockedReason ? (
+        // On a phone the member column is too narrow for the sentence: it takes the full row width below.
+        // The cell above keeps the hidden copy the role is described by.
+        <tr aria-hidden="true" className="md:hidden">
+          <td colSpan={5} className="px-4 pb-3">
+            <span className="flex items-start gap-1 text-metadata text-muted-foreground">
+              <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+              <span className="min-w-0 break-words">{blockedReason}</span>
+            </span>
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
 
@@ -799,7 +818,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                       )}
                     >
                       <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle max-md:min-w-24">
-                        <span className="block truncate text-label">
+                        <span className="block break-all text-label">
                           {invitation.email}
                         </span>
                         <span className="block truncate text-metadata tabular-nums text-muted-foreground sm:hidden">

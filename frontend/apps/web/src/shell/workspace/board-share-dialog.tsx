@@ -358,6 +358,10 @@ export function BoardShareDialog({
       log={log}
       impact={impact}
       notice={notice}
+      peopleState={
+        sharing.loading ? "loading" : sharing.failed ? "error" : undefined
+      }
+      onRetryPeople={sharing.reload}
       candidates={view.canManage && sharing.data ? candidates : undefined}
       onInvite={
         view.canManage && sharing.data

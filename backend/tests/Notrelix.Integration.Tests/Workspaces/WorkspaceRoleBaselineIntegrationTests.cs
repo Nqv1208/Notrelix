@@ -1,4 +1,6 @@
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Tokens;
@@ -27,6 +29,7 @@ using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
+using AppConflict = Notrelix.Application.Common.Exceptions.ConflictException;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
@@ -202,6 +205,64 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
 
         await denied.Should().ThrowAsync<AppForbidden>();
         (await _host.ReadAsync(c => c.WorkspaceInvitations.CountAsync(i => i.WorkspaceId == stack.WorkspaceId))).Should().Be(1);
+    }
+
+    private Task<int> InvitationCountAsync(OrgStack stack) =>
+        _host.ReadAsync(c => c.WorkspaceInvitations.CountAsync(i => i.WorkspaceId == stack.WorkspaceId));
+
+    [Fact]
+    public async Task Admin_CannotInviteAsAdmin_AndNothingIsPersisted()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        using var asAdmin = As(stack, admin);
+
+        var act = () => OrgTreeTestHost.SendAsync(asAdmin, new InviteMemberCommand(stack.WorkspaceId, "boss@example.com", WorkspaceRole.Admin));
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin);
+        (await InvitationCountAsync(stack)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task InvitingAnAddressWithAPendingInvitation_IsAConflictWithTheStableCode_AndAddsNoSecondRow()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        using var asAdmin = As(stack, admin);
+        await OrgTreeTestHost.SendAsync(asAdmin, new InviteMemberCommand(stack.WorkspaceId, "twice@example.com", WorkspaceRole.Member));
+
+        // The address is compared trimmed and lower-cased, so another spelling is the same person.
+        var act = () => OrgTreeTestHost.SendAsync(asAdmin, new InviteMemberCommand(stack.WorkspaceId, " Twice@Example.com ", WorkspaceRole.Guest));
+
+        (await act.Should().ThrowAsync<AppConflict>())
+            .Which.ErrorCode.Should().Be(InviteMemberCommandHandler.PendingInvitationExistsErrorCode);
+        (await InvitationCountAsync(stack)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task InviteMember_RetriedWithTheSameKey_ReplaysTheFirstInvitation_AndAddsNoSecondRow()
+    {
+        var (stack, admin, _, _) = await SeedAsync();
+        using var asAdmin = As(stack, admin);
+        var key = $"invite-{Guid.NewGuid():N}";
+        var command = new InviteMemberCommand(stack.WorkspaceId, "retry@example.com", WorkspaceRole.Member);
+
+        async Task<(Guid Id, bool Replay)> SendWithKeyAsync()
+        {
+            using var scope = asAdmin.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+                .Set(key, IdempotencyExecutionSource.Internal);
+            var result = (Result<Guid>)(await scope.ServiceProvider.GetRequiredService<ISender>().Send(command))!;
+            result.Succeeded.Should().BeTrue();
+            return (result.Data, scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContext>().IsReplay);
+        }
+
+        var first = await SendWithKeyAsync();
+        var second = await SendWithKeyAsync();
+
+        first.Replay.Should().BeFalse();
+        second.Replay.Should().BeTrue("the retry is served from the idempotency record, not executed again");
+        second.Id.Should().Be(first.Id);
+        (await InvitationCountAsync(stack)).Should().Be(1);
     }
 
     // ── RemoveMember / Suspend / Activate: Owner + Admin; Admin acts only on Member and Guest ──

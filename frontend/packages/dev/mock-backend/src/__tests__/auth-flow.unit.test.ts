@@ -115,6 +115,13 @@ describe("guest invitations", () => {
     expect(auth.acceptInvite("invite-erp-expired")).toBe("gone");
   });
 
+  it("has a workspace invitation that offers a role and names no board", () => {
+    const { auth } = directory();
+    const invite = auth.invite("invite-wsp-member");
+    expect(invite?.state).toBe("valid");
+    expect(invite?.workspaceRole).toBe("member");
+  });
+
   it("a declined invitation cannot be accepted afterwards", () => {
     const { auth } = directory();
     expect(auth.declineInvite("invite-erp-guest")).toBe(true);

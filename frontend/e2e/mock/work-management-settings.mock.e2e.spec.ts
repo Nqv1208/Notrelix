@@ -64,7 +64,7 @@ test.describe("board General settings", () => {
     expect(errors).toEqual([]);
   });
 
-  test("archiving asks first, then leaves the settings for the workspace", async ({
+  test("archiving asks first, then leaves the settings for the archived boards", async ({
     page,
   }) => {
     await openSection(page, ROADMAP, "general");
@@ -73,7 +73,10 @@ test.describe("board General settings", () => {
       .getByRole("alert")
       .getByRole("button", { name: /Archive/ })
       .click();
-    await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary$/);
+    // The page that lists archived boards names the way back (onLeave of the settings route).
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/archived-boards\?tab=archived$/,
+    );
   });
 
   test("deleting needs the board name typed, then leaves the settings", async ({
@@ -87,7 +90,9 @@ test.describe("board General settings", () => {
       .fill("Product Roadmap");
     await expect(remove).toBeEnabled();
     await remove.click();
-    await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary$/);
+    await expect(page).toHaveURL(
+      /\/workspaces\/mock-workspace-primary\/archived-boards\?tab=deleted$/,
+    );
   });
 });
 
@@ -156,13 +161,16 @@ test.describe("comments", () => {
     ).toBeEnabled();
   });
 
-  test("a comment's menu in the side sheet is reachable above the Kanban scroll arrow", async ({
+  test("the popup offers an own comment's Edit and Delete and opens the editor in place", async ({
     page,
   }) => {
+    // The popup lists the actions under the comment instead of in a menu over the Kanban.
     await page.goto(`${ROADMAP}?view=kanban&item=card-main-0001`);
     const sheet = page.getByRole("dialog", { name: "Ship mock runtime" });
-    await sheet.getByRole("button", { name: "Comment actions" }).click();
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
+    await expect(sheet.getByRole("button", { name: "Delete" })).toBeVisible();
+    await sheet.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(sheet.getByRole("button", { name: "Save" })).toBeVisible();
+    await expect(sheet.getByRole("button", { name: "Cancel" })).toBeVisible();
   });
 });
 
@@ -174,7 +182,7 @@ test.describe("views and the item sheet", () => {
     await expect(
       page.getByRole("region", { name: "Cần làm", exact: true }),
     ).toBeVisible();
-    await page.getByRole("button", { name: /^Group by/ }).click();
+    await page.getByRole("button", { name: /^Group:/ }).click();
     await page.getByRole("menuitemradio", { name: "Phân hệ ERP" }).click();
     await expect(page).toHaveURL(/groupBy=mock-erp-col-module/);
     await expect(
@@ -201,30 +209,21 @@ test.describe("views and the item sheet", () => {
     await expect(page.getByRole("radio", { name: "Month" })).toBeChecked();
   });
 
-  test("Move to group puts the item in the chosen group and the settings count follows", async ({
+  test("the card popup's column picker moves the item and the Kanban lane counts follow", async ({
     page,
   }) => {
+    // The popup's header writes the item's Status like a drag between lanes does; a board group has
+    // no picker while the board has a Status field.
     const errors = trackErrors(page);
     await page.goto(`${ERP}?view=kanban`);
-    await expect(
-      page.getByRole("region", { name: "Cần làm", exact: true }),
-    ).toBeVisible();
-
-    async function groupCount(name: string) {
-      await page.getByRole("button", { name: "Settings", exact: true }).click();
-      await page.getByRole("button", { name: /^Task groups/ }).click();
-      await expect(page.getByText(/^\d+ items?$/).first()).toBeVisible();
-      const text = await page.locator("main").innerText();
-      await page.getByRole("link", { name: "Back to the board" }).click();
-      await expect(
-        page.getByRole("region", { name: "Cần làm", exact: true }),
-      ).toBeVisible();
-      return Number(new RegExp(`${name}\\s+(\\d+) items?`).exec(text)![1]);
-    }
-
+    const lane = (name: string) =>
+      page.getByRole("region", { name, exact: true });
+    await expect(lane("Cần làm")).toBeVisible();
+    const count = async (name: string) =>
+      Number(await lane(name).getAttribute("data-lane-count"));
     const before = {
-      target: await groupCount("Kiểm thử"),
-      source: await groupCount("Đào tạo và vận hành"),
+      source: await count("Cần làm"),
+      target: await count("Đang làm"),
     };
     await page
       .getByRole("button", {
@@ -233,24 +232,22 @@ test.describe("views and the item sheet", () => {
       })
       .click();
     const sheet = page.getByRole("dialog");
-    await sheet.getByRole("button", { name: "More" }).click();
-    await page.getByRole("menuitem", { name: "Move to group" }).click();
-    await page.getByRole("menuitem", { name: "Kiểm thử" }).click();
-    await expect(page.getByRole("menu")).toHaveCount(0);
-    await sheet.getByRole("button", { name: /^Close/ }).click();
+    await sheet.getByRole("button", { name: "Cần làm", exact: true }).click();
+    await page.getByRole("option", { name: "Đang làm" }).click();
+    await sheet.getByRole("button", { name: "Close", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
-    expect(await groupCount("Kiểm thử")).toBe(before.target + 1);
-    expect(await groupCount("Đào tạo và vận hành")).toBe(before.source - 1);
+    await expect.poll(() => count("Đang làm")).toBe(before.target + 1);
+    expect(await count("Cần làm")).toBe(before.source - 1);
     expect(errors).toEqual([]);
   });
 
-  test("the item page asks a person for approval and lists the request", async ({
+  test("the card popup asks a person for approval and lists the request", async ({
     page,
   }) => {
     await page.goto(`${ERP}/items/mock-erp-item-142`);
     await expect(page.locator("[data-f=item-approval]")).toHaveCount(0);
-    await page.getByRole("button", { name: "More", exact: true }).click();
+    await page.getByRole("button", { name: "Card actions" }).click();
     await page.getByRole("menuitem", { name: "Request approval" }).click();
     await page.getByRole("menuitem", { name: /Jordan Lee/ }).click();
     await expect(page.locator("[data-f=item-approval]")).toContainText(
@@ -262,7 +259,7 @@ test.describe("views and the item sheet", () => {
     await page.goto(`${ERP}?view=table&item=mock-erp-item-149`);
     const title = page
       .getByRole("dialog")
-      .getByRole("textbox", { name: "Edit title" });
+      .getByRole("textbox", { name: "Card title" });
     await title.click();
     await page.keyboard.press("ControlOrMeta+A");
     await page.keyboard.type("ERP-149 retitled");
