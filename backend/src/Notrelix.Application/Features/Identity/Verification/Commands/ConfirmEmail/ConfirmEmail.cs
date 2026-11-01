@@ -20,6 +20,9 @@ public sealed record ConfirmEmailResultDto(
 public sealed class ConfirmEmailCommandHandler
     : IRequestHandler<ConfirmEmailCommand, Result<ConfirmEmailResultDto>>
 {
+    /// <summary>Public Identity error code of a link that was valid and has run out (answered as 400).</summary>
+    public const string TokenExpiredCode = "identity.email-verification.token-expired";
+
     private readonly IIdentityDbContext _identityContext;
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -74,7 +77,9 @@ public sealed class ConfirmEmailCommandHandler
         if (now >= token.ExpiresAt)
         {
             token.Expire(now);
-            return Result<ConfirmEmailResultDto>.Failure("Verification token has expired.");
+            // Only the holder of a live link learns it ran out; an unknown or used token keeps the generic answer.
+            return Result<ConfirmEmailResultDto>.Failure(new ApplicationError(
+                TokenExpiredCode, "Verification token has expired.", ApplicationErrorType.BusinessRule));
         }
 
         var user = await _identityContext.Users

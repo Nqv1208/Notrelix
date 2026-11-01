@@ -545,4 +545,50 @@ describe("verify email flow: the single-use link", () => {
     ).toBeTruthy();
     expect(confirmEmail).toHaveBeenCalledTimes(2);
   });
+
+  it("says the link has expired, with the new-link form, when the server answers the expired code", async () => {
+    const confirmEmail = vi.fn().mockRejectedValue({
+      status: 400,
+      details: { errorCode: "identity.email-verification.token-expired" },
+    });
+    renderPureUi(
+      <Providers>
+        <VerifyEmailFlow
+          service={asService({ confirmEmail })}
+          navigation={navigation()}
+          token="v1.expired-link"
+        />
+      </Providers>,
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: copy.verifyEmail.expiredTitle,
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: copy.verifyEmail.send }),
+    ).toBeTruthy();
+  });
+
+  it("keeps the dead-link state for an unknown or used link (no expired code)", async () => {
+    const confirmEmail = vi.fn().mockRejectedValue({
+      status: 400,
+      details: { errorCode: "validation.failed" },
+    });
+    renderPureUi(
+      <Providers>
+        <VerifyEmailFlow
+          service={asService({ confirmEmail })}
+          navigation={navigation()}
+          token="v1.used-link"
+        />
+      </Providers>,
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: copy.verifyEmail.failedTitle,
+      }),
+    ).toBeTruthy();
+    expect(screen.queryByText(copy.verifyEmail.expiredTitle)).toBeNull();
+  });
 });
