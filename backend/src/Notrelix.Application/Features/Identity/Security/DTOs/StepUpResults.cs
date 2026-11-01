@@ -10,3 +10,9 @@ public sealed record StepUpRequirementResult(
 public sealed record StepUpProofResult(
     string ProofToken,
     DateTimeOffset ExpiresAt);
+
+/// <summary>What a fresh provider re-authentication granted: one proof, and for EnrollMfa a second (the activation spends its own).</summary>
+public sealed record OAuthStepUpResult(StepUpProofResult Proof, StepUpProofResult? SpareProof);
+
+/// <summary>The proof(s) of a provider re-authentication, handed to the page once.</summary>
+public sealed record ProviderStepUpClaimResult(string ProofToken, string? SpareProofToken);

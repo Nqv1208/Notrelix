@@ -66,6 +66,10 @@ export interface SecurityDetails {
   pendingEnrollment: string | null;
   /** Single-use proofs handed out by a completed step-up, with their purpose. */
   proofs: Map<string, string>;
+  /** The provider a person with no password signs in with (`null` = has a password). */
+  signInProvider: string | null;
+  /** The proof(s) a provider re-authentication left in the (mock) httpOnly cookie, until claimed. */
+  providerProofs: string[] | null;
 }
 
 /** `Collaboration.Preferences`: the types of the matrix and the two channels delivered. */
@@ -169,6 +173,8 @@ const defaultSecurity = (offsetMinutes: (m: number) => string) => {
     stepUpFailures: 0,
     pendingEnrollment: null,
     proofs: new Map<string, string>(),
+    signInProvider: null,
+    providerProofs: null,
   } satisfies SecurityDetails;
 };
 
@@ -260,6 +266,18 @@ export class MockAccountPages {
   forgetDefaultWorkspace(userId: string, workspaceId: string): void {
     if (this.defaultWorkspace.get(userId) === workspaceId)
       this.defaultWorkspace.delete(userId);
+  }
+
+  /** The mock's Google account: no password and no second factor, only the provider they sign in with. */
+  becomeProviderOnly(
+    userId: string,
+    provider: string,
+    offsetMinutes: (m: number) => string,
+  ): void {
+    const security = this.securityOf(userId, offsetMinutes);
+    security.signInProvider = provider;
+    security.twoFactorEnabled = false;
+    security.recoveryCodesLeft = 0;
   }
 
   /** The address of the person's new photo; a new upload changes `v`. */

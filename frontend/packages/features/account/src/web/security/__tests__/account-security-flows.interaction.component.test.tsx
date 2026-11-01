@@ -32,6 +32,7 @@ function renderFlow(
     onCloseFlow: vi.fn(),
     onConfirmSignOutThis: vi.fn(),
     onPasswordChangedContinue: vi.fn(),
+    onStartProviderStepUp: vi.fn(),
     ...overrides,
   };
   return { props, view: renderPureUi(<AccountSecuritySurface {...props} />) };
@@ -269,6 +270,69 @@ describe("AccountSecuritySurface step-up and two-factor flows", () => {
       fireEvent.click(signIn);
       expect(props.onPasswordChangedContinue).toHaveBeenCalledTimes(1);
       view.unmount();
+    }
+  });
+
+  it("FUI[account.security:stepup-provider] offers the provider re-authentication instead of a password the person does not have", () => {
+    for (const locale of LOCALES) {
+      const t = securityCopyFixture(locale).flow;
+      const { props, view } = renderFlow(
+        {
+          kind: "stepUp",
+          purpose: "enroll",
+          factor: "provider",
+          providers: ["Google"],
+          error: null,
+        },
+        locale,
+      );
+      expect(screen.getByText(t.providerText, { exact: false })).toBeTruthy();
+      // No field to type into: a password prompt here would be a dead end.
+      expect(screen.queryByLabelText(t.passwordLabel)).toBeNull();
+      expect(screen.queryByLabelText(t.codeLabel)).toBeNull();
+      const confirm = screen.getByRole("button", {
+        name: t.providerButton.replace("{{provider}}", "Google"),
+      });
+      expect(document.activeElement).toBe(confirm);
+      fireEvent.click(confirm);
+      expect(props.onStartProviderStepUp).toHaveBeenCalledWith("Google");
+      fireEvent.click(screen.getByRole("button", { name: t.cancel }));
+      expect(props.onCloseFlow).toHaveBeenCalledTimes(1);
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.security:stepup-provider-failed] says the provider could not confirm the person, and a person with no provider is told what to set up", () => {
+    for (const locale of LOCALES) {
+      const t = securityCopyFixture(locale).flow;
+      const failed = renderFlow(
+        {
+          kind: "stepUp",
+          purpose: "others",
+          factor: "provider",
+          providers: ["Google"],
+          error: "failed",
+        },
+        locale,
+      );
+      expect(screen.getByRole("alert").textContent).toBe(
+        t.providerFailed.replace("{{provider}}", "Google"),
+      );
+      failed.view.unmount();
+
+      const none = renderFlow(
+        {
+          kind: "stepUp",
+          purpose: "others",
+          factor: "provider",
+          providers: [],
+          error: null,
+        },
+        locale,
+      );
+      expect(screen.getByText(t.providerNone)).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /Google/ })).toBeNull();
+      none.view.unmount();
     }
   });
 });

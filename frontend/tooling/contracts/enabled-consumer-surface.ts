@@ -185,6 +185,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Security.StepUpClaimProvider",
+    operationId: "Identity.Security.StepUpClaimProvider",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.OAuth.StepUpStart",
+    operationId: "Identity.Auth.OAuth.StepUpStart",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Mfa.Disable",
     operationId: "Identity.Mfa.Disable",
     mutation: true,
