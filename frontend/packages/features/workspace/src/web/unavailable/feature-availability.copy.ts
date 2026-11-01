@@ -81,15 +81,8 @@ export const en = {
     } as Readonly<Record<string, string>>,
     plan: {
       title: "Current plan",
-      lede: "The plan applies to every workspace of the account.",
+      lede: "The plan applies to every workspace of the account. Notrelix sets it for your account.",
       current: "Current plan",
-      switchTitle: "Switch plan",
-      switchNote:
-        "Development only. No payment is taken; only the account owner can switch.",
-      switchTo: "Switch to {{plan}}",
-      changing: "Switching the plan",
-      failed: "The plan could not be switched.",
-      ownerOnly: "Only the account owner can switch the plan.",
     },
     unavailableTitle: "Not available yet",
     unavailableBody:
@@ -181,15 +174,8 @@ export const vi: FeatureAvailabilityCopy = {
     },
     plan: {
       title: "Gói hiện tại",
-      lede: "Gói áp dụng cho mọi workspace của tài khoản.",
+      lede: "Gói áp dụng cho mọi workspace của tài khoản. Notrelix thiết lập gói cho tài khoản của bạn.",
       current: "Gói hiện tại",
-      switchTitle: "Đổi gói",
-      switchNote:
-        "Chỉ dùng khi phát triển. Không thu tiền; chỉ chủ tài khoản được đổi.",
-      switchTo: "Chuyển sang {{plan}}",
-      changing: "Đang đổi gói",
-      failed: "Không đổi được gói.",
-      ownerOnly: "Chỉ chủ tài khoản được đổi gói.",
     },
     unavailableTitle: "Chưa khả dụng",
     unavailableBody:

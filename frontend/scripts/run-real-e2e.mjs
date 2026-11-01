@@ -20,7 +20,14 @@ const webEnv = {
   VITE_MOCK_API: "false",
 };
 
+const operatorEnv = {
+  ...process.env,
+  VITE_OPERATOR_API_URL: realBackend.operatorApiUrl,
+  REAL_E2E_OPERATOR_URL: realBackend.operatorUrl,
+};
+
 let preview;
+let operatorPreview;
 let failed = false;
 
 try {
@@ -45,9 +52,26 @@ try {
     { env: webEnv },
   );
   await waitForUrl(realBackend.appUrl, 120_000);
+  await runFrontend("pnpm", ["--filter", "@notrelix/app-operator", "build"], {
+    env: operatorEnv,
+  });
+  operatorPreview = start(
+    "pnpm",
+    [
+      "--filter",
+      "@notrelix/app-operator",
+      "preview",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      realBackend.operatorPort,
+    ],
+    { env: operatorEnv },
+  );
+  await waitForUrl(realBackend.operatorUrl, 120_000);
   // Anything after the script name (spec paths, --grep) goes to Playwright.
   await runFrontend("pnpm", ["e2e:real:test", ...process.argv.slice(2)], {
-    env: webEnv,
+    env: { ...webEnv, ...operatorEnv },
   });
 } catch (error) {
   failed = true;
@@ -59,6 +83,7 @@ try {
   }
 } finally {
   await stopProcess(preview);
+  await stopProcess(operatorPreview);
   try {
     await down();
   } catch (cleanupError) {

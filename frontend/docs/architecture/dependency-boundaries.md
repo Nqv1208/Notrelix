@@ -1067,6 +1067,15 @@ according to current manifest.
 
 ---
 
+## 69.1 Operator host dependencies
+
+`@notrelix/app-operator` (`apps/operator`, freeze scope `core-production`) may import `ui-tokens`, `ui-web` and
+`contracts`. The allow-list is deliberately as small as marketing's: the console has no tenant runtime, session,
+query cache or product capability, so none of those packages is reachable from it. Adding a package to it is an
+architecture change (see `hosts-composition-routing.md`, section 3.1, for why it is a separate host).
+
+---
+
 # 70. FE-DEP-035 — Marketing cannot import authenticated product runtime
 
 Marketing MUST NOT depend on:
