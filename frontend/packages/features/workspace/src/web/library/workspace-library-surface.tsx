@@ -868,7 +868,7 @@ export function WorkspaceLibrarySurface({
                                 name: entry.name,
                               })}
                               onClick={() => onMoveEntry(entry)}
-                              className="text-muted-foreground opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 focus-visible:ring-focus-ring"
+                              className="text-muted-foreground opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 focus-visible:ring-focus-ring max-md:-my-0.5 max-md:size-touch max-md:opacity-100"
                             >
                               <ArrowRightLeft aria-hidden="true" />
                             </Button>
@@ -890,10 +890,10 @@ export function WorkspaceLibrarySurface({
                             )}
                             onClick={() => onSetPinned([entry], !entry.pinned)}
                             className={cn(
-                              "focus-visible:ring-focus-ring",
+                              "focus-visible:ring-focus-ring max-md:-my-0.5 max-md:size-touch",
                               entry.pinned
                                 ? "text-brand-ink"
-                                : "text-muted-foreground opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100",
+                                : "text-muted-foreground opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 max-md:opacity-100",
                             )}
                           >
                             {pending ? (

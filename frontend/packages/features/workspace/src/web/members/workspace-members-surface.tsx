@@ -177,6 +177,8 @@ function RowsSkeleton({ label, rows = 5 }: { label: string; rows?: number }) {
   );
 }
 
+// The row menu is not modal: a modal menu hides the page with aria-hidden while the row's own controls stay
+// focusable, which axe reports as aria-hidden-focus.
 function MemberRow({
   member,
   copy,
@@ -260,7 +262,7 @@ function MemberRow({
           >
             <SelectTrigger
               size="sm"
-              className="w-24 focus-visible:ring-focus-ring sm:w-36"
+              className="w-24 focus-visible:ring-focus-ring max-md:h-touch! sm:w-36"
               aria-label={formatCopy(
                 pending ? copy.roleUpdating : copy.roleSelect,
                 { name: member.name },
@@ -323,13 +325,13 @@ function MemberRow({
             </span>
           </span>
         ) : hasActions ? (
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon-sm"
                 aria-label={formatCopy(copy.rowMenu, { name: member.name })}
-                className="focus-visible:ring-focus-ring"
+                className="focus-visible:ring-focus-ring max-md:size-touch"
               >
                 <MoreHorizontal aria-hidden="true" />
               </Button>
@@ -449,7 +451,7 @@ function InviteForm({
               aria-describedby={message ? errorId : undefined}
               onChange={(event) => setEmail(event.target.value)}
               onBlur={() => email && setTouched(true)}
-              className="min-h-10 resize-y"
+              className="min-h-10 resize-y max-md:min-h-touch"
             />
           ) : (
             <Input
@@ -462,6 +464,7 @@ function InviteForm({
               aria-describedby={message ? errorId : undefined}
               onChange={(event) => setEmail(event.target.value)}
               onBlur={() => email && setTouched(true)}
+              className="max-md:h-touch"
             />
           )}
           {message ? (
@@ -480,7 +483,7 @@ function InviteForm({
               setRole(value as CreateWorkspaceInvitationInput["role"])
             }
           >
-            <SelectTrigger id={roleId} className="w-full">
+            <SelectTrigger id={roleId} className="w-full max-md:h-touch!">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -492,7 +495,11 @@ function InviteForm({
             </SelectContent>
           </Select>
         </Field>
-        <Button type="submit" disabled={inviting} className="sm:mt-8">
+        <Button
+          type="submit"
+          disabled={inviting}
+          className="hover:bg-primary/90 max-md:h-touch sm:mt-8"
+        >
           <Mail aria-hidden="true" />
           {inviting ? copy.invitations.sending : copy.invitations.send}
         </Button>
@@ -640,7 +647,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
               value={filter}
               placeholder={copy.filter.placeholder}
               onChange={(event) => setFilter(event.target.value)}
-              className="h-8 pl-8"
+              className="h-8 pl-8 max-md:h-touch"
             />
           </div>
           {shownMembers.length === 0 ? (
@@ -814,7 +821,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                           >
                             <SelectTrigger
                               size="sm"
-                              className="w-36"
+                              className="w-36 max-md:h-touch!"
                               aria-label={formatCopy(
                                 copy.invitations.roleOfInvitation,
                                 { email: invitation.email },
@@ -861,7 +868,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                               { email: invitation.email },
                             )}
                             onClick={() => props.onResend?.(invitation)}
-                            className="text-muted-foreground hover:bg-state-hover hover:text-foreground focus-visible:ring-focus-ring"
+                            className="text-muted-foreground hover:bg-state-hover hover:text-foreground focus-visible:ring-focus-ring max-md:size-touch"
                           >
                             <RotateCw aria-hidden="true" />
                           </Button>
@@ -879,7 +886,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                           onClick={() =>
                             setConfirmation({ type: "revoke", invitation })
                           }
-                          className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-text focus-visible:ring-focus-ring"
+                          className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-text focus-visible:ring-focus-ring max-md:size-touch"
                         >
                           {pending ? (
                             <Spinner aria-hidden="true" />
@@ -911,7 +918,11 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
           </p>
         </div>
         {invitations && activeTab === "members" ? (
-          <Button size="sm" onClick={() => onTabChange("invitations")}>
+          <Button
+            size="sm"
+            onClick={() => onTabChange("invitations")}
+            className="hover:bg-primary/90 max-md:h-touch"
+          >
             <UserPlus aria-hidden="true" />
             {copy.invite}
           </Button>
@@ -923,8 +934,12 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
           value={activeTab}
           onValueChange={(value) => onTabChange(value as MembersTab)}
         >
-          <TabsList aria-label={copy.tabs.label}>
-            <TabsTrigger value="members" onClick={() => onTabChange("members")}>
+          <TabsList aria-label={copy.tabs.label} className="max-md:h-auto!">
+            <TabsTrigger
+              value="members"
+              onClick={() => onTabChange("members")}
+              className="max-md:h-touch!"
+            >
               {copy.tabs.members}
               {members.status === "ready" ? (
                 <span className="tabular-nums text-muted-foreground">
@@ -935,6 +950,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
             <TabsTrigger
               value="invitations"
               onClick={() => onTabChange("invitations")}
+              className="max-md:h-touch!"
             >
               {copy.tabs.invitations}
               {invitations.status === "ready" && pendingCount > 0 ? (
@@ -969,8 +985,14 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{copy.confirm.cancel}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirm}>
+            <AlertDialogCancel className="max-md:h-touch">
+              {copy.confirm.cancel}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={confirm}
+              className="max-md:h-touch"
+            >
               {confirmText?.action}
             </AlertDialogAction>
           </AlertDialogFooter>
