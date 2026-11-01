@@ -44,14 +44,14 @@ Letters follow the Accounts list in the team spec (section 4).
 | A | Account create | 3 | 2 | 0 | 1 | 0 | 0 | 0 |
 | B | Account read | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | C | Account update | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| D | Account lifecycle transition | 6 | 1 | 2 | 0 | 0 | 0 | 3 |
+| D | Account lifecycle transition | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
 | E | Account-context resolution | 3 | 0 | 2 | 1 | 0 | 0 | 0 |
 | F | Account switch / transition behavior | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | G | Account-scoped frontend state isolation | 3 | 1 | 2 | 0 | 0 | 0 | 0 |
 | H | Account-level administration integration | 20 | 6 | 14 | 0 | 0 | 0 | 0 |
-| | Total | 42 | 15 | 22 | 2 | 0 | 0 | 3 |
+| | Total | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. No use case is HARDENING: no `frontend/e2e/real` spec exercises an Account use case (the only real spec near it, `email-confirmation.real.e2e.spec.ts`, covers registration, which creates the personal Account as a side effect).
+No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
 
 How "IMPLEMENTING" is used here: for lifecycle, member, invitation, domain, IdP, SCIM, region and route use cases the Domain aggregate and its tests exist, but no Application command, query or endpoint exists. They cannot run at all.
 
@@ -110,7 +110,7 @@ Not matched on purpose: org-wide 2FA enforcement and session policy (Identity an
 
 Capability letters: A Account create, B Account read, C Account update, D Account lifecycle transition, E Account-context resolution, F Account switch / transition behavior, G Account-scoped frontend state isolation, H Account-level administration integration.
 
-Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and tests, no command or endpoint) or `no`. Design is `none` when the canvas has no artboard. Real e2e is `none` for every row today.
+Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and tests, no command or endpoint) or `no`. Design is `none` when the canvas has no artboard. Real e2e is `yes` for D01 and D02 (`operator-suspension.real.e2e.spec.ts`), `partial` for A01 and `none` for every other row.
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
@@ -122,11 +122,11 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-B03 | See the derived plan label | B | Account member | domain only | no | none | none | DEFINED | Billing fact, no PlanCode writer |
 | UC-ACC-C01 | Rename the Account | C | Account Owner, Admin | yes | no | none | none | IMPLEMENTING | Expected version, UI, suspended rule |
 | UC-ACC-C02 | Set the legal name (enterprise baseline) | C | Account Owner, Admin | partial | no | none | none | DEFINED | Update operation, command |
-| UC-ACC-D01 | Suspend an Account | D | Platform operator | domain only | no | none | none | BLOCKED | Operator principal undecided |
-| UC-ACC-D02 | Lift a suspension | D | Platform operator | domain only | no | none | none | BLOCKED | Operator principal undecided |
+| UC-ACC-D01 | Suspend an Account | D | Platform operator | yes | yes | none | yes | HARDENING | Reactions of other contexts (D06), tenant banner, integrations in the impact preview |
+| UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | HARDENING | Same as D01 |
 | UC-ACC-D03 | Close an Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, impact preview, reactions |
 | UC-ACC-D04 | Reopen a closed Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, reactions |
-| UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | BLOCKED | Owner deferred deletion |
+| UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built. |
 | UC-ACC-D06 | Other contexts react to suspension and closure | D | System | no | no | none | none | DEFINED | Consumers in four contexts |
 | UC-ACC-E01 | Resolve the current Account for a request | E | Any signed-in actor | yes | partial | none | none | INTEGRATING | Non-deterministic bootstrap pick; FE uses User.id |
 | UC-ACC-E02 | Deny access to another Account identically | E | Any actor | yes | no | none | none | IMPLEMENTING | FE denied state; cross-tenant test per use case |
@@ -287,7 +287,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 
 ### UC-ACC-D01 Suspend an Account
 - Capability: D Account lifecycle transition
-- Actors and permission: platform operator (system principal). Product doc section 14 does not say who may suspend; the principal model for operators is undefined.
+- Actors and permission: the platform operator (owner decision 2026-10-31): a separate operator account with its own sign-in scheme and database login, never a tenant user (`backend/docs/architecture/security-tenancy-authorization.md` section 12.4).
 - Preconditions: Account exists and is not Deleted.
 - Input: Account id, reason (required, up to 500 characters), `expectedVersion`.
 - Output: status Suspended, version +1, `AccountSuspended` fact with the previous status and reason, audit record. No content is deleted.
@@ -296,12 +296,12 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: destructive confirmation (impact preview), conflict, pending; members of the Account see a suspended banner and read-only state.
 - Rules: accounts sections 14, 15, 72, ACC-005, ACC-019; IAREQ026, IAREQ030.
 - Acceptance: Given an Active Account, When an operator suspends it, Then status is Suspended, one event is raised and no data is deleted.
-- Evidence: BE `Account.Suspend` (no caller) · FE none · Design none · Tests `AccountTests` (suspend cases) · Real e2e none
-- State: BLOCKED — decide who is the operator principal and how it is authenticated, audited and separated from tenant RLS. Until then no endpoint may exist.
+- Evidence: BE `POST /operator/v1/accounts/{accountId}/suspend` (`Operator.Account.Suspend`, `OperatorAccountService`), the `AccountSuspended` access fact and the write refusal in `AccessPolicyEngine` · FE `frontend/apps/operator` (tenant detail, impact preview with two counts, reason dialog) · Design none (the canvas has no operator artboard) · Tests Domain `AccountOperatorLifecycleTests` (+`OperatorAccountTests`, `PlanRevisionTests`: 20 in all), Application `OperatorAccountServiceTests` (10: success, each rejection, no-op without audit, stale version), Integration `OperatorConsoleIntegrationTests` (29 on a real Postgres with the operator login: suspend blocks a workspace-scoped and a resource-scoped tenant write and keeps reads, audit row with actor, reason, before, after and time), Architecture `AccountSuspensionWriteGateArchitectureTests` (every tenant-scoped write loads the facts) · Real e2e `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` (3 real specs passed 2026-11-01)
+- State: HARDENING — Other contexts do not react yet (D06: sessions, integrations, background and automation writes, anonymous form and webhook writes still run on a suspended Account); no suspended banner or read-only presentation in the tenant UI (the refusal shows as the generic error toast with the server message); the impact preview shows members and workspaces only; no design artboard exists for the console.
 
 ### UC-ACC-D02 Lift a suspension
 - Capability: D Account lifecycle transition
-- Actors and permission: platform operator (same undecided principal as D01).
+- Actors and permission: the platform operator (same principal as D01).
 - Preconditions: Account is Suspended.
 - Input: Account id, `expectedVersion`.
 - Output: status Active, version +1, `AccountActivated` fact, audit record.
@@ -310,8 +310,8 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: confirmation, conflict, pending.
 - Rules: accounts sections 13, 14, 19; ACC-005.
 - Acceptance: Given a Suspended Account, When lifted, Then status is Active and members can write again.
-- Evidence: BE `Account.Activate` (no caller) · FE none · Design none · Tests `AccountTests` · Real e2e none
-- State: BLOCKED — same operator-principal decision as D01.
+- Evidence: BE `POST /operator/v1/accounts/{accountId}/lift-suspension` (`Operator.Account.LiftSuspension`) · FE `frontend/apps/operator` tenant detail · Design none · Tests as D01 (a Closed Account can be neither suspended nor reactivated: `AccountOperatorLifecycleTests`; lifting an Active one is a no-op) · Real e2e `frontend/e2e/real/operator-suspension.real.e2e.spec.ts`
+- State: HARDENING — same limits as D01.
 
 ### UC-ACC-D03 Close an Account
 - Capability: D Account lifecycle transition
@@ -353,7 +353,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts ACC-006; sections 17, 83; owner decision 48 (A8).
 - Acceptance: Given the current release, When an Owner looks for "Delete organization", Then no control exists and no endpoint exists.
 - Evidence: BE `Account.Delete`, `Account.Restore` (no caller) · FE none · Design none · Tests `AccountTests` · Real e2e none
-- State: BLOCKED — owner deferred Account deletion and data export (Part 4). Needs a legal and retention decision: retention period, what is purged, Billing and audit evidence, identity references.
+- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built.
 
 ### UC-ACC-D06 Other contexts react to suspension and closure
 - Capability: D Account lifecycle transition
@@ -771,7 +771,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 
 # 4. Product decisions applied
 
-Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 is BLOCKED and shows no control); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (job title, device as session, IP and user agent, accent and sidebar) belong to Identity.
+Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 was BLOCKED on this; the delete rule is decided 2026-11-01, README §9 decision 3, and not built); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (job title, device as session, IP and user agent, accent and sidebar) belong to Identity.
 
 Lead decision (2026-10-30): A new Account permission set is defined. `ManageAccount` (exists): Owner and Admin. `ManageAccountSecurity` (new): Owner and SecurityAdmin, for domains, SSO and SCIM. `ManageAccountLifecycle` (new): Owner only, for close, reopen and ownership transfer. `ViewAccountAudit` (new): Owner and SecurityAdmin. `BillingAdmin` keeps only Billing-owned actions (see [billing.md](billing.md)); it gets no other Account action.
 
@@ -785,7 +785,7 @@ Lead decision (2026-10-30): `AccountStatus.Trialing` is not an Account lifecycle
 
 Lead decision (2026-10-30): `Account.PlanCode` is a derived summary written only by a Billing reaction, never by an Accounts command or a client. Reads of the plan go to Billing (B03).
 
-Lead decision (2026-10-30): Suspension is a platform-operator action. Who the operator principal is and how it is isolated from tenant RLS is not decided, so D01 and D02 are BLOCKED. Needed decision: operator identity source, the audit actor shown to the customer, and the RLS role used.
+Lead decision (2026-10-30): Suspension is a platform-operator action. Decided and built 2026-10-31 (owner): the operator is a separate account with its own sign-in scheme, signing key and database login, every action is audited; D01 and D02 are HARDENING. The audit actor shown to the customer is not decided (the trail is operator-only today).
 
 Lead decision (2026-10-30): Closing an Account makes it and its Workspaces read-only, retains all data, pauses provisioning and integrations, and is reversible by an Owner (D03, D04). No purge happens in this release.
 
@@ -835,7 +835,7 @@ Text for `docs/product/accounts.md` (and Governance where noted) to absorb.
 | Sections 1 to 3, 6, 8, 9 (mission, boundary, identity, source evidence) | Context statements, exercised through A01, E01 and Part 5 rules, no separate behaviour. |
 | Section 10, Account type | A decision only (Part 4): the type carries no rule. Reachable through A01, A02. |
 | Section 11 and 53, lifecycle states `Trialing` | Deprecated by Part 4. No use case drives it. |
-| Sections 17 to 19, delete and restore | D05, BLOCKED. |
+| Sections 17 to 19, delete and restore | D05, DEFINED (decided 2026-11-01). |
 | Section 50 to 52 and 99, Billing relation | B03, H20 and R-ACC-PLAN. Billing owns the behaviour: [billing.md](billing.md). |
 | Section 60, Integrations classification | Routing of ownership only; generic providers are in `automation-integrations.md`. |
 | Sections 61 and 91, Analytics | Derived by Analytics, see `analytics.md`; no Accounts action. |

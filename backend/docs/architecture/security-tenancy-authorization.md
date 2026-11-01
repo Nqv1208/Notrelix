@@ -382,7 +382,7 @@ kind next to `workspaces.workspace` and `integrations.calendar-integration`; it 
 
 # 12.2a. Custom roles in the decision (owner decision 2026-10-31)
 
-Product meaning is Governance GOV-026. Where it lives in the engine:
+Product meaning is Governance GOV-034. Where it lives in the engine:
 
 - The access facts carry the person's active custom role (`AccessFacts.CustomRole`: id, fixed base, added and removed action names), read in the same query as the other facts and never for a workspace Owner. An archived role is not read, so it grants nothing. A role of a downgraded plan stays effective.
 - `AccessPolicyEngine` swaps the built-in role for the role's base after the explicit permission rules (Deny first, then Allow). What the role adds applies only where the decision reads the workspace baseline and only for an addable, non-locked action on a non-Guest base; what it removes applies on the workspace baseline, on Space level derived from the baseline, and on Board and Page levels derived from the workspace default. An explicit grant, board membership or Space entry is never removed by a role.
@@ -418,6 +418,20 @@ executor decides *what the Rule may do*.
   is disabled when first evaluated.
 - Attribution: facts written for an automated move carry the executor as actor plus `automationRuleId` /
   `automationExecutionId` (additive on `board_item.moved` v2).
+
+---
+
+# 12.4. The platform operator principal (owner decision 2026-10-31)
+
+The platform operator sets, per Account, the plan, features and limits (layer 1 of three; Deny wins across layers).
+It is a fourth database principal and a fourth caller kind, deliberately outside the tenant stack:
+
+- **Operators are not tenant users.** `operators.operator_accounts` holds separate accounts with a bcrypt password hash (`Operators` is the principal and its append-only audit only; it is not a bounded context). One account is seeded from `Operator:Seed:*` configuration; the password is never in code, never logged and never overwritten on a later start.
+- **Own scheme.** Authentication scheme `NotrelixOperator` with its own signing key, issuer and audience (startup validation refuses a key or audience equal to the tenant's), claim `token_use=operator`, policy `PlatformOperator`, `Authorization` header only (no cookie, so no CSRF surface). A tenant token is refused on `/operator/*` and an operator token on every tenant route. `OperatorSessionFilter` re-reads the operator row on every request, so disabling an operator is instant. Five failed sign-ins lock the account for 15 minutes; one generic 401 answers every failure and a dummy hash check keeps the timing alike.
+- **Own database login.** `OperatorPrincipalMiddleware` runs `/operator/*` on `ConnectionStrings:NotrelixOperatorDb`, login `notrelix_operator` (script `027_operator_console.sql`): a member of no role, a closed allow-list, forced RLS with policies bound to the role itself. It can read account identity and status and write only `status` and its audit columns on `account.accounts`; it can read and write the billing plan, subscription and entitlement tables and its own tables; it may only INSERT into `events.domain_event_logs` and `messaging.outbox_messages`. It holds no privilege on any board, item, page, comment, member or credential table. The impact preview is the `operators.account_summary` definer function, which returns two counts. The tenant logins hold no privilege on the `operators` schema and lost write access to `billing.subscriptions`. With no operator login and no signing key the console answers 404, and the startup role guard also checks the operator connection.
+- **Every action is audited** (actor, reason of 1 to 500 characters, before, after, time) in the same `SaveChanges` as the change; an unchanged request writes nothing. Operators are plain scoped services, not pipeline requests, because the frozen pipeline is tenant-oriented.
+- **Suspend** is an access fact (`AccountSuspended`): `AccessPolicyEngine` refuses every write request with `account.suspended`; reads stay open and nothing is deleted.
+- **Not built:** consent-based support access to tenant data (a later step), operator MFA, workspace-scope overrides.
 
 ---
 

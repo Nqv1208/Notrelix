@@ -193,6 +193,8 @@ It does not imply:
 
 Suspension is an Account-level administrative state that may affect Workspaces, sessions, provisioning, integrations, or background work through explicit cross-context policy.
 
+Who suspends (owner decision 2026-10-31): the platform operator, from the operator console, with a reason (1 to 500 characters), an expected version and an audit entry (actor, reason, before, after, time). A Closed Account can be neither suspended nor reactivated; suspending a suspended Account, or lifting an active one, is a no-op that writes nothing. While an Account is suspended every write by its members is refused with `account.suspended` and every read stays open; nothing is deleted. The operator sees the Account's identity, status and two counts (active members, workspaces), never its content. Reactions of other contexts (sessions, integrations, background work) are not built yet.
+
 # 15. ACC-005 — Suspension effects are coordinated, not hidden cascades
 
 Accounts owns the fact that the Account is suspended.

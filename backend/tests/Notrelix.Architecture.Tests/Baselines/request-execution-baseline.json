@@ -325,31 +325,6 @@
     ]
   },
   {
-    "requestType": "Notrelix.Application.Features.Billing.Plans.Commands.ChangeAccountPlan.ChangeAccountPlanCommand",
-    "kind": "Command",
-    "principalMarkers": [
-      "IAuthenticatedRequest"
-    ],
-    "scopeMarkers": [
-      "IWorkspaceRequest"
-    ],
-    "dataMarkers": [
-      "IWriteRequest"
-    ],
-    "requiresPermission": true,
-    "requiresVerifiedEmail": false,
-    "requiresSubscription": false,
-    "requiresFeature": false,
-    "expectedVersion": false,
-    "idempotent": false,
-    "realtime": false,
-    "authorizedCache": false,
-    "publicCache": false,
-    "handlerTypes": [
-      "Notrelix.Application.Features.Billing.Plans.Commands.ChangeAccountPlan.ChangeAccountPlanCommandHandler"
-    ]
-  },
-  {
     "requestType": "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.GetWorkspaceBillingPlanQuery",
     "kind": "Query",
     "principalMarkers": [

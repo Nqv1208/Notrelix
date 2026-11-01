@@ -26,6 +26,13 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
     public string WorkerConnectionString { get; private set; } = string.Empty;
     public string RedisConnectionString { get; private set; } = string.Empty;
 
+    /// <summary>The operator console's real login (<c>notrelix_operator</c>).</summary>
+    public string OperatorConnectionString { get; private set; } = string.Empty;
+
+    /// <summary>A context connected as the operator login (row-level security and the operator's closed grants apply).</summary>
+    public Notrelix.Infrastructure.Data.ApplicationDbContext CreateOperatorContext(ICurrentTenantContext? tenant = null) =>
+        PostgresTestContainer.CreateContextFor(OperatorConnectionString, tenant);
+
     public Notrelix.Infrastructure.Data.ApplicationDbContext CreateOwnerContext(ICurrentTenantContext? tenant = null) =>
         _postgres.CreateOwnerContext(tenant);
 
@@ -42,6 +49,7 @@ public sealed class AppRoleTestContainer : IAsyncLifetime
         await _postgres.InitializeAsync();
         AppConnectionString = _postgres.AppConnectionString;
         WorkerConnectionString = _postgres.WorkerConnectionString;
+        OperatorConnectionString = _postgres.OperatorConnectionString;
 
         _redis = new ContainerBuilder("redis:7-alpine")
             .WithName($"notrelix-test-redis-{Guid.NewGuid():N}")

@@ -55,6 +55,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 $"{descriptor.RequestType.Name} requires workspace context.");
         }
 
+        // Defense in depth for the descriptor rule: a tenant-scoped write that did not load the access facts
+        // cannot be checked for account suspension, so it is refused instead of waved through.
+        if (request is IWriteRequest
+            && descriptor.Scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && !descriptor.Access.RequiresDatastoreFacts)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.SecurityMisconfiguration,
+                $"{descriptor.RequestType.Name} is a tenant-scoped write without access facts.");
+        }
+
         if (descriptor.Access.RequiresPermission)
         {
             var permission = EvaluatePermission(descriptor, facts, request, context.UserId);
@@ -119,6 +130,16 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// </summary>
     private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
     {
+        // A suspended or closed account is read-only for everyone in it, whatever the request (owner decision:
+        // the platform operator suspends an account; its content stays and nothing is deleted).
+        if (request is IWriteRequest && facts.AccountSuspended)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This account is suspended. It is read-only until the suspension is lifted.",
+                AccessDenialCodes.AccountSuspended);
+        }
+
         if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)
         {
             return null;

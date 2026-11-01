@@ -15,6 +15,8 @@ const composeFiles = [
 
 // The web port is 5173 unless REAL_E2E_WEB_PORT says otherwise (5173 is often a dev server).
 const webPort = process.env.REAL_E2E_WEB_PORT ?? "5173";
+// The operator console is its own host on its own origin (its origin is in the backend's CORS list).
+const operatorPort = process.env.REAL_E2E_OPERATOR_PORT ?? "5180";
 
 export const realBackend = {
   project: "notrelix-fe-real-e2e",
@@ -22,7 +24,10 @@ export const realBackend = {
   healthUrl: "http://127.0.0.1:58000/health/live",
   webPort,
   appUrl: `http://127.0.0.1:${webPort}`,
-  ports: [55432, 56379, 55672, 58000, Number(webPort)],
+  operatorPort,
+  operatorUrl: `http://127.0.0.1:${operatorPort}`,
+  operatorApiUrl: "http://127.0.0.1:58000/operator/v1",
+  ports: [55432, 56379, 55672, 58000, Number(webPort), Number(operatorPort)],
 };
 
 const composeEnv = {
@@ -41,6 +46,7 @@ const composeEnv = {
   FRONTEND_PORT: webPort,
   REAL_E2E_WEB_PORT: webPort,
   FRONTEND_WEB_PORT: webPort,
+  REAL_E2E_OPERATOR_PORT: operatorPort,
 };
 
 function run(command, args, options = {}) {

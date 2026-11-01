@@ -76,13 +76,17 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
     {
         _reset = new DatabaseReset(_db.OwnerConnectionString);
         await _reset.ResetAsync();
+
+        // The reset empties the plan catalog too; an account without a subscription is on the Free plan.
+        await using var seed = _db.CreateOwnerContext(new FakeCurrentTenantContext());
+        await Notrelix.Infrastructure.Billing.PlanCatalogSeed.EnsureAsync(seed);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
     private static BillingCapabilityFactsProvider NewFacts(IBillingDbContext ctx, IDateTimeProvider clock) =>
         new(ctx, clock, new Notrelix.Infrastructure.Billing.BillingUsageReader((ApplicationDbContext)ctx),
-            new Notrelix.Application.Features.Billing.Plans.BillingPlanResolver(ctx, clock));
+            new Notrelix.Application.Features.Billing.Plans.BillingPlanResolver(ctx, clock, new Notrelix.Application.Features.Billing.Plans.BillingPlanCatalogReader(ctx)));
 
     [Fact(DisplayName = "TAC-XPK-BILLING-LAST-SLOT - two concurrent creates, one remaining slot")]
     public async Task TwoConcurrentCreateRuleCommands_OneRemainingSlot_ExactlyOneWins_AndOneSloteConsumed()

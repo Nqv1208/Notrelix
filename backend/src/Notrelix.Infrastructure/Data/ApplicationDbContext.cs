@@ -40,7 +40,8 @@ public partial class ApplicationDbContext : DbContext,
     IAuditDbContext,
     IOpsDbContext,
     IActivityProjectionDbContext,
-    INotificationDbContext
+    INotificationDbContext,
+    Notrelix.Application.Features.Operators.Abstractions.IOperatorsDbContext
 {
     private readonly ICurrentTenantContext? _tenant;
 

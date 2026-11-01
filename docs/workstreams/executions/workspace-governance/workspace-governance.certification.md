@@ -2256,7 +2256,7 @@ Architecture evidence: Notrelix.Architecture.Tests full suite PASS 623/623 (0 fa
 Security evidence: RLS defense unchanged; row lock is ordering/atomicity, not authorization. RlsRuntimeEnforcementTests 18/18 PASS.
 Integration evidence: WorkspaceMembershipConcurrencyEvidenceTests PASS 2/2 on real PostgreSQL:
   - ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember (WG-TEST-GAP-001, DB unique constraint);
-  - ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners (WG-TEST-GAP-002, FOR UPDATE row lock).
+  - ConcurrentDemoteOfBothOwners_NeverLeavesZeroActiveOwners (WG-TEST-GAP-002, FOR UPDATE row lock).
   Regression proof: removing the FOR UPDATE from WorkspaceOwnerUpdateLocker makes the last-owner test fail
   (no BusinessRuleException; race silently survives), then restoring the lock passes 3/3 repeated runs.
 CI evidence: Local focused runs on candidate SHA; no aggregate CI run recorded for this SHA.
@@ -3524,7 +3524,7 @@ interpreted as independent or competing debt catalogs.
 | `WG-DEBT-006` | OPEN ARCHITECTURE DEBT | `P2A-CERT-004`, `P2B-CERT-007`, `CERT-X-002` | MUST be named in P3 handoff; no silent expansion of `AccessFactsQuery` foreign-table reads |
 | `WG-DEBT-007` | OPEN DOWNSTREAM CONTRACT DEBT | `P2B-CERT-011`, `CERT-X-002` | MUST be named in P3 handoff; full generic `ManageBoard` semantics are not D5 |
 | `WG-DEBT-008` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-004`, `P2B-CERT-003`; suspend/remove grant revocation proven by `RlsRuntimeEnforcementTests` under the RLS app role on real PostgreSQL | no longer blocks Milestone B; residual stale-grant convergence after revoke stays open in `P2B-CERT-003` |
-| `WG-DEBT-009` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-003`, `CERT-CONC-001`; `ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners` PASS (FOR UPDATE row lock) | no longer blocks Milestone B |
+| `WG-DEBT-009` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-003`, `CERT-CONC-001`; `ConcurrentDemoteOfBothOwners_NeverLeavesZeroActiveOwners` PASS (FOR UPDATE row lock) | no longer blocks Milestone B |
 | `WG-DEBT-010` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-002`, `CERT-CONC-001`; `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` PASS (unique-constraint loser) | no longer blocks Milestone B |
 | `WG-DEBT-011` | OPEN SECONDARY | `WG-DEBT-CERT-012`, `FULL-CERT-POL-001` | blocks WorkspacePolicy full-release claim only |
 | `WG-DEBT-012` | OPEN SECONDARY | `WG-DEBT-CERT-011`, `FULL-CERT-CROLE-001` | blocks CustomRole full-release claim only |
@@ -4266,7 +4266,7 @@ contract change, no frontend codegen). `dotnet format --verify-no-changes` exit 
 | WG-DEBT-006 | OPEN, carried to P3 | `AccessFactsQuery` and `ResourceVisibilityQuery` read `work.boards` and `work.board_members`. See P3 handoff below. |
 | WG-DEBT-007 | OPEN, carried to P3 | Generic `ManageBoard` is requested by 47 commands. See P3 handoff below. |
 | WG-DEBT-008 | CLOSED | Executed: `RlsRuntimeEnforcementTests.RuntimeMembershipSuspend_RevokesGrant_AndDeniesUnderAppRole` and `RuntimeMembershipRemoval_RevokesGrant_AndDeniesUnderAppRole` (23/23 in class), `AccessGrantProjectionTests` 7/7; unit `SuspendMemberCommandHandlerTests`. SHA and counts above. |
-| WG-DEBT-009 | CLOSED | Executed: `WorkspaceMembershipConcurrencyEvidenceTests.ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners`. Residual closed: `TransferOwnership` now takes the same workspace row lock (`IWorkspaceOwnerUpdateLocker`); `ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners` proves the concurrent case. |
+| WG-DEBT-009 | CLOSED | Executed: `WorkspaceMembershipConcurrencyEvidenceTests.ConcurrentDemoteOfBothOwners_NeverLeavesZeroActiveOwners`. Residual closed: `TransferOwnership` now takes the same workspace row lock (`IWorkspaceOwnerUpdateLocker`); `ConcurrentTransferOwnershipAndRemoveOfNewOwner_NeverLeavesZeroActiveOwners` proves the concurrent case. |
 | WG-DEBT-010 | CLOSED | Executed: `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` and `ConcurrentAcceptsOfSameInvitation_DatabaseAllowsExactlyOneMember`. Residual closed: the same test now maps the real PostgreSQL unique violation through `ExceptionMappingBehavior` to `ConflictException` (HTTP 409). |
 | WG-DEBT-011 | OPEN, secondary (non-core) | `WorkspacePolicy` delivery depth; P3 handoff as non-core. |
 | WG-DEBT-012 | OPEN, secondary (non-core) | `CustomRole` is Domain-only; no Application feature. |

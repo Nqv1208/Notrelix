@@ -543,6 +543,19 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     ],
   },
   {
+    // A separate host, not a route of app-web: its own origin and bundle, an in-memory operator token and no
+    // tenant session, scope, query cache or realtime. Visual packages and generated wire types only.
+    packageName: "@notrelix/app-operator",
+    relativePath: "apps/operator",
+    layer: "app",
+    freezeScope: "core-production",
+    allowedInternalImports: [
+      "@notrelix/contracts",
+      "@notrelix/ui-tokens",
+      "@notrelix/ui-web",
+    ],
+  },
+  {
     packageName: "@notrelix/app-mobile",
     relativePath: "apps/mobile",
     layer: "app",

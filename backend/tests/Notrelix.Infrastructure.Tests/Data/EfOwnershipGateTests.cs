@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Notrelix.Domain.Operators;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Analytics;
 using Notrelix.Infrastructure.Data.Audit;
@@ -83,6 +84,11 @@ public sealed class EfOwnershipGateTests
         // because its foreign keys to Space are same-context and must stay legal.
         [typeof(SpacePathRecord)] = "Business:Workspaces",
 
+        // Platform operator console: the operator principal and its append-only audit. Not a bounded context
+        // (lead ratification 2026-11-01), so it is a technical owner and IOperatorsDbContext is not a business port.
+        [typeof(OperatorAccount)] = "OperatorConsole",
+        [typeof(OperatorAuditEntry)] = "OperatorConsole",
+
         // Integrations physical secret persistence (M8)
         [typeof(IntegrationSecretBlob)] = "IntegrationsSecretPersistence",
         [typeof(InboundWebhookReceipt)] = "IntegrationsSecretPersistence",
@@ -139,6 +145,7 @@ public sealed class EfOwnershipGateTests
         type.IsInterface
         && type.Name.StartsWith('I')
         && type.Name.EndsWith("DbContext", StringComparison.Ordinal)
+        && type.Name != "IOperatorsDbContext"
         && type.Namespace is not null
         && type.Namespace.StartsWith("Notrelix.Application.Features", StringComparison.Ordinal)
         && type.Namespace.EndsWith(".Abstractions", StringComparison.Ordinal);

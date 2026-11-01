@@ -1,5 +1,8 @@
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Billing;
 using Notrelix.Infrastructure.Data.Seed;
+using Notrelix.Infrastructure.Operators;
+using Notrelix.Domain.Operators;
 
 
 namespace Notrelix.Infrastructure.Data;
@@ -13,6 +16,7 @@ public class ApplicationDbContextInitialiser
     private readonly RlsPolicyApplier _rlsPolicyApplier;
     private readonly ICurrentTenantContext _tenant;
     private readonly RlsOptions _rlsOptions;
+    private readonly OperatorOptions _operatorOptions;
 
     public ApplicationDbContextInitialiser(
         ILogger<ApplicationDbContextInitialiser> logger,
@@ -21,8 +25,10 @@ public class ApplicationDbContextInitialiser
         IOptions<SeedDataOptions> options,
         RlsPolicyApplier rlsPolicyApplier,
         ICurrentTenantContext tenant,
-        IOptions<RlsOptions> rlsOptions)
+        IOptions<RlsOptions> rlsOptions,
+        IOptions<OperatorOptions>? operatorOptions = null)
     {
+        _operatorOptions = operatorOptions?.Value ?? new OperatorOptions();
         _logger = logger;
         _context = context;
         _passwordHasher = passwordHasher;
@@ -44,6 +50,12 @@ public class ApplicationDbContextInitialiser
                 {
                     await _rlsPolicyApplier.ApplyAsync();
                 }
+
+                // Baseline data every environment needs, written on the owner connection and only when absent:
+                // the plan catalog (an account without a subscription is on its Free plan) and the one seeded
+                // operator account of the Notrelix company.
+                await PlanCatalogSeed.EnsureAsync(_context);
+                await SeedOperatorAsync();
             }
         }
         catch (Exception ex)
@@ -51,6 +63,31 @@ public class ApplicationDbContextInitialiser
             _logger.LogError(ex, "An error occurred while initialising the database.");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Creates the seeded operator account when <c>Operator:Seed</c> carries an email and a password and no operator
+    /// holds that email yet. The password is read from configuration, hashed, and neither logged nor returned; an
+    /// existing operator is never overwritten, so rotating the configured password does not silently reset an account.
+    /// </summary>
+    private async Task SeedOperatorAsync()
+    {
+        var seed = _operatorOptions.Seed;
+        if (!seed.IsConfigured)
+        {
+            return;
+        }
+
+        var email = seed.Email.Trim().ToLowerInvariant();
+        if (await _context.OperatorAccounts.AnyAsync(o => o.Email == email))
+        {
+            return;
+        }
+
+        _context.OperatorAccounts.Add(OperatorAccount.Create(
+            seed.Email, seed.DisplayName, _passwordHasher.HashPassword(seed.Password), DateTimeOffset.UtcNow));
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Seeded the configured operator account.");
     }
 
     public async Task SeedAsync()

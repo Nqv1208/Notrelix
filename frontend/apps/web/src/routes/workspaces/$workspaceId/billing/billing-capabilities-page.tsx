@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   BillingCapabilitiesSurface,
   WorkspaceSetupFrame,
@@ -30,7 +30,6 @@ export function BillingCapabilitiesPage() {
   const teamsCopy = useWorkspaceTeamsCopy();
   const frame = useSetupFrame("billing");
   const api = useBillingApi();
-  const queryClient = useQueryClient();
 
   const capabilities = useQuery({
     queryKey: billingKeys.capabilities(workspaceId),
@@ -41,11 +40,6 @@ export function BillingCapabilitiesPage() {
     queryKey: billingKeys.plan(workspaceId),
     queryFn: () => api.plan(workspaceId),
     retry: false,
-  });
-  const changePlan = useMutation({
-    mutationFn: (code: string) => api.changePlan(workspaceId, code),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: billingKeys.all(workspaceId) }),
   });
   const state: BillingCapabilitiesState = capabilities.data
     ? { status: "ready", data: capabilities.data }
@@ -69,14 +63,10 @@ export function BillingCapabilitiesPage() {
           plan.data
             ? {
                 currentCode: plan.data.currentCode,
-                plans: plan.data.plans,
-                canChange: plan.data.canChange,
-                changing: changePlan.isPending,
-                failed: changePlan.isError,
+                currentName: plan.data.currentName,
               }
             : undefined
         }
-        onChangePlan={(code) => changePlan.mutate(code)}
       />
     </WorkspaceSetupFrame>
   );

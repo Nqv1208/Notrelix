@@ -221,6 +221,25 @@ public static class EndpointMappingExtensions
         Delegate handler)
         => endpoints.MapDelete(pattern, handler).AsInternalEndpoint();
 
+    // ── Operator console ────────────────────────────────────
+    public static RouteHandlerBuilder MapOperatorGet(
+        this IEndpointRouteBuilder endpoints,
+        string pattern,
+        Delegate handler)
+        => endpoints.MapGet(pattern, handler).AsOperatorEndpoint();
+
+    public static RouteHandlerBuilder MapOperatorPost(
+        this IEndpointRouteBuilder endpoints,
+        string pattern,
+        Delegate handler)
+        => endpoints.MapPost(pattern, handler).AsOperatorEndpoint();
+
+    public static RouteHandlerBuilder MapOperatorPut(
+        this IEndpointRouteBuilder endpoints,
+        string pattern,
+        Delegate handler)
+        => endpoints.MapPut(pattern, handler).AsOperatorEndpoint();
+
     // ── Private helpers ─────────────────────────────────────
     private static RouteHandlerBuilder AsPublicEndpoint(this RouteHandlerBuilder builder)
         => builder
@@ -256,4 +275,9 @@ public static class EndpointMappingExtensions
         => builder
             .RequireAuthorization("InternalService")
             .WithMetadata(new InternalEndpointAttribute());
+
+    private static RouteHandlerBuilder AsOperatorEndpoint(this RouteHandlerBuilder builder)
+        => builder
+            .RequireAuthorization(Notrelix.Infrastructure.Operators.OperatorOptions.PolicyName)
+            .WithMetadata(new OperatorEndpointAttribute());
 }

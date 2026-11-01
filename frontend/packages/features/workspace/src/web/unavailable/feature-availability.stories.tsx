@@ -102,26 +102,13 @@ export const CapabilitiesEdgeData: Story = {
   tags: ["fui-surface--workspace.billing-capabilities", "fui-state--EdgeData"],
 };
 
-const PLANS = [
-  { code: "free", name: "Free" },
-  { code: "pro", name: "Pro" },
-  { code: "enterprise", name: "Enterprise" },
-] as const;
-
 export const CapabilitiesWithPlan: Story = {
   render: () => (
     <Page>
       <BillingCapabilitiesSurface
         copy={copy}
         onRetry={noop}
-        plan={{
-          currentCode: "pro",
-          plans: PLANS,
-          canChange: true,
-          changing: false,
-          failed: false,
-        }}
-        onChangePlan={noop}
+        plan={{ currentCode: "pro", currentName: "Pro" }}
         state={{
           status: "ready",
           data: [

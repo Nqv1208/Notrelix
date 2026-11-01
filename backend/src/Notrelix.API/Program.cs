@@ -93,6 +93,9 @@ app.UseExceptionHandler();
 // 3. Correlation ID (request tracing)
 app.UseMiddleware<CorrelationIdMiddleware>();
 
+// 3a. Operator console routes run on the operator database login (chosen before any database use)
+app.UseMiddleware<OperatorPrincipalMiddleware>();
+
 // 3b. CORS (before CSRF and rate limiting, so their 4xx answers carry the CORS headers and the
 // browser lets the frontend read the problem instead of reporting an opaque network failure)
 app.UseCors("Frontend");

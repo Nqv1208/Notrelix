@@ -239,6 +239,22 @@ const FRONTEND_HOSTS = [
       "Next",
     ],
   },
+
+  {
+    path:
+      "apps/operator",
+
+    packageName:
+      "@notrelix/app-operator",
+
+    frameworkDependency:
+      "vite",
+
+    overviewTokens: [
+      "apps/operator",
+      "Vite",
+    ],
+  },
 ];
 
 const BACKEND_SOLUTION =

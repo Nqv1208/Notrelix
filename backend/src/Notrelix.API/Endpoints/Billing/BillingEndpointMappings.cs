@@ -1,4 +1,3 @@
-using Notrelix.API.Endpoints.Billing.Commands;
 using Notrelix.API.Endpoints.Billing.Queries;
 
 namespace Notrelix.API.Endpoints.Billing;
@@ -14,7 +13,6 @@ public static class BillingEndpointMappings
 
         group.MapListWorkspaceBillingCapabilities();
         group.MapGetWorkspaceBillingPlan();
-        group.MapChangeWorkspaceBillingPlan();
 
         return app;
     }

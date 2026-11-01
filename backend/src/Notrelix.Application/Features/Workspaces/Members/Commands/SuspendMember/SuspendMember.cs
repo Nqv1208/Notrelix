@@ -55,6 +55,8 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
         if (member is null)
             throw new NotFoundException("WorkspaceMember", request.UserId);
 
+        WorkspaceMemberRules.EnsureActorIsNotTarget(_requestContext.UserId, member.UserId);
+
         var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
             _context, request.WorkspaceId, _requestContext.UserId, ct);
         WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, member.Role);

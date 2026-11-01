@@ -19,6 +19,9 @@ public static class AccessDenialCodes
 
     /// <summary>The plan does not include the feature the request needs, or its limit is reached.</summary>
     public const string FeatureNotEnabled = "plan.feature_not_enabled";
+
+    /// <summary>The account is suspended or closed by the platform operator: its people read, nobody writes.</summary>
+    public const string AccountSuspended = "account.suspended";
 }
 
 public sealed record AccessDecision(AccessDecisionKind Kind, string? Message = null, string? Code = null)

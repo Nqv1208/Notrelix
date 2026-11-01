@@ -13,6 +13,13 @@ public enum DatabasePrincipalKind
     /// (<c>ops.is_worker_scope()</c>) is honoured for.
     /// </summary>
     Worker = 1,
+
+    /// <summary>
+    /// The platform operator login (<c>notrelix_operator</c>): the operator console only. It holds privileges on
+    /// the operator tables, on the account lifecycle and the commercial billing tables, and on nothing else: no
+    /// tenant content table, no identity table, no credential. It is never a tenant principal and never the worker.
+    /// </summary>
+    Operator = 2,
 }
 
 /// <summary>
@@ -26,13 +33,21 @@ public sealed class DatabaseConnectionStrings
 {
     public const string WorkerConnectionStringName = "NotrelixWorkerDb";
     public const string ApplicationConnectionStringName = "NotrelixDb";
+    public const string OperatorConnectionStringName = "NotrelixOperatorDb";
 
-    public DatabaseConnectionStrings(string? application, string? worker, bool workerUsesApplicationFallback)
+    public DatabaseConnectionStrings(string? application, string? worker, bool workerUsesApplicationFallback, string? @operator = null)
     {
         Application = application;
         Worker = worker;
         WorkerUsesApplicationFallback = workerUsesApplicationFallback;
+        Operator = @operator;
     }
+
+    /// <summary>
+    /// The operator login's connection string. Optional and never defaulted: with no operator login configured
+    /// the operator console is switched off, and no other login is ever used in its place.
+    /// </summary>
+    public string? Operator { get; }
 
     public string? Application { get; }
 
@@ -45,9 +60,15 @@ public sealed class DatabaseConnectionStrings
     {
         var application = configuration.GetConnectionString(ApplicationConnectionStringName);
         var worker = configuration.GetConnectionString(WorkerConnectionStringName);
+        var @operator = configuration.GetConnectionString(OperatorConnectionStringName);
+        if (string.IsNullOrWhiteSpace(@operator))
+        {
+            @operator = null;
+        }
+
         if (!string.IsNullOrWhiteSpace(worker))
         {
-            return new DatabaseConnectionStrings(application, worker, false);
+            return new DatabaseConnectionStrings(application, worker, false, @operator);
         }
 
         if (!string.IsNullOrWhiteSpace(application) && RlsRoleEnforcement.IsEnforced(configuration))
@@ -58,7 +79,7 @@ public sealed class DatabaseConnectionStrings
                 "may omit it.");
         }
 
-        return new DatabaseConnectionStrings(application, application, true);
+        return new DatabaseConnectionStrings(application, application, true, @operator);
     }
 }
 
@@ -82,11 +103,41 @@ public sealed class DatabasePrincipal
 
     public bool IsWorker => Kind == DatabasePrincipalKind.Worker;
 
+    public bool IsOperator => Kind == DatabasePrincipalKind.Operator;
+
+    /// <summary>True when an operator login is configured, so the operator console can serve.</summary>
+    public bool OperatorConfigured => !string.IsNullOrWhiteSpace(_connectionStrings.Operator);
+
+    /// <summary>
+    /// Switches this scope to the operator login. Fails when the connection was already resolved as another
+    /// principal, and when no operator login is configured: it never falls back to another login.
+    /// </summary>
+    public void UseOperator()
+    {
+        if (Kind == DatabasePrincipalKind.Operator)
+            return;
+
+        if (_connectionResolved)
+        {
+            throw new InvalidOperationException(
+                "The scope's database connection was already resolved as another login; " +
+                "choose the operator principal before the first database use.");
+        }
+
+        if (!OperatorConfigured)
+            throw new InvalidOperationException($"ConnectionStrings:{DatabaseConnectionStrings.OperatorConnectionStringName} is not configured.");
+
+        Kind = DatabasePrincipalKind.Operator;
+    }
+
     /// <summary>Switches this scope to the background login. Fails when the connection was already resolved as another principal.</summary>
     public void UseWorker()
     {
         if (Kind == DatabasePrincipalKind.Worker)
             return;
+
+        if (Kind == DatabasePrincipalKind.Operator)
+            throw new InvalidOperationException("An operator scope never becomes the worker principal.");
 
         if (_connectionResolved)
         {
@@ -102,7 +153,12 @@ public sealed class DatabasePrincipal
     internal string? ResolveConnectionString()
     {
         _connectionResolved = true;
-        return IsWorker ? _connectionStrings.Worker : _connectionStrings.Application;
+        return Kind switch
+        {
+            DatabasePrincipalKind.Worker => _connectionStrings.Worker,
+            DatabasePrincipalKind.Operator => _connectionStrings.Operator,
+            _ => _connectionStrings.Application,
+        };
     }
 }
 
@@ -116,6 +172,14 @@ public static class WorkerScopeExtensions
     {
         var scope = scopeFactory.CreateAsyncScope();
         scope.ServiceProvider.GetRequiredService<DatabasePrincipal>().UseWorker();
+        return scope;
+    }
+
+    /// <summary>Creates a scope whose <see cref="ApplicationDbContext"/> connects as the operator login.</summary>
+    public static AsyncServiceScope CreateOperatorAsyncScope(this IServiceScopeFactory scopeFactory)
+    {
+        var scope = scopeFactory.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<DatabasePrincipal>().UseOperator();
         return scope;
     }
 }

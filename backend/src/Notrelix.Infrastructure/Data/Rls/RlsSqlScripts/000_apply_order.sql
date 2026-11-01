@@ -24,3 +24,4 @@
 \i 024_membership_end_access.sql
 \i 025_invitee_invitations.sql
 \i 026_authz_access_helpers_static.sql
+\i 027_operator_console.sql

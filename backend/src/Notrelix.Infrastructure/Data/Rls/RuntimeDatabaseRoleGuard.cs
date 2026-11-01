@@ -165,11 +165,27 @@ public sealed class RuntimeDatabaseRoleGuard : IHostedService
             violations.AddRange(EvaluateWorker(facts).Select(v => "background connection: " + v));
         }
 
+        // The operator login is optional (no string, no console). When configured it must be the dedicated
+        // login: constrained like the others, never the worker, and never an application or owner login.
+        string? operatorRole = null;
+        if (connectionStrings is { Operator: not null })
+        {
+            await using var operatorScope = _scopes.CreateOperatorAsyncScope();
+            var context = operatorScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var facts = await ReadFactsAsync(context, cancellationToken);
+            operatorRole = facts.CurrentUser;
+            violations.AddRange(Evaluate(facts).Select(v => "operator connection: " + v));
+            if (facts.SessionUser != "notrelix_operator")
+            {
+                violations.Add($"operator connection: login '{facts.SessionUser}' is not notrelix_operator");
+            }
+        }
+
         if (violations.Count == 0)
         {
             _logger.LogInformation(
-                "Runtime database roles are constrained by row-level security: application '{AppRole}', background '{WorkerRole}'.",
-                appRole, workerRole);
+                "Runtime database roles are constrained by row-level security: application '{AppRole}', background '{WorkerRole}', operator '{OperatorRole}'.",
+                appRole, workerRole, operatorRole ?? "(console off)");
             return;
         }
 

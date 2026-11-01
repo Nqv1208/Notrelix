@@ -1,9 +1,9 @@
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Billing.Entitlements.Services;
 using Notrelix.Application.Features.Billing.Plans;
-using Notrelix.Application.Features.Billing.Plans.Commands.ChangeAccountPlan;
 using Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan;
 using Notrelix.Application.Features.Billing.Public.Facts;
+using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Application.Tests.Features.Billing;
@@ -17,121 +17,121 @@ public class BillingPlanTests
 
     private readonly Mock<IBillingDbContext> _context = new();
     private readonly Mock<IBillingUsageReader> _reader = new();
-    private readonly Mock<IBillingPlanChangePolicy> _policy = new();
     private readonly Mock<ICurrentRequestContext> _requestContext = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
     private readonly List<Subscription> _subscriptions = [];
+    private readonly List<Plan> _plans = TestBaselinePlans.All();
 
     public BillingPlanTests()
     {
         _clock.Setup(c => c.UtcNow).Returns(Now);
         _requestContext.Setup(c => c.RequireAccountId()).Returns(AccountId);
         _requestContext.Setup(c => c.UserId).Returns(UserId);
-        _policy.Setup(p => p.IsPlanChangeEnabled).Returns(true);
-        _reader.Setup(r => r.IsAccountOwnerAsync(AccountId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        var subscriptions = TestBillingDbSet.Create(_subscriptions);
-        _context.Setup(c => c.Subscriptions).Returns(subscriptions.Object);
+        _context.Setup(c => c.Subscriptions).Returns(TestBillingDbSet.Create(_subscriptions).Object);
+        _context.Setup(c => c.Plans).Returns(TestBillingDbSet.Create(_plans).Object);
     }
 
-    private ChangeAccountPlanCommandHandler ChangeHandler() =>
-        new(_context.Object, _reader.Object, _policy.Object, _requestContext.Object, _clock.Object);
+    private BillingPlanCatalogReader Catalog() => new(_context.Object);
 
-    private GetWorkspaceBillingPlanQueryHandler QueryHandler() =>
-        new(new BillingPlanResolver(_context.Object, _clock.Object), _reader.Object, _policy.Object, _requestContext.Object);
+    private BillingPlanResolver Resolver() => new(_context.Object, _clock.Object, Catalog());
+
+    private GetWorkspaceBillingPlanQueryHandler QueryHandler() => new(Resolver(), Catalog(), _requestContext.Object);
+
+    private Subscription Subscribe(Plan plan) =>
+        Subscription.Create(AccountId, plan.Id, plan.Tier, Now.AddDays(-1), Now.AddYears(1), null, Now.AddDays(-1));
 
     [Fact]
-    public void The_catalog_defines_the_three_plans_with_their_limits()
+    public async Task The_catalog_is_read_from_the_plan_rows_with_their_limits()
     {
-        Assert.Equal(["free", "pro", "enterprise"], BillingPlanCatalog.All.Select(p => p.Code));
+        var plans = await Catalog().ListSellableAsync(CancellationToken.None);
 
-        Assert.Equal(5, BillingPlanCatalog.Free.Limits[BillingCapabilityCode.AutomationRule]);
-        Assert.Equal(10, BillingPlanCatalog.Free.Limits[BillingCapabilityCode.MemberSeat]);
-        Assert.Equal(2, BillingPlanCatalog.Free.Limits[BillingCapabilityCode.StorageGb]);
-        Assert.Equal(5, BillingPlanCatalog.Free.Limits[BillingCapabilityCode.GuestSeat]);
-
-        Assert.Equal(100, BillingPlanCatalog.Pro.Limits[BillingCapabilityCode.AutomationRule]);
-        Assert.Equal(500, BillingPlanCatalog.Pro.Limits[BillingCapabilityCode.MemberSeat]);
-        Assert.Equal(100, BillingPlanCatalog.Pro.Limits[BillingCapabilityCode.StorageGb]);
-        Assert.Equal(200, BillingPlanCatalog.Pro.Limits[BillingCapabilityCode.GuestSeat]);
-
-        Assert.Null(BillingPlanCatalog.Enterprise.Limits[BillingCapabilityCode.AutomationRule]);
-        Assert.Null(BillingPlanCatalog.Enterprise.Limits[BillingCapabilityCode.MemberSeat]);
-        Assert.Equal(1000, BillingPlanCatalog.Enterprise.Limits[BillingCapabilityCode.StorageGb]);
-        Assert.Null(BillingPlanCatalog.Enterprise.Limits[BillingCapabilityCode.GuestSeat]);
+        Assert.Equal(["free", "pro", "enterprise"], plans.Select(p => p.Code));
+        var free = plans.Single(p => p.Code == "free");
+        Assert.Equal(5, free.Limits[BillingCapabilityCode.AutomationRule]);
+        Assert.Equal(10, free.Limits[BillingCapabilityCode.MemberSeat]);
+        Assert.Equal(2, free.Limits[BillingCapabilityCode.StorageGb]);
+        Assert.Equal(5, free.Limits[BillingCapabilityCode.GuestSeat]);
+        var enterprise = plans.Single(p => p.Code == "enterprise");
+        Assert.Null(enterprise.Limits[BillingCapabilityCode.MemberSeat]);
+        Assert.Equal(1000, enterprise.Limits[BillingCapabilityCode.StorageGb]);
     }
 
     [Fact]
-    public async Task An_account_without_a_subscription_is_on_the_free_plan()
+    public async Task Only_the_newest_active_revision_of_a_family_is_on_sale()
+    {
+        var older = TestBaselinePlans.Build("pro", "Pro", SubscriptionTier.Pro, 1, (BillingCapabilityCode.MemberSeat, 1));
+        var newer = TestBaselinePlans.Build("pro", "Pro v2", SubscriptionTier.Pro, 2, (BillingCapabilityCode.MemberSeat, 900));
+        var retired = TestBaselinePlans.Build("pro", "Pro v3", SubscriptionTier.Pro, 3, (BillingCapabilityCode.MemberSeat, 5));
+        retired.Deprecate(Now);
+        _plans.AddRange([older, newer, retired]);
+
+        var pro = (await Catalog().ListSellableAsync(CancellationToken.None)).Single(p => p.Code == "pro");
+
+        Assert.Equal(2, pro.Revision);
+        Assert.Equal(900, pro.Limits[BillingCapabilityCode.MemberSeat]);
+    }
+
+    [Fact]
+    public async Task An_account_without_a_subscription_is_on_the_free_plan_and_cannot_change_it_from_a_tenant_session()
     {
         var result = await QueryHandler().Handle(new GetWorkspaceBillingPlanQuery(WorkspaceId), CancellationToken.None);
 
         Assert.Equal("free", result.Data!.CurrentPlan.Code);
         Assert.Equal(3, result.Data.AvailablePlans.Count);
-        Assert.True(result.Data.CanChangePlan);
+        Assert.DoesNotContain(typeof(WorkspaceBillingPlanDto).GetProperties(), p => p.Name.Contains("Change", StringComparison.Ordinal));
     }
 
     [Fact]
-    public async Task A_non_owner_or_a_locked_environment_cannot_change_the_plan()
+    public async Task A_subscription_keeps_the_revision_it_references_when_a_newer_one_is_published()
     {
-        _reader.Setup(r => r.IsAccountOwnerAsync(AccountId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        var notOwner = await QueryHandler().Handle(new GetWorkspaceBillingPlanQuery(WorkspaceId), CancellationToken.None);
-        Assert.False(notOwner.Data!.CanChangePlan);
+        var pro1 = TestBaselinePlans.Pro;
+        var pro2 = TestBaselinePlans.Build("pro", "Pro v2", SubscriptionTier.Pro, 2, (BillingCapabilityCode.MemberSeat, 900));
+        _plans.Add(pro2);
+        _subscriptions.Add(Subscribe(pro1));
 
-        _reader.Setup(r => r.IsAccountOwnerAsync(AccountId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _policy.Setup(p => p.IsPlanChangeEnabled).Returns(false);
-        var locked = await QueryHandler().Handle(new GetWorkspaceBillingPlanQuery(WorkspaceId), CancellationToken.None);
-        Assert.False(locked.Data!.CanChangePlan);
+        var plan = await Resolver().ResolveAsync(AccountId, CancellationToken.None);
+
+        Assert.Equal(pro1.Id, plan.PlanId);
+        Assert.Equal(500, plan.Limits[BillingCapabilityCode.MemberSeat]);
     }
 
     [Fact]
-    public async Task Changing_the_plan_starts_a_subscription_when_the_account_has_none()
+    public async Task A_subscription_on_an_archived_revision_still_resolves_its_limits()
     {
-        var result = await ChangeHandler().Handle(new ChangeAccountPlanCommand(WorkspaceId, "pro"), CancellationToken.None);
+        var archived = TestBaselinePlans.Build("pro", "Pro old", SubscriptionTier.Pro, 2, (BillingCapabilityCode.MemberSeat, 42));
+        archived.Archive(Now);
+        _plans.Add(archived);
+        _subscriptions.Add(Subscribe(archived));
 
-        Assert.True(result.Succeeded);
-        Assert.Equal("pro", result.Data!.CurrentPlan.Code);
-        _context.Verify(c => c.Subscriptions.Add(It.Is<Subscription>(s =>
-            s.AccountId == AccountId && s.Tier == SubscriptionTier.Pro && s.PlanId == BillingPlanCatalog.Pro.PlanId)), Times.Once);
+        var plan = await Resolver().ResolveAsync(AccountId, CancellationToken.None);
+
+        Assert.Equal(42, plan.Limits[BillingCapabilityCode.MemberSeat]);
     }
 
     [Fact]
-    public async Task Changing_the_plan_moves_an_existing_subscription_to_the_new_tier()
+    public async Task A_canceled_subscription_puts_the_account_back_on_the_free_plan()
     {
-        var free = BillingPlanCatalog.Free;
-        var existing = Subscription.Create(AccountId, free.PlanId, free.Tier, Now.AddDays(-1), Now.AddYears(1), null, Now.AddDays(-1));
-        _subscriptions.Add(existing);
+        var subscription = Subscribe(TestBaselinePlans.Enterprise);
+        subscription.CancelImmediately(UserId, Now);
+        _subscriptions.Add(subscription);
 
-        var result = await ChangeHandler().Handle(new ChangeAccountPlanCommand(WorkspaceId, "Enterprise"), CancellationToken.None);
-
-        Assert.True(result.Succeeded);
-        Assert.Equal(SubscriptionTier.Enterprise, existing.Tier);
-        Assert.Equal(BillingPlanCatalog.Enterprise.PlanId, existing.PlanId);
+        Assert.Equal("free", (await Resolver().ResolveAsync(AccountId, CancellationToken.None)).Code);
     }
 
     [Fact]
-    public async Task Changing_the_plan_is_refused_when_the_environment_does_not_allow_it()
+    public async Task A_subscription_to_a_plan_the_catalog_no_longer_holds_falls_back_to_the_default_plan()
     {
-        _policy.Setup(p => p.IsPlanChangeEnabled).Returns(false);
+        _subscriptions.Add(Subscription.Create(AccountId, Guid.CreateVersion7(), SubscriptionTier.Pro, Now.AddDays(-1), Now.AddYears(1), null, Now.AddDays(-1)));
 
-        await Assert.ThrowsAsync<ForbiddenException>(() =>
-            ChangeHandler().Handle(new ChangeAccountPlanCommand(WorkspaceId, "pro"), CancellationToken.None));
+        Assert.Equal("free", (await Resolver().ResolveAsync(AccountId, CancellationToken.None)).Code);
     }
 
     [Fact]
-    public async Task Changing_the_plan_needs_the_account_owner()
+    public async Task A_catalog_without_an_active_default_plan_is_a_fault_not_a_guess()
     {
-        _reader.Setup(r => r.IsAccountOwnerAsync(AccountId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _plans.Clear();
 
-        await Assert.ThrowsAsync<ForbiddenException>(() =>
-            ChangeHandler().Handle(new ChangeAccountPlanCommand(WorkspaceId, "pro"), CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task An_unknown_plan_code_is_rejected()
-    {
-        var result = await ChangeHandler().Handle(new ChangeAccountPlanCommand(WorkspaceId, "platinum"), CancellationToken.None);
-
-        Assert.False(result.Succeeded);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Resolver().ResolveAsync(AccountId, CancellationToken.None));
     }
 
     [Theory]

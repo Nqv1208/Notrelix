@@ -7,6 +7,18 @@ namespace Notrelix.Domain.Tests.Workspaces;
 public class WorkspaceMemberRulesTests
 {
     [Fact]
+    public void EnsureActorIsNotTarget_WhenActorIsTarget_ShouldThrowWithItsCode()
+    {
+        var userId = Guid.NewGuid();
+
+        var act = () => WorkspaceMemberRules.EnsureActorIsNotTarget(userId, userId);
+
+        act.Should().Throw<BusinessRuleException>()
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_CannotActOnSelf);
+        WorkspaceMemberRules.EnsureActorIsNotTarget(userId, Guid.NewGuid());
+    }
+
+    [Fact]
     public void EnsureNotLastOwner_WhenLastOwner_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();

@@ -22,6 +22,7 @@ using Notrelix.API.Endpoints.Governance.ResourcePermissions;
 using Notrelix.API.Endpoints.Governance.ShareLinks;
 using Notrelix.API.Endpoints.Governance.Roles;
 using Notrelix.API.Endpoints.Health;
+using Notrelix.API.Endpoints.Operator;
 using Notrelix.API.Endpoints.Identity.ApiTokens;
 using Notrelix.API.Endpoints.Identity.Auth;
 using Notrelix.API.Endpoints.Identity.Profile;
@@ -153,6 +154,9 @@ public static class EndpointRouteBuilderExtensions
 
         // Admin
         app.MapOutboxDiagnosticsEndpoints();
+
+        // Platform operator console (own scheme, own database login)
+        app.MapOperatorEndpoints();
 
         return app;
     }
