@@ -4292,7 +4292,7 @@ P3 handoff
 | Gap ID | Gap | Blocking for P2 Milestone B? |
 |---|---|---|
 | WG-TEST-GAP-001 | Exact DB-level duplicate membership race proof not confirmed | CLOSED — `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` (real PostgreSQL, loser `DbUpdateException` on unique constraint) PASS |
-| WG-TEST-GAP-002 | Explicit last-owner concurrent transaction proof not confirmed | CLOSED — `ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners` (FOR UPDATE row lock via `IWorkspaceOwnerUpdateLocker`) PASS, deterministic + regression-proven |
+| WG-TEST-GAP-002 | Explicit last-owner concurrent transaction proof not confirmed | CLOSED — `ConcurrentDemoteOfBothOwners_NeverLeavesZeroActiveOwners` (FOR UPDATE row lock via `IWorkspaceOwnerUpdateLocker`) PASS, deterministic + regression-proven |
 | WG-TEST-GAP-003 | Membership suspend/remove → access-grant revocation runtime proof must be confirmed | CLOSED — `RlsRuntimeEnforcementTests` revision runtime (18/18) |
 | WG-TEST-GAP-004 | Same-priority PermissionRule allow+deny/time-window matrix may need extension | YES if current policy relies on it |
 | WG-TEST-GAP-005 | Board-specific cross-account negative P2 gate case should be explicit | CLOSED — `GetBoard_FromForeignAccount_IsNotFound_AndForeignBoardStaysUntouched` (GovernanceResourcePermissionFlowTests 52/52) |

@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2690
+Rule count: 2691
 
 ## Namespace summary
 
@@ -72,7 +72,7 @@ Rule count: 2690
 | `FE-STATE` | 82 |
 | `FE-TST` | 79 |
 | `FE-UI` | 81 |
-| `GOV` | 33 |
+| `GOV` | 34 |
 | `ID` | 18 |
 | `INFRA-CTR` | 70 |
 | `INFRA-ENV` | 40 |
@@ -1949,6 +1949,7 @@ Rule count: 2690
 | `GOV-031` | `GOV` | An explicit resource entry may expire | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-032` | `GOV` | The Workspace sharing policy can turn share links off | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-033` | `GOV` | Board child resources are authorized through their Board | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-034` | `GOV` | Custom roles are Account definitions on a fixed built-in base (owner decision 2026-10-31) | [`docs/product/governance.md`](../product/governance.md) |
 | `ID-001` | `ID` | Authentication and authorization are separate | [`docs/product/identity.md`](../product/identity.md) |
 | `ID-002` | `ID` | Mutable email is not universal identity | [`docs/product/identity.md`](../product/identity.md) |
 | `ID-003` | `ID` | Identity deletion does not cascade business history | [`docs/product/identity.md`](../product/identity.md) |

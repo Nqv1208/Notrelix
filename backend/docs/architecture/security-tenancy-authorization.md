@@ -382,7 +382,7 @@ kind next to `workspaces.workspace` and `integrations.calendar-integration`; it 
 
 # 12.2a. Custom roles in the decision (owner decision 2026-10-31)
 
-Product meaning is Governance GOV-026. Where it lives in the engine:
+Product meaning is Governance GOV-034. Where it lives in the engine:
 
 - The access facts carry the person's active custom role (`AccessFacts.CustomRole`: id, fixed base, added and removed action names), read in the same query as the other facts and never for a workspace Owner. An archived role is not read, so it grants nothing. A role of a downgraded plan stays effective.
 - `AccessPolicyEngine` swaps the built-in role for the role's base after the explicit permission rules (Deny first, then Allow). What the role adds applies only where the decision reads the workspace baseline and only for an addable, non-locked action on a non-Guest base; what it removes applies on the workspace baseline, on Space level derived from the baseline, and on Board and Page levels derived from the workspace default. An explicit grant, board membership or Space entry is never removed by a role.

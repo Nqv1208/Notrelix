@@ -59,4 +59,18 @@ public static class WorkspaceMemberRules
                 "Only a workspace Owner can remove, suspend or activate an Owner or an Admin.");
         }
     }
+
+    /// <summary>
+    /// Removing or suspending a member ends that person's workspace grant in the same transaction, so the
+    /// person acting cannot be the person acted on: the writes that follow (audit, outbox, signal) need the
+    /// grant the action ends. A person who wants out leaves the workspace, which orders its writes for it.
+    /// </summary>
+    public static void EnsureActorIsNotTarget(Guid actorUserId, Guid targetUserId)
+    {
+        if (actorUserId != targetUserId) return;
+
+        throw new BusinessRuleException(
+            WorkspaceRuleCodes.Workspaces_Member_CannotActOnSelf,
+            "You cannot remove or suspend yourself here; leave the workspace instead.");
+    }
 }

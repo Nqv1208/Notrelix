@@ -928,7 +928,7 @@ Without these the changed rows would be an escalation. Both are Domain rules fed
 
 - **Role cap** (`Workspaces_Member_ActorCannotAssignRole`): adding a member directly assigns Member or Guest only unless the actor is an Owner. Invitations already offer Member or Guest only (`Workspaces_Invitation_CannotInviteAsAdmin`). Re-adding a returning member whose existing row is an Owner or Admin is refused for a non-Owner (`Workspaces_Member_ActorCannotActOnMember`).
 - **Resend** (`Workspaces_Member_ActorCannotAssignRole`): resending an invitation re-issues the token that grants the invited role, so it applies the same role cap to the invitation's role. A non-Owner cannot re-arm a legacy Admin invitation (created before Admin stopped being invitable); an Admin still resends Member and Guest invitations. Cancelling and changing an invitation role cannot create an Admin or Owner membership (the Domain refuses an Admin or Owner role on create and on change), so they need no extra guard.
-- **Actor-versus-target** (`Workspaces_Member_ActorCannotActOnMember`): remove, suspend and activate act on any target only for an Owner; an Admin acts only on Member and Guest targets, never on an Owner or another Admin. The last-owner invariant and the owner row lock are unchanged.
+- **Actor-versus-target** (`Workspaces_Member_ActorCannotActOnMember`): remove, suspend and activate act on any target only for an Owner; an Admin acts only on Member and Guest targets, never on an Owner or another Admin. The last-owner invariant and the owner row lock are unchanged. Nobody removes or suspends themself with these commands (`Workspaces_Member_CannotActOnSelf`, decided 2026-11-01): the action ends the actor's own workspace grant before the audit and outbox rows are written, which the row-level policies refuse; the Members surface already blocks it, and a person who wants out leaves the workspace (UC-WSP-F06).
 
 ## 44.3. ViewMembers for a Guest (closed 2026-10-23)
 
@@ -976,7 +976,7 @@ Cross-scope role assignment through raw IDs is forbidden.
 
 ---
 
-# 46.1. GOV-026 — Custom roles are Account definitions on a fixed built-in base (owner decision 2026-10-31)
+# 46.1. GOV-034 — Custom roles are Account definitions on a fixed built-in base (owner decision 2026-10-31)
 
 Three layers decide whether a person may act, and all must pass; Deny wins:
 

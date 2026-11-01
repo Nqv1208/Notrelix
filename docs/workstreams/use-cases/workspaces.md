@@ -530,7 +530,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`.
 - Output: Status Suspended; the grant is revoked; history and work stay; person cannot enter.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/members/{userId}/suspend`. 2. Lock and rules. 3. Domain suspends. 4. Grant removed.
-- No-op / rejection / concurrency / retry: Already suspended: no-op. Last owner: rejected. Expected version required (LD-07): body `expectedVersion`, stale answers 412 and changes nothing; a suspended member is a no-op with no version step. A suspended member's session loses access at the next request.
+- No-op / rejection / concurrency / retry: Already suspended: no-op. Last owner: rejected. Yourself as target: rejected `Workspaces_Member_CannotActOnSelf`, nothing changes (a person leaves through F06). Expected version required (LD-07): body `expectedVersion`, stale answers 412 and changes nothing; a suspended member is a no-op with no version step. A suspended member's session loses access at the next request.
 - UI states: Row action, confirmation naming consequences, pending, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 13, 21; WGREQ015, WGREQ021.
 - Acceptance: Given an active member, When suspended, Then reads of the workspace give NotFound. Given the last owner, Then rejected.
@@ -558,7 +558,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`.
 - Output: Status Removed; grant revoked; assignments and history stay. A default workspace of the removed person is not cleared (only leaving clears it); readers treat a default the person cannot open as absent, and Identity is not written for another person.
 - Main flow: 1. `DELETE /api/v1/workspaces/{id}/members/{userId}`. 2. Lock, rules. 3. Domain removes. 4. Grant revoked.
-- No-op / rejection / concurrency / retry: Already removed: no-op. Last owner: rejected. Expected version required (LD-07): query `expectedVersion`, stale answers 412. Removal does not clean Space and Team entries (F09).
+- No-op / rejection / concurrency / retry: Already removed: no-op. Last owner: rejected. Expected version required (LD-07): query `expectedVersion`, stale answers 412. Removal does not clean Space and Team entries (F09). Yourself as target: rejected `Workspaces_Member_CannotActOnSelf`, nothing changes (a person leaves through F06).
 - UI states: Confirmation dialog, pending, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 17, 20, 67; WGREQ017, WGREQ023; WX-MEM-001.
 - Acceptance: Given a member with assigned items, When removed, Then the items keep their assignee id and the member reads nothing.
