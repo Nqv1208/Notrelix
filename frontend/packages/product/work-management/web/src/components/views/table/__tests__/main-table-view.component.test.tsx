@@ -394,8 +394,8 @@ describe("MainTableView on the ERP board", () => {
     expect(new Date(change.dueDate).getTime()).toBe(
       new Date("2026-11-03T17:00:00").getTime(),
     );
-    // The selection is spent.
-    expect(screen.queryByRole("toolbar")).toBeNull();
+    // The selection is spent once the server took the change.
+    await waitFor(() => expect(screen.queryByRole("toolbar")).toBeNull());
   });
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
@@ -439,6 +439,28 @@ describe("MainTableView on the ERP board", () => {
     expect(toast.error.mock.calls.at(-1)?.[0]).toContain(
       "Chưa có gì bị thay đổi",
     );
+  });
+
+  it("names the first item the server refuses and keeps the selection", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.bulkUpdate.mockRejectedValueOnce(
+      Object.assign(new Error("An item was changed by someone else."), {
+        details: { itemId: erpItemId("ERP-151") },
+      }),
+    );
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.change(screen.getByLabelText("Hạn"), {
+      target: { value: "2026-11-03" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    const message = String(toast.error.mock.calls.at(-1)?.[0]);
+    expect(message).toContain("chưa có gì bị thay đổi");
+    expect(message).toContain("Cấu hình quyền truy cập theo phòng ban");
+    // The pick stays so the person can retry or change it.
+    expect(screen.getByRole("toolbar")).toBeTruthy();
   });
 
   it("applies the route filter and says when nothing matches", async () => {

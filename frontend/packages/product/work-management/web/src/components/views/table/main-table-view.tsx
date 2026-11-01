@@ -9,6 +9,7 @@ import { useIsMobile } from "@notrelix/ui-web";
 import {
   useArchiveCard,
   useBulkUpdateItems,
+  bulkFailedItemId,
   useAddFieldOption,
   useBoardTable,
   useMoveFieldOption,
@@ -587,16 +588,23 @@ export function MainTableView({
   // Status, due date and assignee of the selected rows: one request, all or none.
   const bulkWrite = (change: BulkItemChange) => {
     for (const id of selectedList) noteTitle(id);
+    // The selection is spent only once the server took the change; a refusal keeps it and names the item.
     bulkMutate(
       { itemIds: selectedList, change },
       {
-        onError: () =>
-          toast.error(copy.failed.bulk, {
-            id: `table-bulk-${++toastAttempt.current}`,
-          }),
+        onSuccess: () => setSelection(new Set()),
+        onError: (error) => {
+          const failed = bulkFailedItemId(error);
+          const title = failed ? titles.current.get(failed) : undefined;
+          toast.error(
+            title
+              ? fillTableCopy(copy.failed.bulkItem, { title })
+              : copy.failed.bulk,
+            { id: `table-bulk-${++toastAttempt.current}` },
+          );
+        },
       },
     );
-    setSelection(new Set());
   };
 
   const itemFields = findItemFields(board);

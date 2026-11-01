@@ -328,7 +328,9 @@ function Composer() {
         <Lock aria-hidden="true" className="size-4 shrink-0" />
         {capabilities.frozen || readOnly === "archived"
           ? t.readOnlyArchived
-          : t.readOnlyPermission}
+          : readOnly === "item-archived"
+            ? t.readOnlyItemArchived
+            : t.readOnlyPermission}
       </div>
     );
   if (!open)

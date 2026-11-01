@@ -691,7 +691,7 @@ Team capability WM-001.
 - Rules: product sections 105; WM-030; Q7
 - Acceptance: (1) Given a Guest, when a conflict or "deleted by" notice would name someone who is not on the board, then it says "someone" and shows no name or email (owner Q7). (2) Given a Guest, when they open an assignee, person-field or mention picker, then only people on that board are listed and no workspace directory data or email shows (owner Q7). (3) Given a Guest, when they open the assignee, Person-field, mention or filter-by-person pickers, then only board members appear, no email shows, and a request for another workspace member returns nothing (owner Q7).
 - Evidence: BE Governance + board reads (Q7 pickers: board members only) · FE guest-capped controls; picker rule unproven · Design none; needs Guest board view (capped controls, board-members-only pickers) · Tests none found · Real e2e `guest-permission.real.e2e.spec.ts` (negative only)
-- State: INTEGRATING — design for the Guest board view; proof that pickers show no emails (Q7); positive guest journey e2e.
+- State: INTEGRATING — design for the Guest board view; proof that pickers show no emails (Q7); positive guest journey e2e. Checked 2026-11-01 on the real stack: a Guest gets 403 from the workspace members read that the assignee, person and mention pickers use, and there is no board-scoped people read, so the board-members-only picker (Q7) needs a backend read before it can be proven.
 
 ### UC-WM-A24 Copy item/board link
 - Capability: A Board lifecycle (WM-001)
@@ -704,8 +704,8 @@ Team capability WM-001.
 - UI states: success (toast: link copied), pending none, error (clipboard blocked)
 - Rules: product sections 106; WM-030
 - Acceptance: Given a copied link opened by a non-member, then [S1].
-- Evidence: BE not applicable (client URL) · FE copy link in item action menu · Design Final-M-Share `da-sao-chep` · Tests none found · Real e2e none
-- State: INTEGRATING — non-member gets NotFound e2e
+- Evidence: BE not applicable (client URL) · FE copy link in item action menu · Design Final-M-Share `da-sao-chep` · Tests none found · Real e2e `frontend/e2e/real/work-item-states.real.e2e.spec.ts`
+- State: HARDENING — owner check and the 1 px design measurement. Evidence 2026-11-01: real stack run 2026-11-01 at d99b4cca0 plus this branch: 12 of 12 passed (work-item-states 8, item-lifecycle 3, item-page 1); `copy link puts a card address on the clipboard and the same address reads as not found to a person with no access`: the card actions menu put the address (with `item=<id>`) on the clipboard and a Guest with no grant on the board got the same 404 problem (type, title, status, errorCode) for the real item as for an id that never existed. Fixed on the way: the web app showed none of the toasts raised from Work Management (two copies of sonner, so "Item link copied" never appeared); both now use the catalog version. Application tests are not applicable (client URL); `item-actions.interaction.component.test.tsx` 19 passed. Not covered: the clipboard-blocked error toast.
 
 ### UC-WM-A25 Warn when an access change would strand assignees
 - Capability: A Board lifecycle (WM-001)
@@ -960,8 +960,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 26, 123
 - Acceptance: Given a Viewer, then write entries are disabled with the reason. Given an item deleted while the menu is open, then the person is told and the row leaves.
-- Evidence: BE not applicable (per-action routes) · FE item-actions (19 tests) · Design WM-Actions-Menu, BC-Actions · Tests none found · Real e2e none
-- State: INTEGRATING — real e2e; proof that an item deleted while the menu is open is announced.
+- Evidence: BE not applicable (per-action routes) · FE item-actions (19 tests) · Design WM-Actions-Menu, BC-Actions · Tests none found · Real e2e `frontend/e2e/real/work-item-states.real.e2e.spec.ts`
+- State: HARDENING — owner check, design measurement and the other entry points. Evidence 2026-11-01: real stack run 2026-11-01 at d99b4cca0 plus this branch: 12 of 12 passed (work-item-states 8, item-lifecycle 3, item-page 1); `the card actions menu lists one ordered set and an item deleted while its card is open turns the card into the gone state`: the menu lists Copy link, Mark complete, Remind assignees, Duplicate, Move board, Archive, Delete in that order, and when the item is deleted behind the open card the card turns into the one generic gone message with nothing of the item and the card leaves the board. `item-actions.interaction.component.test.tsx` 19 passed (a Viewer sees write entries disabled with their reasons). An archived card now offers Unarchive in the same menu (`a member archives an item from its card, sees it archived and restores it`). Not covered: right-click and long-press entry points, the failure toast with retry.
 
 ### UC-WM-B16 See item face states (card and row)
 - Capability: B BoardItem lifecycle (WM-002)
@@ -975,7 +975,7 @@ Team capability WM-002.
 - Rules: product sections 27.2; WM-043; D39
 - Acceptance: Given 5 labels and 4 assignees, then the card shows 2 and 2 with '+N'. Given an overdue due date, then the chip says so.
 - Evidence: BE comment count in /full (GetFullBoard tests) · FE KanbanCard, table-row · Design WM-Card-Face(-Dem), WM-Card-Compact, Kanban-Card-States · Tests none found · Real e2e none
-- State: INTEGRATING — Non-colour marks proof; 99+ cap
+- State: HARDENING — owner check and design measurement. Evidence 2026-11-01: `kanban-card.interaction.component.test.tsx` 67 passed (two labels then +N, avatars with +N, overdue and today chips with words, blocked badge named in vi and en, done card muted, and the new test: comment and file counts cap at 99+); the real stack runs above open the Engineering Tasks board from the real read and render its cards. An archived item leaves the board, so its muted face is the card popup notice (see UC-WM-B18). Not covered: the table row face and a card-face end-to-end check against the real backend.
 
 ### UC-WM-B17 Purge items, boards and fields after their 30-day window
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1002,8 +1002,8 @@ Team capability WM-002.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 26-28; WM-044; D69; WMREQ011, WMREQ111
 - Acceptance: Given a Member who clicks an item, then the sheet shows Properties, Description, Checklists, Sub-items, Files, Links, Approval and Comments or History. Given an empty section, then it collapses to '+ Add'. Given an item deleted by someone else while open, then the sheet says so and offers Restore only to those who may.
-- Evidence: BE BoardItems.Get = GET /board-items/{itemId:guid} -> GetBoardItemQuery (`BoardItems/Queries/GetBoardItem/GetBoardItem.cs`) [- / -] · FE card popup (`card-popup/*`: CardPopupSurface, KanbanSelectedItem over Kanban, Table, Calendar, Timeline and My work; the item link redirects to the board with the popup open) · Design Kanban-CreateTask and Kanban-CardPopup-* (incl. -States-1/-2, -M-Card, -M-States), BC-Notices · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e `item-page.real.e2e.spec.ts` (smoke)
-- State: INTEGRATING — tests and owner check. Built: a modal popup (full-height sheet at 390) replaces the side sheet and the item page; loading, error with retry, one generic gone-or-no-access message, per-field saving with retry, conflict notice, read-only (permission, archived). Left: paged comments and history, "Trường hiển thị trên thẻ" persistence.
+- Evidence: BE BoardItems.Get = GET /board-items/{itemId:guid} -> GetBoardItemQuery (`BoardItems/Queries/GetBoardItem/GetBoardItem.cs`) [- / -] · FE card popup (`card-popup/*`: CardPopupSurface, KanbanSelectedItem over Kanban, Table, Calendar, Timeline and My work; the item link redirects to the board with the popup open) · Design Kanban-CreateTask and Kanban-CardPopup-* (incl. -States-1/-2, -M-Card, -M-States), BC-Notices · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e `item-page.real.e2e.spec.ts`, `frontend/e2e/real/work-item-states.real.e2e.spec.ts` and `item-lifecycle.real.e2e.spec.ts`
+- State: HARDENING — tests, owner check and design measurement. Built: a modal popup (full-height sheet at 390) replaces the side sheet and the item page; loading, error with retry, one generic gone-or-no-access message, per-field saving with retry, conflict notice, read-only (permission, archived board, and now an archived card with its own notice; the card detail read now says whether the item is archived, so the menu offers Unarchive). Evidence 2026-11-01: real stack run 2026-11-01 at d99b4cca0 plus this branch: 12 of 12 passed (work-item-states 8, item-lifecycle 3, item-page 1); `a card opens with its sections, Escape returns focus to the card, and a missing card reads like one the person cannot see` (Description, Custom fields, Attachments, Links and dependencies and the comments column show; Escape closes and focus returns to the card; a missing id shows the gone message); `a card save that carries a stale version is refused, changes nothing and shows the conflict notice`; the deleted-while-open and archived-and-restore journeys above; `kanban-card-detail-panel.component.test.tsx` 3 passed (an editor reads an archived card view-only). The previous item-lifecycle journeys drove the retired item page and failed; they now drive the popup. Left: paged comments and history, "Trường hiển thị trên thẻ" persistence, the "deleted by <name>" actor (Q12), keeping the draft text when the card is gone, and `sub-items.real.e2e.spec.ts`, which still drives the retired item page and fails.
 
 ### UC-WM-B19 Edit the item description
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1045,7 +1045,7 @@ Team capability WM-002.
 - Rules: product sections 68.1; WM-039; D76.8
 - Acceptance: Given a link kind changed, then the link keeps its id. Given the target archived, then the link stays and shows archived.
 - Evidence: BE BoardItems.DeleteLink = DELETE /board-items/{itemId:guid}/links/{linkId:guid} -> DeleteBoardItemLinkCommand (`ItemLinks/Commands/DeleteBoardItemLink/DeleteBoardItemLink.cs`) [- / Idem] · FE ItemPageLinks (raw) · Design WM-TL-Interactions (undo) · Tests `DeleteBoardItemLinkTests.cs` · Real e2e none
-- State: INTEGRATING — Dangling-link policy (D76.8); typed client
+- State: INTEGRATING — Dangling-link policy (D76.8); typed client Checked 2026-11-01: removing a link answers 204 then 404 on the real stack (`work-item-states.real.e2e.spec.ts`), but no endpoint or control changes the kind of a link, so "a kind change keeps the link id" is not built.
 
 ### UC-WM-B22 See sub-items and derived progress in the item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1129,7 +1129,7 @@ Team capability WM-002.
 - Rules: product sections 85, 89; WM-026; D76.11
 - Acceptance: Given a rejected request, when re-requested, then a Pending request exists and the history shows both. Given a rejected request, when re-requested, then a new request exists linked to the previous one and both show in history.
 - Evidence: BE Approvals.RequestForItem = POST /board-items/{itemId:guid}/approval-requests -> RequestItemApprovalCommand (`Approvals/Commands/RequestItemApproval/RequestItemApproval.cs`) [- / Idem] · FE request again from item section · Design none; needs re-request after reject/cancel · Tests `ItemApprovalTests.cs` · Real e2e none
-- State: INTEGRATING — no link from the new request to the previous one (verified: no previous-request field in the Approvals domain); no design.
+- State: INTEGRATING — no link from the new request to the previous one (verified: no previous-request field in the Approvals domain); no design. Checked 2026-11-01: a request after a rejection is allowed (only a Pending one blocks it); the previous-request link is still not built.
 
 ### UC-WM-B28 See approval state and waiting-review figures
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1213,7 +1213,7 @@ Team capability WM-002.
 - Rules: product sections 127-128; WM-012, WM-034; WMREQ110-113; Q12
 - Acceptance: (1) Given B has an unsaved edit on field F and A changes F, when B saves, then the in-cell conflict choice appears; B's draft is never overwritten before that. (2) Given a version conflict on a cell, when the write returns 412, then the cell offers "Giữ giá trị của tôi" (re-reads first, then writes) and "Dùng giá trị mới" (drops the typed value). (3) Given a version conflict on a cell, a description conflict, or an item deleted by another person, when the notice shows, then it names that person (the actor comes from the API, not the client); when the actor is unknown (system or removed user) it uses neutral copy (owner Q12; the actor on conflict responses and on deleted/moved realtime frames is a contract addition the architect designs).
 - Evidence: BE EV on 38 of 149 endpoints; competing writes without EV (Part 3) · FE ItemPageConflictNotice, 409 handling; no actor name · Design BC-Notices, Final-Detail `xung-dot` · Tests none found · Real e2e none
-- State: INTEGRATING — Actor on conflict (Q12 contract); EV gaps; real e2e
+- State: INTEGRATING — Actor on conflict (Q12 contract); EV gaps; real e2e Checked 2026-11-01 on the real stack: a stale card save (412, nothing changed, notice shown), a stale bulk change and a stale archive are refused; the named actor (Q12) and the in-cell keep-mine choice in the table are not built.
 
 ### UC-WM-B34 Item deleted or archived by someone else while open
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1240,8 +1240,8 @@ Team capability WM-002.
 - UI states: none: system behaviour with no screen of its own
 - Rules: product sections 131; WM-034
 - Acceptance: Given a link target deleted during the write, then the link is not created.
-- Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE not applicable · Design not applicable (no screen) · Tests `CreateBoardItemLinkTests.cs` · Real e2e none
-- State: INTEGRATING — the race is not covered by a test.
+- Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE not applicable · Design not applicable (no screen) · Tests `CreateBoardItemLinkTests.cs` · Real e2e `frontend/e2e/real/work-item-states.real.e2e.spec.ts`
+- State: HARDENING — a test of the concurrent interleaving. Evidence 2026-11-01: `a link is removed once, a second removal is not found, and a trashed target cannot be linked` (real stack run 2026-11-01 at d99b4cca0 plus this branch: 12 of 12 passed (work-item-states 8, item-lifecycle 3, item-page 1)): the target is trashed, then the link write answers 404 and the source lists no link; `CreateBoardItemLinkTests` 13 passed (a missing or trashed target is NotFound, a self link, a cross-board and a cross-workspace link are refused). Limit: the case where the target is trashed between the check and the commit is not driven; a link that wins that race stays and is hidden while the target is in trash (D76.8), so no dangling link is shown.
 
 ### UC-WM-B36 See a bulk failure
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1254,8 +1254,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 132; WM-034; D32, D77.3
 - Acceptance: (1) Given a bulk network failure, when retried, then the retry carries the same idempotency key and does not apply twice. (2) Given a bulk action rejected by the server, when it returns, then nothing changed, the first failing item and reason are named, and the selection stays.
-- Evidence: BE BoardItems.BulkUpdate = POST /boards/{boardId:guid}/items/bulk -> BulkUpdateBoardItemsCommand (`BoardItems/Commands/BulkUpdateBoardItems/BulkUpdateBoardItems.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-bulk-bar.tsx` · Design BC-Bulk (error, >200) · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; proof that the failing item is named and the selection stays.
+- Evidence: BE BoardItems.BulkUpdate = POST /boards/{boardId:guid}/items/bulk -> BulkUpdateBoardItemsCommand (`BoardItems/Commands/BulkUpdateBoardItems/BulkUpdateBoardItems.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-bulk-bar.tsx` · Design BC-Bulk (error, >200) · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e `frontend/e2e/real/work-item-states.real.e2e.spec.ts`
+- State: HARDENING — owner check, the over-200 state and the Kanban bar message. Evidence 2026-11-01: `a bulk change with one stale item changes nothing, names that item, and the table keeps the pick` (real stack run 2026-11-01 at d99b4cca0 plus this branch: 12 of 12 passed (work-item-states 8, item-lifecycle 3, item-page 1)): on the real server a stale item refused the whole request with 412 and `itemId` of that item, the other item kept its version and due date; in the table the refusal names the item ("Couldn't change “…”, so nothing was changed. Your selection is still there.") and the selection stays (the pick is now spent only when the server took the change; the Kanban bar does the same). `BulkUpdateBoardItemsTests` 20 passed; `main-table-view.component.test.tsx` 21 passed (the new test names the item and keeps the toolbar); `bulk-update-items.unit.test.ts` 8 passed. The retry with the same key is covered by the request's idempotency attribute, not by a test in this run.
 
 ## C. BoardField definitions
 
@@ -1301,7 +1301,7 @@ Team capability WM-003.
 - Rules: product sections 21-22; WM-008; WMREQ033
 - Acceptance: Given 10 existing items with the old default, when the default changes, then those 10 stay unchanged and a new item gets the new default.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE default editor not evidenced · Design WM-Field-Sheet (default) · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Test existing values unchanged; UI proof
+- State: INTEGRATING — Test existing values unchanged; UI proof Checked 2026-11-01: the Domain keeps a field default (`SetDefaultValue`) but no command, endpoint or control sets it and item creation does not apply it, so the use case is not built beyond the Domain.
 
 ### UC-WM-C04 Archive or delete a custom field
 - Capability: C BoardField definitions (WM-003)
@@ -1482,8 +1482,8 @@ Team capability WM-003.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 147-148; WM-038; WMREQ034
 - Acceptance: Given a Priority option, then it shows its colour and its text. Given two boards, then each keeps its own Status options.
-- Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE status-option, priority-glyph · Design Final-Settings, Kanban-Card-States · Tests `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; status per board proof
+- Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE status-option, priority-glyph · Design Final-Settings, Kanban-Card-States · Tests `CreateBoardFieldTests.cs` · Real e2e `frontend/e2e/real/work-item-states.real.e2e.spec.ts`
+- State: HARDENING — priority colour check and owner check. Evidence 2026-11-01: `two boards keep their own Status options` (real stack run 2026-11-01 at d99b4cca0 plus this branch: 12 of 12 passed (work-item-states 8, item-lifecycle 3, item-page 1)): a Status option added on one board appeared on that board only, the other board's options were unchanged and no option id is shared; `CreateBoardFieldTests` 5 passed; `status-option-form.interaction.component.test.tsx` 12 and `use-add-group.component.test.tsx` 4 passed; `kanban-card.interaction.component.test.tsx` 67 passed (priority named on the card). Not covered: the Priority option colour and text in the real UI.
 
 ### UC-WM-C17 Keep one semantic contract per field type
 - Capability: C BoardField definitions (WM-003)

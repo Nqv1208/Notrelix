@@ -42,3 +42,22 @@ export function useBulkUpdateItems(boardId: string, workspaceId: string) {
       }),
   });
 }
+
+/** The first item a refused bulk request names (a stale one), when the problem carries it. */
+export function bulkFailedItemId(error: unknown): string | undefined {
+  const details = (error as { details?: unknown } | null)?.details;
+  const id = (details as { itemId?: unknown } | null)?.itemId;
+  return typeof id === "string" ? id : undefined;
+}
+
+/** The title the board read shows for an item, to name the one a refused bulk request points at. */
+export function useBoardCardTitle(boardId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  return (itemId: string): string | undefined =>
+    findBoardCard(
+      queryClient.getQueryData<FullBoardResponse>(
+        wmQueryKeys.fullBoard(workspaceId, boardId),
+      ),
+      itemId,
+    )?.title;
+}

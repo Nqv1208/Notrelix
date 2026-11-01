@@ -71,6 +71,9 @@ export const en = {
   readOnlyPermissionTitle: "You can only view this card",
   readOnlyPermissionBody:
     "You need edit rights to change it. You can still read the whole card, its comments and links.",
+  readOnlyItemArchivedTitle: "This card is archived",
+  readOnlyItemArchivedBody:
+    "The card is view-only. Choose Unarchive in the card actions to edit it again.",
   readOnlyArchivedTitle: "This board is archived",
   readOnlyArchivedBody:
     "The card is view-only. A board manager can restore the board to keep editing.",
@@ -179,6 +182,9 @@ export const vi: ShellCopy = {
   readOnlyPermissionTitle: "Bạn chỉ có quyền xem thẻ này",
   readOnlyPermissionBody:
     "Cần quyền sửa để đổi nội dung. Bạn vẫn đọc được toàn bộ thẻ, bình luận và liên kết.",
+  readOnlyItemArchivedTitle: "Thẻ này đã lưu trữ",
+  readOnlyItemArchivedBody:
+    "Thẻ ở chế độ chỉ xem. Chọn Bỏ lưu trữ trong thao tác trên thẻ để sửa lại.",
   readOnlyArchivedTitle: "Board này đã lưu trữ",
   readOnlyArchivedBody:
     "Thẻ ở chế độ chỉ xem. Quản lý board có thể khôi phục board để tiếp tục sửa.",

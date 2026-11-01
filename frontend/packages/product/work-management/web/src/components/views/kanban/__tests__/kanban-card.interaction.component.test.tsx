@@ -145,6 +145,19 @@ describe("KanbanCard interactions", () => {
   });
 });
 
+describe("KanbanCard counts", () => {
+  it("caps the comment and file counts at 99+ and keeps the real count readable", () => {
+    const { article } = renderCard({
+      _count: { comments: 100, attachments: 99, checklistItems: 0 },
+    });
+    const comments = article.querySelector("[data-comment-count]")!;
+    const files = article.querySelector("[data-file-count]")!;
+    expect(comments.textContent).toContain("99+");
+    expect(files.textContent).toContain("99");
+    expect(files.textContent).not.toContain("99+");
+  });
+});
+
 describe("KanbanCard top row", () => {
   it("shows the item key in the mono font", () => {
     const { article } = renderCard({ itemKey: "ERP-142" });
