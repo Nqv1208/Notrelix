@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;

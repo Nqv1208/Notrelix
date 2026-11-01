@@ -203,7 +203,7 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
       aria-label={label}
       onClick={props.onClose}
       className={cn(
-        "ml-auto grid size-8 shrink-0 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
+        "ml-auto grid size-8 max-md:size-11 shrink-0 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
         FOCUS,
       )}
     >
@@ -485,7 +485,7 @@ function ShareBody({
                   : undefined
               }
               className={cn(
-                "ml-auto box-border inline-flex h-[30px] items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
                 FOCUS,
               )}
             >
@@ -729,7 +729,7 @@ function ShareBody({
             type="button"
             onClick={() => setScreen("log")}
             className={cn(
-              "rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground hover:underline max-md:min-h-11",
+              "rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center",
               FOCUS,
             )}
           >
@@ -1108,7 +1108,7 @@ function PersonRow({
               })}
               onClick={editable ? () => setMenu(!menuOpen) : undefined}
               className={cn(
-                "box-border inline-flex h-[30px] items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                "box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
                 menuOpen && "border-primary ring-2 ring-state-selected",
                 FOCUS,
               )}
