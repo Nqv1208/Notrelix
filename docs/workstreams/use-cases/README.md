@@ -116,23 +116,23 @@ A use case is DONE only when all of these hold on the same commit (`docs/deliver
 
 The design canvas holding the artboards is the owner's claude.ai artifact `18L4jUXGfdXh7Wn9YQvA2x`. Artboard ids in the catalog refer to it.
 
-## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01)
+## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01; Accounts, Workspaces, Documents, Collaboration and Work Management adjusted again 2026-11-01 for decisions 3 and 7 and the Work Management index fixes)
 
 | Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | BLOCKED |
 |---|---|---|---|---|---|---|
-| Accounts | 42 | 15 | 22 | 2 | 2 | 1 |
+| Accounts | 42 | 16 | 22 | 2 | 2 | 0 |
 | Identity | 61 | 6 | 12 | 25 | 14 | 4 |
-| Workspaces | 91 | 5 | 14 | 60 | 7 | 5 |
+| Workspaces | 91 | 8 | 14 | 60 | 7 | 2 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 6 |
-| Work Management | 171 | 12 | 2 | 15 | 141 | 1 |
-| Documents | 82 | 10 | 4 | 43 | 20 | 5 |
-| Collaboration | 85 | 17 | 7 | 37 | 17 | 7 |
+| Work Management | 171 | 11 | 1 | 15 | 143 | 1 |
+| Documents | 82 | 12 | 4 | 43 | 20 | 3 |
+| Collaboration | 85 | 19 | 7 | 37 | 17 | 5 |
 | Automation | 79 | 11 | 26 | 21 | 20 | 1 |
 | Integrations | 55 | 13 | 20 | 11 | 11 | 0 |
 | Billing | 99 | 56 | 27 | 8 | 7 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **959** | **192** | **208** | **245** | **280** | **34** |
+| **Total** | **959** | **199** | **207** | **245** | **282** | **26** |
 
 No use case is DONE: none has a recorded owner check or design-fidelity proof.
 
@@ -147,17 +147,17 @@ Patterns that repeat across contexts, each detailed with file paths in the conte
 
 ## 9. Decisions only the product owner can make
 
-These block use cases in several contexts. They are security-principal, tenant or data-destruction choices (`AGENTS.md` §13), so no lead decision was taken.
+These block use cases in several contexts. They are security-principal, tenant or data-destruction choices (`AGENTS.md` §13), so no lead decision was taken, except where a row below says decided.
 
 | # | Decision | Blocks |
 |---|---|---|
 | 1 | Platform operator principal: decided and built 2026-10-31 (a separate account, its own sign-in scheme and database login, an audit row per action; UC-ACC-D01, D02 HARDENING, UC-BIL-A03, D02, D03, R09 INTEGRATING). Still open: what the customer sees as the audit actor, consent-based support access, operator MFA | UC-BIL-L05, UC-ANA-X02 |
 | 2 | Anonymous principal and abuse controls (rate limit, captcha, spam handling) for public forms, share links, public pages and public comments | UC-WM-N06, UC-GOV-G03, UC-GOV-G05, UC-DCT-A15, UC-COL-H08 |
-| 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization | UC-ACC-D05, UC-WSP-D03, UC-WSP-D04, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05 |
+| 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization. Decided 2026-11-01: one rule everywhere, a 30-day recoverable window, then purge. Workspace delete is Owner-only with typed-name confirmation, members lose access at once, the Owner can restore for 30 days and export during the window, and a purge job hard-deletes after 30 days with an audit fact. Account delete: the account Owner, takes its workspaces, same window. Pages and comments: trash 30 days, then purge. Identity deletion anonymizes (name "Deleted user", email replaced by a non-reversible hash; content and audit keep the user id). Not built | none now; was UC-ACC-D05, UC-WSP-D03, UC-WSP-D04, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05, now DEFINED |
 | 4 | Custom roles: place in the Governance decision order, reach into Private resources, relation to Deny rules; the moderator permission for comments | UC-GOV-C04, UC-GOV-C05, UC-COL-C02, UC-COL-F07 |
 | 5 | Sign-in policy: company SSO enforcement and the verified-domain rule, required MFA owner, SCIM provisioning principal, second-factor recovery | UC-IDN-B08, UC-IDN-J04, UC-IDN-J05, UC-WSP-F10, UC-WSP-J04 |
 | 6 | API token scope vocabulary and whether a token may call person-level routes | UC-IDN-L05 |
-| 7 | Account suspension effect on its workspaces | UC-WSP-D06 |
+| 7 | Account suspension effect on its workspaces. Decided 2026-11-01: a suspended account is read-only end to end; automation runs and outbound webhooks are skipped and recorded with reason account.suspended, public forms and share-link writes refuse, reads stay open, nothing is deleted. Not built | none now; was UC-WSP-D06, now DEFINED |
 
 Also needs the owner: the plan tier list (artboard shows four tiers, catalog has three) and where job title lives (owner decision of 2026-10-27 puts it in the Identity profile; product docs and code keep it in Workspaces).
 
@@ -182,7 +182,7 @@ A use case belongs to the first version whose scope lists it. The catalog state 
 ### 12.1 Version 0.1.0: Work Management core, sign-in and session, workspaces and members
 
 Scope as the owner approved it, pinned to use-case IDs. Teams, onboarding and Home, the rest of Spaces, comments and attachments on items, provider sign-in, profile and API tokens are not in it unless the owner adds them. Use cases BLOCKED on an owner decision (§9) are outside it until the owner decides.
-Workspace delete and restore (UC-WSP-D03, D04) wait on owner decision 3 in §9 and join 0.1.0 if the owner rules before the cut.
+Workspace delete and restore (UC-WSP-D03, D04) are in 0.1.0 now that owner decision 3 is made (§9).
 
 **Identity (`identity.md`)**
 
@@ -205,13 +205,14 @@ Workspace delete and restore (UC-WSP-D03, D04) wait on owner decision 3 in §9 a
 | A | Workspace create | A01-A02, A04 | 3 |
 | B | Workspace read / resolve | B01, B04 | 2 |
 | C | Workspace update | C01 | 1 |
+| D | Workspace lifecycle transition (delete and restore only) | D03-D04 | 2 |
 | E | Membership read | E01-E02 | 2 |
 | F | Membership add / remove / change | F02, F05 | 2 |
 | G | Invitation create | G01, G03-G06 | 5 |
 | H | Invitation accept / reject / revoke | H01-H03, H05-H06 | 5 |
 | I | Workspace selection / switch integration | I01-I02, I04 | 3 |
 | K | Spaces (minimal: create, read, place a board) | K01-K02, K15 | 3 |
-| | Total | | 26 |
+| | Total | | 28 |
 
 **Work Management (`work-management.md`)**
 
@@ -235,7 +236,7 @@ Workspace delete and restore (UC-WSP-D03, D04) wait on owner decision 3 in §9 a
 | T | Performance and hardening | T01 | 1 |
 | | Total | | 134 |
 
-Version 0.1.0 holds 191 use cases.
+Version 0.1.0 holds 193 use cases.
 
 ### 12.2 Later versions (capabilities only)
 

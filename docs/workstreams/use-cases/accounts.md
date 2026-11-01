@@ -44,12 +44,12 @@ Letters follow the Accounts list in the team spec (section 4).
 | A | Account create | 3 | 2 | 0 | 1 | 0 | 0 | 0 |
 | B | Account read | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | C | Account update | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| D | Account lifecycle transition | 6 | 1 | 2 | 0 | 2 | 0 | 1 |
+| D | Account lifecycle transition | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
 | E | Account-context resolution | 3 | 0 | 2 | 1 | 0 | 0 | 0 |
 | F | Account switch / transition behavior | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | G | Account-scoped frontend state isolation | 3 | 1 | 2 | 0 | 0 | 0 | 0 |
 | H | Account-level administration integration | 20 | 6 | 14 | 0 | 0 | 0 | 0 |
-| | Total | 42 | 15 | 22 | 2 | 2 | 0 | 1 |
+| | Total | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
 
@@ -126,7 +126,7 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | HARDENING | Same as D01 |
 | UC-ACC-D03 | Close an Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, impact preview, reactions |
 | UC-ACC-D04 | Reopen a closed Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, reactions |
-| UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | BLOCKED | Owner deferred deletion |
+| UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built. |
 | UC-ACC-D06 | Other contexts react to suspension and closure | D | System | no | no | none | none | DEFINED | Consumers in four contexts |
 | UC-ACC-E01 | Resolve the current Account for a request | E | Any signed-in actor | yes | partial | none | none | INTEGRATING | Non-deterministic bootstrap pick; FE uses User.id |
 | UC-ACC-E02 | Deny access to another Account identically | E | Any actor | yes | no | none | none | IMPLEMENTING | FE denied state; cross-tenant test per use case |
@@ -353,7 +353,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts ACC-006; sections 17, 83; owner decision 48 (A8).
 - Acceptance: Given the current release, When an Owner looks for "Delete organization", Then no control exists and no endpoint exists.
 - Evidence: BE `Account.Delete`, `Account.Restore` (no caller) · FE none · Design none · Tests `AccountTests` · Real e2e none
-- State: BLOCKED — owner deferred Account deletion and data export (Part 4). Needs a legal and retention decision: retention period, what is purged, Billing and audit evidence, identity references.
+- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built.
 
 ### UC-ACC-D06 Other contexts react to suspension and closure
 - Capability: D Account lifecycle transition
@@ -771,7 +771,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 
 # 4. Product decisions applied
 
-Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 is BLOCKED and shows no control); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (job title, device as session, IP and user agent, accent and sidebar) belong to Identity.
+Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 was BLOCKED on this; the delete rule is decided 2026-11-01, README §9 decision 3, and not built); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (job title, device as session, IP and user agent, accent and sidebar) belong to Identity.
 
 Lead decision (2026-10-30): A new Account permission set is defined. `ManageAccount` (exists): Owner and Admin. `ManageAccountSecurity` (new): Owner and SecurityAdmin, for domains, SSO and SCIM. `ManageAccountLifecycle` (new): Owner only, for close, reopen and ownership transfer. `ViewAccountAudit` (new): Owner and SecurityAdmin. `BillingAdmin` keeps only Billing-owned actions (see [billing.md](billing.md)); it gets no other Account action.
 
@@ -835,7 +835,7 @@ Text for `docs/product/accounts.md` (and Governance where noted) to absorb.
 | Sections 1 to 3, 6, 8, 9 (mission, boundary, identity, source evidence) | Context statements, exercised through A01, E01 and Part 5 rules, no separate behaviour. |
 | Section 10, Account type | A decision only (Part 4): the type carries no rule. Reachable through A01, A02. |
 | Section 11 and 53, lifecycle states `Trialing` | Deprecated by Part 4. No use case drives it. |
-| Sections 17 to 19, delete and restore | D05, BLOCKED. |
+| Sections 17 to 19, delete and restore | D05, DEFINED (decided 2026-11-01). |
 | Section 50 to 52 and 99, Billing relation | B03, H20 and R-ACC-PLAN. Billing owns the behaviour: [billing.md](billing.md). |
 | Section 60, Integrations classification | Routing of ownership only; generic providers are in `automation-integrations.md`. |
 | Sections 61 and 91, Analytics | Derived by Analytics, see `analytics.md`; no Accounts action. |
