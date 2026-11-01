@@ -219,8 +219,7 @@ export interface paths {
         };
         /** Get the plan the workspace's account is on, the plan catalog and whether the caller may change the plan */
         get: operations["Billing.Plan.Get"];
-        /** Move the workspace's account to another plan (account owner, development environments only) */
-        put: operations["Billing.Plan.Change"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2348,6 +2347,279 @@ export interface paths {
         put?: never;
         /** Verified provider webhook callback intake */
         post: operations["Integrations.Calendar.HandleWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/auth/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign a platform operator in with a password */
+        post: operations["Operator.Auth.SignIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in operator */
+        get: operations["Operator.Auth.Me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List accounts (identity and status only) */
+        get: operations["Operator.Account.List"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One account with its member and workspace counts */
+        get: operations["Operator.Account.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend an account: read-only for its members, nothing deleted */
+        post: operations["Operator.Account.Suspend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}/lift-suspension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lift an account's suspension */
+        post: operations["Operator.Account.LiftSuspension"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/billing/account-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The plan each listed account is on */
+        post: operations["Operator.Billing.AccountPlans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An account's plan, subscription and entitlement overrides */
+        get: operations["Operator.Billing.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}/billing/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Move an account to a catalog plan revision */
+        put: operations["Operator.Billing.ChangePlan"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}/billing/terminate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End an account's subscription now */
+        post: operations["Operator.Billing.Terminate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/accounts/{accountId}/billing/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Grant a manual entitlement override */
+        post: operations["Operator.Billing.GrantOverride"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/billing/overrides/{entitlementId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a manual entitlement override */
+        post: operations["Operator.Billing.RevokeOverride"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every revision of every plan family */
+        get: operations["Operator.Billing.Plans.List"];
+        put?: never;
+        /** Publish a new plan revision */
+        post: operations["Operator.Billing.Plans.CreateRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/billing/plans/{planId}/deprecate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop selling a plan revision */
+        post: operations["Operator.Billing.Plans.Deprecate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/billing/plans/{planId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a plan revision */
+        post: operations["Operator.Billing.Plans.Archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What operators changed, newest first */
+        get: operations["Operator.Audit.List"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6278,9 +6550,6 @@ export interface components {
             /** Format: uuid */
             boardId?: string | null;
         };
-        "Notrelix.API.Contracts.Billing.ChangeWorkspaceBillingPlanRequest": {
-            planCode?: string | null;
-        };
         "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
             filename?: string | null;
             url?: string | null;
@@ -6503,6 +6772,53 @@ export interface components {
         };
         "Notrelix.API.Contracts.Integrations.Connections.ConnectWebhookRequest": {
             url?: string | null;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorAccountPlansRequest": {
+            accountIds?: string[] | null;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorChangePlanRequest": {
+            /** Format: uuid */
+            planId?: string;
+            reason?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorGrantOverrideRequest": {
+            featureCode?: string | null;
+            isUnlimited?: boolean;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            reason?: string | null;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorPlanLimitRequest": {
+            featureCode?: string | null;
+            isUnlimited?: boolean;
+            /** Format: int32 */
+            limit?: number;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorPlanRevisionRequest": {
+            familyKey?: string | null;
+            /** Format: int32 */
+            revision?: number;
+            name?: string | null;
+            tier?: string | null;
+            /** Format: double */
+            priceAmount?: number;
+            currency?: string | null;
+            period?: string | null;
+            limits?: components["schemas"]["Notrelix.API.Contracts.Operator.OperatorPlanLimitRequest"][] | null;
+            reason?: string | null;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorReasonRequest": {
+            reason?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Operator.OperatorSignInRequest": {
+            email?: string | null;
+            password?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.ApprovalStepRequest": {
             /** Format: uuid */
@@ -7387,6 +7703,29 @@ export interface components {
             avatarUrl?: string | null;
             emailConfirmed?: boolean;
         };
+        "Notrelix.Application.Features.Accounts.Operator.OperatorAccountDetailDto": {
+            account?: components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"];
+            /** Format: int32 */
+            activeMembers?: number;
+            /** Format: int32 */
+            workspaces?: number;
+        };
+        "Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            slug?: string | null;
+            status?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Accounts.Operator.OperatorAccountPageDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"][] | null;
+            /** Format: int32 */
+            total?: number;
+        };
         "Notrelix.Application.Features.Analytics.Reports.BoardReportDto": {
             /** Format: uuid */
             boardId?: string;
@@ -7509,6 +7848,80 @@ export interface components {
             /** Format: int32 */
             remaining?: number | null;
         };
+        "Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingDto": {
+            currentPlan?: components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorCurrentPlanDto"];
+            subscription?: components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorSubscriptionDto"];
+            overrides?: components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorOverrideDto"][] | null;
+        };
+        "Notrelix.Application.Features.Billing.Operator.OperatorAccountPlanDto": {
+            /** Format: uuid */
+            accountId?: string;
+            familyKey?: string | null;
+            /** Format: int32 */
+            revision?: number;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.Billing.Operator.OperatorCurrentPlanDto": {
+            /** Format: uuid */
+            planId?: string;
+            familyKey?: string | null;
+            /** Format: int32 */
+            revision?: number;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.Billing.Operator.OperatorOverrideDto": {
+            /** Format: uuid */
+            id?: string;
+            featureCode?: string | null;
+            isUnlimited?: boolean;
+            /** Format: int32 */
+            limit?: number;
+            source?: string | null;
+            status?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Billing.Operator.OperatorPlanDto": {
+            /** Format: uuid */
+            id?: string;
+            familyKey?: string | null;
+            /** Format: int32 */
+            revision?: number;
+            name?: string | null;
+            tier?: string | null;
+            /** Format: double */
+            priceAmount?: number;
+            currency?: string | null;
+            period?: string | null;
+            status?: string | null;
+            /** Format: int64 */
+            version?: number;
+            limits?: components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorPlanLimitDto"][] | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Billing.Operator.OperatorPlanLimitDto": {
+            featureCode?: string | null;
+            isUnlimited?: boolean;
+            /** Format: int32 */
+            limit?: number;
+        };
+        "Notrelix.Application.Features.Billing.Operator.OperatorSubscriptionDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            planId?: string;
+            status?: string | null;
+            tier?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            currentPeriodEnd?: string;
+        };
         "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto": {
             code?: string | null;
             name?: string | null;
@@ -7523,7 +7936,6 @@ export interface components {
         "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.WorkspaceBillingPlanDto": {
             currentPlan?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"];
             availablePlans?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"][] | null;
-            canChangePlan?: boolean;
         };
         "Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityChangeDto": {
             fieldName?: string | null;
@@ -8079,6 +8491,34 @@ export interface components {
         "Notrelix.Application.Features.Integrations.Connections.IntegrationsOverviewDto": {
             catalog?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto"][] | null;
             connections?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"][] | null;
+        };
+        "Notrelix.Application.Features.Operators.Audit.OperatorAuditEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            operatorEmail?: string | null;
+            action?: string | null;
+            targetKind?: string | null;
+            /** Format: uuid */
+            targetId?: string;
+            /** Format: uuid */
+            accountId?: string | null;
+            reason?: string | null;
+            beforeJson?: string | null;
+            afterJson?: string | null;
+            /** Format: date-time */
+            occurredAt?: string;
+        };
+        "Notrelix.Application.Features.Operators.Auth.OperatorProfileDto": {
+            /** Format: uuid */
+            id?: string;
+            email?: string | null;
+            displayName?: string | null;
+        };
+        "Notrelix.Application.Features.Operators.Auth.OperatorSessionDto": {
+            accessToken?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+            operator?: components["schemas"]["Notrelix.Application.Features.Operators.Auth.OperatorProfileDto"];
         };
         "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval.ApprovalRequestIdDto": {
             /** Format: uuid */
@@ -10053,32 +10493,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.WorkspaceBillingPlanDto"];
-                };
-            };
-        };
-    };
-    "Billing.Plan.Change": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.Billing.ChangeWorkspaceBillingPlanRequest"];
-            };
-        };
         responses: {
             /** @description OK */
             200: {
@@ -15056,6 +15470,426 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Operator.Auth.SignIn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorSignInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Operators.Auth.OperatorSessionDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Operator.Auth.Me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Operators.Auth.OperatorProfileDto"];
+                };
+            };
+        };
+    };
+    "Operator.Account.List": {
+        parameters: {
+            query?: {
+                search?: string;
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountPageDto"];
+                };
+            };
+        };
+    };
+    "Operator.Account.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDetailDto"];
+                };
+            };
+        };
+    };
+    "Operator.Account.Suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"];
+                };
+            };
+        };
+    };
+    "Operator.Account.LiftSuspension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.AccountPlans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorAccountPlansRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorAccountPlanDto"][];
+                };
+            };
+        };
+    };
+    "Operator.Billing.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.ChangePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorChangePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.Terminate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.GrantOverride": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorGrantOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.RevokeOverride": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entitlementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.Plans.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorPlanDto"][];
+                };
+            };
+        };
+    };
+    "Operator.Billing.Plans.CreateRevision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorPlanRevisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorPlanDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.Plans.Deprecate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorPlanDto"];
+                };
+            };
+        };
+    };
+    "Operator.Billing.Plans.Archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Operator.OperatorReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Billing.Operator.OperatorPlanDto"];
+                };
+            };
+        };
+    };
+    "Operator.Audit.List": {
+        parameters: {
+            query?: {
+                accountId?: string;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Operators.Audit.OperatorAuditEntryDto"][];
                 };
             };
         };

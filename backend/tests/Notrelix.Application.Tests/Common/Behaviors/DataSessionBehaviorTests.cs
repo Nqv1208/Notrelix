@@ -6,7 +6,7 @@ public sealed class DataSessionBehaviorTests
     private sealed record ReadRequest(Guid WorkspaceId)
         : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IReadRequest;
     private sealed record WriteRequest(Guid WorkspaceId)
-        : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest;
+        : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest, IRequireVerifiedEmail;
     private sealed record GlobalAuthenticatedRead
         : IRequest<string>, IAuthenticatedRequest, IGlobalRequest, IReadRequest;
     private sealed record GlobalAnonymousRead

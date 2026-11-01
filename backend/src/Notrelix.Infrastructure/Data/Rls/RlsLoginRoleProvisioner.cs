@@ -20,16 +20,30 @@ public static class RlsLoginRoleProvisioner
 {
     public const string ApplicationRoleName = "notrelix_app";
     public const string WorkerRoleName = "notrelix_worker";
+    public const string OperatorRoleName = "notrelix_operator";
 
     /// <summary>
     /// The credentials carried by <c>ConnectionStrings:NotrelixDb</c> and <c>ConnectionStrings:NotrelixWorkerDb</c>.
     /// Throws when either string is missing, names another login, has no password, or both name the same login.
     /// </summary>
-    public static IReadOnlyList<LoginRoleCredential> ResolveCredentials(IConfiguration configuration) =>
-    [
-        FromConnectionString(configuration, DatabaseConnectionStrings.ApplicationConnectionStringName, ApplicationRoleName),
-        FromConnectionString(configuration, DatabaseConnectionStrings.WorkerConnectionStringName, WorkerRoleName),
-    ];
+    public static IReadOnlyList<LoginRoleCredential> ResolveCredentials(IConfiguration configuration)
+    {
+        var credentials = new List<LoginRoleCredential>
+        {
+            FromConnectionString(configuration, DatabaseConnectionStrings.ApplicationConnectionStringName, ApplicationRoleName),
+            FromConnectionString(configuration, DatabaseConnectionStrings.WorkerConnectionStringName, WorkerRoleName),
+        };
+
+        // The operator login exists only when the operator console is configured; without its connection
+        // string the role stays NOLOGIN and the console is off.
+        if (!string.IsNullOrWhiteSpace(configuration.GetConnectionString(DatabaseConnectionStrings.OperatorConnectionStringName)))
+        {
+            credentials.Add(FromConnectionString(
+                configuration, DatabaseConnectionStrings.OperatorConnectionStringName, OperatorRoleName));
+        }
+
+        return credentials;
+    }
 
     private static LoginRoleCredential FromConnectionString(IConfiguration configuration, string name, string expectedRole)
     {
@@ -86,6 +100,30 @@ public static class RlsLoginRoleProvisioner
 
             logger.LogInformation("Database login '{Role}' provisioned.", credential.RoleName);
         }
+
+        // The operator login is never a member of another runtime role, and no runtime role is a member of it.
+        await using var isolate = new NpgsqlCommand(
+            """
+            DO $$
+            DECLARE
+                m record;
+            BEGIN
+                IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'notrelix_operator') THEN
+                    FOR m IN
+                        SELECT g.rolname AS granted, r.rolname AS member
+                          FROM pg_auth_members am
+                          JOIN pg_roles g ON g.oid = am.roleid
+                          JOIN pg_roles r ON r.oid = am.member
+                         WHERE (r.rolname = 'notrelix_operator' AND g.rolname <> 'notrelix_operator')
+                            OR (g.rolname = 'notrelix_operator' AND r.rolname IN ('notrelix_app', 'notrelix_auth', 'notrelix_worker', 'notrelix_support_readonly'))
+                    LOOP
+                        EXECUTE format('REVOKE %I FROM %I', m.granted, m.member);
+                    END LOOP;
+                END IF;
+            END $$;
+            """,
+            connection);
+        await isolate.ExecuteNonQueryAsync(ct);
 
         // The application login must never reach the unbounded worker scope through membership.
         await using var revoke = new NpgsqlCommand(

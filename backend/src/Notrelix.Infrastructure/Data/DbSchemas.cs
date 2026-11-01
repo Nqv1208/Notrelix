@@ -22,4 +22,5 @@ public static class DbSchemas
     public const string Analytics = "analytics";
     public const string Authz = "authz";
     public const string Activity = "activity";
+    public const string Operators = "operators";
 }

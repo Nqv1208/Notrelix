@@ -148,6 +148,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 ChildInArchivedGroup = boardChild.InArchivedGroup,
                 PrivateToAnotherPerson = boardChild.PrivateToUserId is { } owner && owner != context.UserId,
                 CustomRole = ParseCustomRole(NullableString(reader, 21)),
+                AccountSuspended = reader.GetBoolean(22),
             };
         }
 

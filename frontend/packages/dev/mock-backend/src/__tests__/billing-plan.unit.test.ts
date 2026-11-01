@@ -15,20 +15,18 @@ function setup(persona: MockPersona = "owner") {
     baseUrl: "http://localhost:8000/api/v1",
     fetchImpl: createMockFetch(store),
   });
-  return createBillingApi(client.api as unknown as BillingApiClient);
+  return {
+    store,
+    api: createBillingApi(client.api as unknown as BillingApiClient),
+  };
 }
 
 describe("billing plan and limits in the mock world", () => {
   it("reports the Pro plan and every capability with its limit and use", async () => {
-    const api = setup();
+    const { api } = setup();
     const plan = await api.plan(workspaceId);
     expect(plan.currentCode).toBe("pro");
-    expect(plan.plans.map((p) => p.code)).toEqual([
-      "free",
-      "pro",
-      "enterprise",
-    ]);
-    expect(plan.canChange).toBe(true);
+    expect(plan.currentName).toBe("Pro");
 
     const capabilities = await api.capabilities(workspaceId);
     expect(capabilities.map((c) => c.code)).toEqual([
@@ -43,16 +41,15 @@ describe("billing plan and limits in the mock world", () => {
     });
   });
 
-  it("switches the plan and the limits follow", async () => {
-    const api = setup();
-    await api.changePlan(workspaceId, "enterprise");
-    expect((await api.plan(workspaceId)).currentCode).toBe("enterprise");
+  it("follows the plan the operator set for the account", async () => {
+    const { api, store } = setup();
+    store.billing.planCode = "enterprise";
     const seats = (await api.capabilities(workspaceId)).find(
       (c) => c.code === "MEMBER_SEAT",
     );
     expect(seats).toMatchObject({ isUnlimited: true, limit: null });
 
-    await api.changePlan(workspaceId, "free");
+    store.billing.planCode = "free";
     const free = (await api.capabilities(workspaceId)).find(
       (c) => c.code === "AUTOMATION_RULE",
     );
@@ -60,7 +57,7 @@ describe("billing plan and limits in the mock world", () => {
   });
 
   it("closes the plan to a member who does not manage the workspace", async () => {
-    const api = setup("viewer");
+    const { api } = setup("viewer");
     await expect(api.plan(workspaceId)).rejects.toMatchObject({
       kind: "forbidden",
     });

@@ -7,6 +7,8 @@ public static class AccountRuleCodes
 {
     // ── Account ───────────────────────────────────────────────────────────
     public const string Accounts_Account_CannotRenameClosed = "Accounts_Account_CannotRenameClosed";
+    public const string Accounts_Account_ClosedCannotBeSuspended = "Accounts_Account_ClosedCannotBeSuspended";
+    public const string Accounts_Account_ClosedCannotBeActivated = "Accounts_Account_ClosedCannotBeActivated";
 
     // ── Domain ────────────────────────────────────────────────────────────
     public const string Accounts_Domain_CannotEnableAutoJoinUnverified = "Accounts_Domain_CannotEnableAutoJoinUnverified";

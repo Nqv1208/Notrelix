@@ -11,10 +11,10 @@ public sealed record ObservabilityTaggedRequest : IRequest<string>, IAuthenticat
 public sealed record ObservabilityVerifiedRequest
     : IRequest<string>, IAuthenticatedRequest, IGlobalRequest, INoDataRequest, IRequireVerifiedEmail;
 public sealed record ObservabilityWriteRequest(Guid WorkspaceId)
-    : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest;
+    : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest, IRequireVerifiedEmail;
 [IdempotencyOperation("test.observability.write.v1")]
 public sealed record ObservabilityIdempotentWriteRequest(Guid WorkspaceId)
-    : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest, IIdempotentRequest;
+    : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest, IIdempotentRequest, IRequireVerifiedEmail;
 
 /// <summary>
 /// Phase 13 observability proof: the frozen pipeline emits a root request

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Plans;
+using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Domain.Tests.Billing;
 
@@ -10,7 +11,7 @@ public class PlanVersionTests
     [Fact]
     public void AddLimit_ShouldIncrementVersion()
     {
-        var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
         ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
@@ -22,7 +23,7 @@ public class PlanVersionTests
     [Fact]
     public void UpdateDescription_ShouldIncrementVersion()
     {
-        var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
         ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
@@ -34,7 +35,7 @@ public class PlanVersionTests
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
-        var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
         ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
@@ -46,7 +47,7 @@ public class PlanVersionTests
     [Fact]
     public void Deprecate_ShouldIncrementVersion()
     {
-        var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
         ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 

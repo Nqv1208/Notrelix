@@ -119,6 +119,21 @@ marketing
 
 The framework split is intentional.
 
+## 3.1 The operator host
+
+`apps/operator` (`@notrelix/app-operator`, Vite + React) is the platform operator console: sign in, tenant list and
+detail (plan, entitlement overrides, suspend and lift, terminate), plan catalog editor and audit view. It is a
+separate host, not a route of `apps/web`, because its trust model differs: it runs on its own origin and bundle,
+holds the operator token in memory only (sent in the `Authorization` header, never a cookie), and has no tenant
+session, workspace or account scope, no query-key scope and no realtime. A route inside `web` would put operator
+code in the tenant bundle and next to the tenant session shell.
+
+Its manifest allow-list is `@notrelix/ui-tokens` and `@notrelix/ui-web` only (like marketing, visual packages
+only) plus `@notrelix/contracts` for the generated operation types; types are imported, the tenant client is not.
+It MUST NOT import `runtime-web`, `features-*`, `query`, `realtime` or any product package. It calls only
+`/operator/v1/...` (backend: `security-tenancy-authorization.md`, the operator principal). English only; it is an
+internal staff tool and carries no `*.catalog.ts`.
+
 ---
 
 # 4. FE-HOST-002 — Host framework differences remain host-local

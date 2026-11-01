@@ -58,6 +58,8 @@ public class CsrfApplicabilityInventoryArchitectureTests : ArchitectureTestBase
             "one-time email-verification token flows; no ambient cookie session consumed or established"),
         ["IdentifySignInEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "pre-login read of how an email signs in; no ambient session read or established, answer is independent of account existence"),
+        ["OperatorEndpointMappings.cs"] = new(false, "CSRF_NOT_REQUIRED",
+            "operator password sign-in returns a bearer token in the body; sets no cookie and consumes no ambient session"),
         ["DeclineInvitationByTokenEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "one-time invitation-token decision; no ambient cookie session consumed or established"),
         ["AcceptInvitationWithRegistrationEndpoint.cs"] = new(true, "CSRF_REQUIRED",

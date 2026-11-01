@@ -186,6 +186,8 @@ public static class AccessFactsQuery
               AND EXISTS (SELECT 1 FROM workspace.workspace_members wm
                            WHERE wm.workspace_id = @workspace_id AND wm.user_id = @user_id
                              AND wm.status = 'Active' AND wm.role <> 'Owner')
-            GROUP BY r.id, r.base_role LIMIT 1)
+            GROUP BY r.id, r.base_role LIMIT 1),
+          COALESCE((SELECT a.status IN ('Suspended', 'Closed') FROM account.accounts a
+                     WHERE a.id = @account_id AND a.deleted_at IS NULL), false)
     """;
 }

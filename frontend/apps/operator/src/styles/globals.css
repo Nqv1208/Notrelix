@@ -1,0 +1,221 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Design tokens (OKLCH CSS variables from @notrelix/ui-tokens); this file only maps them into Tailwind. */
+@import "@notrelix/ui-tokens/css";
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@source "../../../../packages/ui/web/src";
+
+@theme inline {
+  --font-sans: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+  --font-display: var(--font-family-sans);
+
+  --text-page-title: var(--type-page-title-size);
+  --text-page-title--line-height: var(--type-page-title-line-height);
+  --text-page-title--font-weight: var(--type-page-title-weight);
+  --text-page-title--letter-spacing: var(--type-page-title-tracking);
+  --text-section-heading: var(--type-section-heading-size);
+  --text-section-heading--line-height: var(--type-section-heading-line-height);
+  --text-section-heading--font-weight: var(--type-section-heading-weight);
+  --text-section-heading--letter-spacing: var(--type-section-heading-tracking);
+  --text-subheading: var(--type-subheading-size);
+  --text-subheading--line-height: var(--type-subheading-line-height);
+  --text-subheading--font-weight: var(--type-subheading-weight);
+  --text-subheading--letter-spacing: var(--type-subheading-tracking);
+  --text-body: var(--type-body-size);
+  --text-body--line-height: var(--type-body-line-height);
+  --text-body--font-weight: var(--type-body-weight);
+  --text-body--letter-spacing: var(--type-body-tracking);
+  --text-dense-body: var(--type-dense-body-size);
+  --text-dense-body--line-height: var(--type-dense-body-line-height);
+  --text-dense-body--font-weight: var(--type-dense-body-weight);
+  --text-dense-body--letter-spacing: var(--type-dense-body-tracking);
+  --text-label: var(--type-label-size);
+  --text-label--line-height: var(--type-label-line-height);
+  --text-label--font-weight: var(--type-label-weight);
+  --text-label--letter-spacing: var(--type-label-tracking);
+  --text-metadata: var(--type-metadata-size);
+  --text-metadata--line-height: var(--type-metadata-line-height);
+  --text-metadata--font-weight: var(--type-metadata-weight);
+  --text-metadata--letter-spacing: var(--type-metadata-tracking);
+  --text-caption: var(--type-caption-size);
+  --text-caption--line-height: var(--type-caption-line-height);
+  --text-caption--font-weight: var(--type-caption-weight);
+  --text-caption--letter-spacing: var(--type-caption-tracking);
+  --text-code: var(--type-code-size);
+  --text-code--line-height: var(--type-code-line-height);
+  --text-code--font-weight: var(--type-code-weight);
+  --text-code--letter-spacing: var(--type-code-tracking);
+  --text-compact: var(--type-compact-size);
+  --text-compact--line-height: var(--type-compact-line-height);
+  --text-compact--font-weight: var(--type-compact-weight);
+  --text-compact--letter-spacing: var(--type-compact-tracking);
+  --text-dialog-title: var(--type-dialog-title-size);
+  --text-dialog-title--line-height: var(--type-dialog-title-line-height);
+  --text-dialog-title--font-weight: var(--type-dialog-title-weight);
+  --text-dialog-title--letter-spacing: var(--type-dialog-title-tracking);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-sidebar: var(--surface-sidebar);
+  --color-surface-panel: var(--surface-panel);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-brand-mark: var(--brand-mark);
+  --color-brand-solid: var(--brand-solid);
+  --color-brand-solid-foreground: var(--brand-solid-foreground);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-subtle-foreground: var(--brand-subtle-foreground);
+  --color-link: var(--link);
+  --color-icon: var(--icon);
+  --color-meta-foreground: var(--meta-foreground);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-state-hover: var(--state-hover);
+  --color-state-hover-strong: var(--state-hover-strong);
+  --color-state-selected: var(--state-selected);
+  --color-state-selected-foreground: var(--state-selected-foreground);
+  --color-state-disabled: var(--state-disabled);
+  --color-state-disabled-foreground: var(--state-disabled-foreground);
+  --color-focus-ring: var(--focus-ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-text: var(--success-text);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-text: var(--warning-text);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-text: var(--danger-text);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-subtle-foreground: var(--danger-subtle-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-text: var(--info-text);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-control: var(--corner-control);
+  --radius-surface: var(--corner-surface);
+  --radius-overlay: var(--corner-overlay);
+
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
+  --shadow-modal: var(--elevation-modal);
+  --shadow-card: var(--elevation-card);
+  --shadow-card-hover: var(--elevation-card-hover);
+  --shadow-sheet: var(--elevation-sheet);
+  --shadow-segment: var(--elevation-segment);
+  --shadow-popover: var(--elevation-popover);
+  --shadow-dialog: var(--elevation-dialog);
+  --shadow-palette: var(--elevation-palette);
+  --shadow-bar: var(--elevation-bar);
+
+  --ease-out: var(--motion-ease-out);
+  --ease-out-emphasized: var(--motion-ease-out-emphasized);
+  --default-transition-duration: var(--motion-duration-fast);
+  --default-transition-timing-function: var(--motion-ease-out);
+}
+
+/* Semantic stacking order: dropdown → sticky → backdrop → modal → toast → tooltip. */
+@utility z-dropdown {
+  z-index: var(--z-dropdown);
+}
+@utility z-sticky {
+  z-index: var(--z-sticky);
+}
+@utility z-backdrop {
+  z-index: var(--z-backdrop);
+}
+@utility z-modal {
+  z-index: var(--z-modal);
+}
+@utility z-toast {
+  z-index: var(--z-toast);
+}
+@utility z-tooltip {
+  z-index: var(--z-tooltip);
+}
+
+/* Visible keyboard focus in every appearance × accent (≥3:1, FE-UI-024). */
+@utility focus-ring {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Motion durations as utilities: duration-fast, duration-base, duration-slow. */
+@utility duration-fast {
+  transition-duration: var(--motion-duration-fast);
+}
+@utility duration-base {
+  transition-duration: var(--motion-duration-base);
+}
+@utility duration-slow {
+  transition-duration: var(--motion-duration-slow);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-family-sans);
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-family-mono);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

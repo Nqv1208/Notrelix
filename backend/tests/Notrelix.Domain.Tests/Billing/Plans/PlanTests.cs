@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Plans;
+using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Domain.Tests.Billing;
 
@@ -11,7 +12,7 @@ public class PlanTests
     [Fact]
     public void Create_ShouldSucceed()
     {
-        var plan = Plan.Create("Pro Plan", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("pro-plan", 1, "Pro Plan", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
 
         plan.Name.Should().Be("Pro Plan");
         plan.Price.Should().Be(SamplePrice);
@@ -21,7 +22,7 @@ public class PlanTests
     [Fact]
     public void AddLimit_ShouldAddToList()
     {
-        var plan = Plan.Create("Free", Money.Create(0, "USD"), BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("free", 1, "Free", SubscriptionTier.Pro, Money.Create(0, "USD"), BillingPeriod.Monthly, DateTimeOffset.UtcNow);
 
         plan.AddLimit(SampleFeature, 5, DateTimeOffset.UtcNow);
 
@@ -33,7 +34,7 @@ public class PlanTests
     [Fact]
     public void AddLimit_DuplicateFeature_ShouldThrow()
     {
-        var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         plan.AddLimit(SampleFeature, 10, DateTimeOffset.UtcNow);
 
         var act = () => plan.AddLimit(SampleFeature, 20, DateTimeOffset.UtcNow);
@@ -43,7 +44,7 @@ public class PlanTests
     [Fact]
     public void AddLimit_ShouldRaiseEvent()
     {
-        var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.AddLimit(SampleFeature, 5, DateTimeOffset.UtcNow);
@@ -54,7 +55,7 @@ public class PlanTests
     [Fact]
     public void UpdateDescription_ShouldUpdate()
     {
-        var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
 
         plan.UpdateDescription("Premium plan", DateTimeOffset.UtcNow);
 
@@ -64,7 +65,7 @@ public class PlanTests
     [Fact]
     public void UpdateDescription_WithNull_ShouldSetNull()
     {
-        var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("pro", 1, "Pro", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         plan.UpdateDescription("Desc", DateTimeOffset.UtcNow);
 
         plan.UpdateDescription(null, DateTimeOffset.UtcNow);
@@ -75,7 +76,7 @@ public class PlanTests
     [Fact]
     public void Archive_ShouldTransition_AndRaiseEvent()
     {
-        var plan = Plan.Create("Legacy", SamplePrice, BillingPeriod.Yearly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("legacy", 1, "Legacy", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Yearly, DateTimeOffset.UtcNow);
         ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.Archive(DateTimeOffset.UtcNow);
@@ -87,7 +88,7 @@ public class PlanTests
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
-        var plan = Plan.Create("Legacy", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("legacy", 1, "Legacy", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         plan.Archive(DateTimeOffset.UtcNow);
         ((IHasDomainEvents)plan).ClearDomainEvents();
 
@@ -99,7 +100,7 @@ public class PlanTests
     [Fact]
     public void Deprecate_ShouldTransition_AndRaiseEvent()
     {
-        var plan = Plan.Create("Old", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("old", 1, "Old", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.Deprecate(DateTimeOffset.UtcNow);
@@ -111,7 +112,7 @@ public class PlanTests
     [Fact]
     public void Deprecate_WhenAlreadyDeprecated_ShouldBeNoOp()
     {
-        var plan = Plan.Create("Old", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
+        var plan = Plan.Create("old", 1, "Old", SubscriptionTier.Pro, SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         plan.Deprecate(DateTimeOffset.UtcNow);
         ((IHasDomainEvents)plan).ClearDomainEvents();
 

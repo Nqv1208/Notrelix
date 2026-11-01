@@ -37,6 +37,9 @@ internal static class AppRoleHost
                 // Background work (dispatchers, deduplication, consumers, sweeps) connects as the worker login
                 // whenever the host serves as the application role; a control host on the owner uses it for both.
                 ["ConnectionStrings:NotrelixWorkerDb"] = db == fixture.AppConnectionString ? fixture.WorkerConnectionString : db,
+                // The platform operator console: its own login and its own signing key (never the tenant key).
+                ["ConnectionStrings:NotrelixOperatorDb"] = fixture.OperatorConnectionString,
+                ["Operator:Jwt:SigningKey"] = "operator-console-signing-key-NotTheTenantKey-0123456789",
                 ["ConnectionStrings:Redis"] = fixture.RedisConnectionString,
                 ["JwtSettings:SecretKey"] = "rls-conformance-signing-key-ThisIsNotASecret-0123456789",
                 ["JwtSettings:Issuer"] = "https://notrelix.test",

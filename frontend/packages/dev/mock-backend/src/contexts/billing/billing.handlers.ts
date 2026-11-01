@@ -322,10 +322,9 @@ function usageOf(store: MockStore, workspaceId: string) {
   } as Record<string, number>;
 }
 
-const planOverview = (store: MockStore, canChange: boolean) => ({
+const planOverview = (store: MockStore) => ({
   currentPlan: planDto(planOf(store.billing.planCode)),
   availablePlans: BILLING_PLAN_CATALOG.map(planDto),
-  canChangePlan: canChange,
 });
 
 export const billingOperations = [
@@ -373,27 +372,7 @@ export const billingOperations = [
         return notFound("Workspace not found");
       const role = store.getCurrentMemberRole(params.workspaceId);
       if (role !== "owner" && role !== "admin") return forbidden();
-      return ok(planOverview(store, role === "owner"));
-    },
-  }),
-
-  defineMockOperation<Ws, { planCode?: string }, unknown>({
-    id: "billing.planChange",
-    contract: { kind: "openapi", operationId: "Billing.Plan.Change" },
-    method: "PUT",
-    route: "/workspaces/:workspaceId/billing/plan",
-    async handle({ params, body, store }) {
-      if (!store.getWorkspace(params.workspaceId))
-        return notFound("Workspace not found");
-      if (store.getCurrentMemberRole(params.workspaceId) !== "owner")
-        return forbidden();
-      const target = BILLING_PLAN_CATALOG.find(
-        (p) => p.code === body?.planCode?.toLowerCase(),
-      );
-      if (!target)
-        return validationError({ planCode: ["The plan does not exist."] });
-      store.billing.planCode = target.code;
-      return ok(planOverview(store, true));
+      return ok(planOverview(store));
     },
   }),
 

@@ -12,6 +12,7 @@ public static class RateLimitTestSettings
     public static readonly string[] PolicyNames =
     [
         "AuthCredentialByIp",
+        "OperatorSignInByIp",
         "AuthRefreshByIp",
         "CsrfByIp",
         "AuthSensitiveByUser",

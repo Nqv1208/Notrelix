@@ -2066,6 +2066,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("description");
 
+                    b.Property<string>("FamilyKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("family_key");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -2078,11 +2084,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("period");
 
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("tier");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2102,6 +2118,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_plans");
 
+                    b.HasIndex("FamilyKey", "Revision")
+                        .IsUnique()
+                        .HasDatabaseName("ux_plans_family_revision");
+
                     b.ToTable("plans", "billing");
                 });
 
@@ -2117,6 +2137,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("feature_code");
 
+                    b.Property<bool>("IsUnlimited")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_unlimited");
+
                     b.Property<int>("Limit")
                         .HasColumnType("integer")
                         .HasColumnName("limit_value");
@@ -2130,6 +2156,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("PlanId")
                         .HasDatabaseName("idx_plan_limits_plan_id");
+
+                    b.HasIndex("PlanId", "Feature")
+                        .IsUnique()
+                        .HasDatabaseName("ux_plan_limits_plan_feature");
 
                     b.ToTable("plan_limits", "billing");
                 });
@@ -5774,6 +5804,141 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_webhook_subscriptions_workspace_id");
 
                     b.ToTable("webhook_subscriptions", "integration");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Operators.OperatorAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<int>("FailedSignInCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_sign_in_count");
+
+                    b.Property<DateTimeOffset?>("LastSignedInAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_signed_in_at");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_operator_accounts");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ux_operator_accounts_email");
+
+                    b.ToTable("operator_accounts", "operators");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Operators.OperatorAuditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("after_json");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("before_json");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OperatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("operator_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("target_kind");
+
+                    b.HasKey("Id")
+                        .HasName("pk_operator_audit");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("idx_operator_audit_time");
+
+                    b.HasIndex("AccountId", "OccurredAt")
+                        .HasDatabaseName("idx_operator_audit_account_time");
+
+                    b.ToTable("operator_audit", "operators");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest", b =>

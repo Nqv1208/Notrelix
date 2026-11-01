@@ -24,11 +24,6 @@ export interface BillingApiClient {
     body?: unknown,
     options?: { skipGlobalErrorToast?: boolean; idempotencyKey?: string },
   ): Promise<T>;
-  put<T>(
-    url: string,
-    body?: unknown,
-    options?: { skipGlobalErrorToast?: boolean },
-  ): Promise<T>;
   delete<T>(
     url: string,
     options?: { skipGlobalErrorToast?: boolean },
@@ -58,21 +53,16 @@ function toCapability(row: CapabilityRow): BillingCapabilityDto {
 
 type PlanRow = NonNullable<OperationResponse<"Billing.Plan.Get">>;
 
-/** The plan card's data: the current plan code, the catalog and the caller's right to switch. */
+/** The plan card's data: the plan the account is on. The platform operator changes it. */
 export interface BillingPlanSummary {
   readonly currentCode: string;
-  readonly plans: readonly { code: string; name: string }[];
-  readonly canChange: boolean;
+  readonly currentName: string;
 }
 
 function toPlanSummary(row: PlanRow): BillingPlanSummary {
   return {
     currentCode: row.currentPlan?.code ?? "free",
-    plans: (row.availablePlans ?? []).map((p) => ({
-      code: p.code ?? "",
-      name: p.name ?? p.code ?? "",
-    })),
-    canChange: row.canChangePlan === true,
+    currentName: row.currentPlan?.name ?? row.currentPlan?.code ?? "free",
   };
 }
 
@@ -86,21 +76,9 @@ export function createBillingApi(api: BillingApiClient) {
       );
       return rows.map(toCapability);
     },
-    /** The plan the account is on, the catalog and whether the caller may switch. */
+    /** The plan the account is on. */
     async plan(workspaceId: string): Promise<BillingPlanSummary> {
       const row = await api.get<PlanRow>(`${billing(workspaceId)}/plan`, QUIET);
-      return toPlanSummary(row);
-    },
-    /** Moves the account to another catalog plan (development only, account owner). */
-    async changePlan(
-      workspaceId: string,
-      planCode: string,
-    ): Promise<BillingPlanSummary> {
-      const row = await api.put<PlanRow>(
-        `${billing(workspaceId)}/plan`,
-        { planCode },
-        QUIET,
-      );
       return toPlanSummary(row);
     },
     overview(workspaceId: string) {

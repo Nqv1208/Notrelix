@@ -4,7 +4,7 @@ namespace Notrelix.Integration.Tests.Containers;
 
 /// <summary>
 /// Resets all data in the test PostgreSQL database by truncating all tables
-/// across all 12 schemas. Uses a single TRUNCATE CASCADE statement.
+/// across all 12 schemas. Uses a single TRUNCATE CASCADE statement, then restores the baseline plan catalog.
 /// </summary>
 public sealed class DatabaseReset
 {
@@ -45,6 +45,11 @@ public sealed class DatabaseReset
             tables.Select(t => $"{QuoteIdentifier(t.Schema)}.{QuoteIdentifier(t.Name)}"));
         truncateCmd.CommandText = $"TRUNCATE TABLE {tableNames} CASCADE";
         await truncateCmd.ExecuteNonQueryAsync(ct);
+
+        // A deployed database always holds the baseline plan catalog (an account without a subscription is on
+        // its Free plan), so the reset restores that baseline instead of leaving the catalog empty.
+        await using var owner = PostgresTestContainer.CreateContextFor(_connectionString, new Notrelix.Testing.Application.Fakes.FakeCurrentTenantContext());
+        await Notrelix.Infrastructure.Billing.PlanCatalogSeed.EnsureAsync(owner, ct);
     }
 
     private static string QuoteIdentifier(string identifier)
