@@ -47,25 +47,25 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Page lifecycle | 17 | 0 | 2 | 6 | 6 | 0 | 3 |
-| B | Page hierarchy | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
-| C | Page move / reparent | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
-| D | Block lifecycle | 6 | 0 | 0 | 4 | 2 | 0 | 0 |
+| A | Page lifecycle | 17 | 0 | 2 | 5 | 7 | 0 | 3 |
+| B | Page hierarchy | 5 | 0 | 0 | 4 | 1 | 0 | 0 |
+| C | Page move / reparent | 3 | 1 | 0 | 1 | 1 | 0 | 0 |
+| D | Block lifecycle | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
 | E | Block types and content contract | 9 | 1 | 0 | 6 | 2 | 0 | 0 |
-| F | Block ordering | 4 | 0 | 1 | 3 | 0 | 0 | 0 |
+| F | Block ordering | 4 | 0 | 1 | 2 | 1 | 0 | 0 |
 | G | Document query and loading | 7 | 2 | 0 | 3 | 2 | 0 | 0 |
 | H | Editor state reconciliation | 8 | 1 | 0 | 6 | 1 | 0 | 0 |
 | I | Document permissions | 7 | 2 | 0 | 3 | 2 | 0 | 0 |
 | J | Document events and activity | 8 | 2 | 1 | 5 | 0 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 2 | 0 | 0 | 1 |
 | L | Recovery and conflict hardening | 5 | 1 | 0 | 3 | 0 | 0 | 1 |
-| | Total | 82 | 10 | 4 | 48 | 15 | 0 | 5 |
+| | Total | 82 | 10 | 4 | 43 | 20 | 0 | 5 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. 15 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing) and `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink). Everything else that has both backend and frontend code is INTEGRATING.
+No use case is DONE: none has an owner check or a 1-px design diff. 20 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing), `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink) and `documents-structure.real.e2e.spec.ts` (move a page under another with its version, a stale or circular move refused, trash with children and restore, reorder and delete a block against its version; this spec calls the routes, it does not click the screens). Everything else that has both backend and frontend code is INTEGRATING.
 
 ## 1.2 The ten most important gaps
 
-1. Real end-to-end proof covers 15 of 82 use cases. Versions, restore, templates, import, export, move to space, search, stale-write rebase and mobile have only unit, component and mock e2e proof.
+1. Real end-to-end proof covers 20 of 82 use cases. Versions, restore, templates, import, export, move to space, search, stale-write rebase and mobile have only unit, component and mock e2e proof.
 2. Trashing a page leaves its child pages active; the tree then shows them as roots. Subtree trash, restore and delete are undefined in code (UC-DCT-A08).
 3. Moving a page under another parent cannot be done: the handler throws `NotImplementedException` and there is no route (UC-DCT-C02). The cycle rule is therefore unreachable (UC-DCT-B04).
 4. Competing writes without an expected version: block reorder, page rename and single block delete are fixed (UC-DCT-F02, A02, D04). Reorder also accepts client-made sort keys, which breaks "ordering is server-authoritative", and announces no page save, so reorders create no automatic version and no live refresh.
@@ -126,7 +126,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
 | UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
 | UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Owner check |
-| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | none | INTEGRATING | Tests and owner check |
+| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | real | HARDENING | Owner check; delete for good of a subtree and the confirmation artboard |
 | UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | none | INTEGRATING | Tests and owner check |
@@ -139,15 +139,15 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | INTEGRATING | Owner check |
+| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | HARDENING | Owner check; the Move to dialog is not driven in a browser |
 | UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | INTEGRATING | Owner check |
+| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | HARDENING | Owner check; Move to dialog not driven in a browser; sidebar drag not built |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
 | UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | real | INTEGRATING | Owner check |
+| UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check; block menu with an undo toast not built |
 | UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
@@ -160,7 +160,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-E09 | Open a block type this client does not know | E | Any viewer | partial | partial | none | none | DEFINED | No placeholder behaviour |
 | UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
-| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | INTEGRATING | Owner check |
+| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | HARDENING | Owner check; the grip and keys are not driven in a browser |
 | UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
 | UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
@@ -354,8 +354,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: destructive confirmation with count, pending, permission denied.
 - Rules: product doc sections 89, 90 (product rule DCT-028: lifecycle workflow, not ORM cascade); `DCREQ004`, `DCREQ006`. New rule in Part 5.
 - Acceptance: Given a page with two children, When trashed, Then neither child is in the tree or readable. When the parent is restored, Then both are back.
-- Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` and `IPageSubtreeAuthorizer` · FE confirmation with the count of visible active pages below (`pagesBelow`, the set the trash changes), undo toast, trash note, the refusal message · Design none · Tests none · Real e2e none
-- State: INTEGRATING — tests and owner check (subtree trash, restore and delete; descendants the caller cannot see; confirmation artboard).
+- Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` and `IPageSubtreeAuthorizer` · FE confirmation with the count of visible active pages below (`pagesBelow`, the set the trash changes), undo toast, trash note, the refusal message · Design none · Tests Application `ArchivePageCommandHandlerTests` (5), `PageTrashHandlerTests` (6); Integration `PageTreeShapeIntegrationTests` (7), `PageArchivedOutboxEvidenceTests` (5) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (trashing the parent puts the child in the trash list; restoring the parent brings the child back under it)
+- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Application filter 589, Integration filter 476, none failed). Missing: owner check; permanent delete of a subtree and a descendant the caller cannot see have no test of their own (`Delete_FromTheTrash_DeletesThePage` covers one page); confirmation artboard.
 
 ### UC-DCT-A09 Duplicate a page
 - Capability: A Page lifecycle
@@ -540,8 +540,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: validation error ("Cannot move a page into itself").
 - Rules: product doc sections 14, 15 (product rule DCT-005); `DCREQ007`, `DCREQ010`.
 - Acceptance: Given pages A > B, When A is moved under B, Then refused and unchanged.
-- Evidence: BE `Page.Move`, `PageTreeRules.EnsureNoCycle`, reached through `POST /api/v1/pages/{pageId}/move` (the handler supplies the new parent's ancestry; a parent in another workspace, trashed or deleted is `404`) · FE the Move to dialog lists only places that are not the page, its own pages or its current parent, and words a `400` as a rule message · Design none · Tests `PageTreeRulesTests`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — tests and owner check (cycle and own-parent refusals through the API, concurrent moves with the version).
+- Evidence: BE `Page.Move`, `PageTreeRules.EnsureNoCycle`, reached through `POST /api/v1/pages/{pageId}/move` (the handler supplies the new parent's ancestry; a parent in another workspace, trashed or deleted is `404`) · FE the Move to dialog lists only places that are not the page, its own pages or its current parent, and words a `400` as a rule message · Design none · Tests Domain `PageTreeRulesTests` (5), `PageHierarchyTests` (10); Integration `PageTreeShapeIntegrationTests` (7: concurrent moves that form a cycle, a move under a descendant behind a deleted page, a parent in an archived Space) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (a move under the page's own child is `400`, a stale move is `412`, both change nothing)
+- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the cycle and stale-move refusals pass on the real stack (12 of 12 real specs run) and the Domain, Application and Integration tests above pass (Domain filter 1184, Integration filter 476, none failed). Missing: owner check; the Move to dialog is not driven in a browser (the real spec calls the route).
 
 ### UC-DCT-B05 Limit nesting depth
 - Capability: B Page hierarchy
@@ -586,8 +586,8 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - UI states: pending, conflict, validation error, permission denied, offline.
 - Rules: product doc sections 14 to 16 (product rule DCT-005); `DCREQ008`, `DCREQ010`, `DCREQ034`; team spec section 8 lists what a move must define.
 - Acceptance: Given pages A and B, When A is moved under B, Then A's breadcrumb is B > A and a stale second move is `412`.
-- Evidence: BE `POST /api/v1/pages/{pageId}/move` (body `parentId`, `expectedVersion`), `MovePageCommand` is `UpdatePage` plus `IExpectedVersionRequest` (in `ExpectedVersionTargetMap`); `MovePageCommandHandler` authorizes `CreatePage` on the new parent (`IPageSpacePlacement.AuthorizeParentAsync`) or in the Space for a root page, refuses a trashed, deleted or foreign parent (`404`), a cycle and a nesting beyond 10 levels (`400`), puts the page and its subtree in the new parent's Space with one version bump (`Page.Move` with Space) and, when the Space changes, first evaluates `UpdatePage` for every page below · FE File menu Move to, `DocMovePageDialogSurface`, `useMovePage` (refreshes lists, tree, page and breadcrumb; conflict, subtree and rule messages), drag in the sidebar not built · Design none · Tests `PageHierarchyTests`, `PageTreeRulesTests` · Real e2e none
-- State: INTEGRATING — tests and owner check (the dead `MovePageCommand` stub is replaced; `PublishPageCommand` and `SetPageDeadlineCommand` still throw `NotImplementedException` and are retired with UC-DCT-A15).
+- Evidence: BE `POST /api/v1/pages/{pageId}/move` (body `parentId`, `expectedVersion`), `MovePageCommand` is `UpdatePage` plus `IExpectedVersionRequest` (in `ExpectedVersionTargetMap`); `MovePageCommandHandler` authorizes `CreatePage` on the new parent (`IPageSpacePlacement.AuthorizeParentAsync`) or in the Space for a root page, refuses a trashed, deleted or foreign parent (`404`), a cycle and a nesting beyond 10 levels (`400`), puts the page and its subtree in the new parent's Space with one version bump (`Page.Move` with Space) and, when the Space changes, first evaluates `UpdatePage` for every page below · FE File menu Move to, `DocMovePageDialogSurface`, `useMovePage` (refreshes lists, tree, page and breadcrumb; conflict, subtree and rule messages), drag in the sidebar not built · Design none · Tests Domain `PageHierarchyTests` (10), `PageTreeRulesTests` (5); Integration `PageTreeShapeIntegrationTests` (7) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (move under another page: parent changes and the version rises; the stale second move is `412` and the parent stays)
+- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Domain filter 1184, Integration filter 476, none failed). Missing: owner check; the Move to dialog is not driven in a browser (the real spec calls the route); drag in the sidebar not built; `PublishPageCommand` and `SetPageDeadlineCommand` still throw `NotImplementedException` and are retired with UC-DCT-A15.
 
 ### UC-DCT-C03 Refuse a move to another workspace
 - Capability: C Page move / reparent
@@ -660,8 +660,8 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: pending, undo toast, conflict, read-only.
 - Rules: product doc sections 91, 92, 93 (product rule DCT-029); `DCREQ013`, `DCREQ121`.
 - Acceptance: Given a toggle with two children, When it is deleted, Then no live block remains under it.
-- Evidence: BE `DELETE /api/v1/pages/{pageId}/blocks/{blockId}?expectedVersion=` (`DeleteBlockCommandHandler`: version checked, `412` with the current block when stale, trashed page refused, the blocks under it deleted through `PageBlockSet.Delete`, one page save announced); batch delete in `BatchUpdateBlocksCommandHandler` uses the same cascade · FE `useDocEditor.deleteBlock` sends the cached version and treats `404` and `412` as "show what is stored" (no failed save), `useDeleteBlock` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `docs-blocks-trash.unit.test.ts` · Real e2e none
-- State: INTEGRATING — tests and owner check (cascade and `412` on the single route, real e2e; the editor only deletes an empty line, a block menu with an undo toast is not built).
+- Evidence: BE `DELETE /api/v1/pages/{pageId}/blocks/{blockId}?expectedVersion=` (`DeleteBlockCommandHandler`: version checked, `412` with the current block when stale, trashed page refused, the blocks under it deleted through `PageBlockSet.Delete`, one page save announced); batch delete in `BatchUpdateBlocksCommandHandler` uses the same cascade · FE `useDocEditor.deleteBlock` sends the cached version and treats `404` and `412` as "show what is stored" (no failed save), `useDeleteBlock` · Design Final-Docs-2 · Tests Application `BlockEditingHandlerTests` (12), `BatchUpdateBlocksHandlerTests` (18); FE `docs-blocks-trash.unit.test.ts` · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 3 (a stale single delete is `412` and the block stays; a delete at the read version removes it)
+- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the handler tests above pass (12 of 12 real specs; Application filter 589, none failed). Missing: owner check; the editor only deletes an empty line, a block menu with an undo toast is not built; the real spec calls the route.
 
 ### UC-DCT-D05 Refuse edits to a trashed page
 - Capability: D Block lifecycle
@@ -850,8 +850,8 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - UI states: moving, conflict, announced result, read-only.
 - Rules: product doc sections 27, 28, 30 (product rule DCT-010: ordering is server-authoritative); `DCREQ018`, `DCREQ021`.
 - Acceptance: Given three blocks, When the third moves to the top, Then every reader sees it first and one page save is announced.
-- Evidence: BE `POST /api/v1/blocks/reorder` body `{pageId, items: [{blockId, expectedVersion, parentId, afterBlockId, beforeBlockId, position}]}`, `ReorderBlocksCommandHandler` (one transaction through `PageBlockSet.Place`: version checked per item with `412` and the current block, trashed page refused, the key made by the server or a client key kept only between the named siblings, a block already between them is left alone, one page save announced when something moved, answers the moved blocks) · FE `createBlockApi.reorder` and `useReorderBlocks` send the new body (`ReorderBlocksInput.moves`); the editor's own moves (`block-move.ts`, `block-handle.tsx`, Alt+Shift+Arrow with a live-region announcement) still travel in `batch` through the same placement · Design none · Tests `block-move.component.test.tsx`, `BlockMoveFailureAtomicityTests` · Real e2e none
-- State: INTEGRATING — tests and owner check (key between siblings, stale version, no-op, one save announced, trashed page; real e2e).
+- Evidence: BE `POST /api/v1/blocks/reorder` body `{pageId, items: [{blockId, expectedVersion, parentId, afterBlockId, beforeBlockId, position}]}`, `ReorderBlocksCommandHandler` (one transaction through `PageBlockSet.Place`: version checked per item with `412` and the current block, trashed page refused, the key made by the server or a client key kept only between the named siblings, a block already between them is left alone, one page save announced when something moved, answers the moved blocks) · FE `createBlockApi.reorder` and `useReorderBlocks` send the new body (`ReorderBlocksInput.moves`); the editor's own moves (`block-move.ts`, `block-handle.tsx`, Alt+Shift+Arrow with a live-region announcement) still travel in `batch` through the same placement · Design none · Tests Application `ReorderBlocksHandlerTests` (8); Integration `BlockOrderConcurrencyIntegrationTests` (3); FE `block-move.component.test.tsx` (5), `BlockMoveFailureAtomicityTests` · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 2 (a block moves after a sibling at its version; a stale move is `412` and the order stays; a trashed page's block cannot be moved)
+- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Application filter 589, Integration filter 476, FE block-move 5, none failed). Missing: owner check; the grip and Alt+Shift+Arrow are not driven in a browser (the real spec calls the route; the editor's own moves still travel in `batch`).
 
 ### UC-DCT-F03 Nest or un-nest a block
 - Capability: F Block ordering

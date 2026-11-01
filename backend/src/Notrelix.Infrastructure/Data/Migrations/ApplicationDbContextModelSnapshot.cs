@@ -3903,6 +3903,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
+                    b.Property<string>("BaseRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("base_role");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3947,17 +3953,64 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
-                    b.Property<Guid>("WorkspaceId")
+                    b.HasKey("Id")
+                        .HasName("pk_custom_roles");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("idx_custom_roles_account_id");
+
+                    b.ToTable("custom_roles", "governance");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Governance.Roles.CustomRoleChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<Guid?>("SubjectUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_user_id");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("summary");
+
+                    b.Property<Guid?>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_custom_roles");
+                        .HasName("pk_custom_role_changes");
 
-                    b.HasIndex("WorkspaceId")
-                        .HasDatabaseName("idx_custom_roles_workspace_id");
+                    b.HasIndex("AccountId", "RoleId", "OccurredAt")
+                        .HasDatabaseName("idx_custom_role_changes_role");
 
-                    b.ToTable("custom_roles", "governance");
+                    b.ToTable("custom_role_changes", "governance");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Governance.Roles.CustomRolePermission", b =>
@@ -4029,7 +4082,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("MemberId")
                         .HasDatabaseName("idx_member_role_assignments_member_id");
 
-                    b.HasIndex("MemberId", "CustomRoleId")
+                    b.HasIndex("WorkspaceId", "MemberId")
                         .IsUnique()
                         .HasDatabaseName("idx_member_role_assignments_unique");
 

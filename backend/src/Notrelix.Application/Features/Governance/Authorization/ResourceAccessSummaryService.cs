@@ -161,7 +161,7 @@ public sealed partial class ResourceAccessSummaryService : IResourceAccessSummar
         var peopleCountComplete = !workspaceVisible && !entries.HasReadRules;
 
         var (sourceKind, grantedById) = CallerSource(effective, entries, userId);
-        if (string.Equals(facts.WorkspaceMemberRole, "Guest", StringComparison.Ordinal))
+        if (string.Equals(facts.CustomRole?.Base ?? facts.WorkspaceMemberRole, "Guest", StringComparison.Ordinal))
         {
             sourceKind = AccessSourceKinds.Guest;
         }

@@ -47,7 +47,6 @@ public static class ConsumerNames
     public const string PageArchived = "document.page-archived.v1";
 
     // Governance
-    public const string CustomRoleAssigned = "governance.role-assigned.v1";
     public const string ResourcePermissionGranted = "governance.permission-granted.v1";
     public const string ResourcePermissionRevoked = "governance.permission-revoked.v1";
 

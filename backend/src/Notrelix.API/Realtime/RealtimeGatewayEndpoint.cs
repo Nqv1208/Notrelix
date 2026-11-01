@@ -119,6 +119,7 @@ public static class RealtimeGatewayEndpoint
         IRealtimeSubscriptionAuthorizer authorizer,
         IRealtimeCredentialValidator credentials,
         IRealtimeNotificationSource source,
+        IServiceProvider services,
         ICurrentCredentialContext credentialContext,
         IExecutionContextReader executionContext,
         ILoggerFactory loggerFactory)
@@ -157,7 +158,8 @@ public static class RealtimeGatewayEndpoint
         using var socket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
         var connection = new RealtimeConnection(
             socket, principal, options, authorizer, credentials, source,
-            loggerFactory.CreateLogger<RealtimeConnection>());
+            loggerFactory.CreateLogger<RealtimeConnection>(),
+            accessSource: services.GetService<IRealtimeAccessSignalSource>());
         await connection.RunAsync(context.RequestAborted).ConfigureAwait(false);
 
         // The response is complete once the socket closes.

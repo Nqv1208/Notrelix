@@ -33,6 +33,7 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IBoardSpacePlacement _placement;
+    private readonly IAccessChangeSignal _access;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardRealtimeNotifier? _realtime;
@@ -48,9 +49,11 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
         IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
         _sharing = sharing;
+        _access = access;
         _workspaceAccess = workspaceAccess;
         _changeLog = changeLog;
         _realtime = realtime;
@@ -116,6 +119,7 @@ public class MoveBoardToSpaceCommandHandler : IRequestHandler<MoveBoardToSpaceCo
         }
 
         board.PlaceInSpace(request.SpaceId, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        _access.Board(board.Id);
         return Result.Success();
     }
 }

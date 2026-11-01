@@ -22,6 +22,7 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IAccessChangeSignal _access;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardVisibilityCommandHandler(
@@ -29,8 +30,10 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         BoardAccessChangeLog changeLog,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
@@ -53,7 +56,14 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
         var previous = board.Visibility;
         board.ChangeVisibility(request.Visibility, _requestContext.UserId, _dateTimeProvider.UtcNow);
         if (previous != board.Visibility)
+        {
+            // Going Private ends every Space and workspace source, so the board must already have an Owner
+            // (the share flow offers an explicit "Add me as owner" through Make Private).
+            if (board.Visibility == BoardVisibility.Private)
+                await BoardOwnership.EnsureOwnerForPrivateAsync(_context, board.Id, _requestContext.UserId, false, false, _dateTimeProvider.UtcNow, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
+            _access.Board(board.Id);
+        }
         return Result.Success();
     }
 }

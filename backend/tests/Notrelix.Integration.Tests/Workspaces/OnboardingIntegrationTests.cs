@@ -366,7 +366,7 @@ public sealed class OnboardingIntegrationTests : IAsyncLifetime
         (await _host.ReadAsync(c => c.GettingStartedDismissals.CountAsync())).Should().Be(1);
 
         var crossWorkspace = () => OrgTreeTestHost.SendAsync(asMember, new DismissGettingStartedCommand(other.WorkspaceId));
-        await crossWorkspace.Should().ThrowAsync<AppForbidden>("another workspace is not the member's");
+        await crossWorkspace.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>("another workspace is not the member's");
     }
 
     [Fact]
@@ -379,8 +379,8 @@ public sealed class OnboardingIntegrationTests : IAsyncLifetime
         var read = () => OrgTreeTestHost.QueryAsync(provider, new GetGettingStartedQuery(stack.WorkspaceId));
         var dismiss = () => OrgTreeTestHost.SendAsync(provider, new DismissGettingStartedCommand(stack.WorkspaceId));
 
-        await read.Should().ThrowAsync<AppForbidden>();
-        await dismiss.Should().ThrowAsync<AppForbidden>();
+        await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        await dismiss.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────

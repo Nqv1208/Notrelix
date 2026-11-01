@@ -48,7 +48,7 @@ public sealed class WorkspaceRoleBaselineTests
         var all = Enum.GetValues<PermissionAction>();
 
         WorkspaceRoleBaseline.ClassifiedActions.Should().BeEquivalentTo(all, "a new PermissionAction must be classified in the baseline table");
-        all.Should().HaveCount(39);
+        all.Should().HaveCount(42);
     }
 
     [Theory]

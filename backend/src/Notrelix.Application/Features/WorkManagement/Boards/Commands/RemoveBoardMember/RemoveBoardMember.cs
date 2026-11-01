@@ -26,6 +26,8 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IAccessChangeSignal _access;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public RemoveBoardMemberCommandHandler(
@@ -34,8 +36,12 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
         BoardAccessChangeLog changeLog,
         IDateTimeProvider dateTimeProvider,
         IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
+        IWorkspaceAccessResolver workspaceAccess,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _workspaceAccess = workspaceAccess;
+        _access = access;
         _realtime = realtime;
         _dateTimeProvider = dateTimeProvider;
         _sharing = sharing;
@@ -63,6 +69,12 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
 
         if (member is not null)
         {
+            if (member.Role == BoardRole.Owner)
+                await BoardOwnership.EnsureMayChangeOwnershipAsync(_context, _workspaceAccess, board.WorkspaceId, board.Id, _currentUser.UserId, ct);
+
+            if (member.Role == BoardRole.Owner)
+                await BoardOwnership.EnsureAnotherOwnerAsync(_context, board.Id, request.UserId, ct);
+
             // Removing the only manager would leave the Board with nobody to manage it.
             if (BoardRoleLevels.RankOf(member.Role.ToString()) >= 4)
                 await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, board.Id, request.UserId, ct);
@@ -70,6 +82,7 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
             _context.BoardMembers.Remove(member);
             board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
             await _changeLog.MemberRemovedAsync(board.Id, request.UserId, member.Role, ct);
+            _access.BoardPerson(board.Id, request.UserId);
         }
 
         return Result.Success();

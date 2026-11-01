@@ -177,6 +177,8 @@ export function LibraryPage() {
         state={state}
         pendingPinKeys={pendingPinKeys}
         canCreate={viewer.role !== null && viewer.role !== "guest"}
+        canCreateBoard={viewer.can("CreateBoard")}
+        canCreateDoc={viewer.can("CreatePage")}
         spaces={spaces}
         onMoveBoard={
           viewer.role !== null && viewer.role !== "guest" && spaces.length > 0

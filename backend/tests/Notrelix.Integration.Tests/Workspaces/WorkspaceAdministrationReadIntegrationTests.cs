@@ -43,7 +43,6 @@ using Notrelix.Infrastructure.Security.Tokens;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using PreconditionFailed = Notrelix.Application.Common.Exceptions.PreconditionFailedException;
 
 namespace Notrelix.Integration.Tests.Workspaces;
@@ -157,7 +156,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
 
         var list = () => ListMembersAsync(provider, stack.WorkspaceId);
 
-        await list.Should().ThrowAsync<AppForbidden>();
+        await list.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
     }
 
     [Fact]
@@ -215,7 +214,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         {
             using var provider = CreateProvider(stack.AccountId, user);
             var list = () => ListMembersAsync(provider, stack.WorkspaceId);
-            await list.Should().ThrowAsync<AppForbidden>();
+            await list.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
         }
     }
 
@@ -228,7 +227,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
 
         var intoOther = () => ListMembersAsync(asOtherOwner, stack.WorkspaceId);
 
-        await intoOther.Should().ThrowAsync<AppForbidden>();
+        await intoOther.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
         (await ListMembersAsync(asOtherOwner, other.WorkspaceId)).Select(m => m.UserId)
             .Should().BeEquivalentTo(new[] { other.OwnerId, other.MemberId });
     }
@@ -259,8 +258,8 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         var fromOther = () => GetMyMembershipAsync(asOtherOwner, stack.WorkspaceId);
         var whileSuspended = () => GetMyMembershipAsync(asSuspended, stack.WorkspaceId);
 
-        await fromOther.Should().ThrowAsync<AppForbidden>();
-        await whileSuspended.Should().ThrowAsync<AppForbidden>();
+        await fromOther.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        await whileSuspended.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
     }
 
     // ── Invitations ───────────────────────────────────────────────────────
@@ -497,6 +496,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
                 new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
         services.AddSingleton(new Mock<global::Notrelix.Application.Common.Context.IClientMetadata>().Object);
+        services.AddSingleton(new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();

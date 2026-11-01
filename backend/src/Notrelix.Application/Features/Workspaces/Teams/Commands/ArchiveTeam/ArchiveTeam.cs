@@ -22,8 +22,11 @@ public class ArchiveTeamCommandHandler : IRequestHandler<ArchiveTeamCommand, Res
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ArchiveTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public ArchiveTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -38,6 +41,7 @@ public class ArchiveTeamCommandHandler : IRequestHandler<ArchiveTeamCommand, Res
             throw new NotFoundException(nameof(Team), request.TeamId);
 
         team.Archive(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

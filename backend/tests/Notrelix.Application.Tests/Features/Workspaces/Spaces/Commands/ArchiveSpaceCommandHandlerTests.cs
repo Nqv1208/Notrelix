@@ -14,7 +14,8 @@ public class ArchiveSpaceCommandHandlerTests : WorkspaceHandlerTestBase
     }
 
     private ArchiveSpaceCommandHandler CreateSut() => new(
-        DbContextMock.Object, _content.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, _content.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
+        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
     [Fact]
     public async Task Handle_WhenSpaceExists_ArchivesSuccessfully()

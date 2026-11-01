@@ -15,6 +15,8 @@ export type CardPopupMode = "view" | "create";
 export type CardPopupReadOnly =
   | "permission"
   | "archived"
+  /** The card itself is archived: it reads, and "Unarchive" brings it back. */
+  | "item-archived"
   /** A create is on its way: every field is read-only until it answers. */
   | "creating"
   | null;

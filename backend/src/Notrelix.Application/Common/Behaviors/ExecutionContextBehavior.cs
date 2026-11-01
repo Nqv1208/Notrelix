@@ -68,9 +68,12 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                         throw new ForbiddenException("API token account binding mismatch.");
                     }
 
+                    // Not an active member (never joined, suspended, removed): the workspace is as missing as a
+                    // made-up id, with the identical NotFound, so its existence does not leak. A member who lacks
+                    // the action is refused later with Forbidden: they already know the workspace exists.
                     if (!snapshot.CanAccess)
                     {
-                        throw new ForbiddenException("Access to workspace denied.");
+                        throw new AppNotFoundException(nameof(Workspace), workspaceRequest.WorkspaceId);
                     }
 
                     accountId = snapshot.AccountId;

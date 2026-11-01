@@ -22,7 +22,11 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_MoveAddNotAffected = "WorkManagement_Board_MoveAddNotAffected";
     public const string WorkManagement_Board_DuplicateTooManyItems = "WorkManagement_Board_DuplicateTooManyItems";
     public const string WorkManagement_Board_MoveAddGuest = "WorkManagement_Board_MoveAddGuest";
+    public const string WorkManagement_Board_ViewerHoldsGrant = "WorkManagement_Board_ViewerHoldsGrant";
+    public const string WorkManagement_Board_PrivateNeedsOwner = "WorkManagement_Board_PrivateNeedsOwner";
     public const string WorkManagement_Board_LastOwner = "WorkManagement_Board_LastOwner";
+    public const string WorkManagement_Board_OwnerChangeNeedsOwner = "WorkManagement_Board_OwnerChangeNeedsOwner";
+    public const string WorkManagement_BoardItem_AssigneeIsViewer = "WorkManagement_BoardItem_AssigneeIsViewer";
     public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
     public const string WorkManagement_Group_CannotModifyArchived = "WorkManagement_Group_CannotModifyArchived";
     public const string WorkManagement_Group_CannotReceiveItemsArchived = "WorkManagement_Group_CannotReceiveItemsArchived";

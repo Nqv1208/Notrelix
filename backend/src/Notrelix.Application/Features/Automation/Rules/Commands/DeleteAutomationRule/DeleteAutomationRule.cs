@@ -16,7 +16,7 @@ public record DeleteAutomationRuleCommand(Guid AutomationRuleId, Guid? BoardId =
     public ResourceRef Resource => BoardId is { } board
         ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board)
         : ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
-    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageAutomation : PermissionAction.ManageBoard;
 }
 
 public class DeleteAutomationRuleCommandHandler : IRequestHandler<DeleteAutomationRuleCommand, Result>

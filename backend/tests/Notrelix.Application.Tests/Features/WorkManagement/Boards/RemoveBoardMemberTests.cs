@@ -20,7 +20,9 @@ public class RemoveBoardMemberTests : WorkManagementHandlerTestBase
             _currentUserMock.Object,
             new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object),
             DateTimeProviderMock.Object,
-            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object);
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object,
+            new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object,
+            new Mock<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver>().Object);
     }
 
     [Fact]

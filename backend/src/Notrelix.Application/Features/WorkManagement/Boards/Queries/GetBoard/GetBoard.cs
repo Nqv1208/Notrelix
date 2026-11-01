@@ -31,7 +31,7 @@ public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardD
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        var memberCount = await _context.BoardMembers.CountAsync(m => m.BoardId == board.Id, ct);
+        var memberCount = await _context.BoardMembers.CountAsync(m => m.BoardId == board.Id && !BoardRoles.Viewers.Contains(m.Role), ct);
         var listCount = await _context.BoardGroups.CountAsync(l => l.BoardId == board.Id && l.DeletedAt == null && !l.IsArchived, ct);
 
         // A board reachable through an explicit grant may sit in a Space the

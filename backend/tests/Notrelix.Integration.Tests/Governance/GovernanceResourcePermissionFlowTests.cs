@@ -580,7 +580,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreatePage_NonMember_IsForbidden()
+    public async Task CreatePage_NonMember_IsNotFound()
     {
         var (accountId, _, workspaceId, _, _) = await SeedPageStackAsync();
         var outsider = Guid.NewGuid();
@@ -589,8 +589,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var act = () => SendAsync<Result<Guid>>(provider,
             new CreatePageCommand(workspaceId, "Outsider Page", null));
 
-        await act.Should().ThrowAsync<AppForbidden>(
-            "a non-member has no workspace role, so the engine denies CreatePage");
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>(
+            "a person who is not an active member is told the workspace does not exist");
     }
 
     [Fact]
@@ -1787,6 +1787,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
         services.AddSingleton(new Mock<IClientMetadata>().Object);
+        services.AddSingleton(new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessChangeRecorder, Notrelix.Application.Features.Governance.AccessChanges.ResourceAccessChangeRecorder>();
 
         services.AddScoped<IResourceLocator, ResourceLocator>();

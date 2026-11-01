@@ -1,5 +1,7 @@
 import { toast } from "sonner";
 import {
+  bulkFailedItemId,
+  useBoardCardTitle,
   useBulkUpdateItems,
   useMoveItemToBoard,
   useWorkspaceBoards,
@@ -13,7 +15,7 @@ import {
 } from "@notrelix/work-management-core";
 import { findItemFields } from "../../card-detail/item-field-editors";
 import type { TaskDetailCapabilities } from "../../card-detail/task-detail-types";
-import { pluralTableCopy } from "../table/main-table.copy";
+import { fillTableCopy, pluralTableCopy } from "../table/main-table.copy";
 import { useMainTableCopy } from "../table/use-main-table-copy";
 import { tableStatusOptions } from "../table/table-model";
 import { TableBulkBar } from "../table/table-bulk-bar";
@@ -47,6 +49,7 @@ export function KanbanBulkBar({
 }) {
   const copy = useMainTableCopy();
   const bulk = useBulkUpdateItems(boardId, workspaceId);
+  const titleOf = useBoardCardTitle(boardId, workspaceId);
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
     onError: () => toast.error(copy.failed.bulk, { id: "kanban-bulk-move" }),
   });
@@ -59,16 +62,24 @@ export function KanbanBulkBar({
     bulk.mutate(
       { itemIds: ids, change },
       {
+        // The pick is spent only once the server took the change; a refusal keeps it and names the item.
         onSuccess: () => {
           if (done) toast.success(done, { id: "kanban-bulk" });
+          onClear();
         },
-        onError: () => toast.error(copy.failed.bulk, { id: "kanban-bulk" }),
+        onError: (error) => {
+          const failed = bulkFailedItemId(error);
+          const title = failed ? titleOf(failed) : undefined;
+          toast.error(
+            title
+              ? fillTableCopy(copy.failed.bulkItem, { title })
+              : copy.failed.bulk,
+            { id: "kanban-bulk" },
+          );
+        },
       },
     );
-  const settle = (change: BulkItemChange, done?: string) => {
-    write(change, done);
-    onClear();
-  };
+  const settle = write;
 
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(

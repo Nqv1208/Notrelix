@@ -536,7 +536,7 @@ Manager   : + Board management (ManageBoard on a Board: settings and title, visi
             ManageBoardPermission, ManagePagePermission, ArchivePage
 ```
 
-Board content commands declare the content action they perform (groups: CreateItem/UpdateItem; labels, forms, templates, relations: CreateField/UpdateField/DeleteField; default view and saved filters: UpdateBoardView/CreateBoardView); `ManageBoard` on a Board is Board management only. Board-member semantics still apply on top of the level (for example an Observer cannot update items).
+Board content commands declare the content action they perform (groups: CreateItem/UpdateItem; labels, forms, templates, relations: CreateField/UpdateField/DeleteField; default view and saved filters: UpdateBoardView/CreateBoardView); `ManageBoard` on a Board is Board management only. A read-only board role caps the level (NRX-003, decided 2026-10-31): a person who holds the explicit Observer (or Guest) role on a Board is a Viewer of it and acts on nothing, whatever the Workspace default, the Space level, a Team or an explicit grant would give. Only the Workspace Owner (who reaches every Board) and a Deny rule sit outside the cap; to give such a person more, change their board role. An explicit grant above Viewer to a person whose board role is read-only is refused (`Governance_ResourcePermission_ViewerRoleCapsGrant`), and making a person a viewer while they hold an explicit grant above Viewer is refused (`WorkManagement_Board_ViewerHoldsGrant`), so there is never an inert grant and each person has one source of truth; the share dialog lowers the grant first and raises the board role first, and Can comment is a grant held without a board role. A Viewer is not a member of the Board: they are not counted or listed with its members (the Board read lists them apart as viewers), and they are never offered as an assignee, a checklist-step assignee or a person-field value (the write is refused with `WorkManagement_BoardItem_AssigneeIsViewer`).
 
 # 23.4. GOV-028 — Space and Team management authority
 
@@ -575,9 +575,9 @@ Decided 2026-10-13. Every resource that lives inside a Board — Items (and thei
 - an explicit grant on the child itself still counts as a source of access in addition to the Board's sources;
 - a child accepts only Board-child actions (read, comment, item, field and view changes, Board management); any other action on a child is refused.
 
-Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer. Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
+Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer, and a read-only role is a cap on every other source, not only one source among them (GOV-027). Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
 
-Saved filters are Board children too (they resolve to their Board): a personal filter is its creator's alone, so another principal gets NotFound for it; a shared filter is visible to everyone who can view the Board and is changed by whoever holds the view-edit right (UpdateBoardView), while only its creator changes who sees it.
+Saved filters are Board children too (they resolve to their Board): a personal filter is its creator's alone, so another principal gets NotFound for it. That is a policy fact, not a handler check (decided 2026-10-31, NRX-004): a Private view or Private saved filter that belongs to another person is invisible to the caller whatever their level (the workspace Owner included), so every action on it, and a person's own settings of it (the view preference read and write), is the identical NotFound before any level can answer Forbidden; a shared filter is visible to everyone who can view the Board and is changed by whoever holds the view-edit right (UpdateBoardView), while only its creator changes who sees it.
 
 Forms and form submissions are Board children too (they resolve to their Board): managing a form (questions, publish, close, delete, restore) is Board management and needs Manager; handling its submissions (list, process, reject, mark spam, delete) needs edit rights on the Board (UpdateItem, so an Editor), because a response can hold respondent data (D78.4, decided 2026-10-30); creating a form is an Editor schema change; submitting to a published form needs the right to create Items on its Board, so a principal without Board access gets NotFound. Public (anonymous) submission is not wired (owner decision pending).
 
@@ -973,6 +973,29 @@ Role assignment requires:
 - authorization to assign.
 
 Cross-scope role assignment through raw IDs is forbidden.
+
+---
+
+# 46.1. GOV-026 — Custom roles are Account definitions on a fixed built-in base (owner decision 2026-10-31)
+
+Three layers decide whether a person may act, and all must pass; Deny wins:
+
+1. the platform operator sets each tenant's plan, features and limits (entitlements);
+2. tenant admins own roles (built-in and custom), departments (Space and Team) and assignments;
+3. per-resource sharing.
+
+Rules for a custom role:
+
+- **Tenant = Account.** A custom role is defined once per Account (by an Account Owner or Admin) and assigned per workspace (by the workspace Owner). The permission catalog is product-defined in code; tenants compose roles from it and never invent a permission.
+- **One role per person per workspace.** A custom role replaces the person's built-in role while assigned; removing it returns the person to the built-in role. A workspace Owner never holds one.
+- **The base is fixed.** A role is built on Admin, Member or Guest when created and that never changes. A Guest-based role stays Guest-capped and cannot add actions.
+- **Adds and removes.** A role adds or removes workspace-level actions inside its base. An action decided on a Board or Page can only be removed. Owner-only actions (the GOV-013 list) are never carried. Reading (workspace, board, page) cannot be removed until collection reads honour a role.
+- **Private resources.** A custom role never reaches a Private resource by itself, Deny outranks it, and an explicit resource grant still applies when the role removed the action.
+- **New actions.** Automation management (default Owner and Admin, split from workspace settings without changing who may act), Audit read (default Owner and Admin) and Billing view (default Owner; the billing reads need it, so an Admin reads billing only when a role adds it). All three can be added to a role.
+- **Archiving** moves the role's holders to one chosen role of the account that is not above the archived one, never up to Admin; a role with no holder needs no target.
+- **Plan gate.** Custom roles are an Enterprise capability. After a downgrade they are frozen: still effective, only changes that lower privilege stay allowed (removing a role from a person, archiving); editing, renaming and new assignments are refused.
+- **Seats.** Giving a Guest a Member-or-higher based role needs a free member seat and is refused otherwise.
+- **Explaining.** "Why can X do Y?" is open to whoever may read the audit trail (Owner and Admin by default); each check is audited. The decision is the engine's result; the steps explain it.
 
 ---
 

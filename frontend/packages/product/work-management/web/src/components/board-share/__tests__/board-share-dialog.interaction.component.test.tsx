@@ -173,7 +173,7 @@ describe("BoardShareDialogSurface", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Thêm 2 người rồi chuyển" }),
     );
-    expect(onConfirmPrivate).toHaveBeenCalledWith(["u-quan", "u-anh"]);
+    expect(onConfirmPrivate).toHaveBeenCalledWith(["u-quan", "u-anh"], false);
     expect(props.onClose).toHaveBeenCalled();
   });
 

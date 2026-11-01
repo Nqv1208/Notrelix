@@ -51,12 +51,13 @@ public sealed class RealtimeSubscriptionAuthorizationTests
     public async Task Non_member_or_suspended_member_is_denied_before_the_handler_runs()
     {
         // The tenant bootstrap reports CanAccess=false for a user with no active
-        // membership, including a suspended or removed member.
+        // membership, including a suspended or removed member. The workspace is hidden from them:
+        // the same NotFound as a workspace that does not exist.
         var fixture = WorkspaceFixture(canAccess: false, role: null);
 
         var act = () => fixture.Run(new AuthorizeWorkspaceRealtimeSubscriptionQuery(WorkspaceId));
 
-        await act.Should().ThrowAsync<ForbiddenException>();
+        await act.Should().ThrowAsync<NotFoundException>();
         fixture.HandlerCalls.Should().Be(0);
     }
 
@@ -68,7 +69,7 @@ public sealed class RealtimeSubscriptionAuthorizationTests
 
         var act = () => fixture.Run(new AuthorizeWorkspaceRealtimeSubscriptionQuery(foreignWorkspaceId));
 
-        await act.Should().ThrowAsync<ForbiddenException>();
+        await act.Should().ThrowAsync<NotFoundException>();
         fixture.HandlerCalls.Should().Be(0);
     }
 

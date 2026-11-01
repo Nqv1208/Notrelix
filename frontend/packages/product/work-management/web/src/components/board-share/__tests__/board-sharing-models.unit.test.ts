@@ -346,8 +346,8 @@ describe("planLevelChange", () => {
       source: "member",
       memberRole: "Member",
     });
+    // A read-only board role caps the person at Can view, so Can comment is a grant held without a role.
     expect(planLevelChange(member, "commenter")).toEqual([
-      { kind: "member-role", userId: "u-m", role: "Observer" },
       {
         kind: "grant",
         subjectType: "User",
@@ -355,10 +355,11 @@ describe("planLevelChange", () => {
         level: "commenter",
         expectedVersion: null,
       },
+      { kind: "member-remove", userId: "u-m" },
     ]);
     const both = { ...member, source: "both" as const, permissionId: "perm-m" };
+    // Lowering to Can view writes the grant first: the role cannot become read-only while a higher grant stands.
     expect(planLevelChange(both, "viewer")).toEqual([
-      { kind: "member-role", userId: "u-m", role: "Observer" },
       {
         kind: "grant",
         subjectType: "User",
@@ -366,6 +367,7 @@ describe("planLevelChange", () => {
         level: "viewer",
         expectedVersion: null,
       },
+      { kind: "member-role", userId: "u-m", role: "Observer" },
     ]);
   });
 

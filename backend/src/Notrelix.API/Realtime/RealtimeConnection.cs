@@ -19,6 +19,8 @@ public sealed class RealtimeConnection
     private readonly IRealtimeSubscriptionAuthorizer _authorizer;
     private readonly IRealtimeCredentialValidator _credentials;
     private readonly IRealtimeNotificationSource _source;
+    private readonly IRealtimeAccessSignalSource? _accessSource;
+    private readonly Dictionary<Guid, IAsyncDisposable> _accessHandles = new();
     private readonly ILogger _logger;
     private readonly TimeProvider _clock;
 
@@ -44,8 +46,10 @@ public sealed class RealtimeConnection
         IRealtimeCredentialValidator credentials,
         IRealtimeNotificationSource source,
         ILogger logger,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        IRealtimeAccessSignalSource? accessSource = null)
     {
+        _accessSource = accessSource;
         _socket = socket;
         _principal = principal;
         _options = options;
@@ -378,6 +382,7 @@ public sealed class RealtimeConnection
     private async Task AddSubscriptionAsync(
         RealtimeProtocol.SubscribeMessage message, RealtimeSubscriptionGrant grant, CancellationToken token)
     {
+        await EnsureAccessSignalAsync(grant.WorkspaceId, token).ConfigureAwait(false);
         var subscription = new Subscription(message.SubscriptionId, message.Scope, grant.WorkspaceId);
         subscription.Handle = await _source.SubscribeAsync(
             message.Scope, notification => OnNotification(subscription, notification), token).ConfigureAwait(false);
@@ -398,6 +403,60 @@ public sealed class RealtimeConnection
         _logger.LogDebug(
             "Realtime subscription added connection {ConnectionId} scope {ScopeKind} {ScopeId}",
             ConnectionId, message.Scope.WireKind, message.Scope.Id);
+    }
+
+    /// <summary>One access-signal subscription per workspace of this connection, held until the connection ends.</summary>
+    private async Task EnsureAccessSignalAsync(Guid workspaceId, CancellationToken token)
+    {
+        if (_accessSource is null || _accessHandles.ContainsKey(workspaceId))
+        {
+            return;
+        }
+
+        _accessHandles[workspaceId] = await _accessSource.SubscribeAccessAsync(
+            workspaceId, signal => OnAccessSignal(signal), token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Someone's access changed: when it concerns this person, re-authorize the affected subscriptions now (not
+    /// at the next periodic pass). Never blocks the transport callback; failures fail closed at the next pass.
+    /// </summary>
+    private ValueTask OnAccessSignal(RealtimeNotification signal)
+    {
+        if (Volatile.Read(ref _closeRequested) == 1)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        if (signal.SubjectUserId is { } subject && subject != _principal.UserId)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        // The person's own client learns it at once, so buttons appear and disappear without waiting for a poll.
+        Enqueue(RealtimeProtocol.AccessChanged(signal.WorkspaceId));
+
+        var boardOnly = string.Equals(signal.ResourceKind, RealtimeAccessSignal.BoardResource, StringComparison.Ordinal)
+            ? signal.ResourceId
+            : (Guid?)null;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await ReauthorizeAsync(
+                    _stop.Token,
+                    s => s.WorkspaceId == signal.WorkspaceId
+                        && (boardOnly is null || (s.Scope.Kind == RealtimeScopeKind.Board && s.Scope.Id == boardOnly))).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Realtime access re-authorization failed connection {ConnectionId}", ConnectionId);
+            }
+        });
+        return ValueTask.CompletedTask;
     }
 
     private async Task UnsubscribeAsync(string subscriptionId)
@@ -441,6 +500,20 @@ public sealed class RealtimeConnection
 
     private async Task ReleaseSubscriptionsAsync()
     {
+        foreach (var handle in _accessHandles.Values)
+        {
+            try
+            {
+                await handle.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Realtime access signal release failed connection {ConnectionId}", ConnectionId);
+            }
+        }
+
+        _accessHandles.Clear();
+
         string[] ids;
         lock (_subscriptions)
         {
@@ -549,7 +622,7 @@ public sealed class RealtimeConnection
     /// membership or permission is bounded by <see cref="RealtimeGatewayOptions.ReauthorizationInterval"/>.
     /// Authorization-system failure fails closed.
     /// </summary>
-    internal async Task ReauthorizeAsync(CancellationToken token)
+    internal async Task ReauthorizeAsync(CancellationToken token, Func<Subscription, bool>? only = null)
     {
         if (!await _credentials.IsStillValidAsync(_principal, token).ConfigureAwait(false))
         {
@@ -566,7 +639,7 @@ public sealed class RealtimeConnection
                 snapshot = [.. _subscriptions.Values];
             }
 
-            foreach (var subscription in snapshot)
+            foreach (var subscription in snapshot.Where(s => only is null || only(s)))
             {
                 var result = await _authorizer.AuthorizeAsync(_principal, subscription.Scope, token).ConfigureAwait(false);
                 if (result.Outcome == RealtimeAuthorizationOutcome.Unauthenticated)
@@ -599,7 +672,7 @@ public sealed class RealtimeConnection
         }
     }
 
-    private sealed class Subscription(string id, RealtimeScope scope, Guid workspaceId)
+    internal sealed class Subscription(string id, RealtimeScope scope, Guid workspaceId)
     {
         public string Id { get; } = id;
         public RealtimeScope Scope { get; } = scope;

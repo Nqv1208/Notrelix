@@ -39,7 +39,9 @@ public record FullBoardDto(
     int? FilteredTotal = null,
     int? TotalItems = null,
     // A paged read only: one entry per Status lane (an option, then the empty lane) with its sizes and next cursor.
-    List<BoardLaneDto>? Lanes = null
+    List<BoardLaneDto>? Lanes = null,
+    // The board's Viewers (read-only roles): listed apart, never among the members.
+    List<BoardMemberDto>? Viewers = null
 );
 
 /// <summary>A Status lane of a paged board read: how many Items it holds, how many pass the filter, and where its next page starts.</summary>

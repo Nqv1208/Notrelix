@@ -31,7 +31,7 @@ public class GetBoardLifecycleImpactQueryHandler : IRequestHandler<GetBoardLifec
             .Where(i => i.BoardId == board.Id && i.DeletedAt == null && !i.IsArchived);
         var itemCount = await items.CountAsync(ct);
         var openItemCount = await items.CountAsync(i => i.CompletedAt == null, ct);
-        var memberCount = await _context.BoardMembers.CountAsync(m => m.BoardId == board.Id, ct);
+        var memberCount = await _context.BoardMembers.CountAsync(m => m.BoardId == board.Id && !BoardRoles.Viewers.Contains(m.Role), ct);
         var groupCount = await _context.BoardGroups.CountAsync(g => g.BoardId == board.Id && g.DeletedAt == null && !g.IsArchived, ct);
         var viewCount = await _context.BoardViews.CountAsync(v => v.BoardId == board.Id && !v.IsArchived, ct);
 

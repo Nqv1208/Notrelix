@@ -1,6 +1,7 @@
 import { createRoute, redirect } from "@tanstack/react-router";
 import { workspaceRoute } from "./base.routes";
 import { boardSearchSchema } from "../schemas/board-search-schema";
+import { BoardRouteError } from "../../routes/workspaces/$workspaceId/boards/board-route-error";
 import { BoardPage } from "../../routes/workspaces/$workspaceId/boards/$boardId";
 import { BoardSettingsRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.settings";
 import { BoardFormFillPage } from "../../routes/workspaces/$workspaceId/boards/$boardId.forms.$formId";
@@ -13,6 +14,9 @@ export const boardRoute = createRoute({
   path: "/boards/$boardId",
   validateSearch: (search) => boardSearchSchema.parse(search),
   component: BoardPage,
+  errorComponent: ({ error, reset }) => (
+    <BoardRouteError error={error} reset={reset} />
+  ),
 });
 
 /**

@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 
@@ -61,6 +62,11 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             throw _requestContext is null
                 ? new NotFoundException("BoardField", request.FieldId)
                 : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
+
+        // A person field names who the work is for: a board Viewer is not offered there.
+        if (field.Type == FieldType.Person && request.Value is not null
+            && Guid.TryParse(System.Text.Json.JsonSerializer.Serialize(request.Value).Trim('"'), out var named))
+            await BoardAssigneeGuard.EnsureNotViewerAsync(_context, item.BoardId, named, cancellationToken);
 
         var now = _timeProvider.UtcNow;
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);

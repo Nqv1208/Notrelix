@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Collaboration.Preferences.Queries.GetNotific
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using PreconditionFailed = Notrelix.Application.Common.Exceptions.PreconditionFailedException;
 
 namespace Notrelix.Integration.Tests.Collaboration;
@@ -137,7 +136,7 @@ public sealed class NotificationPreferencesIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task NonMembers_AndMembersOfAnotherWorkspace_AreRefused_ForReadAndUpdate()
+    public async Task NonMembers_AndMembersOfAnotherWorkspace_AreToldNothingExists_ForReadAndUpdate()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var other = await _host.SeedWorkspaceAsync();
@@ -151,15 +150,15 @@ public sealed class NotificationPreferencesIntegrationTests : IAsyncLifetime
             var write = () => OrgTreeTestHost.SendAsync(provider,
                 new UpdateNotificationPreferencesCommand(stack.WorkspaceId, 0, [new NotificationPreferenceRowChange("mention", false, null)]));
 
-            await read.Should().ThrowAsync<AppForbidden>();
-            await write.Should().ThrowAsync<AppForbidden>();
+            await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+            await write.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
         }
 
         (await _host.ReadAsync(c => c.NotificationPreferenceSets.CountAsync())).Should().Be(0);
     }
 
     [Fact]
-    public async Task ASuspendedMember_IsRefused()
+    public async Task ASuspendedMember_IsToldNothingExists()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Suspended");
@@ -171,7 +170,7 @@ public sealed class NotificationPreferencesIntegrationTests : IAsyncLifetime
 
         var read = () => ReadAsync(stack, member);
 
-        await read.Should().ThrowAsync<AppForbidden>();
+        await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
     }
 
     private async Task<NotificationPreferencesDto> ReadAsync(OrgStack stack, Guid userId)

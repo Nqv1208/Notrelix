@@ -147,13 +147,31 @@ export function useBoardSharing(
         runAll([
           { kind: "grant", subjectType: "User", subjectId: userId, level },
         ]),
+      /** A workspace Owner takes a board that has no owner (`WorkManagement.Boards.AddMember` as Owner). */
+      claimOwner: async (userId: string) => {
+        try {
+          await api.api.post(
+            `/boards/${boardId}/members`,
+            { userId, role: "Owner" },
+            { headers: { "Idempotency-Key": crypto.randomUUID() } },
+          );
+        } finally {
+          await refresh();
+        }
+      },
+      /** Hands ownership to a board member (`WorkManagement.Boards.UpdateMemberRole` to Owner). */
+      makeOwner: async (entryId: string) =>
+        runAll([{ kind: "member-role", userId: entryId, role: "Owner" }]),
       remove: async (entryId: string) => {
         const entry = entryOf(entryId);
         if (entry) await runAll(planRemoval(entry));
       },
-      makePrivate: async (addUserIds: readonly string[]) => {
+      makePrivate: async (
+        addUserIds: readonly string[],
+        addMeAsOwner: boolean,
+      ) => {
         const body: OperationRequestBody<"WorkManagement.Boards.MakePrivate"> =
-          { addUserIds: [...addUserIds] };
+          { addUserIds: [...addUserIds], addMeAsOwner };
         try {
           await api.api.post(endpoints.boards.sharingPrivate(boardId), body, {
             headers: { "Idempotency-Key": crypto.randomUUID() },

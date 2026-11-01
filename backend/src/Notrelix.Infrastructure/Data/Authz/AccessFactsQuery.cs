@@ -12,7 +12,7 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// Page's Space supplied as <c>@page_space_id</c> from the Documents-published
 /// page fact); <c>space_path</c> is its ancestor-or-self path from the closure
 /// index. Columns 14..17 expose the Space facts, column 18 the target user's
-/// board role, column 19 whether the Board is archived; every role→level meaning stays
+/// board role, column 19 whether the Board is archived, column 21 the custom role the person holds in the Workspace (owner decision 2026-10-31); every role→level meaning stays
 /// in AccessPolicyEngine. GOV-033: <c>@board_id</c> is the Board the request is
 /// decided on — the Board itself, or the parent Board of a Board child resource
 /// (<c>@board_child</c>) supplied from the Work Management-published relation;
@@ -173,6 +173,19 @@ public static class AccessFactsQuery
               AND b.workspace_id = @workspace_id AND b.is_archived) ELSE false END,
           CASE WHEN @board_id IS NOT NULL AND @board_deleted_ok THEN EXISTS (
             SELECT 1 FROM work.boards b WHERE b.id = @board_id
-              AND b.workspace_id = @workspace_id AND b.deleted_at IS NOT NULL) ELSE false END
+              AND b.workspace_id = @workspace_id AND b.deleted_at IS NOT NULL) ELSE false END,
+          (SELECT jsonb_build_object('id', r.id, 'base', r.base_role,
+                    'added', COALESCE(jsonb_agg(p.action) FILTER (WHERE p.is_allowed), '[]'::jsonb),
+                    'removed', COALESCE(jsonb_agg(p.action) FILTER (WHERE NOT p.is_allowed), '[]'::jsonb))::text
+             FROM governance.member_role_assignments a
+             JOIN governance.custom_roles r ON r.id = a.custom_role_id
+             LEFT JOIN governance.custom_role_permissions p ON p.custom_role_id = r.id
+            WHERE @workspace_id IS NOT NULL
+              AND a.account_id = @account_id AND a.workspace_id = @workspace_id AND a.member_id = @user_id
+              AND r.account_id = @account_id AND r.status = 'Active'
+              AND EXISTS (SELECT 1 FROM workspace.workspace_members wm
+                           WHERE wm.workspace_id = @workspace_id AND wm.user_id = @user_id
+                             AND wm.status = 'Active' AND wm.role <> 'Owner')
+            GROUP BY r.id, r.base_role LIMIT 1)
     """;
 }

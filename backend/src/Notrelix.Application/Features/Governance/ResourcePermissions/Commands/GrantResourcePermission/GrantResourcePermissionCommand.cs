@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Public.BoardAccess;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 
@@ -51,6 +52,8 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly IResourceAccessChangeRecorder _changes;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IBoardAccessSubjectFacts _boards;
+    private readonly IAccessChangeSignal _access;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
@@ -59,9 +62,13 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         IAuditService auditService,
         IResourceAccessChangeRecorder changes,
         IWorkspaceAccessResolver workspaceAccess,
-        IBoardSharingSummary sharing)
+        IBoardSharingSummary sharing,
+        IBoardAccessSubjectFacts boards,
+        IAccessChangeSignal access)
     {
         _sharing = sharing;
+        _access = access;
+        _boards = boards;
         _workspaceAccess = workspaceAccess;
         _changes = changes;
         _context = context;
@@ -95,6 +102,20 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                     "PermissionSubjectMustBelongToWorkspace",
                     "Permission subject must belong to the same workspace.");
+            }
+        }
+
+        // A read-only board role (Observer, Guest) caps the person at Viewer, so a higher explicit grant would be
+        // inert: it is refused instead, and the board role is the one source to change.
+        if (subjectType == PermissionSubjectType.User && kind.Value == BoardResourceKind && (int)level > (int)PermissionLevel.Viewer)
+        {
+            var board = await _boards.FindAsync(workspaceId, request.ResourceId, cancellationToken);
+            var role = board?.Members?.FirstOrDefault(m => m.UserId == request.SubjectId)?.Role;
+            if (BoardRoleLevels.RankOf(role) is > 0 and <= 1)
+            {
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    Notrelix.Domain.Governance.GovernanceRuleCodes.Governance_ResourcePermission_ViewerRoleCapsGrant,
+                    "This person is a viewer of the board, so they can only view. Change their board role first.");
             }
         }
 
@@ -139,6 +160,9 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 permission = existingPermission;
                 if (isBoard)
                 {
+                    // A changed level cuts live subscriptions that held the higher one and tells the person's client.
+                    if (subjectType == PermissionSubjectType.User) _access.BoardPerson(request.ResourceId, request.SubjectId);
+                    else _access.Board(request.ResourceId);
                     await _changes.RecordAsync(
                         new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Changed, subjectType.ToString(), request.SubjectId, LevelToken(previous), LevelToken(level)),
                         cancellationToken);
@@ -164,6 +188,9 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                 await _changes.RecordAsync(
                     new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Added, subjectType.ToString(), request.SubjectId, null, LevelToken(level)),
                     cancellationToken);
+                // A new grant reaches the person's open client at once.
+                if (subjectType == PermissionSubjectType.User) _access.BoardPerson(request.ResourceId, request.SubjectId);
+                else _access.Board(request.ResourceId);
             }
         }
 

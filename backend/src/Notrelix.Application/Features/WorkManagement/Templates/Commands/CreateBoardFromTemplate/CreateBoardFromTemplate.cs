@@ -75,6 +75,7 @@ public class CreateBoardFromTemplateCommandHandler : IRequestHandler<CreateBoard
         var accountId = _requestContext.RequireAccountId();
         var board = Board.Create(accountId, request.WorkspaceId, userId, request.Name, description, now, spaceId: request.SpaceId);
         _context.Boards.Add(board);
+        BoardOwnership.AddCreatorAsOwner(_context, board.Id, userId, now);
 
         BoardStructureInstantiator.Instantiate(_context, board, structure, accountId, request.WorkspaceId, userId, now);
 

@@ -69,6 +69,11 @@ public static class WorkspaceRoleBaseline
         [PermissionAction.ManageTeams] = new(A, A, D, D),
         [PermissionAction.ManageMemberProfile] = new(A, A, D, D),
         [PermissionAction.ManageIntegrations] = new(A, A, D, D),
+        // Automation was decided by ManageWorkspaceSettings (Owner, Admin); the split keeps who may do what.
+        [PermissionAction.ManageAutomation] = new(A, A, D, D),
+        // Reading the audit trail is a tenant-admin right; billing is Owner only unless a role adds it (owner decision 2026-10-31).
+        [PermissionAction.ReadAudit] = new(A, A, D, D),
+        [PermissionAction.ViewBilling] = new(A, D, D, D),
 
         // Creating at the workspace root is a usage right; Guests are excluded. In a Space the
         // Space level decides (Editor on that Space).
@@ -140,7 +145,8 @@ public static class WorkspaceRoleBaseline
     /// </summary>
     public static bool AppliesToResourceKind(PermissionAction action, string? resourceKind) => action switch
     {
-        PermissionAction.ViewWorkspace or PermissionAction.ViewMembers or PermissionAction.ManageWorkspaceSettings => true,
+        PermissionAction.ViewWorkspace or PermissionAction.ViewMembers or PermissionAction.ManageWorkspaceSettings
+            or PermissionAction.ManageAutomation or PermissionAction.ViewBilling => true,
         PermissionAction.ManageIntegrations =>
             resourceKind is "workspaces.workspace" or "integrations.calendar-integration" or "automation.rule",
         _ => resourceKind == "workspaces.workspace",

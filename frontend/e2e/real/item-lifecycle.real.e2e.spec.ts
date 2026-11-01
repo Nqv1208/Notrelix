@@ -9,7 +9,7 @@ import {
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-test("a member archives an item from its page, sees it archived and restores it", async ({
+test("a member archives an item from its card, sees it archived and restores it", async ({
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -19,24 +19,23 @@ test("a member archives an item from its page, sees it archived and restores it"
     "Engineering Tasks",
   );
 
-  // Open an item in the side sheet to learn its id, then its own page.
+  // Open an item's card to learn its id.
   await page
     .getByRole("button", { name: /Task \d+/ })
     .first()
     .click();
   await expect(page).toHaveURL(/[?&]item=/);
   const itemId = new URL(page.url()).searchParams.get("item")!;
-  await page.goto(
-    `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`,
-  );
+  const card = `/workspaces/${workspace.id}/boards/${board.id}?item=${itemId}`;
 
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "Card actions" }).click();
   const archived = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
-      response.url().endsWith(`/board-items/${itemId}/archive`),
+      response.url().endsWith(`/board-items/${itemId}/archive`) &&
+      response.status() !== 403,
   );
-  await page.getByRole("menuitem", { name: "Archive" }).click();
+  await page.getByRole("menuitem", { name: /^Archive/ }).click();
   // Archiving asks first; nothing is sent until the person confirms.
   const confirm = page.getByRole("dialog", { name: "Archive this item?" });
   await expect(confirm).toBeVisible();
@@ -47,21 +46,24 @@ test("a member archives an item from its page, sees it archived and restores it"
     expectedVersion: expect.any(Number),
   });
 
-  // The page closes on archive; an archived item still opens from its address.
-  await page.goto(
-    `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`,
-  );
-  const banner = page.locator('[data-item-banner="archived"]');
-  await expect(banner).toBeVisible();
-
+  // An archived item still opens from its address and offers Unarchive.
+  await page.goto(card);
+  await expect(
+    page.getByRole("dialog").getByText("This card is archived"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Card actions" }).click();
   const restored = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
-      response.url().endsWith(`/board-items/${itemId}/unarchive`),
+      response.url().includes(`/board-items/${itemId}/unarchive`) &&
+      response.status() !== 403,
   );
-  await banner.getByRole("button").click();
+  await page.getByRole("menuitem", { name: "Unarchive", exact: true }).click();
   expect((await restored).status()).toBeLessThan(300);
-  await expect(banner).toHaveCount(0);
+  expect(
+    (await apiRead<{ isArchived?: boolean }>(page, `/board-items/${itemId}`))
+      .isArchived,
+  ).not.toBe(true);
 });
 
 interface ItemRead {
@@ -108,10 +110,10 @@ test("archiving an item with two sub-items asks first, takes all three off the b
 
   // The dialog names the sub-items and counts everything it archives.
   await page.goto(
-    `/workspaces/${workspace.id}/boards/${board.id}/items/${parentId}`,
+    `/workspaces/${workspace.id}/boards/${board.id}?item=${parentId}`,
   );
-  await page.getByRole("button", { name: "More", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Archive" }).click();
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await page.getByRole("menuitem", { name: /^Archive/ }).click();
   const confirm = page.getByRole("dialog", { name: "Archive this item?" });
   await expect(confirm.getByText("2 sub-items")).toBeVisible();
   const archived = page.waitForResponse(

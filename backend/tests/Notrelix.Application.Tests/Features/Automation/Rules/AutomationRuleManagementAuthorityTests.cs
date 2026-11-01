@@ -62,14 +62,14 @@ public sealed class AutomationRuleManagementAuthorityTests
     }
 
     [Fact]
-    public void WorkspaceWideRules_StayWorkspaceSettings()
+    public void WorkspaceWideRules_NeedManageAutomation()
     {
         ((IRequirePermission)new CreateAutomationRuleCommand(Workspace, "r", "ItemCreated", "MoveItem", "{}")).Action
-            .Should().Be(PermissionAction.ManageWorkspaceSettings);
+            .Should().Be(PermissionAction.ManageAutomation);
         ((IRequirePermission)new SetAutomationRuleEnabledCommand(Guid.NewGuid(), true)).Action
-            .Should().Be(PermissionAction.ManageWorkspaceSettings);
+            .Should().Be(PermissionAction.ManageAutomation);
         ((IRequirePermission)new GetWorkspaceAutomationsQuery(Workspace)).Action
-            .Should().Be(PermissionAction.ManageWorkspaceSettings);
+            .Should().Be(PermissionAction.ManageAutomation);
     }
 
     [Fact]

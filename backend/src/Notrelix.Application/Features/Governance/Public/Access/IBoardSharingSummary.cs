@@ -93,6 +93,7 @@ public sealed record BoardSharing(
 /// <param name="SpaceRole"><c>Admin</c>, <c>Member</c> or <c>Viewer</c> when the Space reaches the person.</param>
 /// <param name="OutsideSpace">The Board is placed in a Space and the Space does not reach the person.</param>
 /// <param name="TeamPeople">Active members of a Team entry.</param>
+/// <param name="GrantLevel">The level of the explicit grant itself (not capped by a board role); disclosed only to a caller who manages the Board's access.</param>
 public sealed record BoardSharingEntry(
     string Kind,
     Guid Id,
@@ -109,7 +110,8 @@ public sealed record BoardSharingEntry(
     bool OutsideSpace,
     int? TeamPeople,
     DateTimeOffset AddedAt,
-    AccessGrantor? GrantedBy);
+    AccessGrantor? GrantedBy,
+    string? GrantLevel = null);
 
 /// <param name="Kind">One of <see cref="AccessChangeKinds"/>.</param>
 /// <param name="Target">The person's or Team's name, or null for a visibility change.</param>

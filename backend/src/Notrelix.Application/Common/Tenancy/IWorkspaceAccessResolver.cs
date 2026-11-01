@@ -26,7 +26,12 @@ public sealed record WorkspaceAccessSnapshot(
     Guid ActorUserId,
     bool CanAccess,
     bool IsWorkspaceActive,
-    bool IsGuest = false);
+    bool IsGuest = false,
+    string? Role = null)
+{
+    /// <summary>True for an active workspace Owner or Admin (the roles that manage templates and board owners).</summary>
+    public bool IsOwnerOrAdmin => Role is "Owner" or "Admin";
+}
 
 /// <summary>
 /// Snapshot of a workspace resolved by slug.

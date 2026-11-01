@@ -21,7 +21,7 @@ public record CreateAutomationRuleCommand(
 {
     // Board-scoped rules are managed by the board's Managers (and workspace Owners/Admins, who are
     // Managers everywhere); a rule without a board stays workspace settings.
-    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageAutomation : PermissionAction.ManageBoard;
     public ResourceRef Resource => BoardId is { } board
         ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board, WorkspaceId)
         : ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);

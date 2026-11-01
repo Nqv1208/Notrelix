@@ -102,6 +102,8 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
 
         await _defaultWorkspace.ClearIfAsync(userId, workspace.Id, ct);
 
+        // No access signal here: the grant ended in this transaction, so the person can no longer write a
+        // workspace-scoped fact; their own client is cut by the periodic re-authorization pass.
         return Result.Success();
     }
 }

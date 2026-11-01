@@ -28,7 +28,9 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardSharingSummary _sharing;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IAccessChangeSignal _access;
 
     public AddBoardMemberCommandHandler(
         IWorkManagementDbContext context,
@@ -36,8 +38,12 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
+        IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
+        _sharing = sharing;
         _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
@@ -73,11 +79,16 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         if (alreadyMember) return Result.Success();
 
         var role = request.Role ?? BoardRole.Member;
+        if (role == BoardRole.Owner)
+            await BoardOwnership.EnsureMayChangeOwnershipAsync(_context, _workspaceAccess, board.WorkspaceId, board.Id, _currentUser.UserId, ct);
+        if (role.IsViewer())
+            await BoardManagerGuard.EnsureNoHigherGrantAsync(_sharing, board.Id, request.UserId, ct);
 
         var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
         _context.BoardMembers.Add(member);
         board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberAddedAsync(board.Id, request.UserId, role, ct);
+        _access.BoardPerson(board.Id, request.UserId);
 
         return Result.Success();
     }

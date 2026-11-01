@@ -35,6 +35,7 @@ public static class RealtimeProtocol
         public const string Unsubscribed = "unsubscribed";
         public const string SubscriptionError = "subscription-error";
         public const string Event = "event";
+        public const string AccessChanged = "access-changed";
         public const string Ping = "ping";
         public const string Pong = "pong";
     }
@@ -188,6 +189,13 @@ public static class RealtimeProtocol
         type = ServerTypes.SubscriptionError,
         subscriptionId,
         code,
+    });
+
+    /// <summary>Tells one person's client that their own access in a workspace changed; carries no content beyond that.</summary>
+    public static byte[] AccessChanged(Guid workspaceId) => Serialize(new
+    {
+        type = ServerTypes.AccessChanged,
+        workspaceId,
     });
 
     public static byte[] Ping(DateTimeOffset sentAt) => Serialize(new

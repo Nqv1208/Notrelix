@@ -32,6 +32,12 @@ export interface ShareRowView {
   /** The level is the person's by role and cannot be changed (the owner). */
   readonly fixed: boolean;
   readonly badge: "guest" | "outside" | null;
+  /** A board Viewer (read-only role): listed apart from the members. */
+  readonly viewer?: boolean;
+  /** The person holds the Owner role of the board. */
+  readonly owner?: boolean;
+  /** A board member who is not the owner and not the caller: ownership may be handed to them. */
+  readonly ownable?: boolean;
   /** "31/01/2027"; `null` when the entry does not expire or the read has none. */
 }
 
@@ -226,6 +232,8 @@ export interface BoardSharingData {
   readonly spaceName: string | null;
   readonly spacePeople: number | null;
   readonly canManage: boolean;
+  /** A board Owner or a workspace Owner or Admin: only they make someone an owner or change one. */
+  readonly canAssignOwner?: boolean;
   /** Only a Board manager or member is given the entries; others get the counts. */
   readonly entriesDisclosed: boolean;
   readonly peopleCount: number;
@@ -278,6 +286,7 @@ export interface BoardSharingData {
 export interface BoardSharingWire {
   readonly version?: number;
   readonly canManage?: boolean;
+  readonly canAssignOwner?: boolean;
   readonly entriesDisclosed?: boolean;
   readonly visibility?: string | null;
   readonly spaceName?: string | null;
@@ -364,6 +373,7 @@ export function toBoardSharingData(wire: BoardSharingWire): BoardSharingData {
     spaceName: wire.spaceName ?? null,
     spacePeople: wire.spacePeople ?? null,
     canManage: wire.canManage ?? false,
+    canAssignOwner: wire.canAssignOwner ?? false,
     entriesDisclosed: wire.entriesDisclosed ?? false,
     peopleCount: wire.peopleCount ?? 0,
     guestCount: wire.guestCount ?? 0,
@@ -484,12 +494,22 @@ export function planLevelChange(
     role !== null &&
     WRITABLE_ROLES.includes(role)
   ) {
+    // No board role gives Can comment, and a read-only role (Observer) caps the person at Can view whatever
+    // else they hold: Can comment is an explicit grant held without a board role.
+    if (level === "commenter")
+      return [grant, { kind: "member-remove", userId: entry.id }];
     const writes: SharingWrite[] = [];
     const next = ROLE_OF_LEVEL[level];
-    if (next !== role)
-      writes.push({ kind: "member-role", userId: entry.id, role: next });
-    if (entry.permissionId !== null || level === "commenter")
-      writes.push(grant);
+    const roleWrite: SharingWrite | null =
+      next !== role
+        ? { kind: "member-role", userId: entry.id, role: next }
+        : null;
+    const grantWrite = entry.permissionId !== null ? grant : null;
+    // Raising: the role first, so a grant above Can view never meets a read-only role. Lowering to
+    // Can view: the grant first, because the role cannot become read-only while a higher grant stands.
+    const ordered =
+      level === "viewer" ? [grantWrite, roleWrite] : [roleWrite, grantWrite];
+    for (const write of ordered) if (write) writes.push(write);
     return writes;
   }
   return [grant];
@@ -583,6 +603,14 @@ export function buildSharingRows(
       level: shareLevelOf(entry.level),
       fixed: entry.owner || entry.you,
       badge: entry.kind === "guest" ? "outside" : null,
+      viewer: entry.memberRole === "Observer" || entry.memberRole === "Guest",
+      owner: entry.owner,
+      ownable:
+        data.canAssignOwner === true &&
+        entry.kind === "person" &&
+        entry.memberRole !== null &&
+        entry.memberRole !== "Owner" &&
+        !entry.you,
     } satisfies ShareRowView;
   });
 }

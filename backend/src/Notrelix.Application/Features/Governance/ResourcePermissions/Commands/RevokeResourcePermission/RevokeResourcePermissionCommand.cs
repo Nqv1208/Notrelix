@@ -40,6 +40,7 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IAccessChangeSignal _access;
 
     public RevokeResourcePermissionCommandHandler(
         IGovernanceDbContext context,
@@ -47,9 +48,11 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
         IResourceAccessChangeRecorder changes,
-        IBoardSharingSummary sharing)
+        IBoardSharingSummary sharing,
+        IAccessChangeSignal access)
     {
         _sharing = sharing;
+        _access = access;
         _changes = changes;
         _context = context;
         _requestContext = requestContext;
@@ -104,6 +107,11 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             await _changes.RecordAsync(
                 new ResourceAccessChangeRecord(kind.Value, request.ResourceId, AccessChangeKinds.Removed, permission.SubjectType.ToString(), permission.SubjectId, AccessLevels.OfRank((int)permission.Level), null),
                 cancellationToken);
+            // The person (or the Team's people) may lose the board now, not at the next periodic pass.
+            if (permission.SubjectType == PermissionSubjectType.User)
+                _access.BoardPerson(request.ResourceId, permission.SubjectId);
+            else
+                _access.Board(request.ResourceId);
         }
 
         await _auditService.RecordAsync(

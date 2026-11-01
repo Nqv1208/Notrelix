@@ -74,7 +74,6 @@ global using Notrelix.Domain.Collaboration.Mentions.Events;
 global using Notrelix.Domain.Analytics.Snapshots;
 global using Notrelix.Domain.Documents.Pages.Events;
 global using Notrelix.Domain.Governance.Permissions.Events;
-global using Notrelix.Domain.Governance.Roles.Events;
 global using Notrelix.Domain.Integrations.Webhooks.Events;
 global using Notrelix.Domain.WorkManagement.Boards.Events;
 global using Notrelix.Domain.WorkManagement.Items.Events;

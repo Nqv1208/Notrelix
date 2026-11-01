@@ -103,6 +103,7 @@ export const en = {
     cancel: "Cancel",
     readOnlyPermission: "You can only view, not comment",
     readOnlyArchived: "This board is archived, so comments are closed",
+    readOnlyItemArchived: "This card is archived, so comments are closed",
     createTitle: "Comments open after the card is created",
     createBody:
       "Once it is created you can comment, @mention assignees and follow activity right here.",
@@ -220,6 +221,7 @@ export const vi: RelatedCopy = {
     cancel: "Huỷ",
     readOnlyPermission: "Bạn chỉ có quyền xem, chưa viết được bình luận",
     readOnlyArchived: "Board đã lưu trữ nên bình luận đã đóng",
+    readOnlyItemArchived: "Thẻ đã lưu trữ nên bình luận đã đóng",
     createTitle: "Bình luận mở sau khi tạo thẻ",
     createBody:
       "Tạo thẻ xong, bạn viết bình luận, nhắc @ người làm và xem hoạt động ngay tại đây.",

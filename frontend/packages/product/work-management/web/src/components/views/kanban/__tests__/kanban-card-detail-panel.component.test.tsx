@@ -18,8 +18,11 @@ import {
 } from "../../../../verification/item-sheet-fixtures";
 import type { TaskDetailCapabilities } from "../../../card-detail/task-detail-types";
 
-function renderPanel(capabilities: TaskDetailCapabilities) {
-  const item = erpSheetItem();
+function renderPanel(
+  capabilities: TaskDetailCapabilities,
+  overrides: { isArchived?: boolean } = {},
+) {
+  const item = { ...erpSheetItem(), ...overrides };
   return renderPureUi(
     <WorkManagementTestScope
       services={
@@ -77,5 +80,15 @@ describe("KanbanCardDetailPanel capabilities", () => {
     expect(status.getAttribute("aria-disabled")).toBeNull();
     expect(status.getAttribute("aria-haspopup")).toBe("listbox");
     expect(screen.getByRole("button", { name: "Thêm" })).toBeTruthy();
+  });
+
+  it("reads an archived card: view-only, with the archived notice, an editor included", () => {
+    renderPanel(editorSheetCapabilities, { isArchived: true });
+    expect(screen.getByText("Thẻ này đã lưu trữ")).toBeTruthy();
+    expect(
+      (screen.getByRole("textbox", { name: "Tên thẻ" }) as HTMLTextAreaElement)
+        .readOnly,
+    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "Thêm" })).toBeNull();
   });
 });
