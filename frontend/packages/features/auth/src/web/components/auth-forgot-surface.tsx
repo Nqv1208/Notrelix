@@ -38,6 +38,8 @@ export interface AuthForgotSurfaceProps {
   readonly initialEmail?: string;
   readonly onSend: (email: string) => void;
   readonly onResend: () => void;
+  /** "Enter the code": on to the reset screen with this email. */
+  readonly onEnterCode: (email: string) => void;
   readonly onBack: () => void;
   /** "Dùng email khác": back to the form with an empty field. */
   readonly onOtherEmail: () => void;
@@ -130,6 +132,7 @@ function SentStep({
   copy,
   step,
   onResend,
+  onEnterCode,
   onBack,
   onOtherEmail,
 }: AuthForgotSurfaceProps & {
@@ -152,6 +155,13 @@ function SentStep({
         {t.bodyEnd}
       </p>
       <p className="m-0 text-item-ui text-meta-foreground">{t.spam}</p>
+      <button
+        type="button"
+        onClick={() => onEnterCode(step.email)}
+        className={BUTTON_CLASS.primary}
+      >
+        {t.enterCode}
+      </button>
       <button
         type="button"
         disabled={waiting}

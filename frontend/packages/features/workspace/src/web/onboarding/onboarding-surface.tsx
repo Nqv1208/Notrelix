@@ -62,6 +62,11 @@ export interface OnboardingSurfaceProps {
   readonly error?: "unreachable" | "emailNotConfirmed" | null;
   /** Asks for a new confirmation link (the "emailNotConfirmed" notice offers it). */
   readonly onResendConfirmation?: () => void;
+  /** Where the last "send again" stands; `secondsLeft` counts down to the next one. */
+  readonly resend?: {
+    readonly status: "idle" | "sending" | "sent" | "limited" | "failed";
+    readonly secondsLeft: number;
+  };
   /** The workspace and its departments exist already (a step revisited). */
   readonly created?: {
     readonly workspace: boolean;
@@ -97,6 +102,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
     onEnterHome,
   } = props;
   const [tried, setTried] = useState(false);
+  const resend = props.resend ?? { status: "idle", secondsLeft: 0 };
   const t = copy.frame;
   const index =
     step === "done" ? ONBOARDING_STEPS.length : ONBOARDING_STEPS.indexOf(step);
@@ -383,11 +389,29 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
           {props.onResendConfirmation ? (
             <button
               type="button"
+              disabled={resend.status === "sending" || resend.secondsLeft > 0}
               onClick={props.onResendConfirmation}
-              className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground underline"
+              className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground underline disabled:cursor-not-allowed disabled:text-state-disabled-foreground disabled:no-underline"
             >
-              {copy.frame.resendConfirmation}
+              {resend.status === "sending"
+                ? copy.frame.resendSending
+                : resend.secondsLeft > 0
+                  ? fillOnboarding(copy.frame.resendWait, {
+                      time: `${Math.floor(resend.secondsLeft / 60)}:${String(resend.secondsLeft % 60).padStart(2, "0")}`,
+                    })
+                  : copy.frame.resendConfirmation}
             </button>
+          ) : null}
+          {resend.status === "sent" ? (
+            <p role="status" className="m-0 font-normal text-success-text">
+              {copy.frame.resendSent}
+            </p>
+          ) : null}
+          {resend.status === "limited" ? (
+            <p className="m-0 font-normal">{copy.frame.resendLimited}</p>
+          ) : null}
+          {resend.status === "failed" ? (
+            <p className="m-0 font-normal">{copy.frame.resendFailed}</p>
           ) : null}
         </div>
       ) : null}

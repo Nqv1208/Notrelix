@@ -17,9 +17,11 @@ export const MOCK_AUTH = {
   backupCode: "BK7Q-M2XN-91TD",
   /** A company whose people sign in through the company identity provider. */
   ssoDomain: "minhan.vn",
-  /** Wrong passwords in a row before the account is locked. */
-  maxAttempts: 5,
-  lockSeconds: 60,
+  /** The six digits the password-reset email carries for that account. */
+  resetCode: "246810",
+  /** Wrong passwords in a row before the account is locked (the product rule: ten in 15 minutes). */
+  maxAttempts: 10,
+  lockSeconds: 900,
 } as const;
 
 export interface MockSsoDirectory {
