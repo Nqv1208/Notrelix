@@ -32,7 +32,8 @@ public sealed record RealtimePrincipal(
             user.FindFirstValue("name") ?? user.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
             user.FindFirstValue("jti"),
             Guid.TryParse(user.FindFirstValue(JwtClaimNames.SessionId), out var sid) ? sid : null,
-            ReadUnix(user, "iat"),
+            AccessTokenRevocationEvaluator.ResolveIssuedAt(
+                user.FindFirstValue("iat"), user.FindFirstValue(JwtClaimNames.IssuedAtMilliseconds)),
             ReadUnix(user, "exp"),
             correlationId);
     }
