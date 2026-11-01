@@ -47,7 +47,7 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Page lifecycle | 17 | 0 | 2 | 5 | 7 | 0 | 3 |
+| A | Page lifecycle | 17 | 2 | 2 | 5 | 7 | 0 | 1 |
 | B | Page hierarchy | 5 | 0 | 0 | 4 | 1 | 0 | 0 |
 | C | Page move / reparent | 3 | 1 | 0 | 1 | 1 | 0 | 0 |
 | D | Block lifecycle | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
@@ -58,8 +58,8 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 | I | Document permissions | 7 | 2 | 0 | 3 | 2 | 0 | 0 |
 | J | Document events and activity | 8 | 2 | 1 | 5 | 0 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 2 | 0 | 0 | 1 |
-| L | Recovery and conflict hardening | 5 | 1 | 0 | 3 | 0 | 0 | 1 |
-| | Total | 82 | 10 | 4 | 43 | 20 | 0 | 5 |
+| L | Recovery and conflict hardening | 5 | 2 | 0 | 3 | 0 | 0 | 0 |
+| | Total | 82 | 12 | 4 | 43 | 20 | 0 | 3 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. 20 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing), `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink) and `documents-structure.real.e2e.spec.ts` (move a page under another with its version, a stale or circular move refused, trash with children and restore, reorder and delete a block against its version; this spec calls the routes, it does not click the screens). Everything else that has both backend and frontend code is INTEGRATING.
 
@@ -72,7 +72,7 @@ No use case is DONE: none has an owner check or a 1-px design diff. 20 use cases
 5. Rename is authorized with `ManageBoard`, a Work Management action, and three stubs do the same (UC-DCT-I02).
 6. No bounds: block count per page, page count per list and tree, version list, trash list and backlinks are all unbounded reads (UC-DCT-G02, G06, J05).
 7. No idempotency for creates (page, template, version, page from template) (UC-DCT-L04).
-8. Page visibility Public, favorites and retention are undecided, so five use cases are BLOCKED (UC-DCT-A15, A16, A17, K03, L05); live co-editing needs an ADR (UC-DCT-K03).
+8. Page visibility Public and favorites are undecided, so three use cases are BLOCKED (UC-DCT-A15, A16, K03); the retention rule for A17 and L05 is decided 2026-11-01 and not built; live co-editing needs an ADR (UC-DCT-K03).
 9. Only three integration events exist (`PageCreated`, `PageArchived`, `PageBlocksSaved`); rename, move, restore, delete and block facts reach no consumer, so Automation, Analytics and page activity cannot be built (UC-DCT-J02, J08). The backend realtime frame for a saved page is not evidenced (UC-DCT-K01).
 10. Import, duplicate and convert-to-task are multi-write client orchestrations that can leave an empty page or an unlinked line; offline editing, unknown block types and revoked-access behaviour have no UI (UC-DCT-A09, A13, D06, H04, E09, I07). The canvas has no artboard for the trash dialog, version history, templates, import and export dialogs, table and media blocks or the conflict notice.
 
@@ -135,7 +135,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A14 | Export a page, a subtree or a workspace | A | Viewer; Admin for workspace | none | partial | none | none | INTEGRATING | Page export client-side only; subtree and workspace not built |
 | UC-DCT-A15 | Set page visibility | A | Manager | partial | none | none | none | BLOCKED | Public needs the anonymous principal decision |
 | UC-DCT-A16 | Favorite a page | A | Any viewer | none | partial | none | none | BLOCKED | Owner context unknown; FE call is a no-op |
-| UC-DCT-A17 | Retain and purge deleted pages | A | System | none | none | none | none | BLOCKED | Retention window not decided |
+| UC-DCT-A17 | Retain and purge deleted pages | A | System | none | none | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Pages: trash for 30 days, then purge (the one 30-day rule). Backup handling is not covered by this decision. |
 | UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | Tests and owner check |
@@ -200,7 +200,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-L02 | Refuse a stale block write | L | Editor | yes | yes | none | none | INTEGRATING | No real e2e |
 | UC-DCT-L03 | Apply a batch completely or not at all | L | Editor | yes | yes | none | none | INTEGRATING | Atomicity relies on session transaction; no real e2e |
 | UC-DCT-L04 | Retry a create without a second effect | L | Editor | partial | none | none | none | DEFINED | Page create has no key; block replay returns 409 |
-| UC-DCT-L05 | Retain and delete the dependents of a page | L | System | none | none | none | none | BLOCKED | Retention windows not decided |
+| UC-DCT-L05 | Retain and delete the dependents of a page | L | System | none | none | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Dependents of a page follow the page: trash for 30 days, then purge. Backup handling is not covered by this decision. |
 
 ## 2.1 Endpoint coverage
 
@@ -481,7 +481,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 11, 96 (product rule DCT-003).
 - Acceptance: not writable until the window and backup policy are decided.
 - Evidence: BE none · FE none · Design none · Tests none · Real e2e none
-- State: BLOCKED — owner decides the retention window for deleted pages, versions and backups (a data-destruction choice).
+- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): Pages: trash for 30 days, then purge (the one 30-day rule). Backup handling is not covered by this decision.
 
 ## Capability B: Page hierarchy
 
@@ -1435,7 +1435,7 @@ Team capability 12 (team id DCT-012). Requirements `DCREQ133`, `DCREQ136`, `DCRE
 - Rules: product doc sections 89, 90, 96; `DCREQ004`, `DCREQ134`.
 - Acceptance: not writable until the retention windows are decided.
 - Evidence: BE none · FE none · Design none · Tests none · Real e2e none
-- State: BLOCKED — owner decides retention windows and backup handling (data destruction), with Collaboration and Platform.
+- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): Dependents of a page follow the page: trash for 30 days, then purge. Backup handling is not covered by this decision.
 
 # 4. Product decisions applied
 
@@ -1501,7 +1501,7 @@ Owner decisions come from the lead's decision record of 2026-10-26 (item 75 date
 
 - Public page visibility: needs the anonymous principal, abuse limits and crawler policy (UC-DCT-A15).
 - Favorites: needs the owning context (UC-DCT-A16).
-- Retention window and purge of deleted pages, versions, search projections, exports and backups (UC-DCT-A17, L05).
+- Decided 2026-11-01 (no longer blocking): pages are trashed 30 days, then purged (UC-DCT-A17, L05). Search projections, exports and backups are not covered by that decision.
 - Live co-editing: needs an ADR (UC-DCT-K03).
 
 # 5. Canonical updates required
