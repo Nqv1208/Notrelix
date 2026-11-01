@@ -195,3 +195,42 @@ test("the link-copied toast keeps the Final-States padding and rhythm", async ({
   expect(measured.radius).toBe("10px");
   expect(measured.size).toBe("13px");
 });
+
+/**
+ * At 390 px every setting row keeps its text column readable: the action moves
+ * under the text, 48 px in (the 36 px icon and its 12 px gap), and is 44 px tall.
+ */
+test("at 390 px a setting row puts its action under the text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, false);
+  const description = page.getByText(
+    "Nhập mã 6 số từ ứng dụng mỗi lần đăng nhập trên thiết bị mới",
+  );
+  const title = page.getByText("Ứng dụng xác thực", { exact: true });
+  const button = page.getByRole("button", { name: "Tạo mã mới" });
+  const column = (await description.boundingBox())!;
+  const heading = (await title.boundingBox())!;
+  const action = (await button.boundingBox())!;
+  expect(column.width, "the description column").toBeGreaterThanOrEqual(240);
+  expect(action.y, "the action is below the text").toBeGreaterThanOrEqual(
+    column.y + column.height,
+  );
+  expect(
+    Math.abs(action.x - heading.x),
+    "left-aligned with the text",
+  ).toBeLessThanOrEqual(1);
+  expect(action.height, "a 44 px target").toBeGreaterThanOrEqual(44);
+  const sessionAction = (await page
+    .getByRole("button", { name: /^Đăng xuất (?!mọi)/ })
+    .first()
+    .boundingBox())!;
+  expect(sessionAction.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+    "no horizontal overflow",
+  ).toBe(true);
+});

@@ -207,7 +207,7 @@ function Block({
       aria-labelledby={titleId}
       className="rounded-[12px] border border-line bg-popover dark:bg-card"
     >
-      <div className="flex items-center gap-2.5 border-b border-line px-4 py-[13px]">
+      <div className="flex items-center gap-2.5 border-b border-line px-4 py-[13px] max-sm:flex-wrap max-sm:gap-y-1">
         <h3
           id={titleId}
           className="m-0 text-body leading-[1.45] font-semibold text-foreground"
@@ -235,10 +235,10 @@ function Row({
   return (
     <div
       data-f="row"
-      className="flex items-center gap-3 border-t border-line px-4 py-[11px] first:border-t-0"
+      className="flex items-center gap-3 border-t border-line px-4 py-[11px] first:border-t-0 max-sm:flex-wrap max-sm:gap-y-2"
     >
       <Icon icon={icon} />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 max-sm:basis-[calc(100%-48px)]">
         <b className="block text-nav leading-[1.45] font-semibold text-foreground">
           {title}
         </b>
@@ -246,7 +246,10 @@ function Row({
           {text}
         </small>
       </span>
-      {control}
+      {/* Narrow screens: the action drops under the text column, 48 px in (the icon and its gap). */}
+      <div className="contents max-sm:ml-12 max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-2">
+        {control}
+      </div>
     </div>
   );
 }
@@ -814,7 +817,7 @@ function SecurityBody({
 
       <div
         data-f="dz"
-        className="flex items-center gap-3.5 rounded-[12px] border border-danger-text bg-danger-subtle px-4 py-[13px]"
+        className="flex items-center gap-3.5 rounded-[12px] border border-danger-text bg-danger-subtle px-4 py-[13px] max-sm:flex-wrap max-sm:gap-y-2"
       >
         <span className="min-w-0 flex-1">
           <b

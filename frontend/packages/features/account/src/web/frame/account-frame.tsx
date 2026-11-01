@@ -83,7 +83,7 @@ export function AccountFrame({
             <small className="truncate text-crumb leading-[1.45] text-meta-foreground">
               {identity.name} · {identity.email}
             </small>
-            <h1 className="m-0 text-[22px] leading-tight font-[650] tracking-[-0.015em] text-foreground">
+            <h1 className="m-0 text-account-title text-foreground">
               {copy.title}
             </h1>
           </div>
