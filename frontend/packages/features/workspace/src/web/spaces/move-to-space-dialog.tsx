@@ -184,7 +184,7 @@ export function MoveToSpaceDialog({
           }}
           className="flex min-h-0 flex-col gap-4"
         >
-          <DialogHeader>
+          <DialogHeader className="max-md:pr-11">
             <DialogTitle>
               {formatCopy(
                 subject.kind === "space"
@@ -217,7 +217,7 @@ export function MoveToSpaceDialog({
               value={text}
               placeholder={copy.move.searchPlaceholder}
               onChange={(event) => setText(event.target.value)}
-              className="h-8 pl-8"
+              className="h-8 pl-8 max-md:h-touch"
             />
           </div>
           <p id={labelId} className="sr-only">
@@ -251,6 +251,7 @@ export function MoveToSpaceDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="max-md:h-touch"
             >
               {copy.move.cancel}
             </Button>
@@ -258,6 +259,7 @@ export function MoveToSpaceDialog({
               type="submit"
               variant={footerExtra ? "outline" : "default"}
               disabled={!canSubmit}
+              className="max-md:h-touch"
             >
               {pending
                 ? copy.move.submitting
@@ -553,7 +555,7 @@ function PickerOption({
       htmlFor={id}
       style={{ paddingInlineStart: `${level * INDENT + 8}px` }}
       className={cn(
-        "flex h-9 items-center gap-2 rounded-md pr-2",
+        "flex h-9 items-center gap-2 rounded-md pr-2 max-md:h-touch",
         disabled
           ? "cursor-not-allowed text-muted-foreground"
           : "cursor-pointer hover:bg-state-hover",

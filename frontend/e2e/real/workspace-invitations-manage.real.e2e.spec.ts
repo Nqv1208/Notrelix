@@ -126,7 +126,8 @@ test("an Owner invites by e-mail, lists and re-roles the invitations; a retry, a
   expect((await invitationTokenFor(retried)).count).toBe(sent.count);
   expect(sent.count).toBe(1);
 
-  // G03: rows carry no token; an Owner and a Member read them, a Guest is refused; pages cover each row once.
+  // G03: rows carry no token; invited addresses are for the people who may invite, so a Member and a Guest are
+  // refused; pages cover each row once.
   const all = await invitationsOf(page, workspace.id);
   expect(all.length).toBeGreaterThanOrEqual(2);
   for (const row of all) {
@@ -138,7 +139,7 @@ test("an Owner invites by e-mail, lists and re-roles the invitations; a retry, a
         `${apiUrl}/workspaces/${workspace.id}/invitations`,
       )
     ).status(),
-  ).toBe(200);
+  ).toBe(403);
   expect(
     (
       await guest.page.request.get(

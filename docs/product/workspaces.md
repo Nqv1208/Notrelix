@@ -945,7 +945,7 @@ It remains Collaboration semantics and may be curated differently from audit.
 
 Workspace membership lists, guest identities, Teams, invitations, and private Spaces can be sensitive.
 
-The invitation list needs the right to see the member list (Owner, Admin and Member); a Guest cannot list invitations.
+The invitation list carries invited e-mail addresses, so it needs the right to invite (`InviteMember`: Owner and Admin); a Member or Guest cannot list invitations (lead decision 2026-11-02).
 
 Queries/search/realtime must enforce scope and authorization.
 

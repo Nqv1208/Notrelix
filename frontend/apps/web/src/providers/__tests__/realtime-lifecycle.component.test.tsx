@@ -258,6 +258,42 @@ describe("RealtimeLifecycle", () => {
     expect(sockets).toHaveLength(1);
   });
 
+  it("after a member is revoked the app's own socket stops delivering that workspace and never subscribes it again (UC-WSP-I04)", async () => {
+    const key = ["workspace", "ws-a", "workspace", "detail"];
+    const socket = await openSocket(0);
+    await act(async () => {
+      socket.onmessage?.(subscribed("ws-a"));
+      socket.onmessage?.(event("ws-a", "e1", 1));
+    });
+    await act(async () => {
+      socket.onmessage?.(
+        frame({
+          type: "subscription-error",
+          subscriptionId: "workspace:ws-a",
+          code: "subscription_revoked",
+        }),
+      );
+    });
+    await flush();
+
+    // The revoke refetched over REST once; what the server still sends for the scope is dropped, not applied.
+    queryClient.setQueryData(key, { name: "after-revoke" });
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(false);
+    await act(async () => {
+      socket.onmessage?.(event("ws-a", "e2", 2));
+    });
+    await flush();
+
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(false);
+    expect(telemetry.track).toHaveBeenCalledWith(
+      "realtime.event_for_inactive_subscription",
+      expect.objectContaining({ eventId: "e2" }),
+    );
+    expect(
+      socket.sent.filter((frame) => frame.type === "subscribe"),
+    ).toHaveLength(1);
+  });
+
   it("a late event of the previous workspace is ignored after a workspace switch", async () => {
     const keyA = ["workspace", "ws-a", "workspace", "detail"];
     const keyB = ["workspace", "ws-b", "workspace", "detail"];
