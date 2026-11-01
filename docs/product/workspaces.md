@@ -780,6 +780,14 @@ audit
 retention/export
 ```
 
+Decided 2026-11-01 (owner decision, delegated to the lead):
+
+- only the workspace Owner deletes, and the person confirms by typing the workspace name; a personal workspace is never deleted;
+- the members lose access at once: every request on a deleted workspace, in its own scope or on a resource inside it (reads, writes, search, realtime), answers the identical NotFound to everyone, the Owner included; its content is kept;
+- the Owner alone sees it in a "Recently deleted" list of the Account and may restore it within 30 days;
+- there is no workspace export yet, so none is offered during the 30 days;
+- after 30 days a purge job erases the workspace's data (the audit trail, billing records and the outbox are kept) and writes an audit fact.
+
 # 62. WSP-018 — Workspace deletion is a process, not ORM cascade
 
 A database cascade cannot define product retention, legal/export, provider, or historical-reference semantics.
@@ -793,6 +801,8 @@ If Workspace restore exists, define:
 - integrations/automation;
 - deletion window;
 - what remains irreversible.
+
+Decided 2026-11-01: the Owner restores a workspace inside 30 days of deleting it, and everything comes back as it was (status, memberships, grants, Spaces, Boards and pages are untouched by deletion, so nothing is rebuilt). After the 30 days restore is refused. What stays irreversible: the data erased by the purge, which cannot be restored.
 
 # 64. Cross-context deletion
 
