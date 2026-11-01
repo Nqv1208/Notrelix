@@ -8,6 +8,8 @@ import {
 } from "./support/real-session";
 
 test.use({ viewport: { width: 1440, height: 900 } });
+// Two sign-ins, three plan changes and a cold backend: longer than the default 30 seconds.
+test.setTimeout(120_000);
 
 async function moveTenantTo(page: Page, planOption: string) {
   await page.getByLabel("Move to plan revision").selectOption({
@@ -61,7 +63,7 @@ test("the operator moves a tenant between plans and the tenant sees the new limi
   }
 });
 
-test("a workspace admin who is not the account owner sees the plan but no switcher", async ({
+test("a workspace admin who is not the account owner cannot read billing and has no switcher", async ({
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -72,6 +74,11 @@ test("a workspace admin who is not the account owner sees the plan but no switch
   );
   await page.goto(`/workspaces/${workspace.id}/billing`);
 
-  await expect(page.getByText("Current plan")).toBeVisible();
+  // Billing is read by the workspace Owner (owner decision 2026-10-31); the plan is the operator's to change.
+  await expect(
+    page.getByRole("heading", {
+      name: "Only workspace admins can see billing",
+    }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(0);
 });

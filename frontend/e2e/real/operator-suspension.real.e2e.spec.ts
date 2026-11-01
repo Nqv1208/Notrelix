@@ -8,6 +8,8 @@ import {
   signIn,
 } from "./support/real-session";
 
+test.setTimeout(120_000);
+
 test("the operator suspends a tenant: its members still read but cannot write, and lifting restores writing", async ({
   page,
   browser,

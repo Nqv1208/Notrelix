@@ -16,7 +16,8 @@ function watchErrors(page: Page): string[] {
 test("billing shows what the workspace's billing grants, with the seeded limit and use, and says the rest is not available yet", async ({
   page,
 }) => {
-  await signIn(page, realUsers.workspaceAdmin);
+  // Billing is read by the workspace Owner (owner decision 2026-10-31), not by an Admin.
+  await signIn(page, realUsers.workspaceOwner);
   const { workspace } = await openBoard(
     page,
     "Workspace 3",
