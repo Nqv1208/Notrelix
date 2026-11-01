@@ -61,6 +61,7 @@ export const fontSizeDense = {
   "15p5": 0.96875,
   "19": 1.1875,
   "20": 1.25,
+  "21": 1.3125,
   "22": 1.375,
   "26": 1.625,
 } as const;
@@ -478,6 +479,22 @@ export const textRoles = {
     lineHeight: 1.71875,
     weight: 650,
     letterSpacing: "-0.015em",
+    family: "sans",
+  },
+  /** Product name beside the logo on the sign-in brand panel (Final-Auth `.mark b`, 21px / 700, line 1.5). */
+  "brand-name": {
+    size: "21",
+    lineHeight: 1.96875,
+    weight: weights.bold,
+    letterSpacing: "-0.01em",
+    family: "sans",
+  },
+  /** Promise on the sign-in brand panel (Final-Auth `.promise`, 32px / 650, line 1.28). */
+  "brand-promise": {
+    size: "4xl",
+    lineHeight: 2.56,
+    weight: 650,
+    letterSpacing: "-0.02em",
     family: "sans",
   },
   /** Initials in a 30px person avatar (share dialog people). */

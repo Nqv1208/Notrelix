@@ -782,6 +782,18 @@ describe("Home, My work and Inbox type roles", () => {
     expect(role.letterSpacing).toBe("-0.015em");
   });
 
+  it("sizes the sign-in brand panel as Final-Auth (name 21px / 700 line 1.5, promise 32px / 650 line 1.28)", () => {
+    const name = textRoles["brand-name"];
+    expect(fontSizeDense[name.size as keyof typeof fontSizeDense]).toBe(1.3125);
+    expect(name.lineHeight * 16).toBeCloseTo(31.5, 5);
+    expect(name.weight).toBe(700);
+    expect(name.letterSpacing).toBe("-0.01em");
+    const promise = textRoles["brand-promise"];
+    expect(promise.lineHeight * 16).toBeCloseTo(40.96, 5);
+    expect(promise.weight).toBe(650);
+    expect(promise.letterSpacing).toBe("-0.02em");
+  });
+
   it("sizes the empty-page title as Final-MyWork's `.emp` h2 (19px / 650, line 1.45)", () => {
     const role = textRoles["empty-title"];
     expect(fontSizeDense[role.size as keyof typeof fontSizeDense]).toBe(1.1875);
@@ -814,6 +826,8 @@ describe("Home, My work and Inbox type roles", () => {
       "list-title",
       "empty-title",
       "account-title",
+      "brand-name",
+      "brand-promise",
     ]) {
       expect(globals, role).toContain(
         `--text-${role}: var(--type-${role}-size);`,

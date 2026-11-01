@@ -27,6 +27,7 @@
   --type-scale-17: 1.0625rem;
   --type-scale-19: 1.1875rem;
   --type-scale-20: 1.25rem;
+  --type-scale-21: 1.3125rem;
   --type-scale-22: 1.375rem;
   --type-scale-26: 1.625rem;
   --type-scale-10p4: 0.6510417rem;
@@ -294,6 +295,16 @@
   --type-account-title-weight: 650;
   --type-account-title-tracking: -0.015em;
   --type-account-title-family: var(--font-family-sans);
+  --type-brand-name-size: var(--type-scale-21);
+  --type-brand-name-line-height: 1.96875rem;
+  --type-brand-name-weight: 700;
+  --type-brand-name-tracking: -0.01em;
+  --type-brand-name-family: var(--font-family-sans);
+  --type-brand-promise-size: var(--type-scale-4xl);
+  --type-brand-promise-line-height: 2.56rem;
+  --type-brand-promise-weight: 650;
+  --type-brand-promise-tracking: -0.02em;
+  --type-brand-promise-family: var(--font-family-sans);
   --type-avatar-lg-size: var(--type-scale-10p5);
   --type-avatar-lg-line-height: 1rem;
   --type-avatar-lg-weight: 700;
