@@ -18,8 +18,10 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
     private readonly IActorLookupService _actorLookup;
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
     private readonly ICurrentRequestContext _requestContext;
-    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort, ICurrentRequestContext requestContext)
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
+    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort, ICurrentRequestContext requestContext, IWorkspaceAccessResolver workspaceAccess)
     {
+        _workspaceAccess = workspaceAccess;
         _requestContext = requestContext;
         _context = context;
         _actorLookup = actorLookup;
@@ -31,7 +33,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
         var card = await _context.BoardItems.AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
 
-        if (card is null) throw new NotFoundException("BoardItem", request.BoardItemId);
+        if (card is null) throw await MissingAsync(request.BoardItemId, ct);
 
         // Load member entities, then batch lookup actors
         var memberEntities = await _context.BoardItemMembers.AsNoTracking()
@@ -39,7 +41,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .ToListAsync(ct);
 
         var memberUserIds = memberEntities.Select(m => m.UserId).Distinct().ToList();
-        var lifecycleUserIds = new[] { card.CompletedBy, card.ArchivedBy, card.UpdatedBy }.Where(id => id.HasValue).Select(id => id!.Value);
+        var lifecycleUserIds = new[] { card.CompletedBy, card.UpdatedBy }.Where(id => id.HasValue).Select(id => id!.Value);
         memberUserIds = memberUserIds.Concat(lifecycleUserIds).Distinct().ToList();
         var actors = await _actorLookup.FindManyAsync(memberUserIds, ct);
         var actorMap = actors.ToDictionary(a => a.UserId);
@@ -111,7 +113,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             NameOf(card.CompletedBy),
             card.ArchivedAt,
             card.ArchivedBy,
-            NameOf(card.ArchivedBy),
+            await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, listContext.WorkspaceId, _requestContext.UserId, card.ArchivedBy, ct),
             card.DescriptionMd,
             projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
             projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
@@ -124,4 +126,29 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             NameOf(card.UpdatedBy)
         ));
     }
+
+    /// <summary>
+    /// The item is not readable. Authorization already proved the caller reads its board, so a deleted item answers
+    /// with the deleted code and who deleted it (a Guest reads no name). A caller without access never reaches this
+    /// handler, and a missing id stays the plain not-found.
+    /// </summary>
+    private async Task<NotFoundException> MissingAsync(Guid itemId, CancellationToken ct)
+    {
+        var accountId = _requestContext.RequireAccountId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
+        var deleted = await _context.BoardItems.IgnoreQueryFilters().AsNoTracking()
+            .Where(i => i.Id == itemId && i.AccountId == accountId && i.WorkspaceId == workspaceId && i.DeletedAt != null)
+            .Select(i => new { i.DeletedBy })
+            .FirstOrDefaultAsync(ct);
+        if (deleted is null) return new NotFoundException("BoardItem", itemId);
+
+        var by = await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, workspaceId, _requestContext.UserId, deleted.DeletedBy, ct);
+        return new NotFoundException("BoardItem", itemId)
+        {
+            ErrorCode = DeletedCode,
+            Extensions = new Dictionary<string, object?> { ["deletedByName"] = by },
+        };
+    }
+
+    public const string DeletedCode = "work-management.item.deleted";
 }

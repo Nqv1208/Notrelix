@@ -29,4 +29,29 @@ public class PreconditionFailedProblemTests
         problem.Status.Should().Be(StatusCodes.Status412PreconditionFailed);
         problem.Extensions.Keys.Should().BeEquivalentTo(["errorCode", "traceId"]);
     }
+
+    [Fact]
+    public void ANotFoundWithACode_Answers404_AndCarriesItsMembers()
+    {
+        var exception = new NotFoundException("BoardItem", Guid.NewGuid())
+        {
+            ErrorCode = "work-management.item.deleted",
+            Extensions = new Dictionary<string, object?> { ["deletedByName"] = "Ada" },
+        };
+
+        var problem = ProblemDetailsMapper.Map(new DefaultHttpContext(), exception);
+
+        problem.Status.Should().Be(StatusCodes.Status404NotFound);
+        problem.Extensions["errorCode"].Should().Be("work-management.item.deleted");
+        problem.Extensions["deletedByName"].Should().Be("Ada");
+    }
+
+    [Fact]
+    public void APlainNotFound_KeepsTheGenericCode_AndNoMembers()
+    {
+        var problem = ProblemDetailsMapper.Map(new DefaultHttpContext(), new NotFoundException("BoardItem", Guid.NewGuid()));
+
+        problem.Status.Should().Be(StatusCodes.Status404NotFound);
+        problem.Extensions.Keys.Should().BeEquivalentTo(["errorCode", "traceId"]);
+    }
 }

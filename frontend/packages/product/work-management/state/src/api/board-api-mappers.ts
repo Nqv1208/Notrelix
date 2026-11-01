@@ -357,6 +357,8 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
       : (values.completedAt ?? undefined),
     // The single item read says whether it is archived; the board read never lists archived items.
     isArchived: (dto as { isArchived?: boolean }).isArchived === true,
+    archivedByName:
+      (dto as { archivedByName?: string | null }).archivedByName ?? null,
     isDeleted: false,
     members,
     labels: (dto.labels ?? []).map(mapLabel),

@@ -124,7 +124,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Identity | 61 | 6 | 12 | 25 | 14 | 4 |
 | Workspaces | 91 | 8 | 14 | 60 | 7 | 2 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 6 |
-| Work Management | 171 | 11 | 1 | 15 | 143 | 1 |
+| Work Management | 171 | 10 | 1 | 13 | 146 | 1 |
 | Documents | 82 | 12 | 4 | 43 | 20 | 3 |
 | Collaboration | 85 | 19 | 7 | 37 | 17 | 5 |
 | Automation | 79 | 11 | 26 | 21 | 20 | 1 |
@@ -132,7 +132,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Billing | 99 | 56 | 27 | 8 | 7 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **959** | **199** | **207** | **245** | **282** | **26** |
+| **Total** | **959** | **198** | **207** | **243** | **285** | **26** |
 
 No use case is DONE: none has a recorded lead acceptance or design-fidelity proof.
 

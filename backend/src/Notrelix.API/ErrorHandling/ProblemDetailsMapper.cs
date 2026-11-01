@@ -106,9 +106,9 @@ public static class ProblemDetailsMapper
                 "The request could not be authorized due to a server-side contract violation.",
                 null
             ),
-            AppNotFoundException => (
+            AppNotFoundException notFound => (
                 StatusCodes.Status404NotFound,
-                ErrorCodes.ResourceNotFound,
+                notFound.ErrorCode ?? ErrorCodes.ResourceNotFound,
                 "Resource not found",
                 exception.Message,
                 null
@@ -186,6 +186,14 @@ public static class ProblemDetailsMapper
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
         {
             foreach (var (key, value) in stale.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
+        if (exception is AppNotFoundException { Extensions.Count: > 0 } known)
+        {
+            foreach (var (key, value) in known.Extensions)
             {
                 problemDetails.Extensions[key] = value;
             }

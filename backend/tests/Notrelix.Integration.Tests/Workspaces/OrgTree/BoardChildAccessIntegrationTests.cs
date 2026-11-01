@@ -63,6 +63,53 @@ public sealed class BoardChildAccessIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DeletedItemOfAPrivateBoard_IsThePlainNotFound_ForAnOutsider_AndNamesTheDeleter_ForTheBoardOwner()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var outsider = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Outsider");
+        var board = await _host.SeedBoardAsync(stack, "Salaries", BoardVisibility.Private);
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Raise for Q4");
+        await DeleteItemAsync(item, stack.OwnerId);
+
+        using (var provider = CreateProvider(stack.AccountId, outsider))
+        {
+            var plain = (await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetBoardItemQuery(item)))
+                .Should().ThrowAsync<AppNotFound>("the board is private to the caller, so a deleted item is hidden like a live one")).Which;
+            plain.ErrorCode.Should().BeNull("no deleted code reaches a person without access");
+            plain.Extensions.Should().BeEmpty("no deletedByName reaches a person without access");
+        }
+
+        using (var provider = CreateProvider(stack.AccountId, stack.OwnerId))
+        {
+            var deleted = (await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetBoardItemQuery(item)))
+                .Should().ThrowAsync<AppNotFound>()).Which;
+            deleted.ErrorCode.Should().Be(GetBoardItemQueryHandler.DeletedCode);
+            deleted.Extensions["deletedByName"].Should().Be("Org Owner");
+        }
+    }
+
+    [Fact]
+    public async Task DeletedItemOfAnotherWorkspace_IsThePlainNotFound()
+    {
+        var mine = await _host.SeedWorkspaceAsync();
+        var other = await _host.SeedWorkspaceAsync();
+        var board = await _host.SeedBoardAsync(other, "Elsewhere");
+        var item = await _host.SeedAssignedItemAsync(other, board, other.OwnerId, "Not yours");
+        await DeleteItemAsync(item, other.OwnerId);
+
+        using var provider = CreateProvider(mine.AccountId, mine.OwnerId);
+
+        var plain = (await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetBoardItemQuery(item)))
+            .Should().ThrowAsync<AppNotFound>()).Which;
+        plain.ErrorCode.Should().BeNull();
+        plain.Extensions.Should().BeEmpty();
+    }
+
+    private Task DeleteItemAsync(Guid itemId, Guid actorId) =>
+        _host.WithSystemContextAsync(async c =>
+            (await c.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemId)).Delete(actorId, OrgTreeTestHost.BaseTime));
+
+    [Fact]
     public async Task BoardEditor_UpdatesItemsFieldsAndGroups()
     {
         var stack = await _host.SeedWorkspaceAsync();
