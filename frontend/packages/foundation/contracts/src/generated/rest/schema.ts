@@ -21144,7 +21144,7 @@ export interface operations {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportUploadDto"];
                 };
             };
-            /** @description Payload Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;

@@ -20019,7 +20019,7 @@
             }
           },
           "413": {
-            "description": "Payload Too Large",
+            "description": "Content Too Large",
             "content": {
               "application/problem+json": {
                 "schema": {
