@@ -81,7 +81,10 @@ export interface ItemDetailWriters {
     "createCard" | "updateStatus" | "updateFieldValue" | "setAssignees"
   > &
     Partial<
-      Pick<ReturnType<typeof createCardApi>, "createCardLink" | "uploadCardFile">
+      Pick<
+        ReturnType<typeof createCardApi>,
+        "createCardLink" | "uploadCardFile"
+      >
     >;
   readonly labels: Pick<ReturnType<typeof createLabelApi>, "addLabelToCard">;
   readonly checklists?: Pick<

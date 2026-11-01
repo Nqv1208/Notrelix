@@ -1,7 +1,3 @@
-using Notrelix.Application.Common.Storage;
-using Notrelix.Application.Common.Tenancy;
-using Notrelix.Application.Features.WorkManagement.Abstractions;
-
 namespace Notrelix.Application.Features.WorkManagement.Transfer;
 
 /// <summary>The caller's exports of this board from the last 24 hours, newest first.</summary>

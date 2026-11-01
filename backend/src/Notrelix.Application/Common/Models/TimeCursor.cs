@@ -1,5 +1,3 @@
-using FluentValidation.Results;
-
 namespace Notrelix.Application.Common.Models;
 
 /// <summary>Where a time-ordered page stopped: the time and id of its last row.</summary>

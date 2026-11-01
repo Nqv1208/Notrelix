@@ -62,7 +62,10 @@ type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
 type UpdateFieldValueResponse = OperationResponse<UpdateFieldValueOp, 200>;
 
 /** What a status or assignee write answers: the item's new version. */
-type VersionAnswer = OperationResponse<"WorkManagement.BoardItems.UpdateStatus", 200>;
+type VersionAnswer = OperationResponse<
+  "WorkManagement.BoardItems.UpdateStatus",
+  200
+>;
 
 type BulkUpdateOp = "WorkManagement.BoardItems.BulkUpdate";
 type BulkUpdateBody = OperationRequestBody<BulkUpdateOp>;
@@ -234,7 +237,9 @@ export function createCardApi(client: NotrelixClient) {
         value: payload.value,
         expectedVersion,
       };
-      const written = await api.patch<UpdateFieldValueResponse | null | undefined>(
+      const written = await api.patch<
+        UpdateFieldValueResponse | null | undefined
+      >(
         endpoints.boardItems.fieldValue(
           payload.cardId,
           payload.fieldDefinitionId,

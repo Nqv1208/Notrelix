@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -332,7 +332,6 @@ export function BoardImportDialog({
   const reasonText = (e: RowError) =>
     c[REASONS[e.code ?? ""] ?? "reason_invalidValue"] ?? "";
   const steps = [copy.stepFile, copy.stepMap, copy.stepCheck, copy.stepRun];
-  const busy = sending || status === "queued" || status === "running";
   const progress = job.data;
   const total = progress?.total ?? rowCount;
 

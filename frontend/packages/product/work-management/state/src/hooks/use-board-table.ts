@@ -25,7 +25,8 @@ function serverSortOf(
   customFieldIds: ReadonlySet<string>,
 ): string | null {
   const direction = sort.direction;
-  const level = (fieldId: string) => `${encodeURIComponent(fieldId)}.${direction}`;
+  const level = (fieldId: string) =>
+    `${encodeURIComponent(fieldId)}.${direction}`;
   if (customFieldIds.has(sort.key)) return level(sort.key);
   switch (sort.key) {
     case "title":
@@ -94,12 +95,12 @@ export function useBoardTable(
       !lanes.board || viewLoading
         ? "" // the fields or the saved sort are not read yet: nothing to say about the sort
         : personalSorts && personalSorts.length > 0
-        ? serializeSorts(personalSorts)
-        : serverSortOf(
-            sort,
-            lanes.board.fieldDefinitions,
-            new Set(customFields.map((field) => field.id)),
-          ),
+          ? serializeSorts(personalSorts)
+          : serverSortOf(
+              sort,
+              lanes.board.fieldDefinitions,
+              new Set(customFields.map((field) => field.id)),
+            ),
     [personalSorts, sort, lanes.board, viewLoading, customFields],
   );
   useBoardReadNeed(boardId, workspaceId, {

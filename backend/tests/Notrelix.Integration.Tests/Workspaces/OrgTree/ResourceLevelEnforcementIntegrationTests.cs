@@ -18,7 +18,6 @@ using Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
-using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 
 namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 

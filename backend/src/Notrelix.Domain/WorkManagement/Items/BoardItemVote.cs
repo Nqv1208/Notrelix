@@ -23,8 +23,13 @@ public class BoardItemVote : Entity, IWorkspaceScoped
         Guard.NotEmpty(userId);
         return new BoardItemVote
         {
-            AccountId = accountId, WorkspaceId = workspaceId, BoardId = boardId, ItemId = itemId,
-            FieldId = fieldId, UserId = userId, VotedAt = votedAt,
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            BoardId = boardId,
+            ItemId = itemId,
+            FieldId = fieldId,
+            UserId = userId,
+            VotedAt = votedAt,
         };
     }
 }

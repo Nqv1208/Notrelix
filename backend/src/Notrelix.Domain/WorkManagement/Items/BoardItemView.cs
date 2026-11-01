@@ -27,8 +27,12 @@ public class BoardItemView : Entity, IWorkspaceScoped
         Guard.NotEmpty(userId);
         return new BoardItemView
         {
-            AccountId = accountId, WorkspaceId = workspaceId, BoardId = boardId, ItemId = itemId,
-            UserId = userId, LastViewedAt = viewedAt,
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            BoardId = boardId,
+            ItemId = itemId,
+            UserId = userId,
+            LastViewedAt = viewedAt,
         };
     }
 

@@ -6,7 +6,6 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
-using Notrelix.Application.Features.WorkManagement.Public.BoardRealtime;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;

@@ -3,13 +3,7 @@ import {
   tableCollapsedGroupsKey,
   useKanbanCollapsedLanes,
 } from "../kanban/use-kanban-collapsed-lanes";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@notrelix/ui-web";
 import {
@@ -909,7 +903,9 @@ export function MainTableView({
                       ? projection.visibleCount
                       : null,
                   loadMore: (groupId) =>
-                    void table.loadMoreLane(groupId === "none" ? null : groupId),
+                    void table.loadMoreLane(
+                      groupId === "none" ? null : groupId,
+                    ),
                   loading: table.lanePages.loading,
                   failed: table.lanePages.failed,
                 }

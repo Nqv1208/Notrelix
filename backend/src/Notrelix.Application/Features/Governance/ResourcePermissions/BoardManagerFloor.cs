@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.Governance.Public.Access;
-using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions;
 

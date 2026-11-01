@@ -1,8 +1,6 @@
 using System.Globalization;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Domain.WorkManagement.Fields;
-using Npgsql;
-using NpgsqlTypes;
 
 namespace Notrelix.Infrastructure.Data.WorkManagement;
 
@@ -211,31 +209,31 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                     };
                 case FieldType.Select:
                 case FieldType.Status:
-                {
-                    var single = $"COALESCE({scalar}, '')";
-                    return op switch
                     {
-                        "equals" => $"({single} <> '' AND {single} = {Add(first, NpgsqlDbType.Text)})",
-                        "not_equals" => $"({single} = '' OR {single} <> {Add(first, NpgsqlDbType.Text)})",
-                        _ => SetOf($"CASE WHEN {single} = '' THEN ARRAY[]::text[] ELSE ARRAY[{single}] END", op, values),
-                    };
-                }
+                        var single = $"COALESCE({scalar}, '')";
+                        return op switch
+                        {
+                            "equals" => $"({single} <> '' AND {single} = {Add(first, NpgsqlDbType.Text)})",
+                            "not_equals" => $"({single} = '' OR {single} <> {Add(first, NpgsqlDbType.Text)})",
+                            _ => SetOf($"CASE WHEN {single} = '' THEN ARRAY[]::text[] ELSE ARRAY[{single}] END", op, values),
+                        };
+                    }
                 case FieldType.MultiSelect:
                     return SetOf(
                         $"COALESCE((SELECT CASE WHEN jsonb_typeof(v.value) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(v.value)) END FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp}), ARRAY[]::text[])",
                         op, values);
                 case FieldType.Person:
-                {
-                    var stored = $"(SELECT CASE WHEN jsonb_typeof(v.value) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(v.value)) WHEN jsonb_typeof(v.value) = 'string' THEN ARRAY[v.value #>> ARRAY[]::text[]] END FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp})";
-                    var storedList = $"(SELECT CASE WHEN jsonb_typeof(v.value) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(v.value)) END FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp})";
-                    var people = field.PersonSource switch
                     {
-                        PersonSource.Members => Members,
-                        PersonSource.StoredOrMembers => $"COALESCE(NULLIF({storedList}, ARRAY[]::text[]), {Members})",
-                        _ => $"COALESCE({stored}, ARRAY[]::text[])",
-                    };
-                    return SetOf(people, op, values);
-                }
+                        var stored = $"(SELECT CASE WHEN jsonb_typeof(v.value) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(v.value)) WHEN jsonb_typeof(v.value) = 'string' THEN ARRAY[v.value #>> ARRAY[]::text[]] END FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp})";
+                        var storedList = $"(SELECT CASE WHEN jsonb_typeof(v.value) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(v.value)) END FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp})";
+                        var people = field.PersonSource switch
+                        {
+                            PersonSource.Members => Members,
+                            PersonSource.StoredOrMembers => $"COALESCE(NULLIF({storedList}, ARRAY[]::text[]), {Members})",
+                            _ => $"COALESCE({stored}, ARRAY[]::text[])",
+                        };
+                        return SetOf(people, op, values);
+                    }
                 default:
                     throw Refuse("filter", $"A {field.Type} field cannot be filtered on a paged board.");
             }
@@ -272,11 +270,11 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                 case "equals": return parameter is null ? "false" : $"{number} = {parameter}";
                 case "not_equals": return parameter is null ? "true" : $"({number} IS NULL OR {number} <> {parameter})";
                 case "gt" or "gte" or "lt" or "lte":
-                {
-                    if (parameter is null) return "false";
-                    var symbol = op switch { "gt" => ">", "gte" => ">=", "lt" => "<", _ => "<=" };
-                    return $"({number} IS NOT NULL AND {number} {symbol} {parameter})";
-                }
+                    {
+                        if (parameter is null) return "false";
+                        var symbol = op switch { "gt" => ">", "gte" => ">=", "lt" => "<", _ => "<=" };
+                        return $"({number} IS NOT NULL AND {number} {symbol} {parameter})";
+                    }
                 default: throw Refuse("filter", $"The operator '{op}' is not defined for a number.");
             }
         }
@@ -307,11 +305,11 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                 case "before": return hasFirst ? $"{day} < {Add(from, NpgsqlDbType.Date)}" : "false";
                 case "after": return hasFirst ? $"{day} > {Add(from, NpgsqlDbType.Date)}" : "false";
                 case "between":
-                {
-                    var hasTo = values.Count > 1 && TryDay(values[1], out _);
-                    TryDay(values.Count > 1 ? values[1] : "", out var to);
-                    return hasFirst && hasTo ? $"({day} >= {Add(from, NpgsqlDbType.Date)} AND {day} <= {Add(to, NpgsqlDbType.Date)})" : "false";
-                }
+                    {
+                        var hasTo = values.Count > 1 && TryDay(values[1], out _);
+                        TryDay(values.Count > 1 ? values[1] : "", out var to);
+                        return hasFirst && hasTo ? $"({day} >= {Add(from, NpgsqlDbType.Date)} AND {day} <= {Add(to, NpgsqlDbType.Date)})" : "false";
+                    }
                 default: throw Refuse("filter", $"The operator '{op}' is not defined for a date.");
             }
         }
@@ -323,10 +321,10 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                 case "is_empty": return $"cardinality({array}) = 0";
                 case "is_not_empty": return $"cardinality({array}) > 0";
                 case "has_any":
-                {
-                    var none = values.Contains(NoneValue) ? $" OR cardinality({array}) = 0" : "";
-                    return $"({array} && {Add(values.ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Text)}{none})";
-                }
+                    {
+                        var none = values.Contains(NoneValue) ? $" OR cardinality({array}) = 0" : "";
+                        return $"({array} && {Add(values.ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Text)}{none})";
+                    }
                 case "has_all":
                     return values.Count == 0 ? "false" : $"{array} @> {Add(values.ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Text)}";
                 default: throw Refuse("filter", $"The operator '{op}' is not defined for this field.");
@@ -434,10 +432,10 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                 case FieldType.Checkbox:
                     return ($"(CASE WHEN {value} IS NULL THEN NULL WHEN {value} = 'true'::jsonb THEN 1 ELSE 0 END)", KeyKind.Int);
                 case FieldType.Select or FieldType.Status:
-                {
-                    var order = Add(field.OptionOrder.Select(option => option.ToString()).ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Text);
-                    return ($"(CASE WHEN COALESCE({scalar}, '') = '' THEN NULL ELSE COALESCE(array_position({order}, {scalar}), 2147483647) END)", KeyKind.Int);
-                }
+                    {
+                        var order = Add(field.OptionOrder.Select(option => option.ToString()).ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Text);
+                        return ($"(CASE WHEN COALESCE({scalar}, '') = '' THEN NULL ELSE COALESCE(array_position({order}, {scalar}), 2147483647) END)", KeyKind.Int);
+                    }
                 default:
                     throw Refuse("sort", $"A {field.Type} field cannot be sorted on a paged board.");
             }

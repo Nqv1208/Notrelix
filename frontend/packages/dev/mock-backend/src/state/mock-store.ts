@@ -1287,8 +1287,16 @@ export class MockStore {
       boardId,
       viewMode: "kanban",
       viewConfig: JSON.stringify({
-        cardFieldIds: [ERP_READY_COLUMN_ID, ERP_ACCEPT_COLUMN_ID, ERP_VOTE_COLUMN_ID],
-        cardHideEmpty: [ERP_READY_COLUMN_ID, ERP_ACCEPT_COLUMN_ID, ERP_VOTE_COLUMN_ID],
+        cardFieldIds: [
+          ERP_READY_COLUMN_ID,
+          ERP_ACCEPT_COLUMN_ID,
+          ERP_VOTE_COLUMN_ID,
+        ],
+        cardHideEmpty: [
+          ERP_READY_COLUMN_ID,
+          ERP_ACCEPT_COLUMN_ID,
+          ERP_VOTE_COLUMN_ID,
+        ],
       }),
     });
     this.settings.set(
@@ -1510,7 +1518,8 @@ export class MockStore {
       const checklist = this.createChecklist(cardId, list.title);
       list.items.forEach((title, index) => {
         const item = this.createChecklistItem(checklist.id, title);
-        if (index < list.done) this.updateChecklistItem(item.id, { isChecked: true });
+        if (index < list.done)
+          this.updateChecklistItem(item.id, { isChecked: true });
       });
     }
     for (const [key, userIds] of Object.entries(ERP_FOLLOWERS))

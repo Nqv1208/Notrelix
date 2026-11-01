@@ -324,7 +324,8 @@ export function createItemExtrasApi(
             dependencies?: readonly { from: string; to: string }[];
           } | null>(`/boards/${boardId}/items/dependencies`, quiet)
           .catch((error: unknown) => {
-            if ((error as { status?: number } | null)?.status === 404) return null;
+            if ((error as { status?: number } | null)?.status === 404)
+              return null;
             throw error;
           });
         dto = { links: read?.dependencies ?? [] };
@@ -468,11 +469,13 @@ export function createItemExtrasApi(
       itemId: string,
       expectedVersion: number,
     ): Promise<ItemVersionDto> {
-      return versionOf(await api.post<VersionBody>(
-        `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
-        {},
-        { idempotencyKey: key(), ...quiet },
-      ));
+      return versionOf(
+        await api.post<VersionBody>(
+          `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
+          {},
+          { idempotencyKey: key(), ...quiet },
+        ),
+      );
     },
     /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
     async restoreItem(

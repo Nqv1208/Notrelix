@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   identityToneFor,
-  initialsFor,
   NAVIGATION_RESOURCE_KIND,
 } from "@notrelix/features-workspace/core";
 import { useAppRuntime } from "@notrelix/runtime-web";

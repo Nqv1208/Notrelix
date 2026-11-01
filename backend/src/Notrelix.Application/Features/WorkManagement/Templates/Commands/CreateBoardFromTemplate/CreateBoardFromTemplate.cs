@@ -3,7 +3,6 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Templates.Services;
-using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.CreateBoardFromTemplate;
 

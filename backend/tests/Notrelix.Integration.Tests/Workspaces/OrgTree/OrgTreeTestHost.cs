@@ -336,11 +336,17 @@ internal sealed class OrgTreeTestHost
         Guid? spaceId = null,
         Action<Board>? transition = null)
     {
-        var board = Board.Create(stack.AccountId, stack.WorkspaceId, stack.OwnerId, title, null, BaseTime, visibility, spaceId: spaceId);
+        // A board can no longer be created as a public link; a row stored before that rule is seeded by writing
+        // the stored value, so the reads are still proved against it.
+        var storedPublicLink = visibility == BoardVisibility.PublicLink;
+        var board = Board.Create(stack.AccountId, stack.WorkspaceId, stack.OwnerId, title, null, BaseTime,
+            storedPublicLink ? BoardVisibility.Workspace : visibility, spaceId: spaceId);
         transition?.Invoke(board);
         await WithSystemContextAsync(seed =>
         {
             seed.Boards.Add(board);
+            if (storedPublicLink)
+                seed.Entry(board).Property(nameof(Board.Visibility)).CurrentValue = BoardVisibility.PublicLink;
             return Task.CompletedTask;
         });
         return board.Id;

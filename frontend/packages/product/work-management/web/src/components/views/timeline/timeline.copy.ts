@@ -267,7 +267,8 @@ export const vi: TimelineCopy = {
   },
   reschedule: {
     failed: "Không dời được {{title}}",
-    conflict: "{{actor}} vừa sửa {{title}} trước bạn. Thay đổi của bạn chưa được lưu.",
+    conflict:
+      "{{actor}} vừa sửa {{title}} trước bạn. Thay đổi của bạn chưa được lưu.",
     someone: "Một người khác",
     beforeStart: "Hạn của {{title}} không thể trước ngày bắt đầu",
   },

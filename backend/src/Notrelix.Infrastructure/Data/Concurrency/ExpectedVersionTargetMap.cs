@@ -84,7 +84,6 @@ using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFil
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterSorts;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;

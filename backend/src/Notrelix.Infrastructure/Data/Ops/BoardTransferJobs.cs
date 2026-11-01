@@ -134,20 +134,44 @@ internal sealed class BoardTransferJobs(ApplicationDbContext context) : IBoardTr
         using var options = JsonDocument.Parse(r.OptionsJson);
         return new TransferJob
         {
-            Kind = TransferKind.Import, Id = r.Id, WorkspaceId = r.WorkspaceId, BoardId = r.TargetResourceId ?? Guid.Empty,
-            UserId = r.RequestedByUserId ?? Guid.Empty, Status = r.Status, Total = r.TotalRecords, Succeeded = r.SucceededRecords,
-            Failed = r.FailedRecords, Format = options.RootElement.TryGetProperty("format", out var f) ? f.GetString() ?? "" : "",
-            OptionsJson = r.OptionsJson, DetailJson = r.ResultJson, ErrorMessage = r.ErrorMessage, ExpiresAt = r.ExpiresAt,
-            CreatedAt = r.CreatedAt, StartedAt = r.StartedAt, CompletedAt = r.CompletedAt,
+            Kind = TransferKind.Import,
+            Id = r.Id,
+            WorkspaceId = r.WorkspaceId,
+            BoardId = r.TargetResourceId ?? Guid.Empty,
+            UserId = r.RequestedByUserId ?? Guid.Empty,
+            Status = r.Status,
+            Total = r.TotalRecords,
+            Succeeded = r.SucceededRecords,
+            Failed = r.FailedRecords,
+            Format = options.RootElement.TryGetProperty("format", out var f) ? f.GetString() ?? "" : "",
+            OptionsJson = r.OptionsJson,
+            DetailJson = r.ResultJson,
+            ErrorMessage = r.ErrorMessage,
+            ExpiresAt = r.ExpiresAt,
+            CreatedAt = r.CreatedAt,
+            StartedAt = r.StartedAt,
+            CompletedAt = r.CompletedAt,
         };
     }
 
     private static TransferJob From(ExportJobRecord r) => new()
     {
-        Kind = TransferKind.Export, Id = r.Id, WorkspaceId = r.WorkspaceId, BoardId = r.SourceResourceId ?? Guid.Empty,
-        UserId = r.RequestedByUserId ?? Guid.Empty, Status = r.Status, Format = r.Format, Total = r.RowCount ?? 0,
-        OptionsJson = r.OptionsJson, DetailJson = r.FiltersJson, StorageKey = r.StorageKey, ExpiresAt = r.ExpiresAt,
-        ErrorMessage = r.ErrorMessage, CreatedAt = r.CreatedAt, StartedAt = r.StartedAt, CompletedAt = r.CompletedAt,
+        Kind = TransferKind.Export,
+        Id = r.Id,
+        WorkspaceId = r.WorkspaceId,
+        BoardId = r.SourceResourceId ?? Guid.Empty,
+        UserId = r.RequestedByUserId ?? Guid.Empty,
+        Status = r.Status,
+        Format = r.Format,
+        Total = r.RowCount ?? 0,
+        OptionsJson = r.OptionsJson,
+        DetailJson = r.FiltersJson,
+        StorageKey = r.StorageKey,
+        ExpiresAt = r.ExpiresAt,
+        ErrorMessage = r.ErrorMessage,
+        CreatedAt = r.CreatedAt,
+        StartedAt = r.StartedAt,
+        CompletedAt = r.CompletedAt,
     };
 }
 

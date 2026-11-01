@@ -1,7 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
-using Notrelix.Domain.WorkManagement.Formulas;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 

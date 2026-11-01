@@ -1,9 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using Notrelix.Application.Features.WorkManagement.Common;
-using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Fields;
 using DomainJson = Notrelix.Domain.SharedKernel.JsonValue;
 
 namespace Notrelix.Application.Features.WorkManagement.Transfer;
@@ -214,22 +211,22 @@ public static class ImportPlanner
             case FieldType.Date:
                 return TryDate(raw, out var d) ? (Json(d.ToString("O", CultureInfo.InvariantCulture)), null) : (null, "not-date");
             case FieldType.Status or FieldType.Select:
-            {
-                var option = FindOption(field, raw);
-                return option is null ? (null, "unknown-option") : (Json(option.Id.ToString()), null);
-            }
-            case FieldType.MultiSelect:
-            {
-                var ids = new List<string>();
-                foreach (var part in raw.Split([';', '|', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
                 {
-                    var option = FindOption(field, part);
-                    if (option is null) return (null, "unknown-option");
-                    if (!ids.Contains(option.Id.ToString())) ids.Add(option.Id.ToString());
+                    var option = FindOption(field, raw);
+                    return option is null ? (null, "unknown-option") : (Json(option.Id.ToString()), null);
                 }
+            case FieldType.MultiSelect:
+                {
+                    var ids = new List<string>();
+                    foreach (var part in raw.Split([';', '|', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var option = FindOption(field, part);
+                        if (option is null) return (null, "unknown-option");
+                        if (!ids.Contains(option.Id.ToString())) ids.Add(option.Id.ToString());
+                    }
 
-                return ids.Count == 0 ? (null, null) : (Raw(JsonSerializer.Serialize(ids)), null);
-            }
+                    return ids.Count == 0 ? (null, null) : (Raw(JsonSerializer.Serialize(ids)), null);
+                }
             default:
                 return (null, "invalid-value");
         }

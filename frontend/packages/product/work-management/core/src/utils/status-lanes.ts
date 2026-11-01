@@ -148,7 +148,10 @@ export function groupCardsByStatus(board: {
       ...laneSizes(board.paging, option.id, cards.length),
     };
   });
-  if (withoutStatus.length > 0 || (board.paging?.lanes[NO_STATUS_LANE]?.total ?? 0) > 0) {
+  if (
+    withoutStatus.length > 0 ||
+    (board.paging?.lanes[NO_STATUS_LANE]?.total ?? 0) > 0
+  ) {
     lanes.push({
       optionId: null,
       name: "",

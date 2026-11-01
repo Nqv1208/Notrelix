@@ -171,7 +171,10 @@ export function TableLoadMoreError({
           role="alert"
           className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text"
         >
-          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <TriangleAlert
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
           <span className="flex min-w-0 flex-1 flex-col gap-px">
             <b className="font-semibold text-foreground">
               {copy.group.loadMoreFailed}

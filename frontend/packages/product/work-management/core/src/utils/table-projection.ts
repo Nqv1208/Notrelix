@@ -263,7 +263,10 @@ export function projectTableLanes({
     const laneShown =
       lane.filteredTotal === undefined
         ? kept.length
-        : Math.max(kept.length, lane.filteredTotal - (lane.cards.length - kept.length));
+        : Math.max(
+            kept.length,
+            lane.filteredTotal - (lane.cards.length - kept.length),
+          );
     visibleCount += laneShown;
     if (kept.length === 0 && (lane.total > 0 || narrowed)) continue;
     const cards = orderCards

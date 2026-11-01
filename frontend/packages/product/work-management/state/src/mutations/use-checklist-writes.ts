@@ -113,7 +113,10 @@ export function useChecklistWrites(
           text: removed.title,
           apply: (lists) => lists.filter((list) => list.id !== checklistId),
           send: (version) =>
-            api.deleteChecklist(checklistId, neededVersion(version ?? removed.version, cardId)),
+            api.deleteChecklist(
+              checklistId,
+              neededVersion(version ?? removed.version, cardId),
+            ),
         },
         {
           delayMs: CHECKLIST_UNDO_MS,
@@ -232,7 +235,10 @@ export function useChecklistWrites(
             ),
           })),
         send: (version) =>
-          api.toggleChecklistItem({ itemId, expectedVersion: neededVersion(version, cardId) }),
+          api.toggleChecklistItem({
+            itemId,
+            expectedVersion: neededVersion(version, cardId),
+          }),
       });
     },
     [api, checklists, queue],
@@ -323,7 +329,10 @@ export function useChecklistWrites(
               items: entry.items.filter((item) => item.id !== itemId),
             })),
           send: (version) =>
-            api.deleteChecklistItem({ itemId, expectedVersion: neededVersion(version, cardId) }),
+            api.deleteChecklistItem({
+              itemId,
+              expectedVersion: neededVersion(version, cardId),
+            }),
         },
         undoable
           ? {

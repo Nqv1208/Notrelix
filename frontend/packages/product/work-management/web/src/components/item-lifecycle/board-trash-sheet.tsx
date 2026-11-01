@@ -80,9 +80,7 @@ export function BoardTrashSheet({
               {labels.error}
             </p>
           ) : rows.length === 0 ? (
-            <p className="text-compact text-muted-foreground">
-              {labels.empty}
-            </p>
+            <p className="text-compact text-muted-foreground">{labels.empty}</p>
           ) : (
             <ul className="flex flex-col gap-1">
               {rows.map((row) => (

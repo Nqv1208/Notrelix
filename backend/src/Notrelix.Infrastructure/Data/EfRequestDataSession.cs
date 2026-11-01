@@ -2,7 +2,6 @@ using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Exceptions;
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Infrastructure.Data.Concurrency;
 using Notrelix.Infrastructure.Data.Documents;
 

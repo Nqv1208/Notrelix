@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Events.WorkManagement;
 
 namespace Notrelix.Application.EventMappers.WorkManagement;

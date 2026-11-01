@@ -58,7 +58,9 @@ export function AddFieldPanel({
     return () => window.clearTimeout(id);
   }, [newFieldName]);
   const needle = foldForSearch(query);
-  const list = empty.filter((f) => !needle || foldForSearch(f.name).includes(needle));
+  const list = empty.filter(
+    (f) => !needle || foldForSearch(f.name).includes(needle),
+  );
   return (
     <div>
       <SearchField

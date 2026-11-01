@@ -24,8 +24,10 @@ type CreateChecklistItemResponse = OperationResponse<
 type UpdateChecklistItemOp = "WorkManagement.Checklists.UpdateItem";
 type UpdateChecklistItemBody = OperationRequestBody<UpdateChecklistItemOp>;
 
-type SetItemAssigneeBody = OperationRequestBody<"WorkManagement.Checklists.SetItemAssignee">;
-type SetItemDueBody = OperationRequestBody<"WorkManagement.Checklists.SetItemDue">;
+type SetItemAssigneeBody =
+  OperationRequestBody<"WorkManagement.Checklists.SetItemAssignee">;
+type SetItemDueBody =
+  OperationRequestBody<"WorkManagement.Checklists.SetItemDue">;
 
 type MoveChecklistOp = "WorkManagement.Checklists.Move";
 type MoveChecklistBody = OperationRequestBody<MoveChecklistOp>;

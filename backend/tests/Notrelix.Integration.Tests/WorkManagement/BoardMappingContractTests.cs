@@ -36,7 +36,7 @@ public sealed class BoardMappingContractTests : IAsyncLifetime
         var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var workspace = Workspace.Create(accountId, ownerId, "Mapping WS", $"map-{Guid.NewGuid():N}", now);
-        var title = new string('t', 255);
+        var title = new string('t', Board.MaxTitleLength);
         var description = new string('d', 5000);
         var board = Board.Create(accountId, workspace.Id, ownerId, title, description, now);
 

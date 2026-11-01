@@ -1,6 +1,3 @@
-using FluentValidation.Results;
-using Notrelix.Domain.WorkManagement.Fields;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 /// <summary>One filter condition: a field id (a board field, or a built-in "$title", "$label", "$assignee"), an operator and its operands.</summary>

@@ -16,7 +16,7 @@ import {
   TableBulkBar,
   type TableBulkBarProps,
 } from "./table-bulk-bar";
-import { groupAccent, pageButtonClass } from "./table-chrome";
+import { groupAccent } from "./table-chrome";
 import {
   clampColumnWidth,
   tableGridTemplate,
@@ -248,7 +248,12 @@ export function MainTableSurface({
   const shownRows = (group: TableGroupModel) => {
     const pinned = [openItemId, editingId, tabStopId].reduce(
       (last, id) =>
-        id ? Math.max(last, group.rows.findIndex((row) => row.id === id)) : last,
+        id
+          ? Math.max(
+              last,
+              group.rows.findIndex((row) => row.id === id),
+            )
+          : last,
       -1,
     );
     return Math.min(
@@ -491,98 +496,102 @@ export function MainTableSurface({
                 />
                 {collapsed
                   ? null
-                  : group.rows.slice(0, shownRows(group)).map((row, rowIndex) => (
-                      <Fragment key={row.id}>
-                        <TableRow
-                          row={row}
-                          rowIndex={
-                            paging
-                              ? (rowOffsets.get(group.id) ?? 0) + rowIndex + 1
-                              : undefined
-                          }
-                          expand={
-                            renderSubItems && row.progress
-                              ? {
-                                  expanded: expandedIds.has(row.id),
-                                  count: row.progress.total,
-                                  onToggle: () => toggleExpanded(row.id),
-                                }
-                              : undefined
-                          }
-                          copy={copy}
-                          columns={columns}
-                          accent={groupAccent(group)}
-                          statusOptions={statusOptions}
-                          selected={selectedIds.has(row.id)}
-                          active={openItemId === row.id}
-                          tabStop={tabStop === row.id}
-                          canEdit={canEdit}
-                          editors={editors}
-                          fieldEditing={fieldEditing}
-                          onRename={
-                            onRename
-                              ? (title) => onRename(row.id, title)
-                              : undefined
-                          }
-                          actions={
-                            rowActions
-                              ? {
-                                  onDuplicate: rowActions.onDuplicate
-                                    ? () => rowActions.onDuplicate?.(row.id)
-                                    : undefined,
-                                  onCopyLink: () =>
-                                    rowActions.onCopyLink(row.id),
-                                  onArchive: rowActions.onArchive
-                                    ? () => rowActions.onArchive?.(row.id)
-                                    : undefined,
-                                  onDelete: rowActions.onDelete
-                                    ? () => rowActions.onDelete?.(row.id)
-                                    : undefined,
-                                  onMoveToBoard: rowActions.onMoveToBoard
-                                    ? () => rowActions.onMoveToBoard?.(row.id)
-                                    : undefined,
-                                }
-                              : undefined
-                          }
-                          editing={editingId === row.id}
-                          highlightStatusId={
-                            initialEditing?.rowId === row.id
-                              ? initialEditing.highlightStatusId
-                              : undefined
-                          }
-                          onSelectedChange={(selected) =>
-                            onRowSelectedChange(row.id, selected)
-                          }
-                          onOpen={() => onOpenItem(row.id)}
-                          onEditingChange={(editing) =>
-                            setEditingId(editing ? row.id : null)
-                          }
-                          onStatusChange={(optionId) =>
-                            onStatusChange(row.id, optionId)
-                          }
-                          onKeyDown={(event) => {
-                            setTabStopId(row.id);
-                            onRowKeyDown(event, row.id);
-                          }}
-                        />
-                        {renderSubItems && expandedIds.has(row.id) ? (
-                          <div
-                            role="row"
-                            data-sub-items-of={row.id}
-                            className="grid min-w-full"
-                            style={{ gridTemplateColumns: "var(--table-grid)" }}
-                          >
+                  : group.rows
+                      .slice(0, shownRows(group))
+                      .map((row, rowIndex) => (
+                        <Fragment key={row.id}>
+                          <TableRow
+                            row={row}
+                            rowIndex={
+                              paging
+                                ? (rowOffsets.get(group.id) ?? 0) + rowIndex + 1
+                                : undefined
+                            }
+                            expand={
+                              renderSubItems && row.progress
+                                ? {
+                                    expanded: expandedIds.has(row.id),
+                                    count: row.progress.total,
+                                    onToggle: () => toggleExpanded(row.id),
+                                  }
+                                : undefined
+                            }
+                            copy={copy}
+                            columns={columns}
+                            accent={groupAccent(group)}
+                            statusOptions={statusOptions}
+                            selected={selectedIds.has(row.id)}
+                            active={openItemId === row.id}
+                            tabStop={tabStop === row.id}
+                            canEdit={canEdit}
+                            editors={editors}
+                            fieldEditing={fieldEditing}
+                            onRename={
+                              onRename
+                                ? (title) => onRename(row.id, title)
+                                : undefined
+                            }
+                            actions={
+                              rowActions
+                                ? {
+                                    onDuplicate: rowActions.onDuplicate
+                                      ? () => rowActions.onDuplicate?.(row.id)
+                                      : undefined,
+                                    onCopyLink: () =>
+                                      rowActions.onCopyLink(row.id),
+                                    onArchive: rowActions.onArchive
+                                      ? () => rowActions.onArchive?.(row.id)
+                                      : undefined,
+                                    onDelete: rowActions.onDelete
+                                      ? () => rowActions.onDelete?.(row.id)
+                                      : undefined,
+                                    onMoveToBoard: rowActions.onMoveToBoard
+                                      ? () => rowActions.onMoveToBoard?.(row.id)
+                                      : undefined,
+                                  }
+                                : undefined
+                            }
+                            editing={editingId === row.id}
+                            highlightStatusId={
+                              initialEditing?.rowId === row.id
+                                ? initialEditing.highlightStatusId
+                                : undefined
+                            }
+                            onSelectedChange={(selected) =>
+                              onRowSelectedChange(row.id, selected)
+                            }
+                            onOpen={() => onOpenItem(row.id)}
+                            onEditingChange={(editing) =>
+                              setEditingId(editing ? row.id : null)
+                            }
+                            onStatusChange={(optionId) =>
+                              onStatusChange(row.id, optionId)
+                            }
+                            onKeyDown={(event) => {
+                              setTabStopId(row.id);
+                              onRowKeyDown(event, row.id);
+                            }}
+                          />
+                          {renderSubItems && expandedIds.has(row.id) ? (
                             <div
-                              role="cell"
-                              className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
-                              style={{ gridColumn: "1 / -1" }}
+                              role="row"
+                              data-sub-items-of={row.id}
+                              className="grid min-w-full"
+                              style={{
+                                gridTemplateColumns: "var(--table-grid)",
+                              }}
                             >
-                              {renderSubItems(row.id)}
+                              <div
+                                role="cell"
+                                className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
+                                style={{ gridColumn: "1 / -1" }}
+                              >
+                                {renderSubItems(row.id)}
+                              </div>
                             </div>
-                          </div>
-                        ) : null}
-                      </Fragment>
-                    ))}
+                          ) : null}
+                        </Fragment>
+                      ))}
                 {!collapsed && paging?.failed.has(group.id) && group.hasMore ? (
                   <TableLoadMoreError
                     copy={copy}

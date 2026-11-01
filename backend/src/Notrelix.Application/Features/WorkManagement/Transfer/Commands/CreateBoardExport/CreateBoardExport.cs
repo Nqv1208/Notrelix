@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Storage;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Transfer;
@@ -45,8 +43,15 @@ public class CreateBoardExportCommandHandler(
         var options = new ExportOptions(me.RequireAccountId(), $"{name} - {now:yyyy-MM-dd}.{request.Format}", request.Scope, request.Filter, request.Sort, request.Locale ?? "vi");
         var job = new TransferJob
         {
-            Kind = TransferKind.Export, Id = Guid.CreateVersion7(), WorkspaceId = board.WorkspaceId, BoardId = board.Id, UserId = me.UserId,
-            Status = TransferStatus.Queued, Format = request.Format, OptionsJson = TransferJson.Write(options), CreatedAt = now,
+            Kind = TransferKind.Export,
+            Id = Guid.CreateVersion7(),
+            WorkspaceId = board.WorkspaceId,
+            BoardId = board.Id,
+            UserId = me.UserId,
+            Status = TransferStatus.Queued,
+            Format = request.Format,
+            OptionsJson = TransferJson.Write(options),
+            CreatedAt = now,
         };
         jobs.Add(job);
         return ExportJobs.ToDto(job, progress, clock);

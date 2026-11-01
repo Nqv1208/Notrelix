@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.CreateOrUpdateBoardPreference;
 using Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference;
-using DomainException = Notrelix.Domain.Common.Exceptions.DomainException;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardPreferences;
 

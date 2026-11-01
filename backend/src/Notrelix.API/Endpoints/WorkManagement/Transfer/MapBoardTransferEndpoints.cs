@@ -1,7 +1,6 @@
 using Microsoft.Net.Http.Headers;
 using Notrelix.API.Contracts.WorkManagement.Transfer.Requests;
 using Notrelix.API.ErrorHandling;
-using Notrelix.API.Extensions;
 using Notrelix.API.Uploads;
 using Notrelix.Application.Features.WorkManagement.Transfer;
 

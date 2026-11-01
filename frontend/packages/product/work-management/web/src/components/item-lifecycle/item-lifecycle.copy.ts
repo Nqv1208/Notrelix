@@ -71,7 +71,8 @@ export const en = {
   trashUntil: "Can be restored until {{day}}",
   trashClose: "Close",
   archiveListTitle: "Archived items",
-  archiveListBody: "Items archived on this board. Unarchive one to put it back.",
+  archiveListBody:
+    "Items archived on this board. Unarchive one to put it back.",
   archiveListEmpty: "No item is archived on this board.",
   archiveListLoading: "Loading archived items",
   archiveListError: "Archived items couldn't be loaded.",

@@ -89,7 +89,6 @@ export function BoardDuplicateDialog({
     setFailed(null);
     setAttempt(crypto.randomUUID());
     // The dialog opens for one board; the default name is taken once per opening.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const index = useMemo(() => buildSpaceIndex(tree.data ?? []), [tree.data]);

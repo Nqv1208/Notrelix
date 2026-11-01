@@ -190,7 +190,10 @@ export function runFieldValueCommand(
           ? `${payload.value}T00:00:00.000Z`
           : payload.value;
       return cards
-        .updateFieldValue({ ...payload, value }, { ...context, expectedVersion })
+        .updateFieldValue(
+          { ...payload, value },
+          { ...context, expectedVersion },
+        )
         .then(() => undefined);
     },
   });

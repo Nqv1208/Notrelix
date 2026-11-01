@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Ports.Realtime;
-using Notrelix.Application.Features.WorkManagement.Public.BoardRealtime;
 
 namespace Notrelix.Application.Features.WorkManagement.Realtime;
 

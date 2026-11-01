@@ -366,10 +366,10 @@ export function useBoardKanban(
   // Who last changed a card, read from the cache after a refetch (the other person once a write lost).
   const lastEditorOf = (cardId: string) =>
     workspaceId
-      ? findBoardCard(
+      ? (findBoardCard(
           queryClient.getQueryData(wmQueryKeys.fullBoard(workspaceId, boardId)),
           cardId,
-        )?.updatedByName ?? undefined
+        )?.updatedByName ?? undefined)
       : undefined;
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>

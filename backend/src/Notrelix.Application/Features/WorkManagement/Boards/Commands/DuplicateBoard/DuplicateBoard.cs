@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Templates.Services;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard;
 

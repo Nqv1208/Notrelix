@@ -1,9 +1,3 @@
-using System.Text.Json.Serialization;
-using FluentValidation.Results;
-using Notrelix.Application.Common.Data;
-using Notrelix.Application.Common.Storage;
-using Notrelix.Application.Features.WorkManagement.Abstractions;
-
 namespace Notrelix.Application.Features.WorkManagement.Transfer;
 
 /// <summary>The rows a refused import could not take, for the downloadable report (the client words the reasons).</summary>

@@ -172,7 +172,9 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
         using (var provider = CreateProvider(stack, manager))
         {
             await OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Observer));
-            await OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board, ExpectedVersion: 1));
+            // Adding a member changed the Board, so the archive names the version it now has.
+            var current = await _host.ReadAsync(c => c.Boards.Where(x => x.Id == board).Select(x => x.Version).SingleAsync());
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board, ExpectedVersion: current));
         }
     }
 

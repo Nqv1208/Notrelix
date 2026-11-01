@@ -1,6 +1,4 @@
 using System.Text.Json.Serialization;
-using FluentValidation.Results;
-using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Storage;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
@@ -57,8 +55,15 @@ public class StartBoardImportCommandHandler(
         var options = new ImportOptions(accountId, name, data.Format, bytes.Length, key, data.TotalRows, data.Headers, null);
         jobs.Add(new TransferJob
         {
-            Kind = TransferKind.Import, Id = jobId, WorkspaceId = workspaceId, BoardId = request.BoardId, UserId = me.UserId,
-            Status = TransferStatus.Uploaded, Format = data.Format, Total = data.TotalRows, OptionsJson = TransferJson.Write(options),
+            Kind = TransferKind.Import,
+            Id = jobId,
+            WorkspaceId = workspaceId,
+            BoardId = request.BoardId,
+            UserId = me.UserId,
+            Status = TransferStatus.Uploaded,
+            Format = data.Format,
+            Total = data.TotalRows,
+            OptionsJson = TransferJson.Write(options),
             CreatedAt = clock.UtcNow,
         });
 

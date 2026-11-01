@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
