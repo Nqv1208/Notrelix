@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronDown, MoreHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, Loader2, MoreHorizontal, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,22 +17,54 @@ import { useItemActionsCopy } from "../item-actions/use-item-actions-copy";
 import {
   STATUS_DOT_CLASS,
   describeItemStatus,
+  type ItemStatusCategory,
 } from "../card-detail/item-field-editors";
 import { approvalCandidates } from "./approval/approval-model";
-import { useCardPopup } from "./card-popup-context";
+import { MOVE_SAVE_KEY, useCardPopup } from "./card-popup-context";
+import { fillPopupCopy } from "./card-popup.copy";
 import { IconBtn, PanelPopover } from "./popup-ui";
 
 const GROUP_BTN =
   "relative inline-flex h-9 items-center gap-2 rounded-[8px] border-0 bg-state-hover-strong py-0 pr-2.5 pl-3 text-[14px] font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
+/** The dot of a column: the Status category's tint, else the option's own colour. */
+function LaneDot({ lane }: { lane: Lane }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "size-[9px] shrink-0 rounded-full",
+        lane.category ? STATUS_DOT_CLASS[lane.category] : "bg-meta-foreground",
+      )}
+      style={
+        !lane.category && lane.color
+          ? { backgroundColor: lane.color }
+          : undefined
+      }
+    />
+  );
+}
+
+const NO_LANE: Lane = { id: "", title: "", category: null };
+
+interface Lane {
+  readonly id: string;
+  readonly title: string;
+  readonly category: ItemStatusCategory | null;
+  readonly color?: string;
+}
+
 /**
- * The column of the card: the Kanban lane it sits in (its Status), and moving it is one pick. It writes
- * the Status like a drag between lanes does; a board without a Status field keeps the board groups.
+ * The column of the card, and moving it is one pick that changes what the board groups by: the Status
+ * (a drag between lanes writes the same), the Select field the view is grouped by, or, on a board with
+ * neither, the card's own board group ("Move to group"). It is always shown; without the right to move
+ * it reads as a label and the notice under the header says why.
  */
 function GroupPicker() {
   const {
     card,
     groups,
+    groupField,
     copy,
     mode,
     actions,
@@ -40,55 +72,70 @@ function GroupPicker() {
     readOnly,
     capabilities,
     fields,
+    saves,
     track,
   } = useCardPopup();
   const [open, setOpen] = useState(false);
   const t = copy.shell;
-  const status = fields.status;
-  const lanes = status
-    ? status.options.map((option) => ({
+  const laneField = groupField ?? fields.status;
+  const isStatus =
+    laneField !== undefined && laneField.id === fields.status?.id;
+  const lanes: readonly Lane[] = laneField
+    ? laneField.options.map((option) => ({
         id: option.id,
         title: option.label,
         category: option.category ?? null,
+        color: option.color,
       }))
     : groups.map((group) => ({ ...group, category: null }));
-  const currentId = status
-    ? (describeItemStatus(card, status).option?.id ?? null)
+  const stored = laneField ? card.fieldValues[laneField.id] : undefined;
+  const currentId = laneField
+    ? isStatus
+      ? (describeItemStatus(card, laneField).option?.id ?? null)
+      : typeof stored === "string"
+        ? stored
+        : null
     : card.listId;
   const current = lanes.find((lane) => lane.id === currentId);
-  const dot = current?.category ? STATUS_DOT_CLASS[current.category] : null;
+  const saving = saves[MOVE_SAVE_KEY]?.status === "saving";
   const canMove =
     readOnly === null && (mode === "create" || capabilities.canMoveCard);
   const move = (laneId: string) => {
     setOpen(false);
-    if (laneId === currentId) return;
-    if (status)
-      track(`field:${status.id}`, async () =>
+    if (laneId === currentId || saving) return;
+    if (laneField)
+      track(MOVE_SAVE_KEY, async () =>
         callbacks.onUpdateFieldValue({
           cardId: card.id,
-          fieldDefinitionId: status.id,
+          fieldDefinitionId: laneField.id,
           value: laneId,
         }),
       );
     else if (mode === "create") actions.moveToGroup?.(laneId);
     else
-      (actions.moveToGroup ?? ((id) => callbacks.onMoveToGroup?.(card.id, id)))(
-        laneId,
+      track(MOVE_SAVE_KEY, async () =>
+        callbacks.onMoveToGroup?.(card.id, laneId),
       );
   };
   const label = (
     <>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-[9px] shrink-0 rounded-full",
-          dot ?? "bg-meta-foreground",
-        )}
-      />
-      {current?.title ?? (status ? t.noLane : "")}
+      <LaneDot lane={current ?? NO_LANE} />
+      {current?.title ??
+        (laneField
+          ? isStatus
+            ? t.noLane
+            : fillPopupCopy(t.noLaneField, { field: laneField.name })
+          : "")}
     </>
   );
   if (!canMove) return <span className={cn(GROUP_BTN, "pr-3")}>{label}</span>;
+  const picker = laneField
+    ? { hint: t.groupPicker, title: t.groupMenuTitle, note: t.groupNote }
+    : {
+        hint: t.groupPickerGroup,
+        title: t.groupMenuTitleGroup,
+        note: t.groupNoteGroup,
+      };
   return (
     <PanelPopover
       open={open}
@@ -100,51 +147,55 @@ function GroupPicker() {
             type="button"
             aria-haspopup="listbox"
             aria-expanded={open}
-            title={mode === "create" ? t.groupPickerCreate : t.groupPicker}
-            className={cn(GROUP_BTN, open && "ring-2 ring-primary")}
+            aria-busy={saving}
+            disabled={saving}
+            title={mode === "create" ? t.groupPickerCreate : picker.hint}
+            className={cn(
+              GROUP_BTN,
+              open && "ring-2 ring-primary",
+              "disabled:cursor-progress",
+            )}
           >
             {label}
-            <ChevronDown
-              aria-hidden="true"
-              className="size-[13px] text-meta-foreground"
-            />
+            {saving ? (
+              <>
+                <Loader2
+                  aria-hidden="true"
+                  className="size-[13px] animate-spin text-meta-foreground motion-reduce:animate-none"
+                />
+                <span className="sr-only">{t.saving}</span>
+              </>
+            ) : (
+              <ChevronDown
+                aria-hidden="true"
+                className="size-[13px] text-meta-foreground"
+              />
+            )}
           </button>
         </PopoverTrigger>
       }
     >
       <div className="mb-2 flex h-8 items-center justify-center">
-        <b className="text-[14px] font-[650]">{t.groupMenuTitle}</b>
+        <b className="text-[14px] font-[650]">{picker.title}</b>
       </div>
-      <div
-        role="listbox"
-        aria-label={t.groupMenuTitle}
-        className="flex flex-col"
-      >
-        {lanes.map((group) => {
-          const selected = group.id === currentId;
+      <div role="listbox" aria-label={picker.title} className="flex flex-col">
+        {lanes.map((lane) => {
+          const selected = lane.id === currentId;
           return (
             <button
-              key={group.id}
+              key={lane.id}
               type="button"
               role="option"
               aria-selected={selected}
-              onClick={() => move(group.id)}
+              onClick={() => move(lane.id)}
               className={cn(
                 "flex min-h-10 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong",
                 selected &&
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-[9px] shrink-0 rounded-full",
-                  group.category
-                    ? STATUS_DOT_CLASS[group.category]
-                    : "bg-meta-foreground",
-                )}
-              />
-              {group.title}
+              <LaneDot lane={lane} />
+              {lane.title}
               {selected ? (
                 <Check aria-hidden="true" className="ml-auto size-4" />
               ) : null}
@@ -153,7 +204,7 @@ function GroupPicker() {
         })}
       </div>
       <p className="mt-2.5 mb-0 px-0.5 text-[12.5px] leading-[1.45] text-meta-foreground">
-        {t.groupNote}
+        {picker.note}
       </p>
     </PanelPopover>
   );
