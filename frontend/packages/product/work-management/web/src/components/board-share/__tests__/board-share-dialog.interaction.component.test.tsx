@@ -233,4 +233,38 @@ describe("BoardShareDialogSurface", () => {
     expect(within(dialog).queryByText(/Quyền riêng trên board này/)).toBeNull();
     expect(within(dialog).queryByText("Nguyễn Thu Hà")).toBeNull();
   });
+
+  it("reads the sharing list: shows a loading state and no people while it is on its way", () => {
+    renderShare(shareDefaultScenario(), { peopleState: "loading" });
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByRole("status", { name: copy.people.loading }),
+    ).toBeTruthy();
+    expect(within(dialog).queryByText("Nguyễn Thu Hà")).toBeNull();
+    expect(within(dialog).queryByText(/Quyền riêng trên board này/)).toBeNull();
+  });
+
+  it("says the sharing read failed and reads it again on Try again", () => {
+    const onRetryPeople = vi.fn();
+    renderShare(shareDefaultScenario(), {
+      peopleState: "error",
+      onRetryPeople,
+    });
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("alert").textContent).toBe(
+      copy.people.loadError,
+    );
+    expect(within(dialog).queryByText("Nguyễn Thu Hà")).toBeNull();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: copy.people.retry }),
+    );
+    expect(onRetryPeople).toHaveBeenCalledOnce();
+  });
+
+  it("says no one was added when the sharing read is empty", () => {
+    renderShare(shareEmptyScenario());
+    expect(
+      within(screen.getByRole("dialog")).getByText(copy.people.empty),
+    ).toBeTruthy();
+  });
 });

@@ -188,6 +188,7 @@ for (const viewport of viewports) {
     });
 
     for (const [token, label] of [
+      ["invite-wsp-member", "join-workspace"],
       ["invite-erp-guest", "join-new"],
       ["invite-erp-existing", "join-existing"],
       ["invite-erp-expired", "join-expired"],
@@ -201,6 +202,21 @@ for (const viewport of viewports) {
         await audit(page, label, viewport, dark, page.locator("body"));
       });
     }
+
+    test(`workspace not found, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto("/workspaces/no-such-workspace");
+      await expect(
+        page.getByRole("button", { name: "Try again" }),
+      ).toBeVisible();
+      await audit(
+        page,
+        "workspace-not-found",
+        viewport,
+        dark,
+        page.locator("body"),
+      );
+    });
 
     test(`Space create dialog, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);

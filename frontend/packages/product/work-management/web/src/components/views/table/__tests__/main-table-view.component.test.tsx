@@ -354,6 +354,7 @@ describe("MainTableView on the ERP board", () => {
         [erpItemId("ERP-142")]: expect.any(Number),
         [erpItemId("ERP-146")]: expect.any(Number),
       },
+      { idempotencyKey: expect.any(String) },
     );
     expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull();
   }, 20_000);
@@ -439,6 +440,60 @@ describe("MainTableView on the ERP board", () => {
     expect(toast.error.mock.calls.at(-1)?.[0]).toContain(
       "Chưa có gì bị thay đổi",
     );
+  });
+
+  // The popover closes on Apply, so a second press is the same pick made again.
+  async function applyDueDate() {
+    if (!screen.queryByLabelText("Hạn"))
+      fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.change(screen.getByLabelText("Hạn"), {
+      target: { value: "2026-11-03" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+  }
+
+  it("keeps one idempotency key when Apply is pressed again after a lost answer", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.bulkUpdate.mockRejectedValueOnce(new Error("network down"));
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    await applyDueDate();
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    await applyDueDate();
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    const [first, second] = cards.bulkUpdate.mock.calls.map(
+      (call) =>
+        call as unknown as [
+          string,
+          string[],
+          unknown,
+          unknown,
+          { idempotencyKey: string },
+        ],
+    );
+    expect(first?.[4].idempotencyKey).toBeTruthy();
+    expect(second?.[4].idempotencyKey).toBe(first?.[4].idempotencyKey);
+    // The retry is the same operation: the same versions go with it.
+    expect(second?.[3]).toEqual(first?.[3]);
+  });
+
+  it("starts a new operation when the server answered the first one", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.bulkUpdate.mockRejectedValueOnce(
+      Object.assign(new Error("An item was changed by someone else."), {
+        status: 412,
+      }),
+    );
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    await applyDueDate();
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    await applyDueDate();
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    const keys = cards.bulkUpdate.mock.calls.map(
+      (call) => (call as unknown as unknown[])[4] as { idempotencyKey: string },
+    );
+    expect(keys[1]?.idempotencyKey).not.toBe(keys[0]?.idempotencyKey);
   });
 
   it("names the first item the server refuses and keeps the selection", async () => {

@@ -21,8 +21,12 @@ export const BUTTON_CLASS = {
   ),
 } as const;
 
+/** A text link. On a phone its box grows to the 44 px touch target; the drawn desktop box stays 24 px. */
 export const LINK_BUTTON_CLASS =
-  "cursor-pointer rounded-[4px] border-0 bg-transparent px-0 py-0.5 text-item-ui font-medium text-brand-subtle-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring";
+  "cursor-pointer rounded-[4px] border-0 bg-transparent px-0 py-0.5 text-item-ui leading-normal font-medium text-brand-subtle-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring max-md:inline-flex max-md:min-h-touch max-md:items-center";
+
+/** The bold label over a field (13.5 px on the 1.5 line the artboard draws). */
+export const LABEL_CLASS = "text-item-ui leading-normal font-semibold";
 
 export function AuthHeading({
   title,
@@ -43,8 +47,8 @@ export function AuthHeading({
         className={cn(
           "m-0 tracking-tight",
           medium
-            ? "text-page-title leading-snug font-semibold"
-            : "text-item-title leading-tight font-semibold",
+            ? "text-page-title leading-[1.32] font-[650]"
+            : "text-item-title leading-tight font-[650]",
         )}
       >
         {title}
@@ -69,7 +73,7 @@ export function FieldError({
     <p
       id={id}
       role="alert"
-      className="m-0 flex items-start gap-1.5 text-item-small font-medium text-danger-text"
+      className="m-0 flex items-start gap-1.5 text-item-small leading-normal font-medium text-danger-text"
     >
       <CircleAlert aria-hidden="true" className="mt-0.5 size-3.75 shrink-0" />
       {children}

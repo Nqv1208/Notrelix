@@ -1342,6 +1342,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAuthFlowService",
     consumerFile:
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Auth.ResendEmailVerification",
+    operationId: "Identity.Auth.ResendEmailVerification",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
     capability: "Identity.Auth.OAuth.Start",
     operationId: "Identity.Auth.OAuth.Start",
     mutation: false,

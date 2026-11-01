@@ -515,4 +515,34 @@ describe("verify email flow: the single-use link", () => {
     ).toBeTruthy();
     expect(confirmEmail).toHaveBeenCalledTimes(1);
   });
+
+  it("asks the server again with the same token after a failed call (a network drop), not the cached failure", async () => {
+    const confirmEmail = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(undefined);
+    const service = asService({ confirmEmail });
+    const tree = (
+      <Providers>
+        <VerifyEmailFlow
+          service={service}
+          navigation={navigation()}
+          token="v1.retry-after-drop"
+        />
+      </Providers>
+    );
+    const first = renderPureUi(tree);
+    await waitFor(() => expect(confirmEmail).toHaveBeenCalledTimes(1));
+    expect(
+      await screen.findByRole("heading", {
+        name: copy.verifyEmail.failedTitle,
+      }),
+    ).toBeTruthy();
+    first.unmount();
+    renderPureUi(tree);
+    expect(
+      await screen.findByRole("heading", { name: copy.verifyEmail.doneTitle }),
+    ).toBeTruthy();
+    expect(confirmEmail).toHaveBeenCalledTimes(2);
+  });
 });

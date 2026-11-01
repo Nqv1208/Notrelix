@@ -138,6 +138,25 @@ function levelWord(level: string): string {
 }
 
 export const authFlowOperations = [
+  // The real route answers 200 whether or not the address has an account (no disclosure).
+  defineMockOperation<Record<string, never>, { email?: string }, unknown>({
+    id: "auth.resendEmailVerification",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.ResendEmailVerification",
+    },
+    method: "POST",
+    route: "/auth/email-verification/resend",
+    async handle({ body }) {
+      const email = body?.email?.trim() ?? "";
+      if (!EMAIL.test(email))
+        return genericProblem(400, "validation.failed", "Validation failed", {
+          Email: ["Enter a work email."],
+        });
+      return ok({ success: true });
+    },
+  }),
+
   defineMockOperation<Record<string, never>, { email?: string }, unknown>({
     id: "auth.identify",
     contract: { kind: "openapi", operationId: "Identity.Auth.IdentifySignIn" },
@@ -261,10 +280,11 @@ export const authFlowOperations = [
         state: invite.state,
         inviterName: invite.inviterName,
         workspaceName: invite.orgName,
-        role: "Guest",
-        resourceKind: "work-management.board",
-        resourceTitle: invite.boardTitle,
-        resourceLevel: levelWord(invite.level),
+        role: invite.workspaceRole === "member" ? "Member" : "Guest",
+        // A workspace invitation names no resource.
+        resourceKind: invite.workspaceRole ? null : "work-management.board",
+        resourceTitle: invite.workspaceRole ? null : invite.boardTitle,
+        resourceLevel: invite.workspaceRole ? null : levelWord(invite.level),
         expiresOn: invite.expiresOn,
         // Nothing of the guest's details leaves an invitation that cannot be used.
         email: valid ? invite.email : null,
@@ -327,8 +347,8 @@ export const authFlowOperations = [
       const landing = {
         workspaceSlug: invite.workspaceId,
         workspaceId: invite.workspaceId,
-        resourceKind: "work-management.board",
-        resourceId: invite.boardId,
+        resourceKind: invite.workspaceRole ? null : "work-management.board",
+        resourceId: invite.workspaceRole ? null : invite.boardId,
       };
       // A second press is safe: the guest is added once and no session opens.
       if (outcome === "already")
@@ -372,8 +392,8 @@ export const authFlowOperations = [
       return ok({
         workspaceSlug: invite.workspaceId,
         workspaceId: invite.workspaceId,
-        resourceKind: "work-management.board",
-        resourceId: invite.boardId,
+        resourceKind: invite.workspaceRole ? null : "work-management.board",
+        resourceId: invite.workspaceRole ? null : invite.boardId,
       });
     },
   }),
