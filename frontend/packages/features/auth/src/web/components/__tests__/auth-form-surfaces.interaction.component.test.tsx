@@ -110,6 +110,40 @@ describe("auth sign-in surface", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
+  it("FUI[auth.sign-in:email] keeps the closed password field disabled, so nothing is typed into it before its step", () => {
+    renderPureUi(<AuthSignInSurface {...authSignInScenario()} />);
+    const field = screen.getByLabelText(
+      copy.password.label,
+    ) as HTMLInputElement;
+    expect(field.disabled).toBe(true);
+  });
+
+  it("FUI[auth.sign-in:locked] answers a locked attempt with the generic refusal and the lock notice", () => {
+    renderPureUi(
+      <AuthSignInSurface
+        {...authSignInScenario({
+          step: {
+            kind: "password",
+            email: AUTH_PERSONAL_EMAIL,
+            error: null,
+            lockedSeconds: 48,
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.password.wrong,
+    );
+    expect(
+      (
+        screen.getByLabelText(copy.password.label) as HTMLInputElement
+      ).getAttribute("aria-invalid"),
+    ).toBe("true");
+    expect(screen.getByRole("status").textContent).toContain(
+      fillAuthCopy(copy.password.lockTitle, { seconds: 48 }),
+    );
+  });
+
   it("FUI[auth.sign-in:wrong] says the password is wrong and never counts tries", () => {
     renderPureUi(
       <AuthSignInSurface

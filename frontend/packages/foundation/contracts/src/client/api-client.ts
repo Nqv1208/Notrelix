@@ -37,8 +37,7 @@ export type ApiRequestOptions = {
 export interface SessionExpiredEvent {
   readonly eventId: string;
   readonly occurredAt: string;
-  readonly reason:
-    "refresh-rejected" | "refresh-network-failure" | "session-revoked";
+  readonly reason: "refresh-rejected" | "session-revoked";
   readonly error: AppError;
 }
 
@@ -146,31 +145,29 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
             correlationId,
           );
         } catch (netErr) {
-          const appErr = new AppError({
+          // A dropped connection says nothing about the session: it stays, the
+          // caller sees the offline failure and tries again when it is back.
+          throw new AppError({
             kind: "network",
             message: "Network error during auth refresh.",
             correlationId,
             cause: netErr,
           });
-          if (onSessionExpired) {
-            onSessionExpired({
-              eventId: createCorrelationId(),
-              occurredAt: clock.now().toISOString(),
-              reason: "refresh-network-failure",
-              error: appErr,
-            });
-          }
-          throw appErr;
         }
 
         if (!refreshResponse.ok) {
+          // Only the server's 401 (invalid, expired or replayed token) ends the
+          // session. A limit (429) or a server fault keeps it.
+          const rejected = refreshResponse.status === 401;
           const appErr = new AppError({
-            kind: "auth",
+            kind: rejected ? "auth" : "server",
             status: refreshResponse.status,
-            message: "Session expired. Please sign in again.",
+            message: rejected
+              ? "Session expired. Please sign in again."
+              : "The session could not be refreshed right now.",
             correlationId,
           });
-          if (onSessionExpired) {
+          if (rejected && onSessionExpired) {
             onSessionExpired({
               eventId: createCorrelationId(),
               occurredAt: clock.now().toISOString(),

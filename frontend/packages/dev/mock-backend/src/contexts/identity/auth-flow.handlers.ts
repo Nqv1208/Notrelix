@@ -138,6 +138,25 @@ function levelWord(level: string): string {
 }
 
 export const authFlowOperations = [
+  // The real route answers 200 whether or not the address has an account (no disclosure).
+  defineMockOperation<Record<string, never>, { email?: string }, unknown>({
+    id: "auth.resendEmailVerification",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.ResendEmailVerification",
+    },
+    method: "POST",
+    route: "/auth/email-verification/resend",
+    async handle({ body }) {
+      const email = body?.email?.trim() ?? "";
+      if (!EMAIL.test(email))
+        return genericProblem(400, "validation.failed", "Validation failed", {
+          Email: ["Enter a work email."],
+        });
+      return ok({ success: true });
+    },
+  }),
+
   defineMockOperation<Record<string, never>, { email?: string }, unknown>({
     id: "auth.identify",
     contract: { kind: "openapi", operationId: "Identity.Auth.IdentifySignIn" },

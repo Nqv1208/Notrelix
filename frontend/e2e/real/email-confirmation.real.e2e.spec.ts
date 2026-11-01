@@ -22,9 +22,12 @@ test("a new member confirms the email from the link and then creates the workspa
   await page.locator("#confirmPassword").fill(password);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: /Create account/ }).click();
-  await expect(page).toHaveURL(/\/onboarding/);
+  // Registering opens the app: the personal workspace once its provisioning has run (UC-WSP-A02, an
+  // event consumer, so eventual), the onboarding page while the list is still empty. Either is right.
+  await expect(page).toHaveURL(/\/(workspaces\/[^/]+|onboarding)/);
 
-  // The address is not confirmed yet: creating the workspace is refused and the page says why.
+  // The address is not confirmed yet: creating a further workspace is refused and the page says why.
+  await page.goto("/onboarding");
   await page.getByLabel("Company name").fill(`Confirm ${suffix}`);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Confirm your email");

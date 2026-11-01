@@ -21,7 +21,9 @@ export function createUseAuthUser({ api, endpoints }: UseAuthUserDeps) {
       retry: false,
       staleTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      // With a person already read nothing changes on reconnect; with none (the session could
+      // not be read) the unavailable screen resolves itself when the network is back.
+      refetchOnReconnect: (query) => query.state.data === undefined,
       refetchOnMount: false,
     });
 

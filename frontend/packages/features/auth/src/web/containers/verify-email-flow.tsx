@@ -11,7 +11,9 @@ import type { AuthFlowNavigation } from "./flow-navigation";
 /**
  * The link's token is single use, and the page can mount twice while the app
  * settles (the second mount would spend the token again and show a dead link
- * over a confirmed address): one call per token serves every mount.
+ * over a confirmed address): one call per token serves every mount. A call that
+ * failed is forgotten, so a retry with the same token (after a network drop) asks
+ * the server again instead of replaying the failure.
  */
 const confirmations = new Map<string, Promise<void>>();
 function confirmOnce(service: AuthFlowService, token: string): Promise<void> {
@@ -19,6 +21,9 @@ function confirmOnce(service: AuthFlowService, token: string): Promise<void> {
   if (!call) {
     call = service.confirmEmail(token);
     confirmations.set(token, call);
+    call.catch(() => {
+      if (confirmations.get(token) === call) confirmations.delete(token);
+    });
   }
   return call;
 }

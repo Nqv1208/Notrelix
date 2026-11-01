@@ -18,7 +18,19 @@ test("asking for the confirmation link again waits before the next ask; only the
   await page.getByLabel("Company name").fill(`Resend ${Date.now()}`);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Confirm your email");
-  await page.getByRole("button", { name: "Send the link again" }).click();
+  // On a phone the link is a 44 px target and the header does not squeeze (UC-IDN-B05).
+  await page.setViewportSize({ width: 390, height: 844 });
+  const again = page.getByRole("button", { name: "Send the link again" });
+  expect((await again.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
+  const header = await page.locator("header").first().boundingBox();
+  expect(header!.height, "header stays one line").toBeLessThanOrEqual(57);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await again.click();
   await expect(page.getByText(/A new link is on its way/)).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Send again in \d:\d\d/ }),
