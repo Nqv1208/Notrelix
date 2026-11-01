@@ -31,7 +31,6 @@ using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 
 using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
@@ -146,7 +145,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
 
         var read = () => GetTeamMembersAsync(provider, stack.WorkspaceId, teamId);
 
-        await read.Should().ThrowAsync<AppForbidden>();
+        await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -268,6 +267,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         clockMock.Setup(c => c.UtcNow).Returns(() => _now);
 
         var services = new ServiceCollection();
+        services.AddSingleton(new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
         services.AddLogging();
         services.AddOptions();
 

@@ -100,7 +100,7 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
         using var provider = _host.CreateProvider(stack.AccountId, outsider);
         var list = () => OrgTreeTestHost.SendAsync(provider, new GetBoardsQuery(stack.WorkspaceId));
 
-        await list.Should().ThrowAsync<AppForbidden>();
+        await list.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
     }
 
     [Fact]

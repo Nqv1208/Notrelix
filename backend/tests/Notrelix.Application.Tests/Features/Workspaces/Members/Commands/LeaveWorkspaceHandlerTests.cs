@@ -11,8 +11,7 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
 
     private LeaveWorkspaceCommandHandler Leave() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
-        GrantProjectionMock.Object, LockerMock.Object, _defaults.Object,
-        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
+        GrantProjectionMock.Object, LockerMock.Object, _defaults.Object);
 
     private SetDefaultWorkspaceCommandHandler SetDefault() => new(
         DbContextMock.Object, RequestContextMock.Object, _defaults.Object);

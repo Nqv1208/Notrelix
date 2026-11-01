@@ -152,6 +152,7 @@ internal sealed class OrgTreeTestHost
             new PostgresResourceVisibility(sp.GetRequiredService<ApplicationDbContext>(), sp.GetRequiredService<TimeProvider>()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
         services.AddSingleton(new Mock<IClientMetadata>().Object);
+        services.AddSingleton(new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
             Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
 

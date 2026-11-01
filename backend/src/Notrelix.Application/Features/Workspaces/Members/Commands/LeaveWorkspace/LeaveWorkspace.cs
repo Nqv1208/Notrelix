@@ -40,18 +40,14 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
     private readonly IWorkspaceOwnerUpdateLocker _locker;
     private readonly IIdentityDefaultWorkspace _defaultWorkspace;
 
-    private readonly IAccessChangeSignal _access;
-
     public LeaveWorkspaceCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
         IWorkspaceOwnerUpdateLocker locker,
-        IIdentityDefaultWorkspace defaultWorkspace,
-        IAccessChangeSignal access)
+        IIdentityDefaultWorkspace defaultWorkspace)
     {
-        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -106,7 +102,8 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
 
         await _defaultWorkspace.ClearIfAsync(userId, workspace.Id, ct);
 
-        _access.WorkspacePerson(request.WorkspaceId, _requestContext.UserId);
+        // No access signal here: the grant ended in this transaction, so the person can no longer write a
+        // workspace-scoped fact; their own client is cut by the periodic re-authorization pass.
         return Result.Success();
     }
 }

@@ -32,7 +32,6 @@ using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 
 namespace Notrelix.Integration.Tests.WorkManagement;
 
@@ -97,7 +96,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Outsider_ThroughCanonicalPipeline_IsForbidden()
+    public async Task Outsider_ThroughCanonicalPipeline_IsNotFound()
     {
         var (accountId, _, workspaceId) = await SeedWorkspaceStackAsync();
         var outsider = Guid.NewGuid();
@@ -109,8 +108,8 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
             var act = () => SendAsync<Result<Guid>>(scope,
                 new CreateBoardInWorkspaceCommand(workspaceId, "Outsider Board", null, null, null));
 
-            await act.Should().ThrowAsync<AppForbidden>(
-                "a non-member has no workspace role, so the engine denies CreateBoard");
+            await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>(
+                "a person who is not an active member is told the workspace does not exist");
         }
     }
 

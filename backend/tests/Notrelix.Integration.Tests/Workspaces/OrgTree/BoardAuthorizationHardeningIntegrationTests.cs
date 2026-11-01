@@ -117,11 +117,14 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
 
         using (var provider = CreateProvider(stack, manager))
         {
-            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner, ExpectedVersion: 1));
+            // Only a board owner or a workspace owner or admin hands out or takes back the owner role.
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner, ExpectedVersion: 1)))
+                .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>("a Manager who is not an owner cannot remove the owner");
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, plain, ExpectedVersion: 1));
         }
 
         var remaining = await _host.ReadAsync(c => c.BoardMembers.Where(m => m.BoardId == board).Select(m => m.UserId).ToListAsync());
-        remaining.Should().BeEquivalentTo([granted, plain], "only the Manager's removal took effect");
+        remaining.Should().BeEquivalentTo([boardOwner, granted], "only the Manager's removal of a plain member took effect");
     }
 
     [Fact]

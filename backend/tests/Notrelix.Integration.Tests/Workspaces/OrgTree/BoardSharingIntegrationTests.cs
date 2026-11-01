@@ -88,7 +88,7 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
 
         var combined = sharing.Entries.Single(e => e.Id == both);
         combined.Source.Should().Be("both");
-        combined.Level.Should().Be("editor", "the explicit Editor grant beats the Observer membership");
+        combined.Level.Should().Be("viewer", "a read-only board role caps the person at Viewer over an explicit grant");
         combined.PermissionId.Should().NotBeNull();
 
         var capped = sharing.Entries.Single(e => e.Id == guest);
@@ -212,8 +212,8 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
         var worker = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Worker");
         var board = await _host.SeedBoardAsync(stack, "Plan");
-        // The creator holds Manager on the Board, as creating it gives; a Board always keeps one.
-        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, stack.OwnerId, PermissionLevel.Manager);
+        // The creator owns the Board, as creating it gives; a Board always keeps one.
+        await _host.SeedBoardMemberAsync(board, stack.OwnerId, BoardRole.Owner);
         using var asOwner = CreateProvider(stack, stack.OwnerId);
 
         await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Manager"));
@@ -319,6 +319,8 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         var colleague = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Colleague");
         var outsider = await _host.AddOutsiderAsync(stack);
         var board = await _host.SeedBoardAsync(stack, "Roadmap");
+        // The creator owns the Board, as creating it gives; a Private Board always keeps an owner.
+        await _host.SeedBoardMemberAsync(board, stack.OwnerId, BoardRole.Owner);
         using var asOwner = CreateProvider(stack, stack.OwnerId);
 
         var failing = () => OrgTreeTestHost.SendIdempotentAsync(asOwner, new MakeBoardPrivateCommand(board, [colleague, outsider]));
@@ -329,7 +331,7 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
             Members = await c.BoardMembers.CountAsync(m => m.BoardId == board),
             Changes = await c.ResourceAccessChanges.CountAsync(x => x.ResourceId == board),
         });
-        unchanged.Should().Be(new { Visibility = BoardVisibility.Workspace, Members = 0, Changes = 0 });
+        unchanged.Should().Be(new { Visibility = BoardVisibility.Workspace, Members = 1, Changes = 0 });
 
         await OrgTreeTestHost.SendIdempotentAsync(asOwner, new MakeBoardPrivateCommand(board, [colleague, colleague]));
 
@@ -339,7 +341,7 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
             Members = await c.BoardMembers.Where(m => m.BoardId == board).Select(m => new { m.UserId, m.Role }).ToListAsync(),
         });
         after.Visibility.Should().Be(BoardVisibility.Private);
-        after.Members.Should().ContainSingle().Which.Should().Be(new { UserId = colleague, Role = BoardRole.Member });
+        after.Members.Should().BeEquivalentTo([new { UserId = stack.OwnerId, Role = BoardRole.Owner }, new { UserId = colleague, Role = BoardRole.Member }]);
         (await GetAsync(stack, colleague, board)).EntriesDisclosed.Should().BeTrue();
     }
 
