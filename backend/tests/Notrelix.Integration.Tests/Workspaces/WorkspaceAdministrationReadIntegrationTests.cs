@@ -455,6 +455,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         services.AddSingleton(credentialMock.Object);
         services.AddSingleton(clockMock.Object);
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(new Mock<Notrelix.Application.Common.Context.IClientMetadata>().Object);
 
         services.AddSingleton<IRequestDescriptorRegistry>(
             RequestDescriptorRegistry.Create(typeof(GetWorkspaceQuery).Assembly));
