@@ -122,7 +122,7 @@ export function PasswordField({
         aria-label={shown ? hideLabel : showLabel}
         aria-pressed={shown}
         onClick={() => setShown((open) => !open)}
-        className="absolute top-1 right-1 grid size-9 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="absolute top-1 right-1 grid size-9 cursor-pointer max-md:top-0 max-md:right-0 max-md:size-touch place-items-center rounded-[7px] border-0 bg-transparent text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         {shown ? (
           <EyeOff aria-hidden="true" className="size-4.5" />

@@ -817,6 +817,7 @@ export function MainTableView({
                     groupBy={view.state.group?.fieldId ?? null}
                     canEdit={capabilities.canEditFields}
                     onApply={view.applyCriteria}
+                    compact
                     {...save}
                   />
                 )}

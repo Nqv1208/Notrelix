@@ -49,7 +49,7 @@ test("a member archives an item from its card, sees it archived and restores it"
   // An archived item still opens from its address and offers Unarchive.
   await page.goto(card);
   await expect(
-    page.getByRole("dialog").getByText("This card is archived"),
+    page.getByRole("dialog").getByText("User 4 archived this card"),
   ).toBeVisible();
   await page.getByRole("button", { name: "Card actions" }).click();
   const restored = page.waitForResponse(

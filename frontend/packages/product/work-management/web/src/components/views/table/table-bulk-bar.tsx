@@ -28,10 +28,10 @@ import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
 const BAR_CLASS =
-  "absolute bottom-5.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar";
+  "absolute inset-x-3 bottom-5.5 z-20 mx-auto flex w-fit items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-md:bottom-3 max-md:py-2 max-md:pl-3";
 
 const BAR_BUTTON_CLASS =
-  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-compact font-medium text-inverse-foreground hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
+  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-compact font-medium text-inverse-foreground max-md:h-11 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
 
 export interface TableBulkBarProps {
   copy: MainTableCopy;
@@ -258,13 +258,13 @@ export function TableBulkBar({
                 type="date"
                 value={day}
                 onChange={(event) => setDay(event.target.value)}
-                className="h-8 rounded-[7px] border border-line-strong bg-background px-2 text-compact text-foreground"
+                className="h-8 rounded-[7px] border border-line-strong bg-background px-2 max-md:h-11 text-compact text-foreground"
               />
             </label>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                className="h-8 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium text-foreground hover:bg-state-hover-strong dark:bg-card"
+                className="h-8 cursor-pointer rounded-[7px] max-md:h-11 border border-line-strong bg-popover px-3 text-compact font-medium text-foreground hover:bg-state-hover-strong dark:bg-card"
                 onClick={() => {
                   setDueOpen(false);
                   setDay("");
@@ -276,7 +276,7 @@ export function TableBulkBar({
               <button
                 type="button"
                 disabled={day === ""}
-                className="h-8 cursor-pointer rounded-[7px] bg-primary px-3 text-compact font-semibold text-primary-foreground disabled:cursor-default disabled:opacity-50"
+                className="h-8 cursor-pointer rounded-[7px] max-md:h-11 bg-primary px-3 text-compact font-semibold text-primary-foreground disabled:cursor-default disabled:opacity-50"
                 onClick={() => {
                   setDueOpen(false);
                   onDue(day);

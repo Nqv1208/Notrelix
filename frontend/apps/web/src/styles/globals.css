@@ -500,6 +500,9 @@
   --color-table-group: var(--table-group);
   --color-table-selected: var(--table-selected);
 
+  /* Touch target (size-touch, min-h-touch, min-w-touch): the 44 px minimum of a control on a phone. */
+  --spacing-touch: var(--size-touch-target);
+
   /* Shape. */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

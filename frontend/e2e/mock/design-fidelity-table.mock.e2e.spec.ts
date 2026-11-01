@@ -280,26 +280,68 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expectRect(await rel(page, clear), t.doneChipClear, "chip clear");
     expect(await style(clear, "border-radius")).toBe("5px");
 
+    // The filter, sort, group and saved-filter controls are the member's view bar shared with the
+    // Kanban toolbar (WM-View-Bar): its labels carry a colon ("Sắp xếp: Hạn ↑") and a width that
+    // follows the wording, so a width is not compared; the left edge is compared where only
+    // wording-independent boxes sit to its left, and every later box is read as a 6 px gap after
+    // the one before it.
+    const controls: Locator[] = [];
     for (const [name, want] of [
       [/^Lọc$/, t.filter],
-      [/^Sắp xếp Hạn ↑$/, t.sort],
-      [/^Nhóm theo Trạng thái$/, t.group],
-      // 15 columns now: the board carries the field columns (WM-Table-Columns).
-      [/^Cột 9\/15$/, t.columns],
+      [/^Sắp xếp: Hạn ↑$/, { x: t.sort.x, y: t.sort.y, height: t.sort.height }],
+      [/^Nhóm: Trạng thái$/, { y: t.group.y, height: t.group.height }],
+      [/^Bộ lọc đã lưu$/, { y: t.group.y, height: t.group.height }],
+      // The board carries the field columns (WM-Table-Columns): the count is the live one.
+      [/^Cột \d+\/\d+$/, { y: t.columns.y, height: t.columns.height }],
     ] as const) {
       const button = page.getByRole("button", { name });
       expectRect(await rel(page, button), want, String(name));
+      controls.push(button);
+      if (name.source.startsWith("^Bộ lọc")) {
+        // The saved filters sit in the slack the artboard leaves before the separator: an icon button.
+        expect((await rel(page, button)).width).toBeLessThanOrEqual(40);
+        continue;
+      }
       expect(await style(button, "font-size")).toBe(TYPE.control.size);
       expect(await style(button, "font-weight")).toBe("400");
       expect(await style(button, "border-radius")).toBe("7px");
       expect(await colour(button, "color")).toBe(COLOUR.muted);
     }
+    const [, sort, group, saved] = controls as [
+      Locator,
+      Locator,
+      Locator,
+      Locator,
+      Locator,
+    ];
+    for (const [before, after, label] of [
+      [sort, group, "group after sort"],
+      [group, saved, "saved filters after group"],
+    ] as const) {
+      const a = await rel(page, before);
+      const b = await rel(page, after);
+      expect(Math.abs(b.x - (a.x + a.width + 6)), label).toBeLessThanOrEqual(1);
+    }
 
     const separator = page.locator("[data-table-toolbar] > span.w-px");
-    expectRect(await rel(page, separator), t.separator, "separator");
+    const sep = await rel(page, separator);
+    expectRect(
+      sep,
+      {
+        y: t.separator.y,
+        width: t.separator.width,
+        height: t.separator.height,
+      },
+      "separator",
+    );
     expect(await colour(separator, "background-color")).toBe(
       "rgb(230, 233, 238)",
     );
+    const columns = await rel(page, controls[4]!);
+    expect(
+      Math.abs(columns.x - (sep.x + sep.width + 10)),
+      "columns after the separator",
+    ).toBeLessThanOrEqual(1);
 
     const add = page.getByRole("button", { name: "Thêm công việc" });
     expectRect(await rel(page, add), t.primary, "Thêm công việc");
@@ -318,7 +360,8 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await colour(grid, "border-top-color")).toBe("rgb(230, 233, 238)");
 
     const heads = page.getByRole("columnheader");
-    expect(await heads.count()).toBe(MOCK.headCells.length);
+    // The board shows its field columns after the nine drawn ones (WM-Table-Columns).
+    expect(await heads.count()).toBeGreaterThanOrEqual(MOCK.headCells.length);
     for (const [index, want] of MOCK.headCells.entries()) {
       const head = heads.nth(index);
       const box = await rel(page, head);
@@ -344,7 +387,11 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     const g = MOCK.group;
     const first = page.getByRole("rowgroup", { name: "Cần làm" });
     const header = first.getByRole("row").first();
-    expectRect(await rel(page, header), g.first, "group header");
+    expectRect(
+      await rel(page, header),
+      { x: g.first.x, y: g.first.y, height: g.first.height },
+      "group header",
+    );
     expect(await colour(header, "background-color")).toBe(MOCK.head.background);
 
     const toggle = first.getByRole("button", { name: "Thu gọn nhóm Cần làm" });
@@ -374,7 +421,8 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     const addRow = add.locator("xpath=ancestor::*[@role='row'][1]");
     expectRect(
       await rel(page, addRow),
-      { x: 25, width: 1392, y: MOCK.add.y, height: MOCK.add.height },
+      // The add row spans every column, like a row: its width is not compared.
+      { x: 25, y: MOCK.add.y, height: MOCK.add.height },
       "add row",
     );
     expect(await style(add, "font-size")).toBe(TYPE.control.size);
@@ -393,7 +441,13 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     await openTable(page);
     const r = MOCK.row;
     const target = row(page, "ERP-151");
-    expectRect(await rel(page, target), r.first, "first row");
+    // A row spans every column; the board now shows its field columns after the nine drawn ones, so
+    // the artboard's 1392 px is the width of the first nine only and is not compared here.
+    expectRect(
+      await rel(page, target),
+      { x: r.first.x, y: r.first.y, height: r.first.height },
+      "first row",
+    );
     const columns = cells(target);
 
     const box = columns.nth(0).getByRole("checkbox");
@@ -672,7 +726,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     page,
   }) => {
     await openTable(page);
-    await page.getByRole("button", { name: /^Cột 9\/15$/ }).click();
+    await page.getByRole("button", { name: /^Cột \d+\/\d+$/ }).click();
     await page.getByRole("menuitemradio", { name: "Gọn" }).click();
     await page.keyboard.press("Escape");
     await expect(
