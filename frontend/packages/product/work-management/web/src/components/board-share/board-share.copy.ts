@@ -26,7 +26,7 @@ export const en = {
     comment: "See, comment, mention; files only inside comments",
     edit: "Create, edit, assign and move items",
     manage: "Board settings, who has access",
-    guestManage: "A guest can't manage the Board or share it further",
+    guestViewOnly: "A guest can only view what is shared with them",
   },
   general: {
     label: "Who can open the Board",
@@ -62,7 +62,7 @@ export const en = {
     guests: "{{count}} guests",
     guestOnly: "guest, sees only this Board",
     outside: "Outside the company",
-    levelCapped: "a guest is capped at Can edit",
+    levelCapped: "a guest is capped at Can view",
     counts:
       "{{people}} people and {{guests}} guests can open this Board. Only Board members and managers see who.",
     outsideDepartment: "outside {{space}}",
@@ -202,7 +202,7 @@ export const vi: BoardShareCopy = {
     comment: "Xem, bình luận, nhắc tên; đính kèm tệp chỉ trong bình luận",
     edit: "Tạo, sửa, giao, di chuyển việc",
     manage: "Thiết lập board, ai được vào board",
-    guestManage: "Khách không được quản lý board hay chia sẻ tiếp",
+    guestViewOnly: "Khách chỉ được xem phần được chia sẻ với họ",
   },
   general: {
     label: "Ai vào được board",
@@ -237,7 +237,7 @@ export const vi: BoardShareCopy = {
     guests: "{{count}} khách",
     guestOnly: "khách, chỉ thấy board này",
     outside: "Ngoài công ty",
-    levelCapped: "khách tối đa Có thể sửa",
+    levelCapped: "khách tối đa Có thể xem",
     counts:
       "{{people}} người và {{guests}} khách mở được board này. Chỉ thành viên và người quản lý board thấy là ai.",
     outsideDepartment: "ngoài {{space}}",

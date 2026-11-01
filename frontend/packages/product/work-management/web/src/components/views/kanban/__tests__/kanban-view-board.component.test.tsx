@@ -46,6 +46,7 @@ beforeAll(() => {
 afterEach(() => {
   toast.success.mockClear();
   toast.error.mockClear();
+  vi.useRealTimers();
 });
 
 function detailOf(board: FullBoardResponse, id: string): CardDetail {
@@ -400,6 +401,12 @@ describe("KanbanView on the ERP board", () => {
   }, 20_000);
 
   it("applies the route filter, shows the no-results bar and clears the filter with Bỏ lọc", async () => {
+    // The ERP seed dates its low-priority items up to 30/10: judge "overdue" on that day, not on the
+    // day the suite runs, or the filter that is meant to match nothing starts matching on 31/10.
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-10-30T05:00:00+07:00"),
+    });
     const onFilter = vi.fn();
     renderKanban(erpOwnerAccess(), { initialFilter: "p.low~o", onFilter });
     await ready();

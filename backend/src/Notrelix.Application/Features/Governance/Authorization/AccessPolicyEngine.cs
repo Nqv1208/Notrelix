@@ -24,7 +24,14 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         if (descriptor.Principal == ApplicationPrincipalKind.Anonymous
             || descriptor.Principal == ApplicationPrincipalKind.System)
         {
-            return AccessDecision.Allow();
+            // Public and system requests carry no permission contract (the descriptor validator and the
+            // architecture tests pin that). A request that does carry one is a misconfiguration: it must
+            // never be waved through here and skip the permission check it declares.
+            return descriptor.Access.RequiresPermission
+                ? AccessDecision.Deny(
+                    AccessDecisionKind.SecurityMisconfiguration,
+                    $"{descriptor.RequestType.Name} is {descriptor.Principal} but requires permission.")
+                : AccessDecision.Allow();
         }
 
         if (!context.UserId.HasValue || context.UserId == Guid.Empty)
@@ -460,7 +467,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// reached by a Space level, an unplaced one by the Workspace default
     /// (Guests need explicit access); no source → NotFound. The resource level
     /// is the highest level among every source (<see cref="ResolveResourceLevel"/>),
-    /// a Workspace Guest is capped at Editor (GOV-030), and the action threshold
+    /// a Workspace Guest is capped at Viewer (GOV-030), and the action threshold
     /// of GOV-027 applies to that level whatever the source → Forbidden below it.
     /// The same level is the authority for ACL management and grant ceilings.
     /// </summary>
@@ -496,8 +503,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// <item>unplaced Workspace-visible resource: Editor for non-Guest members
     ///   (every Board/Page action but permission management).</item>
     /// </list>
-    /// A Workspace Guest's level is capped at Editor whatever the source
-    /// (GOV-030). No source → <see cref="EffectiveResourceAccess.None"/>.
+    /// A Workspace Guest's level is capped at Viewer whatever the source
+    /// (GOV-030): a person outside the company reads what was shared with them. No source → <see cref="EffectiveResourceAccess.None"/>.
     /// </summary>
     private static EffectiveResourceAccess ResolveResourceLevel(AccessFacts facts, string? role)
     {
@@ -535,7 +542,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             }
         }
 
-        return guest && best.Rank > EditorRank ? best with { Rank = EditorRank } : best;
+        return guest && best.Rank > ViewerRank ? best with { Rank = ViewerRank } : best;
     }
 
     /// <summary>

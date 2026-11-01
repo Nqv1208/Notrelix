@@ -1945,7 +1945,7 @@ Rule count: 2690
 | `GOV-027` | `GOV` | Space roles map to permission levels deterministically | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-028` | `GOV` | Space and Team management authority | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-029` | `GOV` | Collections apply the single-read decision in the datastore | [`docs/product/governance.md`](../product/governance.md) |
-| `GOV-030` | `GOV` | A Guest's resource level is capped at Editor | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-030` | `GOV` | A Guest's resource level is capped at Viewer | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-031` | `GOV` | An explicit resource entry may expire | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-032` | `GOV` | The Workspace sharing policy can turn share links off | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-033` | `GOV` | Board child resources are authorized through their Board | [`docs/product/governance.md`](../product/governance.md) |

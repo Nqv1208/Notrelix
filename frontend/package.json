@@ -107,7 +107,8 @@
       "vite@7": "^7.3.7",
       "vite@8": "~8.2.4",
       "zod@4": "^4.6.6",
-      "body-parser@2": "^2.4.0"
+      "body-parser@2": "^2.4.0",
+      "node-forge@1": "^1.4.1"
     },
     "auditConfig": {
       "ignoreGhsas": [

@@ -34,11 +34,14 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
     private readonly Mock<IActorLookupService> _actors = new();
     private readonly Mock<IGuestResourceInvitationFacts> _facts = new();
     private readonly Mock<IAuditService> _audit = new();
+    private readonly Mock<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure> _memberEmails = new();
     private readonly List<IIntegrationEvent> _published = [];
 
     public ResourceInvitationLifecycleTests()
     {
         _events.Setup(e => e.Add(It.IsAny<IIntegrationEvent>())).Callback<IIntegrationEvent>(_published.Add);
+        _memberEmails.Setup(m => m.ResolveAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string>());
         _tokens.Setup(t => t.Generate(TokenPurpose.WorkspaceInvitation))
             .Returns(new IssuedOneTimeToken("raw-token", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1));
         _encryptor.Setup(e => e.Protect(It.IsAny<string>(), It.IsAny<string>())).Returns("protected");
@@ -52,7 +55,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
     private WorkspaceInvitation ResourceInvitation(Guid? invitedBy = null, Guid? boardId = null) =>
         WorkspaceInvitation.CreateForResource(
             TestAccountId, TestWorkspaceId, "guest@example.com",
-            new WorkspaceInvitationResourceGrant(BoardKind, boardId ?? BoardId, "Editor"),
+            new WorkspaceInvitationResourceGrant(BoardKind, boardId ?? BoardId, "Viewer"),
             InvitationTokenHash.Create(Hash), 1, invitedBy ?? TestUserId, TestNow.AddDays(-1));
 
     private ResendResourceInvitationCommandHandler ResendHandler() => new(
@@ -268,7 +271,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
             _encryptor.Object, _events.Object, _audit.Object, _actors.Object, _facts.Object);
 
         var result = await handler.Handle(
-            new InviteGuestToResourceCommand(BoardKind, BoardId, "Guest@Example.com", "Editor"), CancellationToken.None);
+            new InviteGuestToResourceCommand(BoardKind, BoardId, "Guest@Example.com", "Viewer"), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         var published = _published.Single().Should().BeOfType<WorkspaceInvitationDeliveryRequestedIntegrationEventV1>().Subject;
@@ -287,7 +290,8 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         var handler = new InviteMemberCommandHandler(
             DbContextMock.Object, _actors.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
             _tokens.Object, _encryptor.Object, _events.Object,
-            new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object));
+            new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
+            _memberEmails.Object);
 
         var act = () => handler.Handle(
             new InviteMemberCommand(TestWorkspaceId, "a@example.com", WorkspaceRole.Admin), CancellationToken.None);

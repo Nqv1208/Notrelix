@@ -1108,7 +1108,7 @@ function LevelMenu({
     >
       {LEVELS.map((level) => {
         const disabled =
-          (level === "manage" && guest) || (locked && level !== "manage");
+          (level !== "view" && guest) || (locked && level !== "manage");
         const checked = row.level === level;
         return (
           <div
@@ -1147,7 +1147,7 @@ function LevelMenu({
                     ? copy.menu.keepCurrent
                     : copy.menu.needManager
                   : disabled
-                    ? copy.levelHints.guestManage
+                    ? copy.levelHints.guestViewOnly
                     : copy.levelHints[level]}
               </small>
             </span>

@@ -238,7 +238,7 @@ export interface BoardSharingData {
     readonly email: string | null;
     readonly you: boolean;
     readonly owner: boolean;
-    /** A Guest is never above Editor; see `levelCapped`. */
+    /** A Guest is never above Viewer; see `levelCapped`. */
     readonly level: SharingLevel;
     readonly levelCapped: boolean;
     readonly source: SharingSource;

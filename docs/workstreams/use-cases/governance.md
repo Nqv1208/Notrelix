@@ -117,7 +117,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-B02 | Decide an account-scoped action from the account role | B | Server | Yes | No | No | No | IMPLEMENTING | No frontend check of denial; no API-level test of the Account cell. |
 | UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | INTEGRATING | No real e2e of the denied path; escalation tests are Application-level. |
 | UC-GOV-B04 | A Guest does not enumerate the workspace | B | Guest | Yes | Yes | Yes | Yes | HARDENING | Real spec covers boards only; the member-list 403 and Members page read-only state have no real e2e; no 1-px diff for the Guest view. |
-| UC-GOV-B05 | A Guest's resource level is capped at Editor | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | No real e2e; a Manager entry for a Guest is not refused at grant time (accepted by GOV-030). |
+| UC-GOV-B05 | A Guest's resource level is capped at Viewer | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | No real e2e; a Manager entry for a Guest is not refused at grant time (accepted by GOV-030). |
 | UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
 | UC-GOV-C02 | Change a custom role's name or actions | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
 | UC-GOV-C03 | Archive a custom role that has assignments | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
@@ -302,17 +302,17 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/members/me` (Workspaces.Members.GetMyMembership) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/members.tsx`, `use-workspace-viewer.ts` · Tests `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e `frontend/e2e/real/guest-permission.real.e2e.spec.ts` · Design `Final-Members`, `Final-M-Members`
 - State: HARDENING - Real spec covers boards only; the member-list 403 and Members page read-only state have no real e2e; no 1-px diff for the Guest view.
 
-### UC-GOV-B05 A Guest's resource level is capped at Editor
+### UC-GOV-B05 A Guest's resource level is capped at Viewer
 - Capability: B Built-in roles (team spec, Governance list)
 - Actors and permission: Guest; Board or Page manager who shares; `ManageBoardPermission`, `ManagePagePermission`
 - Preconditions: A Guest holds a Manager-level entry, Team grant, board role or Space role.
 - Input: Level (Viewer, Commenter, Editor, Manager).
-- Output: Effective level is the lower of the computed level and Editor. A Manager entry for a Guest is stored but never effective.
+- Output: Effective level is the lower of the computed level and Viewer (owner decision 2026-10-31: outside people are view-only). A higher entry for a Guest is stored but never effective; a resource invitation is accepted at Viewer only.
 - Main flow: 1. Engine computes the level from every source. 2. Applies the Guest cap. 3. The sharing read marks the entry `levelCapped`. 4. The UI shows Manager disabled for a Guest with the reason.
 - No-op / rejection / concurrency / retry: A Guest never manages settings, visibility, move, archive, delete, board members or permissions. No 422 on granting Manager (stored and capped, by decision).
 - UI states: disabled option with reason; read-only
 - Rules: [Governance §30.1](../../product/governance.md) GOV-030; WGREQ154.
-- Acceptance: Given a Guest with a Manager entry, When they change board settings, Then denied. When the manager opens sharing, Then the entry shows Editor with `levelCapped`.
+- Acceptance: Given a Guest with a Manager entry, When they change board settings, Then denied. When the manager opens sharing, Then the entry shows Viewer with `levelCapped`.
 - Evidence: BE `AccessPolicyEngine`, `ResourceAccessSummaryService.Sharing.cs` · FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx` · Tests `EffectiveBoardAccessTests`, `ResourceAccessSummaryServiceTests` · Real e2e none · Design `Final-Share`
 - State: INTEGRATING - No real e2e; a Manager entry for a Guest is not refused at grant time (accepted by GOV-030).
 
