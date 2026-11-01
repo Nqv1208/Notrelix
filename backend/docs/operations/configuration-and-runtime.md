@@ -329,6 +329,21 @@ Database connections and the serving role (`ConnectionStrings`, `Rls:RoleEnforce
 | `ConnectionStrings:NotrelixWorkerDb` | none (required while `Rls:RoleEnforcement` is `Enforce`; the host refuses to start without it) | The background login (`notrelix_worker`) used by the outbox and email dispatchers, the deduplication store, message consumers, sweeps, reapers and job locks. Only a host that opted out of enforcement falls back to the application string. The unbounded worker scope is honoured only on a connection logged in as a member of `notrelix_worker`. `--rls-apply` takes this login's password from it. |
 | `Rls:RoleEnforcement` | `Enforce` | `Enforce` fails startup when either login is a superuser, a BYPASSRLS role, a login that can `RESET ROLE` into one, or holds the owner's privileges on the tenant tables; when the application login is a member of `notrelix_worker`; when the background login is not; or when `ConnectionStrings:NotrelixWorkerDb` is unset. `Warn` logs the same findings and continues. `Off` does not inspect the roles (the OpenAPI export and the owner control hosts of the tests only). Every Compose stack (development, staging, production, real-e2e) and the container smoke run `Enforce`. |
 
+Platform operator console (optional; off, answering 404, while `Operator:Jwt:SigningKey` is empty):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `ConnectionStrings:NotrelixOperatorDb` | none | The operator login (`notrelix_operator`) used only by `/operator/*`. `--rls-apply` provisions the login with its password. Never defaulted and never falling back to another login. |
+| `Operator:Jwt:SigningKey` | none | At least 32 characters; must differ from `JwtSettings:SecretKey`. |
+| `Operator:Jwt:Issuer` / `Audience` | `notrelix-operator-console` | The audience must differ from `JwtSettings:Audience`. |
+| `Operator:Jwt:ExpireMinutes` | `30` | 1 to 120. |
+| `Operator:Seed:Email` / `Password` / `DisplayName` | none | The one operator seeded in advance; the password is at least 12 characters, hashed, never logged, and an existing email is never overwritten. |
+| `RateLimiting:Policies:OperatorSignInByIp` | 10 per minute | Operator sign-in throttle. |
+
+Compose variables: `NOTRELIX_OPERATOR_DB_CONNECTION`, `OPERATOR_JWT_SIGNING_KEY`, `OPERATOR_JWT_AUDIENCE`, `OPERATOR_SEED_EMAIL`,
+`OPERATOR_SEED_PASSWORD` (empty by default; the real-e2e stack carries test-only values). The operator host's origin goes
+into `Cors:AllowedOrigins` like the web origin.
+
 Compose variables behind these strings: `POSTGRES_USER` / `POSTGRES_PASSWORD` are the owner,
 `NOTRELIX_APP_DB_PASSWORD` and `NOTRELIX_WORKER_DB_PASSWORD` the two runtime logins (required by the staging overlay;
 production carries full strings in `CONNECTIONSTRINGS_NOTRELIXDB`, `CONNECTIONSTRINGS_NOTRELIXWORKERDB` and

@@ -48,6 +48,14 @@ services:
       JwtSettings__SecretKey: ${JWT_SECRET:?JWT_SECRET is required}
       JwtSettings__Issuer: ${JWT_ISSUER:?JWT_ISSUER is required}
       JwtSettings__Audience: ${JWT_AUDIENCE:?JWT_AUDIENCE is required}
+      # The platform operator console is off until both are set: its own database login (notrelix_operator,
+      # provisioned from this string) and its own signing key. Never reuse JWT_SECRET. The seeded operator
+      # password is read once and hashed; an existing operator is never overwritten.
+      ConnectionStrings__NotrelixOperatorDb: ${NOTRELIX_OPERATOR_DB_CONNECTION:-}
+      Operator__Jwt__SigningKey: ${OPERATOR_JWT_SIGNING_KEY:-}
+      Operator__Jwt__Audience: ${OPERATOR_JWT_AUDIENCE:-notrelix-operator-console}
+      Operator__Seed__Email: ${OPERATOR_SEED_EMAIL:-}
+      Operator__Seed__Password: ${OPERATOR_SEED_PASSWORD:-}
       Email__ApiKey: ${RESEND_API_KEY:?RESEND_API_KEY is required}
       Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}

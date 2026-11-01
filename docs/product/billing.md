@@ -194,6 +194,10 @@ Feature availability is resolved through canonical Entitlement/limit semantics.
 
 ---
 
+The catalog lives in the database, never in code. A Plan is a family (`family_key`, for example `free`) with numbered revisions (`revision`, unique per family) and a `tier`; a revision is immutable once published (a change is a new revision, the same content is idempotent) and carries its Plan Limits, each a number or unlimited. A Subscription keeps the revision it references, so deprecated and archived revisions still resolve for the Accounts on them; only active revisions are sold. A new Account starts on the newest active revision of family `free`, and the last active `free` revision cannot be deprecated or archived. The baseline families (`free`, `pro`, `business`, price 0 VND) are inserted at start only when the family is absent. The platform operator edits the catalog and moves an Account to a revision (owner decision 2026-10-31); a tenant never changes its own plan.
+
+Manual entitlement override: the platform operator grants an Account a feature limit (a number or unlimited) with a reason and an optional expiry, and revokes it; while active it is the limit that applies for that feature instead of the plan's, and it ends at revoke or expiry. Terminating a Subscription ends it now. Every operator action is audited (actor, reason, before, after, time). Workspace-scope overrides are not built.
+
 # 9. Plan lifecycle
 
 A Plan may be:

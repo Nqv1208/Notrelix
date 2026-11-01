@@ -58,6 +58,12 @@ services:
       JwtSettings__SecretKey: ${REAL_E2E_JWT_SECRET:-real-e2e-jwt-secret-at-least-thirty-two-chars}
       JwtSettings__Issuer: http://127.0.0.1:58000
       JwtSettings__Audience: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
+      # Test-only operator console values (this stack only; no real environment carries them).
+      ConnectionStrings__NotrelixOperatorDb: Host=postgres;Port=5432;Database=notrelix_real_e2e;Username=notrelix_operator;Password=${REAL_E2E_OPERATOR_DB_PASSWORD:-real-e2e-operator-db-password}
+      Operator__Jwt__SigningKey: ${REAL_E2E_OPERATOR_JWT_SECRET:-real-e2e-operator-signing-key-at-least-32-chars}
+      Operator__Seed__Email: ${REAL_E2E_OPERATOR_EMAIL:-operator@notrelix.test}
+      Operator__Seed__Password: ${REAL_E2E_OPERATOR_PASSWORD:-real-e2e-operator-password}
+      Cors__AllowedOrigins__1: http://127.0.0.1:${REAL_E2E_OPERATOR_PORT:-5180}
       Cors__AllowedOrigins__0: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
       Frontend__AppBaseUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
       # The browser comes back to this web app after a provider sign-in, a refusal included.
