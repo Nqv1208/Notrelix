@@ -51,6 +51,15 @@ public sealed class CsrfValidationMiddleware
             return;
         }
 
+        // The operator console authenticates with a bearer token from the Authorization header only: it has no
+        // cookie to ride on. Its sign-in carries no credential yet and sets no cookie, so there is no ambient
+        // session for a cross-site request to use (the session inventory records it as CSRF_NOT_REQUIRED).
+        if (context.GetEndpoint()?.Metadata.GetMetadata<Notrelix.API.Security.OperatorEndpointAttribute>() is not null)
+        {
+            await _next(context);
+            return;
+        }
+
         if (_classifier.IsBrowserCsrfApplicable(context.Request)
             && !_protector.Validate(context))
         {

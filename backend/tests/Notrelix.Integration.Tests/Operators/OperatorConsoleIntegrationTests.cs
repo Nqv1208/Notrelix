@@ -199,6 +199,31 @@ public sealed class OperatorConsoleIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task With_browser_csrf_enforcement_on_the_operator_signs_in_and_works_with_no_csrf_token_while_a_tenant_write_still_needs_one()
+    {
+        // The browser gate is on in every real environment. The console has no cookie to ride on, so it needs no
+        // token; a cookie-session tenant write without one is still refused (the gate is genuinely on).
+        using var strict = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString,
+            new Dictionary<string, string?> { ["Security:Csrf:Enabled"] = "true" });
+
+        using var anonymous = strict.CreateClient();
+        var signIn = await anonymous.PostAsJsonAsync("/operator/v1/auth/sign-in", new { email = OperatorEmail, password = OperatorPassword });
+        signIn.StatusCode.Should().Be(HttpStatusCode.OK, await signIn.Content.ReadAsStringAsync());
+
+        var token = (await signIn.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accessToken").GetString()!;
+        using var operatorClient = strict.CreateClient();
+        operatorClient.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        var suspend = await operatorClient.PostAsJsonAsync(
+            $"/operator/v1/accounts/{_tenant.AccountId}/suspend", new { reason = "csrf check", expectedVersion = 1 });
+        suspend.StatusCode.Should().NotBe(HttpStatusCode.Forbidden, "the operator console needs no CSRF token");
+
+        using var cookieWrite = strict.CreateClient();
+        var refused = await cookieWrite.PostAsJsonAsync($"/api/v1/workspaces/{_tenant.WorkspaceId}/boards/", new { title = "No token" });
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await refused.Content.ReadAsStringAsync()).Should().Contain("CSRF");
+    }
+
+    [Fact]
     public async Task Disabling_an_operator_ends_access_on_the_next_request_not_when_the_token_runs_out()
     {
         using var op = As(await SignInAsync());
