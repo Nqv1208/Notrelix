@@ -264,7 +264,10 @@ test("an approver can reject with a comment and the requester hears it", async (
   await approverContext.close();
 });
 
-test("a requester asks a board member to approve from the item page, sees it waiting, then sees the decision", async ({
+// The item page held the approval section and its "Request approval" menu entry; an item has no page
+// of its own any more (f2897fe9e) and the card popup has no approval block yet, so this journey has
+// no screen to drive. It stays, fixed up for the members read, until the lead places the section.
+test.fixme("a requester asks a board member to approve from the item page, sees it waiting, then sees the decision", async ({
   browser,
   page,
 }) => {
@@ -284,11 +287,10 @@ test("a requester asks a board member to approve from the item page, sees it wai
     "Workspace 3",
     "Engineering Tasks",
   );
-  const members = await apiRead<{ userId: string; name: string }[]>(
-    page,
-    `/workspaces/${workspace.id}/members`,
-  );
-  const approverName = members.find(
+  const members = await apiRead<{
+    items: { userId: string; name: string }[];
+  }>(page, `/workspaces/${workspace.id}/members`);
+  const approverName = members.items.find(
     (member) => member.userId === approverSelf.userId,
   )!.name;
   const groupId = (

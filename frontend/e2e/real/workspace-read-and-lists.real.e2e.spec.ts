@@ -257,3 +257,45 @@ test("the realtime gateway refuses a stranger's subscription to a workspace and 
   await strangerContext.close();
   await member.context.close();
 });
+
+test("the Owner of a seeded workspace opens their account page and the Recently deleted list loads for them, and for nobody else it is empty", async ({
+  browser,
+  page,
+}) => {
+  // member@notrelix.com owns Workspace 3 in the seed and joined it the way every member does: through the Account.
+  await signIn(page, realUsers.workspaceOwner);
+  const { accountId } = await apiRead<{ accountId: string }>(
+    page,
+    "/auth/bootstrap",
+  );
+  const mine = await apiRead<Summary[]>(page, "/workspaces");
+  const home = mine.find((row) => row.name === "Workspace 3");
+  expect(home, "the Owner's seeded workspace").toBeDefined();
+
+  const deleted = await page.request.get(
+    `${apiUrl}/accounts/${accountId}/workspaces/deleted`,
+  );
+  expect(deleted.status()).toBe(200);
+  await page.goto(`/workspaces/${home!.id}/account/workspaces`);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Your workspaces" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/couldn't load your recently deleted/),
+  ).toHaveCount(0);
+
+  // A person who owns nothing that was deleted reads the same list as empty: only an Owner sees what was deleted.
+  const memberContext = await browser.newContext();
+  const memberPage = await memberContext.newPage();
+  await signIn(memberPage, realUsers.workspaceAdmin);
+  const memberAccount = await apiRead<{ accountId: string }>(
+    memberPage,
+    "/auth/bootstrap",
+  );
+  const asMember = await memberPage.request.get(
+    `${apiUrl}/accounts/${memberAccount.accountId}/workspaces/deleted`,
+  );
+  expect(asMember.status()).toBe(200);
+  expect(await asMember.json()).toEqual([]);
+  await memberContext.close();
+});

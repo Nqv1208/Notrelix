@@ -264,7 +264,14 @@ function InviteForm({
       </p>
       <p className="m-0 text-center text-item-ui text-muted-foreground">
         {t.hasAccount}{" "}
-        <button type="button" onClick={onSignIn} className={LINK_BUTTON_CLASS}>
+        <button
+          type="button"
+          onClick={onSignIn}
+          className={cn(
+            LINK_BUTTON_CLASS,
+            "max-md:inline-flex max-md:min-h-touch max-md:items-center",
+          )}
+        >
           {t.signInToAccept}
         </button>
       </p>

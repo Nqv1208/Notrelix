@@ -73,11 +73,11 @@ const MARK_TONE: Record<string, string> = {
 
 const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 const BTN =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong aria-disabled:cursor-default dark:bg-card";
+  "inline-flex h-8 max-md:h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong aria-disabled:cursor-default dark:bg-card";
 const BTN_PRIMARY =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 aria-disabled:cursor-default aria-disabled:opacity-60";
+  "inline-flex h-8 max-md:h-11 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 aria-disabled:cursor-default aria-disabled:opacity-60";
 const LEVEL =
-  "box-border inline-flex h-[38px] items-center gap-1.5 rounded-[9px] border border-line-strong bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground aria-disabled:cursor-default dark:bg-card";
+  "box-border inline-flex h-[38px] items-center gap-1.5 rounded-[9px] max-md:h-11 border border-line-strong bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground aria-disabled:cursor-default dark:bg-card";
 
 /** Rows shown before "Show n more": the mockup list is 248 px, five rows. */
 const VISIBLE_ROWS = 5;
@@ -219,7 +219,7 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
             ?.querySelector<HTMLElement>("[data-f='ib']")
             ?.focus();
         }}
-        className="top-[56px] box-border flex w-[640px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-visible rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
+        className="top-[56px] box-border flex w-[640px] max-md:max-h-[calc(100dvh-72px)] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-visible rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
       >
         <div
           data-f="dh"
@@ -326,7 +326,10 @@ function ShareBody({
   const viewerRows = view.rows.filter((row) => row.viewer === true);
   return (
     <>
-      <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+      <div
+        data-f="db"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto"
+      >
         {notice ? (
           <ShareNotice notice={notice} copy={copy} onAddManager={addManager} />
         ) : null}
@@ -338,11 +341,11 @@ function ShareBody({
             managerToken={managerToken}
           />
         ) : (
-          <div data-f="add" className="flex gap-2">
+          <div data-f="add" className="flex gap-2 max-md:flex-wrap">
             <label
               data-f="in"
               title={copy.add.unavailable}
-              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
+              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:h-[42px] max-md:basis-full border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
             >
               <UserPlus
                 aria-hidden="true"
@@ -377,7 +380,10 @@ function ShareBody({
               type="button"
               aria-disabled="true"
               title={copy.add.unavailable}
-              className={cn(BTN_PRIMARY, "h-[38px] aria-disabled:opacity-100")}
+              className={cn(
+                BTN_PRIMARY,
+                "h-[38px] max-md:h-11 aria-disabled:opacity-100",
+              )}
             >
               {copy.add.invite}
             </button>
@@ -675,7 +681,7 @@ function ShareBody({
             type="button"
             onClick={() => setScreen("log")}
             className={cn(
-              "rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground hover:underline",
+              "rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground hover:underline max-md:min-h-11",
               FOCUS,
             )}
           >
@@ -757,10 +763,10 @@ function AddPeople({
     }
   };
   return (
-    <div data-f="add" className="relative flex gap-2">
+    <div data-f="add" className="relative flex gap-2 max-md:flex-wrap">
       <label
         data-f="in"
-        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
+        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:h-[42px] max-md:basis-full border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
       >
         <UserPlus
           aria-hidden="true"
@@ -843,7 +849,7 @@ function AddPeople({
         <ul
           role="listbox"
           aria-label={copy.add.levelList}
-          className="absolute top-[44px] right-[92px] z-10 m-0 flex w-[180px] list-none flex-col rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
+          className="absolute top-[44px] right-[92px] z-10 max-md:top-[100px] m-0 flex w-[180px] list-none flex-col rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
         >
           {LEVELS.map((option) => (
             <li key={option} role="option" aria-selected={option === level}>
@@ -878,7 +884,7 @@ function AddPeople({
         onClick={() => void invite()}
         className={cn(
           BTN_PRIMARY,
-          "h-[38px] disabled:cursor-default disabled:opacity-60",
+          "h-[38px] max-md:h-11 disabled:cursor-default disabled:opacity-60",
           FOCUS,
         )}
       >
@@ -1383,7 +1389,10 @@ function PrivateBody({
     general.kind === "space" ? general.name : view.workspaceName;
   return (
     <>
-      <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+      <div
+        data-f="db"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto"
+      >
         <div
           data-f="lbl"
           id="share-ga"
@@ -1616,7 +1625,10 @@ function LogBody({ copy, log, onClose, setScreen }: BodyProps) {
   const l = copy.log;
   return (
     <>
-      <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+      <div
+        data-f="db"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto"
+      >
         <div data-f="lh2" className="flex items-center gap-2">
           <button
             data-f="ib"

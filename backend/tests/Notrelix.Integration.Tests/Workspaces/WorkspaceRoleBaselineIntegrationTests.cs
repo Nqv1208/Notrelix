@@ -363,7 +363,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ListInvitations_GuestIsForbidden_AdminAndMemberList()
+    public async Task ListInvitations_OnlyOwnerAndAdminRead_MemberAndGuestAreForbidden()
     {
         var (stack, admin, member, guest) = await SeedAsync();
         using (var asAdmin = As(stack, admin))
@@ -371,13 +371,15 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
             await OrgTreeTestHost.SendAsync(asAdmin, new InviteMemberCommand(stack.WorkspaceId, "invited@example.com", WorkspaceRole.Member));
         }
 
-        using (var asGuest = As(stack, guest))
+        // Invited e-mail addresses are visible only to the people who may invite (lead decision 2026-11-02).
+        foreach (var reader in new[] { member, guest })
         {
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(asGuest, new GetWorkspaceInvitationsQuery(stack.WorkspaceId)))
-                .Should().ThrowAsync<AppForbidden>("invited emails are sensitive and a Guest does not enumerate the workspace");
+            using var provider = As(stack, reader);
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetWorkspaceInvitationsQuery(stack.WorkspaceId)))
+                .Should().ThrowAsync<AppForbidden>("invited emails are sensitive and only Owner and Admin read them");
         }
 
-        foreach (var reader in new[] { admin, member })
+        foreach (var reader in new[] { stack.OwnerId, admin })
         {
             using var provider = As(stack, reader);
             var rows = await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceInvitationsQuery(stack.WorkspaceId));
