@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetChecklistItemAssignee;
 
@@ -49,6 +50,7 @@ public class SetChecklistItemAssigneeCommandHandler(
             var visibleBoards = await visibility.VisibleBoardIdsAsync(checklist.WorkspaceId, assignee, ct);
             if (!visibleBoards.Contains(boardId))
                 throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao mục. Hãy chia sẻ board với họ trước.");
+            await BoardAssigneeGuard.EnsureNotViewerAsync(context, boardId, assignee, ct);
         }
 
         checklist.SetItemAssignee(request.ItemId, request.AssigneeUserId, currentUser.UserId, clock.UtcNow);

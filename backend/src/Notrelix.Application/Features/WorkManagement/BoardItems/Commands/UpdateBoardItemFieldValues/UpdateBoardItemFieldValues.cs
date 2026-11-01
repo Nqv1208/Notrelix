@@ -2,6 +2,7 @@ using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
@@ -188,6 +189,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         var existingUserIds = existingMembers.Select(member => member.UserId).ToHashSet();
         foreach (var userId in requested.Where(userId => !existingUserIds.Contains(userId)))
         {
+            await BoardAssigneeGuard.EnsureNotViewerAsync(_context, card.BoardId, userId, ct);
             var member = BoardItemMember.Create(
                 _requestContext.RequireAccountId(),
                 card.WorkspaceId, card.BoardId, card.Id,

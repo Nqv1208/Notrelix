@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 
@@ -24,6 +25,7 @@ public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizati
     {
         Guid? boardId;
         var inArchivedGroup = false;
+        Guid? privateTo = null;
         switch (resourceKind)
         {
             case "work-management.board-item":
@@ -44,12 +46,20 @@ public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizati
                     .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
                 break;
             case "work-management.board-view":
-                boardId = await _context.BoardViews.IgnoreQueryFilters().AsNoTracking()
-                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                var view = await _context.BoardViews.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId)
+                    .Select(x => new { x.BoardId, Private = x.Visibility == BoardViewVisibility.Private, x.CreatedBy })
+                    .FirstOrDefaultAsync(cancellationToken);
+                boardId = view?.BoardId;
+                privateTo = view is { Private: true } ? view.CreatedBy : null;
                 break;
             case "work-management.saved-filter":
-                boardId = await _context.SavedFilters.IgnoreQueryFilters().AsNoTracking()
-                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                var filter = await _context.SavedFilters.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId)
+                    .Select(x => new { x.BoardId, Private = x.Visibility == SavedFilterVisibility.Private, x.CreatedBy })
+                    .FirstOrDefaultAsync(cancellationToken);
+                boardId = filter?.BoardId;
+                privateTo = filter is { Private: true } ? filter.CreatedBy : null;
                 break;
             case "work-management.form":
                 boardId = await _context.Forms.IgnoreQueryFilters().AsNoTracking()
@@ -88,6 +98,6 @@ public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizati
                 return BoardChildScope.NotBoardChild;
         }
 
-        return new BoardChildScope(true, boardId, inArchivedGroup);
+        return new BoardChildScope(true, boardId, inArchivedGroup, privateTo);
     }
 }

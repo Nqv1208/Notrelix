@@ -122,10 +122,17 @@ export interface BoardShareDialogSurfaceProps {
   /** Change a person's permission; absent: the level buttons are inert. */
   readonly onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   readonly onRemove?: (rowId: string) => void;
+  /** The caller becomes the board's Owner when it has none (workspace Owner); absent: no such action. */
+  readonly onClaimOwner?: () => void;
+  /** Hands the board's ownership to the person (a board keeps at least one owner); absent: no such action. */
+  readonly onMakeOwner?: (rowId: string) => void;
   /** Switch who can open the Board; absent: "Đổi" is inert. */
   readonly onChangeGeneral?: (target: "private") => void;
   /** Confirms the switch to Private, adding the chosen people first; absent: inert. */
-  readonly onConfirmPrivate?: (addIds: readonly string[]) => void;
+  readonly onConfirmPrivate?: (
+    addIds: readonly string[],
+    addMeAsOwner: boolean,
+  ) => void;
   /** Workspace members the Board is not shared with yet; with `onInvite` the add field is live. */
   readonly candidates?: readonly ShareCandidate[];
   /** Gives the person the chosen permission on the Board; absent: the add field is inert. */
@@ -289,6 +296,8 @@ function ShareBody({
   onClose,
   onChangeLevel,
   onRemove,
+  onMakeOwner,
+  onClaimOwner,
   onChangeGeneral,
   candidates,
   onInvite,
@@ -312,6 +321,9 @@ function ShareBody({
     onChangeLevel && managers.length === 1 ? managers[0]!.id : null;
   const general = view.general;
   const [expandedRows, setExpandedRows] = useState(false);
+  // A board Viewer reads and is not a member: listed apart.
+  const memberRows = view.rows.filter((row) => row.viewer !== true);
+  const viewerRows = view.rows.filter((row) => row.viewer === true);
   return (
     <>
       <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
@@ -488,30 +500,32 @@ function ShareBody({
               data-f="lbl"
               className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground"
             >
-              {fill(copy.people.label, { count: view.rows.length })}
+              {fill(copy.people.label, { count: memberRows.length })}
             </div>
-            {view.rows.length === 0 ? (
-              <p className="m-0 text-compact leading-[1.45] text-meta-foreground">
-                {copy.people.empty}
-              </p>
+            {memberRows.length === 0 ? (
+              viewerRows.length === 0 ? (
+                <p className="m-0 text-compact leading-[1.45] text-meta-foreground">
+                  {copy.people.empty}
+                </p>
+              ) : null
             ) : (
               <div
                 data-f="pl"
                 role="group"
                 tabIndex={0}
                 aria-label={fill(copy.people.label, {
-                  count: view.rows.length,
+                  count: memberRows.length,
                 })}
                 className={cn(
                   "-mx-2 flex flex-col px-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [@media(max-height:820px)]:overflow-y-auto",
-                  expandedRows || view.rows.length <= VISIBLE_ROWS
+                  expandedRows || memberRows.length <= VISIBLE_ROWS
                     ? "max-h-[min(248px,max(120px,calc(100vh-573px)))]"
                     : "max-h-[min(250px,max(120px,calc(100vh-573px)))]",
                 )}
               >
                 {(expandedRows
-                  ? view.rows
-                  : view.rows.slice(0, VISIBLE_ROWS)
+                  ? memberRows
+                  : memberRows.slice(0, VISIBLE_ROWS)
                 ).map((row) => (
                   <PersonRow
                     key={row.id}
@@ -523,9 +537,10 @@ function ShareBody({
                     onRemove={onRemove}
                     locked={row.id === lockedId}
                     onAddManager={addManager}
+                    onMakeOwner={onMakeOwner}
                   />
                 ))}
-                {!expandedRows && view.rows.length > VISIBLE_ROWS ? (
+                {!expandedRows && memberRows.length > VISIBLE_ROWS ? (
                   <button
                     data-f="plmore"
                     type="button"
@@ -536,12 +551,73 @@ function ShareBody({
                     )}
                   >
                     {fill(copy.people.more, {
-                      count: view.rows.length - VISIBLE_ROWS,
+                      count: memberRows.length - VISIBLE_ROWS,
                     })}
                   </button>
                 ) : null}
               </div>
             )}
+            {view.canManage && !view.rows.some((row) => row.owner === true) ? (
+              <div
+                data-f="noowner"
+                role="status"
+                className="mt-1.5 flex items-start gap-2.5 rounded-[10px] border border-warning-text/40 bg-warning-subtle p-3 text-compact leading-normal text-warning-text"
+              >
+                <span className="flex-1">{copy.people.noOwner}</span>
+                {onClaimOwner && !view.rows.some((row) => row.isYou) ? (
+                  <button
+                    type="button"
+                    onClick={onClaimOwner}
+                    className={cn(BTN, FOCUS)}
+                  >
+                    {copy.people.claimOwner}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {view.canManage && memberRows.some((row) => row.ownable) ? (
+              <p
+                data-f="ownerhint"
+                className="m-0 mt-1.5 text-xs leading-[1.45] text-meta-foreground"
+              >
+                {copy.people.ownerHint}
+              </p>
+            ) : null}
+            {viewerRows.length > 0 ? (
+              <div className="mt-3" data-f="viewers">
+                <div
+                  data-f="vlbl"
+                  className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground"
+                >
+                  {fill(copy.people.viewersLabel, { count: viewerRows.length })}
+                </div>
+                <p className="m-0 mb-1 text-compact leading-[1.45] text-meta-foreground">
+                  {copy.people.viewersHint}
+                </p>
+                <div
+                  role="group"
+                  aria-label={fill(copy.people.viewersLabel, {
+                    count: viewerRows.length,
+                  })}
+                  className="-mx-2 flex flex-col px-2"
+                >
+                  {viewerRows.map((row) => (
+                    <PersonRow
+                      key={row.id}
+                      copy={copy}
+                      row={row}
+                      menuOpen={menuFor === row.id}
+                      setMenu={(open) => setMenuFor(open ? row.id : null)}
+                      onChangeLevel={onChangeLevel}
+                      onRemove={onRemove}
+                      locked={false}
+                      onAddManager={addManager}
+                      onMakeOwner={onMakeOwner}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -872,6 +948,7 @@ function PersonRow({
   onRemove,
   locked,
   onAddManager,
+  onMakeOwner,
 }: {
   copy: BoardShareCopy;
   row: ShareRowView;
@@ -882,6 +959,7 @@ function PersonRow({
   /** The only Manager of the Board: lower levels and removal are locked with the reason. */
   locked: boolean;
   onAddManager: () => void;
+  onMakeOwner?: (rowId: string) => void;
 }) {
   const p = copy.people;
   const trigger = useRef<HTMLButtonElement>(null);
@@ -1040,6 +1118,14 @@ function PersonRow({
                       }
                     : null
                 }
+                onMakeOwner={
+                  onMakeOwner && row.ownable
+                    ? () => {
+                        setMenu(false);
+                        onMakeOwner(row.id);
+                      }
+                    : null
+                }
                 onClose={() => {
                   setMenu(false);
                   trigger.current?.focus();
@@ -1060,6 +1146,7 @@ function LevelMenu({
   onAddManager,
   onPick,
   onRemove,
+  onMakeOwner,
   onClose,
 }: {
   copy: BoardShareCopy;
@@ -1068,6 +1155,7 @@ function LevelMenu({
   onAddManager: () => void;
   onPick: (level: ShareLevel) => void;
   onRemove: (() => void) | null;
+  onMakeOwner: (() => void) | null;
   onClose: () => void;
 }) {
   const menu = useRef<HTMLDivElement>(null);
@@ -1162,6 +1250,39 @@ function LevelMenu({
         );
       })}
       <div data-f="lsep" role="separator" className="mx-0 my-1 h-px bg-line" />
+      {onMakeOwner ? (
+        <div
+          data-f="lo"
+          role="menuitem"
+          tabIndex={-1}
+          onClick={onMakeOwner}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              onMakeOwner();
+            }
+          }}
+          className={itemClass}
+        >
+          <span>
+            <b
+              data-f="lot"
+              className="block text-nav leading-[1.45] font-semibold text-foreground"
+            >
+              {copy.menu.makeOwner}
+            </b>
+            <small
+              data-f="loh"
+              className="block text-xs leading-[1.45] font-normal text-meta-foreground"
+            >
+              {fill(copy.menu.makeOwnerHint, {
+                name: row.shortName ?? row.name,
+              })}
+            </small>
+          </span>
+        </div>
+      ) : null}
       <div
         data-f="lo"
         role="menuitem"
@@ -1244,8 +1365,16 @@ function PrivateBody({
   const [chosen, setChosen] = useState<ReadonlySet<string>>(
     () => new Set((impact?.people ?? []).map((person) => person.id)),
   );
+  // A Private board keeps an Owner. When it has none and the caller holds no board role, becoming its Owner is
+  // the caller's own explicit choice: nothing adds it for them.
+  const needsOwner =
+    !view.hiddenCounts &&
+    !view.rows.some((row) => row.owner === true || row.isYou);
+  const [addMe, setAddMe] = useState(false);
+  const blocked = needsOwner && !addMe;
   const confirm = (ids: readonly string[]) => {
-    onConfirmPrivate?.(ids);
+    if (blocked) return;
+    onConfirmPrivate?.(ids, needsOwner && addMe);
     setScreen("share");
     onClose();
   };
@@ -1404,6 +1533,27 @@ function PrivateBody({
             </p>
           </div>
         ) : null}
+        {needsOwner ? (
+          <label
+            data-f="ownchoice"
+            className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-line p-3 text-compact leading-normal"
+          >
+            <input
+              type="checkbox"
+              checked={addMe}
+              onChange={(event) => setAddMe(event.target.checked)}
+              className="m-0 mt-0.5 size-4 shrink-0 accent-primary"
+            />
+            <span>
+              <b className="block font-semibold text-foreground">
+                {c.addMeOwner}
+              </b>
+              <small className="block text-xs leading-[1.45] text-meta-foreground">
+                {c.addMeOwnerHint}
+              </small>
+            </span>
+          </label>
+        ) : null}
       </div>
       <div
         data-f="df"
@@ -1424,9 +1574,15 @@ function PrivateBody({
         <button
           data-f="btn"
           type="button"
-          aria-disabled={onConfirmPrivate ? undefined : true}
-          title={onConfirmPrivate ? undefined : copy.general.changeUnavailable}
-          onClick={onConfirmPrivate ? () => confirm([]) : undefined}
+          aria-disabled={onConfirmPrivate && !blocked ? undefined : true}
+          title={
+            blocked
+              ? c.addMeOwnerHint
+              : onConfirmPrivate
+                ? undefined
+                : copy.general.changeUnavailable
+          }
+          onClick={onConfirmPrivate && !blocked ? () => confirm([]) : undefined}
           className={cn(BTN, FOCUS)}
         >
           {c.switchOnly}
@@ -1434,9 +1590,19 @@ function PrivateBody({
         <button
           data-f="btn-pri"
           type="button"
-          aria-disabled={onConfirmPrivate ? undefined : true}
-          title={onConfirmPrivate ? undefined : copy.general.changeUnavailable}
-          onClick={onConfirmPrivate ? () => confirm([...chosen]) : undefined}
+          aria-disabled={onConfirmPrivate && !blocked ? undefined : true}
+          title={
+            blocked
+              ? c.addMeOwnerHint
+              : onConfirmPrivate
+                ? undefined
+                : copy.general.changeUnavailable
+          }
+          onClick={
+            onConfirmPrivate && !blocked
+              ? () => confirm([...chosen])
+              : undefined
+          }
           className={cn(BTN_PRIMARY, FOCUS)}
         >
           {fill(c.switchAdd, { count: chosen.size })}

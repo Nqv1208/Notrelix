@@ -30,13 +30,17 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
     private readonly IWorkspaceGrantProjectionService _grantProjection;
     private readonly IWorkspaceOwnerUpdateLocker _locker;
 
+    private readonly IAccessChangeSignal _access;
+
     public RemoveMemberCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
-        IWorkspaceOwnerUpdateLocker locker)
+        IWorkspaceOwnerUpdateLocker locker,
+        IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -79,6 +83,7 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
         await _grantProjection.ClearCustomRoleAssignmentsAsync(
             workspace.AccountId, workspace.Id, request.UserId, ct);
 
+        _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
     }
 }

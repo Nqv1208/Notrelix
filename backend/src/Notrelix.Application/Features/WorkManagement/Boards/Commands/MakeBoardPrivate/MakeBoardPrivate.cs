@@ -15,7 +15,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.MakeBoard
 /// (Editor) is bounded by the caller's own level like a single member add.
 /// </summary>
 [IdempotencyOperation("work-management.boards.make-board-private.v1")]
-public record MakeBoardPrivateCommand(Guid BoardId, IReadOnlyList<Guid> AddUserIds)
+public record MakeBoardPrivateCommand(Guid BoardId, IReadOnlyList<Guid> AddUserIds, bool AddMeAsOwner = false)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequireGrantPermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
@@ -31,6 +31,7 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
     private readonly IDateTimeProvider _clock;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IAccessChangeSignal _access;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public MakeBoardPrivateCommandHandler(
@@ -39,8 +40,10 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
         IDateTimeProvider clock,
         IWorkspaceAccessResolver workspaceAccess,
         BoardAccessChangeLog changeLog,
+        IAccessChangeSignal access,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _access = access;
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
@@ -84,7 +87,16 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
         var previous = board.Visibility;
         board.ChangeVisibility(BoardVisibility.Private, _requestContext.UserId, _clock.UtcNow);
         if (previous != board.Visibility)
+        {
+            // The board keeps an Owner. The actor becomes one only by choosing it (their own deliberate act, logged).
+            var addMe = request.AddMeAsOwner && !request.AddUserIds.Contains(_requestContext.UserId);
+            var mayAssign = addMe && (await _workspaceAccess.ResolveAsync(board.WorkspaceId, _requestContext.UserId, ct)).IsOwnerOrAdmin;
+            if (await BoardOwnership.EnsureOwnerForPrivateAsync(
+                    _context, board.Id, _requestContext.UserId, addMe, mayAssign, _clock.UtcNow, ct))
+                await _changeLog.MemberAddedAsync(board.Id, _requestContext.UserId, BoardRole.Owner, ct);
             await _changeLog.VisibilityChangedAsync(board.Id, board.Visibility, ct);
+            _access.Board(board.Id);
+        }
 
         return Result.Success();
     }

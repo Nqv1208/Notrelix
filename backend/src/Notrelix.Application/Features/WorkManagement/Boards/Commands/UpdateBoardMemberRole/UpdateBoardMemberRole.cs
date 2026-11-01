@@ -29,6 +29,8 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
     private readonly IBoardSharingSummary _sharing;
+    private readonly IAccessChangeSignal _access;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardMemberRoleCommandHandler(
@@ -37,8 +39,12 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         IDateTimeProvider dateTimeProvider,
         BoardAccessChangeLog changeLog,
         IBoardSharingSummary sharing,
+        IAccessChangeSignal access,
+        IWorkspaceAccessResolver workspaceAccess,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _workspaceAccess = workspaceAccess;
+        _access = access;
         _sharing = sharing;
         _realtime = realtime;
         _changeLog = changeLog;
@@ -67,13 +73,23 @@ public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMe
         var previous = member.Role;
         if (previous == request.Role) return Result.Success();
 
+        if (previous == BoardRole.Owner || request.Role == BoardRole.Owner)
+            await BoardOwnership.EnsureMayChangeOwnershipAsync(_context, _workspaceAccess, board.WorkspaceId, board.Id, _currentUser.UserId, ct);
+
+        if (previous == BoardRole.Owner)
+            await BoardOwnership.EnsureAnotherOwnerAsync(_context, request.BoardId, request.UserId, ct);
+
         // Lowering the only manager would leave the Board with nobody to manage it.
         if (BoardRoleLevels.RankOf(previous.ToString()) >= 4 && BoardRoleLevels.RankOf(request.Role.ToString()) < 4)
             await BoardManagerGuard.EnsureAnotherManagerAsync(_sharing, request.BoardId, request.UserId, ct);
 
+        if (request.Role.IsViewer() && !previous.IsViewer())
+            await BoardManagerGuard.EnsureNoHigherGrantAsync(_sharing, request.BoardId, request.UserId, ct);
+
         member.UpdateRole(request.Role);
         board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberRoleChangedAsync(request.BoardId, request.UserId, previous, request.Role, ct);
+        _access.BoardPerson(request.BoardId, request.UserId);
         return Result.Success();
     }
 }

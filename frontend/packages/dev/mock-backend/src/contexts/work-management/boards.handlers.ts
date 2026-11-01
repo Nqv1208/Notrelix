@@ -352,20 +352,8 @@ function projectFullBoard(
         .filter((card) => !card.parentItemId && !card.isArchived)
         .map((card, cardIndex) => projectItemSummary(card, cardIndex, store)),
     })),
-    members: store.getBoardMembers(board.id).flatMap((member) => {
-      const user = store.getUser(member.userId);
-      return user
-        ? [
-            {
-              userId: member.userId,
-              name: user.name,
-              avatar: user.avatarUrl,
-              role: member.role,
-              joinedAt: member.joinedAt,
-            },
-          ]
-        : [];
-    }),
+    members: projectBoardPeople(board.id, store, false),
+    viewers: projectBoardPeople(board.id, store, true),
     version: board.version ?? 1,
     spaceId: visibleSpaceId(store, board.workspaceId, board.spaceId),
     itemKeyPrefix: board.itemKeyPrefix ?? null,
@@ -1327,3 +1315,31 @@ export const boardsOperations = [
     },
   }),
 ];
+
+/** The board's people as the producer reads them: members, or Viewers (Observer, Guest) listed apart. */
+function projectBoardPeople(
+  boardId: string,
+  store: MockStore,
+  viewers: boolean,
+) {
+  return store
+    .getBoardMembers(boardId)
+    .filter(
+      (member) =>
+        (member.role === "Observer" || member.role === "Guest") === viewers,
+    )
+    .flatMap((member) => {
+      const user = store.getUser(member.userId);
+      return user
+        ? [
+            {
+              userId: member.userId,
+              name: user.name,
+              avatar: user.avatarUrl,
+              role: member.role,
+              joinedAt: member.joinedAt,
+            },
+          ]
+        : [];
+    });
+}

@@ -612,7 +612,8 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var handler = new SuspendMemberCommandHandler(
             context, requestContext.Object, clock.Object,
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
-            new WorkspaceOwnerUpdateLocker(context));
+            new WorkspaceOwnerUpdateLocker(context),
+            new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
         var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
             .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
@@ -659,7 +660,8 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var handler = new RemoveMemberCommandHandler(
             context, requestContext.Object, clock.Object,
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
-            new WorkspaceOwnerUpdateLocker(context));
+            new WorkspaceOwnerUpdateLocker(context),
+            new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
         var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
             .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)

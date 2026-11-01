@@ -146,6 +146,8 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 BoardArchived = reader.GetBoolean(19),
                 BoardDeleted = reader.GetBoolean(20),
                 ChildInArchivedGroup = boardChild.InArchivedGroup,
+                PrivateToAnotherPerson = boardChild.PrivateToUserId is { } owner && owner != context.UserId,
+                CustomRole = ParseCustomRole(NullableString(reader, 21)),
             };
         }
 
@@ -173,6 +175,23 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
         }
 
         return facts;
+    }
+
+    private static AccessCustomRole? ParseCustomRole(string? json)
+    {
+        if (json is null)
+        {
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        string[] Read(string name) => root.GetProperty(name).EnumerateArray().Select(e => e.GetString()!).ToArray();
+        return new AccessCustomRole(
+            root.GetProperty("id").GetGuid(),
+            root.GetProperty("base").GetString()!,
+            Read("added").ToHashSet(StringComparer.Ordinal),
+            Read("removed").ToHashSet(StringComparer.Ordinal));
     }
 
     private static AccessFacts ComposePageFacts(

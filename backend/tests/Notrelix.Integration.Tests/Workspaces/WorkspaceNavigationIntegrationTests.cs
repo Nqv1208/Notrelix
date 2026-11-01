@@ -47,7 +47,6 @@ using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Workspaces.Navigation;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
 namespace Notrelix.Integration.Tests.Workspaces;
@@ -151,9 +150,9 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
         var pin = () => SendAsync(provider, new PinResourceCommand(stack.WorkspaceId, NavigationResourceKinds.Board, board));
         var list = () => ListRecentsAsync(provider, stack.WorkspaceId);
 
-        await record.Should().ThrowAsync<AppForbidden>();
-        await pin.Should().ThrowAsync<AppForbidden>();
-        await list.Should().ThrowAsync<AppForbidden>();
+        await record.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        await pin.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        await list.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
         (await CountRowsAsync()).Should().Be((0, 0));
     }
 

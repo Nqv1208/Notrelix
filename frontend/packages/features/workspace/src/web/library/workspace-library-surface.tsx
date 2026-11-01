@@ -77,6 +77,9 @@ export interface WorkspaceLibrarySurfaceProps {
   readonly pendingPinKeys: ReadonlySet<string>;
   /** Members and admins create Boards and Docs; guests cannot. */
   readonly canCreate: boolean;
+  /** A custom role may take one of the two away (default: whatever `canCreate` says). */
+  readonly canCreateBoard?: boolean;
+  readonly canCreateDoc?: boolean;
   readonly onCreateBoard: () => void;
   readonly onCreateDoc: () => void;
   /** Pins or unpins one or many entries (bulk actions pass several). */
@@ -216,6 +219,8 @@ export function WorkspaceLibrarySurface({
   state,
   pendingPinKeys,
   canCreate,
+  canCreateBoard = true,
+  canCreateDoc = true,
   onCreateBoard,
   onCreateDoc,
   onSetPinned,
@@ -396,16 +401,20 @@ export function WorkspaceLibrarySurface({
             : copy.descriptionLoading}
         </p>
       </div>
-      {canCreate ? (
+      {canCreate && (canCreateBoard || canCreateDoc) ? (
         <div className="flex shrink-0 gap-2">
-          <Button size="sm" onClick={onCreateBoard}>
-            <Plus aria-hidden="true" />
-            {copy.newBoard}
-          </Button>
-          <Button size="sm" variant="outline" onClick={onCreateDoc}>
-            <Plus aria-hidden="true" />
-            {copy.newDoc}
-          </Button>
+          {canCreateBoard ? (
+            <Button size="sm" onClick={onCreateBoard}>
+              <Plus aria-hidden="true" />
+              {copy.newBoard}
+            </Button>
+          ) : null}
+          {canCreateDoc ? (
+            <Button size="sm" variant="outline" onClick={onCreateDoc}>
+              <Plus aria-hidden="true" />
+              {copy.newDoc}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </header>

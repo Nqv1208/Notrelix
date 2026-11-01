@@ -22,8 +22,11 @@ public class DeleteSpaceCommandHandler : IRequestHandler<DeleteSpaceCommand, Res
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public DeleteSpaceCommandHandler(IWorkspaceDbContext context, ISpaceContentReader content, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public DeleteSpaceCommandHandler(IWorkspaceDbContext context, ISpaceContentReader content, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _content = content;
         _requestContext = requestContext;
@@ -41,6 +44,7 @@ public class DeleteSpaceCommandHandler : IRequestHandler<DeleteSpaceCommand, Res
         // WSP-022: no cascade — child Spaces or placed resources block the delete.
         var content = await _content.ReadAsync(request.WorkspaceId, space.Id, ct);
         space.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow, content);
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

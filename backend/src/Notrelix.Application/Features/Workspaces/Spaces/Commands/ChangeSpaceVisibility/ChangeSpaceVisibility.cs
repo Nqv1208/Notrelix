@@ -22,8 +22,11 @@ public class ChangeSpaceVisibilityCommandHandler : IRequestHandler<ChangeSpaceVi
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ChangeSpaceVisibilityCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public ChangeSpaceVisibilityCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -39,6 +42,7 @@ public class ChangeSpaceVisibilityCommandHandler : IRequestHandler<ChangeSpaceVi
 
         var visibility = Enum.Parse<SpaceVisibility>(request.Visibility, ignoreCase: true);
         space.ChangeVisibility(visibility, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

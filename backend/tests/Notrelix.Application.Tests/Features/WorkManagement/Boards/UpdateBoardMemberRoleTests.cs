@@ -22,7 +22,9 @@ public class UpdateBoardMemberRoleTests : WorkManagementHandlerTestBase
             _currentUserMock.Object,
             DateTimeProviderMock.Object,
             new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object),
-            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object);
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object,
+            new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object,
+            new Mock<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver>().Object);
     }
 
     [Fact]

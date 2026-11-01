@@ -1,21 +1,26 @@
 namespace Notrelix.Application.Events.Governance;
 
-[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
-[EventName("governance.role.assigned", Version = 1)]
-public sealed record CustomRoleAssignedIntegrationEvent(
+/// <summary>
+/// A custom role changed: <c>Created</c>, <c>Updated</c>, <c>Archived</c> (the definition), or <c>Assigned</c>,
+/// <c>Removed</c> (one person in one workspace, named by <see cref="UserId"/>).
+/// </summary>
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Account)]
+[EventName("governance.role.changed", Version = 1)]
+public sealed record CustomRoleChangedIntegrationEvent(
     Guid EventId,
     Guid? AccountId,
-    Guid RoleId,
     Guid? WorkspaceId,
+    Guid RoleId,
     string RoleName,
-    Guid UserId,
+    string ChangeKind,
+    Guid? UserId,
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     eventId: EventId,
-    messageName: "governance.role.assigned",
+    messageName: "governance.role.changed",
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,

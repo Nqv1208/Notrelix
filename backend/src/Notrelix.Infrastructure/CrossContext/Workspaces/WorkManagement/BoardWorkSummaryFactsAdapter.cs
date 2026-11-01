@@ -79,7 +79,7 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
 
         var members = (await _context.BoardMembers
             .AsNoTracking()
-            .Where(m => ids.Contains(m.BoardId))
+            .Where(m => ids.Contains(m.BoardId) && !BoardRoles.Viewers.Contains(m.Role))
             .GroupBy(m => m.BoardId)
             .Select(g => new { BoardId = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken)).ToDictionary(x => x.BoardId, x => x.Count);

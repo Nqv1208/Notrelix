@@ -920,7 +920,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 65, 86; DESIGN.md sections 35, 37.
 - Acceptance: Given an archived workspace, When a Member opens it, Then a read-only banner shows and write controls are inert.
 - Evidence: BE statuses of B01 · FE `workspace-scope-state-surface.tsx`, `feature-unavailable-surface.tsx` · Design `Final-States` · Tests `workspace-shell.mock.e2e.spec.ts` · Real e2e none
-- State: IMPLEMENTING — Archived banner with action; plan-limited state; real e2e.
+- State: IMPLEMENTING — Archived banner with action; plan-limited state; real e2e. real-stack check 2026-10-31: a person who is not an active member (never joined, suspended, removed) now gets the same 404 as a made-up workspace id on every workspace-scoped route, from the one workspace gate in ExecutionContextBehavior; bodies byte-identical except echoed ids on members, members/me, members/me/access, roles, api-tokens, boards, pages, spaces and the custom-role PUT and DELETE; a member who lacks the action keeps 403; invitation accept by token and account routes unchanged, commit 9ca19ef3a
 
 ### UC-WSP-I06 Always see which workspace I am in
 - Capability: I Workspace selection / switch integration

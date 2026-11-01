@@ -166,7 +166,10 @@ public sealed class WorkspaceSecurityExtIntegrationTests : IAsyncLifetime
         {
             using var provider = _host.CreateProvider(stack.AccountId, userId);
             var read = () => OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId));
-            await read.Should().ThrowAsync<AppForbidden>();
+            if (userId == outsider)
+                await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>("a person who is not an active member is told the workspace does not exist");
+            else
+                await read.Should().ThrowAsync<AppForbidden>();
         }
 
         var cross = () => OrgTreeTestHost.QueryAsync(asOwnerOfOther, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId));

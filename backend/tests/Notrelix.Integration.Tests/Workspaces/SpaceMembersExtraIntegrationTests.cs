@@ -119,7 +119,10 @@ public sealed class SpaceMembersExtraIntegrationTests : IAsyncLifetime
         {
             using var provider = _host.CreateProvider(stack.AccountId, userId);
             var read = () => OrgTreeTestHost.QueryAsync(provider, new GetSpaceMembersExtraQuery(stack.WorkspaceId, hidden));
-            await read.Should().ThrowAsync<AppForbidden>();
+            if (userId == outsider)
+                await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>("a person who is not an active member is told the workspace does not exist");
+            else
+                await read.Should().ThrowAsync<AppForbidden>();
         }
 
         var cross = () => OrgTreeTestHost.QueryAsync(asOwner, new GetSpaceMembersExtraQuery(stack.WorkspaceId, foreign));

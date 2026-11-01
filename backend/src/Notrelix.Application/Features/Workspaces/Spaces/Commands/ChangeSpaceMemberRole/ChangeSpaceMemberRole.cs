@@ -27,8 +27,11 @@ public class ChangeSpaceMemberRoleCommandHandler : IRequestHandler<ChangeSpaceMe
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ChangeSpaceMemberRoleCommandHandler(ISpaceStore spaces, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    private readonly IAccessChangeSignal _access;
+
+    public ChangeSpaceMemberRoleCommandHandler(ISpaceStore spaces, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _spaces = spaces;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -42,6 +45,7 @@ public class ChangeSpaceMemberRoleCommandHandler : IRequestHandler<ChangeSpaceMe
         var subjectType = Enum.Parse<SpaceMemberSubjectType>(request.SubjectType, ignoreCase: true);
         var role = Enum.Parse<SpaceRole>(request.Role, ignoreCase: true);
         space.ChangeMemberRole(subjectType, request.SubjectId, role, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        if (string.Equals(request.SubjectType, "User", StringComparison.OrdinalIgnoreCase)) _access.WorkspacePerson(request.WorkspaceId, request.SubjectId); else _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

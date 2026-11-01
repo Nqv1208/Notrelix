@@ -21,6 +21,10 @@ public class OwnedEntityMutationVisibilityTests
         "Notrelix.Domain.WorkManagement.Items.BoardItemLabel",
         "Notrelix.Domain.WorkManagement.Items.BoardItemMember",
 
+        // ── Governance ── a person's role assignment is its own row per workspace; archiving a role moves its
+        // holders in several workspaces, so no single aggregate owns the move
+        "Notrelix.Domain.Governance.Roles.MemberRoleAssignment",
+
         // ── Analytics ──
         "Notrelix.Domain.Analytics.Dashboards.DashboardWidget",
 

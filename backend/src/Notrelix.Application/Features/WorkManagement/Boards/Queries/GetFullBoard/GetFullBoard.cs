@@ -256,15 +256,16 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
         var boardMemberActors = await _actorLookup.FindManyAsync(boardMemberUserIds, cancellationToken);
         var boardMemberActorMap = boardMemberActors.ToDictionary(a => a.UserId);
 
-        var members = boardMemberEntities
-            .Select(m => new BoardMemberDto(
-                m.UserId,
-                boardMemberActorMap.TryGetValue(m.UserId, out var actor) ? actor.Name : "Unknown",
-                boardMemberActorMap.TryGetValue(m.UserId, out var a) ? a.AvatarUrl : null,
-                m.Role.ToString(),
-                m.JoinedAt.UtcDateTime
-            ))
-            .ToList();
+        BoardMemberDto ToMemberDto(BoardMember m) => new(
+            m.UserId,
+            boardMemberActorMap.TryGetValue(m.UserId, out var actor) ? actor.Name : "Unknown",
+            boardMemberActorMap.TryGetValue(m.UserId, out var a) ? a.AvatarUrl : null,
+            m.Role.ToString(),
+            m.JoinedAt.UtcDateTime);
+
+        // A Viewer reads the Board and is not one of its members: listed apart.
+        var members = boardMemberEntities.Where(m => !m.Role.IsViewer()).Select(ToMemberDto).ToList();
+        var viewers = boardMemberEntities.Where(m => m.Role.IsViewer()).Select(ToMemberDto).ToList();
 
         // A board reachable through an explicit grant may sit in a Space the
         // caller cannot see; that Space's id is not disclosed.
@@ -291,7 +292,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             board.IsArchived,
             lanes?.Sum(lane => lane.FilteredCount),
             lanes?.Sum(lane => lane.ItemCount),
-            lanes
+            lanes,
+            viewers
         ));
     }
 

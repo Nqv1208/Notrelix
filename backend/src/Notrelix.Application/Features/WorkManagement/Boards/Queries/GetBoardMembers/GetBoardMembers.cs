@@ -29,7 +29,7 @@ public class GetBoardMembersQueryHandler : IRequestHandler<GetBoardMembersQuery,
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
         var memberEntities = await _context.BoardMembers.AsNoTracking()
-            .Where(m => m.BoardId == request.BoardId)
+            .Where(m => m.BoardId == request.BoardId && !BoardRoles.Viewers.Contains(m.Role))
             .ToListAsync(ct);
 
         var userIds = memberEntities.Select(m => m.UserId).Distinct().ToList();

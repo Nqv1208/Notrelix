@@ -13,6 +13,7 @@ public interface IGovernanceDbContext
     DbSet<CustomRole> CustomRoles { get; }
     DbSet<CustomRolePermission> CustomRolePermissions { get; }
     DbSet<MemberRoleAssignment> MemberRoleAssignments { get; }
+    DbSet<CustomRoleChange> CustomRoleChanges { get; }
     DbSet<ShareLink> ShareLinks { get; }
     DbSet<WorkspacePolicy> WorkspacePolicies { get; }
     DbSet<PermissionTemplate> PermissionTemplates { get; }

@@ -52,6 +52,14 @@ export const en = {
   },
   people: {
     label: "Permissions on this Board · {{count}}",
+    viewersLabel: "Viewers (read only) · {{count}}",
+    noOwner:
+      "No owner: this board has none. Make a member the owner, or take it yourself if you are a workspace owner.",
+    claimOwner: "Make me owner",
+    ownerHint:
+      "A board always keeps an owner. To hand it over, make someone else the owner first.",
+    viewersHint:
+      "A viewer can only read. Choosing a higher level changes their board role first.",
     empty: "No one has been added to this Board on their own.",
     you: "(you)",
     owner: "Board owner",
@@ -84,6 +92,8 @@ export const en = {
     lastNote:
       "A Board needs at least one person or team at Manager level. Make someone else a Manager first.",
     addManager: "Add a Manager",
+    makeOwner: "Make owner",
+    makeOwnerHint: "{{name}} becomes an owner of this Board",
   },
   link: {
     title: "Board link",
@@ -121,6 +131,9 @@ export const en = {
     cancel: "Cancel",
     switchOnly: "Switch, add no one",
     switchAdd: "Add {{count}} people, then switch",
+    addMeOwner: "Add me as an owner of this Board",
+    addMeOwnerHint:
+      "This Board has no owner, and a Private board needs one. Choose to become its owner (kept in the permission history), or ask a workspace owner or admin to assign one.",
     keepInSpace: "**{{names}}** (already added on their own)",
     keepGuest: "guest **{{name}}**",
     keepAnd: " and ",
@@ -227,6 +240,14 @@ export const vi: BoardShareCopy = {
   },
   people: {
     label: "Quyền riêng trên board này · {{count}}",
+    viewersLabel: "Người xem (chỉ đọc) · {{count}}",
+    noOwner:
+      "Chưa có chủ: board này chưa có chủ. Hãy giao quyền chủ cho một thành viên, hoặc tự nhận nếu bạn là chủ workspace.",
+    claimOwner: "Nhận làm chủ",
+    ownerHint:
+      "Board luôn có một chủ. Muốn trao lại, hãy giao quyền chủ cho người khác trước.",
+    viewersHint:
+      "Người xem chỉ đọc. Chọn mức cao hơn sẽ đổi vai trò trên board của họ trước.",
     empty: "Chưa có ai được thêm riêng vào board này.",
     you: "(bạn)",
     owner: "Chủ board",
@@ -259,6 +280,8 @@ export const vi: BoardShareCopy = {
     lastNote:
       "Board cần ít nhất một người hoặc nhóm ở mức Quản lý. Thêm người khác làm Quản lý trước.",
     addManager: "Thêm Quản lý",
+    makeOwner: "Giao quyền chủ board",
+    makeOwnerHint: "{{name}} trở thành chủ của board này",
   },
   link: {
     title: "Liên kết của board",
@@ -296,6 +319,9 @@ export const vi: BoardShareCopy = {
     cancel: "Huỷ",
     switchOnly: "Chuyển, không thêm ai",
     switchAdd: "Thêm {{count}} người rồi chuyển",
+    addMeOwner: "Thêm tôi làm chủ board này",
+    addMeOwnerHint:
+      "Board này chưa có chủ, mà board riêng tư cần một chủ. Hãy chọn làm chủ board (được ghi vào lịch sử quyền), hoặc nhờ chủ hay quản trị viên workspace chỉ định một người.",
     keepInSpace: "**{{names}}** (đã được thêm riêng)",
     keepGuest: "khách **{{name}}**",
     keepAnd: " và ",

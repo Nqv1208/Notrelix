@@ -12,11 +12,11 @@ public class AutomationPermissionMarkerTests
     private static readonly Guid Workspace = Guid.NewGuid();
 
     [Fact]
-    public void CreateWebhookRule_RequiresManageIntegrationsInAdditionToSettings()
+    public void CreateWebhookRule_RequiresManageIntegrationsInAdditionToManageAutomation()
     {
         var command = new CreateAutomationRuleCommand(Workspace, "r", "ItemCreated", "Webhook", """{"webhookPath":"h"}""");
 
-        ((IRequirePermission)command).Action.Should().Be(PermissionAction.ManageWorkspaceSettings);
+        ((IRequirePermission)command).Action.Should().Be(PermissionAction.ManageAutomation);
         ((IRequireAdditionalPermission)command).AdditionalActionNames.Should().Equal(nameof(PermissionAction.ManageIntegrations));
     }
 
@@ -41,8 +41,8 @@ public class AutomationPermissionMarkerTests
     public void ReadingRulesAndExecutions_RequiresTheManagingPermission()
     {
         ((IRequirePermission)new GetWorkspaceAutomationsQuery(Workspace)).Action
-            .Should().Be(PermissionAction.ManageWorkspaceSettings);
+            .Should().Be(PermissionAction.ManageAutomation);
         ((IRequirePermission)new GetAutomationExecutionsQuery(Guid.NewGuid())).Action
-            .Should().Be(PermissionAction.ManageWorkspaceSettings);
+            .Should().Be(PermissionAction.ManageAutomation);
     }
 }

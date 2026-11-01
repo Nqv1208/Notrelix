@@ -380,6 +380,17 @@ enabling any Rule also name `ManageIntegrations` through `IRequireAdditionalPerm
 For that, the workspace-role baseline lets `ManageIntegrations` apply to the `automation.rule` resource
 kind next to `workspaces.workspace` and `integrations.calendar-integration`; it never widens to other kinds.
 
+# 12.2a. Custom roles in the decision (owner decision 2026-10-31)
+
+Product meaning is Governance GOV-026. Where it lives in the engine:
+
+- The access facts carry the person's active custom role (`AccessFacts.CustomRole`: id, fixed base, added and removed action names), read in the same query as the other facts and never for a workspace Owner. An archived role is not read, so it grants nothing. A role of a downgraded plan stays effective.
+- `AccessPolicyEngine` swaps the built-in role for the role's base after the explicit permission rules (Deny first, then Allow). What the role adds applies only where the decision reads the workspace baseline and only for an addable, non-locked action on a non-Guest base; what it removes applies on the workspace baseline, on Space level derived from the baseline, and on Board and Page levels derived from the workspace default. An explicit grant, board membership or Space entry is never removed by a role.
+- `ResourceVisibilityQuery` reads the same effective base so a collection returns what a single read would allow.
+- Definitions are Account-scoped (`governance.custom_roles` carries `account_id` only, RLS by account access); assignments are workspace-scoped, and an Account Owner or Admin also reaches the assignments of the account so archiving can move every holder. Every change appends a `governance.custom_role_changes` row, an outbox event `governance.role.changed` and an access-change signal so realtime re-authorizes at once.
+- The plan gate is the Billing capability `CUSTOM_ROLES` read through `IBillingCapabilityFacts` in the handler; the seat check is `IBillingSeatGate`.
+- Problem responses carry `ruleCode` next to `errorCode` so a client branches on the refusing rule.
+
 # 12.3. Automation executor identity (AUT-020)
 
 A Rule acts as its **executor**: the creator, stored on the Rule (`ExecutorUserId`), never the trigger actor

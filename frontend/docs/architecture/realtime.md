@@ -118,8 +118,13 @@ session-cookie authenticated) speaks protocol v1:
 ```text
 client → server: subscribe | unsubscribe | ping | pong
 server → client: ready | subscribed | unsubscribed | subscription-error
-                 | ping | pong | event (no payload)
+                 | access-changed | ping | pong | event (no payload)
 ```
+
+`access-changed` carries only the workspace id. The gateway sends it to the person whose own access changed
+(role, custom role, suspension, board role, resource grant or revoke) after the change committed. The client
+treats it as a recovery signal (reason `access-changed`) and revalidates the workspace scope over REST, so
+buttons and lists follow the new access at once. It never says what changed.
 
 `streamVersion` is a per-`streamKey` gap-free counter allocated by the server.
 `resourceVersion` is informational only. Close codes 1001/1006/1013/4408

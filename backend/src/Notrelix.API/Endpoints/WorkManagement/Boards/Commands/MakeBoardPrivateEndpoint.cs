@@ -23,7 +23,7 @@ public static class MakeBoardPrivateEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MakeBoardPrivateCommand(boardId, body.AddUserIds ?? []), cancellationToken);
+        var result = await sender.Send(new MakeBoardPrivateCommand(boardId, body.AddUserIds ?? [], body.AddMeAsOwner), cancellationToken);
         return result.ToNoContentResult();
     }
 }

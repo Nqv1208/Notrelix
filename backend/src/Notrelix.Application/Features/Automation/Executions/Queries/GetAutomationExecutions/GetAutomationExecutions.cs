@@ -13,7 +13,7 @@ namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomat
 public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, int PageSize = 20, Guid? BoardId = null)
     : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => BoardId is null ? PermissionAction.ManageWorkspaceSettings : PermissionAction.ManageBoard;
+    public PermissionAction Action => BoardId is null ? PermissionAction.ManageAutomation : PermissionAction.ManageBoard;
     public ResourceRef Resource => BoardId is { } board
         ? ResourceRef.Create(ResourceKind.Create("work-management.board"), board)
         : ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);

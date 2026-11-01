@@ -30,8 +30,11 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
     private readonly IWorkspaceGrantProjectionService _grantProjection;
     private readonly IWorkspaceOwnerUpdateLocker _locker;
 
-    public SuspendMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IWorkspaceOwnerUpdateLocker locker)
+    private readonly IAccessChangeSignal _access;
+
+    public SuspendMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IWorkspaceOwnerUpdateLocker locker, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -68,6 +71,7 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
             _dateTimeProvider.UtcNow,
             ct);
 
+        _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
     }
 }

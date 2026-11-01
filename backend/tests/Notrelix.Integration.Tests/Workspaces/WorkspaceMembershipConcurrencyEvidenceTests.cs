@@ -196,9 +196,11 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         await using var txB = await contextB.Database.BeginTransactionAsync();
 
         var handlerA = new UpdateMemberRoleCommandHandler(
-            contextA, RequestContext(ownerAId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA));
+            contextA, RequestContext(ownerAId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA),
+            new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
         var handlerB = new RemoveMemberCommandHandler(
-            contextB, RequestContext(ownerBId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB));
+            contextB, RequestContext(ownerBId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB),
+            new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
         // Handler A wins the race: it acquires the workspace row lock, observes
         // two owners, demotes ownerA, and holds the lock until we commit below.
@@ -269,7 +271,8 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         var transfer = new TransferOwnershipCommandHandler(
             contextA, RequestContext(ownerId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA));
         var remove = new RemoveMemberCommandHandler(
-            contextB, RequestContext(ownerId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB));
+            contextB, RequestContext(ownerId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB),
+            new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
         (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1), CancellationToken.None))
             .Succeeded.Should().BeTrue();

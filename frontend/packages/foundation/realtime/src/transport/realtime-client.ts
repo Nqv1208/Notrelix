@@ -87,6 +87,8 @@ export type RealtimeRecoveryReason =
   | "duplicate"
   /** `streamVersion` went backwards (stream reset). */
   | "reset"
+  /** The person's own access changed (role, grant, suspension): refetch what depends on it now. */
+  | "access-changed"
   /** Server revoked/denied the subscription: permission was lost. */
   | "permission-lost"
   /** Server rejected the subscription for a non-permission reason. */
@@ -585,6 +587,9 @@ export class RealtimeClient implements RealtimeTransport {
         return;
       case "unsubscribed":
         return;
+      case "access-changed":
+        this.handleAccessChanged(message.workspaceId);
+        return;
       case "subscription-error":
         this.handleSubscriptionError(message);
         return;
@@ -650,6 +655,17 @@ export class RealtimeClient implements RealtimeTransport {
 
     // Events arrive strictly after this ack; state fetched now is the base.
     this.emitRecovery(wire, "subscribed");
+  }
+
+  // One recovery signal per change: the workspace stream carries it, so the host revalidates the workspace
+  // scope once (a board stream of the same workspace would only repeat it).
+  private handleAccessChanged(workspaceId: string): void {
+    for (const wire of this.wireSubscriptions.values()) {
+      if (wire.workspaceId === workspaceId && wire.scope.kind === "workspace") {
+        this.emitRecovery(wire, "access-changed");
+        return;
+      }
+    }
   }
 
   private handleSubscriptionError(

@@ -28,7 +28,7 @@ public sealed record BillingCapabilityDto(
 public record GetWorkspaceBillingCapabilitiesQuery(Guid WorkspaceId)
     : IQuery<Result<IReadOnlyList<BillingCapabilityDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+    public PermissionAction Action => PermissionAction.ViewBilling;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("billing.capability"), WorkspaceId, WorkspaceId);
 }
 

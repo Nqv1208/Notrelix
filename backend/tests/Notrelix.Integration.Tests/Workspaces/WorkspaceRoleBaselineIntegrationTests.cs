@@ -58,6 +58,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
 
     private static void RegisterServices(IServiceCollection services)
     {
+        services.AddSingleton(new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
         services.AddScoped<AccessGrantProjectionService>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<IWorkspaceOwnerUpdateLocker, WorkspaceOwnerUpdateLocker>();

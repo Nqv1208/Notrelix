@@ -10,6 +10,7 @@ namespace Notrelix.Application.Features.WorkManagement.Common.DTOs;
 /// <param name="SpaceName">Present only when the caller can see the Space.</param>
 /// <param name="SpacePeople">People the Space's entries reach (Guests excluded); present only when the caller can see the Space.</param>
 /// <param name="PrivateImpact">Null unless the caller manages the Board.</param>
+/// <param name="CanAssignOwner">The caller may make someone an Owner or change an Owner: a Board Owner or a Workspace Owner or Admin. A Board Admin manages Members and Viewers only.</param>
 /// <param name="Version">The Board version of this read: a member role change or removal sends it back, and a stale one changes nothing.</param>
 public record BoardSharingDto(
     Guid BoardId,
@@ -25,7 +26,8 @@ public record BoardSharingDto(
     IReadOnlyList<BoardSharingEntryDto> Entries,
     IReadOnlyList<BoardSharingLogEntryDto> Log,
     BoardPrivateImpactDto? PrivateImpact,
-    long Version = 0);
+    long Version = 0,
+    bool CanAssignOwner = false);
 
 /// <param name="Id">The person's user id or the Team's id: the key of the existing writes.</param>
 /// <param name="Kind"><c>person</c>, <c>team</c> or <c>guest</c> (Workspace role Guest; a membership fact, never an email domain).</param>

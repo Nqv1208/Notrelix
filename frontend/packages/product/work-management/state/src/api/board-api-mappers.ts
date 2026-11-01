@@ -173,6 +173,7 @@ export function mapFullBoardDto(
       : createDefaultFieldDefinitions(boardId);
   const fieldDefinitions = assignSemanticRoles(mappedFields);
   const members = (dto.members ?? []).map(mapBoardMember);
+  const viewers = (dto.viewers ?? []).map(mapBoardMember);
   const board: Board = {
     id: boardId,
     workspaceId: context.workspaceId,
@@ -184,6 +185,7 @@ export function mapFullBoardDto(
     linkedPageId: undefined,
     fieldDefinitions,
     members,
+    ...(viewers.length > 0 ? { viewers } : {}),
     createdAt: EPOCH_ISO,
     ...(typeof dto.version === "number" ? { version: dto.version } : {}),
   };

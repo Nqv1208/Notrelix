@@ -26,7 +26,7 @@ public sealed record WorkspaceBillingPlanDto(
 public record GetWorkspaceBillingPlanQuery(Guid WorkspaceId)
     : IQuery<Result<WorkspaceBillingPlanDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+    public PermissionAction Action => PermissionAction.ViewBilling;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("billing.plan"), WorkspaceId, WorkspaceId);
 }
 

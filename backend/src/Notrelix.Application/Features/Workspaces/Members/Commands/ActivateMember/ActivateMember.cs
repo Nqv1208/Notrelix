@@ -30,9 +30,11 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
     private readonly IBillingSeatGate _seatGate;
+    private readonly IAccessChangeSignal _access;
 
-    public ActivateMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IBillingSeatGate seatGate)
+    public ActivateMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IBillingSeatGate seatGate, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -83,6 +85,8 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
         await _grantProjection.ClearCustomRoleAssignmentsAsync(
             workspace.AccountId, workspace.Id, request.UserId, ct);
 
+        // The person's own open client learns it is active again at once.
+        _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
     }
 }
