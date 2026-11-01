@@ -18732,7 +18732,7 @@
           "Workspaces.Members"
         ],
         "summary": "Invite a member to workspace",
-        "description": "Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists.",
+        "description": "Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.",
         "operationId": "Workspaces.Members.InviteMember",
         "parameters": [
           {
@@ -18787,7 +18787,14 @@
             }
           },
           "409": {
-            "description": "Idempotency key reused with a different payload"
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           },
           "503": {
             "description": "Operation still being processed; retry after the indicated delay"

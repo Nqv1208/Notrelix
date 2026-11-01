@@ -38,6 +38,9 @@ import { useIdSet } from "@/shell/workspace/use-id-set";
 import { useNow } from "@/shell/workspace/use-now";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
+/** The producer refuses an invitation for a person who is already an Active member. */
+const ALREADY_MEMBER_CODE = "workspaces.invitation.already-member";
+
 function recoveryHint(copy: WorkspaceMembersCopy) {
   return (failure: WorkspaceFailure): string => {
     switch (failure.kind) {
@@ -164,6 +167,15 @@ export function MembersPage() {
         },
         onError: (error) => {
           const failure = describeWorkspaceFailure(error);
+          if (failure.errorCode === ALREADY_MEMBER_CODE) {
+            // The producer refused: that person is an Active member. Shown next to the field.
+            setInviteError(
+              formatCopy(copy.invitations.alreadyMember, {
+                email: input.email,
+              }),
+            );
+            return;
+          }
           const fieldMessage =
             Object.values(failure.fieldErrors).flat()[0] ?? null;
           // Someone else invited this address a moment ago: the same words as the check before sending.

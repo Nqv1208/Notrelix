@@ -4509,7 +4509,7 @@ export interface paths {
         put?: never;
         /**
          * Invite a member to workspace
-         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists.
+         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.
          */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
@@ -19337,12 +19337,14 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Idempotency key reused with a different payload */
+            /** @description Conflict */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
             /** @description Operation still being processed; retry after the indicated delay */
             503: {
