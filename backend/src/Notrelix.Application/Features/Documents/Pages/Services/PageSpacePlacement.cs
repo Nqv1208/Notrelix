@@ -16,6 +16,12 @@ public interface IPageSpacePlacement
     Task EnsureActiveTargetAsync(Guid workspaceId, Guid spaceId, CancellationToken cancellationToken);
 
     Task AuthorizeTargetAsync(Guid workspaceId, Guid? spaceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether the actor may create a page under <paramref name="parentId"/>: the right a page moved under that
+    /// parent needs on the destination. A parent the actor cannot reach answers like one that does not exist.
+    /// </summary>
+    Task AuthorizeParentAsync(Guid workspaceId, Guid parentId, CancellationToken cancellationToken);
 }
 
 public sealed class PageSpacePlacement : IPageSpacePlacement
@@ -50,7 +56,13 @@ public sealed class PageSpacePlacement : IPageSpacePlacement
             throw new ConflictException("The target space is archived; pages cannot be placed in it.", InactiveSpaceErrorCode);
     }
 
-    public async Task AuthorizeTargetAsync(Guid workspaceId, Guid? spaceId, CancellationToken cancellationToken)
+    public Task AuthorizeTargetAsync(Guid workspaceId, Guid? spaceId, CancellationToken cancellationToken) =>
+        AuthorizeAsync(new CreatePageCommand(workspaceId, "placement", ParentId: null, SpaceId: spaceId), workspaceId, spaceId.HasValue ? "Space" : "Workspace", spaceId ?? workspaceId, cancellationToken);
+
+    public Task AuthorizeParentAsync(Guid workspaceId, Guid parentId, CancellationToken cancellationToken) =>
+        AuthorizeAsync(new CreatePageCommand(workspaceId, "placement", ParentId: parentId), workspaceId, "Page", parentId, cancellationToken);
+
+    private async Task AuthorizeAsync(CreatePageCommand request, Guid workspaceId, string target, Guid targetId, CancellationToken cancellationToken)
     {
         var current = _executionContext.Snapshot
             ?? throw new SecurityMisconfigurationException("Page placement authorization requires the request execution context.");
@@ -58,7 +70,6 @@ public sealed class PageSpacePlacement : IPageSpacePlacement
             throw new SecurityMisconfigurationException("Page placement authorization must stay in the request workspace.");
 
         // Authorization descriptor only: never dispatched.
-        var request = new CreatePageCommand(workspaceId, "placement", ParentId: null, SpaceId: spaceId);
         var descriptor = _descriptors.GetRequired(typeof(CreatePageCommand));
         var snapshot = current with { Resource = null, Scope = descriptor.Scope };
 
@@ -69,7 +80,7 @@ public sealed class PageSpacePlacement : IPageSpacePlacement
             case AccessDecisionKind.Allowed:
                 return;
             case AccessDecisionKind.NotFound:
-                throw new NotFoundException("Space", spaceId ?? workspaceId);
+                throw new NotFoundException(target, targetId);
             default:
                 throw new ForbiddenException(decision.Message ?? "You do not have permission to place a page there.");
         }

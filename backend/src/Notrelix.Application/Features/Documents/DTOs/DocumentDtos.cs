@@ -17,10 +17,15 @@ public record PageDto(
     Guid? SpaceId = null
 );
 
+/// <summary>
+/// One crumb of a page's path. A crumb the caller may not see carries no id, title or icon and
+/// <paramref name="Unavailable"/> set; consecutive hidden pages are one crumb.
+/// </summary>
 public record PageBreadcrumbDto(
-    Guid Id,
-    string Title,
-    string Icon
+    Guid? Id,
+    string? Title,
+    string? Icon,
+    bool Unavailable = false
 );
 
 public record PageHistoryDto(

@@ -79,8 +79,18 @@ export function createBlockApi(
       return mapBlock(dto, 0);
     },
 
-    async delete(pageId: string, blockId: string): Promise<void> {
-      await api.delete<void>(endpoints.blocks.detail(pageId, blockId));
+    /**
+     * `Documents.Blocks.DeleteBlock` deletes the block and every block under
+     * it, against the version the caller read (a stale one answers 412).
+     */
+    async delete(
+      pageId: string,
+      blockId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.blocks.detail(pageId, blockId)}?expectedVersion=${expectedVersion}`,
+      );
     },
 
     /**
@@ -96,10 +106,18 @@ export function createBlockApi(
       });
     },
 
-    // TRANSITION: no screen reorders blocks; the editor's saver places blocks
-    // through `batch`.
-    async reorder(payload: ReorderBlocksInput): Promise<void> {
-      await api.post<void>(endpoints.blocks.reorder, payload);
+    /**
+     * `Documents.Blocks.ReorderBlocks`: the moves apply in order in one
+     * transaction against the versions read (a stale one answers 412 with the
+     * current block); answers the moved blocks with their new versions. The
+     * editor's own moves still travel inside `batch`.
+     */
+    async reorder(payload: ReorderBlocksInput): Promise<Block[]> {
+      const moved = await api.post<BlockDtoApi[]>(endpoints.blocks.reorder, {
+        pageId: payload.pageId,
+        items: payload.moves,
+      });
+      return moved.map((dto) => mapBlock(dto, 0));
     },
   };
 }

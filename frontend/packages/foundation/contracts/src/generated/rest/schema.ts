@@ -757,7 +757,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a block */
+        /** Delete a block and the blocks under it against the version read */
         delete: operations["Documents.Blocks.DeleteBlock"];
         options?: never;
         head?: never;
@@ -774,7 +774,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reorder blocks */
+        /** Move blocks of a page against the versions read */
         post: operations["Documents.Blocks.ReorderBlocks"];
         delete?: never;
         options?: never;
@@ -807,7 +807,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get page tree for a workspace */
+        /** Get the page tree for a workspace; a very large workspace answers one level at a time (root pages, or the children of parentId) */
         get: operations["Documents.Pages.GetPageTree"];
         put?: never;
         post?: never;
@@ -841,7 +841,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the pages in the trash of a workspace */
+        /** List the pages in the trash of a workspace, newest change first, one cursor page at a time */
         get: operations["Documents.Pages.ListTrashedPages"];
         put?: never;
         post?: never;
@@ -866,7 +866,7 @@ export interface paths {
         delete: operations["Documents.Pages.DeletePage"];
         options?: never;
         head?: never;
-        /** Update a page */
+        /** Rename a page */
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
@@ -966,6 +966,23 @@ export interface paths {
         put?: never;
         /** Move a root page and its subtree into a space or back to the workspace root */
         post: operations["Documents.Pages.MoveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a page and its subtree under another parent page, or make it a root page of its space */
+        post: operations["Documents.Pages.Move"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5603,10 +5620,15 @@ export interface components {
         "Notrelix.API.Contracts.Documents.Blocks.Requests.ReorderBlockItemRequest": {
             /** Format: uuid */
             blockId?: string;
-            /** Format: double */
-            position?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             parentId?: string | null;
+            /** Format: uuid */
+            afterBlockId?: string | null;
+            /** Format: uuid */
+            beforeBlockId?: string | null;
+            position?: string | null;
         };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.ReorderBlocksRequest": {
             /** Format: uuid */
@@ -5627,6 +5649,12 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
+            /** Format: uuid */
+            parentId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest": {
             /** Format: uuid */
             spaceId?: string | null;
@@ -5635,9 +5663,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Documents.Pages.Requests.UpdatePageRequest": {
             title?: string | null;
-            iconType?: string | null;
-            iconValue?: string | null;
-            coverUrl?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
             title?: string | null;
@@ -6393,6 +6420,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfPageDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
             nextCursor?: string | null;
@@ -6693,9 +6725,10 @@ export interface components {
         };
         "Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto": {
             /** Format: uuid */
-            id?: string;
+            id?: string | null;
             title?: string | null;
             icon?: string | null;
+            unavailable?: boolean;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageDto": {
             /** Format: uuid */
@@ -9795,7 +9828,9 @@ export interface operations {
     };
     "Documents.Blocks.DeleteBlock": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -9811,7 +9846,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -9889,7 +9951,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -9919,7 +10008,10 @@ export interface operations {
     "Documents.Pages.CreatePage": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -9934,17 +10026,35 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Documents.Pages.GetPageTree": {
         parameters: {
-            query?: never;
+            query?: {
+                parentId?: string;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -9990,7 +10100,10 @@ export interface operations {
     };
     "Documents.Pages.ListTrashedPages": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -10005,7 +10118,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfPageDto"];
                 };
             };
         };
@@ -10216,6 +10329,32 @@ export interface operations {
             };
         };
     };
+    "Documents.Pages.Move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Documents.Templates.ListPageTemplates": {
         parameters: {
             query?: never;
@@ -10241,7 +10380,10 @@ export interface operations {
     "Documents.Templates.CreatePageTemplate": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -10256,18 +10398,37 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Documents.Templates.CreatePageFromTemplate": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
                 templateId: string;
@@ -10283,11 +10444,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

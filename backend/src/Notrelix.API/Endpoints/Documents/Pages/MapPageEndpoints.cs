@@ -32,6 +32,7 @@ public static class MapPageEndpoints
         pageGroup.MapGetPageHistory();
         pageGroup.MapGetPageBacklinks();
         pageGroup.MapMovePageToSpace();
+        pageGroup.MapMovePage();
 
         return app;
     }

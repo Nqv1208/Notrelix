@@ -12,6 +12,7 @@ public static class DocumentRuleCodes
     public const string Documents_Page_NestedPageFollowsRootSpace = "Documents_Page_NestedPageFollowsRootSpace";
     public const string Documents_Page_CannotEditArchived = "Documents_Page_CannotEditArchived";
     public const string Documents_Page_NotInTrash = "Documents_Page_NotInTrash";
+    public const string Documents_Page_BlockLimitReached = "Documents_Page_BlockLimitReached";
 
     // ── Version ───────────────────────────────────────────────────────────
     public const string Documents_Version_NameRequired = "Documents_Version_NameRequired";
@@ -20,6 +21,7 @@ public static class DocumentRuleCodes
     // ── PageTree ──────────────────────────────────────────────────────────
     public const string Documents_PageTree_CannotBeOwnParent = "Documents_PageTree_CannotBeOwnParent";
     public const string Documents_PageTree_MoveWouldCreateCycle = "Documents_PageTree_MoveWouldCreateCycle";
+    public const string Documents_PageTree_MaxDepthExceeded = "Documents_PageTree_MaxDepthExceeded";
 
     // ── Block ─────────────────────────────────────────────────────────────
     public const string Documents_Block_ContentCannotBeNull = "Documents_Block_ContentCannotBeNull";

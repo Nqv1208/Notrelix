@@ -142,6 +142,12 @@ export function DocFileMenuSurface({
           unavailable={f.unavailable}
         />
         <Item
+          label={f.move}
+          popup="dialog"
+          onClick={callbacks?.onMovePage}
+          unavailable={f.unavailable}
+        />
+        <Item
           label={f.share}
           popup="dialog"
           onClick={canShare ? callbacks?.onOpenShare : undefined}

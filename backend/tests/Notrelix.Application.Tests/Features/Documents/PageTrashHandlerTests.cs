@@ -1,11 +1,9 @@
-using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.RestorePage;
+using Notrelix.Application.Features.Documents.Pages.Services;
 using Notrelix.Domain.Documents;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Testing.Application.Fakes;
-using TestDbSet = Notrelix.Application.Tests.Features.Collaboration.TestDbSet;
 
 namespace Notrelix.Application.Tests.Features.Documents;
 
@@ -87,18 +85,11 @@ public sealed class PageTrashHandlerTests
     private static Page NewPage() =>
         Page.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), "Trash Candidate", Guid.CreateVersion7(), Now);
 
-    private static IDocumentDbContext ContextOf(Page page)
-    {
-        var contextMock = new Mock<IDocumentDbContext>();
-        contextMock.Setup(c => c.Pages).Returns(TestDbSet.Create(new List<Page> { page }).Object);
-        return contextMock.Object;
-    }
-
     private static RestorePageCommandHandler Restore(Page page) =>
-        new(ContextOf(page), new FakeCurrentRequestContext().AsUser(Guid.CreateVersion7()), new FixedClock());
+        new(new InMemoryPageSubtreeStore(page), new Mock<IPageSpacePlacement>().Object, new RecordingSubtreeAuthorizer(), PageRequestContext.For(page), new FixedClock());
 
     private static DeletePageCommandHandler Delete(Page page) =>
-        new(ContextOf(page), new FakeCurrentUser { UserId = Guid.CreateVersion7() }, new FixedClock());
+        new(new InMemoryPageSubtreeStore(page), new RecordingSubtreeAuthorizer(), PageRequestContext.For(page), new FixedClock());
 
     private sealed class FixedClock : IDateTimeProvider
     {

@@ -24,6 +24,8 @@ public static class ExpectedVersionInventory
             ["UpdateBoardCommand"] = "work-management.board",
             ["MoveBoardToSpaceCommand"] = "work-management.board",
             ["MovePageToSpaceCommand"] = "documents.page",
+            ["UpdatePageCommand"] = "documents.page",
+            ["MovePageCommand"] = "documents.page",
             ["UpdateBoardFieldCommand"] = "work-management.board-field",
             ["DeleteBoardGroupCommand"] = "work-management.board-group",
             ["UpdateBoardItemCommand"] = "work-management.board-item",

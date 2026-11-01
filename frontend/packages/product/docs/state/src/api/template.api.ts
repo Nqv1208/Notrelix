@@ -54,7 +54,10 @@ export function createTemplateApi(
             ...(payload.parentId ? { parentId: payload.parentId } : {}),
             ...(payload.spaceId ? { spaceId: payload.spaceId } : {}),
           },
-          { skipGlobalErrorToast: true },
+          {
+            skipGlobalErrorToast: true,
+            idempotencyKey: payload.idempotencyKey,
+          },
         ),
       );
     },

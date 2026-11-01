@@ -24,6 +24,8 @@ import type {
   DocMarkTargets,
   DocPerson,
   DocPickerPageView,
+  DocMovePageView,
+  DocTrashConfirmView,
   DocTrashView,
   DocHeaderView,
   DocOverlay,
@@ -45,7 +47,9 @@ import type {
 import {
   DocBoardPickerDialogSurface,
   DocConvertTaskDialogSurface,
+  DocMovePageDialogSurface,
   DocPagePickerDialogSurface,
+  DocTrashConfirmDialogSurface,
   DocTrashDialogSurface,
 } from "./doc-dialogs-surface";
 import {
@@ -114,6 +118,10 @@ export interface DocPageScreenSurfaceProps {
   readonly share?: DocShareView;
   /** The trash list the trash dialog shows. */
   readonly trash?: DocTrashView;
+  /** The confirmation before the open page and the pages under it go to the trash. */
+  readonly trashConfirm?: DocTrashConfirmView;
+  /** The "Move to" dialog's destinations and write state. */
+  readonly movePage?: DocMovePageView;
   /** The pages the page picker offers. */
   readonly pickerPages?: readonly DocPickerPageView[];
   /** The boards the board picker offers. */
@@ -214,6 +222,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     importState,
     share,
     trash,
+    trashConfirm,
+    movePage,
     pickerPages,
     pickerBoards,
     convert,
@@ -258,6 +268,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
   const dialogOpen =
     shareOpen ||
     (overlay.kind === "trash" && trash !== undefined) ||
+    (overlay.kind === "trashPage" && trashConfirm !== undefined) ||
+    (overlay.kind === "movePage" && movePage !== undefined) ||
     (overlay.kind === "saveVersion" && history !== undefined) ||
     (overlay.kind === "restoreVersion" && history !== undefined) ||
     (overlay.kind === "saveTemplate" && templateAction !== undefined) ||
@@ -389,6 +401,21 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         <DocTrashDialogSurface
           copy={copy}
           trash={trash}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "movePage" && movePage ? (
+        <DocMovePageDialogSurface
+          copy={copy}
+          move={movePage}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "trashPage" && trashConfirm ? (
+        <DocTrashConfirmDialogSurface
+          copy={copy}
+          title={header.title}
+          confirm={trashConfirm}
           callbacks={callbacks}
         />
       ) : null}
