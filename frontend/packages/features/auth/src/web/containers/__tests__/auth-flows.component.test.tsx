@@ -14,6 +14,7 @@ import { SignInFlow } from "../sign-in-flow";
 
 const copy = authCopy("vi");
 const NEW_PASSWORD = `Pw-${"a".repeat(12)}`;
+const NEW_PASSWORD = `Pw-${"a".repeat(12)}`;
 
 function Providers({ children }: { children: ReactNode }) {
   const client = new QueryClient({
