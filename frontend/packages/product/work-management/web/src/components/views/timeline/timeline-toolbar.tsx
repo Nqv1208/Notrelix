@@ -1,4 +1,9 @@
-import { useRef, type KeyboardEvent, type MouseEvent } from "react";
+import {
+  useRef,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import {
@@ -45,6 +50,8 @@ export interface TimelineToolbarProps {
   canAdd: boolean;
   /** Without it "Thêm công việc" is inert and says where to add an item. */
   onAddItem?: () => void;
+  /** The member's filter, personal-state chip and saved filters (`ViewStateBar`), after "Vừa khít". */
+  viewBar?: ReactNode;
 }
 
 /**
@@ -70,6 +77,7 @@ export function TimelineToolbar({
   undatedHref,
   canAdd,
   onAddItem,
+  viewBar,
 }: TimelineToolbarProps) {
   const scaleButtons = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -174,6 +182,8 @@ export function TimelineToolbar({
           {copy.fit.label}
         </Button>
       ) : null}
+
+      {viewBar}
 
       <Button
         variant="ghost"

@@ -84,8 +84,42 @@ export function useBoardPlacements(workspaceId: string) {
   });
 }
 
+type MoveImpactDto = OperationResponse<
+  "WorkManagement.Boards.GetMoveImpact",
+  200
+>;
+
+/**
+ * `WorkManagement.Boards.GetMoveImpact`: who gains and loses the Board in the
+ * picked place, read before the move. Not cached (`gcTime` 0): the answer is
+ * about the people of this moment.
+ */
+export function useBoardMoveImpact(
+  boardId: string | null,
+  target: string | null | undefined,
+) {
+  const { api: client } = useAppRuntime();
+  return useQuery({
+    queryKey: ["work-management", "board-move-impact", boardId, target ?? null],
+    enabled: Boolean(boardId) && target !== undefined,
+    gcTime: 0,
+    staleTime: 0,
+    retry: false,
+    queryFn: async () => {
+      const path = client.endpoints.boards.moveImpact(boardId as string);
+      const dto = await client.api.get<MoveImpactDto>(
+        target ? `${path}?targetSpaceId=${target}` : path,
+        { skipGlobalErrorToast: true },
+      );
+      return dto;
+    },
+  });
+}
+
 export interface MoveBoardInput {
   readonly boardId: string;
+  /** People added as editors in the same step, so they keep the Board. */
+  readonly addUserIds?: readonly string[];
   /** `null` moves the Board back to the workspace level. */
   readonly spaceId: string | null;
   readonly expectedVersion: number;
@@ -110,6 +144,9 @@ export function useMoveBoardToSpace(workspaceId: string) {
       const body: MoveBoardBody = {
         spaceId: input.spaceId,
         expectedVersion: input.expectedVersion,
+        ...(input.addUserIds?.length
+          ? { addUserIds: [...input.addUserIds] }
+          : {}),
       };
       await client.api.post<void>(
         client.endpoints.boards.moveToSpace(input.boardId),

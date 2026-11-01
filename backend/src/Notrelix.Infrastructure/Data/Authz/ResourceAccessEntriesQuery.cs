@@ -46,6 +46,14 @@ public static class ResourceAccessEntriesQuery
           ) rp
         """;
 
+    /// <summary>Column: user_id of every active Workspace Owner and Admin.</summary>
+    public const string WorkspaceAdminsSql = """
+        SELECT wm.user_id
+          FROM workspace.workspace_members wm
+         WHERE wm.account_id = @account_id AND wm.workspace_id = @workspace_id
+           AND wm.status = 'Active' AND wm.role IN ('Owner', 'Admin')
+        """;
+
     /// <summary>
     /// Columns: source (owner | member | user | team | space), team_id (nullable), user_id, is_guest.
     /// Space rows are produced only when <c>@space_id</c> is not null.

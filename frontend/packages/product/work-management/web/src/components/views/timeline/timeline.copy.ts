@@ -93,7 +93,12 @@ export const en = {
     reschedule:
       "Alt and arrow keys move the bar, Alt, Shift and arrow keys change the due date",
   },
-  reschedule: { failed: "Could not move {{title}}" },
+  reschedule: {
+    failed: "Could not move {{title}}",
+    conflict: "{{actor}} changed {{title}} first. Your move was not saved.",
+    someone: "Someone",
+    beforeStart: "The due date of {{title}} cannot be before its start date",
+  },
   fit: {
     label: "Fit",
     tip: "Fit the items shown",
@@ -260,7 +265,13 @@ export const vi: TimelineCopy = {
     reschedule:
       "Alt và phím mũi tên dời cả thanh, Alt, Shift và phím mũi tên đổi hạn",
   },
-  reschedule: { failed: "Không dời được {{title}}" },
+  reschedule: {
+    failed: "Không dời được {{title}}",
+    conflict:
+      "{{actor}} vừa sửa {{title}} trước bạn. Thay đổi của bạn chưa được lưu.",
+    someone: "Một người khác",
+    beforeStart: "Hạn của {{title}} không thể trước ngày bắt đầu",
+  },
   fit: {
     label: "Vừa khít",
     tip: "Vừa khít các việc đang hiển thị",

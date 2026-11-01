@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.BoardViews.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RestoreBoardView;
 
@@ -18,10 +19,11 @@ public static class RestoreBoardViewEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
+        BoardViewVersionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RestoreBoardViewCommand(viewId), cancellationToken);
+        var result = await sender.Send(new RestoreBoardViewCommand(viewId, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

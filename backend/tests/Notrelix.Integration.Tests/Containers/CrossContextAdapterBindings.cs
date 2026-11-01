@@ -34,6 +34,20 @@ internal static class CrossContextAdapterBindings
             foreach (var port in provider.GetInterfaces().Where(IsPublicFactPort))
                 services.TryAddScoped(port, provider);
 
+        // Application services the bound ports are built from, so a hand-composed host does not list them again.
+        services.TryAddScoped<Notrelix.Application.Common.Messaging.IIntegrationEventCollector,
+            Notrelix.Application.Common.Messaging.IntegrationEventCollector>();
+        services.TryAddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemSummaryBuilder,
+            Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder>();
+        services.TryAddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessEntriesReader,
+            Notrelix.Infrastructure.Data.Authz.PostgresResourceAccessEntriesReader>();
+        services.TryAddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader,
+            Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
+        services.TryAddScoped<Notrelix.Application.Common.Tenancy.IActorLookupService,
+            Notrelix.Infrastructure.Services.ActorLookupService>();
+        services.TryAddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemPageReader,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader>();
+
         return services;
 
         bool IsPublicFactPort(Type port) =>

@@ -17,10 +17,11 @@ public static class CloseFormEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid formId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CloseFormCommand(formId), cancellationToken);
+        var result = await sender.Send(new CloseFormCommand(formId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

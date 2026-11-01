@@ -122,6 +122,8 @@ export interface BoardSettingsArchivedFieldDto {
 
 export interface BoardSettingsViewDto {
   readonly id: string;
+  /** Version of the view, sent back by a write on it. */
+  readonly version?: number;
   readonly name: string;
   readonly kind: "table" | "kanban" | "calendar" | "timeline";
   readonly summary: string;
@@ -188,6 +190,14 @@ export interface BoardSettingsGeneralDto {
   readonly isArchived: boolean;
 }
 
+/** What archiving or deleting the board touches; absent when the person may not read it. */
+export interface BoardSettingsLifecycleImpact {
+  readonly itemCount: number;
+  readonly openItemCount: number;
+  readonly memberCount: number;
+  readonly viewCount: number;
+}
+
 export interface BoardSettingsDto {
   readonly boardId: string;
   /** Version of this read: a write may send it back to detect a conflict. */
@@ -195,11 +205,20 @@ export interface BoardSettingsDto {
   readonly itemCount: number;
   readonly general: BoardSettingsGeneralDto;
   readonly fields: readonly BoardSettingsFieldDto[];
+  /**
+   * Every live field of the board, locked system fields included, in the order
+   * the server keeps. A move names its neighbours in this order, so a locked
+   * field between two custom ones does not make the move stale.
+   */
+  readonly fieldOrder?: readonly string[];
   readonly systemFields: readonly BoardSettingsSystemFieldDto[];
   readonly archivedFields: readonly BoardSettingsArchivedFieldDto[];
   readonly views: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
+  /** Groups taken out of every view; their items stay in them, read-only, until the group is unarchived. */
+  readonly archivedGroups: readonly BoardSettingsGroupDto[];
   readonly automations: readonly BoardSettingsAutomationDto[];
+  readonly impact?: BoardSettingsLifecycleImpact;
   readonly unavailable?: BoardSettingsUnavailable;
 }
 
@@ -231,11 +250,21 @@ export interface BoardSettingsViewPatch {
 /** Why a write did not go through, as the page tells it. */
 export type BoardSettingsWriteFailure = "conflict" | "invalid" | "failed";
 
+/** Who saved first when a write was refused as stale, as the server names them. */
+export interface WriteConflict {
+  /** Null when the person may not see the name: the page says "someone else". */
+  readonly byName: string | null;
+  /** ISO instant of that save. */
+  readonly at: string | null;
+}
+
 export type BoardSettingsWriteResult =
   | { ok: true }
   | {
       ok: false;
       reason: BoardSettingsWriteFailure;
+      /** Present on a conflict, when the server named who saved first. */
+      conflict?: WriteConflict;
       /** The request field a refused value belongs to ("name"). */
       field?: string;
       /** The server's rule or error code, when it sent one. */

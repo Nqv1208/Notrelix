@@ -11,24 +11,43 @@ export * from "./components/board-workspace-view-content";
 // Board layout
 export * from "./components/board-layout/board-layout-shell";
 export { BoardTrashHost } from "./components/item-lifecycle/board-trash-host";
+export { BoardArchiveHost } from "./components/item-lifecycle/board-archive-host";
 export { itemLifecycleCatalog } from "./components/item-lifecycle/item-lifecycle.catalog";
 export { itemActionsCatalog } from "./components/item-actions/item-actions.catalog";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
 export * from "./components/board-layout/board-header-surface";
-export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
-export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
-export { itemCreateCatalog } from "./components/item-create/item-create.catalog";
 export {
-  BoardItemCreateDialog,
-  type BoardItemCreateBoard,
-} from "./components/item-create/board-item-create-dialog";
+  BoardConnectionNotice,
+  type BoardConnectionState,
+} from "./components/board-layout/board-connection-notice";
+export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
+export * from "./components/board-lifecycle/retired-boards-surface";
+export { retiredBoardsCatalog } from "./components/board-lifecycle/retired-boards.catalog";
+export { useRetiredBoardsCopy } from "./components/board-lifecycle/use-retired-boards-copy";
+export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
+export {
+  BoardCardCreate,
+  type BoardCardCreateBoard,
+} from "./components/card-popup/create/board-card-create";
 export {
   boardHeaderCopy,
   type BoardHeaderCopy,
 } from "./components/board-layout/board-header.copy";
 export { BoardHeaderCopyContext } from "./components/board-layout/board-header-copy-context";
 export { useBoardHeaderCopy } from "./components/board-layout/use-board-header-copy";
+export { boardLifecycleCatalog } from "./components/board-lifecycle/board-lifecycle.catalog";
+export {
+  boardLifecycleCopy,
+  fillLifecycleCopy,
+  pluralLifecycle,
+  type BoardLifecycleCopy,
+} from "./components/board-lifecycle/board-lifecycle.copy";
+export { useBoardLifecycleCopy } from "./components/board-lifecycle/use-board-lifecycle-copy";
+export {
+  BoardMoveImpactPanel,
+  type BoardMoveImpact,
+} from "./components/board-lifecycle/board-move-impact";
 export { boardShareCatalog } from "./components/board-share/board-share.catalog";
 export {
   boardShareCopy,
@@ -65,11 +84,16 @@ export * from "./components/views/kanban/kanban-add-card";
 export * from "./components/views/kanban/kanban-card-detail-panel";
 export * from "./components/views/kanban/kanban-empty-state";
 export * from "./components/views/kanban/kanban-filter";
-export * from "./components/views/kanban/kanban-filter-menu";
 export * from "./components/views/kanban/kanban-skeleton";
 export * from "./components/views/kanban/kanban-toolbar";
 export { kanbanToolbarCatalog } from "./components/views/kanban/kanban-toolbar.catalog";
 export { savedFiltersCatalog } from "./components/saved-filters/saved-filters.catalog";
+export { viewStateCatalog } from "./components/filters/filters.catalog";
+export * from "./components/filters/view-state-bar";
+export * from "./components/filters/view-state-control";
+export * from "./components/filters/use-view-state";
+export * from "./components/filters/use-board-view-state";
+export * from "./components/filters/use-filters-copy";
 export {
   kanbanToolbarCopy,
   type KanbanToolbarCopy,
@@ -122,14 +146,8 @@ export {
   BoardItemSheetHost,
   type BoardItemSheetHostProps,
 } from "./components/shared/board-item-sheet-host";
-export * from "./components/card-detail/task-detail-panel";
-export * from "./components/card-detail/task-detail-header";
-export * from "./components/card-detail/task-detail-tabs";
-export * from "./components/card-detail/task-detail-empty-state";
-export * from "./components/card-detail/task-activity-tab";
-export * from "./components/card-detail/task-updates-tab";
-export * from "./components/card-detail/update-composer";
 export { itemSheetCatalog } from "./components/card-detail/item-sheet.catalog";
+export { cardPopupCatalog } from "./components/card-popup/card-popup.catalog";
 export { itemChecklistsCatalog } from "./components/checklists/item-checklists.catalog";
 export {
   itemSheetCopy,
@@ -138,8 +156,6 @@ export {
 export { useItemSheetCopy } from "./components/card-detail/use-item-sheet-copy";
 
 // Item page (full-width view of one item)
-export * from "./components/item-page/item-page-container";
-export * from "./components/item-page/item-page-surface";
 export * from "./components/item-page/item-page-types";
 export { itemPageCatalog } from "./components/item-page/item-page.catalog";
 export {
@@ -164,3 +180,6 @@ export {
   FormInboxPage,
   formLink,
 } from "./components/forms/forms-containers";
+
+// Card popup capabilities (cover, repeat, reminder, vote, viewers, colour-blind labels, checklist copy, links, face fields)
+export * from "./components/card-popup/capabilities";

@@ -64,7 +64,7 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
         await using (var context = _db.CreateOwnerContext(stack.Request.Tenant))
         {
             var handler = new RestoreBoardCommandHandler(context, stack.Request, FakeDateTimeProvider.WithFixedTime(Now.AddMinutes(1)));
-            await handler.Handle(new RestoreBoardCommand(stack.BoardId), CancellationToken.None);
+            await handler.Handle(new RestoreBoardCommand(stack.BoardId, ExpectedVersion: 1), CancellationToken.None);
             await context.SaveChangesAsync();
         }
 

@@ -44,6 +44,7 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
     private readonly IRequestRollbackCompensations _compensations;
     private readonly IAttachmentTargetLock _targetLock;
     private readonly AttachmentUploadOptions _options;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UploadBoardItemAttachmentCommandHandler(
         ICollaborationDbContext context,
@@ -52,8 +53,10 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
         IStorageService storage,
         IRequestRollbackCompensations compensations,
         IAttachmentTargetLock targetLock,
-        IOptions<AttachmentUploadOptions> options)
+        IOptions<AttachmentUploadOptions> options,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -63,7 +66,14 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
         _options = options.Value;
     }
 
-    public Task<Result<AttachmentDto>> Handle(UploadBoardItemAttachmentCommand request, CancellationToken ct) =>
+    public async Task<Result<AttachmentDto>> Handle(UploadBoardItemAttachmentCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private Task<Result<AttachmentDto>> HandleCore(UploadBoardItemAttachmentCommand request, CancellationToken ct) =>
         // Resource existence, tenant ownership and UpdateItem permission were established by
         // the pipeline before this handler runs; nothing below is reached by an unauthorized caller.
         AttachmentTargetOperations.UploadFileAsync(

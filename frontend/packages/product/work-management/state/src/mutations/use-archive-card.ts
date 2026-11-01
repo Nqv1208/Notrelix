@@ -4,56 +4,27 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import type { ApiRequestOptions } from "@notrelix/contracts";
-import type {
-  CardDetail,
-  FullBoardResponse,
-} from "@notrelix/work-management-core";
-import { findBoardCard, restoreBoardCard } from "../cache/card-restore";
-import { wmQueryKeys } from "../queries/keys";
+import { restoreBoardCard } from "../cache/card-restore";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
+import { seenItemVersion } from "./seen-version";
 import { UnknownItemVersionError } from "./use-move-card";
 import type { CardWriteHookOptions } from "./use-update-item-status";
+
+export { seenItemVersion };
 
 interface ItemArchiver {
   archiveCard(
     cardId: string,
     expectedVersion: number,
     options?: ApiRequestOptions,
-  ): Promise<void>;
+  ): Promise<{ version?: number } | void>;
 }
 
 /** What an archive names: the item and, when the dialog opened on one, the version it showed. */
 export interface ArchiveCardInput {
   readonly cardId: string;
   readonly expectedVersion?: number;
-}
-
-/**
- * The version of an item as the person last saw it: the board read's or, for a
- * sub-item (not in the board read), the item read's. Undefined when neither
- * carries one.
- */
-export function seenItemVersion(
-  queryClient: QueryClient,
-  {
-    workspaceId,
-    boardId,
-    cardId,
-  }: { workspaceId: string; boardId: string; cardId: string },
-): number | undefined {
-  const version = (
-    findBoardCard(
-      queryClient.getQueryData<FullBoardResponse>(
-        wmQueryKeys.fullBoard(workspaceId, boardId),
-      ),
-      cardId,
-    ) ??
-    queryClient.getQueryData<CardDetail>(
-      wmQueryKeys.cardDetail(workspaceId, cardId),
-    )
-  )?.version;
-  return version && version > 0 ? version : undefined;
 }
 
 /**
@@ -72,7 +43,7 @@ export function runArchiveCardCommand(
     cardId,
     expectedVersion: opened,
   }: { workspaceId: string; boardId: string } & ArchiveCardInput,
-): Promise<void> {
+): Promise<{ version?: number }> {
   const expectedVersion =
     opened ?? seenItemVersion(queryClient, { workspaceId, boardId, cardId });
   if (!expectedVersion || expectedVersion <= 0) {
@@ -85,7 +56,8 @@ export function runArchiveCardCommand(
     cardId,
     kind: "archive-item",
     applyBoard: (board) => restoreBoardCard(board, cardId, undefined) ?? board,
-    send: (context) => cards.archiveCard(cardId, expectedVersion, context),
+    send: async (context) =>
+      (await cards.archiveCard(cardId, expectedVersion, context)) ?? {},
   });
 }
 

@@ -34,9 +34,18 @@ export function identityMarkClass(seed: string): string {
 
 // ─── Label tone ─────────────────────────────────────────────────────────────
 
-/** The six label tones of the design tokens (`--label-<tone>`). */
+/** The ten label tones of the design tokens (`--label-<tone>`). */
 export type ItemLabelTone =
-  "data" | "security" | "training" | "report" | "doc" | "test";
+  | "data"
+  | "security"
+  | "training"
+  | "report"
+  | "doc"
+  | "test"
+  | "orange"
+  | "green"
+  | "indigo"
+  | "red";
 
 /** Literal tone classes, so Tailwind sees every one of them. */
 export const ITEM_LABEL_TONE_CLASS: Readonly<Record<ItemLabelTone, string>> = {
@@ -46,6 +55,10 @@ export const ITEM_LABEL_TONE_CLASS: Readonly<Record<ItemLabelTone, string>> = {
   report: "bg-label-report text-label-report-foreground",
   doc: "bg-label-doc text-label-doc-foreground",
   test: "bg-label-test text-label-test-foreground",
+  orange: "bg-label-orange text-label-orange-foreground",
+  green: "bg-label-green text-label-green-foreground",
+  indigo: "bg-label-indigo text-label-indigo-foreground",
+  red: "bg-label-red text-label-red-foreground",
 };
 
 /**
@@ -55,11 +68,15 @@ export const ITEM_LABEL_TONE_CLASS: Readonly<Record<ItemLabelTone, string>> = {
  */
 export const ITEM_LABEL_COLORS: Readonly<Record<ItemLabelTone, string>> = {
   data: "#2F6FD6",
-  security: "#D6453D",
-  training: "#2E9B5E",
+  security: "#D13A5B",
+  training: "#1F8A76",
   report: "#D9A21B",
   doc: "#8A8F98",
   test: "#7A4FD1",
+  orange: "#D9660E",
+  green: "#2E9A5E",
+  indigo: "#4650C8",
+  red: "#D12F2F",
 };
 
 /** The colour a new label takes: the tones in turn, so neighbours differ. */
@@ -130,8 +147,9 @@ function hueOf(color: string): { hue: number; saturation: number } | null {
  *    as whole words against the keyword table (Dữ liệu/data, Bảo mật/security,
  *    Đào tạo/training, Báo cáo/report, Kiểm thử/test, Tài liệu/Hạ tầng/doc);
  * 2. otherwise by the hue of the label colour: grey (saturation < 0.15) → doc,
- *    red/pink → security, orange/yellow → report, green → training,
- *    blue → data, purple → test;
+ *    rose → security, red → red, orange → orange, amber/yellow → report,
+ *    green → green, teal → training, blue → data, indigo → indigo,
+ *    purple → test;
  * 3. otherwise doc. The raw label colour is never painted.
  */
 export function itemLabelTone(label: {
@@ -145,10 +163,14 @@ export function itemLabelTone(label: {
   const colour = label.color ? hueOf(label.color) : null;
   if (!colour || colour.saturation < 0.15) return "doc";
   const { hue } = colour;
-  if (hue < 20 || hue >= 330) return "security";
+  if (hue >= 355 || hue < 12) return "red";
+  if (hue >= 330) return "security";
+  if (hue < 35) return "orange";
   if (hue < 70) return "report";
-  if (hue < 170) return "training";
-  if (hue < 250) return "data";
+  if (hue < 157) return "green";
+  if (hue < 195) return "training";
+  if (hue < 228) return "data";
+  if (hue < 250) return "indigo";
   return "test";
 }
 

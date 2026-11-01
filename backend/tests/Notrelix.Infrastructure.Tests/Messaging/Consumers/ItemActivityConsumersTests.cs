@@ -32,7 +32,7 @@ public sealed class ItemActivityConsumersTests
     private static readonly Guid Doing = Guid.CreateVersion7();
 
     private static ItemActivityRecorder Recorder(ApplicationDbContext db) =>
-        new(db, NullLogger<ItemActivityRecorder>.Instance);
+        new(db, NullLogger<ItemActivityRecorder>.Instance, new Moq.Mock<Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts>().Object);
 
     private static Mock<IWorkItemActivityFacts> Facts()
     {

@@ -127,6 +127,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Attachments.IBoardItemImageAttachments,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Attachments.PostgresBoardItemImageAttachments>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Watchers.IResourceFollowers,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.INotificationInbox,
@@ -162,6 +164,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemActivity.IWorkItemActivityFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemActivityFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Automation.AutomationActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Activity.Ports.IResourceActivityReader,
             global::Notrelix.Infrastructure.Data.Collaboration.ResourceActivityReader>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,
@@ -174,10 +178,16 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,
             Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.IBoardTransferJobs, Notrelix.Infrastructure.Data.Ops.BoardTransferJobs>();
+        services.AddSingleton<Notrelix.Application.Features.WorkManagement.Transfer.ITransferProgress, Notrelix.Infrastructure.Data.Ops.TransferProgress>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemReminders,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemReminders>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemViews,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemViews>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemPageReader,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
@@ -198,6 +208,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardAccessSubjectFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.Authorization.IBoardChildAuthorizationFacts,
             global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardChildAuthorizationFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Ports.Realtime.IBoardRealtimeScopeFacts,
+            global::Notrelix.Infrastructure.CrossContext.WorkManagement.Realtime.BoardRealtimeScopeAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IMemberPhoneLookup, MemberPhoneLookup>();
         services.AddScoped<global::Notrelix.Application.Features.Workspaces.Abstractions.IWorkspaceSlugResolver, Notrelix.Infrastructure.Workspaces.Workspaces.WorkspaceSlugResolver>();

@@ -34,6 +34,9 @@ interface BoardToolbarProps {
   onOpenSettings?: () => void;
   /** Opens the board's deleted items from the More options menu. */
   onOpenTrash?: () => void;
+  onOpenArchive?: () => void;
+  /** A notice between the title row and the view tabs (the live connection). */
+  notice?: React.ReactNode;
 }
 
 /**
@@ -52,6 +55,8 @@ export function BoardToolbar({
   copy: copyProp,
   onOpenSettings,
   onOpenTrash,
+  onOpenArchive,
+  notice,
 }: BoardToolbarProps) {
   const contextCopy = useContext(BoardHeaderCopyContext);
   const contextHeader = useContext(BoardHeaderDataContext);
@@ -63,9 +68,10 @@ export function BoardToolbar({
     savedViews?.find((view) => view.id === activeView)?.viewMode ?? activeView;
   const headerForView =
     activeLayout === "kanban" ? header : { ...header, onCopyLink: undefined };
-  const headerWithTrash = onOpenTrash
-    ? { ...headerForView, onOpenTrash }
-    : headerForView;
+  const headerWithTrash =
+    onOpenTrash || onOpenArchive
+      ? { ...headerForView, onOpenTrash, onOpenArchive }
+      : headerForView;
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface
@@ -74,6 +80,7 @@ export function BoardToolbar({
         {...headerWithTrash}
         {...(onOpenSettings ? { onOpenSettings } : {})}
       />
+      {notice}
       <div
         className={cn(
           // One height for every view, so switching views moves nothing: the

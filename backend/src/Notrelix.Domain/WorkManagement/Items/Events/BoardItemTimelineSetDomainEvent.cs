@@ -9,5 +9,7 @@ public sealed record BoardItemTimelineSetDomainEvent(
     DateTimeOffset? StartedAt,
     DateTimeOffset? DueAt,
     Guid UpdatedBy,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    DateTimeOffset? PreviousStartedAt = null,
+    DateTimeOffset? PreviousDueAt = null
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -32,17 +32,17 @@ export function useItemSheetActions({
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
 
   const onUpdateFieldValue = (payload: UpdateFieldValueInput) => {
+    // The promise lets the popup show this field's save and its retry.
     if (
       payload.fieldDefinitionId === kanban.statusField?.id &&
       typeof payload.value === "string"
     ) {
-      kanban.updateStatus.mutate({
+      return kanban.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
-    kanban.updateFieldValue.mutate(payload);
+    return kanban.updateFieldValue.mutateAsync(payload);
   };
 
   const onMoveToGroup = (cardId: string, groupId: string) => {

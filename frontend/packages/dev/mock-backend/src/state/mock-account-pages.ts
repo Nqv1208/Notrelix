@@ -24,6 +24,7 @@ export interface AccountPreferences {
   theme: "light" | "dark" | "system";
   phone: string | null;
   phoneVisibleToWorkspaceMembers: boolean;
+  colourBlindLabels: boolean;
   version: number;
 }
 
@@ -110,6 +111,7 @@ const defaultPreferences = (): AccountPreferences => ({
   theme: "system",
   phone: null,
   phoneVisibleToWorkspaceMembers: false,
+  colourBlindLabels: false,
   version: 0,
 });
 

@@ -15,18 +15,28 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public ArchiveBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider timeProvider)
+        IDateTimeProvider timeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(ArchiveBoardItemCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(ArchiveBoardItemCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
@@ -40,6 +50,6 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
             .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null && !child.IsArchived)
             .ToListAsync(ct);
         foreach (var child in children) child.ArchiveWithParent(_currentUser.UserId, now);
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 }

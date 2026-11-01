@@ -14,30 +14,27 @@ import {
   orderByKey,
   projectTableLanes,
   type Card,
+  type FieldDefinition,
   type KanbanStatusLane,
   type TableDensity,
   type TableSort,
 } from "@notrelix/work-management-core";
 import {
-  ERP_LABELS,
   ERP_PEOPLE,
   erpBoardScenario,
   erpClock,
   erpItemId,
 } from "@notrelix/work-management-testing";
-import {
-  emptyKanbanFilter,
-  isKanbanCardOverdue,
-  type KanbanFilterState,
-} from "../components/views/kanban/kanban-filter";
-import type { KanbanGroupByField } from "../components/views/kanban/kanban-toolbar";
-import type { KanbanToolbarFilterOptions } from "../components/views/kanban/kanban-filter-menu";
+import { isKanbanCardOverdue } from "../components/views/kanban/kanban-filter";
+import type { ViewState } from "@notrelix/work-management-core";
+import { erpViewBar } from "./view-state-fixtures";
 import {
   mainTableCopy,
   type MainTableCopy,
 } from "../components/views/table/main-table.copy";
 import { statusOptionFormCopy } from "../components/status-option/status-option-form.copy";
 import type { MainTableSurfaceProps } from "../components/views/table/main-table-surface";
+import type { TableFieldEditing } from "../components/views/table/table-field-cell";
 import type { MainTableToolbarProps } from "../components/views/table/table-toolbar";
 import {
   buildTableGroup,
@@ -84,28 +81,6 @@ export const tableNoopCallbacks = {
   | "onBulkArchive"
 >;
 
-export const TABLE_TOOLBAR_FILTER_OPTIONS: KanbanToolbarFilterOptions = {
-  statuses: [
-    { id: "status-todo", name: "Cần làm" },
-    { id: "status-doing", name: "Đang làm" },
-    { id: "status-review", name: "Chờ duyệt" },
-    { id: "status-done", name: "Hoàn thành" },
-  ],
-  assignees: Object.values(ERP_PEOPLE).map((person) => ({
-    id: person.userId,
-    name: person.name,
-  })),
-  labels: Object.values(ERP_LABELS).map((label) => ({
-    id: label.labelId,
-    name: label.name,
-  })),
-};
-
-export const TABLE_GROUP_BY_FIELDS: readonly KanbanGroupByField[] = [
-  { id: "field-erp-status", name: "Trạng thái", kind: "status" },
-  { id: "field-erp-priority", name: "Ưu tiên", kind: "select" },
-];
-
 /** The ERP board's status lanes (every item, in option order). */
 export function erpTableLanes(): KanbanStatusLane[] {
   const { board, groups } = erpBoardScenario();
@@ -132,7 +107,8 @@ export interface TableScenarioOptions {
   hiddenColumnIds?: readonly string[];
   /** Saved column widths by column id. */
   columnWidths?: Readonly<Record<string, number>>;
-  filter?: KanbanFilterState;
+  /** The member's own filter, sort, group and swimlane shown by the view bar. */
+  viewState?: Partial<ViewState>;
   searchQuery?: string;
   selected?: readonly string[];
   collapsed?: readonly string[];
@@ -144,6 +120,10 @@ export interface TableScenarioOptions {
   /** Search or filter narrow the board (lanes with no cards disappear). */
   narrowed?: boolean;
   boardTitle?: string;
+  /** Custom fields shown as columns. */
+  customFields?: readonly FieldDefinition[];
+  /** Editing of the custom field cells. */
+  fieldEditing?: TableFieldEditing;
 }
 
 /** The default hidden columns of a new view: start, created, completed, checklist, comments, files. */
@@ -186,6 +166,7 @@ export function erpTableProps(
       copy,
       timeZone: TABLE_STORY_TIME_ZONE,
       statuses,
+      customFields: options.customFields,
     }),
   );
   const canEdit = options.canEdit ?? true;
@@ -198,14 +179,13 @@ export function erpTableProps(
       onSearchChange: noop,
       hideDone,
       onShowDone: noop,
-      filter: options.filter ?? emptyKanbanFilter(),
-      filterOptions: TABLE_TOOLBAR_FILTER_OPTIONS,
-      onFilterChange: noop,
-      groupByFields: TABLE_GROUP_BY_FIELDS,
-      groupByFieldId: "field-erp-status",
-      onGroupByChange: noop,
+      viewBar: erpViewBar({
+        locale,
+        view: "table",
+        ...(options.viewState ? { state: options.viewState } : {}),
+      }),
       sort,
-      onSortChange: noop,
+      customFields: options.customFields,
       hiddenColumnIds: options.hiddenColumnIds ?? TABLE_DEFAULT_HIDDEN_COLUMNS,
       onColumnVisibleChange: noop,
       density: options.density ?? "comfortable",
@@ -218,6 +198,7 @@ export function erpTableProps(
     collapsedGroupIds: new Set(options.collapsed ?? []),
     openItemId: options.openItemId ?? null,
     canEdit,
+    fieldEditing: options.fieldEditing,
     canCreate,
     canArchive: canEdit,
     addGroup: canEdit
@@ -282,9 +263,17 @@ export function erpTableNoResultsProps(
   const props = erpTableProps({
     ...options,
     narrowed: true,
-    filter: {
-      ...emptyKanbanFilter(),
-      assigneeIds: [ERP_PEOPLE.DT.userId],
+    viewState: {
+      filter: {
+        join: "and",
+        conditions: [
+          {
+            fieldId: "field-erp-owner",
+            operator: "has_any",
+            values: [ERP_PEOPLE.DT.userId],
+          },
+        ],
+      },
     },
     lanes: erpTableLanes().map((lane) => ({ ...lane, cards: [] })),
   });
@@ -432,43 +421,67 @@ export function erpTableToolbarProps(
   if (variant === "filtered")
     return {
       ...base,
-      filter: {
-        ...emptyKanbanFilter(),
-        priorities: ["urgent", "high"],
-        assigneeIds: [ERP_PEOPLE.DT.userId],
-        overdue: true,
-      },
+      viewBar: erpViewBar({
+        locale,
+        view: "table",
+        state: {
+          filter: {
+            join: "and",
+            conditions: [
+              {
+                fieldId: "field-erp-priority",
+                operator: "has_any",
+                values: ["p-urgent", "p-high"],
+              },
+              {
+                fieldId: "field-erp-owner",
+                operator: "has_any",
+                values: [ERP_PEOPLE.DT.userId],
+              },
+              { fieldId: "$overdue", operator: "is_true", values: [] },
+            ],
+          },
+        },
+        counts: { shown: 4, total: 16 },
+      }),
     };
   if (variant === "read-only") return { ...base, canAdd: false };
   if (variant === "edge") {
-    const longAssignee = {
-      id: "user-long",
-      name: "Nguyễn Hoàng Phương Thảo Nguyên (Phòng Kế toán – Chi nhánh Hà Nội)",
-    };
     return {
       ...base,
       searchQuery:
         "đối soát hoá đơn đầu vào quý 3 cho toàn bộ chi nhánh phía Bắc",
-      filterOptions: {
-        ...TABLE_TOOLBAR_FILTER_OPTIONS,
-        assignees: [...TABLE_TOOLBAR_FILTER_OPTIONS.assignees, longAssignee],
-      },
-      filter: {
-        statusOptionIds: ["status-todo", "status-doing", "status-review"],
-        priorities: ["urgent", "high", "medium", "low"],
-        assigneeIds: [longAssignee.id, ERP_PEOPLE.HA.userId],
-        labelIds: [ERP_LABELS.security.labelId, ERP_LABELS.doc.labelId],
-        overdue: true,
-      },
-      groupByFields: [
-        ...TABLE_GROUP_BY_FIELDS,
-        {
-          id: "field-long",
-          name: "Giai đoạn triển khai theo kế hoạch tổng thể năm tài chính",
-          kind: "select",
+      viewBar: erpViewBar({
+        locale,
+        view: "table",
+        state: {
+          filter: {
+            join: "or",
+            conditions: [
+              {
+                fieldId: "field-erp-priority",
+                operator: "has_any",
+                values: ["p-urgent", "p-high", "p-medium", "p-low"],
+              },
+              {
+                fieldId: "field-erp-owner",
+                operator: "has_any",
+                values: [ERP_PEOPLE.HA.userId, ERP_PEOPLE.DT.userId],
+              },
+              {
+                fieldId: "$title",
+                operator: "contains",
+                values: ["đối soát hoá đơn đầu vào quý 3 chi nhánh phía Bắc"],
+              },
+            ],
+          },
+          sorts: [
+            { fieldId: "field-erp-owner", direction: "desc" },
+            { fieldId: "field-erp-due", direction: "asc" },
+          ],
+          group: { fieldId: "field-erp-owner" },
         },
-      ],
-      groupByFieldId: "field-long",
+      }),
       sort: { key: "assignee", direction: "desc" },
       hiddenColumnIds: [],
     };

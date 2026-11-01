@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
 [IdempotencyOperation("work-management.board-fields.delete-board-field.v1")]
-public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     // A field is a part of the board's shape, so deleting one is Board management (Manager).
     public PermissionAction Action => PermissionAction.ManageBoard;
@@ -16,12 +16,15 @@ public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public DeleteBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -29,9 +32,18 @@ public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCo
 
     public async Task<Result> Handle(DeleteBoardFieldCommand request, CancellationToken ct)
     {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(DeleteBoardFieldCommand request, CancellationToken ct)
+    {
         var column = await _context.BoardFields
             .FirstOrDefaultAsync(item => item.Id == request.ColumnId && item.BoardId == request.BoardId, ct);
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);
+
+        await ComputedFieldGuard.EnsureNoDependentsAsync(_context, column, ct);
 
         var now = _dateTimeProvider.UtcNow;
         column.Delete(_currentUser.UserId, now);

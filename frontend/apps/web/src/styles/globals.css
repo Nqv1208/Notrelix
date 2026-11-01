@@ -373,6 +373,24 @@
   --color-label-doc-foreground: var(--label-doc-foreground);
   --color-label-test: var(--label-test);
   --color-label-test-foreground: var(--label-test-foreground);
+  --color-label-orange: var(--label-orange);
+  --color-label-orange-foreground: var(--label-orange-foreground);
+  --color-label-green: var(--label-green);
+  --color-label-green-foreground: var(--label-green-foreground);
+  --color-label-indigo: var(--label-indigo);
+  --color-label-indigo-foreground: var(--label-indigo-foreground);
+  --color-label-red: var(--label-red);
+  --color-label-red-foreground: var(--label-red-foreground);
+  --color-cover-blue: var(--cover-blue);
+  --color-cover-teal: var(--cover-teal);
+  --color-cover-violet: var(--cover-violet);
+  --color-cover-amber: var(--cover-amber);
+  --color-cover-rose: var(--cover-rose);
+  --color-cover-gray: var(--cover-gray);
+  --color-cover-orange: var(--cover-orange);
+  --color-cover-green: var(--cover-green);
+  --color-cover-indigo: var(--cover-indigo);
+  --color-cover-red: var(--cover-red);
 
   /* High priority (orange, distinct from danger; always with an icon or label). */
   --color-priority-high: var(--priority-high);

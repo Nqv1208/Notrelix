@@ -10,8 +10,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Reope
 /// status that is not done. Completion (who, when) is cleared.
 /// </summary>
 [IdempotencyOperation("work-management.board-items.reopen-board-item.v1")]
-public record ReopenBoardItemCommand(Guid BoardItemId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ReopenBoardItemCommand(Guid BoardItemId, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -22,9 +22,11 @@ public class ReopenBoardItemCommandHandler : IRequestHandler<ReopenBoardItemComm
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public ReopenBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public ReopenBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
@@ -32,12 +34,19 @@ public class ReopenBoardItemCommandHandler : IRequestHandler<ReopenBoardItemComm
 
     public async Task<Result> Handle(ReopenBoardItemCommand request, CancellationToken ct)
     {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(ReopenBoardItemCommand request, CancellationToken ct)
+    {
         var item = await _context.BoardItems
             .Include(i => i.FieldValues)
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        if (!item.CompletedAt.HasValue) return Result.Success();
+        if (!item.CompletedAt.HasValue) return VersionedResult.Success(item.Version);
 
         var now = _timeProvider.UtcNow;
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, ct);
@@ -52,7 +61,7 @@ public class ReopenBoardItemCommandHandler : IRequestHandler<ReopenBoardItemComm
             item.Reopen(_currentUser.UserId, now);
         }
 
-        return Result.Success();
+        return VersionedResult.Success(item.Version);
     }
 
     /// <summary>The recorded earlier status when it is still an open option, else the first open option.</summary>

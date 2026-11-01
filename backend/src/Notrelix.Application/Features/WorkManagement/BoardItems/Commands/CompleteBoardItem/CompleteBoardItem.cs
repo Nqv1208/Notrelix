@@ -6,8 +6,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Compl
 [IdempotencyOperation("work-management.board-items.complete-board-item.v1")]
 public record CompleteBoardItemCommand(
     Guid BoardItemId,
-    DateTimeOffset? CompletedAt)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    DateTimeOffset? CompletedAt,
+    long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -18,12 +19,15 @@ public class CompleteBoardItemCommandHandler : IRequestHandler<CompleteBoardItem
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CompleteBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -31,12 +35,19 @@ public class CompleteBoardItemCommandHandler : IRequestHandler<CompleteBoardItem
 
     public async Task<Result> Handle(CompleteBoardItemCommand request, CancellationToken ct)
     {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(CompleteBoardItemCommand request, CancellationToken ct)
+    {
         var item = await _context.BoardItems
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var completedAt = request.CompletedAt ?? _dateTimeProvider.UtcNow;
-        item.Complete(completedAt, _requestContext.UserId, _dateTimeProvider.UtcNow);
-        return Result.Success();
+        item.CompleteOccurrence(completedAt, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        return VersionedResult.Success(item.Version);
     }
 }

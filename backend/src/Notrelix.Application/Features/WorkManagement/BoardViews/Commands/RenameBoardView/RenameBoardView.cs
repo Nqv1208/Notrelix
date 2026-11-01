@@ -6,8 +6,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.Renam
 [IdempotencyOperation("work-management.board-views.rename-board-view.v1")]
 public record RenameBoardViewCommand(
     Guid ViewId,
-    string Name)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string Name,
+    long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
@@ -18,18 +19,28 @@ public class RenameBoardViewCommandHandler : IRequestHandler<RenameBoardViewComm
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public RenameBoardViewCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(RenameBoardViewCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RenameBoardViewCommand request, CancellationToken ct)
     {
         var view = await _context.BoardViews
             .FirstOrDefaultAsync(v => v.Id == request.ViewId, ct);

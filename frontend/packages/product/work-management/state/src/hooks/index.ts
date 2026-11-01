@@ -14,7 +14,6 @@ export * from "./use-kanban-columns";
 export * from "../mutations/use-create-kanban-column";
 export * from "../mutations/use-update-kanban-column";
 export * from "../mutations/use-delete-kanban-column";
-export * from "../mutations/use-reorder-kanban-columns";
 
 export * from "../queries/use-card";
 export * from "../queries/use-card-detail";

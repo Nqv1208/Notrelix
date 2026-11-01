@@ -38,8 +38,11 @@ export type ActivityEventWords = {
   readonly movedToBoardPlain: string;
   readonly archived: string;
   readonly unarchived: string;
+  readonly datesChanged: string;
   readonly deleted: string;
   readonly restored: string;
+  /** Added after a line an Automation rule made. Placeholder: {{rule}}. */
+  readonly viaRule: string;
 };
 
 export const ACTIVITY_WORDS_EN: ActivityEventWords = {
@@ -72,8 +75,10 @@ export const ACTIVITY_WORDS_EN: ActivityEventWords = {
   movedToBoardPlain: "moved this item to another board",
   archived: "archived this item",
   unarchived: "restored this item from the archive",
+  datesChanged: "changed the dates",
   deleted: "deleted this item",
   restored: "restored this item from deleted",
+  viaRule: "by the rule {{rule}}",
 };
 
 export const ACTIVITY_WORDS_VI: ActivityEventWords = {
@@ -108,8 +113,10 @@ export const ACTIVITY_WORDS_VI: ActivityEventWords = {
   movedToBoardPlain: "chuyển việc sang bảng khác",
   archived: "lưu trữ việc này",
   unarchived: "khôi phục việc này từ kho lưu trữ",
+  datesChanged: "đổi ngày của việc này",
   deleted: "xóa việc này",
   restored: "khôi phục việc này đã xóa",
+  viaRule: "bằng quy tắc {{rule}}",
 };
 
 export interface DescribedActivity {
@@ -161,15 +168,21 @@ export function describeActivityEvent(
   const sentence = (
     template: string,
     detail?: ActivityDetail,
-  ): DescribedActivity => ({
-    verb: fill(template, {
+  ): DescribedActivity => {
+    const verb = fill(template, {
       field: change.fieldName ?? "",
       from: from ?? "",
       to: to ?? "",
       person,
-    }).trim(),
-    ...(detail ? { detail } : {}),
-  });
+    }).trim();
+    return {
+      // The history says which rule made the change, not only the person the rule acts for.
+      verb: change.ruleName
+        ? `${verb} ${fill(words.viaRule, { rule: change.ruleName })}`
+        : verb,
+      ...(detail ? { detail } : {}),
+    };
+  };
 
   switch (event.code) {
     case "work.item-created":
@@ -231,6 +244,8 @@ export function describeActivityEvent(
       );
     case "work.item-archived":
       return sentence(words.archived);
+    case "work.item-dates-changed":
+      return sentence(words.datesChanged, diff());
     case "work.item-unarchived":
       return sentence(words.unarchived);
     case "work.item-deleted":

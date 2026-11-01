@@ -52,7 +52,7 @@ public class ItemStatusAndSystemFieldWritesTests : WorkManagementHandlerTestBase
         later.AddDefaultStatusOptions(TestUserId, TestNow);
         SetupBoardFields(later, _status);
 
-        var result = await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.Review).ToString()), CancellationToken.None);
+        var result = await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.Review).ToString(), ExpectedVersion: 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         _item.FieldValues.Should().ContainSingle().Which.FieldId.Should().Be(_status.Id);
@@ -63,10 +63,10 @@ public class ItemStatusAndSystemFieldWritesTests : WorkManagementHandlerTestBase
     {
         SetupBoardFields(_status, _dueDate, _title);
 
-        await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.Done).ToString()), CancellationToken.None);
+        await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.Done).ToString(), ExpectedVersion: 1), CancellationToken.None);
         _item.CompletedAt.Should().Be(TestNow);
 
-        await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.InProgress).ToString()), CancellationToken.None);
+        await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.InProgress).ToString(), ExpectedVersion: 1), CancellationToken.None);
         _item.CompletedAt.Should().BeNull();
     }
 
@@ -97,7 +97,7 @@ public class ItemStatusAndSystemFieldWritesTests : WorkManagementHandlerTestBase
     public async Task ClearingTheStatus_ReopensTheItem()
     {
         SetupBoardFields(_status, _dueDate, _title);
-        await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.Done).ToString()), CancellationToken.None);
+        await StatusHandler().Handle(new UpdateBoardItemStatusCommand(_item.Id, Option(_status, WorkStatusCategory.Done).ToString(), ExpectedVersion: 1), CancellationToken.None);
 
         await new ClearFieldValueCommandHandler(DbContextMock.Object, _currentUser.Object, DateTimeProviderMock.Object)
             .Handle(new ClearFieldValueCommand(_item.Id, _status.Id, 1), CancellationToken.None);

@@ -111,7 +111,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
     public async Task StatusOfASystemStatusField_IsWrittenThroughTheStatusCommand()
     {
         await InTransactionAsync(context => new UpdateBoardItemStatusCommandHandler(context, CurrentUser(), Clock())
-            .Handle(new UpdateBoardItemStatusCommand(_itemId, _doneOptionId.ToString()), CancellationToken.None));
+            .Handle(new UpdateBoardItemStatusCommand(_itemId, _doneOptionId.ToString(), ExpectedVersion: 1), CancellationToken.None));
 
         (await StoredValuesAsync(_statusFieldId)).Should().ContainSingle().Which.Should().Contain(_doneOptionId.ToString());
         (await ItemColumnAsync("completed_at")).Should().NotBeNull("a done-category status completes the Item");

@@ -253,6 +253,8 @@ The exact state machine must define:
 - references;
 - Automation/Integrations behavior.
 
+**Archived and deleted Boards (decided 2026-10-30).** An archived Board and its children stay reachable: whoever may read an active Board reads it archived, and a person who may not still gets the identical NotFound (GOV-025, GOV-033). It is read-only: every write on the Board or one of its children is refused with the stable code `WorkManagement_Board_Archived`, except the lifecycle commands archive, unarchive, delete and restore, which need ManageBoard. A deleted Board is reachable only for its restore inside the 30-day window and for its delete, which is then a no-op; its children are NotFound. Archiving an already archived Board and deleting a deleted one stay no-ops, and a retry under the same idempotency key replays; the clients send the Board version they read and refresh after a refusal. The archived list shows the archived Boards the person may read, by the same decision as the active list. An Item inside an archived Group is read-only the same way and is refused with `WorkManagement_Group_Archived`.
+
 ---
 
 # 11. WM-004 — Board lifecycle is not view lifecycle
@@ -667,6 +669,12 @@ It may have:
 
 ---
 
+An archived BoardGroup is hidden from every view together with its active Items; the Items keep their group and are read-only, and unarchiving brings back the group and the Items that were active before. Archiving and unarchiving a group carry the group's version. An archived group cannot receive new or moved Items (rule `WorkManagement_Group_CannotReceiveItemsArchived`).
+
+Duplicating a BoardGroup copies its settings and its active top-level Items, each with its active sub-Items kept as sub-Items; archived Items are not copied. A group with more than 500 such Items is refused with `WorkManagement_Group_DuplicateTooManyItems`, never cut. The client sends the copy's title already in the person's language ("Copy of {title}", "Bản sao của {title}"); the server names the copy only when none is sent.
+
+---
+
 # 39. WM-014 — BoardGroup is not universal status
 
 Moving Item between BoardGroups changes structural group/ordering.
@@ -726,6 +734,8 @@ server-authoritative validation
 ```
 
 Floating-point midpoint hacks and client-only authority are forbidden.
+
+A client names the neighbours it sees. Siblings that no client sees, such as an archived group or item, still hold their keys: the server checks the named neighbours against the visible siblings only, and generates the new key in front of the hidden sibling that follows the previous neighbour, so the order of the visible siblings is exactly what the client asked for and a reload cures a stale drop.
 
 ---
 
@@ -900,6 +910,8 @@ authoritative Item state
 ```
 
 Do not let the two silently diverge.
+
+**Handling submissions (decided 2026-10-30, D78.4).** Listing the submissions of a form, processing, rejecting, marking as spam and deleting one need edit rights on the Board (`UpdateItem`: an Editor, a Manager, a Workspace Owner), not `ViewBoard` and not `ManageBoard`, because a response can hold respondent data; a Viewer, a Commenter and an Observer are refused. Managing the form itself (questions, details, publish, close, delete, restore) stays Board management and needs Manager. Submitting still needs the right to create Items (`CreateItem`).
 
 ---
 
@@ -2447,6 +2459,30 @@ frontend/docs/architecture/realtime.md
 ```
 
 ---
+
+# 178A. Card popup capabilities (decided 2026-10-30)
+
+These settings and interactions belong to the Item and are written through the Item's own use cases; none of them is a field value except the Vote field.
+
+**Cover sources.** An Item cover is one of ten colour tokens (blue, teal, violet, amber, rose, gray, orange, green, indigo, red) or an image attachment of the same Item, shown as a top strip or over the whole card. Collaboration owns the attachment; Work keeps only its id and asks Collaboration whether it is a stored image of the Item. Uploading an image from the picker also adds it to the Item's attachments. Set and remove are one write against the Item version; the same cover again changes nothing. No image from an outside service is accepted.
+
+**Repeat semantics.** Options: does not repeat, every day, weekdays (Monday to Friday), every week, every two weeks, every month. A repeating Item needs a due date. Completing a repeating Item with a due date does not leave it completed: in the same Complete use case the due date (and the start date, by the same distance) moves to the first occurrence after the completion, the Item stays open and a repeated fact is raised. A retry under the same idempotency key replays the first result. Completion through a status change is not a repeat. Checklist items are not reset.
+
+**Reminder audience.** One reminder per Item: off, when due, 15 minutes, 1 hour, 1 day (the default), 2 days or 1 week before the due time. It goes to every assignee and every follower of the Item, once per person for the Item, due time and offset, so changing the due date or the offset arms it again. The default (1 day) is the daily due-date job, which now tells followers as well as assignees; the other offsets are told by the same job when their time comes. Each person's own notification preference for due dates still applies.
+
+**Vote visibility.** Vote is a Field Type with no stored value: its value is the number of votes and whether the reader has voted. One vote per person per Item and field; voting again or withdrawing a vote that is not there changes nothing. Voting needs the right to comment, never edit rights. Anyone who can view the board sees who voted. It cannot be written as an ordinary field value. It sorts and filters by its count.
+
+**Viewer tracking.** Opening an Item records the last time each board member viewed it, at most once every five minutes per person and Item. Workspace guests are never recorded. The count and the list (names and last times) are visible to whoever can view the board. The records go with the Item and follow the workspace row-level policy of the Item tables.
+
+**Colour-blind mode.** An account preference (default off). When on, each label colour shows a small shape beside the label name in the picker, the chip row and the card face.
+
+**Face fields.** The fields a Kanban card shows, their order and which of them hide while empty are settings of the Kanban view's own config (`cardFieldIds`, `cardHideEmpty`). Changing them needs edit rights on the board. A field with no value shows a dash unless it hides while empty.
+
+**Repeat on a status move.** Moving a repeating Item with a due date from an open status to a done status completes its occurrence, exactly like the complete action: the Item stays open at its current status and its dates move to the next occurrence, in the same change. An Item with no open status before the move, or with no due date, completes normally.
+
+**Checklist item people and dates.** A checklist item may carry one assignee and its own due time, both optional and both owned by the checklist. Giving an item to a person needs the assign right and a person who can already see the Board; the item due time is a plain update. Both are semantic no-ops when the value does not change.
+
+**Label tones.** The ten label colours of the popup (blue, teal, violet, amber, rose, gray, orange, green, indigo, red) each have a tone in the design tokens; a label colour shows as its own tone by name first, then by hue. The Đêm theme's popover surface and accent follow the card popup artboards (`--panel` #1A2028, accent #5AA9FF with ink #04111F).
 
 # 178. Final Work Management rule
 

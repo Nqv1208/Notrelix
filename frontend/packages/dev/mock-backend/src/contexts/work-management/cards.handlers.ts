@@ -43,6 +43,7 @@
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
 
+import { projectComputedValues } from "../../state/mock-computed-values";
 import type {
   CardDtoApi,
   ChecklistDtoApi,
@@ -57,8 +58,18 @@ import {
   ok,
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
+import {
+  projectCardSettings,
+  projectVoteValues,
+} from "./item-capabilities.handlers";
 import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
+import { rollRepeatOnCompletion } from "./item-capabilities.handlers";
+
+/** What a versioned item write answers: the item's version after it. */
+const versionOf = (store: MockStore, itemId: string) => ({
+  version: store.getCard(itemId)?.version ?? 1,
+});
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
 import {
   assignMember,
@@ -121,6 +132,9 @@ function badRequest(errors: Record<string, string[]>) {
   };
 }
 
+const MOCK_IMAGE_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice"><rect width="320" height="120" fill="#DCE9FA"/><g fill="#8DBBF3"><rect x="40" y="50" width="34" height="70"/><rect x="92" y="34" width="34" height="86"/><rect x="144" y="62" width="34" height="58"/><rect x="196" y="22" width="34" height="98"/><rect x="248" y="46" width="34" height="74"/></g><path d="M20 44 L110 28 L160 56 L212 14 L300 34" fill="none" stroke="#1E5FB5" stroke-width="3"/></svg>';
+
 /** The limits and blocked types of `POST .../attachments/files`. */
 export const MOCK_MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 export const MOCK_MAX_ATTACHMENTS = 50;
@@ -177,11 +191,11 @@ function attachmentDto(file: MockAttachmentRecord, store: MockStore) {
     id: file.id,
     resourceId: file.cardId,
     filename: file.filename,
-    url: "",
-    kind: "File",
+    url: file.url ?? "",
+    kind: file.url ? "Link" : "File",
     sizeBytes: file.sizeBytes,
     contentType: file.contentType,
-    source: "upload",
+    source: file.url ? "link" : "upload",
     uploadedBy: file.uploadedBy,
     uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
     createdAt: file.createdAt,
@@ -217,6 +231,8 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
       isChecked: item.isChecked,
       dueDate: item.dueDate ?? null,
       assigneeId: item.assigneeId ?? null,
+      dueAt: item.dueDate ?? null,
+      assigneeUserId: item.assigneeId ?? null,
       position: item.position ?? idx + 1,
     })),
   }));
@@ -240,16 +256,27 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     startDate: c.startedAt ?? null,
     completedAt,
     cover: null,
+    ...projectCardSettings(store, c.id),
     position: c.position,
     members: projectItemMembers(c, store),
     labels,
     checklists,
     commentCount: comments.length,
     attachmentCount: 0,
-    fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
+    fieldValues: (() => {
+      const merged = {
+        ...fieldValues,
+        ...projectVoteValues(store, c.id, c.boardId),
+      };
+      return Object.keys(merged).length > 0 ? merged : null;
+    })(),
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
     ...{
+      computedValues: projectComputedValues(
+        store.getColumns(c.boardId),
+        fieldValues,
+      ),
       name: c.title,
       groupId: c.listId,
       isArchived: c.isArchived === true,
@@ -522,7 +549,7 @@ export const cardsOperations = [
       if (!item.isArchived && (item.version ?? 1) !== expectedVersion)
         return preconditionFailed();
       store.archiveCard(params.id);
-      return ok<void>(undefined);
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -730,13 +757,21 @@ export const cardsOperations = [
     route: "/board-items/:id/values/:fieldId",
     async handle({ params, body, store }) {
       const data = body as { value: unknown };
+      const target = store.getCard(params.id)?.boardId
+        ? store
+            .getColumns(store.getCard(params.id)!.boardId)
+            .find((column) => column.id === (params as any).fieldId)
+        : undefined;
+      // A Formula is evaluated by the backend and never written.
+      if (target?.fieldType === "formula")
+        return badRequest({ value: ["Cannot write a computed field."] });
       const updated = store.updateFieldValue(
         params.id,
         (params as any).fieldId,
         data.value,
       );
       if (!updated) return notFound("Card not found");
-      return ok<void>(undefined);
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -759,6 +794,9 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const status = (body as { status?: string | null } | undefined)?.status;
       if (!status) return badRequest({ status: ["The status is required."] });
+      // A repeating item moved to a done status rolls to its next occurrence and keeps its status.
+      if (rollRepeatOnCompletion(store, params.id, status))
+        return ok(versionOf(store, params.id));
       const result = store.updateItemStatus(params.id, status);
       if (result === "not-found") return notFound("Card not found");
       if (result === "invalid") {
@@ -766,8 +804,8 @@ export const cardsOperations = [
           status: ["Not an option of the board's Status field."],
         });
       }
-      // The real endpoint answers 204 No Content.
-      return noContent();
+      // The real endpoint answers the item's new version.
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -792,7 +830,7 @@ export const cardsOperations = [
       if (result === "invalid") {
         return badRequest({ userId: ["That person is not a member."] });
       }
-      return noContent();
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -813,7 +851,7 @@ export const cardsOperations = [
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       unassignMember(store, params.id, params.userId);
-      return noContent();
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -971,16 +1009,69 @@ export const cardsOperations = [
           filename: file.filename,
           // A stored file has no public address: it downloads through the
           // content route (`GET .../attachments/:attachmentId/content`).
-          url: "",
-          kind: "File",
+          url: file.url ?? "",
+          kind: file.url ? "Link" : "File",
           sizeBytes: file.sizeBytes,
           contentType: file.contentType,
-          source: "upload",
+          source: file.url ? "link" : "upload",
           uploadedBy: file.uploadedBy,
           uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
           createdAt: file.createdAt,
         })),
       );
+    },
+  }),
+
+  // ─── POST /board-items/:id/attachments ──────────────────────────────────────────
+  // Collaboration.Attachments.Create: attaches a web link (name and http(s) address).
+
+  defineMockOperation<
+    { id: string },
+    { filename?: string | null; url?: string | null },
+    void
+  >({
+    id: "cards.attachments.createLink",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.Create",
+    },
+    method: "POST",
+    route: "/board-items/:id/attachments",
+    async handle({ params, body, store, request }) {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "Idempotency-Key is required.",
+        );
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (store.getUploadByKey(params.id, key)) return noContent();
+      const name = body?.filename?.trim();
+      const url = body?.url?.trim();
+      if (!name || !url || !/^https?:\/\/\S+$/i.test(url))
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "A name and an http or https address are required.",
+        );
+      if (store.getAttachments(params.id).length >= MOCK_MAX_ATTACHMENTS)
+        return attachmentProblem(
+          409,
+          "attachment.limit_exceeded",
+          "The item has the most attachments it can hold.",
+        );
+      const record = store.addAttachment(params.id, {
+        filename: name,
+        sizeBytes: 0,
+        contentType: "text/uri-list",
+        url,
+      });
+      if (!record) return notFound("Card not found");
+      store.rememberUpload(params.id, key, record);
+      return noContent();
     },
   }),
 
@@ -1101,15 +1192,21 @@ export const cardsOperations = [
         return notFound("Attachment not found");
       const file = store.getAttachment(params.id, params.attachmentId);
       if (!file) return notFound("Attachment not found");
+      // An image stub is a small drawing, so a cover made from it has something to show.
+      const isImage = file.contentType.startsWith("image/");
       return {
         status: 200,
         headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Content-Disposition": "attachment",
+          "Content-Type": isImage
+            ? "image/svg+xml"
+            : "text/plain; charset=utf-8",
+          "Content-Disposition": isImage ? "inline" : "attachment",
           "X-Content-Type-Options": "nosniff",
           "Cache-Control": "private, no-store",
         },
-        rawBody: `Tệp mẫu của mock: ${file.filename}`,
+        rawBody: isImage
+          ? MOCK_IMAGE_SVG
+          : `Tệp mẫu của mock: ${file.filename}`,
       };
     },
   }),
@@ -1335,6 +1432,8 @@ export const cardsOperations = [
             isChecked: item.isChecked,
             dueDate: item.dueDate ?? null,
             assigneeId: item.assigneeId ?? null,
+            dueAt: item.dueDate ?? null,
+            assigneeUserId: item.assigneeId ?? null,
             position: item.position ?? idx + 1,
           })),
         })),
@@ -1475,6 +1574,60 @@ export const cardsOperations = [
       if (!store.toggleChecklistItem(params.id))
         return notFound("ChecklistItem not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── PUT /checklist-items/:id/assignee ────────────────────────────────────
+  // WorkManagement.Checklists.SetItemAssignee: a person of the workspace, or nobody.
+
+  defineMockOperation<
+    { id: string },
+    { assigneeUserId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "checklistItems.setAssignee",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.SetItemAssignee",
+    } as any,
+    method: "PUT",
+    route: "/checklist-items/:id/assignee",
+    async handle({ params, body, store, request }) {
+      const missing = missingIdempotencyKey(request);
+      if (missing) return missing;
+      const assignee = body?.assigneeUserId ?? null;
+      if (assignee !== null && !store.getUser(assignee))
+        return badRequest({ assigneeUserId: ["Unknown person."] });
+      if (!store.updateChecklistItem(params.id, { assigneeId: assignee }))
+        return notFound("ChecklistItem not found");
+      return noContent();
+    },
+  }),
+
+  // ─── PUT /checklist-items/:id/due ─────────────────────────────────────────
+  // WorkManagement.Checklists.SetItemDue: the item's own due time, or none.
+
+  defineMockOperation<
+    { id: string },
+    { dueAt?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "checklistItems.setDue",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.SetItemDue",
+    } as any,
+    method: "PUT",
+    route: "/checklist-items/:id/due",
+    async handle({ params, body, store, request }) {
+      const missing = missingIdempotencyKey(request);
+      if (missing) return missing;
+      const due = body?.dueAt ?? null;
+      if (due !== null && Number.isNaN(Date.parse(due)))
+        return badRequest({ dueAt: ["Not a date and time."] });
+      if (!store.updateChecklistItem(params.id, { dueDate: due }))
+        return notFound("ChecklistItem not found");
+      return noContent();
     },
   }),
 

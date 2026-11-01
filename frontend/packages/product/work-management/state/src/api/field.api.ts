@@ -1,19 +1,13 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type { OperationRequestBody } from "@notrelix/contracts";
-import type {
-  BoardTableColumn,
-  FieldDefinition,
-} from "@notrelix/work-management-core";
+import type { FieldDefinition } from "@notrelix/work-management-core";
 
 type CreateFieldOp = "WorkManagement.BoardFields.Create";
 type CreateFieldBody = OperationRequestBody<CreateFieldOp>;
 
 type UpdateFieldOp = "WorkManagement.BoardFields.Update";
 type UpdateFieldBody = OperationRequestBody<UpdateFieldOp>;
-
-type MoveFieldOp = "WorkManagement.BoardFields.Move";
-type MoveFieldBody = OperationRequestBody<MoveFieldOp>;
 
 export type CreateColumnInput = {
   boardId: string;
@@ -30,6 +24,8 @@ export type UpdateColumnInput = {
   fieldType?: FieldDefinition["fieldType"];
   settings?: Record<string, unknown>;
   isHidden?: boolean;
+  /** The field version the person saw. */
+  expectedVersion: number;
 };
 
 export function createColumnApi(client: NotrelixClient) {
@@ -39,9 +35,8 @@ export function createColumnApi(client: NotrelixClient) {
     async createColumn(input: CreateColumnInput): Promise<string> {
       const body: CreateFieldBody = {
         name: input.name,
-        // The domain enum is `MultiSelect`; the read model says `multi_select`.
-        type:
-          input.fieldType === "multi_select" ? "multiselect" : input.fieldType,
+        // The domain enum is `MultiSelect` / `LongText`; the read model says `multi_select` / `long_text`.
+        type: input.fieldType.replaceAll("_", ""),
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
@@ -64,6 +59,7 @@ export function createColumnApi(client: NotrelixClient) {
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
+        expectedVersion: input.expectedVersion,
       };
       await api.patch<void>(
         endpoints.boardFields.detail(input.boardId, input.columnId),
@@ -73,26 +69,14 @@ export function createColumnApi(client: NotrelixClient) {
       // If it's a BoardView preference, it's not part of the board field update!
     },
 
-    async deleteColumn(boardId: string, columnId: string): Promise<void> {
-      await api.delete<void>(endpoints.boardFields.detail(boardId, columnId));
-    },
-
-    async reorderColumns(
+    async deleteColumn(
       boardId: string,
-      columns: Pick<BoardTableColumn, "id">[] | string[],
+      columnId: string,
+      expectedVersion: number,
     ): Promise<void> {
-      // Transitional (WM-V3-FE-001 sends one neighbor-relative move per drag):
-      // the full-list reorder route is retired, so the desired order is applied
-      // by appending each column in turn; appending the current last column is
-      // a server-side no-op.
-      const body: MoveFieldBody = {};
-      for (const column of columns) {
-        const columnId = typeof column === "string" ? column : column.id;
-        await api.post<void>(
-          endpoints.boardFields.move(boardId, columnId),
-          body,
-        );
-      }
+      await api.delete<void>(
+        `${endpoints.boardFields.detail(boardId, columnId)}?expectedVersion=${expectedVersion}`,
+      );
     },
   };
 }

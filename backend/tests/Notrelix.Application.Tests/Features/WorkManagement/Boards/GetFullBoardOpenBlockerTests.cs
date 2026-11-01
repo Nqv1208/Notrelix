@@ -21,12 +21,7 @@ public class GetFullBoardOpenBlockerTests : WorkManagementHandlerTestBase
         collaboration
             .Setup(c => c.GetCountsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, WorkItemCollaborationCounts>());
-        _handler = new GetFullBoardQueryHandler(
-            DbContextMock.Object,
-            actors.Object,
-            collaboration.Object,
-            new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(),
-            RequestContextMock.Object);
+        _handler = new GetFullBoardQueryHandler(DbContextMock.Object, actors.Object, new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(DbContextMock.Object, actors.Object, collaboration.Object, RequestContextMock.Object), new Moq.Mock<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemPageReader>().Object, new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(), RequestContextMock.Object);
     }
 
     private BoardItemLink Link(Guid source, Guid target, BoardItemLinkType type) => BoardItemLink.Create(

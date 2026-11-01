@@ -57,7 +57,60 @@ export const en = {
     dragHandle: "Drag to reorder",
     reorderUp: "Move up",
     reorderDown: "Move down",
+    moved: "{{name}} moved to position {{position}} of {{total}}",
     lockedReason: "This cannot be changed here",
+  },
+  conflict: {
+    someone: "Someone else",
+    they: "They",
+    and: "and",
+    titleGeneral: "{{by}} just changed the board settings at {{time}}",
+    titleGeneralNoTime: "{{by}} just changed the board settings",
+    titleField: "{{by}} just changed this field",
+    bodyGeneral:
+      "{{they}} changed {{fields}}. Yours is not saved yet and stays in the form below; nothing was overwritten.",
+    bodyField: "{{they}} changed {{fields}}. Yours is not saved yet.",
+    bodyUnknown:
+      "Yours is not saved yet and stays in the form below; nothing was overwritten.",
+    showDiff: "See differences",
+    hideDiff: "Hide differences",
+    takeTheirs: "Use the new version",
+    keepMine: "Keep mine",
+    keepMineAndSave: "Keep mine and save",
+    working: "Saving…",
+    diffLabel: "Differences between your version and the latest",
+    columns: {
+      part: "Field",
+      mine: "Yours",
+      latest: "Latest by {{by}}",
+      onSave: "When you save",
+    },
+    unchanged: "(unchanged)",
+    choiceMine: "Keep yours",
+    choiceLatest: "Take the new one",
+    diffHint:
+      "Keep mine only overwrites the fields you changed; fields only {{by}} changed still take the new version.",
+    saveHint: "Pick one way out in the notice above to save.",
+    renamed: "{{by}} renamed it to “{{value}}”.",
+    changedTo: "{{by}} changed it to “{{value}}”.",
+    optionRemoved: "{{by}} removed “{{name}}”.",
+    optionAdded: "{{by}} added “{{name}}”.",
+    savedMine: "Saved: your change sits on the latest version by {{by}}.",
+    tookTheirs:
+      "Using the latest version by {{by}}. Your unsaved changes were dropped.",
+    parts: {
+      name: "Board name",
+      description: "Description",
+      color: "Colour",
+      prefix: "Item key",
+      fieldName: "Display name",
+      options: "Options",
+      required: "Required",
+      guidance: "Guidance",
+      defaultOption: "Default value",
+    },
+    yes: "Yes",
+    no: "No",
   },
   feedback: {
     saved: "Saved",
@@ -96,6 +149,52 @@ export const en = {
     archivedMeta: "archived {{date}} · {{name}}",
     restore: "Restore",
     restoreLabel: "Restore the field {{name}}",
+    tabs: { live: "In use", deleted: "Deleted", label: "Field lists" },
+    deleted: {
+      label: "Deleted fields",
+      columns: {
+        name: "Field name",
+        type: "Type",
+        by: "Deleted by · when",
+        left: "Left to restore",
+      },
+      meta: "{{count}} items have a value",
+      metaOne: "1 item has a value",
+      metaNone: "no values",
+      deletedOn: "deleted {{date}}",
+      unknownPerson: "Someone",
+      left: "{{count}} days left",
+      leftOne: "1 day left",
+      leftToday: "Less than a day left",
+      gone: "Past 30 days",
+      restore: "Restore",
+      restoring: "Restoring…",
+      note: "A deleted field is kept 30 days, then removed with its values. Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
+      nameTaken:
+        "Couldn't restore: another field already uses the name “{{name}}”. Rename the field in use, then restore again.",
+      openLive: "Open the field in use",
+      openField: "Open the field",
+      expired:
+        "It was deleted more than 30 days ago and can't be restored any more. Its values were removed with it.",
+      dismiss: "Remove from the list",
+      already: "{{name}} was restored by someone else. The list is refreshed.",
+      forbidden:
+        "You can see this list but can't restore the field. Ask a Board manager to restore it.",
+      failed: "Couldn't restore the field {{name}}. Nothing changed.",
+      retry: "Try again",
+      done: "Restored the field {{name}}",
+      doneBody:
+        "The old values of {{count}} items show again. Views and filters are not applied again.",
+      doneBodyNone: "Views and filters are not applied again.",
+      emptyTitle: "No field has been deleted",
+      emptyBody:
+        "A deleted field waits here for 30 days; restoring shows its old values again. After 30 days the field and its values are removed.",
+      loadError: "Couldn't load the deleted fields",
+      loadErrorBody:
+        "The connection was lost. The old list is not shown so a field isn't restored from changed data.",
+      reload: "Try again",
+      loading: "Loading the deleted fields",
+    },
     empty: {
       title: "This board has no data fields yet.",
       body: "Add a field to give every item a column of its own.",
@@ -367,7 +466,8 @@ export const en = {
     makeDefault: "Make default",
     copyName: "{{name}} (copy)",
     deleteConfirm: "Delete the view “{{name}}”? No item is deleted.",
-    deleteDefault: "The default view cannot be deleted",
+    deleteDefault: "The only shared view cannot be deleted",
+    nextDefault: "The default view becomes",
     brokenTitle: "This view is empty because its date field was archived.",
     brokenBody:
       "“{{field}}” was archived on {{date}} by {{name}}. Whoever opens the tab {{view}} sees this notice instead of an empty calendar.",
@@ -425,10 +525,23 @@ export const en = {
     danger: "Danger zone",
     archive: "Archive board",
     archiveBody:
-      "The board is hidden from the department's list. Items and history are kept, and it can be restored at any time.",
+      "The board becomes read-only and leaves the working lists. Items and history are kept, and a manager can unarchive it at any time.",
     archiveConfirm:
-      "Archive the board “{{name}}”? It can be restored at any time.",
+      "Archive the board “{{name}}”? It can be unarchived at any time.",
+    archiveEffect:
+      "It becomes read-only: nobody can add or change items until it is unarchived. Its {{items}} items ({{open}} not done), {{members}} members, fields and views stay. Its automation rules and integration sync pause.",
+    archiveEffectPlain:
+      "It becomes read-only: nobody can add or change items until it is unarchived. Items, fields and views stay. Its automation rules and integration sync pause.",
     archiveAction: "Archive board",
+    unarchive: "Unarchive board",
+    unarchiveBody:
+      "The board is archived and read-only. Unarchiving lets people write again and resumes its automation rules and integration sync.",
+    unarchiveAction: "Unarchive board",
+    unarchiveDone: "The board was unarchived.",
+    deleteEffect:
+      "The board and its {{items}} items leave every list and open as not found for people without the manage permission. A manager can restore it for 30 days, then it is deleted for good.",
+    deleteEffectPlain:
+      "The board and its items leave every list and open as not found for people without the manage permission. A manager can restore it for 30 days, then it is deleted for good.",
     delete: "Delete board",
     deleteBody:
       "Recoverable for 30 days, then deleted for good. Documents that mention the board are not deleted.",
@@ -465,6 +578,20 @@ export const en = {
       "Deleting a group never deletes items. The last group of a board cannot be deleted.",
     lastGroup: "The last group of a board cannot be deleted",
     notEmpty: "Move the items out of the group first; then it can be deleted",
+    duplicate: "Duplicate the group",
+    copyName: "Copy of {{name}}",
+    archive: "Archive the group",
+    archiveQuestion: "Archive the group “{{name}}”?",
+    archiveBody:
+      "Its {{count}} items are hidden from every view and stay in the group, read-only. Unarchive the group to bring them back.",
+    archiveBodyEmpty:
+      "The group has no item. It is hidden from every view until you unarchive it.",
+    archiveConfirm: "Archive the group",
+    archivedList: "Archived groups",
+    archivedSummary: "{{count}} archived",
+    archivedNote: "Hidden from every view; their items stay inside.",
+    unarchive: "Unarchive",
+    unarchiveLabel: "Unarchive the group {{name}}",
   },
   labels: {
     title: "Labels",
@@ -484,11 +611,15 @@ export const en = {
     colorLabel: "Colour",
     colors: {
       data: "Blue",
-      security: "Red",
-      training: "Green",
+      security: "Rose",
+      training: "Teal",
       report: "Amber",
       doc: "Grey",
       test: "Violet",
+      orange: "Orange",
+      green: "Green",
+      indigo: "Indigo",
+      red: "Red",
     },
     addConfirm: "Add",
     nameTaken: "A label with this name already exists.",
@@ -520,6 +651,8 @@ export const en = {
     includeItemsCount_other: "Include the {{count}} items of this board",
     includeItemsHint:
       "Copies each top-level item with its name, description and field values. Comments, files and sub-items are never copied. At most 500 items.",
+    includeItemsOverCap:
+      "This board has {{count}} items. A template holds at most 500, and it is never cut short: save it without items, or archive some items first.",
     saveConfirm: "Save template",
     saved:
       "Saved the template “{{name}}” as a draft. Once a workspace admin publishes it, everyone can pick it when creating a board.",
@@ -630,7 +763,60 @@ export const vi: BoardSettingsCopy = {
     dragHandle: "Kéo để sắp xếp",
     reorderUp: "Chuyển lên",
     reorderDown: "Chuyển xuống",
+    moved: "Đã chuyển “{{name}}” đến vị trí {{position}} trên {{total}}",
     lockedReason: "Mục này không đổi được ở đây",
+  },
+  conflict: {
+    someone: "Một người khác",
+    they: "Họ",
+    and: "và",
+    titleGeneral: "{{by}} vừa sửa thiết lập board lúc {{time}}",
+    titleGeneralNoTime: "{{by}} vừa sửa thiết lập board",
+    titleField: "{{by}} vừa sửa trường này",
+    bodyGeneral:
+      "{{they}} đổi {{fields}}. Bản của bạn chưa được lưu và vẫn nằm trong biểu mẫu bên dưới; chưa có gì bị ghi đè.",
+    bodyField: "{{they}} đổi {{fields}}. Bản của bạn chưa lưu.",
+    bodyUnknown:
+      "Bản của bạn chưa được lưu và vẫn nằm trong biểu mẫu bên dưới; chưa có gì bị ghi đè.",
+    showDiff: "Xem khác biệt",
+    hideDiff: "Ẩn khác biệt",
+    takeTheirs: "Dùng bản mới",
+    keepMine: "Giữ của tôi",
+    keepMineAndSave: "Giữ của tôi và lưu",
+    working: "Đang lưu…",
+    diffLabel: "Khác biệt giữa bản của bạn và bản mới nhất",
+    columns: {
+      part: "Trường",
+      mine: "Của bạn",
+      latest: "Bản mới nhất của {{by}}",
+      onSave: "Khi bạn lưu",
+    },
+    unchanged: "(không đổi)",
+    choiceMine: "Giữ của bạn",
+    choiceLatest: "Lấy bản mới",
+    diffHint:
+      "Giữ của tôi chỉ ghi đè trường bạn đã sửa; trường chỉ {{by}} sửa vẫn lấy bản mới.",
+    saveHint: "Chọn một cách xử lý ở thông báo phía trên để lưu.",
+    renamed: "{{by}} đổi tên thành “{{value}}”.",
+    changedTo: "{{by}} đổi thành “{{value}}”.",
+    optionRemoved: "{{by}} đã bỏ “{{name}}”.",
+    optionAdded: "{{by}} đã thêm “{{name}}”.",
+    savedMine: "Đã lưu: thay đổi của bạn nằm trên bản mới nhất của {{by}}.",
+    tookTheirs:
+      "Đã dùng bản mới nhất của {{by}}. Thay đổi chưa lưu của bạn đã bỏ.",
+    parts: {
+      name: "Tên board",
+      description: "Mô tả",
+      color: "Màu",
+      prefix: "Mã việc",
+      fieldName: "Tên hiển thị",
+      options: "Các lựa chọn",
+      required: "Bắt buộc",
+      guidance: "Hướng dẫn",
+      defaultOption: "Giá trị mặc định",
+    },
+    yes: "Có",
+    no: "Không",
   },
   feedback: {
     saved: "Đã lưu",
@@ -669,6 +855,52 @@ export const vi: BoardSettingsCopy = {
     archivedMeta: "lưu trữ {{date}} · {{name}}",
     restore: "Khôi phục",
     restoreLabel: "Khôi phục trường {{name}}",
+    tabs: { live: "Đang dùng", deleted: "Đã xoá", label: "Danh sách trường" },
+    deleted: {
+      label: "Trường đã xoá",
+      columns: {
+        name: "Tên trường",
+        type: "Loại",
+        by: "Người xoá · lúc",
+        left: "Còn khôi phục",
+      },
+      meta: "{{count}} việc có giá trị",
+      metaOne: "1 việc có giá trị",
+      metaNone: "không có giá trị",
+      deletedOn: "xoá {{date}}",
+      unknownPerson: "Một người",
+      left: "Còn {{count}} ngày",
+      leftOne: "Còn 1 ngày",
+      leftToday: "Còn chưa đến 1 ngày",
+      gone: "Quá 30 ngày",
+      restore: "Khôi phục",
+      restoring: "Đang khôi phục…",
+      note: "Trường đã xoá giữ 30 ngày, sau đó bị xoá hẳn cùng giá trị. Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
+      nameTaken:
+        "Chưa khôi phục được: tên “{{name}}” đang được một trường khác dùng. Đổi tên trường đang dùng đó rồi khôi phục lại.",
+      openLive: "Mở trường đang dùng",
+      openField: "Mở trường",
+      expired:
+        "Đã quá 30 ngày nên không khôi phục được nữa. Giá trị của các việc đã bị xoá cùng trường.",
+      dismiss: "Bỏ khỏi danh sách",
+      already: "{{name}} đã được người khác khôi phục. Danh sách đã làm mới.",
+      forbidden:
+        "Bạn xem được danh sách này nhưng chưa khôi phục được trường. Nhờ người quản lý board khôi phục.",
+      failed: "Chưa khôi phục được trường {{name}}. Không có gì thay đổi.",
+      retry: "Thử lại",
+      done: "Đã khôi phục trường {{name}}",
+      doneBody:
+        "Giá trị cũ của {{count}} việc hiện lại. Chế độ xem và bộ lọc không tự áp lại.",
+      doneBodyNone: "Chế độ xem và bộ lọc không tự áp lại.",
+      emptyTitle: "Chưa có trường nào bị xoá",
+      emptyBody:
+        "Khi xoá một trường, nó nằm ở đây 30 ngày; khôi phục là giá trị cũ hiện lại. Hết 30 ngày, trường và giá trị bị xoá hẳn.",
+      loadError: "Chưa tải được trường đã xoá",
+      loadErrorBody:
+        "Mất kết nối. Không hiện danh sách cũ để tránh khôi phục nhầm.",
+      reload: "Thử lại",
+      loading: "Đang tải trường đã xoá",
+    },
     empty: {
       title: "Board này chưa có trường dữ liệu nào.",
       body: "Thêm một trường để mỗi việc có thêm một cột dữ liệu riêng.",
@@ -934,7 +1166,8 @@ export const vi: BoardSettingsCopy = {
     makeDefault: "Đặt làm mặc định",
     copyName: "{{name}} (bản sao)",
     deleteConfirm: 'Xoá chế độ xem "{{name}}"? Không việc nào bị xoá.',
-    deleteDefault: "Không xoá được chế độ xem mặc định",
+    deleteDefault: "Không xoá được chế độ xem chung duy nhất",
+    nextDefault: "Chế độ xem mặc định sẽ là",
     brokenTitle:
       "Chế độ xem này đang trống vì trường ngày của nó đã bị lưu trữ.",
     brokenBody:
@@ -992,9 +1225,22 @@ export const vi: BoardSettingsCopy = {
     danger: "Vùng nguy hiểm",
     archive: "Lưu trữ board",
     archiveBody:
-      "Board ẩn khỏi danh sách của phòng ban. Việc và lịch sử giữ nguyên, khôi phục được bất cứ lúc nào.",
-    archiveConfirm: 'Lưu trữ board "{{name}}"? Khôi phục được bất cứ lúc nào.',
+      "Board chuyển sang chỉ đọc và rời các danh sách đang làm việc. Việc và lịch sử giữ nguyên, quản lý bỏ lưu trữ được bất cứ lúc nào.",
+    archiveConfirm: 'Lưu trữ board "{{name}}"? Bỏ lưu trữ được bất cứ lúc nào.',
+    archiveEffect:
+      "Board chuyển sang chỉ đọc: không ai thêm hay sửa việc cho đến khi bỏ lưu trữ. {{items}} việc ({{open}} chưa xong), {{members}} thành viên, trường và chế độ xem giữ nguyên. Quy tắc tự động và đồng bộ tích hợp của board tạm dừng.",
+    archiveEffectPlain:
+      "Board chuyển sang chỉ đọc: không ai thêm hay sửa việc cho đến khi bỏ lưu trữ. Việc, trường và chế độ xem giữ nguyên. Quy tắc tự động và đồng bộ tích hợp của board tạm dừng.",
     archiveAction: "Lưu trữ board",
+    unarchive: "Bỏ lưu trữ board",
+    unarchiveBody:
+      "Board đang được lưu trữ và chỉ đọc. Bỏ lưu trữ cho phép ghi lại và chạy tiếp quy tắc tự động, đồng bộ tích hợp của board.",
+    unarchiveAction: "Bỏ lưu trữ board",
+    unarchiveDone: "Đã bỏ lưu trữ board.",
+    deleteEffect:
+      "Board và {{items}} việc của nó rời mọi danh sách, và người không có quyền quản lý sẽ thấy board không tồn tại. Quản lý khôi phục được trong 30 ngày, sau đó board bị xoá vĩnh viễn.",
+    deleteEffectPlain:
+      "Board và các việc của nó rời mọi danh sách, và người không có quyền quản lý sẽ thấy board không tồn tại. Quản lý khôi phục được trong 30 ngày, sau đó board bị xoá vĩnh viễn.",
     delete: "Xoá board",
     deleteBody:
       "Khôi phục được trong 30 ngày, sau đó xoá vĩnh viễn. Không xoá tài liệu đã nhắc tới board.",
@@ -1031,6 +1277,20 @@ export const vi: BoardSettingsCopy = {
       "Xoá nhóm không bao giờ xoá việc. Nhóm cuối cùng của board không xoá được.",
     lastGroup: "Nhóm cuối cùng của board không xoá được",
     notEmpty: "Chuyển hết việc ra khỏi nhóm trước, rồi mới xoá được",
+    duplicate: "Nhân bản nhóm",
+    copyName: "Bản sao của {{name}}",
+    archive: "Lưu trữ nhóm",
+    archiveQuestion: 'Lưu trữ nhóm "{{name}}"?',
+    archiveBody:
+      "{{count}} việc trong nhóm bị ẩn khỏi mọi chế độ xem và vẫn nằm trong nhóm, chỉ để xem. Bỏ lưu trữ nhóm để đưa chúng trở lại.",
+    archiveBodyEmpty:
+      "Nhóm không có việc nào. Nhóm bị ẩn khỏi mọi chế độ xem cho đến khi bạn bỏ lưu trữ.",
+    archiveConfirm: "Lưu trữ nhóm",
+    archivedList: "Nhóm đã lưu trữ",
+    archivedSummary: "{{count}} nhóm",
+    archivedNote: "Ẩn khỏi mọi chế độ xem; việc vẫn nằm bên trong.",
+    unarchive: "Bỏ lưu trữ",
+    unarchiveLabel: "Bỏ lưu trữ nhóm {{name}}",
   },
   labels: {
     title: "Nhãn",
@@ -1050,11 +1310,15 @@ export const vi: BoardSettingsCopy = {
     colorLabel: "Màu",
     colors: {
       data: "Xanh dương",
-      security: "Đỏ",
-      training: "Xanh lá",
+      security: "Hồng",
+      training: "Xanh ngọc",
       report: "Vàng hổ phách",
       doc: "Xám",
       test: "Tím",
+      orange: "Cam",
+      green: "Xanh lá",
+      indigo: "Chàm",
+      red: "Đỏ",
     },
     addConfirm: "Thêm",
     nameTaken: "Đã có nhãn khác dùng tên này.",
@@ -1086,6 +1350,8 @@ export const vi: BoardSettingsCopy = {
     includeItemsCount_other: "Kèm {{count}} việc của board này",
     includeItemsHint:
       "Chép tên, mô tả và giá trị trường của từng việc cấp 1. Không chép bình luận, tệp hay việc con. Tối đa 500 việc.",
+    includeItemsOverCap:
+      "Board này có {{count}} việc. Mẫu chứa tối đa 500 việc và không bao giờ bị cắt bớt: hãy lưu mẫu không kèm việc, hoặc lưu trữ bớt việc rồi thử lại.",
     saveConfirm: "Lưu mẫu",
     saved:
       "Đã lưu mẫu “{{name}}” ở dạng bản nháp. Khi quản trị viên workspace xuất bản, mọi người chọn được mẫu này lúc tạo board.",

@@ -23,7 +23,7 @@ public static class SetBoardViewVisibilityEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new SetBoardViewVisibilityCommand(boardId, viewId, body.Visibility), cancellationToken);
+        var result = await sender.Send(new SetBoardViewVisibilityCommand(boardId, viewId, body.Visibility, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

@@ -47,34 +47,34 @@ The product doc also owns approvals, labels, templates, import, export, search a
 
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
-| A | Board lifecycle | WM-001 | 26 | 4 | 2 | 16 | 4 | 0 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 5 | 1 | 23 | 7 | 0 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 2 | 1 | 17 | 2 | 0 | 0 |
-| D | Field values | WM-004 | 12 | 0 | 0 | 12 | 0 | 0 | 0 |
-| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
-| F | Ordering | WM-006 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
-| G | Checklists | WM-007 | 2 | 0 | 0 | 2 | 0 | 0 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 2 | 5 | 7 | 5 | 0 | 0 |
-| I | Table view | WM-009 | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
-| J | Kanban view | WM-010 | 6 | 2 | 1 | 3 | 0 | 0 | 0 |
-| K | Calendar view | WM-011 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
-| L | Timeline view | WM-012 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
-| M | Dashboard projection | WM-013 | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
-| N | Form input | WM-014 | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
-| O | Activity and event production | WM-015 | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
-| P | Realtime synchronization | WM-016 | 4 | 1 | 3 | 0 | 0 | 0 | 0 |
-| Q | Automation handoff | WM-017 | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
-| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 6 | 2 | 0 | 0 |
+| A | Board lifecycle | WM-001 | 26 | 4 | 0 | 3 | 19 | 0 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 11 | 20 | 0 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
+| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 12 | 0 | 0 |
+| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
+| F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
+| G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 1 | 18 | 0 | 0 |
+| I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
+| J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
+| K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| M | Dashboard projection | WM-013 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| N | Form input | WM-014 | 6 | 0 | 0 | 0 | 5 | 0 | 1 |
+| O | Activity and event production | WM-015 | 4 | 0 | 0 | 1 | 3 | 0 | 0 |
+| P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
+| Q | Automation handoff | WM-017 | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
+| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 22 | 14 | 109 | 24 | 0 | 1 |
+| | Total | | 170 | 16 | 2 | 23 | 128 | 0 | 1 |
 
 Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
 
 ## 1.2 The ten most important gaps
 
 1. Competing writes are last-writer-wins. Eight item commands (status, due date, complete, reopen, move to board, assign, unassign), label update and delete, member role change, view config writes and form question writes carry no expected version, and bulk edit sends none per item. The decision is that all of them carry it (UC-WM-B05, UC-WM-B06, UC-WM-B08, UC-WM-B14, UC-WM-A17, UC-WM-C22, UC-WM-H02, UC-WM-N02; D77.3; WMREQ110 to WMREQ113).
-2. There is no realtime on `develop`. Boards converge only by refetch; the adapter, wider event coverage and the access-loss handling are in open PR #193 (UC-WM-P01, UC-WM-P02, UC-WM-P03, UC-WM-P04, UC-WM-Q02). The stream version is also a wall-clock counter, not the resource version (LD4).
+2. Realtime is a notify-only board stream: every board change sends one content-free frame and the open board and card refetch (UC-WM-P01 to UC-WM-P04, UC-WM-Q02). The connection status, the draft choice and live role lowering are built; real e2e and owner check remain. The stream version is also a wall-clock counter, not the resource version (LD4).
 3. Large boards do not scale. Board, item and trash reads are unpaged, filter and sort run on the client, and no read returns filtered totals (UC-WM-T01, UC-WM-H17, UC-WM-I01, UC-WM-J01; WMREQ147).
 4. The delete lifecycle is half built. Board restore applies no 30-day rule, field delete is a hard delete with no restore, and no purge job exists for boards, fields or items (UC-WM-A07, UC-WM-C05, UC-WM-B17).
 5. Personal view state (filter, sort, group, swimlane, return to the shared view, stale-reference hint) exists only in open PR #201; saved filters and preferences are stored but never applied on the server (UC-WM-H06, UC-WM-H07, UC-WM-H08, UC-WM-J04, UC-WM-H11, UC-WM-H12, UC-WM-H09).
@@ -95,7 +95,7 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 |---|---|---|---|---|
 | B-01 | Item lifecycle and assignment writes carry no expected version; last writer wins silently | UpdateBoardItemStatus, SetBoardItemDueDate, CompleteBoardItem, ReopenBoardItem, MoveBoardItemToBoard, AssignBoardItemMember, UnassignBoardItemMember | UC-WM-B05 UC-WM-D04 UC-WM-D05 UC-WM-B06 UC-WM-B08 UC-WM-B33 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/<each>/<each>.cs; backend/src/Notrelix.Infrastructure/Data/Concurrency/ExpectedVersionTargetMap.cs |
 | B-02 | Bulk update has no per-item expected version (D32), which acceptance section 1 does not allow for competing writes | BulkUpdateBoardItems | UC-WM-B14 UC-WM-B36 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/BulkUpdateBoardItems/BulkUpdateBoardItems.cs |
-| B-03 | Board member role change has no expected version | UpdateBoardMemberRole | UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
+| B-03 | Fixed in code, tests pending: board member role change and removal now carry the board version | UpdateBoardMemberRole | UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
 | B-04 | Label update and delete have no expected version | UpdateLabel, DeleteLabel | UC-WM-C22 | backend/src/Notrelix.Application/Features/WorkManagement/Labels/Commands/UpdateLabel/UpdateLabel.cs; backend/src/Notrelix.Application/Features/WorkManagement/Labels/Commands/DeleteLabel/DeleteLabel.cs |
 | B-05 | Field delete has no expected version, is a hard delete, and no restore endpoint exists although the domain event does (D76.5 wants 30-day soft delete) | DeleteBoardField | UC-WM-C04 UC-WM-C05 | backend/src/Notrelix.Application/Features/WorkManagement/BoardFields/Commands/DeleteBoardField/DeleteBoardField.cs |
 | B-06 | View config writes are last-writer-wins: PUT upsert and PATCH config carry no expected version | SaveBoardView, UpdateBoardViewConfig | UC-WM-H02 UC-WM-J05 | backend/src/Notrelix.Application/Features/WorkManagement/BoardViews/Commands/SaveBoardView/SaveBoardView.cs; backend/src/Notrelix.Application/Features/WorkManagement/BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs |
@@ -104,7 +104,7 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 | B-09 | Fixed for the cycle part: CreateBoardItemLink now runs DependencyRules.EnsureNoCycle and refuses a waits-on or blocks link that closes a cycle, naming the path. Open: links are same-board only (cross-board links not built); no kind-change command exists | CreateBoardItemLink; DependencyRules.EnsureNoCycle | UC-WM-B20 UC-WM-B21 UC-WM-L01 UC-WM-B35 | backend/src/Notrelix.Application/Features/WorkManagement/ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs; backend/src/Notrelix.Domain/WorkManagement/Items/DependencyRules.cs |
 | B-10 | PATCH /board-items/{id} has expected version but no Idempotency-Key, unlike sibling mutations | UpdateBoardItem | UC-WM-B04 UC-WM-B19 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs |
 | B-11 | Unbounded reads: board items, full board and trash load everything; computed fields add O(board) work per request (AGENTS.md section 25 red flag) | GetBoardItems, GetFullBoard, ListBoardItemTrash | UC-WM-A09 UC-WM-I01 UC-WM-J01 UC-WM-T01 UC-WM-B13 UC-WM-D07 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Queries/GetFullBoard/GetFullBoard.cs; backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/ListBoardItemTrash/ListBoardItemTrash.cs |
-| B-12 | Realtime StreamVersion is a wall-clock counter, not the resource version; only 8 commands publish on develop (open PR #193 widens coverage, version semantics unchanged) | RealtimeResourceChangedV1, RealtimeChangeMapper | UC-WM-P01 UC-WM-P03 | backend/src/Notrelix.Application/Common/Realtime/RealtimeResourceChangedV1.cs; backend/src/Notrelix.Application/Common/Realtime/RealtimeChangeMapper.cs |
+| B-12 | Realtime StreamVersion is a wall-clock counter, not the resource version; every board write handler now announces on the board stream; version semantics unchanged | RealtimeResourceChangedV1, RealtimeChangeMapper | UC-WM-P01 UC-WM-P03 | backend/src/Notrelix.Application/Common/Realtime/RealtimeResourceChangedV1.cs; backend/src/Notrelix.Application/Common/Realtime/RealtimeChangeMapper.cs |
 | B-13 | Dead code: unregistered duplicate endpoint, handler with no endpoint, stub consumers | CreateChecklistItemEndpoint, GetBoardsBySlugQuery, WM Stub consumers | UC-WM-G02 UC-WM-A09 UC-WM-O03 UC-WM-O04 | backend/src/Notrelix.API/Endpoints/WorkManagement/Checklists/Commands/CreateChecklistItemEndpoint.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Queries/GetBoardsBySlug/GetBoardsBySlug.cs; backend/src/Notrelix.Infrastructure/Messaging/ConsumerRegistrySetup.cs |
 | B-14 | Handlers with zero test references | ListApprovalRequests, Archive/Unarchive/RestoreBoardView, UpdateFormQuestion, Delete/Pause/ResumeBoardRelation | UC-WM-B28 UC-WM-H03 UC-WM-N02 UC-WM-C18 | backend/src/Notrelix.Application/Features/WorkManagement/Approvals, BoardViews, Forms, Relations |
 | B-15 | No API-level endpoint tests for Forms, Approvals, Templates, Relations, SavedFilters, Preferences | all endpoints of those groups | UC-WM-N01 to N05 UC-WM-B24 to B28 UC-WM-A12 to A15 UC-WM-H09 UC-WM-H06 | backend/tests (API tests project); backend/src/Notrelix.API/Endpoints/WorkManagement |
@@ -114,15 +114,15 @@ Verified against `develop`. B is backend (24 listed), F is frontend (14 listed);
 | B-19 | No purge job: deleted boards (D76.1), fields (D76.5) and trashed items (D51) are never removed after 30 days | none exists | UC-WM-A06 UC-WM-A07 UC-WM-C05 UC-WM-B17 | n/a (missing job) |
 | B-23 | Template create copies structure only; no include-items option, no 500-item refusal (66, D76.13) | CreateBoardTemplate | UC-WM-A12 | backend/src/Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardTemplate/CreateBoardTemplate.cs |
 | B-24 | Saved filters and preferences are stored but never applied server-side; no q, filter, sort or count on item reads | GetBoardItems, SavedFilters.*, BoardPreferences.* | UC-WM-H06 UC-WM-H07 UC-WM-H08 UC-WM-H15 UC-WM-H17 UC-WM-T01 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs |
-| B-25 | Board restore has no retention check; a board deleted long ago restores, and no purge job exists | RestoreBoard, Board.Restore | UC-WM-A07 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RestoreBoard/RestoreBoard.cs; backend/src/Notrelix.Domain/WorkManagement/Boards/Board.cs |
-| B-26 | The last Manager of a board can be removed or demoted; no guard in either handler | RemoveBoardMember, UpdateBoardMemberRole | UC-WM-A26 UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RemoveBoardMember/RemoveBoardMember.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
+| B-25 | Fixed in code, tests pending (the purge job is still missing): board restore now refuses after 30 days. Was: board restore has no retention check; a board deleted long ago restores, and no purge job exists | RestoreBoard, Board.Restore | UC-WM-A07 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RestoreBoard/RestoreBoard.cs; backend/src/Notrelix.Domain/WorkManagement/Boards/Board.cs |
+| B-26 | Fixed in code, tests pending: the last Manager of a board can no longer be removed or demoted. Was: the last Manager of a board can be removed or demoted; no guard in either handler | RemoveBoardMember, UpdateBoardMemberRole | UC-WM-A26 UC-WM-A17 | backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/RemoveBoardMember/RemoveBoardMember.cs; backend/src/Notrelix.Application/Features/WorkManagement/Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs |
 | B-27 | A moved item gets a new key but the old key is not stored as an alias, so it no longer resolves | MoveBoardItemToBoard | UC-WM-A10 UC-WM-B08 | backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Commands/MoveBoardItemToBoard/MoveBoardItemToBoard.cs |
 | F-01 | Item extras bypass the typed client: raw path strings for links, approvals, following, linked pages, trash, child items, remind, complete, reopen, unarchive, restore, move-to-board | item-extras.api.ts | UC-WM-B03 UC-WM-B06 UC-WM-B08 UC-WM-B10 UC-WM-B13 UC-WM-B20 UC-WM-B21 UC-WM-R05 UC-WM-R06 UC-WM-B24 UC-WM-B25 UC-WM-B26 | frontend/packages/product/work-management/state/src/api/item-extras.api.ts |
 | F-02 | Board archive and delete use raw paths | archiveBoard, deleteBoard | UC-WM-A04 UC-WM-A06 | frontend/packages/product/work-management/state/src/api/board-settings.api.ts:367,373 |
 | F-03 | Raw /boards/:id/plan-items path for Calendar and Timeline; the backend inventory lists no such route and a real e2e asserts it is not called | plan-items | UC-WM-K01 UC-WM-L01 | frontend/packages/product/work-management/state/src/api/item-extras.api.ts:276 |
 | F-04 | About 40 contract operations have no mock handler by id (Approvals.*, Relations.*, BoardPreferences.*, many BoardItems.*, Boards.*, SavedFilters update ops); mock e2e cannot prove those flows | mock-backend | UC-WM-A08 UC-WM-B10 UC-WM-B20 UC-WM-B24 to B28 UC-WM-H09 | frontend/packages/dev/mock-backend/src/contexts/work-management/ |
 | F-05 | Contract operations never called by the UI: BoardPreferences.* (open PR #201), Boards.Restore/Unarchive, BoardGroups.Archive/Unarchive, BoardViews.Archive/Restore, ClearFieldValue, UpdateFieldValues, GetSchema, SavedFilters update ops | generated client | UC-WM-A05 UC-WM-A07 UC-WM-E03 UC-WM-H03 UC-WM-D03 UC-WM-D01 UC-WM-H09 | frontend/packages/product/work-management/state/src (no callers) |
-| F-06 | No realtime adapter on develop: boards converge by refetch only (open PR #193 adds it) | module-adapter-registry | UC-WM-P01 UC-WM-P02 UC-WM-P03 UC-WM-P04 UC-WM-Q02 | frontend/apps/web/src/realtime/module-adapter-registry.ts |
+| F-06 | The Work Management adapter refetches the open board on a board frame; the connection status shows while reconnecting or lost | module-adapter-registry | UC-WM-P01 UC-WM-P02 UC-WM-P03 UC-WM-P04 UC-WM-Q02 | frontend/apps/web/src/realtime/module-adapter-registry.ts |
 | F-07 | No virtualization or paging; sort and filter run client-side on a fully loaded board | table, kanban views | UC-WM-I01 UC-WM-J01 UC-WM-T01 UC-WM-H17 | frontend/packages/product/work-management/web/src/components/views/table, views/kanban |
 | F-08 | Hard-coded capability flags lock field archive, field rules, view split, board automations; field archive contradicts D76.5 soft delete with restore | UNAVAILABLE | UC-WM-C04 UC-WM-C05 UC-WM-Q01 | frontend/packages/product/work-management/state/src/api/board-settings.api.ts |
 | F-09 | Kanban has no multi-select (Q8) and no WIP limit (D37) | KanbanView | UC-WM-B14 UC-WM-I03 UC-WM-J06 | frontend/packages/product/work-management/web/src/components/views/kanban/kanban-view.tsx |
@@ -153,7 +153,7 @@ Table stakes (offered by at least 5 of 7 vendors) and where Notrelix stands on `
 | Item CRUD and sub-items (7) | UC-WM-B01 to B04, UC-WM-B07 to B14 | Built; expected version missing on most writes (gap 1) |
 | Rich custom field types (6) | UC-WM-C01 to C19, UC-WM-D01, UC-WM-F01, UC-WM-H15 | Eleven types built; Relation (UC-WM-C18) and required fields (UC-WM-C19) missing |
 | Groups and sections (6) | UC-WM-E01 to E05, UC-WM-F02 | Built; group delete needs a target group (D76.6) |
-| Table and Kanban (7) | UC-WM-I01, UC-WM-J01 | Built; custom Table columns in open PR #204; no WIP limit (UC-WM-J06) |
+| Table and Kanban (7) | UC-WM-I01, UC-WM-J01 | Built, with custom Table columns; no WIP limit (UC-WM-J06) |
 | Calendar (6) | UC-WM-K01 | Built; drag and day-prefill proof missing |
 | Saved, shared and personal views (6) | UC-WM-H01 to H05, UC-WM-H09 to H11, UC-WM-I02 | Shared and private views built; personal state in open PR #201 |
 | Filter, sort, group (7) | UC-WM-H06 to H08, UC-WM-H15 | Client-side only; server-side on paged boards missing (gap 3) |
@@ -181,172 +181,173 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-WM-A01 | Create a board (blank, preset or from template) | A | Owner/Admin/Member (Space: Editor); Guest denied | yes | partial | partial | none | INTEGRATING | No real e2e; default-group proof (D49, D58); template gallery entry; Guest 403 test |
+| UC-WM-A01 | Create a board (blank, preset or from template) | A | Owner/Admin/Member (Space: Editor); Guest denied | yes | partial | partial | none | HARDENING | No real e2e; default-group proof (D49, D58); template gallery entry; Guest 403 test |
 | UC-WM-A02 | Rename the board and edit its settings | A | Manager | yes | yes | partial | board-settings, work-board-management | HARDENING | Test prefix change affects new items only; design Er/320/768; icon change |
-| UC-WM-A03 | Place a board in a Space or move it between Spaces | A | Manager (+ CreateBoard on target Space) | yes | partial | none | none | INTEGRATING | Design; access-impact warning with grant offer (UC-WM-A25); real e2e |
-| UC-WM-A04 | Archive a board | A | Manager | partial | partial | partial | none | INTEGRATING | automation and integration sync are not paused (D76.1; defect B-18); archive uses a raw path, not the typed client (defect F-02); no real e2e; peers see the banner live only with open PR #193. |
-| UC-WM-A05 | Unarchive a board | A | Manager | yes | no | none | none | IMPLEMENTING | Unarchive UI; design; resume automation/sync; real e2e |
-| UC-WM-A06 | Delete a board | A | Manager (workspace Owner) | partial | partial | none | none | INTEGRATING | 30-day soft delete and purge (D76.1); impact counts in confirm; typed client; design |
-| UC-WM-A07 | Restore a deleted board | A | Manager | partial | no | none | none | IMPLEMENTING | no 30-day window check in Board.Restore, no deleted-boards list or UI, no purge job (see UC-WM-B17); verified in source. |
-| UC-WM-A08 | List boards the person may see | A | Any member; Guest only shared boards | yes | yes | partial | guest-permission | INTEGRATING | Parity test: Private board absent for non-member; mock handler |
-| UC-WM-A09 | Open a board (read: schema, groups, items, preferences) | A | Viewer and above; Guest per grant | partial | partial | complete | board-views-and-settings | INTEGRATING | per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states. |
-| UC-WM-A10 | Assign and keep the item key (prefix and sequence) | A | System on create | partial | yes | complete | work-board-management | INTEGRATING | no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence. |
+| UC-WM-A03 | Place a board in a Space or move it between Spaces | A | Manager (+ CreateBoard on target Space) | yes | partial | none | none | HARDENING | Design; access-impact warning with grant offer (UC-WM-A25); real e2e |
+| UC-WM-A04 | Archive a board | A | Manager | partial | partial | partial | none | HARDENING | automation and integration sync are not paused (D76.1; defect B-18); archive uses a raw path, not the typed client (defect F-02); no real e2e; peers see the banner live only with open PR #193. |
+| UC-WM-A05 | Unarchive a board | A | Manager | yes | no | none | none | HARDENING | Unarchive UI; design; resume automation/sync; real e2e |
+| UC-WM-A06 | Delete a board | A | Manager (workspace Owner) | partial | partial | none | none | HARDENING | 30-day soft delete and purge (D76.1); impact counts in confirm; typed client; design |
+| UC-WM-A07 | Restore a deleted board | A | Manager | partial | no | none | none | HARDENING | no 30-day window check in Board.Restore, no deleted-boards list or UI, no purge job (see UC-WM-B17); verified in source. |
+| UC-WM-A08 | List boards the person may see | A | Any member; Guest only shared boards | yes | yes | partial | guest-permission | HARDENING | Parity test: Private board absent for non-member; mock handler |
+| UC-WM-A09 | Open a board (read: schema, groups, items, preferences) | A | Viewer and above; Guest per grant | partial | partial | complete | board-views-and-settings | HARDENING | per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states. |
+| UC-WM-A10 | Assign and keep the item key (prefix and sequence) | A | System on create | partial | yes | complete | work-board-management | HARDENING | no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence. |
 | UC-WM-A11 | Duplicate a board | A | Manager (ManageBoard); CreateBoard in target Space | no | no | none | none | DEFINED | no endpoint, no UI, no design; behaviour is decided in D78.5. |
-| UC-WM-A12 | Save a board as a template | A | Manager of the board | partial | yes | complete | none | INTEGRATING | Include-items option and 500 refusal (D76.13, 66); design Er |
-| UC-WM-A13 | Publish a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | INTEGRATING | API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5). |
-| UC-WM-A14 | Archive or delete a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | INTEGRATING | API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66). |
-| UC-WM-A15 | Create a board from a template or built-in starter | A | As UC-WM-A01 | yes | partial | complete | none | INTEGRATING | Gallery route on New board; real e2e |
+| UC-WM-A12 | Save a board as a template | A | Manager of the board | partial | yes | complete | none | HARDENING | Include-items option and 500 refusal (D76.13, 66); design Er |
+| UC-WM-A13 | Publish a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | HARDENING | API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5). |
+| UC-WM-A14 | Archive or delete a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | HARDENING | API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66). |
+| UC-WM-A15 | Create a board from a template or built-in starter | A | As UC-WM-A01 | yes | partial | complete | none | HARDENING | Gallery route on New board; real e2e |
 | UC-WM-A16 | Read who has access (sharing summary) | A | ViewBoard (counts); members/managers (entries, log) | yes | yes | partial | board-sharing | HARDENING | Direct GetSharing tests; design Er/L/E |
 | UC-WM-A17 | Add, change or remove a board member | A | Manager (up to own level) | yes | yes | partial | board-sharing | HARDENING | Expected version on role change; last-manager guard (UC-WM-A26) |
 | UC-WM-A18 | Grant explicit access to a user or team | A | Manager (ManageBoardPermission) | yes | yes | partial | guest-permission, board-sharing | HARDENING | Expiry input removed (D76.4); Guest capped at Editor proof |
 | UC-WM-A19 | Invite an external guest to one board | A | ManageBoardPermission | no | no | none | none | DEFINED | no Work Management call to the Workspaces resource-invitation API from the Share dialog; no UI. |
 | UC-WM-A20 | Resend or revoke a resource invitation | A | Issuer or Owner/Admin | no | no | none | none | DEFINED | Depends on UC-WM-A19; design; BE; FE |
-| UC-WM-A21 | Change board visibility (Workspace or Private) | A | Manager | partial | partial | partial | none | INTEGRATING | Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility |
-| UC-WM-A22 | Make a board private with impact preview and bulk add | A | Manager | yes | yes | complete | none | INTEGRATING | Direct handler tests; real e2e; one-transaction proof |
+| UC-WM-A21 | Change board visibility (Workspace or Private) | A | Manager | partial | partial | partial | none | HARDENING | Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility |
+| UC-WM-A22 | Make a board private with impact preview and bulk add | A | Manager | yes | yes | complete | none | HARDENING | Direct handler tests; real e2e; one-transaction proof |
 | UC-WM-A23 | Open a shared board as a Guest | A | Guest with explicit access | yes | partial | none | guest-permission | INTEGRATING | design for the Guest board view; proof that pickers show no emails (Q7); positive guest journey e2e. |
 | UC-WM-A24 | Copy item/board link | A | Any viewer | not applicable | yes | complete | none | INTEGRATING | non-member gets NotFound e2e |
 | UC-WM-A25 | Warn when an access change would strand assignees | A | Manager | partial | partial | none | none | INTEGRATING | Warning on visibility change and move-to-space; design |
 | UC-WM-A26 | Block removing or demoting the last board manager | A | Manager | partial | no | none | none | DEFINED | no last-manager guard in UpdateBoardMemberRole or RemoveBoardMember (verified in source); no design for the message. |
-| UC-WM-B01 | Create an item (full dialog) | B | Editor and above; Guest if Editor | yes | yes | complete | none | INTEGRATING | no real e2e; proof matrix for the create dialog (limits, retry, partial failure); sub-item mode; 'retry the missing part' check. |
-| UC-WM-B02 | Quick-add an item in a group or lane | B | Editor and above | yes | yes | complete | none | INTEGRATING | WIP warning on over-limit add (D37); scroll when outside window; real e2e |
+| UC-WM-A27 | Leave a board | A | Any person with an explicit board role | yes | yes | none | board-share | HARDENING | tests and owner check; decided by the lead 2026-10-31. |
+| UC-WM-B01 | Create an item (full dialog) | B | Editor and above; Guest if Editor | yes | yes | complete | none | HARDENING | no real e2e; proof matrix for the create dialog (limits, retry, partial failure); sub-item mode; 'retry the missing part' check. |
+| UC-WM-B02 | Quick-add an item in a group or lane | B | Editor and above | yes | yes | complete | none | HARDENING | WIP warning on over-limit add (D37); scroll when outside window; real e2e |
 | UC-WM-B03 | Create a sub-item | B | Editor and above | yes | yes | partial | sub-items | HARDENING | Typed client; sheet add; Q3 create-dialog sub-item mode |
-| UC-WM-B04 | Edit the item title in place | B | Editor and above | partial | yes | complete | none | INTEGRATING | PATCH /board-items/{id} has expected version but no Idempotency-Key (see defect B-10). |
-| UC-WM-B05 | Assign people to an item | B | Editor and above (AssignItem) | partial | yes | complete | none | INTEGRATING | expected version on assign and unassign (D77.3; defect B-01); invite action in the 'share the board first' message; Guest picker with no emails; real e2e. |
+| UC-WM-B04 | Edit the item title in place | B | Editor and above | partial | yes | complete | none | HARDENING | PATCH /board-items/{id} has expected version but no Idempotency-Key (see defect B-10). |
+| UC-WM-B05 | Assign people to an item | B | Editor and above (AssignItem) | partial | yes | complete | none | HARDENING | expected version on assign and unassign (D77.3; defect B-01); invite action in the 'share the board first' message; Guest picker with no emails; real e2e. |
 | UC-WM-B06 | Complete, reopen, remind | B | Editor and above | partial | partial | partial | work-board-management | HARDENING | expected version on complete and reopen (D77.3; defect B-01); the Nhắc dialog calls a raw path and is not on the typed client (defect F-01); the real e2e proves only reopen. |
-| UC-WM-B07 | Duplicate an item | B | Editor and above (CreateItem) | partial | yes | partial | none | INTEGRATING | Prove copy set (incl. sub-items option) and exclusions; design Er/busy |
-| UC-WM-B08 | Move an item to another board | B | UpdateItem source + CreateItem target | partial | yes | partial | none | INTEGRATING | Old-key alias (D76.3); mapping notice proof (D50, D54); EV |
+| UC-WM-B07 | Duplicate an item | B | Editor and above (CreateItem) | partial | yes | partial | none | HARDENING | Prove copy set (incl. sub-items option) and exclusions; design Er/busy |
+| UC-WM-B08 | Move an item to another board | B | UpdateItem source + CreateItem target | partial | yes | partial | none | HARDENING | Old-key alias (D76.3); mapping notice proof (D50, D54); EV |
 | UC-WM-B09 | Archive an item | B | Editor and above | yes | yes | complete | sub-items, item-lifecycle | HARDENING | owner check |
-| UC-WM-B10 | Browse archived items and unarchive | B | Editor and above (UpdateItem) | partial | no | complete | item-lifecycle | IMPLEMENTING | BE paged archived list; FE panel; unarchive restores sub-items |
-| UC-WM-B11 | Delete an item (to Trash) | B | Editor and above | yes | yes | complete | none | INTEGRATING | Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e |
-| UC-WM-B12 | Restore an item from Trash | B | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; >30 days refusal proof |
-| UC-WM-B13 | Open the board Trash | B | Editor and above (UpdateItem) | partial | yes | complete | none | INTEGRATING | Paging; typed client; real e2e |
-| UC-WM-B14 | Bulk-edit items (Table and Kanban) | B | Editor and above | yes | partial | complete | none | INTEGRATING | Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e. |
+| UC-WM-B10 | Browse archived items and unarchive | B | Editor and above (UpdateItem) | partial | no | complete | item-lifecycle | HARDENING | BE paged archived list; FE panel; unarchive restores sub-items |
+| UC-WM-B11 | Delete an item (to Trash) | B | Editor and above | yes | yes | complete | none | HARDENING | Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e |
+| UC-WM-B12 | Restore an item from Trash | B | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; >30 days refusal proof |
+| UC-WM-B13 | Open the board Trash | B | Editor and above (UpdateItem) | partial | yes | complete | none | HARDENING | Paging; typed client; real e2e |
+| UC-WM-B14 | Bulk-edit items (Table and Kanban) | B | Editor and above | yes | partial | complete | none | HARDENING | Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e. |
 | UC-WM-B15 | Use the item action menu everywhere | B | Any viewer | not applicable | yes | complete | none | INTEGRATING | real e2e; proof that an item deleted while the menu is open is announced. |
 | UC-WM-B16 | See item face states (card and row) | B | Any viewer | yes | yes | complete | none | INTEGRATING | Non-colour marks proof; 99+ cap |
 | UC-WM-B17 | Purge items, boards and fields after their 30-day window | B | System (job); Manager restores before | no | partial | none | none | DEFINED | no purge job for items, boards or fields; decided in D78.10; needs the audit fact and tests. |
 | UC-WM-B18 | Open an item (side sheet or full page) | B | Viewer and above; Guest per grant | yes | yes | complete | item-page | INTEGRATING | paged comments, history and sub-items; replace the 'not available yet' fallback copy (defect F-10); proof of the section order and the sheet behaviours. |
 | UC-WM-B19 | Edit the item description | B | Editor and above | partial | yes | complete | none | INTEGRATING | no actor name on the conflict response (Q12 needs a contract addition); PATCH has no Idempotency-Key. |
-| UC-WM-B20 | Link two items (waits on / related) | B | Editor | partial | partial | partial | none | INTEGRATING | Server acyclic check (D76.8); cross-board; typed client; design for sheet |
+| UC-WM-B20 | Link two items (waits on / related) | B | Editor | partial | partial | partial | none | HARDENING | Server acyclic check (D76.8); cross-board; typed client; design for sheet |
 | UC-WM-B21 | Change or remove an item link | B | Editor | partial | partial | partial | none | INTEGRATING | Dangling-link policy (D76.8); typed client |
 | UC-WM-B22 | See sub-items and derived progress in the item | B | Any viewer | yes | yes | partial | sub-items | HARDENING | the progress rule of D76.10 is partly built (see UC-WM-D09); design for the progress bar. |
 | UC-WM-B23 | Recover from item deleted/archived/moved while open | B | Any viewer | partial | yes | complete | none | INTEGRATING | Actor in API/realtime frames (Q12); real e2e |
 | UC-WM-B24 | Request an approval on an item or board | B | Requester with Editor | yes | yes | partial | approvals | HARDENING | One approver per request validation (D76.11); typed client; no mock handler |
 | UC-WM-B25 | Decide (approve or reject) a request | B | Named approver (team: any member) | partial | yes | none | approvals | HARDENING | ApproverTeamId is ignored so team approvers can never decide; two decide paths exist (board-scoped with version, workspace without) (defect B-08). |
-| UC-WM-B26 | Cancel a request | B | Requester or manager | yes | yes | none | none | INTEGRATING | Race test; real e2e; design |
+| UC-WM-B26 | Cancel a request | B | Requester or manager | yes | yes | none | none | HARDENING | Race test; real e2e; design |
 | UC-WM-B27 | Re-request after rejection or cancel | B | Requester | partial | partial | none | none | INTEGRATING | no link from the new request to the previous one (verified: no previous-request field in the Approvals domain); no design. |
 | UC-WM-B28 | See approval state and waiting-review figures | B | ViewBoard | yes | yes | partial | approvals | HARDENING | Tests for List; waiting-review count-once proof |
-| UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | no | no | none | none | DEFINED | Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE |
-| UC-WM-B30 | Map import columns to fields | B | Editor | no | no | none | none | DEFINED | Part of D76.15 import; design, BE, FE |
-| UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | no | no | none | none | DEFINED | CSV/XLSX of the current view with filters (D76.15); design, BE, FE |
+| UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | no | no | none | none | HARDENING | Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE |
+| UC-WM-B30 | Map import columns to fields | B | Editor | no | no | none | none | HARDENING | Part of D76.15 import; design, BE, FE |
+| UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | no | no | none | none | HARDENING | CSV/XLSX of the current view with filters (D76.15); design, BE, FE |
 | UC-WM-B32 | Provider/migration import | B | Integrations | no | no | none | none | DEFINED | Integrations-owned migration path; no WM work scheduled |
 | UC-WM-B33 | Handle a stale-version write conflict | B | Editor | partial | yes | complete | none | INTEGRATING | Actor on conflict (Q12 contract); EV gaps; real e2e |
 | UC-WM-B34 | Item deleted or archived by someone else while open | B | Any viewer (see UC-) | partial | yes | complete | none | INTEGRATING | actor name on the deleted notice needs the Q12 contract addition; live delivery needs open PR #193; real e2e. |
 | UC-WM-B35 | Recover from a target lost during commit | B | System | partial | not applicable | not applicable | none | INTEGRATING | the race is not covered by a test. |
 | UC-WM-B36 | See a bulk failure | B | Editor | yes | yes | complete | none | INTEGRATING | real e2e; proof that the failing item is named and the selection stays. |
-| UC-WM-C01 | Add a custom field | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; DateTime and file types deferred; design Er/T/M |
-| UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; stale-schema conflict proof |
+| UC-WM-C01 | Add a custom field | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; DateTime and file types deferred; design Er/T/M |
+| UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; stale-schema conflict proof |
 | UC-WM-C03 | Change a field default | C | Editor | yes | partial | complete | none | INTEGRATING | Test existing values unchanged; UI proof |
 | UC-WM-C04 | Archive or delete a custom field | C | Editor | partial | yes | none | work-board-management | HARDENING | Soft delete with 30-day restore (D76.5); dependents rejection; EV; design |
-| UC-WM-C05 | Restore an archived field | C | Editor | no | no | none | none | DEFINED | no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive. |
-| UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | INTEGRATING | API test: delete/edit system field refused |
+| UC-WM-C05 | Restore an archived field | C | Editor | no | no | none | none | IMPLEMENTING | no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive. |
+| UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | HARDENING | API test: delete/edit system field refused |
 | UC-WM-C07 | Manage Select / Status / Priority options | C | Editor (statusManageRoles on views) | yes | yes | partial | board-settings | HARDENING | design for the replacement picker; live refresh needs open PR #193. |
-| UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | INTEGRATING | API test 'last Done option'; e2e |
-| UC-WM-C09 | Define Text and Long text fields | C | Editor | yes | partial | complete | none | INTEGRATING | real e2e; Table cell editing is in open PR #204. |
-| UC-WM-C10 | Define a Number field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; normalized-value proof |
-| UC-WM-C11 | Define Date and DateTime fields | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; tz-independent day proof; DateTime deferred |
-| UC-WM-C12 | Define Select and Multi-select fields | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; +N display |
-| UC-WM-C13 | Define a Person (People) field | C | Editor | yes | yes | complete | none | INTEGRATING | Guest picker no-email proof; real e2e |
-| UC-WM-C14 | Define a Link (and file) field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e; absolute http(s) rule proof |
-| UC-WM-C15 | Define a Checkbox field | C | Editor | yes | partial | complete | none | INTEGRATING | Real e2e |
+| UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | HARDENING | API test 'last Done option'; e2e |
+| UC-WM-C09 | Define Text and Long text fields | C | Editor | yes | partial | complete | none | HARDENING | tests and owner check; Table cell editing is built. |
+| UC-WM-C10 | Define a Number field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; normalized-value proof |
+| UC-WM-C11 | Define Date and DateTime fields | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; tz-independent day proof; DateTime deferred |
+| UC-WM-C12 | Define Select and Multi-select fields | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; +N display |
+| UC-WM-C13 | Define a Person (People) field | C | Editor | yes | yes | complete | none | HARDENING | Guest picker no-email proof; real e2e |
+| UC-WM-C14 | Define a Link (and file) field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e; absolute http(s) rule proof |
+| UC-WM-C15 | Define a Checkbox field | C | Editor | yes | partial | complete | none | HARDENING | Real e2e |
 | UC-WM-C16 | Status and Priority as specialized select types | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; status per board proof |
 | UC-WM-C17 | Keep one semantic contract per field type | C | Engineering (acceptance gate) | yes | yes | not applicable | none | INTEGRATING | fixed-dataset parity test (client vs server) for 12 types |
 | UC-WM-C18 | Relation field: reference items of another board | C | Editor | partial | no | none | none | IMPLEMENTING | Relations.* endpoints exist (create, list, delete, pause, resume) with no tests and no UI; no Relation field type exists. |
 | UC-WM-C19 | Mark a field required | C | Editor | no | no | none | none | DEFINED | no required flag, no enforcement on any write path; decided in D78.7. |
 | UC-WM-C20 | Define a Formula field | C | Editor | yes | yes | partial | none | INTEGRATING | Cycle error design; formula Er; real e2e |
 | UC-WM-C21 | Define a Rollup field | C | Editor | yes | yes | complete | none | INTEGRATING | Real e2e |
-| UC-WM-C22 | Create, rename, recolor and delete a label | C | Editor | partial | yes | complete | none | INTEGRATING | EV on update/delete; real e2e |
-| UC-WM-D01 | Validate a value against the current schema | D | System (every write path) | yes | partial | not applicable | none | INTEGRATING | Cross-board field-id rejection test |
-| UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | INTEGRATING | real e2e; conflict copy names no actor until the API carries one (Q12); custom-field cell editors are in open PR #204. |
-| UC-WM-D03 | Clear a value (explicit clear) | D | Editor | partial | partial | partial | none | INTEGRATING | Wire clear in UI; test omitted-date means unchanged |
-| UC-WM-D04 | Set start and due dates | D | Editor | partial | yes | complete | none | INTEGRATING | EV on due date; inverted-range proof; real e2e |
-| UC-WM-D05 | Change an item's status | D | Editor and above | partial | yes | complete | none | INTEGRATING | EV on status write; four-path completion-time test; real e2e |
-| UC-WM-D06 | Set priority | D | Editor | yes | yes | complete | none | INTEGRATING | Real e2e |
-| UC-WM-D07 | Read a formula value (valid, stale, error) | D | Any viewer | partial | yes | partial | none | INTEGRATING | Valid/stale/error states; design |
-| UC-WM-D08 | Rollup and relation authorization | D | Any viewer | partial | not applicable | not applicable | none | INTEGRATING | masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection. |
-| UC-WM-D09 | Show derived progress of an item with child Items | D | Any viewer | partial | partial | partial | sub-items | INTEGRATING | only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not. |
-| UC-WM-D10 | Keep one progress truth | D | Product rule | partial | partial | not applicable | none | INTEGRATING | implement the D76.10 precedence on the server; test. |
-| UC-WM-D11 | Add or remove labels on an item | D | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; 200-label window |
-| UC-WM-D12 | Handle a client with a stale field or view schema | D | Editor with old schema | partial | partial | none | none | INTEGRATING | no test of a stale-field write refusal. |
+| UC-WM-C22 | Create, rename, recolor and delete a label | C | Editor | partial | yes | complete | none | HARDENING | EV on update/delete; real e2e |
+| UC-WM-D01 | Validate a value against the current schema | D | System (every write path) | yes | partial | not applicable | none | HARDENING | Cross-board field-id rejection test |
+| UC-WM-D02 | Edit a custom field value in place (cell, sheet, page) | D | Editor and above | yes | partial | complete | none | HARDENING | tests and owner check; conflict copy names no actor until the API carries one (Q12). |
+| UC-WM-D03 | Clear a value (explicit clear) | D | Editor | partial | partial | partial | none | HARDENING | Wire clear in UI; test omitted-date means unchanged |
+| UC-WM-D04 | Set start and due dates | D | Editor | partial | yes | complete | none | HARDENING | EV on due date; inverted-range proof; real e2e |
+| UC-WM-D05 | Change an item's status | D | Editor and above | partial | yes | complete | none | HARDENING | EV on status write; four-path completion-time test; real e2e |
+| UC-WM-D06 | Set priority | D | Editor | yes | yes | complete | none | HARDENING | Real e2e |
+| UC-WM-D07 | Read a formula value (valid, stale, error) | D | Any viewer | partial | yes | partial | none | HARDENING | Valid/stale/error states; design |
+| UC-WM-D08 | Rollup and relation authorization | D | Any viewer | partial | not applicable | not applicable | none | HARDENING | masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection. |
+| UC-WM-D09 | Show derived progress of an item with child Items | D | Any viewer | partial | partial | partial | sub-items | HARDENING | only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not. |
+| UC-WM-D10 | Keep one progress truth | D | Product rule | partial | partial | not applicable | none | HARDENING | implement the D76.10 precedence on the server; test. |
+| UC-WM-D11 | Add or remove labels on an item | D | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; 200-label window |
+| UC-WM-D12 | Handle a client with a stale field or view schema | D | Editor with old schema | partial | partial | none | none | HARDENING | no test of a stale-field write refusal. |
 | UC-WM-E01 | Create a group | E | Editor (CreateItem class) | yes | yes | partial | board-settings | HARDENING | Design for create flow; no-group notice proof |
 | UC-WM-E02 | Rename or edit a group | E | Editor | yes | yes | partial | board-settings | HARDENING | Design Er/P; no-op (same name) proof |
 | UC-WM-E03 | Archive or delete a group | E | Editor | yes | partial | none | work-board-management | HARDENING | Design; archive/unarchive UI or drop; dialog-open case |
-| UC-WM-E04 | Move an item between groups (Table) | E | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; status-unchanged proof |
-| UC-WM-E05 | Collapse or expand a group (personal) | E | Any role (personal, client-side) | not applicable | partial | complete | none | INTEGRATING | proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence. |
-| UC-WM-E06 | Move an item between groups (Table) | E | Editor and above | yes | yes | complete | none | INTEGRATING | Real e2e; two-user same-position test |
-| UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | INTEGRATING | concurrent reorder test; design; Table column order is in open PR #204. |
-| UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | INTEGRATING | Design; deterministic-order test |
-| UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | INTEGRATING | No-op move proof; real e2e |
-| UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | INTEGRATING | test of ten concurrent inserts into one ordering scope. |
-| UC-WM-G01 | Add and edit a checklist on an item | G | Editor and above | yes | yes | complete | none | INTEGRATING | Optional assignee and convert-to-sub-item (D69) proof; real e2e |
-| UC-WM-G02 | Complete, reorder and delete checklist items | G | Editor | yes | yes | complete | none | INTEGRATING | a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13). |
+| UC-WM-E04 | Move an item between groups (Table) | E | Editor | yes | yes | complete | none | HARDENING | Real e2e; status-unchanged proof |
+| UC-WM-E05 | Collapse or expand a group (personal) | E | Any role (personal, client-side) | not applicable | partial | complete | none | HARDENING | proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence. |
+| UC-WM-E06 | Move an item between groups (Table) | E | Editor and above | yes | yes | complete | none | HARDENING | Real e2e; two-user same-position test |
+| UC-WM-F01 | Reorder fields / columns | F | Editor (shared); any role (personal) | yes | partial | partial | none | HARDENING | tests and owner check; concurrent reorder test; design. Personal Table column order is built (Alt+Arrow in the Cột menu, kept on the board preference). |
+| UC-WM-F02 | Reorder groups | F | Editor | yes | yes | none | none | HARDENING | Design; deterministic-order test |
+| UC-WM-F03 | Reorder an item within its group or lane | F | Editor | yes | yes | complete | none | HARDENING | No-op move proof; real e2e |
+| UC-WM-F04 | Resolve an ordering collision | F | System | yes | yes | not applicable | none | HARDENING | test of ten concurrent inserts into one ordering scope. |
+| UC-WM-G01 | Add and edit a checklist on an item | G | Editor and above | yes | yes | complete | none | HARDENING | Optional assignee and convert-to-sub-item (D69) proof; real e2e |
+| UC-WM-G02 | Complete, reorder and delete checklist items | G | Editor | yes | yes | complete | none | HARDENING | a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13). |
 | UC-WM-H01 | Create a view | H | Editor | yes | yes | none | saved-views | HARDENING | design for view create, edit and delete; proof that Calendar needs a date field. |
 | UC-WM-H02 | Edit a shared view's configuration | H | Editor | partial | yes | complete | saved-views | HARDENING | PUT and PATCH carry no expected version (defect B-06). |
-| UC-WM-H03 | Delete or archive a view | H | Editor | partial | partial | none | none | INTEGRATING | delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design. |
+| UC-WM-H03 | Delete or archive a view | H | Editor | partial | partial | none | none | HARDENING | delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design. |
 | UC-WM-H04 | Set the default view | H | Editor | yes | yes | none | saved-views | HARDENING | Exactly-one default invariant and delete flow (D76.9); design |
 | UC-WM-H05 | Create and use a private view | H | Editor (creator only sees it) | partial | yes | none | saved-views | HARDENING | Design states; prove absent from others' list and realtime (D77.4) |
-| UC-WM-H06 | Filter the view (personal state) | H | Any role incl. Viewer | partial (open PR #201) | no (open PR #201) | complete | none | IMPLEMENTING | the central code is in open PR #201, not on develop; real e2e; server-side filter on paged boards (Q9) |
-| UC-WM-H07 | Sort the view | H | Any role | partial (open PR #201) | no (open PR #201) | complete | none | IMPLEMENTING | the central code is in open PR #201, not on develop; server-side sort is missing; real e2e. |
-| UC-WM-H08 | Group the view | H | Any role | partial (open PR #201) | no (open PR #201) | complete | none | IMPLEMENTING | the central code is in open PR #201, not on develop; 'No value' group proof; real e2e. |
-| UC-WM-H09 | Save, share, edit and delete a saved filter | H | Editor (create/share); Viewer applies | yes | yes | complete | none | INTEGRATING | API tests; real e2e; criteria without sort; open PR #201 touches the menu. |
-| UC-WM-H10 | Apply a saved filter | H | Anyone who can see it | yes | yes | complete | none | INTEGRATING | real e2e; re-check against open PR #201. |
-| UC-WM-H11 | Return to the shared view ("Về view chung") | H | Any role | partial (open PR #201) | no (open PR #201) | complete | none | IMPLEMENTING | personal state lives in open PR #201; owner confirms the icon button with a dot; real e2e. |
-| UC-WM-H12 | Repair stale view references | H | System; Editor | not applicable | no (open PR #201) | complete | none | DEFINED | the stale-condition hint is in open PR #201; real e2e. |
-| UC-WM-H13 | Switch and open views via tabs and URL | H | Any viewer | yes | yes | complete | saved-views | INTEGRATING | proof that Back and Forward follow the URL; unknown-view notice. |
+| UC-WM-H06 | Filter the view (personal state) | H | Any role incl. Viewer | partial | yes | complete | none | HARDENING | tests and owner check; server-side filter on paged boards (Q9) is not built. |
+| UC-WM-H07 | Sort the view | H | Any role | partial | yes | complete | none | HARDENING | tests and owner check; server-side sort is not built. |
+| UC-WM-H08 | Group the view | H | Any role | partial | yes | complete | none | HARDENING | tests and owner check; 'No value' group proof. |
+| UC-WM-H09 | Save, share, edit and delete a saved filter | H | Editor (create/share); Viewer applies | yes | yes | complete | none | HARDENING | API tests; real e2e; criteria without sort; open PR #201 touches the menu. |
+| UC-WM-H10 | Apply a saved filter | H | Anyone who can see it | yes | yes | complete | none | HARDENING | real e2e; re-check against open PR #201. |
+| UC-WM-H11 | Return to the shared view ("Về view chung") | H | Any role | yes | yes | complete | none | HARDENING | tests and owner check; the owner confirms the icon button with a dot. |
+| UC-WM-H12 | Repair stale view references | H | System; Editor | not applicable | no (open PR #201) | complete | none | HARDENING | the stale-condition hint is in open PR #201; real e2e. |
+| UC-WM-H13 | Switch and open views via tabs and URL | H | Any viewer | yes | yes | complete | saved-views | HARDENING | proof that Back and Forward follow the URL; unknown-view notice. |
 | UC-WM-H14 | Apply workspace time zone to date filters and buckets | H | Any member | yes | partial | none | work-board-management | HARDENING | proof of date buckets in the workspace time zone, after open PR #201. |
-| UC-WM-H15 | Make a field filterable, sortable, groupable per its type | H | System | partial | partial | not applicable | none | INTEGRATING | server-side filter, sort and group with parity to the client for every field type. |
-| UC-WM-H16 | Search items and boards | H | Any member; Guest shared only | yes | yes | complete | none | INTEGRATING | Real e2e; Private-board no-leak test |
-| UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | IMPLEMENTING | BoardItems.List has no q parameter; search runs on the client. |
-| UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | INTEGRATING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
-| UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | DEFINED | label operators are in open PR #201, not on develop; no server-side label filter. |
-| UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | no (open PR #204) | complete | none | INTEGRATING | the central code is in open PR #204, not on develop; real e2e; virtualization (UC-WM-T01) |
-| UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | partial | partial | complete | none | INTEGRATING | prove personal hide/order/width and save-to-shared; real e2e |
-| UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | INTEGRATING | Kanban selection is missing; proof of the 200 cap. |
-| UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | partial | complete | none | INTEGRATING | Canonical Kanban artboard; multi-select; WIP; real e2e |
-| UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | INTEGRATING | WIP warning (D37); undo proof; real e2e |
-| UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | no (open PR #201) | complete | none | IMPLEMENTING | the central code is in open PR #201 (kanban-swimlane-board.tsx), not on develop; Q13 multi-assignee proof; real e2e. |
-| UC-WM-J04 | Use swimlanes | J | Any role | partial (open PR #201) | no (open PR #201) | complete | none | DEFINED | the central code is in open PR #201, not on develop; Q13 multi-assignee proof; 320 snap-scroll design |
-| UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | INTEGRATING | Real e2e; proof |
-| UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | partial | no | complete | none | DEFINED | no WIP limit in the Kanban view configuration or UI. |
-| UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | INTEGRATING | Detail is roadmap 02 (D76.18); multi-day bars, undated aside redraw (D72) |
-| UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | INTEGRATING | Roadmap 02 (D76.18); no auto-reschedule test; cycle check |
-| UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | INTEGRATING | Cross-tenant/Private negative test; real e2e |
-| UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | INTEGRATING | API tests; real e2e |
-| UC-WM-N02 | Map form questions to fields | N | Editor | partial | yes | complete | none | INTEGRATING | AddFormQuestion, UpdateFormQuestion and RemoveFormQuestion carry no expected version and UpdateFormQuestion has no test (defects B-07, B-14). |
-| UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | INTEGRATING | API tests; real e2e |
-| UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | INTEGRATING | no real e2e or API-level test; the form fill page refuses unsupported question types. |
-| UC-WM-N05 | Process, reject or mark spam on a submission | N | Manager | yes | yes | complete | none | INTEGRATING | ListSubmissions needs UpdateItem, not ViewBoard (D78.4); security check not proven by a test. |
+| UC-WM-H15 | Make a field filterable, sortable, groupable per its type | H | System | partial | partial | not applicable | none | HARDENING | tests and owner check; group by a field other than Status still reads the whole board. |
+| UC-WM-H16 | Search items and boards | H | Any member; Guest shared only | yes | yes | complete | none | HARDENING | Real e2e; Private-board no-leak test |
+| UC-WM-H17 | Filter by text inside a board | H | Any role | no | partial | complete | none | HARDENING | BoardItems.List has no q parameter; search runs on the client. |
+| UC-WM-H18 | List My Work | H | Any member | yes | yes | complete | work-feeds | HARDENING | Prove D76.17 rule (not-done, assigned, due order); Er/L design |
+| UC-WM-H19 | Filter items by label | H | Any role | partial | no (open PR #201) | complete | none | HARDENING | label operators are in open PR #201, not on develop; no server-side label filter. |
+| UC-WM-I01 | Use the Table view | I | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; virtualization (UC-WM-T01) |
+| UC-WM-I02 | Arrange columns (personal) and save to the shared view | I | Any role (personal); Editor (save to view) | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-I03 | Select items across views and windows | I | Editor and above | not applicable | partial | complete | none | HARDENING | tests and owner check; proof of the 200 cap; no selection across windows. |
+| UC-WM-J01 | Use the Kanban view | J | Any viewer; edit per role | yes | yes | complete | none | HARDENING | tests and owner check; the checkbox on the card face is not on an artboard; the bar archives at once (no undo window as in the Table). |
+| UC-WM-J02 | Move an item between Kanban lanes | J | Editor and above | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-J03 | Move an item across swimlanes | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check; Q13 multi-assignee proof. |
+| UC-WM-J04 | Use swimlanes | J | Any role | yes | yes | complete | none | HARDENING | tests and owner check; Q13 multi-assignee proof; 320 snap-scroll design. |
+| UC-WM-J05 | Choose fields shown on the card | J | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-J06 | Set a WIP limit and see the warning | J | Editors of the view | yes | yes | complete | none | HARDENING | tests and owner check. |
+| UC-WM-K01 | Use the Calendar view | K | Any viewer | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); multi-day bars and the undated aside redraw are design (D72); a Calendar over a chosen date field is not built (it shows the start and due of each item). |
+| UC-WM-L01 | Use the Timeline (Gantt) view | L | Any viewer; editors resize | partial | yes | complete | board-views-and-settings | HARDENING | tests and owner check; detail is a later roadmap item (D76.18); no auto-reschedule test; cycle check test |
+| UC-WM-M01 | Provide board work figures to the Space overview | M | System; Workspaces | yes | yes | complete | none | HARDENING | tests and owner check (cross-tenant and Private negative test); the product doc counts a request aimed at the Board in waiting review, the port counts only Items: owner to decide which holds. |
+| UC-WM-N01 | Create a form on a board | N | Editor | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-N02 | Map form questions to fields | N | Editor | yes | yes | complete | none | HARDENING | tests and owner check; UpdateFormQuestion has no test (defect B-14). |
+| UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | HARDENING | tests and owner check |
+| UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | HARDENING | tests and owner check; the form fill page refuses unsupported question types. |
+| UC-WM-N05 | Process, reject or mark spam on a submission | N | Editor (UpdateItem) | yes | yes | complete | none | HARDENING | tests and owner check. |
 | UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal and abuse controls |
-| UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | INTEGRATING | Design E/L/Er; one-line-per-action proof; real e2e |
-| UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | INTEGRATING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
+| UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | partial | none | HARDENING | Design E/L/Er; one-line-per-action proof; real e2e |
+| UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | HARDENING | the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
 | UC-WM-O03 | Expose events and projections to Analytics | O | Analytics (consumer) | partial | not applicable | not applicable | none | INTEGRATING | 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13). |
-| UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | INTEGRATING | Single-logical-event proof under retry |
-| UC-WM-P01 | See a colleague's change live | P | Any viewer | partial (open PR #193) | no (open PR #193) | complete | none | IMPLEMENTING | the central code is in open PR #193, not on develop; real e2e (the PR adds mock e2e only); proof of the 2 s delivery. |
-| UC-WM-P02 | Keep editing safe while others edit | P | Editor | not applicable | no (open PR #193) | complete | none | DEFINED | the central code is in open PR #193, not on develop; tests that an unsaved draft and a drag survive an incoming frame. |
-| UC-WM-P03 | Lose and regain the connection | P | Any viewer | partial (open PR #193) | no (open PR #193) | complete | none | IMPLEMENTING | the central code is in open PR #193, not on develop; reconnect and gap-recovery proof. |
-| UC-WM-P04 | Lose access or role while the board is open | P | Any viewer | yes | no (open PR #193) | complete | none | IMPLEMENTING | the realtime subscription authorization exists; live role-lowering handling is in open PR #193 and unproven. |
+| UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | HARDENING | Single-logical-event proof under retry |
+| UC-WM-P01 | See a colleague's change live | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec for two users on one board and card, tests of the notifier and the adapter, and owner check. |
+| UC-WM-P02 | Keep editing safe while others edit | P | Editor | not applicable | yes | complete | none | HARDENING | real e2e spec, tests that an unsaved draft and a drag survive a frame, the table cell choice driven live, and owner check. |
+| UC-WM-P03 | Lose and regain the connection | P | Any viewer | yes | yes | partial | none | HARDENING | real e2e spec, reconnect and gap tests, the status measured in dark and at 1024, and owner check. |
+| UC-WM-P04 | Lose access or role while the board is open | P | Any viewer | yes | yes | complete | none | HARDENING | real e2e spec, a test of the 60 s re-check, and owner check. |
 | UC-WM-Q01 | Let an Automation rule act on items | Q | Rule executor identity | yes | yes | complete | automation | HARDENING | Loop-guard and executor-lost tests |
-| UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | IMPLEMENTING | live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
+| UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | HARDENING | live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
 | UC-WM-Q03 | Sync items with an external provider | Q | Integrations | no | no | not applicable | none | DEFINED | Integrations-owned; idempotent replay test when built |
-| UC-WM-R01 | Comment on an item | R | Commenter and above | yes | yes | partial | none | INTEGRATING | Design gaps; real e2e |
-| UC-WM-R02 | Reply, edit or delete a comment | R | Author; moderator separate | yes | yes | partial | none | INTEGRATING | Design edit/delete; real e2e |
-| UC-WM-R03 | Mention a person in an item comment | R | Commenter and above | yes | yes | complete | none | INTEGRATING | No-notify-for-no-access proof; Guest list |
-| UC-WM-R04 | Attach files to an item | R | Editor and above (upload); ViewBoard (view) | yes | yes | complete | none | INTEGRATING | Real e2e; Viewer upload refused test |
-| UC-WM-R05 | Link a Document from an item | R | Editor | yes | yes | complete | none | INTEGRATING | Typed client; no-title-for-unreadable proof; real e2e |
+| UC-WM-R01 | Comment on an item | R | Commenter and above | yes | yes | partial | none | HARDENING | Design gaps; real e2e |
+| UC-WM-R02 | Reply, edit or delete a comment | R | Author; moderator separate | yes | yes | partial | none | HARDENING | Design edit/delete; real e2e |
+| UC-WM-R03 | Mention a person in an item comment | R | Commenter and above | yes | yes | complete | none | HARDENING | No-notify-for-no-access proof; Guest list |
+| UC-WM-R04 | Attach files to an item | R | Editor and above (upload); ViewBoard (view) | yes | yes | complete | none | HARDENING | Real e2e; Viewer upload refused test |
+| UC-WM-R05 | Link a Document from an item | R | Editor | yes | yes | complete | none | HARDENING | Typed client; no-title-for-unreadable proof; real e2e |
 | UC-WM-R06 | Watch or unwatch an item | R | Any viewer | yes | yes | none | following, follow-notifications | HARDENING | Typed client; design; auto-watch decision open |
 | UC-WM-R07 | Notify and attend (assignment, mention, approval, overdue, watching) | R | Collaboration | partial | yes | complete | follow-notifications | HARDENING | Other types have no producer; decide set |
 | UC-WM-R08 | Reference items from Documents | R | Documents | partial | partial | not applicable | none | INTEGRATING | Private-board embed test |
 | UC-WM-S01 | Apply billing entitlements | S | Billing decides | partial | not applicable | not applicable | none | DEFINED | no Work Management command implements IRequireFeature (verified); entitlement checks stay behind the port and allow. |
-| UC-WM-T01 | Use the view on a large (paged) board | T | Any viewer | no | no | complete | none | DEFINED | BoardItems.List, GetFullBoard and Trash reads are unpaged; filter and sort run on the client (defects B-11, F-07). |
+| UC-WM-T01 | Use the view on a large (paged) board | T | Any viewer | no | no | complete | none | HARDENING | tests and owner check; load more of comments and form submissions in the web client, trash read unpaged. |
 | UC-WM-T02 | Use the view at 1440 / 1280 / 1024 / 768 / 320 px | T | Any viewer | not applicable | partial | complete | none | INTEGRATING | 1-px box-tree diff at 1440, 1024 and 390 px in light and dark; 44 px targets. |
 | UC-WM-T03 | Published limits and limit-reached states | T | System; any viewer | no | no | none | none | DEFINED | no limit is published or enforced; the limits are decided in D78.8. |
 | UC-WM-T04 | Work with boards on the native mobile app | T | Any member on native app | not applicable | no | partial | none | DEFINED | the mobile package is placeholder screens; web slices come first (D78.14). |
@@ -382,7 +383,7 @@ Team capability WM-001.
 - Rules: product sections 7-9, 12-13, 101-102; WM-003, WM-005, WM-028, WM-042; WMREQ001-003, WMREQ008-010, WMREQ016
 - Acceptance: Given a Member in Workspace W, when they create a board from a template, then a new Board with new Field/Group/View identities exists in W and later template edits do not change it. Given a Guest, when they look for "New board", then it is not available (403 on API). Given a Space from another Workspace, when chosen, then the request is rejected and nothing is created.
 - Evidence: BE Boards.Create = POST /workspaces/{workspaceId:guid}/boards -> CreateBoardInWorkspaceCommand (`Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs`) [- / Idem]; Templates.CreateBoard = POST /templates/{templateId:guid}/create-board -> CreateBoardFromTemplateCommand (`Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs`) [- / Idem] · FE `frontend/apps/web/src/shell/workspace/use-create-resource.tsx`; no template gallery route · Design Final-Space `tao-moi`, Final-M-Space; no Er, L, name-taken · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — No real e2e; default-group proof (D49, D58); template gallery entry; Guest 403 test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design Er and name-taken; tests and owner check. Evidence: real-stack check 2026-10-31: created a blank, a starter and a workspace-template board from New Board as a member (201, lands on the board, the reload keeps it); a retry under one key made one board; an empty or 121-character name 400; a Guest 403; an unknown Space 404, commit 33ed8c465.
 
 ### UC-WM-A02 Rename the board and edit its settings
 - Capability: A Board lifecycle (WM-001)
@@ -396,7 +397,7 @@ Team capability WM-001.
 - Rules: product sections 9, 14; WM-043; WMREQ005, WMREQ010, WMREQ095-097
 - Acceptance: Given a Manager renames the board, when saved, then URL id and item keys are unchanged and members see the new name without reload. Given an Editor opens Settings, then fields are read-only with reason. Given items PRJ-1..3 and a prefix changed to NEW, when saved, then PRJ-1..3 keep their keys and the next item is NEW-4.
 - Evidence: BE Boards.Rename = PATCH /boards/{boardId:guid} -> UpdateBoardCommand (`Boards/Commands/UpdateBoard/UpdateBoard.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-general.tsx` (icon unchangeable) · Design Final-Settings `chung`; Er-on-save, 320, 768 missing · Tests `BoardManagementLevelTests.cs` · Real e2e `board-settings.real.e2e.spec.ts`, `work-board-management.real.e2e.spec.ts` (key prefix)
-- State: HARDENING — Test prefix change affects new items only; design Er/320/768; icon change
+- State: HARDENING — tests and owner check; a board name is 1 to 120 characters on create and rename (D78.3); not built: icon change, design Er/320/768. Real-stack check 2026-10-31: a second manager saved first and the stale save answered 412 with the last writer (name and time); the page named the person, held the typed values, showed the three-column diff, Keep mine saved only my fields on the newest version and Use the new version dropped them, commit f7b60fb72. Not built: Undo after Use the new version, the 1180/1024 px artboard layout of the general panel (the built panel keeps the Final-Settings rows).
 
 ### UC-WM-A03 Place a board in a Space or move it between Spaces
 - Capability: A Board lifecycle (WM-001)
@@ -410,7 +411,7 @@ Team capability WM-001.
 - Rules: product sections 101-102; WM-003, WM-040; WMREQ002, WMREQ005
 - Acceptance: Given a Manager moves a board to another Space, when confirmed, then the board remains in the same Workspace and a person with only the old Space's access receives NotFound. Given assignees would lose access, then a warning lists them and offers to grant access.
 - Evidence: BE Boards.MoveToSpace = POST /boards/{boardId:guid}/move-to-space -> MoveBoardToSpaceCommand (`Boards/Commands/MoveBoardToSpace/MoveBoardToSpace.cs`) [EV / Idem] · FE `frontend/apps/web/src/shell/workspace/use-move-to-space.tsx`, `frontend/apps/web/src/shell/workspace/board-placement-bridge.ts`; no impact warning · Design none; needs move-board dialog, access-impact warning list, error · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — Design; access-impact warning with grant offer (UC-WM-A25); real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; access-impact warning with grant offer (UC-WM-A25), move dialog design; tests and owner check. Evidence: real-stack check 2026-10-31: moved a board to a department from the Library dialog and the reload shows the new location; the same Space is a no-op; a member 403; an unknown Space 404, commit 33ed8c465. Real-stack check 2026-10-31: the board settings 'Chuyển sang phòng khác' and the Library dialog read GET /boards/{id}/move-impact for the picked place and list who loses, who gains, who keeps and who would be left with unfinished items; 'Thêm N người rồi chuyển' adds them as editors and moves in one transaction; the same Space bumps nothing, a stale version 412, a member 403, an unknown Space 404, a repeated idempotency key moves once, commit b3c9198af. Deviation: the picker is the generic Space tree, not the WM-MoveBoard card list (no people count per Space); Workspace Owners and Admins are never listed as left behind. Adds in the move are checked on the server inside the transaction: each person must be an active Workspace member, not a Guest, and in the recomputed loses-access set of this very move (else 400 `WorkManagement_Board_MoveAddNotAffected` or `WorkManagement_Board_MoveAddGuest`); the actor needs the AddBoardMember right (ManageBoard plus the Member grant ceiling); the adds use the same access-change log and version bump. Not on this branch: the realtime access signal (`IAccessChangeSignal`, gov/custom-roles); when that lands the move must call `BoardPerson` for each added person.
 
 ### UC-WM-A04 Archive a board
 - Capability: A Board lifecycle (WM-001)
@@ -424,7 +425,7 @@ Team capability WM-001.
 - Rules: product sections 10-11; D76.1; WMREQ004-005, WMREQ110-113
 - Acceptance: . Given an archived board, when a Member tries any write via API, then it is refused with the archived reason and no version/event changes. Given a board with enabled automation rules, when it is archived, then its rules and integration sync pause; when unarchived they resume.
 - Evidence: BE Boards.Archive = POST /boards/{boardId:guid}/archive -> ArchiveBoardCommand (`Boards/Commands/ArchiveBoard/ArchiveBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/state/src/api/board-settings.api.ts`:367 raw path; archived banner · Design Final-Settings `luu-tru`, BC-Shell archived banner · Tests `ArchiveBoardCommandHandlerTests.cs` · Real e2e none
-- State: INTEGRATING — automation and integration sync are not paused (D76.1; defect B-18); archive uses a raw path, not the typed client (defect F-02); no real e2e; peers see the banner live only with open PR #193.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; automation and integration sync are not paused (D76.1); tests and owner check. Built: archive carries the board version (`BoardVersionRequest`), the typed client, a confirmation that names the effect with item, open-item and member counts (`GET /boards/{id}/lifecycle-impact`), an archived board opens read-only with a banner (`GET /boards/{id}/full` no longer refuses it) and the views, item sheet and item page turn every write control off through `useBoardCapabilities`, and the archived list at `/workspaces/{id}/archived-boards`. Built: an archived board and its children are reachable to whoever passes GOV-025 steps 2-6, so the read, the access read and the archived list answer, and the policy refuses every write on the board or a child with `WorkManagement_Board_Archived` once the decision is Allow, after the NotFound checks (owner decision 2026-10-30; the one rule covers every child write through the board-child relation, no extra pipeline behaviour); archive, unarchive, delete and restore carry `IBoardLifecycleRequest` and pass; the viewer's personal view state stays on screen only on an archived board. Archive carries the lifecycle marker too, so archiving an archived board stays a no-op and a retry under the same key replays. Not built: pausing automation rules and integration sync (D76.1; defect B-18), live banner for peers (open PR #193). Evidence: real-stack check 2026-10-31: archived from Settings through the confirm that names the effect (204); the reload shows the archived banner; a write answers 403 with the reason and a member still reads; archiving again bumps nothing; a stale version 412; a member 403, commit 33ed8c465.
 
 ### UC-WM-A05 Unarchive a board
 - Capability: A Board lifecycle (WM-001)
@@ -438,7 +439,7 @@ Team capability WM-001.
 - Rules: product sections 10-11; D76.1; WMREQ004-005
 - Acceptance: Given an archived board, when a Manager unarchives it, then all controls re-enable for Editors without reload.
 - Evidence: BE Boards.Unarchive = POST /boards/{boardId:guid}/unarchive -> UnarchiveBoardCommand (`Boards/Commands/UnarchiveBoard/UnarchiveBoard.cs`) [- / Idem] · FE none; operation unused, no UI · Design none; needs unarchive action on archived banner/settings · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: IMPLEMENTING — Unarchive UI; design; resume automation/sync; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; resuming automation and integration sync (D76.1); tests and owner check. Built: unarchive carries the board version; the archived banner and the General settings danger zone offer Unarchive to a Manager; the archived list at `/workspaces/{id}/archived-boards` unarchives from a row. Built: unarchive now reaches the handler (the access facts no longer answer NotFound for an archived board) and passes the policy as a lifecycle command. Not built: resuming automation and integration sync (D76.1), design. Evidence: real-stack check 2026-10-31: unarchived from the banner (204) and the banner stays gone after reload; a second unarchive bumps nothing; a stale version 412; writes work again, commit 33ed8c465.
 
 ### UC-WM-A06 Delete a board
 - Capability: A Board lifecycle (WM-001)
@@ -452,7 +453,7 @@ Team capability WM-001.
 - Rules: product sections 121-122; WM-033; D76.1; WMREQ004-005, WMREQ113
 - Acceptance: Given a Manager deletes a board, when a member reloads, then the generic no-access state shows and Collaboration comments of its items are retained (not hard-deleted). Given a board deleted 29 days ago, when a Manager restores it, then it returns; given 31 days (after purge), then restore is refused.
 - Evidence: BE Boards.Delete = DELETE /boards/{boardId:guid} -> DeleteBoardCommand (`Boards/Commands/DeleteBoard/DeleteBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/state/src/api/board-settings.api.ts`:373 raw DELETE, typed-name confirm · Design none; needs delete confirm naming impact, deleted state · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — 30-day soft delete and purge (D76.1); impact counts in confirm; typed client; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; purge job after 30 days (UC-WM-B17), design; tests and owner check. Built: delete carries the board version (`?expectedVersion=n`), the typed client, a confirmation that names the 30-day window and the item count, and a redirect to the deleted list. Built: delete passes the policy on an active or archived board as a lifecycle command, and a deleted board stays reachable for Delete (`IBoardReachesDeletedRequest`, ManageBoard only), so deleting a deleted board is a no-op and a retry under the same key replays; a deleted board is NotFound to every other request. Not built: the purge job after 30 days (see UC-WM-B17), design. Evidence: real-stack check 2026-10-31: deleted with the typed name (204) and landed on the deleted list; a member and an unknown id now both answer 404 (restore and delete answered 403 before); a stale version 412; a member 403 on an active board, commit 33ed8c465.
 
 ### UC-WM-A07 Restore a deleted board
 - Capability: A Board lifecycle (WM-001)
@@ -466,7 +467,7 @@ Team capability WM-001.
 - Rules: product sections 121-122; WM-033; D76.1; WMREQ004
 - Acceptance: Given a deleted board, when a Manager restores it within retention, then items, fields, views return unchanged.
 - Evidence: BE Boards.Restore = POST /boards/{boardId:guid}/restore -> RestoreBoardCommand (`Boards/Commands/RestoreBoard/RestoreBoard.cs`) [- / Idem] · FE none; no UI · Design none; needs deleted-boards list, restore, restore-refused · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: IMPLEMENTING — no 30-day window check in Board.Restore, no deleted-boards list or UI, no purge job (see UC-WM-B17); verified in source.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; listing for Space and workspace managers who are neither the deleter nor a board Owner or Admin; purge job; tests and owner check. Built: `Board.Restore` refuses after 30 days with rule code `WorkManagement_Board_RestoreWindowElapsed`; restore carries the board version; `GET /workspaces/{id}/boards/deleted` lists the boards the caller deleted or holds Owner or Admin on, and the page at `/workspaces/{id}/archived-boards?tab=deleted` restores with the conflict, window, denied and gone states. Built: restore now reaches the handler: a deleted board is reachable only for `IBoardReachesDeletedRequest` (restore and delete; the facts query reads the deleted board and its Space only then). Not built: listing for Space and workspace managers who are neither the deleter nor a board Owner or Admin (needs a Governance listing), the purge job (UC-WM-B17). Evidence: real-stack check 2026-10-31: restored from the deleted list (204) and the board opens for admin and member after reload; past 30 days it is refused with the reason; restoring an active board bumps nothing; a retry under the same key replays (it answered 500 before); a stale version 412; a member 404, commit 33ed8c465.
 
 ### UC-WM-A08 List boards the person may see
 - Capability: A Board lifecycle (WM-001)
@@ -480,7 +481,7 @@ Team capability WM-001.
 - Rules: product sections 103-105; WM-030; WMREQ105-108
 - Acceptance: Given a Private board and a non-member Member, when boards are listed, then it is absent and a direct URL gives [S1]..
 - Evidence: BE Boards.ListWorkspaceBoards = GET /workspaces/{workspaceId:guid}/boards -> GetBoardsQuery (`Boards/Queries/GetBoards/GetBoards.cs`) [- / -] · FE useWorkspaceBoards; contract op has no mock handler · Design Final-Space `chi-xem`, Final-M-Space · Tests `CollectionVisibilityIntegrationTests.cs` · Real e2e `guest-permission.real.e2e.spec.ts` (negative only)
-- State: INTEGRATING — Parity test: Private board absent for non-member; mock handler
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a Private board is absent from a member's list and present for its manager; the Library list shows the boards of the workspace, commit 33ed8c465.
 
 ### UC-WM-A09 Open a board (read: schema, groups, items, preferences)
 - Capability: A Board lifecycle (WM-001)
@@ -494,7 +495,7 @@ Team capability WM-001.
 - Rules: product sections 26, 27.2, 46; WM-030; WMREQ111, WMREQ147-148
 - Acceptance: (1) Given an archived board, when it opens, then a banner states archived, every write control is disabled with that reason, and reads work. (2) Given a view URL naming a deleted or unknown view, when opened, then the default view shows and one notice says the view no longer exists. (3) Given a board with no BoardGroup, when a Member tries to add, then the no-group notice names the reason and offers "Add group"; adding never returns silently (D49).
 - Evidence: BE Boards.Get = GET /boards/{boardId:guid} -> GetBoardQuery (`Boards/Queries/GetBoard/GetBoard.cs`) [- / -]; Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardFields.GetSchema = GET /boards/{boardId:guid}/schema -> GetBoardSchemaQuery (`BoardSchema/Queries/GetBoardSchema/GetBoardSchemaQuery.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE BoardScreen; whole board loaded, no paging · Design BC-Shell-1440, BC-Shell-1280-768, BC-Shell-320, BC-Index · Tests `CacheIdentityHashTests.cs`, `ComputedFieldsIntegrationTests.cs`, `GetBoardSchemaTests.cs`, `NotrelixApiFactory.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (implicit)
-- State: INTEGRATING — per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; per-group paging (UC-WM-T01); tests and owner check. Evidence: real-stack check 2026-10-31: a board opens with its views; an archived board shows the banner and still reads; a deleted or Private board shows the not-available state to a member; the reload keeps the view, commit 33ed8c465.
 
 ### UC-WM-A10 Assign and keep the item key (prefix and sequence)
 - Capability: A Board lifecycle (WM-001)
@@ -508,7 +509,7 @@ Team capability WM-001.
 - Rules: product sections 27.1; WM-043; WMREQ015
 - Acceptance: Given 20 parallel creates on one board, then keys are unique and gapless-or-gapped but never duplicated; given an item is moved to another board, then it takes a key on the target board's sequence (see UC-WM-B08). Given an item moved to board B and keyed B-9, when its old key is opened, then it resolves to the same item.
 - Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem] · FE key display (D39) · Design WM-Card-Face (key) · Tests `CreateBoardItemTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (prefix only)
-- State: INTEGRATING — no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; no stored alias, so an old key does not resolve after a move; tests and owner check. Evidence: real-stack check 2026-10-31: 20 parallel creates on one board gave 20 distinct keys, commit 33ed8c465.
 
 ### UC-WM-A11 Duplicate a board
 - Capability: A Board lifecycle (WM-001)
@@ -521,8 +522,8 @@ Team capability WM-001.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 12-13, 97; WM-005, WM-028; D78.5; WMREQ008-009, WMREQ115-117
 - Acceptance: Given a Manager duplicates a board without items, then a new board has the same fields, groups, labels and views and no items. Given the same request retried, then one copy exists.
-- Evidence: BE none: no endpoint (inventory: board duplicate missing) · FE none · Design none; needs duplicate board dialog, in-progress, partial, done · Tests none found · Real e2e none
-- State: DEFINED — no endpoint, no UI, no design; behaviour is decided in D78.5.
+- Evidence: BE Boards.Duplicate = POST /boards/{boardId:guid}/duplicate -> DuplicateBoardCommand (`Boards/Commands/DuplicateBoard/DuplicateBoard.cs`, shared capture and writer with templates in `Templates/Services`) [Idem]; preview GET /boards/{boardId:guid}/duplicate-preview · FE `frontend/apps/web/src/shell/workspace/board-duplicate-dialog.tsx`, board menu entry 'Nhân bản board…' (Manager) · Design WM-DuplicateBoard · Tests none (build phase) · Real e2e none
+- State: HARDENING — tests and owner check. Built: settings, fields, groups, labels and board views copy; items only when chosen (default off, over 500 refused with `WorkManagement_Board_DuplicateTooManyItems`, the switch locks with the reason); members and automations are not copied; the duplicator reaches the copy as its creator; an assignee with no access to the copy is dropped and the dialog says how many before the confirm; one transaction, so a failure leaves no half board; a repeated idempotency key makes one copy. Real-stack check 2026-10-31: copy without items has 4 fields and 4 groups and no items; copy with items into IT kept the admin assignment and dropped demo's (preview said 1); retry with the same key returned the same copy; a member 403; a blank name 400; an unknown Space 404; the source version unchanged, commit 41105e7a1. Not built: progress is an indeterminate bar (the copy is one request, at most 500 items); forms of the board are not copied (structure capture has no forms); the picker is a select, not the card list.
 
 ### UC-WM-A12 Save a board as a template
 - Capability: A Board lifecycle (WM-001)
@@ -536,7 +537,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005, WM-028; D66; D76.13
 - Acceptance: Given a board with 600 items and "include items", then the action states the 500 cap. Given a board with 501 items and include items ticked, then the action is refused with the reason and nothing is truncated.
 - Evidence: BE Templates.Create = POST /boards/{boardId:guid}/templates -> CreateBoardTemplateCommand (`Templates/Commands/CreateBoardTemplate/CreateBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx` · Design WM-Template-Save; Er missing · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — Include-items option and 500 refusal (D76.13, 66); design Er
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; include-items 500 refusal driven; design Er; tests and owner check. Built: more than 500 top-level items with include-items is refused with rule code `WorkManagement_BoardTemplate_TooManyItems` instead of being cut short, and the form names the cap and disables Save. Not built: design Er. Evidence: real-stack check 2026-10-31: saved a board as a draft template (201, listed as Draft); an empty name 400; a member without Manage 403, commit 33ed8c465.
 
 ### UC-WM-A13 Publish a template
 - Capability: A Board lifecycle (WM-001)
@@ -550,7 +551,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005; D66
 - Acceptance: Given a Manager who is not Owner/Admin, when they publish, then 403.
 - Evidence: BE Templates.Publish = PATCH /templates/{templateId:guid}/publish -> PublishBoardTemplateCommand (`Templates/Commands/PublishBoardTemplate/PublishBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx` · Design WM-Template-Manage; denied/Er missing · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the template list returns Draft and Archived templates to every member; the product doc says Owner or Admin publishes and D66 says ManageBoard; tests and owner check. Evidence: real-stack check 2026-10-31: published a template (200); publishing again changes nothing; a member 403; it appears in New board for a member, commit 33ed8c465.
 
 ### UC-WM-A14 Archive or delete a template
 - Capability: A Board lifecycle (WM-001)
@@ -564,7 +565,7 @@ Team capability WM-001.
 - Rules: product sections 96-98; WM-005; D66
 - Acceptance: Given a template archived, then boards created from it are unchanged and it is no longer offered.
 - Evidence: BE Templates.Archive = PATCH /templates/{templateId:guid}/archive -> ArchiveBoardTemplateCommand (`Templates/Commands/ArchiveBoardTemplate/ArchiveBoardTemplate.cs`) [- / Idem]; Templates.Delete = DELETE /templates/{templateId:guid} -> DeleteBoardTemplateCommand (`Templates/Commands/DeleteBoardTemplate/DeleteBoardTemplate.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-templates.tsx`; no unarchive · Design WM-Template-Manage · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; same list gap as UC-WM-A13; no unarchive; tests and owner check. Evidence: real-stack check 2026-10-31: archived a template (200) and it left New board and could not be used (404); a member delete 403; delete 204, commit 33ed8c465.
 
 ### UC-WM-A15 Create a board from a template or built-in starter
 - Capability: A Board lifecycle (WM-001)
@@ -578,7 +579,7 @@ Team capability WM-001.
 - Rules: product sections 12-13, 96-98; WM-005, WM-028; D66; WMREQ008-009
 - Acceptance: Given a template edited after instantiation, then the existing board is unchanged.
 - Evidence: BE Templates.CreateBoard = POST /templates/{templateId:guid}/create-board -> CreateBoardFromTemplateCommand (`Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs`) [- / Idem]; Templates.List = GET /workspaces/{workspaceId:guid}/templates -> ListBoardTemplatesQuery (`Templates/Queries/ListBoardTemplates/ListBoardTemplates.cs`) [- / -] · FE create from template in settings; no gallery on New board path · Design WM-Template-Gallery; L, Er, E, M missing · Tests `BoardTemplateIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Gallery route on New board; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a member created boards from a starter and from a workspace template (201, groups and fields copied, no items); a Guest 403; an unknown Space 404, commit 33ed8c465.
 
 ### UC-WM-A16 Read who has access (sharing summary)
 - Capability: A Board lifecycle (WM-001)
@@ -606,7 +607,7 @@ Team capability WM-001.
 - Rules: product sections 103-105; WM-030; WMREQ007, WMREQ105-108
 - Acceptance: Given a Manager adds a person as Member, when that person opens the board, then they can create items. Given an Admin-level actor, when they try to assign a role above their own, then it is refused.
 - Evidence: BE Boards.GetMembers = GET /boards/{boardId:guid}/members -> GetBoardMembersQuery (`Boards/Queries/GetBoardMembers/GetBoardMembers.cs`) [- / -]; Boards.AddMember = POST /boards/{boardId:guid}/members -> AddBoardMemberCommand (`Boards/Commands/AddBoardMember/AddBoardMember.cs`) [- / Idem]; Boards.RemoveMember = DELETE /boards/{boardId:guid}/members/{userId:guid} -> RemoveBoardMemberCommand (`Boards/Commands/RemoveBoardMember/RemoveBoardMember.cs`) [- / Idem]; Boards.UpdateMemberRole = PATCH /boards/{boardId:guid}/members/{userId:guid}/role -> UpdateBoardMemberRoleCommand (`Boards/Commands/UpdateBoardMemberRole/UpdateBoardMemberRole.cs`) [- / Idem] · FE BoardShareDialogSurface; AddMember op unused · Design Final-Share, Final-Members · Tests `AddBoardMemberTests.cs`, `BoardAuthorizationHardeningIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e `board-sharing.real.e2e.spec.ts`
-- State: HARDENING — Expected version on role change; last-manager guard (UC-WM-A26)
+- State: HARDENING — tests and owner check. Built: role change and removal carry the board version (the sharing read returns it; a member add, role change or removal advances it), a stale write changes nothing and the dialog says so; the last manager cannot be lowered or removed (UC-WM-A26).
 
 ### UC-WM-A18 Grant explicit access to a user or team
 - Capability: A Board lifecycle (WM-001)
@@ -662,7 +663,7 @@ Team capability WM-001.
 - Rules: product sections 103-106; WM-030, WM-040; D76.4; WMREQ006
 - Acceptance: Given a board made Private, when a non-member Workspace Member opens it, then NotFound.
 - Evidence: BE Boards.UpdateVisibility = PATCH /boards/{boardId:guid}/visibility -> UpdateBoardVisibilityCommand (`Boards/Commands/UpdateBoardVisibility/UpdateBoardVisibility.cs`) [- / Idem] · FE contract op unused; header offers Make private only · Design Final-Share (private) · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Reject PublicLink (D76.4); affected-assignee warning (UC-WM-A25); UI for Workspace visibility
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; settings conflict notice names no actor and has no keep-mine (artboard Er-on-save needed); tests and owner check. Built: PublicLink is refused on create and on every visibility change (rule code `WorkManagement_Board_PublicLinkNotSupported`); the visibility write carries the board version. Not built: affected-assignee warning (UC-WM-A25), UI for Workspace visibility. Evidence: real-stack check 2026-10-31: switched a board to Private from the Share dialog and a member now gets the not-available state after reload; an unknown visibility value is now 400 (it answered 204 and stored it); the same value bumps nothing; a stale version 412, commit 33ed8c465. Settings conflict notice now names the actor and offers Keep mine / Use the new version (same panel as UC-WM-A02); tests and owner check.
 
 ### UC-WM-A22 Make a board private with impact preview and bulk add
 - Capability: A Board lifecycle (WM-001)
@@ -676,7 +677,7 @@ Team capability WM-001.
 - Rules: product sections 103-106; WM-030, WM-040; WMREQ006-007
 - Acceptance: Given 3 Space-only people with open Items, when "Make private" lists them, then confirming with 2 selected adds those 2 as editors and the third loses access, all in one transaction.
 - Evidence: BE Boards.MakePrivate = POST /boards/{boardId:guid}/sharing/private -> MakeBoardPrivateCommand (`Boards/Commands/MakeBoardPrivate/MakeBoardPrivate.cs`) [- / Idem] · FE BoardShareDialogSurface · Design Final-Share (private flow) · Tests `BoardSharingIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Direct handler tests; real e2e; one-transaction proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: made a board Private from the Share dialog with the impact count (204) and the reload keeps it; the people added keep access; a Guest cannot open it, commit 33ed8c465.
 
 ### UC-WM-A23 Open a shared board as a Guest
 - Capability: A Board lifecycle (WM-001)
@@ -718,7 +719,7 @@ Team capability WM-001.
 - Rules: product sections 68.2, 103; WM-040; D78.11
 - Acceptance: Given Private visibility is chosen and 4 assignees lack access, then the warning names them with a "grant access" action.
 - Evidence: BE privateImpact on MakePrivate only; none on Visibility/MoveToSpace · FE list inside make-private only · Design none; needs assignee-impact warning with Grant access action · Tests none found · Real e2e none
-- State: INTEGRATING — Warning on visibility change and move-to-space; design
+- State: INTEGRATING — Warning on visibility change and move-to-space; design Move-to-Space half built: the impact read is authorized (ManageBoard plus create-a-board on the target), identical NotFound, bounded (50 people), commit b3c9198af. Visibility-change impact stays later (decision 11).
 
 ### UC-WM-A26 Block removing or demoting the last board manager
 - Capability: A Board lifecycle (WM-001)
@@ -732,7 +733,21 @@ Team capability WM-001.
 - Rules: product sections 103; WM-030; D78.9; WMREQ007
 - Acceptance: Given one Manager, when that person is demoted or removed, then it is refused and the role is unchanged.
 - Evidence: BE domain rule unverified on RemoveMember/UpdateMemberRole · FE none · Design none; needs last-manager blocked message · Tests none found · Real e2e none
-- State: DEFINED — no last-manager guard in UpdateBoardMemberRole or RemoveBoardMember (verified in source); no design for the message.
+- State: HARDENING — tests and owner check. Built: `BoardManagerGuard` refuses lowering or removing the last person or Team at Manager level on the board (rule code `WorkManagement_Board_LastManager`, nothing changes; the problem now carries `ruleCode`). The share dialog locks lower levels and removal of the only Manager from the start with the reason and "Add a Manager", names the refusal at the head of the dialog when a stale list still tried, and tells a workspace admin managing through Governance. Not built: the own row stays fixed (no menu); leave board has no catalog use case (not built; the artboard draws it). Evidence: real-stack check 2026-10-31: lowering a grant Manager to Viewer and revoking the only grant Manager both answered 400 with the same ruleCode and nothing changed, a second Manager lets the first be lowered (Governance grant and revoke now run the guard); lowering the only board-member Manager answered 400 with ruleCode WorkManagement_Board_LastManager and the role stayed; the menu of a sole grant Manager drew lower levels and removal locked with the reasons, commit a4966637e.
+
+### UC-WM-A27 Leave a board
+- Capability: A Board lifecycle (WM-001)
+- Actors and permission: Any person who can read the board and holds an explicit board role (any role, Viewer included).
+- Preconditions: The person is a member of the board.
+- Input: Board id.
+- Output: The person's own board role ends; the access change is logged and audited. Permissions granted to them by name (Governance) are not touched. On a Workspace-visible board they still see it through the workspace; on a Private board they lose access.
+- Main flow: 1. Open the board menu, Leave board. 2. Read what changes. 3. Confirm; a Private board closes to the workspace home.
+- No-op / rejection / concurrency / retry: The last Owner (`WorkManagement_Board_LastOwner`) and the last Manager (`WorkManagement_Board_LastManager`) stay, 400, nothing changes. Leaving twice is a no-op (204). A person without access gets the identical NotFound. Assignments are kept as history.
+- UI states: confirm (private / workspace-visible), refused (last Manager, last owner, names the way out), no own role (confirm disabled), pending
+- Rules: WM-030; lead decision 2026-10-31
+- Acceptance: Given the only Manager, when they leave, then it is refused with the reason and the role is unchanged. Given a member leaves a Workspace-visible board twice, then the second call changes nothing and they still see the board.
+- Evidence: BE `POST /boards/{boardId}/members/leave` -> LeaveBoardCommand (`Boards/Commands/LeaveBoard/LeaveBoard.cs`) · FE `apps/web/src/shell/workspace/board-leave-dialog.tsx`, header menu entry · Design WM-LastManager (Rời board frames) · Tests none yet · Real e2e none
+- State: HARDENING — tests and owner check. Evidence: real-stack check 2026-10-31: the only Manager leaving was refused 400 with ruleCode WorkManagement_Board_LastManager and the dialog showed the reason; with a second Manager the leave answered 204 and the Private board closed to the workspace home (404 afterwards); a viewer leaving a Workspace-visible board answered 204, twice 204, and still read it (200). Not built: the menu entry is not locked up front for the only Manager (the dialog says so after the refusal); realtime cut for the leaver relies on the existing access-change signal; assignees are kept (no assignee-access rule exists to follow).
 
 ## B. BoardItem lifecycle
 
@@ -749,8 +764,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 27.3, 28, 29; WM-011, WM-043, WM-044; D28, D30, Q2; WMREQ011-017, WMREQ020
 - Acceptance: (1) Given a Commenter or Viewer, when they look for "Add item", then no button, no quick add and no shortcut C exist. (2) Given the person edits any input after a failed attempt, when they submit again, then a new idempotency key is used. (3) Given an empty name, when submitting, then an inline error appears under the name, focus goes to it, and no request is sent.
-- Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem]; BoardItems.AssignMember = POST /board-items/{itemId:guid}/assignees -> AssignBoardItemMemberCommand (`BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs`) [- / Idem]; BoardItems.AddLabel = POST /board-items/{itemId:guid}/labels -> AddLabelToBoardItemCommand (`Labels/Commands/AddLabelToBoardItem/AddLabelToBoardItem.cs`) [- / Idem]; BoardItems.UpdateFieldValues = PATCH /board-items/{itemId:guid}/field-values -> UpdateBoardItemFieldValuesCommand (`BoardItems/Commands/UpdateBoardItemFieldValues/UpdateBoardItemFieldValues.cs`) [EV / Idem] · FE BoardItemCreateDialog, `frontend/packages/product/work-management/state/src/mutations/use-create-item-with-details.ts` · Design BC-Create-Main-States, BC-Create-320-Pickers (Kanban-CreateTask stale) · Tests `AddLabelToBoardItemTests.cs`, `AssignBoardItemMemberTests.cs`, `CreateBoardItemTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — no real e2e; proof matrix for the create dialog (limits, retry, partial failure); sub-item mode; 'retry the missing part' check.
+- Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem]; BoardItems.AssignMember = POST /board-items/{itemId:guid}/assignees -> AssignBoardItemMemberCommand (`BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs`) [- / Idem]; BoardItems.AddLabel = POST /board-items/{itemId:guid}/labels -> AddLabelToBoardItemCommand (`Labels/Commands/AddLabelToBoardItem/AddLabelToBoardItem.cs`) [- / Idem]; BoardItems.UpdateFieldValues = PATCH /board-items/{itemId:guid}/field-values -> UpdateBoardItemFieldValuesCommand (`BoardItems/Commands/UpdateBoardItemFieldValues/UpdateBoardItemFieldValues.cs`) [EV / Idem] · FE card popup create mode (`card-popup/create/*`), `frontend/packages/product/work-management/state/src/mutations/use-create-item-with-details.ts` · Design Kanban-CardPopup-Create, -Create-States, -M-Create · Tests `AddLabelToBoardItemTests.cs`, `AssignBoardItemMemberTests.cs`, `CreateBoardItemTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the full-dialog partial-failure proof. Evidence: real-stack check 2026-10-31: created through the API and the quick add in the browser; empty and 501-char title, 20,001-char description, inverted dates and a foreign group refused (400/404); a retry under one key made one item; a member created one; a non-member of a Private board got 404; reload kept the item, commit f812cc4ff.
 
 ### UC-WM-B02 Quick-add an item in a group or lane
 - Capability: B BoardItem lifecycle (WM-002)
@@ -764,7 +779,7 @@ Team capability WM-002.
 - Rules: product sections 27.3; WM-044; D30, D39; WMREQ016-017
 - Acceptance: (1) Given a quick add failing, when the write errors, then the typed name stays in the input with an inline error and "Thử lại". (2) Given a quick add or dialog create in a group that is scrolled away from its bottom, when it succeeds, then the new item is brought into view. (3) Given a quick add in a lane, when Enter is pressed with a name, then the item is appended to the bottom of that lane and the input stays focused for the next; with an empty name nothing happens (D39).
 - Evidence: BE BoardItems.Create = POST /boards/{boardId:guid}/items -> CreateBoardItemCommand (`BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs`) [- / Idem] · FE KanbanAddCard, table row add; WIP warning not found · Design Kanban-Card-States, BC-Kanban (quick add) · Tests `CreateBoardItemTests.cs` · Real e2e none
-- State: INTEGRATING — WIP warning on over-limit add (D37); scroll when outside window; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; WIP warning on over-limit add. Evidence: real-stack check 2026-10-31: quick add in the Kanban 'No status' lane in the browser created the item and it stayed after reload, commit f812cc4ff.
 
 ### UC-WM-B03 Create a sub-item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -778,7 +793,7 @@ Team capability WM-002.
 - Rules: product sections 26, 27.1, 77.1; WM-041, WM-043; Q3; WMREQ012-013, WMREQ016
 - Acceptance: (1) Given the dialog opened from the item sheet's Sub-items "Add with details", when it opens, then the parent is fixed and shown, the Group is the parent's and not editable, and the created item is a sub-item (owner Q3). (2) Given a Member creates a sub-item from the sheet's Sub-items "Add with details" (owner Q3), when it is created, then its parent is the chosen item, one level only (a sub-item cannot be chosen as a parent), and it appears under the parent in Table sub-rows and in the sheet.
 - Evidence: BE BoardItems.CreateChild = POST /board-items/{itemId:guid}/child-items -> CreateChildItemCommand (`BoardItems/Commands/CreateChildItem/CreateChildItem.cs`) [- / Idem]; BoardItems.ListChildren = GET /board-items/{itemId:guid}/child-items -> ListChildItemsQuery (`BoardItems/Queries/ListChildItems/ListChildItems.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-sub-items.tsx`, ItemPageChildItems; raw /child-items path · Design BC-Create sub-item mode; sheet add/reorder not drawn · Tests `SubItemTests.cs` · Real e2e `sub-items.real.e2e.spec.ts`
-- State: HARDENING — Typed client; sheet add; Q3 create-dialog sub-item mode
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the sheet add and reorder design. Evidence: real-stack check 2026-10-31: child created through the API, a child of a child refused (400), the children list returned it, archive and delete of the parent took it along and restore brought it back, commit f812cc4ff.
 
 ### UC-WM-B04 Edit the item title in place
 - Capability: B BoardItem lifecycle (WM-002)
@@ -792,7 +807,7 @@ Team capability WM-002.
 - Rules: product sections 28; D63; WMREQ020, WMREQ110-113; LD1
 - Acceptance: Given an item title edited in the Table, when Enter is pressed, then the new title shows for everyone. Given Escape, then the old title stays. Given a stale version, then a conflict choice appears.
 - Evidence: BE BoardItems.Update = PATCH /board-items/{itemId:guid} -> UpdateBoardItemCommand (`BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs`) [EV / -] · FE table inline title (/Enter/double-click) · Design Final-Table `sua-o` · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — PATCH /board-items/{id} has expected version but no Idempotency-Key (see defect B-10).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version bumped the version once, the same title changed nothing, a stale version answered 412 and kept the title, a blank title was refused, commit f812cc4ff.
 
 ### UC-WM-B05 Assign people to an item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -806,7 +821,7 @@ Team capability WM-002.
 - Rules: product sections 68.2, 139; WM-040; D41; D78.1; WMREQ022, WMREQ110-113
 - Acceptance: (Guest picker), Given a user without ViewBoard, when assigned via API, then rejected with the rule and nothing changes. Given an assignee loses access later, then the item still shows them as assignee.
 - Evidence: BE BoardItems.AssignMember = POST /board-items/{itemId:guid}/assignees -> AssignBoardItemMemberCommand (`BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs`) [- / Idem]; BoardItems.UnassignMember = DELETE /board-items/{itemId:guid}/assignees/{userId:guid} -> UnassignBoardItemMemberCommand (`BoardItems/Commands/UnassignBoardItemMember/UnassignBoardItemMember.cs`) [- / Idem] · FE ItemAssigneePicker; 'share the board first' with invite action unproven · Design WM-Sheet-Full, BC-Create-320-Pickers · Tests `AssignBoardItemMemberTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — expected version on assign and unassign (D77.3; defect B-01); invite action in the 'share the board first' message; Guest picker with no emails; real e2e.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: assign and unassign carry the expected version (stale 412, nothing changed), an assignee who cannot see a Private board got 403 with the share-first message, assigning twice changed nothing, non-member 404, commit f812cc4ff.
 
 ### UC-WM-B06 Complete, reopen, remind
 - Capability: B BoardItem lifecycle (WM-002)
@@ -820,7 +835,7 @@ Team capability WM-002.
 - Rules: product sections 148.1; WM-042; D35, D77.2, D77.3; WMREQ014, WMREQ110-113
 - Acceptance: Given an open item, when Complete is used, then it moves to a done-category status. Given Nhắc pressed twice in an hour, then the second is refused with the time it is possible again.
 - Evidence: BE BoardItems.Complete = POST /board-items/{itemId:guid}/complete -> CompleteBoardItemCommand (`BoardItems/Commands/CompleteBoardItem/CompleteBoardItem.cs`) [- / Idem]; BoardItems.Reopen = POST /board-items/{itemId:guid}/reopen -> ReopenBoardItemCommand (`BoardItems/Commands/ReopenBoardItem/ReopenBoardItem.cs`) [- / Idem]; BoardItems.RemindOwners = POST /board-items/{itemId:guid}/remind (the Nhắc nudge, D35) · FE `frontend/packages/product/work-management/web/src/components/item-page/item-page-states.tsx`; `frontend/packages/product/work-management/web/src/components/item-actions/remind-dialog.tsx` raw /remind (nudge) · Design WM-Actions-Menu, WM-Actions-Remind; Er, M missing · Tests `ReopenBoardItemTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (reopen)
-- State: HARDENING — expected version on complete and reopen (D77.3; defect B-01); the Nhắc dialog calls a raw path and is not on the typed client (defect F-01); the real e2e proves only reopen.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: complete, reopen in the browser (POST complete 204, reopen 204 with the version) and through the API; a second complete or reopen changed nothing, a stale version answered 412, complete on an archived item was refused, commit f812cc4ff.
 
 ### UC-WM-B07 Duplicate an item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -834,7 +849,7 @@ Team capability WM-002.
 - Rules: product sections 27, 28; WM-043; D76.7; WMREQ049
 - Acceptance: Given a duplicate, then the new item has a new key and the original is unchanged. Given Duplicate with sub-items on (default), then the copy has title, description, field values, labels, checklist and sub-items, and no comments, activity, approvals, links or attachment files.
 - Evidence: BE BoardItems.Duplicate = POST /board-items/{itemId:guid}/duplicate -> DuplicateBoardItemCommand (`BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-actions/duplicate-item-dialog.tsx` · Design WM-Actions-Duplicate; Er, busy missing · Tests `CreateBoardItemTests.cs` · Real e2e none
-- State: INTEGRATING — Prove copy set (incl. sub-items option) and exclusions; design Er/busy
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: duplicate with sub-items copied the item and its sub-item, a retry under one key made one copy, an archived item was refused (400), commit f812cc4ff.
 
 ### UC-WM-B08 Move an item to another board
 - Capability: B BoardItem lifecycle (WM-002)
@@ -848,7 +863,7 @@ Team capability WM-002.
 - Rules: product sections 26, 27.1; WM-043, WM-040; D50, D54, D76.3; WMREQ018-019, WMREQ110-113
 - Acceptance: (1) Given a bulk Move, when the target lacks CreateItem for the person, then Move is disabled with the reason (D50). (2) Given Move board with a target where the person lacks CreateItem or the item has dependencies, when attempted, then the refusal names the reason (D50/D54).
 - Evidence: BE BoardItems.MoveToBoard = POST /board-items/{itemId:guid}/move-to-board -> MoveBoardItemToBoardCommand (`BoardItems/Commands/MoveBoardItemToBoard/MoveBoardItemToBoard.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-actions/move-board-dialog.tsx` (raw move-to-board) · Design WM-Actions-Move (mapping preview); Er/partial missing · Tests `MoveBoardItemToBoardTests.cs` · Real e2e none
-- State: INTEGRATING — Old-key alias (D76.3); mapping notice proof (D50, D54); EV
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; mapping-notice proof. Evidence: real-stack check 2026-10-31: move to another board with the expected version (stale 412), the same board and an archived item refused (400), links followed the item, commit f812cc4ff.
 
 ### UC-WM-B09 Archive an item
 - Capability: B BoardItem lifecycle (WM-002)
@@ -862,7 +877,7 @@ Team capability WM-002.
 - Rules: product sections 26, 123; WM-033; WMREQ014
 - Acceptance: Given an item with 2 sub-items, when archived, then all three leave the lists. Given an archived item, when a description edit is sent, then it is refused with the reason.
 - Evidence: BE BoardItems.Archive = POST /board-items/{itemId:guid}/archive -> ArchiveBoardItemCommand (`BoardItems/Commands/ArchiveBoardItem/ArchiveBoardItem.cs`) [EV / Idem] · FE useArchiveCard, `ArchiveItemDialog` (`item-lifecycle/archive-item-dialog.tsx`), ItemPageArchivedBanner · Design BC-Actions (confirm archive) · Tests `ArchiveBoardItemTests.cs`, `WorkMutationTransportRegressionTests.cs`, `archive-item-dialog` component tests, `card-commands.unit.test.ts` · Real e2e `item-lifecycle.real.e2e.spec.ts`, `sub-items.real.e2e.spec.ts`
-- State: HARDENING — owner check
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: archive from the card popup in the browser removed the item from the board and kept it after reload; archiving twice changed nothing, an archived item refused edits, its sub-items were archived with it, commit f812cc4ff.
 
 ### UC-WM-B10 Browse archived items and unarchive
 - Capability: B BoardItem lifecycle (WM-002)
@@ -876,7 +891,7 @@ Team capability WM-002.
 - Rules: product sections 123; WM-033; D51; Q6; WMREQ014; LD2
 - Acceptance: (1) Given a board's Archived items panel, when a Member opens it, then archived items are listed with search, each with Unarchive; a Viewer does not see the entry (owner Q6). (2) Given the Archived items panel (owner Q6), when a Member opens it, then archived items list with name, key, who archived and when, paged, each with Unarchive; unarchive returns the item and the sub-items archived with it to its group.
 - Evidence: BE BoardItems.Unarchive = POST /board-items/{itemId:guid}/unarchive -> UnarchiveBoardItemCommand (`BoardItems/Commands/UnarchiveBoardItem/UnarchiveBoardItem.cs`) [- / Idem] · FE none; no archive browse; unarchive via raw path · Design BC-Archive-Trash (archived list) · Tests `SubItemTests.cs` · Real e2e `item-lifecycle.real.e2e.spec.ts` (unarchive on item page only)
-- State: IMPLEMENTING — BE paged archived list; FE panel; unarchive restores sub-items
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design measurement against BC-Archive-Trash (the sheet reuses the Deleted items sheet). Evidence: real-stack check 2026-10-31: Archived items sheet in the board menu listed the archived item, Unarchive put it back and it stayed after reload; the read answers 404 to a non-member; search by name works, commit f812cc4ff.
 
 ### UC-WM-B11 Delete an item (to Trash)
 - Capability: B BoardItem lifecycle (WM-002)
@@ -890,7 +905,7 @@ Team capability WM-002.
 - Rules: product sections 123; WM-033; D51; Q10; WMREQ014
 - Acceptance: (1) Given the item was deleted by someone else while the menu was open, when an entry is chosen, then the person is told it was deleted and the row/card is gone. (2) Given the item is deleted while the sheet is open, when the change arrives, then the sheet shows "this item was deleted" with Restore for people who may and a link back to the board. (3) Given Delete, when chosen, then a confirmation names the item and the counts of sub-items and dependencies; confirming soft-deletes it; a toast offers Hoàn tác (restore); the item is listed in Trash for 30 days (D51).
 - Evidence: BE BoardItems.Delete = DELETE /board-items/{itemId:guid} -> DeleteBoardItemCommand (`BoardItems/Commands/DeleteBoardItem/DeleteBoardItem.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-lifecycle/use-item-removal.tsx`, undo toast · Design WM-Actions-Trash, BC-Archive-Trash · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — Sub-items trashed with parent (Q10) proof; actor on deleted frame (Q12 contract); real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: delete from the card popup in the browser asked for confirmation, the item went to Deleted items; a stale version answered 412; the sub-items went with the parent, commit f812cc4ff.
 
 ### UC-WM-B12 Restore an item from Trash
 - Capability: B BoardItem lifecycle (WM-002)
@@ -904,7 +919,7 @@ Team capability WM-002.
 - Rules: product sections 123; WM-033; D51, D54, Q10; WMREQ014
 - Acceptance: Given an item deleted yesterday, when restored, then it returns with its sub-items. Given one deleted 31 days ago, then restore is refused.
 - Evidence: BE BoardItems.Restore = POST /board-items/{itemId:guid}/restore -> RestoreBoardItemCommand (`BoardItems/Commands/RestoreBoardItem/RestoreBoardItem.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/item-lifecycle/board-trash-sheet.tsx`, `frontend/packages/product/work-management/state/src/cache/card-restore.ts` · Design BC-Archive-Trash (restore, >30 days, parent deleted) · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; >30 days refusal proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: restore from the Deleted items sheet in the browser put the item back and it stayed after reload; an item past 30 days is not listed and its restore answers 409, commit f812cc4ff.
 
 ### UC-WM-B13 Open the board Trash
 - Capability: B BoardItem lifecycle (WM-002)
@@ -918,7 +933,7 @@ Team capability WM-002.
 - Rules: product sections 123; D51; D54; WMREQ147
 - Acceptance: Given the board Trash, when a Member restores an item within 30 days, then it returns to its group; after 30 days restore is refused with the reason (D54).
 - Evidence: BE BoardItems.Trash = GET /boards/{boardId:guid}/items/trash -> ListBoardItemTrashQuery (`BoardItems/Queries/ListBoardItemTrash/ListBoardItemTrash.cs`) [- / -] · FE BoardTrashHost, useBoardTrash (raw trash path) · Design WM-Actions-Trash, BC-Archive-Trash · Tests `MoveBoardItemToBoardTests.cs` · Real e2e none
-- State: INTEGRATING — Paging; typed client; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: Deleted items sheet listed the deleted root items (at most 200), none past 30 days, 404 to a non-member, commit f812cc4ff.
 
 ### UC-WM-B14 Bulk-edit items (Table and Kanban)
 - Capability: B BoardItem lifecycle (WM-002)
@@ -932,7 +947,7 @@ Team capability WM-002.
 - Rules: product sections 34, 132; WM-012; WMREQ025, WMREQ110-113; D32, D43, D77.3, Q8
 - Acceptance: (1) Given a bulk Move, when the target lacks CreateItem for the person, then Move is disabled with the reason (D50). (2) Given a bulk network failure, when retried, then the retry carries the same idempotency key and does not apply twice. (3) Given 201 items selected, when the person tries an action, then it is disabled with the cap stated and the selection is not truncated.
 - Evidence: BE BoardItems.BulkUpdate = POST /boards/{boardId:guid}/items/bulk -> BulkUpdateBoardItemsCommand (`BoardItems/Commands/BulkUpdateBoardItems/BulkUpdateBoardItems.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-bulk-bar.tsx`; Kanban has no multi-select; no bulk move-to-board · Design BC-Bulk (Final-Table bar stale) · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — Kanban multi-select is missing (Q8; defect F-09); 200-item cap message; per-item expected versions (D77.3; defect B-02); real e2e.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; Kanban multi-select is not built (needs the BC-Bulk artboard states). Evidence: real-stack check 2026-10-31: bulk set-due-date and assign through the API with a version per item: one stale item refused the whole batch with 412 and named it, nothing changed; a retry under one key replayed; an empty list got 400 and an item of another board 404, commit f812cc4ff.
 
 ### UC-WM-B15 Use the item action menu everywhere
 - Capability: B BoardItem lifecycle (WM-002)
@@ -987,8 +1002,8 @@ Team capability WM-002.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 26-28; WM-044; D69; WMREQ011, WMREQ111
 - Acceptance: Given a Member who clicks an item, then the sheet shows Properties, Description, Checklists, Sub-items, Files, Links, Approval and Comments or History. Given an empty section, then it collapses to '+ Add'. Given an item deleted by someone else while open, then the sheet says so and offers Restore only to those who may.
-- Evidence: BE BoardItems.Get = GET /board-items/{itemId:guid} -> GetBoardItemQuery (`BoardItems/Queries/GetBoardItem/GetBoardItem.cs`) [- / -] · FE BoardItemSheetHost, ItemPage; sheet fallback strings · Design Final-Detail, WM-Sheet-Full, BC-Notices · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e `item-page.real.e2e.spec.ts` (smoke)
-- State: INTEGRATING — paged comments, history and sub-items; replace the 'not available yet' fallback copy (defect F-10); proof of the section order and the sheet behaviours.
+- Evidence: BE BoardItems.Get = GET /board-items/{itemId:guid} -> GetBoardItemQuery (`BoardItems/Queries/GetBoardItem/GetBoardItem.cs`) [- / -] · FE card popup (`card-popup/*`: CardPopupSurface, KanbanSelectedItem over Kanban, Table, Calendar, Timeline and My work; the item link redirects to the board with the popup open) · Design Kanban-CreateTask and Kanban-CardPopup-* (incl. -States-1/-2, -M-Card, -M-States), BC-Notices · Tests `BoardAuthorizationHardeningIntegrationTests.cs` · Real e2e `item-page.real.e2e.spec.ts` (smoke)
+- State: INTEGRATING — tests and owner check. Built: a modal popup (full-height sheet at 390) replaces the side sheet and the item page; loading, error with retry, one generic gone-or-no-access message, per-field saving with retry, conflict notice, read-only (permission, archived). Left: paged comments and history, "Trường hiển thị trên thẻ" persistence.
 
 ### UC-WM-B19 Edit the item description
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1016,7 +1031,7 @@ Team capability WM-002.
 - Rules: product sections 68, 68.1; WM-039; D76.8; WMREQ113
 - Acceptance: Given A waits on B, when B waits on A is attempted, then rejected naming the path A to B. Given a target the viewer cannot read, then the link shows no title. Given a link to an archived item, then it stays and shows archived; given a link to a trashed item, then it is hidden while in trash and removed on purge.
 - Evidence: BE BoardItems.ListLinks = GET /board-items/{itemId:guid}/links -> ListBoardItemLinksQuery (`BoardItems/Queries/ListBoardItemLinks/ListBoardItemLinks.cs`) [- / -]; BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE ItemPageLinks (raw /links); blocks/blocked-by wording · Design WM-TL-Interactions (timeline only); Table/sheet link edit missing · Server cycle check: CreateBoardItemLinkCommandHandler loads the board's waits-on rows, then `DependencyRules.EnsureNoCycle`; rejection is a Domain BusinessRuleException, rule code `WorkManagement_Dependency_CannotCreateCycle`, HTTP 400 business-rule violation with the ordered path (titles and ids) in the message; blocks is stored as the inverse waits-on row, related never forms a cycle · Tests `CreateBoardItemLinkTests.cs` (direct, transitive with path, blocks inverse, related, self), `V4DomainRulesTests.cs`, `ListBoardItemLinksTests.cs` · Real e2e none, no integration test for item links
-- State: INTEGRATING — Cycle check done (D76.8); open: cross-board, typed client, design for sheet, integration test of the real pipeline
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a link to an archived item stays but its row carries no archived mark; no typed client check; tests and owner check. Evidence: real-stack check 2026-10-31: A blocks B linked (200) and read back as blocked-by on B; B blocks A refused naming the path A to B to A (400); a self link refused (400); a retry under the same key answered the same link; a trashed target left the list at once and a removed link answered 204 then 404, commit 820baf039.
 
 ### UC-WM-B21 Change or remove an item link
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1100,7 +1115,7 @@ Team capability WM-002.
 - Rules: product sections 86-88; WM-026; D62
 - Acceptance: Given decide and cancel at the same time, then exactly one wins and the other gets conflict.
 - Evidence: BE Approvals.Cancel = POST /approvals/{requestId:guid}/cancel -> CancelApprovalRequestCommand (`Approvals/Commands/CancelApprovalRequest/CancelApprovalRequest.cs`) [EV / Idem] · FE cancel in `frontend/packages/product/work-management/web/src/components/item-page/item-page-approval.tsx` (raw) · Design none; needs cancel, race conflict · Tests `ApprovalRequestCommandTests.cs` · Real e2e none
-- State: INTEGRATING — Race test; real e2e; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; cancel after a decision answers 400 where the spec asks for a conflict, and decide against cancel racing was not driven; tests and owner check. Evidence: real-stack check 2026-10-31: a pending request cancelled with its version (204) and listed as Cancelled; a stale version answered 412; cancelling a request that is no longer pending answered 400, commit 820baf039.
 
 ### UC-WM-B27 Re-request after rejection or cancel
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1141,8 +1156,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 133-134; WM-035; D76.15
 - Acceptance: Given a CSV with a bad Number cell, then the import reports the row and the contract-defined outcome. Given a file of 5,001 rows or one bad cell, then nothing is imported and the report names the row.
-- Evidence: BE none: no code · FE none · Design none; needs import wizard (upload, mapping, preview, error report, over-limit) · Tests none found · Real e2e none
-- State: DEFINED — Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE
+- Evidence: BE: board import upload/preview/confirm/get/errors on `/boards/{id}/imports`, background all-or-nothing run, Ops import_jobs · FE: board menu `Nhập việc từ tệp…`, 4-step dialog (file, mapping, check, import with progress), downloadable CSV error report · Design: Import-1 and Import-2 (880 px dialog, 390 px sheet); box tree not diffed, dialog box measured 880 wide at 1440 and full-width sheet at 390 · real-stack check 2026-10-31: 5,000-row XLSX and CSV imported (10.8 s), 5,001+ rows, PDF, macro and external-link XLSX refused with a reason, wrong type and bad date/option/empty title reported by row and column, error report downloaded, viewer and guest refused, archive mid-way names the actor and creates nothing, same key twice queues one run; commit 37785495e and the commit after it · Tests none (build-only phase) · Real e2e none
+- State: HARDENING — gap: tests and owner check; Assignee column cannot be imported yet (needs an owner decision on how a person is matched); import into a new board later (decision 11)
 
 ### UC-WM-B30 Map import columns to fields
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1155,8 +1170,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 134; WM-035; D76.15
 - Acceptance: Given a column mapped to an incompatible field, then flagged before import.
-- Evidence: BE none: no code · FE none · Design none; needs column-to-field mapping with preview · Tests none found · Real e2e none
-- State: DEFINED — Part of D76.15 import; design, BE, FE
+- Evidence: BE: per-column checks (ok, unknown values, incompatible) from `POST /imports/{id}/preview`, suggested mapping by field name · FE: mapping step with field select, chips, required Title, locked fields with reason · real-stack check 2026-10-31: Number column with `ba ngày` flagged incompatible and Continue locked, missing Title blocks, skipping the column opens Continue, stranger gets the identical 404; commit see B29 · Tests none · Real e2e none
+- State: HARDENING — gap: tests and owner check
 
 ### UC-WM-B31 Export a board or view
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1169,8 +1184,8 @@ Team capability WM-002.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 135, 104; WM-030; D76.15
 - Acceptance: Given a person without export right, then 403. Given a Guest, when export is attempted, then it is refused; given a Viewer, then the current view's rows export.
-- Evidence: BE none: no code (reports export is Analytics) · FE none; reports export only · Design none; needs export dialog (current view, queued/ready/expired) · Tests none found · Real e2e none
-- State: DEFINED — CSV/XLSX of the current view with filters (D76.15); design, BE, FE
+- Evidence: BE: `POST /boards/{id}/exports`, background run, file in storage, inbox entry when ready, `GET .../exports/{job}/file` authorised per call, 24 h expiry sweep, formula-injection guard · FE: board menu `Xuất việc…`, dialog (format, view or all, progress, ready, download, expired, failed) · Design: Export artboard (600 px dialog, 390 px sheet); box tree not diffed · real-stack check 2026-10-31: CSV and XLSX of 5,006 items, filtered view export (1 of 3 rows), `=`, `+`, `-`, `@` titles prefixed with an apostrophe, private board 404 for a non-member, viewer exports, guest 403 on export, summary and download, other person's file 404, inbox entry `work.export.ready`; commit see B29 · Tests none · Real e2e none
+- State: HARDENING — gap: tests and owner check; no field-level view right exists so no field is hidden; sub-items are not exported
 
 ### UC-WM-B32 Provider/migration import
 - Capability: B BoardItem lifecycle (WM-002)
@@ -1258,7 +1273,7 @@ Team capability WM-003.
 - Rules: product sections 15-22; WM-006, WM-007, WM-008; WMREQ026-028, WMREQ030
 - Acceptance: Given an Editor, when they add a Select field with 3 options, then the field shows as a column for everyone and each option has a stable id. Given an invalid default for a Number with a maximum, when saved, then it is rejected with the reason. Given a Viewer, then Add field is absent.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-fields.tsx`, useCreateItemField · Design Final-Settings `truong`/`them-truong`, WM-Field-Sheet(-Dem) · Tests `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; DateTime and file types deferred; design Er/T/M
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design measurement of the inline name message. Evidence: real-stack check 2026-10-31: fields of nine types created through the API; empty and 101-char names and an unknown type refused (400); a name already used on the board (trimmed, any case) answers 409 work-management.field.name-taken and the new-property form in the card popup shows it inline in the browser, commit b45baefb5, da1695a37.
 
 ### UC-WM-C02 Rename a field or change its settings
 - Capability: C BoardField definitions (WM-003)
@@ -1272,7 +1287,7 @@ Team capability WM-003.
 - Rules: product sections 16, 20; WM-006; WMREQ026, WMREQ030-032, WMREQ110-113
 - Acceptance: Given a field renamed, then views, filters and automation referring to its key still work. Given an existing field, when the person looks for change type, then the UI says to create a new field.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE field panel; 'change type' says create new field · Design Final-Settings `truong`; WM-Field-Sheet · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; stale-schema conflict proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: rename with the expected version, the same name changed nothing, a stale version answers 412, a taken name answers 409, a case-only rename of itself passes, commit b45baefb5, da1695a37. Real-stack check 2026-10-31: a second manager saved first and the stale save answered 412 with the last writer (name and time); the page named the person, held the typed values, showed the three-column diff, Keep mine saved only my fields on the newest version and Use the new version dropped them, commit f7b60fb72. The field panel's options keep their own saves; Keep mine re-sends only the panel fields.
 
 ### UC-WM-C03 Change a field default
 - Capability: C BoardField definitions (WM-003)
@@ -1300,7 +1315,7 @@ Team capability WM-003.
 - Rules: product sections 124, 25; WM-009; D76.5; WMREQ035, WMREQ040, WMREQ110-113
 - Acceptance: Given a formula that references field F, when F is deleted, then the action is rejected naming the formula. Given a field deleted 5 days ago, when an Editor restores it, then its values return; after 30 days restore is refused.
 - Evidence: BE BoardFields.Delete = DELETE /boards/{boardId:guid}/fields/{fieldId:guid} -> DeleteBoardFieldCommand (`BoardFields/Commands/DeleteBoardField/DeleteBoardField.cs`) [- / Idem] · FE board-settings-field-delete; fieldArchive flag locked · Design none; needs delete-field confirm listing dependents (formula, view, form) · Tests `DeleteBoardFieldTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete field)
-- State: HARDENING — Soft delete with 30-day restore (D76.5); dependents rejection; EV; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; restore has no screen (UC-WM-C05). Evidence: real-stack check 2026-10-31: delete of a field names the expected version (stale 412) and the field left the schema; deleting a field a formula reads is refused (400) naming the formula, commit b45baefb5, da1695a37.
 
 ### UC-WM-C05 Restore an archived field
 - Capability: C BoardField definitions (WM-003)
@@ -1314,7 +1329,7 @@ Team capability WM-003.
 - Rules: product sections 124-125; D76.5; WMREQ035
 - Acceptance: Given an archived field restored, then old item values show again.
 - Evidence: BE none: no endpoint (domain event exists) · FE none · Design none; needs archived/deleted fields list, restore · Tests none found · Real e2e none
-- State: DEFINED — no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive.
+- State: HARDENING — tests and owner check. Built: the restore endpoint (POST /boards/{id}/fields/{fieldId}/restore, a Manager, within 30 days, a taken name refused with 409) and the deleted-fields list (GET /boards/{id}/fields/deleted, now with who deleted, the count of items still holding a value and typed in OpenAPI); board settings, Fields, has a Deleted tab (decision: restore needs Manager) with who, when, days left (amber under 3 days), a Restore button per row, the taken-name refusal under the row with "open the field in use", the closed window with "remove from the list", loading, empty and error states. Not built: the 390 px sheet (settings is a desktop surface, decision 10); the "viewer reads the list" state (the list itself needs Manager); the field key is not on the row. Evidence: real-stack check 2026-10-31: two deleted fields listed with deleter and days left; restoring one whose name a live field took showed the refusal on its row, restoring the other removed it from the list and it stayed gone after a reload; box tree of the list within 1 px of WM-DeletedFields at 1440 light (page content is 8 px wider), commit see git log.
 
 ### UC-WM-C06 Attempt to edit or delete a system field
 - Capability: C BoardField definitions (WM-003)
@@ -1328,7 +1343,7 @@ Team capability WM-003.
 - Rules: product sections 23-24; WM-009; WMREQ029
 - Acceptance: Given a Created-at system field, when a Manager attempts delete via API, then refused.
 - Evidence: BE domain rule (Fields 102 tests); no API refusal test · FE read-only column header lock · Design WM-Field-Editors (locked, ƒx header lock) · Tests none found · Real e2e none
-- State: INTEGRATING — API test: delete/edit system field refused
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: renaming Title, Status, Assignee or Due Date answers 409 work-management.field.system-locked, the same name changes nothing, deleting one is refused (400); no screen offers a rename of a field today, commit b45baefb5, da1695a37.
 
 ### UC-WM-C07 Manage Select / Status / Priority options
 - Capability: C BoardField definitions (WM-003)
@@ -1342,7 +1357,7 @@ Team capability WM-003.
 - Rules: product sections 142-143, 148; WM-037, WM-038; D55; D65; WMREQ034-035, WMREQ074-075, WMREQ141
 - Acceptance: Given option "In Progress" renamed, then 40 items keep the option and show the new label.
 - Evidence: BE BoardFields.AddFieldOption = POST /boards/{boardId:guid}/fields/{fieldId:guid}/options -> AddFieldOptionCommand (`BoardFields/Commands/AddFieldOption/AddFieldOption.cs`) [EV / Idem]; BoardFields.RemoveFieldOption = DELETE /boards/{boardId:guid}/fields/{fieldId:guid}/options/{optionId:guid} -> RemoveFieldOptionCommand (`BoardFields/Commands/RemoveFieldOption/RemoveFieldOption.cs`) [EV / Idem]; BoardFields.UpdateFieldOption = PATCH /boards/{boardId:guid}/fields/{fieldId:guid}/options/{optionId:guid} -> UpdateFieldOptionCommand (`BoardFields/Commands/UpdateFieldOption/UpdateFieldOption.cs`) [EV / Idem]; BoardFields.MoveFieldOption = POST /boards/{boardId:guid}/fields/{fieldId:guid}/options/{optionId:guid}/move -> MoveFieldOptionCommand (`BoardFields/Commands/MoveFieldOption/MoveFieldOption.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/state/src/cache/field-option.ts`, StatusOptionForm (16 tests) · Design Final-Settings status/select; where-items-go dialog not drawn · Tests `FieldOptionCategoryTests.cs`, `RemoveFieldOptionTests.cs`, `WorkItemPlacementIntegrationTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (adds option)
-- State: HARDENING — design for the replacement picker; live refresh needs open PR #193.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: option added, renamed, moved; a duplicate name, a non-hex colour and an empty name refused; removing an option moved the items to the replacement, a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C08 Set a Status option's category
 - Capability: C BoardField definitions (WM-003)
@@ -1356,7 +1371,7 @@ Team capability WM-003.
 - Rules: product sections 148.1; WM-042; WMREQ034
 - Acceptance: Given a board with one Done option, when an Editor changes it to Review, then rejected with "last Done option".
 - Evidence: BE RemoveFieldOption/UpdateFieldOption (last Todo/Done rule) · FE menu entry disabled with reason (D55) · Design Final-Settings status (category) · Tests none found · Real e2e none
-- State: INTEGRATING — API test 'last Done option'; e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: changing the category of the last Done option is refused, commit 6e59c53bb.
 
 ### UC-WM-C09 Define Text and Long text fields
 - Capability: C BoardField definitions (WM-003)
@@ -1370,7 +1385,7 @@ Team capability WM-003.
 - Rules: product sections 19, 31; WM-007; WMREQ027-028, WMREQ037
 - Acceptance: Given a Text field with a limit of 10, when someone saves 11 characters, then the cell shows an inline reason and nothing is stored. Given the same text saved twice, then the version does not change.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem]; BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE sheet/page on develop; Table cell editors in PR #204 · Design WM-Field-Editors(-Dem) · Tests `BulkUpdateBoardItemsTests.cs`, `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; Table cell editing is in open PR #204.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C10 Define a Number field
 - Capability: C BoardField definitions (WM-003)
@@ -1384,7 +1399,7 @@ Team capability WM-003.
 - Rules: product sections 145; WM-007; WMREQ027-028
 - Acceptance: Given a Number field with range 0 to 100, when someone enters 101, then an inline error appears and nothing is stored. Given a display format of 2 decimals, then the stored value is not rounded.
 - Evidence: BE BoardFields.Create = POST /boards/{boardId:guid}/fields -> CreateBoardFieldCommand (`BoardFields/Commands/CreateBoardField/CreateBoardField.cs`) [- / Idem] · FE sheet/page; Table cells in PR #204 · Design WM-Field-Editors(-Dem) · Tests `CreateBoardFieldTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; normalized-value proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C11 Define Date and DateTime fields
 - Capability: C BoardField definitions (WM-003)
@@ -1398,7 +1413,7 @@ Team capability WM-003.
 - Rules: product sections 146, 138; WM-007; D76.5; WMREQ028
 - Acceptance: Given a Date field, when a day is saved, then the same day reads back in every time zone. Given an inverted start and due range, then it is rejected inline.
 - Evidence: BE Date field (UTC days) · FE ItemDatePicker; Table date cell in PR #204 (calendar only) · Design WM-Field-Editors(-Dem) (Date) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; tz-independent day proof; DateTime deferred
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C12 Define Select and Multi-select fields
 - Capability: C BoardField definitions (WM-003)
@@ -1412,7 +1427,7 @@ Team capability WM-003.
 - Rules: product sections 142-144; WM-037; WMREQ034
 - Acceptance: Given a Select option renamed, when the board is read, then items keep the same option id and show the new name. Given a Multi-select, when the same option is added twice, then the set holds it once.
 - Evidence: BE field options + UpdateFieldValue · FE sheet/page; Table cells in PR #204 · Design WM-Field-Editors(-Dem) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; +N display
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412; the board read now lists the options of a multi-select field, commit 6e59c53bb.
 
 ### UC-WM-C13 Define a Person (People) field
 - Capability: C BoardField definitions (WM-003)
@@ -1426,7 +1441,7 @@ Team capability WM-003.
 - Rules: product sections 139; WM-036, WM-040; D41; Q7; WMREQ022
 - Acceptance: Given a person without access to the board, when they are picked, then the write is refused with 'share the board first'. Given a Guest, then the picker lists only people on this board and no emails.
 - Evidence: BE UpdateFieldValue + AssignMember (view-access check) · FE ItemAssigneePicker; Guest board-only list unproven · Design WM-Field-Editors; BC-Create-320-Pickers (1000 people) · Tests none found · Real e2e none
-- State: INTEGRATING — Guest picker no-email proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C14 Define a Link (and file) field
 - Capability: C BoardField definitions (WM-003)
@@ -1440,7 +1455,7 @@ Team capability WM-003.
 - Rules: product sections 141; WM-007; D76.5; WMREQ027-028
 - Acceptance: Given a Link field, when a non-URL or a non-http scheme is entered, then it is rejected inline. Given a valid URL, then the cell shows the host.
 - Evidence: BE field value validation · FE link editor; file field deferred · Design WM-Field-Editors (Link) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; absolute http(s) rule proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C15 Define a Checkbox field
 - Capability: C BoardField definitions (WM-003)
@@ -1454,7 +1469,7 @@ Team capability WM-003.
 - Rules: product sections 19; WM-007
 - Acceptance: Given a Checkbox cell, when a person presses Space, then the value flips and saves once. Given a group-by on a Checkbox field, then two groups appear.
 - Evidence: BE UpdateFieldValue · FE sheet/page; Table cell in PR #204 · Design WM-Field-Editors (Checkbox) · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: field of that type created through the API; valid values set, cleared and read back, invalid ones refused (400), a stale version answers 412, commit 6e59c53bb.
 
 ### UC-WM-C16 Status and Priority as specialized select types
 - Capability: C BoardField definitions (WM-003)
@@ -1552,7 +1567,7 @@ Team capability WM-003.
 - Rules: product sections 78-79; WM-024; D61; WMREQ023
 - Acceptance: Given a label renamed, then items show the new name.
 - Evidence: BE Labels.Create = POST /boards/{boardId:guid}/labels -> CreateLabelCommand (`Labels/Commands/CreateLabel/CreateLabel.cs`) [- / Idem]; Labels.Update = PATCH /labels/{labelId:guid} -> UpdateLabelCommand (`Labels/Commands/UpdateLabel/UpdateLabel.cs`) [- / Idem]; Labels.Delete = DELETE /labels/{labelId:guid} -> DeleteLabelCommand (`Labels/Commands/DeleteLabel/DeleteLabel.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-labels.tsx` · Design WM-Labels; Er missing · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — EV on update/delete; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design. Evidence: real-stack check 2026-10-31: label created, renamed, recoloured and deleted through the API with the expected version (stale 412, same content changes nothing); a non-hex colour is refused; deleting it removed it from the item; a conflict shows the board settings reload notice, commit b45baefb5, da1695a37.
 
 ## D. Field values
 
@@ -1570,7 +1585,7 @@ Team capability WM-004.
 - Rules: product sections 29-31; WM-011; WMREQ024-025, WMREQ036, WMREQ040
 - Acceptance: Given a field id of another board, when a value is written, then it is refused and nothing is stored. Given a bulk value write with one invalid value, then none is stored.
 - Evidence: BE BoardFields.GetSchema = GET /boards/{boardId:guid}/schema -> GetBoardSchemaQuery (`BoardSchema/Queries/GetBoardSchema/GetBoardSchemaQuery.cs`) [- / -] · FE GetSchema op unused by UI · Design not applicable (no screen) · Tests `GetBoardSchemaTests.cs` · Real e2e none
-- State: INTEGRATING — Cross-board field-id rejection test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: values of every field type checked through the API: number text, link without http(s), checkbox string, bad date, duplicate multi-select ids, an option or a person that does not belong are refused (400); a field of another board answers 404; a batch with one invalid value changes nothing, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D02 Edit a custom field value in place (cell, sheet, page)
 - Capability: D Field values (WM-004)
@@ -1584,7 +1599,7 @@ Team capability WM-004.
 - Rules: product sections 29-32; WM-011; WMREQ024-025, WMREQ036-040
 - Acceptance: (1) Given a Viewer or Commenter, when they select any cell, then no editor opens and the header lock explains why. (2) Given B has an unsaved edit on field F and A changes F, when B saves, then the in-cell conflict choice appears; B's draft is never overwritten before that. (3) Given a Member on any editable cell, when Enter/double-click opens it, then the editor matches the field type and Enter saves, Escape restores, leaving saves.
 - Evidence: BE BoardItems.UpdateFieldValues = PATCH /board-items/{itemId:guid}/field-values -> UpdateBoardItemFieldValuesCommand (`BoardItems/Commands/UpdateBoardItemFieldValues/UpdateBoardItemFieldValues.cs`) [EV / Idem]; BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE sheet/page on develop; Table cell editors in PR #204 · Design WM-Field-Editors(-Dem), WM-Field-Sheet · Tests `BulkUpdateBoardItemsTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; conflict copy names no actor until the API carries one (Q12); custom-field cell editors are in open PR #204.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; conflict copy names no actor until the API carries it; the Add field menu leaves focus on a button instead of the new input. Evidence: real-stack check 2026-10-31: in the card popup in the browser a Text and a Number field were added and edited in place (PATCH values 200), 'Enter a number' showed for 'abc' with no request, both stayed after reload; stale version answers 412 and keeps the value; the same value changes nothing, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D03 Clear a value (explicit clear)
 - Capability: D Field values (WM-004)
@@ -1598,7 +1613,7 @@ Team capability WM-004.
 - Rules: product sections 27.3, 31; WM-044; D29; WMREQ037, WMREQ039
 - Acceptance: Given a due date, when Clear due is used, then the date is empty and the version bumps once. Given an already empty field, then nothing changes.
 - Evidence: BE BoardItems.Update = PATCH /board-items/{itemId:guid} -> UpdateBoardItemCommand (`BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs`) [EV / -]; BoardItems.ClearFieldValue = DELETE /board-items/{itemId:guid}/values/{fieldId:guid} -> ClearFieldValueCommand (`BoardItems/Commands/ClearFieldValue/ClearFieldValue.cs`) [EV / Idem] · FE ClearFieldValue unused by UI · Design WM-Field-Editors (clear) · Tests `BoardAuthorizationHardeningIntegrationTests.cs`, `ItemStatusAndSystemFieldWritesTests.cs` · Real e2e none
-- State: INTEGRATING — Wire clear in UI; test omitted-date means unchanged
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: clearing in the popup removed the row and it stayed gone after reload; clearing through the API twice changed nothing the second time, a stale clear answers 412, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D04 Set start and due dates
 - Capability: D Field values (WM-004)
@@ -1612,7 +1627,7 @@ Team capability WM-004.
 - Rules: product sections 146, 138; WM-044; D29; WMREQ021, WMREQ110-113
 - Acceptance: (1) Given due before start, an invalid date, a number out of range, or a non-URL Link, when submitting, then the inline error appears under that input, focus goes to the first invalid input, and nothing is sent. (2) Given a card, when it renders, then it shows key (or "#n"), title (max 2 lines, full title in tooltip and accessible name), up to 2 labels and 2 avatars then "+N", due chip with overdue and today states, priority glyph, and counts for checklist, comments and files, each count 99+ above 99 (D39).
 - Evidence: BE BoardItems.Update = PATCH /board-items/{itemId:guid} -> UpdateBoardItemCommand (`BoardItems/Commands/UpdateBoardItem/UpdateBoardItem.cs`) [EV / -]; BoardItems.SetDueDate = PATCH /board-items/{itemId:guid}/due-date -> SetBoardItemDueDateCommand (`BoardItems/Commands/SetBoardItemDueDate/SetBoardItemDueDate.cs`) [- / Idem] · FE ItemDatePicker, `frontend/packages/product/work-management/web/src/components/views/calendar/calendar-dates-dialog.tsx` · Design WM-Field-Editors (date), Final-Calendar · Tests `BoardAuthorizationHardeningIntegrationTests.cs`, `PipelineTelemetryIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — EV on due date; inverted-range proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: start and due date set with the expected version, an inverted range refused (400), the same dates changed nothing, a stale version answers 412, clearing the due date works, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D05 Change an item's status
 - Capability: D Field values (WM-004)
@@ -1626,7 +1641,7 @@ Team capability WM-004.
 - Rules: product sections 148, 148.1; WM-038, WM-042; WMREQ110-113
 - Acceptance: Given a done-category status chosen, when saved, then completion time is set. Given the item reopened, then it is cleared. Given a stale version, then the write is refused and nothing changes.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem]; BoardItems.Complete = POST /board-items/{itemId:guid}/complete -> CompleteBoardItemCommand (`BoardItems/Commands/CompleteBoardItem/CompleteBoardItem.cs`) [- / Idem]; BoardItems.UpdateStatus = PATCH /board-items/{itemId:guid}/status -> UpdateBoardItemStatusCommand (`BoardItems/Commands/UpdateBoardItemStatus/UpdateBoardItemStatus.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/table/table-status-picker.tsx`, useUpdateItemStatus (optimistic, rollback) · Design Final-Table/BC-Kanban status picker · Tests `BulkUpdateBoardItemsTests.cs`, `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — EV on status write; four-path completion-time test; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: status change set and cleared completion, a status of another board refused, the same status changed nothing, a stale version answers 412, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D06 Set priority
 - Capability: D Field values (WM-004)
@@ -1640,7 +1655,7 @@ Team capability WM-004.
 - Rules: product sections 147; WM-038; D43; WMREQ110-113
 - Acceptance: Given a priority set, when saved, then the card glyph and the text change for everyone. Given the same option chosen again, then the version does not change.
 - Evidence: BE BoardItems.UpdateFieldValue = PATCH /board-items/{itemId:guid}/values/{fieldId:guid} -> UpdateBoardItemFieldValueCommand (`BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/shared/item-priority.ts`, `frontend/packages/product/work-management/web/src/components/shared/priority-glyph.tsx` · Design WM-Card-Face (priority glyph) · Tests `BulkUpdateBoardItemsTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design for the picker. Evidence: real-stack check 2026-10-31: priority set as a Select option through the API; an option of another field refused, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D07 Read a formula value (valid, stale, error)
 - Capability: D Field values (WM-004)
@@ -1654,7 +1669,7 @@ Team capability WM-004.
 - Rules: product sections 69-73, 149; WM-022; D78.8; WMREQ147
 - Acceptance: Given a formula that divides by zero, then the cell shows an error with the reason. Given a stale value, then it is marked and never shown as current.
 - Evidence: BE evaluated per read; no stale state · FE read-only fx value · Design WM-Field-Computed; stale/recomputing missing · Tests none found · Real e2e none
-- State: INTEGRATING — Valid/stale/error states; design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; stale and error states in the popup. Evidence: real-stack check 2026-10-31: formula field computed [n] * 2 = 6 on the item, a bad expression refused (400), a write to a formula field refused (400), commits 609c34dbd, d290bb373.
 
 ### UC-WM-D08 Rollup and relation authorization
 - Capability: D Field values (WM-004)
@@ -1668,7 +1683,7 @@ Team capability WM-004.
 - Rules: product sections 76, 66; WM-023, WM-030; WMREQ148
 - Acceptance: Given a sub-item the viewer cannot read, then the rollup excludes it and no title or value of it appears.
 - Evidence: BE masking of unreadable children unproven · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — masking of unreadable children is not proven by a test; the rollup is evaluated in BoardItemFieldProjection.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a parent with two sub-items and a checklist read as the admin and as a member gives the same child progress (1 of 2) on the card and on the item; sub-items live on the parent's board and the read has no per-item grant, so there is no unreadable child to mask here; relation rollups wait on the relation field type (C18), commit 25aa0bddb.
 
 ### UC-WM-D09 Show derived progress of an item with child Items
 - Capability: D Field values (WM-004)
@@ -1682,7 +1697,7 @@ Team capability WM-004.
 - Rules: product sections 77, 77.1; WM-041; D76.10
 - Acceptance: Given 5 sub-items with 3 done, then progress reads 3/5. Given no sub-items and a checklist at 2 of 4, then it reads 50 percent.
 - Evidence: BE derived in item DTO (BoardItemReadValues.cs); D76.10 fallbacks unproven · FE group/field progress copy · Design WM-Card-Face (count); progress bar missing · Tests none found · Real e2e `sub-items.real.e2e.spec.ts` (count only)
-- State: INTEGRATING — only the child-item share is derived today (BoardItemReadValues); the checklist and status-category fallbacks are not.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; checklist share of the progress (D76.10 precedence) is not derived. Evidence: real-stack check 2026-10-31: a parent's progress counted a completed sub-item (1 of 2) and fell back to 0 of 2 on reopen, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D10 Keep one progress truth
 - Capability: D Field values (WM-004)
@@ -1696,7 +1711,7 @@ Team capability WM-004.
 - Rules: product sections 77; D76.10
 - Acceptance: Given a parent with sub-items and a checklist, then the parent shows the sub-item progress and the checklist shows its own count.
 - Evidence: BE no single progress source · FE none · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — implement the D76.10 precedence on the server; test.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a parent with two sub-items (one done) and a three-item checklist reads childProgress 1/2 and checklist 0/3 as two separate figures on the card and the item, the same for an admin and a member: sub-item progress is never merged with the checklist count, commit 25aa0bddb.
 
 ### UC-WM-D11 Add or remove labels on an item
 - Capability: D Field values (WM-004)
@@ -1710,7 +1725,7 @@ Team capability WM-004.
 - Rules: product sections 78-79; WM-024; D61; WMREQ023
 - Acceptance: Given 200 labels, then the picker searches and windows. Given a typed text that matches nothing, then 'Create label' is offered.
 - Evidence: BE BoardItems.AddLabel = POST /board-items/{itemId:guid}/labels -> AddLabelToBoardItemCommand (`Labels/Commands/AddLabelToBoardItem/AddLabelToBoardItem.cs`) [- / Idem]; BoardItems.RemoveLabel = DELETE /board-items/{itemId:guid}/labels/{labelId:guid} -> RemoveLabelFromBoardItemCommand (`Labels/Commands/RemoveLabelFromBoardItem/RemoveLabelFromBoardItem.cs`) [- / Idem]; Labels.List = GET /boards/{boardId:guid}/labels -> GetLabelsQuery (`Labels/Queries/GetLabels/GetLabels.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/card-detail/item-labels-popover.tsx` · Design WM-Labels, WM-Sheet-Create, BC-Create-320-Pickers · Tests `AddLabelToBoardItemTests.cs`, `GetLabelsTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; 200-label window
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: label added, added again (no change), removed, and a label of another board answered 404, commits 609c34dbd, d290bb373.
 
 ### UC-WM-D12 Handle a client with a stale field or view schema
 - Capability: D Field values (WM-004)
@@ -1724,7 +1739,7 @@ Team capability WM-004.
 - Rules: product sections 129, 117; WM-011; WMREQ036, WMREQ040
 - Acceptance: Given field F archived, when a stale client writes F, then conflict and no value stored.
 - Evidence: BE BoardFields.Update = PATCH /boards/{boardId:guid}/fields/{fieldId:guid} -> UpdateBoardFieldCommand (`BoardFields/Commands/UpdateBoardField/UpdateBoardField.cs`) [EV / Idem] · FE settings conflict reloads (D64) · Design none; needs stale-schema conflict and reload · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — no test of a stale-field write refusal.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: a value written to a field deleted since the client loaded the board answers 412 `work-management.field.deleted` naming the field and who deleted it (an unknown field stays the identical 404), nothing is stored; the open card shows "{who} vừa xoá trường {field}" with "Tải lại trường" (reloads the board schema). Not built: the option-removed, field-type-changed and table-cell variants of WM-StaleSchema; "Một người khác" for guests (the server always names the actor); the 390 px frame. Evidence: real-stack check 2026-10-31: after deleting the field, a PATCH of its value answered 412 with fieldName and changedByName and the value was not stored; an unknown field id answered 404; the popup banner was not driven end to end (a custom field is not shown in the popup by default), commit see git log.
 
 ## E. Groups and grouping
 
@@ -1742,7 +1757,7 @@ Team capability WM-005.
 - Rules: product sections 38-39; WM-014; D49; WMREQ044, WMREQ048, WMREQ132, WMREQ140
 - Acceptance: Given an Editor, when they add a group, then it appears for everyone and no item changes. Given a Viewer, then Add group is absent.
 - Evidence: BE BoardGroups.Create = POST /boards/{boardId:guid}/groups -> CreateBoardGroupCommand (`BoardGroups/Commands/CreateBoardGroup/CreateBoardGroup.cs`) [- / Idem]; BoardGroups.Duplicate = POST /board-groups/{groupId:guid}/duplicate (group duplicate; UI `useDuplicateGroup`) · FE `frontend/packages/product/work-management/web/src/components/views/table/table-add-group.tsx`, `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-add-lane.tsx`, `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-groups.tsx` · Design Final-Settings `nhom-viec`; create flow, Er, P not drawn · Tests `BoardManagementLevelTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (adds group)
-- State: HARDENING — Design for create flow; no-group notice proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; no design for the create flow. Built: Duplicate in the group menu of board settings; the server copies the group's settings and its active items with their sub-items, skips archived items, refuses past 500 items with a stable code, and names the copy from the client's localised title. Not built: design for the create flow. Evidence: real-stack check 2026-10-31: Add group in the Kanban strip made the group (201) with a confirmation, no item changed; an outsider is refused with the identical NotFound; Duplicate exists in board settings, commit c8fa65246.
 
 ### UC-WM-E02 Rename or edit a group
 - Capability: E Groups and grouping (WM-005)
@@ -1756,7 +1771,7 @@ Team capability WM-005.
 - Rules: product sections 38-39; WM-014; WMREQ110-113
 - Acceptance: Given a renamed group, when another member reloads, then they see the new name and the same group id.
 - Evidence: BE BoardGroups.Update = PATCH /board-groups/{groupId:guid} -> UpdateBoardGroupCommand (`BoardGroups/Commands/UpdateBoardGroup/UpdateBoardGroup.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-groups.tsx` (rename, recolor) · Design Final-Settings `nhom-viec` · Tests `BoardChildAccessIntegrationTests.cs` · Real e2e `board-settings.real.e2e.spec.ts` (renames group)
-- State: HARDENING — Design Er/P; no-op (same name) proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; rename lives in board settings only. Built: the renamed event carries the old title. Not built: design Er/P, rename from a group menu in the views (rename lives in board settings). Evidence: real-stack check 2026-10-31: rename from board settings wrote the group (200); the same name wrote nothing and kept the version (API: version 2 stays 2); a stale version answers 412, commit c8fa65246.
 
 ### UC-WM-E03 Archive or delete a group
 - Capability: E Groups and grouping (WM-005)
@@ -1769,8 +1784,8 @@ Team capability WM-005.
 - UI states: destructive confirm (names the impact)
 - Rules: product sections 125, 38; WM-014, WM-033; D76.6
 - Acceptance: Given a group with 3 items, when delete is attempted without a target, then it is refused. Given a target group, then the 3 items move and keep their keys.
-- Evidence: BE BoardGroups.Archive = POST /board-groups/{groupId:guid}/archive -> ArchiveBoardGroupCommand (`BoardGroups/Commands/ArchiveBoardGroup/ArchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Unarchive = POST /board-groups/{groupId:guid}/unarchive -> UnarchiveBoardGroupCommand (`BoardGroups/Commands/UnarchiveBoardGroup/UnarchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Delete = DELETE /board-groups/{groupId:guid} -> DeleteBoardGroupCommand (`BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs`) [EV / Idem] · FE delete with item reassignment; archive/unarchive not in UI · Design none; needs delete group holding items (move-to picker), archive/unarchive · Tests `ArchiveBoardGroupTests.cs`, `BoardManagementLevelTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete group with items)
-- State: HARDENING — Design; archive/unarchive UI or drop; dialog-open case
+- Evidence: BE BoardGroups.Archive = POST /board-groups/{groupId:guid}/archive -> ArchiveBoardGroupCommand (`BoardGroups/Commands/ArchiveBoardGroup/ArchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Unarchive = POST /board-groups/{groupId:guid}/unarchive -> UnarchiveBoardGroupCommand (`BoardGroups/Commands/UnarchiveBoardGroup/UnarchiveBoardGroup.cs`) [- / Idem]; BoardGroups.Delete = DELETE /board-groups/{groupId:guid} -> DeleteBoardGroupCommand (`BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs`) [EV / Idem] · FE delete with item reassignment; create dialog guards a deleted group (`item-create-dialog.tsx`); archive/unarchive not in UI · Design none; needs delete group holding items (move-to picker), archive/unarchive · Tests `ArchiveBoardGroupTests.cs`, `BoardManagementLevelTests.cs` · Real e2e `work-board-management.real.e2e.spec.ts` (delete group with items)
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: a create dialog whose group was deleted says it is no longer available, offers the other groups and holds the submit. Built: archive (with a confirm naming the item count) and unarchive carry the group version; an archived group and its items leave every board view (full board, item list, schema), the settings list the archived groups with Unarchive, and an archived group refuses new or moved items with a stable code. Built: an item inside an archived group, and the checklists of such an item, stay readable and take no write: the policy refuses it with `WorkManagement_Group_Archived` through the board-child relation (owner decision 2026-10-30), and the item sheet and page turn the write controls, follow and remind off. Not built: My Work, inbox and report lists still count such items, design. Evidence: real-stack check 2026-10-31: Delete on a group with 3 items asked for the group to move them to and held the button; the delete named expectedVersion and the target, the 3 items kept their keys in the new group; without a target the API answers 400, commit c8fa65246.
 
 ### UC-WM-E04 Move an item between groups (Table)
 - Capability: E Groups and grouping (WM-005)
@@ -1784,7 +1799,7 @@ Team capability WM-005.
 - Rules: product sections 38-41; WM-014, WM-043; WMREQ018-019, WMREQ044
 - Acceptance: Given an item dragged to another group, when the board reloads, then the item is in the new group and its status is unchanged.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE useMoveRow, table row reorder · Design BC-Table (drop onto empty group) · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; status-unchanged proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; drag in the Table, design. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); real pointer drag in the browser (headless Chromium, mouse down, move, up) 2026-10-31: a card dropped on an empty lane wrote its status (version 2 to 3) and showed in the lane, a card dropped between two cards of another lane wrote the lane value, Hoàn tác put it back (built with this check: the toast shows after the server kept the move, never for a refused one), and a drag from a stale view answered 412, the card returned and the database kept the other person's value; the stale-drag toast names no actor and still says the old lane (S4 not met); swimlane drops, Alt+Arrow and the WIP warning not driven; commits bc1e10a10 and the Kanban undo commit that follows it.
 
 ### UC-WM-E05 Collapse or expand a group (personal)
 - Capability: E Groups and grouping (WM-005)
@@ -1797,8 +1812,8 @@ Team capability WM-005.
 - UI states: success (collapsed and expanded), empty group
 - Rules: product sections 38; D38
 - Acceptance: Given a collapsed group, when a refetch happens, then it stays collapsed. Given another device, then the group is expanded.
-- Evidence: BE not applicable (client-side, 38) · FE `frontend/packages/product/work-management/web/src/components/views/kanban/use-kanban-collapsed-lanes.ts`; Table group collapse persistence unproven · Design BC-Table collapsed, Kanban-Card-States · Tests none found · Real e2e none
-- State: INTEGRATING — proof that a collapsed group stays collapsed after a refetch; Table group collapse persistence.
+- Evidence: BE not applicable (client-side, 38) · FE `frontend/packages/product/work-management/web/src/components/views/kanban/use-kanban-collapsed-lanes.ts` (Kanban lanes and Table groups) · Design BC-Table collapsed, Kanban-Card-States · Tests none found · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: the Table keeps its collapsed groups per workspace and board on this device, as the Kanban does for lanes. Evidence: real-stack check 2026-10-31: collapsing a Table group survived a reload and showed expanded in a fresh browser context (per device), commit c8fa65246.
 
 ### UC-WM-E06 Move an item between groups (Table)
 - Capability: E Groups and grouping (WM-005)
@@ -1812,7 +1827,7 @@ Team capability WM-005.
 - Rules: product sections 38-41, 42-43; WM-014, WM-016; WMREQ018-019, WMREQ042-044, WMREQ131, WMREQ139
 - Acceptance: Given two users drop different items into the same position, then both persist with distinct keys.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE useMoveRow, fractional-index · Design BC-Table · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; two-user same-position test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; two-user same-position test. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); pointer drag in the browser: a drop on an empty lane shows the target and keeps the move, Hoàn tác puts it back, a stale drop answers 412 with a toast that names who moved the card and to which lane (the item reads carry who last edited it), commit 2eed7b832.
 
 ## F. Ordering
 
@@ -1829,8 +1844,8 @@ Team capability WM-006.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 42-45, 130; WM-016; WMREQ041-045, WMREQ114, WMREQ132, WMREQ141
 - Acceptance: Given two Editors reorder at once, then the final order is deterministic and no duplicate keys exist.
-- Evidence: BE BoardFields.Move = POST /boards/{boardId:guid}/fields/{fieldId:guid}/move -> MoveBoardFieldCommand (`BoardFields/Commands/MoveBoardField/MoveBoardField.cs`) [EV / Idem] · FE settings reorder; Alt+Arrow Cột menu in PR #204 · Design WM-Table-Columns; field reorder drag/Er missing · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — concurrent reorder test; design; Table column order is in open PR #204.
+- Evidence: BE BoardFields.Move = POST /boards/{boardId:guid}/fields/{fieldId:guid}/move -> MoveBoardFieldCommand (`BoardFields/Commands/MoveBoardField/MoveBoardField.cs`) [EV / Idem] · FE settings reorder; Alt+Arrow Cột menu (`table-toolbar.tsx`, personal order in `use-board-table.ts`) · Design WM-Table-Columns; field reorder drag/Er missing · Tests `WorkItemPlacementIntegrationTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; no personal Table column order here (Table unit); the conflict notice names no actor. Built: the field list of board settings moves a field by drag or Alt+Arrow on its handle, names its neighbours in the server's whole field order (locked system fields included), puts the old order back when the write fails, and announces the new place. Not built: personal Table column order (BoardPreference, with the Table unit), design for the Alt+Arrow and conflict states, the conflict notice does not name the actor (the 409 carries none). Evidence: real-stack check 2026-10-31: Alt+Arrow on a field handle moved it and announced the place (Fc moved to position 3 of 4); a pointer drag moved a field to the end; a move above the Status used to answer 409 because the neighbours named were not adjacent on the server, now fixed, commit c8fa65246.
 
 ### UC-WM-F02 Reorder groups
 - Capability: F Ordering (WM-006)
@@ -1844,7 +1859,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ042-044, WMREQ132, WMREQ140
 - Acceptance: Given two groups swapped, when the board is read, then the order is the same for everyone. Given a drop on the current position, then the version does not change.
 - Evidence: BE BoardGroups.Move = POST /board-groups/{groupId:guid}/move -> MoveBoardGroupCommand (`BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs`) [EV / Idem] · FE useMoveRow, Table menu 'move group up/down' · Design none; needs group reorder (move up/down), conflict · Tests `BoardManagementLevelTests.cs` · Real e2e none
-- State: INTEGRATING — Design; deterministic-order test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the conflict notice does not name the actor. Built: the group list of board settings has the same drag and Alt+Arrow move with rollback; an archived group between two visible groups no longer makes every move between them fail, because the server checks the neighbours against the visible groups and keeps the archived group's key. Not built: design for group reorder and conflict, the conflict notice does not name the actor. Evidence: real-stack check 2026-10-31: Alt+ArrowUp on a group handle moved it (POST move 204) and the list followed, commit c8fa65246.
 
 ### UC-WM-F03 Reorder an item within its group or lane
 - Capability: F Ordering (WM-006)
@@ -1858,7 +1873,7 @@ Team capability WM-006.
 - Rules: product sections 42-45; WM-016; WMREQ041-044, WMREQ050-052, WMREQ114, WMREQ131, WMREQ139
 - Acceptance: Given an item dragged one place down, when the board reloads, then the order holds for everyone. Given two people dragging at once, then one gets a conflict and the other order stands.
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem]; BoardItems.MoveChild = POST /board-items/{itemId:guid}/move-within-parent -> MoveChildItemCommand (`BoardItems/Commands/MoveChildItem/MoveChildItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts`, useMoveRow · Design BC-Table, BC-Kanban · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `SubItemTests.cs` · Real e2e none
-- State: INTEGRATING — No-op move proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; drag in the browser. Evidence: real-stack check 2026-10-31: reorder through the API: a card placed first took position 0 and the order followed, placing it where it is changed nothing, a sibling of another group answers 409 work.ordering.stale-placement, a stale version answers 412; pointer drag in the browser: a card dropped above another in its lane took the new place, a drop on the place it holds wrote nothing, Alt+ArrowDown moved it one place and a move past the end wrote nothing, commit c8fa65246.
 
 ### UC-WM-F04 Resolve an ordering collision
 - Capability: F Ordering (WM-006)
@@ -1872,7 +1887,7 @@ Team capability WM-006.
 - Rules: product sections 130, 43; WM-016; WMREQ042, WMREQ050-052, WMREQ114
 - Acceptance: Given 10 concurrent inserts at one position, then 10 distinct keys and a deterministic order.
 - Evidence: BE fractional ordering/rebalance (Ordering 15 tests) · FE fractional-index (core) · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — test of ten concurrent inserts into one ordering scope.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; ten-insert test. Evidence: real-stack check 2026-10-31: six parallel creates into one group all answered 200 and took six distinct positions, commit 4d4c7b5fa. Form builder: the stale autosave names who saved first, holds the person's edit, shows what differs (label, required, new and removed questions, order) and locks Publish until Keep mine or Use the new version is chosen; real-stack check 2026-10-31 with two sessions, commit f7b60fb72.
 
 ## G. Checklists
 
@@ -1890,7 +1905,7 @@ Team capability WM-007.
 - Rules: product sections 80-83; WM-025; WMREQ056-059, WMREQ066, WMREQ142
 - Acceptance: Given a checklist item added, when the item is read, then the list shows it in order. Given a stale parent version, then the write is refused.
 - Evidence: BE Checklists.List = GET /board-items/{itemId:guid}/checklists -> GetChecklistsQuery (`Checklists/Queries/GetChecklists/GetChecklists.cs`) [- / -]; Checklists.Create = POST /board-items/{itemId:guid}/checklists -> CreateChecklistCommand (`Checklists/Commands/CreateChecklist/CreateChecklist.cs`) [- / Idem]; Checklists.Update = PATCH /checklists/{checklistId:guid} -> UpdateChecklistCommand (`Checklists/Commands/UpdateChecklist/UpdateChecklist.cs`) [EV / Idem]; Checklists.Delete = DELETE /checklists/{checklistId:guid} -> DeleteChecklistCommand (`Checklists/Commands/DeleteChecklist/DeleteChecklist.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/checklists/item-checklists.tsx`, `frontend/packages/product/work-management/state/src/mutations/checklist-queue.ts` · Design WM-Checklist-Sheet, WM-Checklist-States · Tests `CreateChecklistTests.cs`, `DeleteChecklistTests.cs`, `GetChecklistsTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Optional assignee and convert-to-sub-item (D69) proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; convert-to-sub-item (D69) proof; focus lands on a button, not the new item input, after creating a checklist. Evidence: real-stack check 2026-10-31: checklist created, renamed and deleted through the API and in the card popup in the browser (it stayed after reload); an empty title refused (400), a stale version answers 412 on rename, add item and delete (the delete took no version before), the same title changed nothing, a non-member got 404, a new checklist on an archived item is refused (400); a checklist item can be given a person (403 for someone who cannot see the board) and a due time, commits 8b16f42a3.
 
 ### UC-WM-G02 Complete, reorder and delete checklist items
 - Capability: G Checklists (WM-007)
@@ -1904,7 +1919,7 @@ Team capability WM-007.
 - Rules: product sections 83; WM-025; WMREQ060-062, WMREQ066, WMREQ142
 - Acceptance: Given a checklist item set done twice, then the version bumps once. Given a reorder, then the order holds for everyone.
 - Evidence: BE Checklists.CreateItemByChecklist = POST /checklists/{checklistId:guid}/items -> CreateChecklistItemCommand (`Checklists/Commands/CreateChecklistItem/CreateChecklistItem.cs`) [EV / Idem]; Checklists.Move = POST /checklists/{checklistId:guid}/move -> MoveChecklistCommand (`Checklists/Commands/MoveChecklist/MoveChecklist.cs`) [EV / Idem]; Checklists.MoveItem = POST /checklist-items/{itemId:guid}/move -> MoveChecklistItemCommand (`Checklists/Commands/MoveChecklistItem/MoveChecklistItem.cs`) [EV / Idem]; Checklists.UpdateItem = PATCH /checklist-items/{itemId:guid} -> UpdateChecklistItemCommand (`Checklists/Commands/UpdateChecklistItem/UpdateChecklistItem.cs`) [EV / Idem]; Checklists.DeleteItem = DELETE /checklist-items/{itemId:guid} -> DeleteChecklistItemCommand (`Checklists/Commands/DeleteChecklistItem/DeleteChecklistItem.cs`) [EV / Idem]; Checklists.ToggleItem = POST /checklist-items/{itemId:guid}/toggle -> ToggleChecklistItemCommand (`Checklists/Commands/ToggleChecklistItem/ToggleChecklistItem.cs`) [EV / Idem]; Checklists.CreateItem = a second endpoint class `Checklists/Commands/CreateChecklistItemEndpoint.cs` that is never mapped (dead code, defect B-13); the live route is Checklists.CreateItemByChecklist · FE `frontend/packages/product/work-management/web/src/components/checklists/item-checklists.tsx` · Design WM-Checklist-States (drag-sort) · Tests `CreateChecklistItemTests.cs`, `DeleteChecklistItemTests.cs`, `NotrelixApiFactory.cs`, `WorkChecklistIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — a second unregistered CreateChecklistItem endpoint file is dead code (defect B-13).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a second unregistered CreateChecklistItem endpoint file is dead code. Evidence: real-stack check 2026-10-31: checklist item toggled, edited, moved first and deleted through the API: a stale version answers 412 on each; the order followed the move, commits 8b16f42a3.
 
 ## H. Query, filter and sort foundation
 
@@ -1936,7 +1951,7 @@ Team capability WM-008.
 - Rules: product sections 47-49, 150; WM-017, WM-018; WMREQ110-113; views pack section 11
 - Acceptance: (1) Given an Editor, when they change the shared sort, group or columns, then every other member sees the new defaults (unless their personal state overrides) without reload. (2) Given the Cột menu, when any person (including a Viewer) hides, reorders (Alt+Arrow) or resizes a column, then it is saved as their own BoardPreference, persists across reload, and other members' columns are unchanged; an Editor's "Lưu vào view chung" writes it as the shared default; a Viewer's "Lưu vào view chung" is disabled with the reason (owner Q5).
 - Evidence: BE BoardViews.Save = PUT /boards/{boardId:guid}/views -> SaveBoardViewCommand (`BoardViews/Commands/SaveBoardView/SaveBoardView.cs`) [- / Idem]; BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem]; BoardViews.Rename = PATCH /boards/{boardId:guid}/views/{viewId:guid}/rename -> RenameBoardViewCommand (`BoardViews/Commands/RenameBoardView/RenameBoardView.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design BC-Toolbar (Lưu vào view chung), BC-View-Personal · Tests `BoardAuthorizationHardeningIntegrationTests.cs`, `BoardViewVisibilityTests.cs`, `NotrelixApiFactory.cs` · Real e2e `saved-views.real.e2e.spec.ts` (rename)
-- State: HARDENING — PUT and PATCH carry no expected version (defect B-06).
+- State: HARDENING — tests and owner check. Built: rename, config change and visibility of a saved view carry the view version (a stale one changes nothing, 409); the web client names the version it last read and takes the new one from the config response. Not built: the PUT upsert of the default view (legacy path, no version), design for the conflict state.
 
 ### UC-WM-H03 Delete or archive a view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1950,7 +1965,7 @@ Team capability WM-008.
 - Rules: product sections 62, 125; WM-004, WM-017; D76.9
 - Acceptance: Given the default view deleted, then another becomes default deterministically and no item is deleted.
 - Evidence: BE BoardViews.Delete = DELETE /boards/{boardId:guid}/views/{viewId:guid} -> DeleteBoardViewCommand (`BoardViews/Commands/DeleteBoardView/DeleteBoardView.cs`) [- / Idem]; BoardViews.Archive = POST /boards/{boardId:guid}/views/{viewId:guid}/archive -> ArchiveBoardViewCommand (`BoardViews/Commands/ArchiveBoardView/ArchiveBoardView.cs`) [- / Idem]; BoardViews.Unarchive = POST /boards/{boardId:guid}/views/{viewId:guid}/unarchive -> UnarchiveBoardViewCommand (`BoardViews/Commands/UnarchiveBoardView/UnarchiveBoardView.cs`) [- / Idem]; BoardViews.Restore = POST /boards/{boardId:guid}/views/{viewId:guid}/restore -> RestoreBoardViewCommand (`BoardViews/Commands/RestoreBoardView/RestoreBoardView.cs`) [- / Idem] · FE delete; archive/restore unused · Design none; needs delete view, default-fallback, archive · Tests `DeleteBoardViewTests.cs` · Real e2e none
-- State: INTEGRATING — delete-default asks for the next default (D76.9); archive and restore handlers have no test (defect B-14); design.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; archive and restore of a view not driven in the UI; tests and owner check. Built: delete, archive, unarchive and restore of a view carry the view version; deleting or archiving the default view hands the default to the view the person picks, else to the oldest shared view, in the same commit; board settings ask for the next default before deleting it and keep the only shared view undeletable. Not built: archive and restore in the web UI, design. Evidence: real-stack check 2026-10-31: deleted a shared view (204, a stale version 412, an Observer 403, deleting again 404); the default hands over to the view the person picks or the oldest shared one, commit 2ab39238c.
 
 ### UC-WM-H04 Set the default view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1964,7 +1979,7 @@ Team capability WM-008.
 - Rules: product sections 154; D76.9
 - Acceptance: Given a new default set, then exactly one view is default.
 - Evidence: BE BoardViews.SetDefault = POST /boards/{boardId:guid}/views/{viewId:guid}/set-default -> SetDefaultViewCommand (`BoardViews/Commands/SetDefaultView/SetDefaultView.cs`) [- / Idem] · FE `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design none; needs pick next default when deleting default view · Tests `BoardManagementLevelTests.cs` · Real e2e `saved-views.real.e2e.spec.ts`
-- State: HARDENING — Exactly-one default invariant and delete flow (D76.9); design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design for the next-default picker; tests and owner check. Built: set-default carries the view version and clears the old default in the same commit; the delete flow above keeps exactly one default. Not built: design for the next-default picker. Evidence: real-stack check 2026-10-31: set the default view (it answered 500 because the command named the board while its expected version binds the view, fixed); exactly one default after the write, setting the default again bumps nothing, a stale version 412, an Observer 403, commit 2ab39238c.
 
 ### UC-WM-H05 Create and use a private view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1978,7 +1993,7 @@ Team capability WM-008.
 - Rules: product sections 61, 153; D77.4; D71
 - Acceptance: Given user A's private view, when B lists views or listens to realtime, then it is absent.
 - Evidence: BE BoardViews.SetVisibility = PATCH /boards/{boardId:guid}/views/{viewId:guid}/visibility -> SetBoardViewVisibilityCommand (`BoardViews/Commands/SetBoardViewVisibility/SetBoardViewVisibility.cs`) [- / Idem] · FE private visibility in `frontend/packages/product/work-management/web/src/components/board-settings/board-settings-view-panel.tsx` · Design none; needs private badge, visibility switch · Tests `BoardViewVisibilityTests.cs` · Real e2e `saved-views.real.e2e.spec.ts` (keeps view private)
-- State: HARDENING — Design states; prove absent from others' list and realtime (D77.4)
+- State: HARDENING — tests and owner check. Built: the visibility write carries the view version; a private view cannot be the default (rule code already present). Not built: private badge and switch design, realtime absence proof.
 
 ### UC-WM-H06 Filter the view (personal state)
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -1991,8 +2006,8 @@ Team capability WM-008.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 150, 153; D68, D71; views pack section 4, 11
 - Acceptance: (1) Given an incomplete condition row, when the view shows results, then the row stays visible and is not applied. (2) Given two Members, when A sets a personal filter, then B's view is unchanged and the shared BoardView is not written. (3) Given saving personal state fails, when the failure returns, then the state stays applied for the session and an alert with "Thử lại" shows.
-- Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -]; BoardPreferences.UpdateFilters = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/filters -> UpdateBoardPreferenceFiltersCommand (`BoardPreferences/Commands/UpdateBoardPreferenceFilters/UpdateBoardPreferenceFilters.cs`) [- / -] · FE in open PR #201: filter-builder.tsx, use-view-state.ts, view-state-bar.tsx · Design WM-Filter-Builder, -States, -320, BC-View-Personal, BC-Filter-Gaps · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201, not on develop; real e2e; server-side filter on paged boards (Q9)
+- Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -]; BoardPreferences.UpdateFilters = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/filters -> UpdateBoardPreferenceFiltersCommand (`BoardPreferences/Commands/UpdateBoardPreferenceFilters/UpdateBoardPreferenceFilters.cs`) [- / -] · FE `filters/filter-builder.tsx`, `filters/use-view-state.ts`, `filters/view-state-bar.tsx` in the toolbars of `main-table-view.tsx`, `kanban-view.tsx`, `board-calendar-view.tsx` and `board-timeline-view.tsx` · Design WM-Filter-Builder, -States, -320, BC-View-Personal, BC-Filter-Gaps · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a condition on a deleted field is not shown with a hint; the typed rule writes were removed (they always answered 500 and nothing called them; the personal state is the criteria JSON); tests and owner check. Built: the compound filter model, the member's personal view state (filter, three sort levels, group, swimlane field) kept as versioned criteria on the board preference (server stores an opaque JSON object up to 8 KB), the preference read and write in the web client, the filter builder, sort and group menus and the view state bar with a state hook and mock handlers, and the bar in the Table, Kanban, Calendar and Timeline toolbars in place of the older filter menu. Not built: server-side filter on paged boards (Q9). Evidence: real-stack check 2026-10-31: added a condition in the Filter dialog: the count updates as typed and the view filters, the personal state is written per person (PUT preference) and survives the reload, another member's view is unaffected; no match shows No items match the filter with Clear filter; the system Title is no longer offered twice, commit 2ab39238c.
 
 ### UC-WM-H07 Sort the view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2005,8 +2020,8 @@ Team capability WM-008.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 151; WM-016; views pack section 4
 - Acceptance: Given a sort on a Number field ascending, then empty values come last. Given 3 levels, then ties on level 1 order by level 2.
-- Evidence: BE BoardPreferences.UpdateSorts = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/sorts -> UpdateBoardPreferenceSortsCommand (`BoardPreferences/Commands/UpdateBoardPreferenceSorts/UpdateBoardPreferenceSorts.cs`) [- / -] · FE in open PR #201: sort-menu.tsx (3 levels) · Design WM-Filter-SortGroup · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201, not on develop; server-side sort is missing; real e2e.
+- Evidence: BE BoardPreferences.UpdateSorts = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/sorts -> UpdateBoardPreferenceSortsCommand (`BoardPreferences/Commands/UpdateBoardPreferenceSorts/UpdateBoardPreferenceSorts.cs`) [- / -] · FE `filters/sort-menu.tsx` (3 levels) in the Table and Kanban toolbars · Design WM-Filter-SortGroup · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; server-side sort; tests and owner check. Built: up to three sort levels in the personal view state and the sort menu in the Table and Kanban toolbars; the Table header marks the first level. Not built: server-side sort. Evidence: real-stack check 2026-10-31: added sort levels in the Sort menu up to three (the fourth is disabled), the state is written to the preference and survives the reload, the shared view is not written, commit 2ab39238c.
 
 ### UC-WM-H08 Group the view
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2019,8 +2034,8 @@ Team capability WM-008.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 152; D71, Q13; views pack section 4
 - Acceptance: Given Group by Assignee on a multi-assignee item, then it shows in each lane and the board total counts it once (Q13).
-- Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE in open PR #201: group menu, use-view-state.ts · Design WM-Filter-SortGroup, BC-Kanban (No value) · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201, not on develop; 'No value' group proof; real e2e.
+- Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE `filters/field-ref-menu.tsx` (group), `filters/use-view-state.ts` in the Table and Kanban toolbars · Design WM-Filter-SortGroup, BC-Kanban (No value) · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; server-side grouping on paged boards (Q9); tests and owner check. Built: group and swimlane field in the personal view state with date buckets, and the group menu in the Table and Kanban toolbars. Not built: server-side grouping on paged boards (Q9). Evidence: real-stack check 2026-10-31: grouped by Assignee from the Group menu, the state survives the reload; a non-groupable field is listed as unavailable with the reason, commit 2ab39238c.
 
 ### UC-WM-H09 Save, share, edit and delete a saved filter
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2034,7 +2049,7 @@ Team capability WM-008.
 - Rules: product sections 150, 153; D68; WMREQ110-113
 - Acceptance: Given a personal saved filter, then another member cannot see it and gets NotFound by id. Given a shared one, then every viewer can apply it.
 - Evidence: BE SavedFilters.Create = POST /boards/{boardId:guid}/saved-filters -> CreateSavedFilterCommand (`Views/Commands/CreateSavedFilter/CreateSavedFilter.cs`) [- / Idem]; SavedFilters.Rename = PATCH /saved-filters/{filterId:guid}/rename -> RenameSavedFilterCommand (`Views/Commands/RenameSavedFilter/RenameSavedFilter.cs`) [EV / Idem]; SavedFilters.UpdateVisibility = PATCH /saved-filters/{filterId:guid}/visibility -> UpdateSavedFilterVisibilityCommand (`Views/Commands/UpdateSavedFilterVisibility/UpdateSavedFilterVisibility.cs`) [EV / Idem]; SavedFilters.UpdateFilters = PATCH /saved-filters/{filterId:guid}/filters -> UpdateSavedFilterFiltersCommand (`Views/Commands/UpdateSavedFilterFilters/UpdateSavedFilterFilters.cs`) [EV / Idem]; SavedFilters.UpdateSorts = PATCH /saved-filters/{filterId:guid}/sorts -> UpdateSavedFilterSortsCommand (`Views/Commands/UpdateSavedFilterSorts/UpdateSavedFilterSorts.cs`) [EV / Idem]; SavedFilters.UpdateGroup = PATCH /saved-filters/{filterId:guid}/group -> UpdateSavedFilterGroupCommand (`Views/Commands/UpdateSavedFilterGroup/UpdateSavedFilterGroup.cs`) [EV / Idem]; SavedFilters.SoftDelete = DELETE /saved-filters/{filterId:guid} -> DeleteSavedFilterCommand (`Views/Commands/DeleteSavedFilter/DeleteSavedFilter.cs`) [EV / Idem]; SavedFilters.Restore = POST /saved-filters/{filterId:guid}/restore -> RestoreSavedFilterCommand (`Views/Commands/RestoreSavedFilter/RestoreSavedFilter.cs`) [- / Idem] · FE saved-filters-menu/control (11 tests); update ops unused · Design WM-SavedFilter-Menu, -Save, -States · Tests `BoardManagementLevelTests.cs`, `SavedFilterCommandTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e; criteria without sort; open PR #201 touches the menu.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; another member's private filter answers 403 instead of NotFound to a viewer-level member (the policy decides before the handler; handed to the access lane); applying and saving from the menu not driven; tests and owner check. Evidence: real-stack check 2026-10-31: created a private and a shared saved filter: a member sees only the shared one; rename (204, same name bumps nothing, a stale version 412), delete and restore (204), an empty name 400; an Observer's rename of another person's private filter answers 403, commit 2ab39238c.
 
 ### UC-WM-H10 Apply a saved filter
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2048,7 +2063,7 @@ Team capability WM-008.
 - Rules: product sections 150, 153; D68, D71
 - Acceptance: Given a shared filter applied, then only this person's state changes.
 - Evidence: BE SavedFilters.List = GET /boards/{boardId:guid}/saved-filters -> ListSavedFiltersQuery (`Views/Queries/ListSavedFilters/ListSavedFilters.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/saved-filters/saved-filters-menu.tsx` (changed by PR #201) · Design WM-SavedFilter-Menu · Tests `SavedFilterPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — real e2e; re-check against open PR #201.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: saved the current filter as 'Later only' (a personal saved filter), went Back to shared view (6 of 6 items), opened the Saved filters menu (Mine, Later only, Only me) and applied it (2 of 6): only preference writes went out and the shared view's config stayed {}, commit 25aa0bddb.
 
 ### UC-WM-H11 Return to the shared view ("Về view chung")
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2061,8 +2076,8 @@ Team capability WM-008.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 153; D71
 - Acceptance: Given personal filter and sort, when 'Về view chung' is pressed, then both clear and the shared view's own sort shows.
-- Evidence: BE BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE in open PR #201: view-state-bar.tsx (Về view chung) · Design BC-View-Personal (icon + dot), BC-Toolbar · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: IMPLEMENTING — personal state lives in open PR #201; owner confirms the icon button with a dot; real e2e.
+- Evidence: BE BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE `filters/view-state-bar.tsx` (Về view chung) in all four view toolbars · Design BC-View-Personal (icon + dot), BC-Toolbar · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Built: the view state bar clears the whole personal state including the saved criteria, in the Table, Kanban, Calendar and Timeline toolbars. Evidence: real-stack check 2026-10-31: Back to shared view clears the personal state on the server (204) and the shared defaults show after the reload; with no personal state the button is absent and nothing is written, commit 2ab39238c.
 
 ### UC-WM-H12 Repair stale view references
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2076,7 +2091,7 @@ Team capability WM-008.
 - Rules: product sections 49, 150; D71; views pack section 11
 - Acceptance: Given a filter on a deleted field, then the view loads, the condition is ignored and a hint says so.
 - Evidence: BE not applicable (opaque criteria) · FE in open PR #201: stale condition ignored with hint · Design WM-Filter-States (deleted-field chip) · Tests none found · Real e2e none
-- State: DEFINED — the stale-condition hint is in open PR #201; real e2e.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a filter on a deleted label (a value, not a field) is not ignored: it shows 0 items with no hint, because label choices come from the items; the board's label list would tell; tests and owner check. Evidence: real-stack check 2026-10-31: a filter on a field that was deleted afterwards loads the view with all 6 items, the chip reads 'Removed field · field removed', and the bar says the condition is ignored with Remove ignored conditions and Save as a new filter, commit 25aa0bddb.
 
 ### UC-WM-H13 Switch and open views via tabs and URL
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2090,7 +2105,7 @@ Team capability WM-008.
 - Rules: product sections 154; WM-018
 - Acceptance: Given a URL naming a deleted view, then the default shows with a notice. Given Back, then the previous view returns.
 - Evidence: BE BoardViews.Get = GET /boards/{boardId:guid}/views -> GetBoardViewQuery (`BoardViews/Queries/GetBoardView/GetBoardView.cs`) [- / -]; BoardViews.List = GET /boards/{boardId:guid}/views/saved -> ListBoardViewsQuery (`BoardViews/Queries/ListBoardViews/ListBoardViews.cs`) [- / -] · FE ViewTabs, `?view=`, `?savedView=` · Design BC-Toolbar, BC-Shell · Tests `BoardViewVisibilityTests.cs`, `GetBoardViewTests.cs` · Real e2e `saved-views.real.e2e.spec.ts` (partial)
-- State: INTEGRATING — proof that Back and Forward follow the URL; unknown-view notice.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: tabs write the layout to the address, Back and Forward follow it; an unknown layout in the address no longer fails the page and an unknown saved view opens the default with one notice, commit 2ab39238c.
 
 ### UC-WM-H14 Apply workspace time zone to date filters and buckets
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2117,8 +2132,8 @@ Team capability WM-008.
 - UI states: success (only valid operators shown), validation (invalid operator refused)
 - Rules: product sections 35-36, 150-152; WM-013
 - Acceptance: Given a Number field, then filter offers numeric operators only. Given a Text field, then it cannot be chosen for a Kanban lane.
-- Evidence: BE operators defined in domain; no server-side filter/sort/group endpoint · FE client-side filter/sort/group; PR #201 adds compound model · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — server-side filter, sort and group with parity to the client for every field type.
+- Evidence: BE operators defined in domain; server-side filter and sort on `GET /boards/{boardId}/full?pageSize&filter&sort` and `GET /boards/{boardId}/items/lanes/{lane}` (`BoardItems/Services/BoardItemCriteria.cs`, `Infrastructure/Data/WorkManagement/PostgresBoardItemPageReader.cs`); an operator or field it cannot evaluate is a 400 on `filter` or `sort` · FE client-side filter/sort/group; PR #201 adds compound model · Design not applicable (no screen) · Tests none found · Real e2e none
+- State: HARDENING — real-stack check 2026-10-31: the server evaluates the web client's own compound filter (every operator of every field type but Formula, Rollup, Vote and "$overdue", joined by AND or OR; text accent- and case-insensitive; Person and due-date reading as the client reads them) and sorts (title, text, number, date, checkbox, Status, Select; empty last ascending, first descending; equal keys keep board order). The real client code (`cardMatchesFilter`, `sortCardsByLevels`) and the server gave the same Items and the same order on 206 generated cases over two seeded boards, 0 differences, commit 5cf04018a. Left: the Table and Kanban still read the whole board and filter in the browser, group/lane by Person, date or Select is not paged, and Formula, Rollup, Vote, overdue and people sorts fall back to the client read; tests and owner check. Web client, real-stack check 2026-10-31: the table and kanban send the view filter and sort to the server (title, status, due date and custom fields) when a Status lane has more than the first page, show the lane and board totals under a filter ("100 của 1.500", "Đang lọc: 100 trên 5.000 việc của board"), and read the whole board for anything the server cannot evaluate (a 400 on the filter or sort, search, facet filters, other sorts), commit 0825e3ec7.
 
 ### UC-WM-H16 Search items and boards
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2132,7 +2147,7 @@ Team capability WM-008.
 - Rules: product sections 136; WM-030; D33
 - Acceptance: Given a board the person cannot see, then it never appears in results.
 - Evidence: BE GET /workspaces/{ws}/command-search (CommandSearchQuery, adjacent; 5 tests) · FE `frontend/apps/web/src/shell/workspace/use-command-search.ts`, features-search · Design Final-Command, Final-M-Search · Tests `CommandSearchQueryHandlerTests.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; Private-board no-leak test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the caps (6, 5, 5) were not driven; tests and owner check. Evidence: real-stack check 2026-10-31: command search finds a Private board and its item for its manager and returns nothing for a non-member and a Guest, commit 2ab39238c.
 
 ### UC-WM-H17 Filter by text inside a board
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2146,7 +2161,7 @@ Team capability WM-008.
 - Rules: product sections 136; D71
 - Acceptance: (1) Given a filter that matches nothing, when applied, then a "no results" state with "Xóa bộ lọc" shows, not the empty-board state, and group headers show 0. (2) Given a filter or sort on a paged board, when applied, then it is evaluated on the server, group totals show the filtered total, and the result equals the full-data result on a fixed dataset.
 - Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE useKanbanSearch client-side · Design BC-Toolbar (search), BC-Table filtered-empty · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: IMPLEMENTING — BoardItems.List has no q parameter; search runs on the client.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; BoardItems.List has no text parameter, the search runs on the client; tests and owner check. Evidence: real-stack check 2026-10-31: the board search box filters the table by text as typed, a no-match state names the filter with Clear filter, empty text clears it, commit 2ab39238c.
 
 ### UC-WM-H18 List My Work
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2160,7 +2175,7 @@ Team capability WM-008.
 - Rules: product sections 136; D35, D76.17
 - Acceptance: Given an item on a board the person cannot view, then it never appears. Given a done item assigned to me, then My Work does not list it; given open items, then they are ordered by due date.
 - Evidence: BE BoardItems.ListMyWork = GET /workspaces/{workspaceId:guid}/my-work/items -> GetMyBoardItemsQuery (`BoardItems/Queries/GetMyBoardItems/GetMyBoardItems.cs`) [- / -]; BoardItems.GetMyWorkExtended = GET /workspaces/{workspaceId:guid}/my-work/extended -> GetMyWorkExtendedQuery (`BoardItems/Queries/GetMyWorkExtended/GetMyWorkExtended.cs`) [- / -] · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/my-work.tsx` · Design Final-MyWork, Final-T-MyWork, Final-M-MyWork · Tests `CollectionVisibilityIntegrationTests.cs`, `MyWorkAndHomeFeedTests.cs` · Real e2e `work-feeds.real.e2e.spec.ts` (smoke)
-- State: INTEGRATING — Prove D76.17 rule (not-done, assigned, due order); Er/L design
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; Er and L design; tests and owner check. Evidence: real-stack check 2026-10-31: My Work for a member lists the assigned not-done items in due order with undated last, a done item is absent, items of a board the member cannot open never appear, commit 2ab39238c.
 
 ### UC-WM-H19 Filter items by label
 - Capability: H Query, filter and sort foundation (WM-008)
@@ -2174,7 +2189,7 @@ Team capability WM-008.
 - Rules: product sections 150; D71
 - Acceptance: Given a label filter 'has any of', then only items with those labels show.
 - Evidence: BE no server-side filter · FE in open PR #201: label operators in filter-builder.tsx · Design WM-Filter-Builder · Tests none found · Real e2e none
-- State: DEFINED — label operators are in open PR #201, not on develop; no server-side label filter.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; filter runs on the client only (no server-side filter on paged boards, Q9); tests and owner check. Evidence: real-stack check 2026-10-31: a Labels condition (is one of) on a board with two labels filtered 2 of 6 items, the count in the builder matched, and the filter survived a reload and a new browser context (personal preference write), commit 25aa0bddb.
 
 ## I. Table view
 
@@ -2191,8 +2206,8 @@ Team capability WM-009.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 50, 152; views pack section 5; WM-017; WMREQ139
 - Acceptance: (1) Given a Viewer or Commenter, when they select any cell, then no editor opens and the header lock explains why. (2) Given a title cell, when or double-click or Enter is pressed, then the title edits in place; single click opens the item (D63). (3) Given a column header, when sorted, then the registry comparator and null rule apply (empty last ascending, first descending) for every field type.
-- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE in open PR #204: custom-field columns, in-cell editors; develop has fixed columns · Design Final-Table, BC-Table, WM-Toolbar-Table · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — the central code is in open PR #204, not on develop; real e2e; virtualization (UC-WM-T01)
+- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE `table-columns.ts`, `table-field-cell.tsx`, `table-field-editors.tsx` (custom-field columns, in-cell editors), `table-toolbar.tsx` · Design Final-Table, BC-Table, WM-Toolbar-Table · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; virtualization is UC-WM-T01. Built: every visible custom field of a type the table can show is a column with its type's cell editor, a lock in the header for calculated or uneditable types and for a viewer, and sorting by the type's rules. Evidence: real-stack check 2026-10-31: a board Observer sees locked headers that say 'Read only, you can't edit this field', a double click opens the card whose inputs are read-only with 'You can only view this card'; for an editor a double click edits the title in place (one PATCH) and a single click opens the item; the sort menu orders by Points with empty last ascending and first descending, commit 8240660a5.
 
 ### UC-WM-I02 Arrange columns (personal) and save to the shared view
 - Capability: I Table view (WM-009)
@@ -2205,8 +2220,8 @@ Team capability WM-009.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 46, 153; Q5, D73
 - Acceptance: Given a hidden column, then only this person loses it. Given a Viewer, then 'Lưu vào view chung' is disabled with the reason.
-- Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE Cột menu Alt+Arrow in PR #204; personal persistence unproven · Design WM-Table-Columns, BC-View-Personal · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: INTEGRATING — prove personal hide/order/width and save-to-shared; real e2e
+- Evidence: BE BoardPreferences.Get = GET /boards/{boardId:guid}/preferences/{viewId:guid} -> GetBoardPreferenceQuery (`BoardPreferences/Queries/GetBoardPreference/GetBoardPreference.cs`) [- / -]; BoardPreferences.CreateOrUpdate = PUT /boards/{boardId:guid}/preferences/{viewId:guid} -> CreateOrUpdateBoardPreferenceCommand (`BoardPreferences/Commands/CreateOrUpdateBoardPreference/CreateOrUpdateBoardPreference.cs`) [- / -] · FE Cột menu with Alt+Arrow, "Lưu vào view chung" and "Về cột của view chung" (`table-toolbar.tsx`), personal hide, order and width in `use-board-table.ts` over the preference `columns` (`board-preference.api.ts`) · Design WM-Table-Columns, BC-View-Personal · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Built: hidden columns, column order and widths are kept per member on the board preference (opaque JSON up to 4 KB, migration `AddBoardPreferenceColumns`) and replace the shared view's for that member alone; an editor's "Lưu vào view chung" writes them to the shared view (with its version) and drops the personal copy only once that write went through, a viewer sees it disabled with the reason; "Về cột của view chung" drops them; a failed save keeps them with "Thử lại". Evidence: real-stack check 2026-10-31: hiding Notes in the Columns menu is personal (the member kept it, a fresh browser context of the admin did not show it); Save to shared view wrote the shared view (POST views); for the Observer the item is disabled with 'Only editors can change the columns of the shared view', commit 8240660a5.
 
 ### UC-WM-I03 Select items across views and windows
 - Capability: I Table view (WM-009)
@@ -2220,7 +2235,7 @@ Team capability WM-009.
 - Rules: product sections 34; D32; Q8
 - Acceptance: Given 201 items in a group, when select all is pressed, then 200 are selected and the cap is stated. Given a refetch, then the selection holds.
 - Evidence: BE not applicable (client selection) · FE Table only; no Kanban selection; no window-spanning selection · Design BC-Bulk, BC-Large · Tests none found · Real e2e none
-- State: INTEGRATING — Kanban selection is missing; proof of the 200 cap.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the selection kept across a refetch and the over-200 lock were not driven. Evidence: real-stack check 2026-10-31: Select all on a 205-row group picked 200 and said 'At most 200 at a time. 5 more are not selected.'; a selection past 200 locks the actions and names the limit (built, not driven); the Kanban selection now exists (checkbox, Shift+click) and reuses the bar, commit 8240660a5.
 
 ## J. Kanban view
 
@@ -2237,8 +2252,8 @@ Team capability WM-010.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 51, 40-41; WM-015; views pack section 6
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given a quick add failing, when the write errors, then the typed name stays in the input with an inline error and "Thử lại". (3) Given Kanban, when a Member selects cards (Space, Shift+click, checkbox), then the same bulk bar as the Table appears (owner Q8).
-- Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -]; BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE KanbanView (186 tests); no swimlanes (PR #201), multi-select, WIP · Design BC-Kanban (Final-Board; Kanban-Board proposal, canonical unrecorded) · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Canonical Kanban artboard; multi-select; WIP; real e2e
+- Evidence: BE BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -]; BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-view.tsx`, `kanban-selection.ts`, `kanban-bulk-bar.tsx` (the Table's bar over the picked cards), `kanban-card.tsx` (checkbox, Space, Shift+click) · Design BC-Kanban (Final-Board; Kanban-Board proposal, canonical unrecorded) · Tests `CreateCommentTargetPolicyMatrixTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; not built: an undo window for the bulk archive, the card checkbox is on no artboard. Evidence: real-stack check 2026-10-31: drop on an empty lane shows the target and keeps the move; a failed quick add keeps the typed name in the field with an inline error and Retry (retry created it); checkbox plus Shift+click picks cards and the bulk bar (BC-Bulk, dark bar at the bottom centre) set Hoàn thành for both in one request, commit 2eed7b832.
 
 ### UC-WM-J02 Move an item between Kanban lanes
 - Capability: J Kanban view (WM-010)
@@ -2252,7 +2267,7 @@ Team capability WM-010.
 - Rules: product sections 40-41, 51; WM-015; D36-D40; WMREQ018, WMREQ044, WMREQ131
 - Acceptance: (1) Given an empty lane, when a card is dragged over it, then a drop target is shown and the drop works. (2) Given B is dragging a card, when A moves another card, then B's drag completes unaffected and the board re-reads after the drop. (3) Given a lane at its WIP limit, when a card is dropped in, then a warning shows and the drop is allowed; the server does not block (D37).
 - Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `frontend/packages/product/work-management/web/src/components/views/kanban/kanban-dnd.ts` + keyboard DnD (186 kanban tests) · Design BC-Kanban, Kanban-Card-States, WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: INTEGRATING — WIP warning (D37); undo proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; pointer and keyboard drag in the browser, design measurement, tests. Evidence: real-stack check 2026-10-31: moved through the API with the expected version: to another group (group changed), the same place changed nothing, a stale version answers 412, a group of another board 404, an archived group refused (400); pointer drag in the browser: a drop on an empty lane shows the target and keeps the move, Hoàn tác puts it back, a stale drop answers 412 with a toast that names who moved the card and to which lane (the item reads carry who last edited it), commit 2eed7b832.
 
 ### UC-WM-J03 Move an item across swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2265,8 +2280,8 @@ Team capability WM-010.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 40-41; WM-015; D71; Q13
 - Acceptance: Given an item in lane A and swimlane X, when dropped in lane B and swimlane Y, then both fields hold the new values. Given a multi-assignee item, then other assignees are unchanged.
-- Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE in open PR #201: kanban-swimlane-board.tsx · Design WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #201 (kanban-swimlane-board.tsx), not on develop; Q13 multi-assignee proof; real e2e.
+- Evidence: BE BoardItems.Move = POST /board-items/{itemId:guid}/move -> MoveBoardItemCommand (`BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs`) [EV / Idem] · FE `kanban-swimlane-board.tsx` (a drop on a cell writes the column and the lane value that changed) · Design WM-Swimlanes · Tests `CreateCommentTargetPolicyMatrixTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the swimlane header is not sticky when the board scrolls. Evidence: real-stack check 2026-10-31: swimlanes by Assignee: a multi-assignee card shows in each assignee lane, a drop on another lane and column wrote the status and swapped only the source assignee (admin, member kept), the two writes run in turn and the column is put back when the lane write fails; a stale drop answers 412, commit 2eed7b832.
 
 ### UC-WM-J04 Use swimlanes
 - Capability: J Kanban view (WM-010)
@@ -2279,8 +2294,8 @@ Team capability WM-010.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 51; D71, D38
 - Acceptance: Given swimlanes by Assignee, then each swimlane header is sticky and collapses per person.
-- Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE in open PR #201: kanban-swimlane-board.tsx · Design WM-Swimlanes · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
-- State: DEFINED — the central code is in open PR #201, not on develop; Q13 multi-assignee proof; 320 snap-scroll design
+- Evidence: BE BoardPreferences.UpdateGroup = PATCH /boards/{boardId:guid}/preferences/{viewId:guid}/group -> UpdateBoardPreferenceGroupCommand (`BoardPreferences/Commands/UpdateBoardPreferenceGroup/UpdateBoardPreferenceGroup.cs`) [- / -] · FE `kanban-swimlane-board.tsx`, the swimlane field in the view bar (personal state, kept on the preference) · Design WM-Swimlanes · Tests `BoardPreferenceCommandTests.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the collapsed state is not kept across a reload; 320 snap-scroll design. Evidence: real-stack check 2026-10-31: Lane: Assignee is personal (no view write, Back to shared view offered); each lane header collapses on its own, commit 2eed7b832.
 
 ### UC-WM-J05 Choose fields shown on the card
 - Capability: J Kanban view (WM-010)
@@ -2294,7 +2309,7 @@ Team capability WM-010.
 - Rules: product sections 51; D39
 - Acceptance: Given a field ticked, then every card shows it formatted for its type.
 - Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE Kanban settings panel (card face columns) · Design WM-Card-Face · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: INTEGRATING — Real e2e; proof
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: Fields shown on the card: the panel opened without the crash it had, the switch wrote the view config and every card showed Points in its type format (5, or a dash when empty), commit 2eed7b832.
 
 ### UC-WM-J06 Set a WIP limit and see the warning
 - Capability: J Kanban view (WM-010)
@@ -2307,8 +2322,8 @@ Team capability WM-010.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 51; D37
 - Acceptance: Given a lane limit of 3 holding 3 cards, when a fourth is dropped, then the drop succeeds and the lane shows the warning.
-- Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE none; no WIP limits in FE · Design Kanban-Card-States (WIP warning) · Tests `NotrelixApiFactory.cs` · Real e2e none
-- State: DEFINED — no WIP limit in the Kanban view configuration or UI.
+- Evidence: BE BoardViews.UpdateConfig = PATCH /boards/{boardId:guid}/views/{viewId:guid} -> UpdateBoardViewConfigCommand (`BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs`) [- / Idem] · FE the lane menu sets the limit (`kanban-column.tsx`, `kanban-view.tsx` writes `wipLimits` to the view config); the lane and the drop target warn · Design Kanban-Card-States (WIP warning) · Tests `NotrelixApiFactory.cs` · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check. Evidence: real-stack check 2026-10-31: lane menu Set item limit 1 wrote the view config; dragging a second card in showed the over-limit warning while hovering, the drop was kept and the lane header showed 2 / 1, commit 2eed7b832.
 
 ## K. Calendar view
 
@@ -2325,8 +2340,8 @@ Team capability WM-011.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 52, 138; WMREQ021; views pack section 7; LD5
 - Acceptance: Given the Calendar over field Due, when an item's due changes, then it moves on the calendar for all members.
-- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -] · FE BoardCalendarView (69 tests) · Design Final-Calendar, WM-Cal-Interactions, WM-Toolbar-Calendar · Tests `ComputedFieldsIntegrationTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
-- State: INTEGRATING — Detail is roadmap 02 (D76.18); multi-day bars, undated aside redraw (D72)
+- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -] · FE `board-calendar-view.tsx` with the view bar (filter, personal state, saved filters) in `calendar-toolbar.tsx` · Design Final-Calendar, WM-Cal-Interactions, WM-Toolbar-Calendar · Tests `ComputedFieldsIntegrationTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a date field chosen per Calendar view is not built; the quick-add makes two writes (create, then date); tests and owner check. Built: the Calendar filters with the member's own view state (an item with no date still lists in the undated aside; phases and milestones hide under a filter). Not built: a date field chosen per Calendar view. Evidence: real-stack check 2026-10-31: on a board with dated, ranged and undated items: dragged an item a day (200, the reload keeps it, an undo toast); Set date scheduled an undated item; a day click opened Add item with the day prefilled and the new item kept its date after reload; a stale drag answered 412 and the toast now names the actor, the item snapped back; an Observer sees no Add item or Set date and the drag and resize handles are disabled; an archived board hides Add item and refuses the drag; Week view opens, commit 4b8a14c28.
 
 ## L. Timeline view
 
@@ -2343,8 +2358,8 @@ Team capability WM-012.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 53, 68.1; WMREQ021; views pack section 8; D76.9, D76.18; LD5
 - Acceptance: Given due before start, then the write is rejected (pattern).
-- Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE BoardTimelineView (96 tests); raw plan-items · Design Final-Timeline, WM-TL-Interactions · Tests `CreateBoardItemLinkTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
-- State: INTEGRATING — Roadmap 02 (D76.18); no auto-reschedule test; cycle check
+- Evidence: BE BoardItems.CreateLink = POST /board-items/{itemId:guid}/links -> CreateBoardItemLinkCommand (`ItemLinks/Commands/CreateBoardItemLink/CreateBoardItemLink.cs`) [- / Idem] · FE `board-timeline-view.tsx` with the view bar in `timeline-toolbar.tsx`; raw plan-items · Design Final-Timeline, WM-TL-Interactions · Tests `CreateBoardItemLinkTests.cs` · Real e2e `board-views-and-settings.real.e2e.spec.ts` (draws dated items)
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; grouping and bar span choices are not built; a timeline drag shows no success toast or undo; the archived Timeline was not driven; tests and owner check. Built: the Timeline filters with the member's own view state (phases and milestones hide under a filter), and a due day moved before the start day from the keyboard is refused with a visible error (the pointer drag was already clamped). Not built: grouping and bar span choices (shown as unavailable). Evidence: real-stack check 2026-10-31: dragged a bar two days (200 with the expected version, the reload keeps it); a stale drag answered 412 and the toast now names who changed the item, the bar snapped back; Alt+Shift+Left past the start day was refused with a visible error; an Observer cannot drag or link; Link with... created a dependency and the line is drawn, a cycle is refused (400, and the dialog disables the item); the Timeline had no dependency lines and hid dependency-only items because the real backend has no plan read, now a board read gives the dependencies, commit c1c8abded.
 
 ## M. Dashboard projection
 
@@ -2362,7 +2377,7 @@ Team capability WM-013.
 - Rules: product sections 111; WM-030; WMREQ128
 - Acceptance: Given a Private board the caller cannot read, then it contributes to no figure.
 - Evidence: BE IBoardWorkSummaryFacts (port, not an endpoint) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/spaces/$spaceId.tsx` (space-page e2e 15) · Design Final-Space overview · Tests none found · Real e2e none
-- State: INTEGRATING — Cross-tenant/Private negative test; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a Private board created by an admin shows 'only 0 people are added' (the creator has no board member row: owner decision pending); tests and owner check. Evidence: real-stack check 2026-10-31: the Space overview as the admin gives progress 1/5 done, 1 overdue, 1 waiting review (an item with a pending approval counts once) and 3 unclaimed on a fresh board, the top assignee and the open work per person; a Private board in the Space shows for the admin and is hidden from a member who is not on it and from the member lens (a non-admin asking for the member lens gets 403, a Guest 403); an archived board leaves every figure; the figures are the same after a reload of the Space page, commit b823844bd.
 
 ## N. Form input
 
@@ -2380,7 +2395,7 @@ Team capability WM-014.
 - Rules: product sections 54-58; WM-019; D70
 - Acceptance: Given an Editor creates a form, then it is draft and invisible to submitters.
 - Evidence: BE Forms.Create = POST /boards/{boardId:guid}/forms -> CreateFormCommand (`Forms/Commands/CreateForm/CreateForm.cs`) [- / Idem]; Forms.List = GET /boards/{boardId:guid}/forms -> ListFormsQuery (`Forms/Queries/ListForms/ListForms.cs`) [- / -]; Forms.UpdateDetails = PATCH /forms/{formId:guid} -> UpdateFormDetailsCommand (`Forms/Commands/UpdateFormDetails/UpdateFormDetails.cs`) [EV / Idem]; Forms.AddQuestion = POST /forms/{formId:guid}/questions -> AddFormQuestionCommand (`Forms/Commands/AddFormQuestion/AddFormQuestion.cs`) [- / Idem]; Forms.Get = GET /forms/{formId:guid} -> GetFormQuery (`Forms/Queries/GetForm/GetForm.cs`) [- / -] · FE FormBuilderPage, `frontend/packages/product/work-management/web/src/components/forms/form-builder-surface.tsx` · Design WM-Forms-List, WM-Forms-Builder · Tests `BoardManagementLevelTests.cs`, `FormCommandTests.cs`, `FormPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; design for the builder conflict state; tests and owner check. Built: updating, publishing, closing and deleting a form, and adding, changing and removing a question, each name the form version the caller read (a missing one is a 400, a stale one a 409); the web client sends the version of the form it showed (the open form, else the row of the list, which now carries it), refuses a write that has none before sending it, and writes one at a time. The form endpoints sent no version before, so the pipeline refused every one of these writes. Evidence: real-stack check 2026-10-31: created a form (201; a second form of the same title in any tenant answered 409 because the unique slug came from the title alone, fixed); an empty title 400; an Observer 403; renaming from the builder writes 204 and the reload keeps it; the same content bumps nothing; a stale version 412, commit 5cc3d5082.
 
 ### UC-WM-N02 Map form questions to fields
 - Capability: N Form input (WM-014)
@@ -2394,7 +2409,7 @@ Team capability WM-014.
 - Rules: product sections 57, 55; WM-019; D70
 - Acceptance: Given a Text question mapped to a Number field, then rejected.
 - Evidence: BE Forms.UpdateQuestion = PATCH /forms/{formId:guid}/questions/{questionId:guid} -> UpdateFormQuestionCommand (`Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs`) [- / Idem]; Forms.RemoveQuestion = DELETE /forms/{formId:guid}/questions/{questionId:guid} -> RemoveFormQuestionCommand (`Forms/Commands/RemoveFormQuestion/RemoveFormQuestion.cs`) [- / Idem] · FE builder; some question types 'Sắp có' · Design WM-Forms-Builder · Tests `SubmitFormCommandTests.cs` · Real e2e none
-- State: INTEGRATING — AddFormQuestion, UpdateFormQuestion and RemoveFormQuestion carry no expected version and UpdateFormQuestion has no test (defects B-07, B-14).
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; an item name, description and due date come from the questions the builder marks Goes into the item, not from a question mapped to a system column; tests and owner check. Built: the three question writes carry the form version (UpdateFormQuestion now goes through the Form so the version moves, and a change to what the question already is moves nothing); UpdateFormQuestion has no test (defect B-14). Evidence: real-stack check 2026-10-31: added a Short text question on the Title column and a Date question on Due Date; a duplicate key 400; a stale version 412; a Date question on a text field and a file or signature question are now refused (both were accepted); updating with the same content bumps nothing, commit 5cc3d5082.
 
 ### UC-WM-N03 Publish, close, delete or restore a form
 - Capability: N Form input (WM-014)
@@ -2408,7 +2423,7 @@ Team capability WM-014.
 - Rules: product sections 56, 54; D70
 - Acceptance: Given an Editor, when they publish, then 403.
 - Evidence: BE Forms.Publish = POST /forms/{formId:guid}/publish -> PublishFormCommand (`Forms/Commands/PublishForm/PublishForm.cs`) [EV / Idem]; Forms.Close = POST /forms/{formId:guid}/close -> CloseFormCommand (`Forms/Commands/CloseForm/CloseForm.cs`) [EV / Idem]; Forms.SoftDelete = DELETE /forms/{formId:guid} -> DeleteFormCommand (`Forms/Commands/DeleteForm/DeleteForm.cs`) [EV / Idem]; Forms.Restore = POST /forms/{formId:guid}/restore -> RestoreFormCommand (`Forms/Commands/RestoreForm/RestoreForm.cs`) [- / Idem] · FE forms list panel (no Mở lại) · Design WM-Forms-List (states) · Tests `FormCommandTests.cs` · Real e2e none
-- State: INTEGRATING — API tests; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Built: publish, close and delete name the form version (see UC-WM-N01); publishing a published form and updating a form with what it already holds change nothing. Evidence: real-stack check 2026-10-31: published (204; a stale version 412; an Observer 403; publishing again bumps nothing), closed (again bumps nothing), deleted (NotFound to a member) and restored; a form with a question on a deleted field cannot be published, commit 5cc3d5082.
 
 ### UC-WM-N04 Submit a form as an authenticated member
 - Capability: N Form input (WM-014)
@@ -2422,7 +2437,7 @@ Team capability WM-014.
 - Rules: product sections 55, 58; WM-019; D70, D77.1; WMREQ016
 - Acceptance: Given a submission, then exactly one Item exists with mapped values and the submission references it. Given a signed-in member submits, then the Item exists immediately with mapped values and the submission references it.
 - Evidence: BE Forms.Submit = POST /forms/{formId:guid}/submissions -> SubmitFormCommand (`Forms/Commands/SubmitForm/SubmitForm.cs`) [- / Idem] · FE FormFillPage · Design WM-Forms-Submit, WM-Forms-Submit-States · Tests `FormPipelineIntegrationTests.cs` · Real e2e none
-- State: INTEGRATING — no real e2e or API-level test; the form fill page refuses unsupported question types.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a member filled the form: an empty required answer shows the inline error and writes nothing, a valid one answered 201 and shows the sent state; a retry under the same key replays; a bad date and an unknown question key 400; a Guest and an unknown form 404; a closed form refuses, commit 5cc3d5082.
 
 ### UC-WM-N05 Process, reject or mark spam on a submission
 - Capability: N Form input (WM-014)
@@ -2436,7 +2451,7 @@ Team capability WM-014.
 - Rules: product sections 58, 55; WM-019; D70, D77.1, D78.4
 - Acceptance: Given an Accepted submission, when Process is chosen, then the create-item dialog opens prefilled from the answers and saving links the submission to the new item. Given Reject or spam, then no item is created and the reason is kept. Given a person with ViewBoard only, then the inbox is refused.
 - Evidence: BE Forms.ListSubmissions = GET /forms/{formId:guid}/submissions -> ListFormSubmissionsQuery (`Forms/Queries/ListFormSubmissions/ListFormSubmissions.cs`) [- / -]; Forms.ProcessSubmission = POST /form-submissions/{submissionId:guid}/process -> ProcessFormSubmissionCommand (`Forms/Commands/ProcessFormSubmission/ProcessFormSubmission.cs`) [- / Idem]; Forms.RejectSubmission = POST /form-submissions/{submissionId:guid}/reject -> RejectFormSubmissionCommand (`Forms/Commands/RejectFormSubmission/RejectFormSubmission.cs`) [- / Idem]; Forms.MarkAsSpam = POST /form-submissions/{submissionId:guid}/spam -> MarkFormSubmissionAsSpamCommand (`Forms/Commands/MarkFormSubmissionAsSpam/MarkFormSubmissionAsSpam.cs`) [- / Idem]; Forms.DeleteSubmission = DELETE /form-submissions/{submissionId:guid} -> DeleteFormSubmissionCommand (`Forms/Commands/DeleteFormSubmission/DeleteFormSubmission.cs`) [- / Idem] · FE FormInboxPage · Design WM-Forms-Inbox(-States) · Tests `FormPipelineIntegrationTests.cs`, `FormSubmissionCommandTests.cs` · Real e2e none
-- State: INTEGRATING — ListSubmissions needs UpdateItem, not ViewBoard (D78.4); security check not proven by a test.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Built: ListSubmissions needs UpdateItem (D78.4), so a person with ViewBoard only is refused. Built: process, reject, mark spam and delete need UpdateItem as well (D78.4, owner decision 2026-10-30), so an Editor handles responses, a Viewer, Commenter or Observer is refused, and the inbox page opens for editors and managers; the form builder stays the manager's. Evidence: real-stack check 2026-10-31: the inbox lists the response; Create item from response opened the prefilled dialog and processing linked the item (the response moved to Processed and stays after reload); reject and spam 204; a handled response is refused; processing it into a second item was accepted and replaced the first, now refused; a viewer cannot list or handle, commit 5cc3d5082.
 
 ### UC-WM-N06 Submit a public (anonymous) form
 - Capability: N Form input (WM-014)
@@ -2468,7 +2483,7 @@ Team capability WM-015.
 - Rules: product sections 113; D56; WMREQ118-119
 - Acceptance: Given a status change, then a history line shows who, what and when, newest first. Given an item the person cannot view, then the read is NotFound.
 - Evidence: BE GET /board-items/{id}/activity (Collaboration, adjacent) · FE `frontend/packages/product/work-management/web/src/components/card-detail/task-activity-tab.tsx`, `frontend/packages/product/work-management/web/src/components/card-detail/activity-words.ts` · Design Final-Detail `lich-su`; E, L, Er missing · Tests none found · Real e2e none
-- State: INTEGRATING — Design E/L/Er; one-line-per-action proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a date change now leaves a history line (new dates-changed fact, from and to shown under Show details; the events manifest and AsyncAPI must be regenerated in the test phase); a field value other than status adds no line; the page cap of 100 was not driven; design E, L and Er; tests and owner check. Evidence: real-stack check 2026-10-31: the card popup lists the history newest first, one line per action by name (created, renamed, status, assigned, checklist, archived, restored, deleted); a same-value write adds no line; a person without access and an unknown id get NotFound; a member reads; the archive line was missing because the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
 
 ### UC-WM-O02 Provide first-work-item facts for getting-started
 - Capability: O Activity and event production (WM-015)
@@ -2482,7 +2497,7 @@ Team capability WM-015.
 - Rules: product sections 101; WM-030
 - Acceptance: Given the caller creates the first item, then `first-item` becomes done.
 - Evidence: BE IFirstWorkItemFacts not verified · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one.
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; first item becoming done on a fresh workspace was not driven (every seeded workspace already has items); tests and owner check. Evidence: real-stack check 2026-10-31: the getting-started read answers first-item done with the earliest board holding an item for an admin and for a member (member: only a board he can read), on every seeded workspace, commit 25aa0bddb.
 
 ### UC-WM-O03 Expose events and projections to Analytics
 - Capability: O Activity and event production (WM-015)
@@ -2510,7 +2525,7 @@ Team capability WM-015.
 - Rules: product sections 113-114; WM-031; WMREQ118-123
 - Acceptance: Given a value set to the same value, then no event; given a retry, then one logical event.
 - Evidence: BE domain/integration events (38 contracts); no-op suppression tests exist per command · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — Single-logical-event proof under retry
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a replay under the same key now answers exactly what the first call answered (200 with the version); tests and owner check. Evidence: real-stack check 2026-10-31: a status write enrolled one logical event; a retry under the same key and a same-value write enrolled none; the archived fact carried the item and board ids swapped, fixed, commit 6b9697e20.
 
 ## P. Realtime synchronization
 
@@ -2527,8 +2542,8 @@ Team capability WM-016.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115-116; WM-032; WMREQ124-126; LD4
 - Acceptance: (1) Given reduced motion is set, when any remote change, drop or create highlight occurs, then no animation plays. (2) Given A creates the first item on an empty board, when the frame arrives, then B's empty state is replaced by the item. (3) Given a frame of another board or of the previous workspace arrives late, when received, then no view of the current board changes.
-- Evidence: BE in open PR #193: BoardRealtimeNotifier announces every board change (develop: 8 commands) · FE in open PR #193: work-management-realtime-adapter.ts (develop: none) · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #193, not on develop; real e2e (the PR adds mock e2e only); proof of the 2 s delivery.
+- Evidence: BE `IBoardRealtimeNotifier` called by the Work Management write handlers and the comment, attachment and reaction handlers (`BoardRealtimeNotifier`, `BoardRealtimeScopeAdapter`); development publisher `InProcessRealtimePublisher` · FE `work-management-realtime-adapter.ts`, `realtime-lifecycle.tsx`, `drag-gate.ts` · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none · real-stack check 2026-10-31: two browser contexts on one board and one open card; one person changed the title, comment, due date, labels, checklist, link, attachment, cover, vote, lane and assignee and created a card; the other person's popup and board showed each change in 0.1 to 1.2 s without a reload, one frame per change, no duplicate event id; a rejected write and a write that changed nothing (same title, same cover, same vote) sent no frame; after leaving the workspace no board frame arrived; over Redis and in-process, commit efd513a3f
+- State: HARDENING — the real e2e spec, tests of the notifier and the adapter, and the owner check.
 
 ### UC-WM-P02 Keep editing safe while others edit
 - Capability: P Realtime synchronization (WM-016)
@@ -2541,8 +2556,8 @@ Team capability WM-016.
 - UI states: validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115; WM-032
 - Acceptance: (1) Given B is dragging a card, when A moves another card, then B's drag completes unaffected and the board re-reads after the drop. (2) Given B has a cell editor open on another item, when A changes something, then B's editor, caret, scroll position and selection are unchanged. (3) Given B has an unsaved edit on field F and A changes F, when B saves, then the in-cell conflict choice appears; B's draft is never overwritten before that.
-- Evidence: BE not applicable · FE in open PR #193: refetch only open board's queries; editor-preserving behaviour per unproven · Design BC-Notices, BC-Realtime-1440 · Tests none found · Real e2e none
-- State: DEFINED — the central code is in open PR #193, not on develop; tests that an unsaved draft and a drag survive an incoming frame.
+- Evidence: BE not applicable · FE `use-server-draft.ts` and `popup-states.tsx` (two-way choice from BC-Notices), `use-field-cell-writes.ts` (stale cell opens the in-cell choice), `kanban-board.tsx` and `refetch-hold.ts` (drag hold) · Design BC-Notices, BC-Realtime-1440 · Tests none found · Real e2e none · real-stack check 2026-10-31: a person typing in the title kept the draft when another person renamed the item and saw "Someone else just changed the title to …"; leaving the field wrote nothing; "Use the new value" took theirs and "Keep my value" saved the draft; a card dragged while another person renamed another card caused no refetch until the drop, commit efd513a3f
+- State: HARDENING — the real e2e spec, tests that a draft and a drag survive a frame, the table cell and the sheet cell choice driven live (typechecked only), and the owner check; the description editor still relies on the server's stale-version notice.
 
 ### UC-WM-P03 Lose and regain the connection
 - Capability: P Realtime synchronization (WM-016)
@@ -2555,8 +2570,8 @@ Team capability WM-016.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115-116; WM-032; WMREQ126; LD4
 - Acceptance: (1) Given a stream gap or reset, when detected, then the open board refetches from the server and shows no stale item. (2) Given connection loss, when the stream drops, then a "reconnecting" status shows, writes still follow/ failure rules, and on reconnect the board refetches.
-- Evidence: BE in open PR #193: gateway recovery; StreamVersion is a clock (unchanged) · FE in open PR #193: `frontend/apps/web/src/providers/realtime-lifecycle.tsx`, transport recovery · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none
-- State: IMPLEMENTING — the central code is in open PR #193, not on develop; reconnect and gap-recovery proof.
+- Evidence: BE gateway reconnect and re-authorization every 60 s · FE `realtime-lifecycle.tsx` refetches the workspace scope on resubscribe; `use-realtime-connection.ts` and `board-connection-notice.tsx` show the status · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests none found · Real e2e none · real-stack check 2026-10-31: a viewer's socket was closed while another person commented and renamed; it reconnected within 1 s and the missed comment showed in 2.6 s without a reload; with the server killed a "Reconnecting…" pill showed at once and after 10 s the "Connection lost since 12:48 PM. Data may be out of date" notice with Reconnect; box check at 1440: banner 64 px high, button 44 px, pill 28 px high, as the artboard; at 320 banner 148 px high, button 44 px full width, as the artboard; commit efd513a3f
+- State: HARDENING — the real e2e spec, reconnect and gap tests, the status measured in dark and at 1024 and 390, and the owner check; deviations: nothing shows while connected (the artboard's quiet "connected" line is left out so the measured headers keep their size), widths differ by the font and the shell (button 99 vs 94 px at 1440, banner 472 px wide and two lines at 768 because the rail takes the width), the offline write rule "fails and offers Try again" is the existing write failure.
 
 ### UC-WM-P04 Lose access or role while the board is open
 - Capability: P Realtime synchronization (WM-016)
@@ -2569,8 +2584,8 @@ Team capability WM-016.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 115, 103; WM-030; WMREQ105-108
 - Acceptance: (1) Given B's level drops from Member to Viewer, when the access read updates, then editors, drag handles and bulk checkboxes disappear without reload. (2) Given B's access to the board is removed, when the next frame or refetch returns NotFound, then B's view shows the generic no-access state and no board data remains on screen. (3) Given the person's level drops to Viewer while the sheet is open, when the next frame or refetch arrives, then editors close, values remain, and a banner says the item is now read-only.
-- Evidence: BE realtime subscription authorization (AuthorizeBoardRealtimeSubscriptionQuery) · FE in open PR #193: adapter; live role-lowering unproven · Design BC-Realtime (access lost, permission reduced) · Tests `RealtimeSubscriptionAuthorizationTests.cs` · Real e2e none
-- State: IMPLEMENTING — the realtime subscription authorization exists; live role-lowering handling is in open PR #193 and unproven.
+- Evidence: BE realtime subscription authorization (AuthorizeBoardRealtimeSubscriptionQuery), re-checked every 60 s · FE adapter and refetch, `use-full-board.ts` drops the cached board once the read answers NotFound or forbidden · Design BC-Realtime (access lost, permission reduced) · Tests `RealtimeSubscriptionAuthorizationTests.cs` · Real e2e none · real-stack check 2026-10-31: a workspace member without access and a guest were refused the private board's stream (subscription_denied) and received no frame while its owner received every change; their REST read returned the same NotFound as an unknown id; a member whose role was lowered to Observer saw the title editor turn read-only and the read-only banner without a reload; a member removed from the board saw the generic unavailable state with no board name or card, commit efd513a3f
+- State: HARDENING — the real e2e spec, a test of the 60 s re-check, and the owner check; the lowered role was checked on the popup title and banner, not on bulk checkboxes or drag handles.
 
 ## Q. Automation handoff
 
@@ -2588,7 +2603,7 @@ Team capability WM-017.
 - Rules: product sections 109, 118; WMREQ109, WMREQ127, WMREQ156
 - Acceptance: Given a rule that sets a field, then it runs under the executor, writes one activity line and does not re-trigger itself.
 - Evidence: BE IWorkItemActions via WorkItemActionAdapter · FE workspace-rule editor; board automations flag locked · Design Final-Automation · Tests none found · Real e2e `automation.real.e2e.spec.ts`
-- State: HARDENING — Loop-guard and executor-lost tests
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the executor-lost stop was not driven (the only executor is the rule's creator, who cannot be demoted here); tests and owner check. Evidence: real-stack check 2026-10-31: a board rule (moved to a group, then change the status and assign the member) ran under its executor on the real stack: both steps Succeeded, the item took the status and the assignee, the rule's own run list shows them; a second run of the same rule on a state it already set changed nothing (no history line, no frame, no version bump) so the rule does not re-trigger itself; a member cannot create a rule (403) and a Guest cannot list them; a stale move 412, commit 3b011817e.
 
 ### UC-WM-Q02 Show automation-caused changes on the board
 - Capability: Q Automation handoff (WM-017)
@@ -2601,8 +2616,8 @@ Team capability WM-017.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1])
 - Rules: product sections 109; D56; WMREQ127
 - Acceptance: Given an automation change, then a viewer sees it live and the history names the rule.
-- Evidence: BE history names rule/executor unproven · FE in open PR #193: live refresh · Design BC-Realtime · Tests none found · Real e2e none
-- State: IMPLEMENTING — live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor.
+- Evidence: BE ItemActivityRecorder names the rule (IAutomationActivityFacts), WorkItemActions notifies the board · FE card-detail activity-words · Design BC-Realtime · Tests none found · Real e2e none
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; the history actor is still the executor's name, followed by the rule; tests and owner check. Evidence: real-stack check 2026-10-31: a viewer with the board open saw the rule's status and assignee changes arrive live (a board frame per action, after the person's own move frame) and the board converged without a reload (the item left the not-done view); the item history reads 'set the status to X by the rule Q2 hand over' and 'assigned member by the rule Q2 hand over', in English and Vietnamese, commit 3b011817e.
 
 ### UC-WM-Q03 Sync items with an external provider
 - Capability: Q Automation handoff (WM-017)
@@ -2634,7 +2649,7 @@ Team capability WM-018.
 - Rules: product sections 108, 159; WMREQ129
 - Acceptance: Given a Commenter, when they post, then the comment shows for everyone with access. Given a Viewer, then the composer is disabled with the reason.
 - Evidence: BE POST/GET /board-items/{id}/comments (Collaboration, adjacent) · FE comment-thread/*, `frontend/packages/product/work-management/web/src/components/card-detail/task-updates-tab.tsx` · Design WM-Comments; Er, E, edit/delete, M missing · Tests none found · Real e2e none
-- State: INTEGRATING — Design gaps; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: commented on an item (201); a retry under the same key now answers the first comment instead of adding a second (was not idempotent, fixed); an empty and a too-long comment 400; a Guest 404; the card panel posts a comment and it is still there after reload, commit 23cee8fa7.
 
 ### UC-WM-R02 Reply, edit or delete a comment
 - Capability: R Collaboration handoff (WM-018)
@@ -2648,7 +2663,7 @@ Team capability WM-018.
 - Rules: product sections 108; D59, D60; WMREQ129
 - Acceptance: Given a reply to a reply, then it attaches to the top-level comment. Given a non-author, then Edit and Delete are absent.
 - Evidence: BE PATCH/DELETE /comments/{id}, reactions (Collaboration, adjacent) · FE comment-thread, useToggleCommentReaction · Design WM-Comments (reply, reactions) · Tests none found · Real e2e none
-- State: INTEGRATING — Design edit/delete; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: replied, edited as the author, another author's edit 403, the same content bumps nothing, deleted; editing a deleted comment 404, commit 23cee8fa7.
 
 ### UC-WM-R03 Mention a person in an item comment
 - Capability: R Collaboration handoff (WM-018)
@@ -2662,7 +2677,7 @@ Team capability WM-018.
 - Rules: product sections 108; D42; Q7
 - Acceptance: Given a person without board access, when mentioned, then no notification is sent. Given a Guest, then the list holds board members only.
 - Evidence: BE CreateComment mentions (Collaboration) · FE `frontend/packages/product/work-management/web/src/components/item-page/item-page-mention.tsx` · Design Final-Detail (mention) · Tests none found · Real e2e none
-- State: INTEGRATING — No-notify-for-no-access proof; Guest list
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; tests and owner check. Evidence: real-stack check 2026-10-31: a mention of a member reaches their inbox and shows as a chip; a Guest with no access gets no notification and no chip, commit 23cee8fa7.
 
 ### UC-WM-R04 Attach files to an item
 - Capability: R Collaboration handoff (WM-018)
@@ -2676,7 +2691,7 @@ Team capability WM-018.
 - Rules: product sections 108; WMREQ129
 - Acceptance: Given an Editor, when a file is added, then the item shows the file. Given a Viewer, then Add is disabled.
 - Evidence: BE attachments routes (Collaboration, adjacent) · FE ItemPageFiles, useItemFileUploads · Design WM-Sheet-Files · Tests none found · Real e2e none
-- State: INTEGRATING — Real e2e; Viewer upload refused test
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; file upload (not a link) was not driven; tests and owner check. Evidence: real-stack check 2026-10-31: added a link attachment (201) and listed it; an unsafe url 400; an Observer cannot add or delete (403) but can list; a Guest 404; deleted (204) and deleting again 404, commit 23cee8fa7.
 
 ### UC-WM-R05 Link a Document from an item
 - Capability: R Collaboration handoff (WM-018)
@@ -2690,7 +2705,7 @@ Team capability WM-018.
 - Rules: product sections 107, 157; WM-029
 - Acceptance: Given a linked page the viewer cannot read, then the item shows an 'unavailable' chip with no title.
 - Evidence: BE BoardItems.LinkPage = POST /board-items/{itemId:guid}/link-page -> LinkPageToBoardItemCommand (`BoardItems/Commands/LinkPageToBoardItem/LinkPageToBoardItem.cs`) [- / Idem]; BoardItems.UnlinkPage = DELETE /board-items/{itemId:guid}/link-page/{pageId:guid} -> UnlinkPageFromBoardItemCommand (`BoardItems/Commands/UnlinkPageFromBoardItem/UnlinkPageFromBoardItem.cs`) [- / Idem]; BoardItems.ListLinkedPages = GET /board-items/{itemId:guid}/linked-pages -> ListBoardItemPageLinksQuery (`BoardItems/Queries/ListBoardItemPageLinks/ListBoardItemPageLinks.cs`) [- / -] · FE `frontend/packages/product/work-management/web/src/components/item-actions/linked-docs-section.tsx` (raw paths) · Design WM-Actions-LinkedDocs · Tests `ItemPageLinkTests.cs` · Real e2e none
-- State: INTEGRATING — Typed client; no-title-for-unreadable proof; real e2e
+- State: HARDENING — real e2e spec, tests, design measurement and owner check; a deleted page stays listed until it is purged (page delete answered 400 in the probe); tests and owner check. Evidence: real-stack check 2026-10-31: linked a page (200), the same page again and a retry under the same key add nothing, the list shows it once; an unknown page 404; an Observer 403; a Guest 404; a page in a Private Space is counted in hiddenCount and not named for a member while the admin sees its title; unlinking twice 204, commit 23cee8fa7.
 
 ### UC-WM-R06 Watch or unwatch an item
 - Capability: R Collaboration handoff (WM-018)
@@ -2732,7 +2747,7 @@ Team capability WM-018.
 - Rules: product sections 107; WM-029
 - Acceptance: Given a page embedding a Private board, when a non-member opens it, then the board shows no content.
 - Evidence: BE item link side owned by Documents · FE docs-web · Design not applicable (no screen) · Tests none found · Real e2e none
-- State: INTEGRATING — Private-board embed test
+- State: INTEGRATING — real-stack check 2026-10-31: no Documents block embeds a board or an item yet, so there is nothing to drive; the linked-pages read already hides unreadable pages (R05); Documents owns the embed and its no-leak test, commit 23cee8fa7
 
 ## S. Billing and entitlement integration
 
@@ -2767,8 +2782,8 @@ Team capability WM-020.
 - UI states: loading (skeleton), empty, error with Retry, denied (identical NotFound [S1]); validation (inline), denied (control disabled with reason [S2]), read-only (archived [S3]), conflict (names the actor [S4]), pending, offline
 - Rules: product sections 36, 127; WMREQ147-148; views pack section 14
 - Acceptance: Given a board of 5,000 items, when opened, then the first paint is under 2 s and at most 200 items per group return.
-- Evidence: BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE none; no windowing/paging; client filter/sort · Design BC-Large · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
-- State: DEFINED — BoardItems.List, GetFullBoard and Trash reads are unpaged; filter and sort run on the client (defects B-11, F-07).
+- Evidence: BE paged read `GET /boards/{boardId}/full?pageSize&filter&sort` (lanes with item and filtered counts and a next cursor) and `GET /boards/{boardId}/items/lanes/{lane}?cursor&limit` (page size 50, clamped to 200; identical NotFound through the ViewBoard marker); BE Boards.GetOverview = GET /boards/{boardId:guid}/full -> GetFullBoardQuery (`Boards/Queries/GetFullBoard/GetFullBoard.cs`) [- / -]; BoardItems.List = GET /boards/{boardId:guid}/items -> GetBoardItemsQuery (`BoardItems/Queries/GetBoardItems/GetBoardItemsQuery.cs`) [- / -] · FE none; no windowing/paging; client filter/sort · Design BC-Large · Tests `ComputedFieldsIntegrationTests.cs`, `NotrelixApiFactory.cs` · Real e2e none
+- State: HARDENING — real-stack check 2026-10-31, backend (commits f6d837c87, efb68f7ee, 5cf04018a): the row-level security grant check is static SQL (5,000-item board read, database time 720 ms to about 200 ms; 0 differences on 230,640 old/new calls over three logins and an identical permission matrix), the outbox claim has a partial index (365 ms to 8 ms), and the paged read returns the first 200 Items per lane in 141 KB against 3.4 MB (about 210 ms against 270 ms). The Table and Kanban are not yet moved to it, so the browser numbers below are unchanged. Earlier: measured on a seeded board of 5,000 items (real stack 2026-10-31), before: the board read took 2.2 to 4.6 s and 3.4 MB, 1.6 s of it one per-field count that joined every value of every board (fixed, commit ea5287110); the Table drew all 5,000 rows, 130,000 nodes, 662 MB heap and 10.1 s to the first row (a group now draws fifty rows with the artboard's shown-of-total foot and show-more button, commit 9e539b23f: 1,739 nodes, first row 2.6 s); approval requests had only a primary key (index added, commit b7e9a1f0d). Still open: the Table and Kanban windowing and "show more" fetch of the next page (BC-Large), and the lane counts are still computed with a pass over the board's rows (about 40 us per row under row-level security); Kanban already caps a column at 20 cards; `GET /boards/{id}/items` is unpaged (1.2 s for 5,000) and no client calls it; comments, form submissions and board approvals lists are unpaged. Web client and cursor, real-stack check 2026-10-31: on a 5,000-item board in 5 lanes the board read carries 50 items per lane (0.21 MB against 4.14 MB, server 1.65 s against 3.8 s, table first row 3.0 s against 5.4 s, kanban 2.8 s against 4.9 s), "Hiện thêm" reads the lane's next page into the same cache entry, a refetch restores the loaded pages, the table counts rows with aria-rowindex and aria-rowcount, a failed page shows a retry row, the kanban lane draws at most 80 cards, the lane cursor continues from the last item (1,500 items under six sort and filter combinations, no repeats; an old or foreign cursor is a 400), commits 0825e3ec7, 60ba9bc19, ca88e0bd8, 0d3111e53; comment, form submission and board approval reads have page routes with a time-and-id cursor (121 comments in 3 pages, same order as the whole read), commit cd206b2bd. The card reads its comments 50 at a time with a "Xem thêm bình luận" button (real-stack check 2026-10-31: a card with 60 comments showed 50, then 60 and the button left). Not built: the form responses "Xem thêm", the new-card-in-view fix for a far-scrolled lane (AC-124) and the Kanban drag window.
 
 ### UC-WM-T02 Use the view at 1440 / 1280 / 1024 / 768 / 320 px
 - Capability: T Performance and hardening (WM-020)
@@ -3001,6 +3016,25 @@ Lead decision (2026-10-30): LD3. An approver chosen for a request must be able t
 Lead decision (2026-10-30): LD4. Realtime frames carry the resource version (the same number a read returns for the next mutation), not a wall-clock counter, so a client can order frames and detect a gap (WMREQ125).
 
 Lead decision (2026-10-30): LD5. Calendar and Timeline read dated items through the ordinary board item read with their date fields; the raw `plan-items` path of the frontend is removed because the backend has no such route.
+
+## 4.9 Card popup capabilities (built 2026-10-30)
+
+These are new capabilities of the item card popup; each is built backend to frontend and checked only by compiling, so the gap is the same for all of them: tests and owner check. Product rules: product section 178A.
+
+- Item cover (colour or image attachment, strip or whole card, card face shows it): Evidence: BE BoardItems.SetCover = PUT /board-items/{itemId}/cover -> SetBoardItemCoverCommand (`BoardItems/Commands/SetBoardItemCover/SetBoardItemCover.cs`) [EV / Idem] · FE `components/card-popup/capabilities/cover-picker.tsx`, `card-cover.tsx`, `views/kanban/kanban-card.tsx`. State: INTEGRATING — tests and owner check.
+- Repeat and complete-and-reopen: Evidence: BE BoardItems.SetRepeat -> SetBoardItemRepeatCommand; `BoardItem.CompleteOccurrence` used by CompleteBoardItemCommand and by a move to a done status (`BoardItemFieldWrites.Write`, `BoardItem.RepeatsOnCompletion`) [EV / Idem]; the mock rolls the dates in `rollRepeatOnCompletion` · FE `repeat-reminder-select.tsx`. State: INTEGRATING — tests and owner check.
+- Reminder before due and followers on the due-date job: Evidence: BE BoardItems.SetReminder -> SetBoardItemReminderCommand; `DueDateNotificationSweeper` in `Infrastructure/BackgroundJobs/DueDateNotificationSweep.cs` · FE `repeat-reminder-select.tsx`. State: INTEGRATING — tests and owner check.
+- Vote field type: Evidence: BE `FieldType.Vote`, BoardItems.SetVote / ListVotes -> SetBoardItemVoteCommand [- / Idem], `BoardItemFieldProjection` · FE `vote-viewers-chips.tsx`, `field-type-registry.ts`. State: INTEGRATING — tests and owner check.
+- Viewers ("Đã xem"): Evidence: BE BoardItems.RecordView / ListViewers -> RecordBoardItemViewCommand through `IBoardItemViews` (one `INSERT ... ON CONFLICT` upsert, so two first views cannot collide), `board_item_views` with RLS · FE `ViewersChip`. State: INTEGRATING — tests and owner check.
+- Colour-blind mode: Evidence: BE Identity.Profile.UpdatePreferences `colourBlindLabels` · FE `colour-blind-label-mark.tsx`, `apps/web/src/providers/app-providers.tsx`. State: INTEGRATING — tests and owner check.
+- Copy a checklist: Evidence: BE Checklists.Copy -> CopyChecklistCommand, Checklists.ListForBoard · FE `ChecklistCopyFrom`. State: INTEGRATING — tests and owner check.
+- Remove all links: Evidence: BE BoardItems.ClearLinks -> ClearBoardItemLinksCommand [- / Idem] · FE `ClearAllLinks`. State: INTEGRATING — tests and owner check.
+- Face fields of the Kanban card: Evidence: FE `face-fields-popover.tsx`, `face-fields.ts`, and the board settings `updateView` (`board-settings.api.ts`) which writes the same list; view config `cardFieldIds` and `cardHideEmpty` (the unused backend `KanbanViewConfig.VisibleFieldIds` refuses an empty list, which would break showing no fields, so the saved view config carries it). State: INTEGRATING — tests and owner check.
+- Card popup layout, assignee stack and priority: Evidence: FE `card-popup-surface.tsx` (popup stops 64 px from the top and bottom, header pinned, columns scroll), `popup-ui.tsx` `EmptySection` (empty description, attachments and links fold to one line) and `AvatarStack` (24 px marks, 6 px overlap, at most 3 then +N, also on the Kanban card face), `people-panel.tsx`, the priority picker in `field-editors.tsx`. State: INTEGRATING — tests and owner check.
+- Custom field rows and the add menu: Evidence: FE `fields-section.tsx` (only fields with a value as rows, face-pinned fields as chips, `add-field-panel.tsx`), `add-menu.tsx` (search, Nội dung, Thuộc tính của board, Hiển thị), `attach-panel.tsx` (one panel, 25 MB, drop and paste on the card). State: INTEGRATING — tests and owner check.
+- Start date with a time: Evidence: FE `dates-panel.tsx` writes the start as an instant; BE `BoardItem.StartedAt` is already a `DateTimeOffset` and `UpdateBoardItem`, `SetBoardItemDueDate` and `CreateBoardItem` take a `DateTime` start, so no schema or contract change. State: INTEGRATING — tests and owner check.
+- Checklist item assignee and due ("Giao mục này", "Đặt hạn cho mục"): Evidence: BE Checklists.SetItemAssignee = PUT /checklist-items/{itemId}/assignee -> SetChecklistItemAssigneeCommand (assign right, the person must see the board) and Checklists.SetItemDue = PUT /checklist-items/{itemId}/due -> SetChecklistItemDueCommand [EV / Idem], `Checklist.SetItemAssignee` and `SetItemDue` (current value is a no-op), the `assignee_user_id` and `due_at` columns of `checklist_items` already had the checklist RLS · FE `checklist-item-controls.tsx`, `use-checklist-writes.ts`, mock `checklistItems.setAssignee` and `setDue`. State: INTEGRATING — tests and owner check.
+- Link attachments in the mock: Evidence: mock `cards.attachments.createLink` (POST /board-items/{id}/attachments, Collaboration.Attachments.Create). State: INTEGRATING — tests and owner check.
 
 # 5. Canonical updates required
 

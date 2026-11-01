@@ -8,7 +8,8 @@ using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
-public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("collaboration.comments.create-comment.v1")]
+public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public static CreateCommentCommand ForBoardItem(Guid boardItemId, string contentMd, Guid? parentCommentId, IReadOnlyList<Guid>? mentionedUserIds = null, CommentAnchorInput? anchor = null)
         => new(ResourceKind.Create(BoardItemKind), boardItemId, contentMd, parentCommentId, mentionedUserIds, anchor);
@@ -33,6 +34,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     private readonly IPageBlockFacts _pageBlocks;
     private readonly IWorkItemNotificationFacts _itemFacts;
     private readonly IResourceVisibility _visibility;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateCommentCommandHandler(
         ICollaborationDbContext context,
@@ -40,8 +42,10 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         IDateTimeProvider dateTimeProvider,
         IPageBlockFacts pageBlocks,
         IWorkItemNotificationFacts itemFacts,
-        IResourceVisibility visibility)
+        IResourceVisibility visibility,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _itemFacts = itemFacts;
         _visibility = visibility;
         _context = context;
@@ -51,6 +55,13 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     }
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateCommentCommand request, CancellationToken ct)
     {
         var workspaceId = _requestContext.RequireWorkspaceId();
 

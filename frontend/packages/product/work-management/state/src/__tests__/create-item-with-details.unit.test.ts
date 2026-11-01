@@ -6,10 +6,15 @@ import {
 
 function writers(overrides: Partial<ItemDetailWriters["cards"]> = {}) {
   const cards = {
-    createCard: vi.fn(async () => "item-1" as string | undefined),
-    updateStatus: vi.fn(async () => undefined),
-    updateFieldValue: vi.fn(async () => undefined),
-    setAssignees: vi.fn(async () => undefined),
+    // Each write answers the version the next one names.
+    createCard: vi.fn(
+      async () =>
+        ({ id: "item-1", version: 1 }) as
+          { id: string; version: number } | undefined,
+    ),
+    updateStatus: vi.fn(async () => ({ version: 2 })),
+    updateFieldValue: vi.fn(async () => ({ version: 3 })),
+    setAssignees: vi.fn(async () => 4),
     ...overrides,
   };
   const labels = { addLabelToCard: vi.fn(async () => undefined) };
@@ -42,16 +47,20 @@ describe("creating an item with the dialog's details", () => {
       },
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
-    expect(w.cards.updateStatus).toHaveBeenCalledWith("item-1", "s-doing");
-    expect(w.cards.updateFieldValue).toHaveBeenCalledWith({
-      cardId: "item-1",
-      fieldDefinitionId: "f-prio",
-      value: "p-high",
-    });
+    expect(w.cards.updateStatus).toHaveBeenCalledWith("item-1", "s-doing", 1);
+    expect(w.cards.updateFieldValue).toHaveBeenCalledWith(
+      {
+        cardId: "item-1",
+        fieldDefinitionId: "f-prio",
+        value: "p-high",
+      },
+      { expectedVersion: 2 },
+    );
     expect(w.cards.setAssignees).toHaveBeenCalledWith(
       "item-1",
       ["u-1", "u-2"],
       [],
+      3,
     );
     expect(w.labels.addLabelToCard).toHaveBeenCalledTimes(2);
   });

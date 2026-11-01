@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.SystemOperations;
+using Notrelix.Application.Features.Collaboration.Public.Watchers;
 using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
@@ -7,8 +8,9 @@ using Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
 /// <summary>
-/// Daily due-date notifications (accepted 2026-10-25): an assignee is told once that an open Item is due
-/// tomorrow and once that it became overdue. "Tomorrow" and "overdue" are the calendar days of the
+/// Due-date notifications (accepted 2026-10-25): the assignees and followers of an open Item are told once that
+/// it is due tomorrow and once that it became overdue; an Item with its own reminder offset is instead told that
+/// long before the due time. "Tomorrow" and "overdue" are the calendar days of the
 /// Workspace's own time zone. Bound from <c>Collaboration:DueDateNotifications</c> and validated on start.
 /// See <c>backend/docs/operations/configuration-and-runtime.md</c>.
 /// </summary>
@@ -76,6 +78,7 @@ internal sealed class DueDateNotificationSweeper
     private readonly IRlsSessionContext _rls;
     private readonly IDateTimeProvider _clock;
     private readonly ItemFollowerNotifier _notifier;
+    private readonly IResourceFollowers _followers;
     private readonly DueDateNotificationOptions _options;
     private readonly ILogger<DueDateNotificationSweeper> _logger;
 
@@ -85,6 +88,7 @@ internal sealed class DueDateNotificationSweeper
         IRlsSessionContext rls,
         IDateTimeProvider clock,
         ItemFollowerNotifier notifier,
+        IResourceFollowers followers,
         IOptions<DueDateNotificationOptions> options,
         ILogger<DueDateNotificationSweeper> logger)
     {
@@ -93,12 +97,13 @@ internal sealed class DueDateNotificationSweeper
         _rls = rls;
         _clock = clock;
         _notifier = notifier;
+        _followers = followers;
         _options = options.Value;
         _logger = logger;
     }
 
     private sealed record DueItem(
-        Guid Id, Guid AccountId, Guid WorkspaceId, DateTimeOffset DueAt, IReadOnlyList<Guid> Assignees);
+        Guid Id, Guid AccountId, Guid WorkspaceId, DateTimeOffset DueAt, int? ReminderOffsetMinutes, IReadOnlyList<Guid> Assignees);
 
     /// <returns>The number of Items looked at.</returns>
     public async Task<int> RunOnceAsync(CancellationToken cancellationToken)
@@ -139,7 +144,7 @@ internal sealed class DueDateNotificationSweeper
         // The widest local day is 14 hours away from UTC, so this window covers "tomorrow" and the grace days
         // of every zone; the exact local day is decided per Workspace below.
         var from = now.AddDays(-(_options.OverdueGraceDays + 2));
-        var to = now.AddDays(3);
+        var to = now.AddDays(8); // the longest reminder offset is one week
 
         var items = await _context.BoardItems
             .AsNoTracking()
@@ -150,7 +155,7 @@ internal sealed class DueDateNotificationSweeper
                         && (after == null || i.Id.CompareTo(after.Value) > 0))
             .OrderBy(i => i.Id)
             .Take(_options.BatchSize)
-            .Select(i => new { i.Id, i.AccountId, i.WorkspaceId, DueAt = i.DueAt!.Value })
+            .Select(i => new { i.Id, i.AccountId, i.WorkspaceId, DueAt = i.DueAt!.Value, i.ReminderOffsetMinutes })
             .ToListAsync(ct);
         if (items.Count == 0) return [];
 
@@ -164,7 +169,7 @@ internal sealed class DueDateNotificationSweeper
             .ToDictionary(g => g.Key, g => (IReadOnlyList<Guid>)g.Select(m => m.UserId).Distinct().ToList());
 
         return items
-            .Select(i => new DueItem(i.Id, i.AccountId, i.WorkspaceId, i.DueAt,
+            .Select(i => new DueItem(i.Id, i.AccountId, i.WorkspaceId, i.DueAt, i.ReminderOffsetMinutes,
                 members.GetValueOrDefault(i.Id) ?? []))
             .ToList();
     }
@@ -185,31 +190,31 @@ internal sealed class DueDateNotificationSweeper
 
     private async Task NotifyAsync(DueItem item, TimeZoneInfo zone, DateTimeOffset now, CancellationToken ct)
     {
-        if (item.Assignees.Count == 0) return;
-
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, zone).DateTime);
         var due = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(item.DueAt, zone).DateTime);
+        var offset = item.ReminderOffsetMinutes;
 
-        string producedType;
-        string title;
-        if (due == today.AddDays(1))
-        {
-            producedType = NotificationTypes.ItemDueTomorrowProducedType;
-            title = "An item assigned to you is due tomorrow";
-        }
-        else if (due < today && due >= today.AddDays(-_options.OverdueGraceDays))
-        {
-            producedType = NotificationTypes.ItemOverdueProducedType;
-            title = "An item assigned to you is overdue";
-        }
-        else
-        {
-            return;
-        }
+        // (produced type, title, deduplication scope): each is sent at most once per person for its scope.
+        var sends = new List<(string Type, string Title, string Scope)>();
+        if (offset is null && due == today.AddDays(1))
+            sends.Add((NotificationTypes.ItemDueTomorrowProducedType, "An item you work on or follow is due tomorrow", $"{item.Id:N}:{due:yyyy-MM-dd}"));
+        if (offset is >= 0
+            && now >= item.DueAt.AddMinutes(-offset.Value)
+            && now <= item.DueAt.AddDays(offset == 0 ? 1 : 0))
+            sends.Add((NotificationTypes.ItemDueReminderProducedType, "An item you work on or follow is coming due", $"{item.Id:N}:{item.DueAt.UtcTicks}:{offset}"));
+        if (due < today && due >= today.AddDays(-_options.OverdueGraceDays))
+            sends.Add((NotificationTypes.ItemOverdueProducedType, "An item you work on or follow is overdue", $"{item.Id:N}:{due:yyyy-MM-dd}"));
+        if (sends.Count == 0) return;
 
-        await _notifier.NotifyAsync(
-            item.AccountId, item.WorkspaceId, item.Id, null, null,
-            $"{item.Id:N}:{due:yyyy-MM-dd}", producedType, title, null, item.Assignees, now, ct);
+        var recipients = item.Assignees
+            .Concat(await _followers.FollowerIdsAsync(ItemFollowerNotifier.BoardItemKind, item.Id, ct))
+            .Distinct()
+            .ToList();
+        foreach (var (type, title, scope) in sends)
+        {
+            await _notifier.NotifyAsync(
+                item.AccountId, item.WorkspaceId, item.Id, null, null, scope, type, title, null, recipients, now, ct);
+        }
     }
 }
 

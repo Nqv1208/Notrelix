@@ -31,14 +31,17 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
     private readonly IDateTimeProvider _clock;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MakeBoardPrivateCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider clock,
         IWorkspaceAccessResolver workspaceAccess,
-        BoardAccessChangeLog changeLog)
+        BoardAccessChangeLog changeLog,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _clock = clock;
@@ -47,6 +50,13 @@ public class MakeBoardPrivateCommandHandler : IRequestHandler<MakeBoardPrivateCo
     }
 
     public async Task<Result> Handle(MakeBoardPrivateCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(MakeBoardPrivateCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct)
             ?? throw new NotFoundException(nameof(BoardEntity), request.BoardId);

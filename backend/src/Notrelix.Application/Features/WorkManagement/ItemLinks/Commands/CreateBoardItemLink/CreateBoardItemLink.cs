@@ -22,9 +22,17 @@ public class CreateBoardItemLinkCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IDateTimeProvider timeProvider,
-    IWorkOrderingScopeLock scopeLock) : IRequestHandler<CreateBoardItemLinkCommand, Result<Guid>>
+    IWorkOrderingScopeLock scopeLock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<CreateBoardItemLinkCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(CreateBoardItemLinkCommand request, CancellationToken cancellationToken)
+    {
+        var response = await HandleCore(request, cancellationToken);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, cancellationToken);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateBoardItemLinkCommand request, CancellationToken cancellationToken)
     {
         if (request.BoardItemId == request.OtherBoardItemId)
             throw new BusinessRuleException("An item cannot be linked to itself.");

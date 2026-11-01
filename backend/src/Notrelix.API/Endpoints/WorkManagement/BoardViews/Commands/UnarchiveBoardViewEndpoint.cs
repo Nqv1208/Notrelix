@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.BoardViews.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UnarchiveBoardView;
 
@@ -18,10 +19,11 @@ public static class UnarchiveBoardViewEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
+        BoardViewVersionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UnarchiveBoardViewCommand(boardId, viewId), cancellationToken);
+        var result = await sender.Send(new UnarchiveBoardViewCommand(boardId, viewId, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

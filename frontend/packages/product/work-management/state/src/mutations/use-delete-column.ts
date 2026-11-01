@@ -7,8 +7,13 @@ export function useDeleteColumn(boardId: string, workspaceId?: string) {
   const { columns } = useWorkManagementServices();
   const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
-  return useMutation<void, Error, string>({
-    mutationFn: (columnId) => columns.deleteColumn(boardId, columnId),
+  return useMutation<
+    void,
+    Error,
+    { columnId: string; expectedVersion: number }
+  >({
+    mutationFn: ({ columnId, expectedVersion }) =>
+      columns.deleteColumn(boardId, columnId, expectedVersion),
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
 }

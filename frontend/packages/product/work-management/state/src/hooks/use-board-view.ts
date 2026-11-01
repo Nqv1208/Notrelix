@@ -58,12 +58,28 @@ const LAYOUT_NAME: Record<ViewMode, string> = {
   timeline: "Timeline",
 };
 
+/** Thrown before sending when the saved-view list carries no version for the view. */
+export class UnknownViewVersionError extends Error {
+  constructor(viewId: string) {
+    super(`The version of view ${viewId} is unknown; reload the views.`);
+    this.name = "UnknownViewVersionError";
+  }
+}
+
 /** The saved views of a board and the writes that change them. */
 export function useSavedViews(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient();
   const { boards } = useWorkManagementServices();
   const queryKey = wmQueryKeys.view(workspaceId ?? "workspace", boardId);
   const refresh = () => queryClient.invalidateQueries({ queryKey });
+  // The version the list last read: every write on a view names it.
+  const versionOf = (viewId: string): number => {
+    const version = queryClient
+      .getQueryData<SavedBoardView[]>(queryKey)
+      ?.find((view) => view.id === viewId)?.version;
+    if (!version) throw new UnknownViewVersionError(viewId);
+    return version;
+  };
 
   const query = useQuery({
     queryKey,
@@ -98,25 +114,54 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
   });
   const rename = useMutation({
     mutationFn: (input: { viewId: string; name: string }) =>
-      boards.renameSavedView(boardId, input.viewId, input.name),
+      boards.renameSavedView(
+        boardId,
+        input.viewId,
+        input.name,
+        versionOf(input.viewId),
+      ),
     onSettled: refresh,
   });
   const setVisibility = useMutation({
     mutationFn: (input: { viewId: string; visibility: "board" | "me" }) =>
-      boards.setSavedViewVisibility(boardId, input.viewId, input.visibility),
+      boards.setSavedViewVisibility(
+        boardId,
+        input.viewId,
+        input.visibility,
+        versionOf(input.viewId),
+      ),
     onSettled: refresh,
   });
   const setDefault = useMutation({
-    mutationFn: (viewId: string) => boards.setDefaultSavedView(boardId, viewId),
+    mutationFn: (viewId: string) =>
+      boards.setDefaultSavedView(boardId, viewId, versionOf(viewId)),
     onSettled: refresh,
   });
   const remove = useMutation({
-    mutationFn: (viewId: string) => boards.deleteSavedView(boardId, viewId),
+    mutationFn: (
+      input: string | { viewId: string; newDefaultViewId?: string },
+    ) => {
+      const { viewId, newDefaultViewId } =
+        typeof input === "string"
+          ? { viewId: input, newDefaultViewId: undefined }
+          : input;
+      return boards.deleteSavedView(
+        boardId,
+        viewId,
+        versionOf(viewId),
+        newDefaultViewId,
+      );
+    },
     onSettled: refresh,
   });
   const saveConfig = useMutation({
     mutationFn: (input: { viewId: string; viewConfig: ViewConfig }) =>
-      boards.updateSavedViewConfig(boardId, input.viewId, input.viewConfig),
+      boards.updateSavedViewConfig(
+        boardId,
+        input.viewId,
+        input.viewConfig,
+        versionOf(input.viewId),
+      ),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<SavedBoardView[]>(queryKey);
@@ -128,6 +173,16 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
         ),
       );
       return { previous };
+    },
+    onSuccess: (written, input) => {
+      // The next change before the refetch names the version this one made.
+      queryClient.setQueryData<SavedBoardView[]>(queryKey, (views) =>
+        views?.map((view) =>
+          view.id === input.viewId
+            ? { ...view, version: written.version }
+            : view,
+        ),
+      );
     },
     onError: (_error, _input, context) => {
       queryClient.setQueryData(queryKey, context?.previous);
@@ -149,6 +204,12 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
     saveConfig: saveConfig.mutate,
     isSaving: saveConfig.isPending || create.isPending,
   };
+}
+
+/** What a caller of `updateViewConfig` hears once the write ended. */
+export interface ViewConfigWriteResult {
+  readonly onSuccess?: () => void;
+  readonly onError?: () => void;
 }
 
 /**
@@ -173,22 +234,25 @@ export function useBoardView(
   const creating = useRef<Promise<SavedBoardView> | null>(null);
 
   const writeConfig = useCallback(
-    (next: ViewConfig) => {
+    (next: ViewConfig, result?: ViewConfigWriteResult) => {
       if (active) {
-        saveConfig({ viewId: active.id, viewConfig: next });
+        saveConfig({ viewId: active.id, viewConfig: next }, result);
         return;
       }
       if (creating.current) {
         // The view this change belongs to is being made: save to it after.
         void creating.current
-          .then((made) => saveConfig({ viewId: made.id, viewConfig: next }))
-          .catch(() => undefined);
+          .then((made) =>
+            saveConfig({ viewId: made.id, viewConfig: next }, result),
+          )
+          .catch(() => result?.onError?.());
         return;
       }
       const made = create({ viewMode, viewConfig: next });
       creating.current = made;
       void made
-        .catch(() => undefined)
+        .then(() => result?.onSuccess?.())
+        .catch(() => result?.onError?.())
         .finally(() => {
           creating.current = null;
         });
@@ -197,7 +261,8 @@ export function useBoardView(
   );
 
   const updateViewConfig = useCallback(
-    (patch: Partial<ViewConfig>) => writeConfig({ ...viewConfig, ...patch }),
+    (patch: Partial<ViewConfig>, result?: ViewConfigWriteResult) =>
+      writeConfig({ ...viewConfig, ...patch }, result),
     [viewConfig, writeConfig],
   );
 

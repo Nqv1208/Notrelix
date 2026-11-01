@@ -45,7 +45,7 @@ public class FieldOptionCategoryTests : WorkManagementHandlerTestBase
 
         var result = await AddHandler().Handle(new AddFieldOptionCommand(boardId, field.Id, "Mới", "#808080", field.Version, Category: category), CancellationToken.None);
 
-        field.Options.Single(o => o.Id == result.Data).Category.Should().Be(expected);
+        field.Options.Single(o => o.Id == result.Data!.OptionId).Category.Should().Be(expected);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class FieldOptionCategoryTests : WorkManagementHandlerTestBase
 
         var result = await AddHandler().Handle(new AddFieldOptionCommand(boardId, field.Id, "Legacy client", "#808080", field.Version), CancellationToken.None);
 
-        field.Options.Single(o => o.Id == result.Data).Category.Should().Be(WorkStatusCategory.InProgress);
+        field.Options.Single(o => o.Id == result.Data!.OptionId).Category.Should().Be(WorkStatusCategory.InProgress);
     }
 
     [Fact]

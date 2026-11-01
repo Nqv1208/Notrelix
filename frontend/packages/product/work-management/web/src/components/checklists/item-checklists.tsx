@@ -39,6 +39,18 @@ export interface ItemChecklistsModel {
     title: string,
   ) => void;
   readonly toggleItem: (checklistId: string, itemId: string) => void;
+  /** Gives an item to a person or to nobody; absent: the row has no such control. */
+  readonly setItemAssignee?: (
+    checklistId: string,
+    itemId: string,
+    assigneeId: string | null,
+  ) => void;
+  /** Sets an item's own due time (an ISO instant) or clears it. */
+  readonly setItemDue?: (
+    checklistId: string,
+    itemId: string,
+    dueAt: string | null,
+  ) => void;
   readonly deleteItem: (checklistId: string, itemId: string) => void;
   readonly moveItem: (
     checklistId: string,

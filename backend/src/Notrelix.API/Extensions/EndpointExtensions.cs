@@ -27,10 +27,20 @@ public static class EndpointExtensions
         if (!result.Succeeded)
             return ResultToProblemDetails(result);
 
-        return location is not null
-            ? Results.Created(location, result.Data)
-            : Results.Created($"/{result.Data}", result.Data);
+        if (location is not null)
+            return Results.Created(location, result.Data);
+
+        // A DTO's ToString is not a URL (it carries dates and names that are not valid in a header).
+        return result.Data is Guid or string
+            ? Results.Created($"/{result.Data}", result.Data)
+            : Results.Json(result.Data, statusCode: StatusCodes.Status201Created);
     }
+
+    /// <summary>The item's new version when the handler reported one, else no content.</summary>
+    public static IResult ToItemVersionResult(this Result result)
+        => result is VersionedResult { Succeeded: true } versioned
+            ? Results.Ok(new Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto(versioned.Version))
+            : result.ToNoContentResult();
 
     public static IResult ToNoContentResult(this Result result)
     {
@@ -154,6 +164,12 @@ public static class EndpointExtensions
 
         pd.Extensions["errorCode"] = errorCode;
         pd.Extensions["traceId"] = Activity.Current?.Id ?? "unknown";
+
+        // The specific refusal code, additive to the category in errorCode (see ProblemDetailsMapper).
+        if (!string.IsNullOrWhiteSpace(primary.Code) && !string.Equals(primary.Code, errorCode, StringComparison.Ordinal))
+        {
+            pd.Extensions["ruleCode"] = primary.Code;
+        }
 
         if (primary.RetryAfter is { } retryAfter)
         {

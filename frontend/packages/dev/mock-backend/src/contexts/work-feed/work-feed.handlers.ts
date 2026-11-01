@@ -313,7 +313,10 @@ export const workFeedOperations = [
     method: "POST",
     route: "/board-items/:id/reopen",
     async handle({ params, store }) {
-      return outcome(reopenItem(store, params.id));
+      const result = reopenItem(store, params.id);
+      return result === "ok"
+        ? ok({ version: store.getCard(params.id)?.version ?? 1 })
+        : outcome(result);
     },
   }),
 

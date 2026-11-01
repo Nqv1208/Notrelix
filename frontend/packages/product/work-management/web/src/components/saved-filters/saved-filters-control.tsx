@@ -26,6 +26,10 @@ export interface SavedFiltersControlProps {
    * the grouping. Never writes the board's shared view.
    */
   onApply: (criteria: SavedFilterCriteria) => void;
+  /** The "Lưu bộ lọc" form, controlled by the filter bar (its removed-field warning opens it). */
+  compact?: boolean;
+  saveOpen?: boolean;
+  onSaveOpenChange?: (open: boolean) => void;
 }
 
 /** A saved filter is applied when the bar already shows its filter (and its grouping, if it kept one). */
@@ -50,6 +54,9 @@ export function SavedFiltersControl({
   groupBy,
   canEdit,
   onApply,
+  saveOpen,
+  onSaveOpenChange,
+  compact,
 }: SavedFiltersControlProps) {
   const copy = useSavedFiltersCopy();
   const query = useSavedFilters(boardId, workspaceId);
@@ -94,6 +101,9 @@ export function SavedFiltersControl({
       filters={filters}
       appliedId={applied?.id ?? null}
       canEdit={canEdit}
+      {...(compact ? { compact } : {})}
+      {...(saveOpen !== undefined ? { saveOpen } : {})}
+      {...(onSaveOpenChange ? { onSaveOpenChange } : {})}
       canSaveCurrent={Boolean(filter) && applied === undefined}
       onApply={(saved) => onApply(saved.criteria)}
       onClearApplied={() => onApply({})}

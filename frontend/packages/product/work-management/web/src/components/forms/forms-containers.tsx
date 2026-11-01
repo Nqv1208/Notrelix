@@ -16,7 +16,7 @@ import type {
   FormSubmissionStatus,
 } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
-import { ItemCreateHost } from "../item-create/item-create-host";
+import { CardCreatePopup } from "../card-popup/create/card-create-popup";
 import { FormBuilderSurface } from "./form-builder-surface";
 import { FormFillSurface } from "./form-fill-surface";
 import { FormInboxSurface, whenLong } from "./form-inbox-surface";
@@ -102,10 +102,23 @@ export function useBoardFormsPanel(
   };
 }
 
-/** The manager reads the access level of the board; the builder and the inbox are theirs only. */
+/** The manager reads the access level of the board; the builder is theirs only. */
 function useIsManager(boardId: string, workspaceId: string) {
   const { access, isLoading, error } = useBoardAccess(boardId, workspaceId);
   return {
+    manager: access?.myLevel === "manager",
+    pending: isLoading && !error,
+  };
+}
+
+/**
+ * Handling the responses (read, process, reject, mark as spam, delete) needs edit rights on the board
+ * (UpdateItem), which an editor has as well as a manager; the builder stays the manager's.
+ */
+function useCanHandleResponses(boardId: string, workspaceId: string) {
+  const { access, isLoading, error } = useBoardAccess(boardId, workspaceId);
+  return {
+    allowed: access?.myLevel === "manager" || access?.myLevel === "editor",
     manager: access?.myLevel === "manager",
     pending: isLoading && !error,
   };
@@ -185,7 +198,8 @@ export function FormBuilderPage({
       onPublish={() => writes.publish(formId)}
       onClose={() => writes.close(formId)}
       onCopyLink={() => copyText(formLink(workspaceId, boardId, formId))}
-      onReload={() => void query.refetch()}
+      onReload={() => writes.reload(formId)}
+      onReadLatest={() => writes.readLatest(formId)}
       onBack={onBack}
     />
   );
@@ -271,6 +285,7 @@ export function FormInboxPage({
   now,
   onOpenItem,
   onBack,
+  onBackToBoard,
 }: {
   readonly workspaceId: string;
   readonly boardId: string;
@@ -279,7 +294,10 @@ export function FormInboxPage({
   readonly deciderName?: string;
   readonly now?: Date;
   readonly onOpenItem: (itemId: string) => void;
+  /** Back to the forms list in the board settings, where a manager came from. */
   readonly onBack: () => void;
+  /** Back to the board, for an editor who reaches the inbox from the board menu. */
+  readonly onBackToBoard: () => void;
 }) {
   const copy = useFormsCopy();
   const { locale } = useLocale();
@@ -290,7 +308,10 @@ export function FormInboxPage({
     boardId,
     workspaceId,
   );
-  const { manager, pending } = useIsManager(boardId, workspaceId);
+  const { allowed, manager, pending } = useCanHandleResponses(
+    boardId,
+    workspaceId,
+  );
   const fields = useMemo(
     () => boardFormFields(fieldDefinitions),
     [fieldDefinitions],
@@ -324,7 +345,7 @@ export function FormInboxPage({
 
   const status =
     [403, 404].includes(readStatus(formQuery.error) ?? 0) ||
-    (!pending && !manager)
+    (!pending && !allowed)
       ? "missing"
       : formQuery.isError
         ? "error"
@@ -375,6 +396,7 @@ export function FormInboxPage({
         onSelect={setSelectedId}
         conflict={conflict}
         failed={failed}
+        archived={board?.isArchived === true}
         onCreateItem={(response) => {
           setConflict(false);
           setFailed(null);
@@ -398,10 +420,11 @@ export function FormInboxPage({
           void formQuery.refetch();
           void submissions.refetch();
         }}
-        onBack={onBack}
+        onBack={manager ? onBack : onBackToBoard}
+        backLabel={manager ? undefined : copy.inbox.backToBoard}
       />
       {board && creating && form && prefill ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open
           onOpenChange={(next) => {
             if (!next) setCreating(null);
@@ -416,7 +439,6 @@ export function FormInboxPage({
           defaultPriorityId={prefill.priorityOptionId}
           defaultDueDay={prefill.dueDay}
           currentUserId={currentUserId}
-          heading={copy.createFromResponse.title}
           submitLabel={copy.createFromResponse.submit}
           successMessage={copy.inbox.createdToast}
           hideAnother
@@ -431,38 +453,14 @@ export function FormInboxPage({
                 name: nameOf(creating),
                 when: whenLong(creating.submittedAt, locale, tz),
               })}
+              {prefill.left.length > 0
+                ? prefill.left
+                    .map((entry) =>
+                      fillFormsCopy(copy.createFromResponse.unmapped, entry),
+                    )
+                    .join(" ")
+                : null}
             </>
-          }
-          sources={{
-            name: prefill.from.title
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.title,
-                })
-              : undefined,
-            description: prefill.from.description
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.description,
-                })
-              : undefined,
-            priority: prefill.from.priority
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.priority,
-                })
-              : undefined,
-            due: prefill.from.due
-              ? fillFormsCopy(copy.createFromResponse.from, {
-                  question: prefill.from.due,
-                })
-              : undefined,
-          }}
-          footnote={
-            prefill.left.length > 0
-              ? prefill.left
-                  .map((entry) =>
-                    fillFormsCopy(copy.createFromResponse.unmapped, entry),
-                  )
-                  .join(" ")
-              : undefined
           }
           onCreated={async ({ itemId }) => {
             const response = creating;

@@ -14,9 +14,6 @@ public static class MapBoardPreferenceEndpoints
 
         group.MapGetBoardPreference();
         group.MapCreateOrUpdateBoardPreference();
-        group.MapUpdateBoardPreferenceFilters();
-        group.MapUpdateBoardPreferenceSorts();
-        group.MapUpdateBoardPreferenceGroup();
 
         return app;
     }

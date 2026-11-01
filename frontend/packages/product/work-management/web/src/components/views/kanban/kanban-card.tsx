@@ -10,6 +10,10 @@ import {
   SquareCheck,
 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import { CardCover } from "../../card-popup/capabilities/card-cover";
+import { ColourBlindLabelMark } from "../../card-popup/capabilities/colour-blind-label-mark";
+import { useKanbanFace } from "../../card-popup/capabilities/face-context";
+import { faceFieldsOf } from "../../card-popup/capabilities/face-fields";
 import type { Card, CardMember } from "@notrelix/work-management-core";
 import {
   fillCopy,
@@ -24,6 +28,8 @@ import {
 } from "./kanban-card-quick-actions";
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
+import type { KanbanCardSelection } from "./kanban-selection";
+import { TableCheckbox } from "../table/table-parts";
 import type { KanbanMoveDirection } from "./kanban-dnd";
 import {
   PRIORITY_TONE_CLASS,
@@ -143,7 +149,7 @@ function cardParts(
       : null;
 
   const assignee = card.members?.[0];
-  const shownAssignees = (card.members ?? []).slice(0, crowded ? 1 : 2);
+  const shownAssignees = (card.members ?? []).slice(0, crowded ? 1 : 3);
   const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
   const hiddenAssignees = Math.max(
     (card.members?.length ?? 0) - shownAssignees.length,
@@ -234,8 +240,32 @@ function KanbanCardContent({
     hasMeta,
   } = parts;
   const compactBlocked = crowded || due?.kind === "overdue";
+  const face = useKanbanFace();
+  const faceFields = faceFieldsOf(
+    card,
+    face.fields,
+    face.cardFieldIds,
+    face.cardHideEmpty,
+  );
+  const cover = card.cover ?? null;
+  const fullCover = cover?.style === "full";
   return (
     <>
+      {cover ? (
+        fullCover ? (
+          <CardCover
+            cover={cover}
+            cardId={card.id}
+            className="absolute inset-0 -z-10 rounded-[11px]"
+          />
+        ) : (
+          <CardCover
+            cover={cover}
+            cardId={card.id}
+            className="-mx-3 -mt-[11px] h-8 rounded-t-[11px]"
+          />
+        )
+      ) : null}
       {hasTop ? (
         <div
           id={`${idPrefix}-top`}
@@ -257,6 +287,7 @@ function KanbanCardContent({
                       : "bg-state-hover-strong text-muted-foreground",
                   )}
                 >
+                  <ColourBlindLabelMark label={label} />
                   {label.name}
                 </span>
               </span>
@@ -300,11 +331,37 @@ function KanbanCardContent({
       <h3
         className={cn(
           "line-clamp-3 break-words text-nav leading-[1.4]",
-          isDone ? "text-muted-foreground" : "text-foreground",
+          fullCover
+            ? "relative text-primary-foreground"
+            : isDone
+              ? "text-muted-foreground"
+              : "text-foreground",
         )}
       >
         {card.title}
       </h3>
+
+      {faceFields.length > 0 ? (
+        <div
+          data-face-fields=""
+          className={cn(
+            "flex min-w-0 flex-wrap gap-1",
+            fullCover && "relative",
+          )}
+        >
+          {faceFields.map(({ field, text }) => (
+            <span
+              key={field.id}
+              data-face-field={field.id}
+              title={field.name}
+              className="inline-flex h-5 max-w-full items-center truncate rounded-[5px] bg-state-hover-strong px-1.5 text-micro font-medium text-muted-foreground"
+            >
+              <span className="sr-only">{field.name}: </span>
+              {text}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {progress ? (
         <div
@@ -367,7 +424,7 @@ function KanbanCardContent({
                 "inline-flex h-5 shrink-0 items-center gap-0.75 rounded-[5px] font-semibold tabular-nums",
                 crowded
                   ? "px-0.5"
-                  : "bg-state-hover-strong px-1 text-muted-foreground",
+                  : "bg-state-hover-strong px-0.5 text-muted-foreground",
               )}
             >
               <SquareCheck className="size-3.25" aria-hidden="true" />
@@ -483,6 +540,7 @@ export function KanbanCardOverlay({
       data-card-id={card.id}
       className={cn(
         CARD_CLASS,
+        card.cover?.style === "full" && "isolate",
         "h-full cursor-grabbing shadow-popover ring-1 ring-primary/30",
         reducedMotion
           ? "scale-[1.02]"
@@ -510,6 +568,7 @@ export function KanbanCardOverlay({
  */
 export function KanbanCard({
   card,
+  dndId,
   laneKey,
   now,
   timeZone,
@@ -519,8 +578,11 @@ export function KanbanCard({
   onMoveKey,
   onOpenDetails,
   actions,
+  selection,
 }: {
   card: Card;
+  /** The drag id when the same card shows in several cells (a card of several people in swimlanes); the card id when absent. */
+  dndId?: string;
   /** The lane this card is shown in (the lane it is dragged over while dragging). */
   laneKey?: string;
   /** The reference time for the due wording; read once by the container. */
@@ -540,11 +602,15 @@ export function KanbanCard({
   onOpenDetails: (cardId: string) => void;
   /** Hover and focus actions; absent: the card has none. */
   actions?: KanbanCardActions;
+  /** Picking cards for the bulk bar (checkbox, Space, Shift+click); absent: the card cannot be picked. */
+  selection?: KanbanCardSelection;
 }) {
   const [dueOpen, setDueOpen] = useState(false);
+  const picked = selection?.selectedIds.has(card.id) ?? false;
+  const picking = (selection?.selectedIds.size ?? 0) > 0;
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
-      id: card.id,
+      id: dndId ?? card.id,
       data: { type: KANBAN_CARD_TYPE, card, laneKey },
       disabled: dragDisabled,
       // The sortable animation of the cards that make room is the smooth part
@@ -578,12 +644,15 @@ export function KanbanCard({
       }}
       {...dragListeners}
       aria-current={selected ? "true" : undefined}
+      data-picked={picked ? "" : undefined}
       data-dragging={isDragging ? "" : undefined}
       className={cn(
         CARD_CLASS,
+        card.cover?.style === "full" && "isolate",
         "group cursor-pointer shadow-card transition-shadow hover:shadow-card-hover",
         !dragDisabled && "touch-manipulation",
         selected && "shadow-card-hover ring-2 ring-inset ring-primary",
+        picked && "bg-state-selected ring-2 ring-inset ring-primary/60",
         // The slot the card leaves is the gap it will fill: an empty, tinted
         // box of the card's own height (its content stays, hidden).
         isDragging &&
@@ -607,7 +676,17 @@ export function KanbanCard({
             .filter(Boolean)
             .join(" ") || undefined
         }
-        onClick={() => onOpenDetails(card.id)}
+        onClick={(event) => {
+          if (selection && event.shiftKey) {
+            selection.onToggle(card.id, { range: true });
+            return;
+          }
+          if (selection && (event.metaKey || event.ctrlKey)) {
+            selection.onToggle(card.id);
+            return;
+          }
+          onOpenDetails(card.id);
+        }}
         onKeyDown={(event) => {
           const direction = onMoveKey ? ALT_ARROW[event.key] : undefined;
           if (direction && event.altKey && !event.ctrlKey && !event.metaKey) {
@@ -633,12 +712,34 @@ export function KanbanCard({
               return;
             }
           }
+          // With picking on, Space picks the card and Enter opens it.
+          if (selection && event.key === " ") {
+            event.preventDefault();
+            selection.onToggle(card.id, { range: event.shiftKey });
+            return;
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onOpenDetails(card.id);
           }
         }}
       />
+      {selection && !isDragging ? (
+        <span
+          className={cn(
+            "absolute top-2 left-2 z-20 grid place-items-center rounded-[5px] bg-popover/90 p-0.5 dark:bg-card/90",
+            !picked &&
+              !picking &&
+              "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
+          )}
+        >
+          <TableCheckbox
+            checked={picked}
+            label={fillCopy(copy.selectCard, { title: card.title })}
+            onChange={() => selection.onToggle(card.id)}
+          />
+        </span>
+      ) : null}
       {actions && !isDragging ? (
         <KanbanCardQuickActions
           card={card}

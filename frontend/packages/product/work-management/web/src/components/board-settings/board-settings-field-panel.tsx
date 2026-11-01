@@ -27,6 +27,17 @@ import type {
 } from "@notrelix/work-management-core";
 import { DisabledControl } from "../item-page/item-page-parts";
 import { useSettings } from "./board-settings-context";
+import {
+  SettingsConflictSlot,
+  show,
+  useConflictFor,
+  useSavedBy,
+  type ConflictPart,
+} from "./board-settings-conflict";
+import {
+  CHANGED_INPUT_CLASS,
+  ConflictFieldNote,
+} from "./board-settings-conflict-parts";
 import { WriteError, useWriteErrorProps } from "./board-settings-write-error";
 import {
   OPTION_COLORS,
@@ -89,15 +100,103 @@ export function FieldPanel({
   const [nameTaken, setNameTaken] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // The server's value wins after a refetch of the same field.
+  const saveScope = `field:${field.id}`;
+  const conflict = useConflictFor(
+    (scope) => scope === saveScope || scope === optionsScope(field.id),
+  );
+  // The server's value wins after a refetch of the same field, except while a
+  // stale save holds what the person typed until they choose.
   useEffect(() => {
+    if (conflict) return;
     setName(field.name);
     setDefaultId(field.defaultOptionId);
     setRequired(field.required);
     setGuidance(field.guidance);
-  }, [field.name, field.defaultOptionId, field.required, field.guidance]);
-
-  const saveScope = `field:${field.id}`;
+  }, [
+    field.name,
+    field.defaultOptionId,
+    field.required,
+    field.guidance,
+    conflict,
+  ]);
+  const savedBy = useSavedBy(conflict);
+  const baseField = conflict?.base.fields.find((f) => f.id === field.id);
+  const edited = baseField ?? field;
+  const latestField = conflict?.latest?.fields.find((f) => f.id === field.id);
+  const theirs = <
+    K extends "name" | "required" | "guidance" | "defaultOptionId",
+  >(
+    key: K,
+  ) =>
+    baseField && latestField && latestField[key] !== baseField[key]
+      ? latestField[key]
+      : undefined;
+  const optionNames = (
+    list: readonly { id: string; name: string }[] | undefined,
+  ) => new Map((list ?? []).map((option) => [option.id, option.name]));
+  const optionChanges = (() => {
+    if (!baseField || !latestField) return { removed: [], added: [] };
+    const before = optionNames(baseField.options);
+    const after = optionNames(latestField.options);
+    return {
+      removed: [...before].filter(([id]) => !after.has(id)).map(([, n]) => n),
+      added: [...after].filter(([id]) => !before.has(id)).map(([, n]) => n),
+    };
+  })();
+  const yesNo = (value: boolean) =>
+    value ? copy.conflict.yes : copy.conflict.no;
+  const optionName = (id: string | null) =>
+    (latestField ?? field).options.find((o) => o.id === id)?.name ?? "";
+  const conflictParts: ConflictPart[] = [
+    {
+      id: "name",
+      label: copy.conflict.parts.fieldName,
+      mine: name.trim() !== edited.name ? show(name.trim()) : null,
+      latest: theirs("name") !== undefined ? show(latestField!.name) : null,
+    },
+    {
+      id: "options",
+      label: copy.conflict.parts.options,
+      mine: null,
+      latest:
+        optionChanges.removed.length + optionChanges.added.length > 0
+          ? [
+              ...optionChanges.removed.map((n) =>
+                fillCopy(copy.conflict.optionRemoved, { by: savedBy, name: n }),
+              ),
+              ...optionChanges.added.map((n) =>
+                fillCopy(copy.conflict.optionAdded, { by: savedBy, name: n }),
+              ),
+            ].join(" ")
+          : null,
+    },
+    {
+      id: "required",
+      label: copy.conflict.parts.required,
+      mine: required !== edited.required ? yesNo(required) : null,
+      latest:
+        theirs("required") !== undefined ? yesNo(latestField!.required) : null,
+    },
+    {
+      id: "guidance",
+      label: copy.conflict.parts.guidance,
+      mine: guidance !== edited.guidance ? show(guidance) : null,
+      latest:
+        theirs("guidance") !== undefined ? show(latestField!.guidance) : null,
+    },
+    {
+      id: "defaultOption",
+      label: copy.conflict.parts.defaultOption,
+      mine:
+        defaultId !== edited.defaultOptionId
+          ? show(optionName(defaultId))
+          : null,
+      latest:
+        theirs("defaultOptionId") !== undefined
+          ? show(optionName(latestField!.defaultOptionId))
+          : null,
+    },
+  ];
   const saveErrorId = `${nameId}-save-error`;
   const saveFailedProps = useWriteErrorProps(saveScope, saveErrorId);
   const trimmed = name.trim();
@@ -173,6 +272,13 @@ export function FieldPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-[18px] pt-3.5 pb-[18px]">
+        <SettingsConflictSlot
+          match={(scope) =>
+            scope === saveScope || scope === optionsScope(field.id)
+          }
+          kind="field"
+          parts={conflictParts}
+        />
         <FormGroup
           label={t.name}
           htmlFor={nameId}
@@ -191,8 +297,19 @@ export function FieldPanel({
                 ? true
                 : saveFailedProps["aria-invalid"]
             }
-            className={INPUT_CLASS}
+            className={cn(
+              INPUT_CLASS,
+              theirs("name") !== undefined && CHANGED_INPUT_CLASS,
+            )}
           />
+          {theirs("name") !== undefined ? (
+            <ConflictFieldNote>
+              {fillCopy(copy.conflict.changedTo, {
+                by: savedBy,
+                value: latestField!.name,
+              })}
+            </ConflictFieldNote>
+          ) : null}
         </FormGroup>
 
         {onEditComputed ? (
@@ -368,7 +485,7 @@ export function FieldPanel({
           </button>
           <button
             type="button"
-            disabled={trimmed === "" || saving}
+            disabled={trimmed === "" || saving || conflict !== null}
             onClick={() => void save()}
             className={BUTTON_CLASS.primary}
           >
@@ -491,7 +608,14 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
         <SortableList
           ids={field.options.map((option) => option.id)}
           onReorder={(ids) =>
-            void run(() => actions.reorderOptions(field.id, ids), scope)
+            run(() => actions.reorderOptions(field.id, ids), scope)
+          }
+          announce={(id, position, total) =>
+            fillCopy(copy.common.moved, {
+              name: field.options.find((entry) => entry.id === id)?.name ?? "",
+              position,
+              total,
+            })
           }
         >
           {(order) =>

@@ -44,7 +44,7 @@ public sealed record TemplateLabel(string Name, string Color);
 
 public sealed record TemplateView(string Name, string Type, bool IsDefault, JsonElement Config);
 
-public sealed record TemplateItem(Guid GroupId, string Title, string? Description, Dictionary<Guid, JsonElement> Values);
+public sealed record TemplateItem(Guid GroupId, string Title, string? Description, Dictionary<Guid, JsonElement> Values, List<Guid>? Assignees = null);
 
 /// <summary>
 /// The starters every workspace offers in the New board gallery. They are code, not rows: the same ids for every

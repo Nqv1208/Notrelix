@@ -130,7 +130,14 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
+      // Where a page sits: its parent's title, for a parent in this same list.
+      const titles = new Map(pages.map((page) => [page.id, page.title]));
+      return ok<PageDtoApi[]>(
+        pages.map((page) => ({
+          ...mapPageDto(page, store),
+          parentTitle: (page.parentId && titles.get(page.parentId)) || null,
+        })),
+      );
     },
   }),
 

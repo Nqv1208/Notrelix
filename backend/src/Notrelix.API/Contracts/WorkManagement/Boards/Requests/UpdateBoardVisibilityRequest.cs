@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 
-public record UpdateBoardVisibilityRequest(BoardVisibility Visibility);
+public record UpdateBoardVisibilityRequest(BoardVisibility Visibility, long ExpectedVersion);

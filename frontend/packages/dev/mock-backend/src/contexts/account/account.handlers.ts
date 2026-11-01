@@ -54,6 +54,7 @@ export const accountOperations = [
       theme?: string;
       phone?: string | null;
       phoneVisibleToWorkspaceMembers?: boolean;
+      colourBlindLabels?: boolean;
     }
   >({
     id: "account.preferences.update",
@@ -109,6 +110,9 @@ export const accountOperations = [
               phoneVisibleToWorkspaceMembers:
                 body.phoneVisibleToWorkspaceMembers,
             }
+          : {}),
+        ...(body?.colourBlindLabels !== undefined
+          ? { colourBlindLabels: body.colourBlindLabels }
           : {}),
       };
       // A no-op update keeps the version.

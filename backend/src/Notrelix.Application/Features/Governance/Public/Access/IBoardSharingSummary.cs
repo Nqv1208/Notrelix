@@ -15,7 +15,45 @@ namespace Notrelix.Application.Features.Governance.Public.Access;
 public interface IBoardSharingSummary
 {
     Task<BoardSharing?> GetBoardSharingAsync(Guid boardId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Who would gain and who would lose the Board if it were placed in <paramref name="targetSpaceId"/> (null =
+    /// the Workspace root). Null unless the caller manages the Board, so a caller without that right learns
+    /// nothing, exactly as for a missing Board. <paramref name="candidateUserIds"/> are the people whose fate the
+    /// caller needs when the Workspace's members are not enumerated (a Board at the root).
+    /// </summary>
+    Task<BoardPlacementReach?> GetBoardPlacementReachAsync(Guid boardId, Guid? targetSpaceId, IReadOnlyCollection<Guid> candidateUserIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Who would reach a new, Workspace-visible Board placed in <paramref name="spaceId"/> with no entries of its own:
+    /// the people of that Space and the Workspace's Owners and Admins; at the root (null) every member who is not a Guest.
+    /// </summary>
+    Task<NewBoardAudience> GetNewBoardAudienceAsync(Guid? spaceId, CancellationToken cancellationToken);
 }
+
+/// <param name="EveryMember">Every Workspace member who is not a Guest reaches the Board (the Workspace root).</param>
+/// <param name="UserIds">The people reached through the Space, and Owners and Admins; empty when <paramref name="EveryMember"/>.</param>
+public sealed record NewBoardAudience(bool EveryMember, IReadOnlySet<Guid> UserIds);
+
+/// <param name="Everyone">The target is the Workspace root, which every member who is not a Guest reaches, so no list of who gains is kept.</param>
+/// <param name="EveryoneLoses">The Board sits at the Workspace root today, so every member not reached by the target or by an entry of the Board loses it; only the candidates are listed.</param>
+/// <param name="TargetSpaceName">Name of the target Space.</param>
+/// <param name="TargetPeople">People the target Space reaches (Guests excluded).</param>
+/// <param name="LosingCount">People who stop reaching the Board; null when <paramref name="EveryoneLoses"/> (the Workspace's members are not enumerated).</param>
+/// <param name="LosingUserIds">The people losing the Board; with <paramref name="EveryoneLoses"/> only those among the candidates.</param>
+/// <param name="GainingCount">People only the target reaches.</param>
+/// <param name="KeptUserIds">People who keep access on their own entry (Board member or explicit grant).</param>
+/// <param name="KeptTeamCount">Teams granted on the Board itself.</param>
+public sealed record BoardPlacementReach(
+    bool Everyone,
+    bool EveryoneLoses,
+    string? TargetSpaceName,
+    int TargetPeople,
+    int? LosingCount,
+    IReadOnlyList<Guid> LosingUserIds,
+    int GainingCount,
+    IReadOnlyList<Guid> KeptUserIds,
+    int KeptTeamCount);
 
 /// <param name="CanManage">The caller may manage the Board's access (and so see the log and the Private impact).</param>
 /// <param name="EntriesDisclosed">Entries are listed: the caller manages the Board or is one of its members.</param>

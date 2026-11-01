@@ -200,6 +200,10 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         await cross.Should().ThrowAsync<AppNotFound>("a board of another workspace is unreachable");
     }
 
+    // Every member change moves the Board's version, so a later write names the version it has now.
+    private Task<long> BoardVersionAsync(Guid board) =>
+        _host.ReadAsync(c => c.Boards.Where(x => x.Id == board).Select(x => x.Version).SingleAsync());
+
     [Fact]
     public async Task EveryAccessChange_IsLogged_ForManagersOnly_NewestFirst_WithGuestFlag()
     {
@@ -208,6 +212,8 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
         var worker = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Worker");
         var board = await _host.SeedBoardAsync(stack, "Plan");
+        // The creator holds Manager on the Board, as creating it gives; a Board always keeps one.
+        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, stack.OwnerId, PermissionLevel.Manager);
         using var asOwner = CreateProvider(stack, stack.OwnerId);
 
         await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Manager"));
@@ -218,9 +224,9 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         _host.Now = _host.Now.AddMinutes(1);
         await OrgTreeTestHost.SendIdempotentAsync(asOwner, new AddBoardMemberCommand(board, editor, BoardRole.Member));
         _host.Now = _host.Now.AddMinutes(1);
-        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new UpdateBoardMemberRoleCommand(board, editor, BoardRole.Admin));
+        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new UpdateBoardMemberRoleCommand(board, editor, BoardRole.Admin, ExpectedVersion: await BoardVersionAsync(board)));
         _host.Now = _host.Now.AddMinutes(1);
-        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new RemoveBoardMemberCommand(board, editor));
+        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new RemoveBoardMemberCommand(board, editor, ExpectedVersion: await BoardVersionAsync(board)));
         _host.Now = _host.Now.AddMinutes(1);
         var permissionId = (await GetAsync(stack, stack.OwnerId, board)).Entries.Single(e => e.Id == guest).PermissionId!.Value;
         await OrgTreeTestHost.SendAsync(asOwner, new RevokeResourcePermissionCommand("work-management.board", board, permissionId));

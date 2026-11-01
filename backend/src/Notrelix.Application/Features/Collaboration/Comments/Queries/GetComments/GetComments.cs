@@ -4,7 +4,9 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
-public record GetCommentsQuery(ResourceKind ResourceKind, Guid ResourceId) : IQuery<Result<List<CommentDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
+/// <param name="After">Reads the comments that follow this one (oldest first); absent reads from the first.</param>
+/// <param name="Limit">Reads at most this many; absent reads them all.</param>
+public record GetCommentsQuery(ResourceKind ResourceKind, Guid ResourceId, TimeCursorPosition? After = null, int? Limit = null) : IQuery<Result<List<CommentDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public static GetCommentsQuery ForBoardItem(Guid boardItemId)
         => new(ResourceKind.Create(BoardItemKind), boardItemId);
@@ -33,10 +35,15 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
 
     public async Task<Result<List<CommentDto>>> Handle(GetCommentsQuery request, CancellationToken ct)
     {
-        var comments = await _context.Comments.AsNoTracking()
-            .Where(c => c.Target.Kind == request.ResourceKind && c.Target.ResourceId == request.ResourceId && c.DeletedAt == null)
-            .OrderBy(c => c.CreatedAt)
-            .ToListAsync(ct);
+        var thread = _context.Comments.AsNoTracking()
+            .Where(c => c.Target.Kind == request.ResourceKind && c.Target.ResourceId == request.ResourceId && c.DeletedAt == null);
+        if (request.After is { } after)
+        {
+            thread = thread.Where(c => c.CreatedAt > after.At || (c.CreatedAt == after.At && c.Id.CompareTo(after.Id) > 0));
+        }
+
+        var ordered = thread.OrderBy(c => c.CreatedAt).ThenBy(c => c.Id);
+        var comments = await (request.Limit is { } limit ? ordered.Take(limit) : ordered).ToListAsync(ct);
 
         var commentKind = ResourceKind.Create("collaboration.comment");
         var commentIds = comments.Select(c => c.Id).ToList();

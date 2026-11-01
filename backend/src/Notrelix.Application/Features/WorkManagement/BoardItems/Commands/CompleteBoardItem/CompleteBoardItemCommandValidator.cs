@@ -4,6 +4,7 @@ public class CompleteBoardItemCommandValidator : AbstractValidator<CompleteBoard
 {
     public CompleteBoardItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
     }
 }

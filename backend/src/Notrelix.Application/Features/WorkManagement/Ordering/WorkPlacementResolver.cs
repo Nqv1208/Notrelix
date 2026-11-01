@@ -12,8 +12,18 @@ public sealed record WorkPlacementIntent(Guid? PreviousSiblingId, Guid? NextSibl
     public static WorkPlacementIntent Append { get; } = new(null, null);
 }
 
-/// <summary>An active sibling of an ordering scope with its persisted position.</summary>
-public sealed record OrderedSibling(Guid Id, FractionalIndex Position);
+/// <summary>
+/// An active sibling of an ordering scope with its persisted position. A hidden
+/// sibling (archived) is not on any client's screen but still holds its key in the
+/// unique ordering index: neighbors are validated against the visible siblings and
+/// the new key is generated against all of them.
+/// </summary>
+public sealed record OrderedSibling(Guid Id, FractionalIndex Position, bool Hidden)
+{
+    public OrderedSibling(Guid id, FractionalIndex position) : this(id, position, false)
+    {
+    }
+}
 
 /// <summary>
 /// The canonical placement rule for every normal P3 ordering mutation
@@ -101,9 +111,7 @@ public sealed class WorkPlacementResolver
         {
             var index = IndexOf(ordered, anchorId);
             if (index < 0) throw StalePlacement();
-
-            var successor = index + 1 < ordered.Count ? ordered[index + 1].Id : (Guid?)null;
-            return Place(ordered, new WorkPlacementIntent(anchorId, successor));
+            return KeyAfter(ordered, index);
         });
     }
 
@@ -129,19 +137,19 @@ public sealed class WorkPlacementResolver
         var holder = ordered.FindIndex(sibling => sibling.Position.Value == previousPosition.Value);
         if (holder < 0) return null;
 
-        var successor = holder + 1 < ordered.Count ? ordered[holder + 1].Id : (Guid?)null;
-        return Observe(scope, () => Place(ordered, new WorkPlacementIntent(ordered[holder].Id, successor)));
+        return Observe(scope, () => KeyAfter(ordered, holder));
     }
 
     private static bool TryKeepCurrent(
         IReadOnlyList<OrderedSibling> ordered, Guid movedId, WorkPlacementIntent intent, out FractionalIndex current)
     {
         current = null!;
-        var index = IndexOf(ordered, movedId);
+        var visible = Visible(ordered);
+        var index = IndexOf(visible, movedId);
         if (index < 0) return false;
 
-        var before = index > 0 ? ordered[index - 1].Id : (Guid?)null;
-        var after = index + 1 < ordered.Count ? ordered[index + 1].Id : (Guid?)null;
+        var before = index > 0 ? visible[index - 1].Id : (Guid?)null;
+        var after = index + 1 < visible.Count ? visible[index + 1].Id : (Guid?)null;
         var matches = (intent.PreviousSiblingId, intent.NextSiblingId) switch
         {
             (null, null) => after is null,
@@ -150,14 +158,27 @@ public sealed class WorkPlacementResolver
             ({ } previous, { } next) => before == previous && after == next,
         };
 
-        if (matches) current = ordered[index].Position;
+        if (matches) current = visible[index].Position;
         return matches;
     }
+
+    /// <summary>A key directly after the sibling at <paramref name="index"/>, in front of whatever follows it (hidden siblings included).</summary>
+    private static FractionalIndex KeyAfter(IReadOnlyList<OrderedSibling> ordered, int index)
+    {
+        var previous = ordered[index].Position;
+        FractionalIndex? next = index + 1 < ordered.Count ? ordered[index + 1].Position : null;
+        if (next is not null && previous.CompareTo(next) >= 0) throw StalePlacement();
+        return FractionalIndexGenerator.GenerateKeyBetween(previous, next);
+    }
+
+    private static IReadOnlyList<OrderedSibling> Visible(IReadOnlyList<OrderedSibling> siblings) =>
+        siblings.Any(sibling => sibling.Hidden) ? siblings.Where(sibling => !sibling.Hidden).ToList() : siblings;
 
     /// <summary>Pure placement rule over siblings already sorted in canonical order.</summary>
     public static FractionalIndex Place(IReadOnlyList<OrderedSibling> orderedSiblings, WorkPlacementIntent intent)
     {
         var (previousId, nextId) = (intent.PreviousSiblingId, intent.NextSiblingId);
+        var visible = Visible(orderedSiblings);
 
         if (previousId is null && nextId is null)
         {
@@ -166,34 +187,37 @@ public sealed class WorkPlacementResolver
 
         if (previousId is not null && nextId is null)
         {
-            var last = orderedSiblings.LastOrDefault();
+            var last = visible.LastOrDefault();
             if (last is null || last.Id != previousId) throw StalePlacement();
-            return FractionalIndexGenerator.GenerateKeyBetween(last.Position, null);
+            return FractionalIndexGenerator.GenerateKeyBetween(orderedSiblings[^1].Position, null);
         }
 
         if (previousId is null && nextId is not null)
         {
-            var first = orderedSiblings.FirstOrDefault();
+            var first = visible.FirstOrDefault();
             if (first is null || first.Id != nextId) throw StalePlacement();
-            return FractionalIndexGenerator.GenerateKeyBetween(null, first.Position);
+            return FractionalIndexGenerator.GenerateKeyBetween(null, orderedSiblings[0].Position);
         }
 
         if (previousId == nextId) throw StalePlacement();
 
-        var previousIndex = IndexOf(orderedSiblings, previousId!.Value);
-        if (previousIndex < 0 || previousIndex + 1 >= orderedSiblings.Count || orderedSiblings[previousIndex + 1].Id != nextId)
+        var previousIndex = IndexOf(visible, previousId!.Value);
+        if (previousIndex < 0 || previousIndex + 1 >= visible.Count || visible[previousIndex + 1].Id != nextId)
         {
             throw StalePlacement();
         }
 
-        var previous = orderedSiblings[previousIndex].Position;
-        var next = orderedSiblings[previousIndex + 1].Position;
+        var previous = visible[previousIndex].Position;
+        var next = visible[previousIndex + 1].Position;
 
         // Equal legacy keys leave no gap to place into; the scope must be
         // rebalanced or the client must rebase.
         if (previous.CompareTo(next) >= 0) throw StalePlacement();
 
-        return FractionalIndexGenerator.GenerateKeyBetween(previous, next);
+        // A hidden sibling between the two neighbors keeps its key: the new key goes
+        // directly after the previous neighbor, in front of whatever follows it.
+        var upper = orderedSiblings[IndexOf(orderedSiblings, previousId.Value) + 1].Position;
+        return FractionalIndexGenerator.GenerateKeyBetween(previous, upper);
     }
 
     private static int IndexOf(IReadOnlyList<OrderedSibling> siblings, Guid id)

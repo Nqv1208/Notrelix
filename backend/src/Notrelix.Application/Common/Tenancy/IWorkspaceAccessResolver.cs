@@ -25,7 +25,8 @@ public sealed record WorkspaceAccessSnapshot(
     Guid WorkspaceId,
     Guid ActorUserId,
     bool CanAccess,
-    bool IsWorkspaceActive);
+    bool IsWorkspaceActive,
+    bool IsGuest = false);
 
 /// <summary>
 /// Snapshot of a workspace resolved by slug.

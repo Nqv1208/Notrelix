@@ -17,10 +17,11 @@ public static class DeleteChecklistEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid checklistId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteChecklistCommand(checklistId), cancellationToken);
+        var result = await sender.Send(new DeleteChecklistCommand(checklistId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

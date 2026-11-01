@@ -2,29 +2,29 @@ namespace Notrelix.Infrastructure.Data.Ops.Entities;
 
 public sealed class ImportJobRecord
 {
-    public Guid Id { get; private set; }
-    public Guid WorkspaceId { get; private set; }
-    public string JobType { get; private set; } = null!;
-    public string? TargetResourceType { get; private set; }
-    public Guid? TargetResourceId { get; private set; }
-    public Guid? SourceFileAttachmentId { get; private set; }
-    public string Status { get; private set; } = null!;
-    public int TotalRecords { get; private set; }
-    public int ProcessedRecords { get; private set; }
-    public int SucceededRecords { get; private set; }
-    public int FailedRecords { get; private set; }
-    public string OptionsJson { get; private set; } = null!;
-    public string? ResultJson { get; private set; }
-    public string? ErrorSummary { get; private set; }
-    public string? ErrorMessage { get; private set; }
-    public Guid? ErrorFileAttachmentId { get; private set; }
-    public Guid? RequestedByUserId { get; private set; }
-    public DateTimeOffset? StartedAt { get; private set; }
-    public DateTimeOffset? CompletedAt { get; private set; }
-    public DateTimeOffset? CancelledAt { get; private set; }
-    public DateTimeOffset? ExpiresAt { get; private set; }
-    public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; private set; }
+    public Guid Id { get; internal set; }
+    public Guid WorkspaceId { get; internal set; }
+    public string JobType { get; internal set; } = null!;
+    public string? TargetResourceType { get; internal set; }
+    public Guid? TargetResourceId { get; internal set; }
+    public Guid? SourceFileAttachmentId { get; internal set; }
+    public string Status { get; internal set; } = null!;
+    public int TotalRecords { get; internal set; }
+    public int ProcessedRecords { get; internal set; }
+    public int SucceededRecords { get; internal set; }
+    public int FailedRecords { get; internal set; }
+    public string OptionsJson { get; internal set; } = null!;
+    public string? ResultJson { get; internal set; }
+    public string? ErrorSummary { get; internal set; }
+    public string? ErrorMessage { get; internal set; }
+    public Guid? ErrorFileAttachmentId { get; internal set; }
+    public Guid? RequestedByUserId { get; internal set; }
+    public DateTimeOffset? StartedAt { get; internal set; }
+    public DateTimeOffset? CompletedAt { get; internal set; }
+    public DateTimeOffset? CancelledAt { get; internal set; }
+    public DateTimeOffset? ExpiresAt { get; internal set; }
+    public DateTimeOffset CreatedAt { get; internal set; }
+    public DateTimeOffset? UpdatedAt { get; internal set; }
 
     private ImportJobRecord() { }
 

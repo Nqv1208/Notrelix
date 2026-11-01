@@ -76,6 +76,11 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
+        var settings = ValidateJson(settingsJson, nameof(SettingsJson));
+        var policy = ValidateJson(submitterPolicyJson, nameof(SubmitterPolicyJson));
+        if (Name == name.Trim() && Visibility == visibility && SettingsJson == settings && SubmitterPolicyJson == policy)
+            return;
+
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = name.Trim();
         Visibility = visibility;
@@ -92,6 +97,8 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
         if (Status == FormStatus.Closed)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishClosed, "Cannot publish a closed form.");
+
+        if (Status == FormStatus.Published) return;
 
         if (_questions.Count == 0)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishNoQuestions, "Cannot publish a form with no questions.");
@@ -145,6 +152,27 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedAt));
+    }
+
+    /// <summary>Changes a question of this form; the form's version moves only when the question did.</summary>
+    public void UpdateQuestion(
+        FormQuestion question,
+        string label,
+        bool isRequired,
+        FractionalIndex position,
+        FormQuestionConfig? config,
+        Guid? boardFieldId,
+        Guid updatedBy,
+        DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(question);
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        if (!question.UpdateQuestion(label, isRequired, position, config, boardFieldId)) return;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
     }
 
     public void RemoveQuestion(Guid questionId, Guid updatedBy, DateTimeOffset updatedAt)

@@ -186,7 +186,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         var visibility = new Mock<IResourceVisibility>();
         visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(visibleSpaces);
         await using var context = _db.CreateOwnerContext(Tenant());
-        var result = await new GetFullBoardQueryHandler(context, Actors(), Collaboration(), visibility.Object, Request())
+        var result = await new GetFullBoardQueryHandler(context, Actors(), new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(context, Actors(), Collaboration(), Request()), new Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader(context), visibility.Object, Request())
             .Handle(new GetFullBoardQuery(_board.Id), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;
@@ -195,7 +195,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     private async Task<BoardItemDto> ItemAsync(Guid itemId)
     {
         await using var context = _db.CreateOwnerContext(Tenant());
-        var result = await new GetBoardItemQueryHandler(context, Actors(), Collaboration())
+        var result = await new GetBoardItemQueryHandler(context, Actors(), Collaboration(), Request())
             .Handle(new GetBoardItemQuery(itemId), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;

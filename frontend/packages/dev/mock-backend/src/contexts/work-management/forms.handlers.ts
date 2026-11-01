@@ -136,6 +136,18 @@ function manageable(store: MockStore, formId: string, includeDeleted = false) {
   return found;
 }
 
+/** The producer refuses a write that names no version (400) and one that names a stale version (409). */
+function versionRefusal(form: MockForm, expected: number | string | undefined) {
+  const version = Number(expected);
+  if (!Number.isFinite(version) || version <= 0)
+    return validationError({
+      expectedVersion: ["ExpectedVersion must be a positive value."],
+    });
+  if (version !== form.version)
+    return conflict("The form changed since it was read.");
+  return null;
+}
+
 function submissionOf(store: MockStore, submissionId: string) {
   const submission = store.forms.findSubmission(submissionId);
   if (!submission)
@@ -240,6 +252,7 @@ interface QuestionBody {
   configJson?: string | null;
   position?: string | null;
   boardFieldId?: string | null;
+  expectedVersion?: number;
 }
 
 function applyConfig(
@@ -317,7 +330,7 @@ export const formsOperations = [
 
   defineMockOperation<
     FormParams,
-    { title?: string; description?: string },
+    { title?: string; description?: string; expectedVersion?: number },
     void
   >({
     id: "forms.updateDetails",
@@ -330,6 +343,8 @@ export const formsOperations = [
     async handle({ params, body, store }) {
       const { form, refusal } = manageable(store, params.formId);
       if (!form) return refusal;
+      const stale = versionRefusal(form, body?.expectedVersion);
+      if (stale) return stale;
       const title = (body?.title ?? "").trim();
       if (title === "") return validationError({ title: ["Name the form."] });
       form.name = title;
@@ -347,9 +362,11 @@ export const formsOperations = [
     },
     method: "DELETE",
     route: "/forms/:formId",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { form, refusal } = manageable(store, params.formId);
       if (!form) return refusal;
+      const stale = versionRefusal(form, query.expectedVersion);
+      if (stale) return stale;
       form.deleted = true;
       form.version += 1;
       return noContent();
@@ -375,9 +392,12 @@ export const formsOperations = [
     contract: { kind: "openapi", operationId: "WorkManagement.Forms.Publish" },
     method: "POST",
     route: "/forms/:formId/publish",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { form, refusal } = manageable(store, params.formId);
       if (!form) return refusal;
+      const stale = versionRefusal(form, query.expectedVersion);
+      if (stale) return stale;
+      if (form.status === "Published") return noContent();
       if (form.status === "Closed")
         return conflict("Cannot publish a closed form.");
       if (form.questions.length === 0)
@@ -393,9 +413,12 @@ export const formsOperations = [
     contract: { kind: "openapi", operationId: "WorkManagement.Forms.Close" },
     method: "POST",
     route: "/forms/:formId/close",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { form, refusal } = manageable(store, params.formId);
       if (!form) return refusal;
+      const stale = versionRefusal(form, query.expectedVersion);
+      if (stale) return stale;
+      if (form.status === "Closed") return noContent();
       form.status = "Closed";
       form.version += 1;
       return noContent();
@@ -413,6 +436,8 @@ export const formsOperations = [
     async handle({ params, body, store }) {
       const { form, refusal } = manageable(store, params.formId);
       if (!form) return refusal;
+      const stale = versionRefusal(form, body?.expectedVersion);
+      if (stale) return stale;
       if (form.status === "Closed")
         return conflict("Cannot add a question to a closed form.");
       const key = (body?.questionKey ?? "").trim();
@@ -462,6 +487,8 @@ export const formsOperations = [
       if (!form) return refusal;
       const question = form.questions.find((q) => q.id === params.questionId);
       if (!question) return notFound("Question not found");
+      const stale = versionRefusal(form, body?.expectedVersion);
+      if (stale) return stale;
       if (form.status === "Closed")
         return conflict("Cannot change a question of a closed form.");
       const label = (body?.label ?? "").trim();
@@ -490,9 +517,11 @@ export const formsOperations = [
     },
     method: "DELETE",
     route: "/forms/:formId/questions/:questionId",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { form, refusal } = manageable(store, params.formId);
       if (!form) return refusal;
+      const stale = versionRefusal(form, query.expectedVersion);
+      if (stale) return stale;
       if (form.status === "Closed")
         return conflict("Cannot remove a question from a closed form.");
       form.questions = form.questions.filter((q) => q.id !== params.questionId);
@@ -512,6 +541,8 @@ export const formsOperations = [
     async handle({ params, store }) {
       const { form, refusal } = readable(store, params.formId);
       if (!form) return refusal;
+      // Responses can hold respondent data: they need edit rights on the board.
+      if (!canEditBoard(form.boardId, store)) return forbidden();
       return ok(store.forms.submissions(form.id).map(submissionRow));
     },
   }),

@@ -153,6 +153,7 @@ export const en = {
     failedNote: "You are offline. The new dates stay shown so you can retry.",
     retry: "Retry",
     conflict: "{{key}} was just changed by someone else",
+    conflictBy: "{{actor}} changed the dates of {{key}} first",
     conflictNote:
       "Reload to see the latest dates, then change them again if needed.",
     reload: "Reload",
@@ -343,6 +344,7 @@ export const vi: CalendarCopy = {
     failedNote: "Mất kết nối. Ngày mới vẫn hiển thị để bạn thử lại.",
     retry: "Thử lại",
     conflict: "{{key}} vừa được người khác đổi ngày",
+    conflictBy: "{{actor}} vừa đổi ngày của {{key}} trước bạn",
     conflictNote: "Tải lại để xem ngày mới nhất, rồi đổi lại nếu cần.",
     reload: "Tải lại",
   },

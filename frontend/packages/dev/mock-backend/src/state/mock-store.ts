@@ -97,15 +97,24 @@ import {
   ERP_DESCRIPTIONS,
 } from "./mock-erp-detail";
 import {
+  ERP_ACCEPT_COLUMN_ID,
+  ERP_CHECKLISTS,
   ERP_CUSTOM_VALUES,
+  ERP_EMPTY_FIELDS,
   ERP_ESTIMATE_COLUMN_ID,
+  ERP_READY_COLUMN_ID,
+  ERP_VOTE_COLUMN_ID,
   ERP_FILES,
   ERP_FOLLOWERS,
   ERP_EXTRA_COMMENTS,
   ERP_HISTORY,
   ERP_ITEM_CREATED,
+  ERP_DOUBLE_COLUMN_ID,
+  ERP_LINK_COLUMN_ID,
   ERP_MODULE_COLUMN_ID,
   ERP_MODULE_OPTIONS,
+  ERP_NOTE_COLUMN_ID,
+  ERP_POINTS_COLUMN_ID,
   ERP_RELATED_LINKS,
   ERP_REQUESTER_COLUMN_ID,
   ERP_REQUESTER_OPTIONS,
@@ -128,6 +137,7 @@ import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { MockBoardSavedFilters } from "./mock-board-saved-filters";
+import { MockBoardPreferences } from "./mock-board-preferences";
 import { MockBoardForms } from "./mock-board-forms";
 import { seedErpForms } from "./mock-erp-forms";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
@@ -336,6 +346,7 @@ export class MockStore {
   readonly savedViews = new MockBoardSavedViews(() => this);
   /** The saved filters of the boards (personal or shared with the board). */
   readonly savedFilters = new MockBoardSavedFilters(() => this);
+  readonly boardPreferences = new MockBoardPreferences();
   /** The forms of the boards with their responses. */
   readonly forms = new MockBoardForms(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
@@ -1213,6 +1224,81 @@ export class MockStore {
         }),
       ),
     });
+    this.insertColumn({
+      id: ERP_NOTE_COLUMN_ID,
+      boardId,
+      name: "Ghi chú",
+      fieldType: "long_text",
+      position: 7,
+    });
+    this.insertColumn({
+      id: ERP_LINK_COLUMN_ID,
+      boardId,
+      name: "Liên kết",
+      fieldType: "link",
+      position: 8,
+    });
+    this.insertColumn({
+      id: ERP_POINTS_COLUMN_ID,
+      boardId,
+      name: "Điểm",
+      fieldType: "number",
+      position: 9,
+    });
+    this.insertColumn({
+      id: ERP_DOUBLE_COLUMN_ID,
+      boardId,
+      name: "Điểm gấp đôi",
+      fieldType: "formula",
+      settings: JSON.stringify({ expression: "[Điểm] * 2" }),
+      position: 10,
+    });
+    this.insertColumn({
+      id: ERP_READY_COLUMN_ID,
+      boardId,
+      name: "Sẵn sàng bàn giao",
+      fieldType: "checkbox",
+      position: 11,
+    });
+    this.insertColumn({
+      id: ERP_ACCEPT_COLUMN_ID,
+      boardId,
+      name: "Ngày nghiệm thu",
+      fieldType: "date",
+      position: 12,
+    });
+    this.insertColumn({
+      id: ERP_VOTE_COLUMN_ID,
+      boardId,
+      name: "Bình chọn",
+      fieldType: "vote",
+      position: 13,
+    });
+    ERP_EMPTY_FIELDS.forEach((field, index) =>
+      this.insertColumn({
+        id: field.id,
+        boardId,
+        name: field.name,
+        fieldType: field.fieldType,
+        position: 14 + index,
+      }),
+    );
+    this.boardViewsByBoardId.set(boardId, {
+      boardId,
+      viewMode: "kanban",
+      viewConfig: JSON.stringify({
+        cardFieldIds: [
+          ERP_READY_COLUMN_ID,
+          ERP_ACCEPT_COLUMN_ID,
+          ERP_VOTE_COLUMN_ID,
+        ],
+        cardHideEmpty: [
+          ERP_READY_COLUMN_ID,
+          ERP_ACCEPT_COLUMN_ID,
+          ERP_VOTE_COLUMN_ID,
+        ],
+      }),
+    });
     this.settings.set(
       boardId,
       erpSettingsRegistry({
@@ -1425,6 +1511,16 @@ export class MockStore {
     for (const [key, values] of Object.entries(ERP_CUSTOM_VALUES)) {
       for (const [columnId, value] of Object.entries(values))
         this.updateFieldValue(erpItemId(key), columnId, value);
+    }
+    for (const list of ERP_CHECKLISTS) {
+      const cardId = erpItemId(list.itemKey);
+      if (!this.cardsById.has(cardId)) continue;
+      const checklist = this.createChecklist(cardId, list.title);
+      list.items.forEach((title, index) => {
+        const item = this.createChecklistItem(checklist.id, title);
+        if (index < list.done)
+          this.updateChecklistItem(item.id, { isChecked: true });
+      });
     }
     for (const [key, userIds] of Object.entries(ERP_FOLLOWERS))
       this.followersByCardId.set(erpItemId(key), [...userIds]);
@@ -1806,6 +1902,7 @@ export class MockStore {
     this.boardViewsByBoardId.clear();
     this.savedViews.clear();
     this.savedFilters.clear();
+    this.boardPreferences.clear();
     this.forms.clear();
     this.columnsById.clear();
     this.labelsById.clear();
@@ -3050,10 +3147,10 @@ export class MockStore {
     const field = this.getColumns(card.boardId).find(
       (column) => column.id === fieldDefinitionId,
     );
-    if (
-      (field?.fieldType === "user" || field?.fieldType === "person") &&
-      Array.isArray(value)
-    ) {
+    const assigneeField = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "user" || column.fieldType === "person",
+    );
+    if (field && field.id === assigneeField?.id && Array.isArray(value)) {
       this.cardsById.set(cardId, {
         ...card,
         assigneeUserIds: value.filter(
@@ -4397,7 +4494,12 @@ export class MockStore {
 
   addAttachment(
     cardId: string,
-    file: { filename: string; sizeBytes: number; contentType: string },
+    file: {
+      filename: string;
+      sizeBytes: number;
+      contentType: string;
+      url?: string;
+    },
   ): MockAttachmentRecord | undefined {
     if (!this.cardsById.has(cardId)) return undefined;
     const record: MockAttachmentRecord = {
@@ -4406,6 +4508,7 @@ export class MockStore {
       filename: file.filename,
       sizeBytes: file.sizeBytes,
       contentType: file.contentType,
+      ...(file.url ? { url: file.url } : {}),
       uploadedBy: this.getCurrentUser().id,
       createdAt: this.clock.isoNow(),
     };

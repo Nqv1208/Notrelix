@@ -7,8 +7,8 @@ import { ITEM_LABEL_COLORS } from "../shared/item-display";
 /** The label palette, in the order the swatches are drawn. */
 const SWATCHES = [
   ["blue", ITEM_LABEL_COLORS.data],
-  ["red", ITEM_LABEL_COLORS.security],
-  ["green", ITEM_LABEL_COLORS.training],
+  ["red", ITEM_LABEL_COLORS.red],
+  ["green", ITEM_LABEL_COLORS.green],
   ["amber", ITEM_LABEL_COLORS.report],
   ["gray", ITEM_LABEL_COLORS.doc],
   ["violet", ITEM_LABEL_COLORS.test],

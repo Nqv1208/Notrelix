@@ -64,6 +64,29 @@ export interface BoardLabelsPanelProps {
   readonly onDelete: (labelId: string) => Promise<BoardSettingsWriteResult>;
 }
 
+/** One field deleted from the board in the last 30 days. */
+export interface DeletedFieldRow {
+  readonly id: string;
+  readonly name: string;
+  readonly type: BoardSettingsFieldType;
+  readonly deletedAt: string;
+  readonly restorableUntil: string;
+  readonly deletedByName: string | null;
+  readonly valueCount: number;
+}
+
+export type DeletedFieldRestore =
+  "restored" | "name-taken" | "expired" | "forbidden" | "failed";
+
+/** The board's deleted fields and the way back (a Manager restores). */
+export interface DeletedFieldsPanelProps {
+  readonly status: "loading" | "error" | "ready";
+  readonly fields: readonly DeletedFieldRow[];
+  readonly restoringId?: string;
+  readonly onReload: () => void;
+  readonly onRestore: (fieldId: string) => Promise<DeletedFieldRestore>;
+}
+
 /** One template of the workspace (the built-in starters are not listed here). */
 export interface BoardTemplateRow {
   readonly id: string;
@@ -99,6 +122,7 @@ export interface BoardSettingsActions {
     changes: BoardSettingsGeneralPatch,
   ): Promise<BoardSettingsWriteResult>;
   archiveBoard(): Promise<BoardSettingsWriteResult>;
+  unarchiveBoard(): Promise<BoardSettingsWriteResult>;
   deleteBoard(confirmTitle: string): Promise<BoardSettingsWriteResult>;
   /** `input` names the field and carries a Formula's or Rollup's settings JSON. */
   createField(
@@ -142,7 +166,11 @@ export interface BoardSettingsActions {
   duplicateView(viewId: string): Promise<BoardSettingsWriteResult>;
   /** The tab a board opens on. */
   setDefaultView(viewId: string): Promise<BoardSettingsWriteResult>;
-  deleteView(viewId: string): Promise<BoardSettingsWriteResult>;
+  /** Deleting the default view names the view that becomes the default. */
+  deleteView(
+    viewId: string,
+    newDefaultViewId?: string,
+  ): Promise<BoardSettingsWriteResult>;
   createGroup(name: string): Promise<BoardSettingsWriteResult>;
   reorderGroups(ids: readonly string[]): Promise<BoardSettingsWriteResult>;
   updateGroup(
@@ -153,6 +181,13 @@ export interface BoardSettingsActions {
     groupId: string,
     moveToGroupId: string | null,
   ): Promise<BoardSettingsWriteResult>;
+  /** The copy keeps the group's settings and its active items and sub-items; `title` is already in the person's language. */
+  duplicateGroup(
+    groupId: string,
+    title: string,
+  ): Promise<BoardSettingsWriteResult>;
+  archiveGroup(groupId: string): Promise<BoardSettingsWriteResult>;
+  unarchiveGroup(groupId: string): Promise<BoardSettingsWriteResult>;
   setAutomationEnabled(
     automationId: string,
     enabled: boolean,
@@ -194,18 +229,24 @@ export interface BoardSettingsSurfaceProps {
   workspaceRules?: WorkspaceRulesPanelProps;
   /** The labels of the board: when given, the page has a "Labels" section. */
   labels?: BoardLabelsPanelProps;
+  /** The fields deleted in the last 30 days: when given, the Fields section has a "Deleted" tab. */
+  deletedFields?: DeletedFieldsPanelProps;
   /** The forms of the board: when given, the page has a "Forms" section. */
   forms?: BoardFormsPanelProps;
   /** The workspace's board templates: when given, the page has a "Board templates" section. */
   templates?: BoardTemplatesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */
   kanbanSettings?: ReactNode;
-  /** Reads the settings again (after a conflict or an error). */
-  onReload: () => void;
+  /** Reads the settings again (after a conflict or an error); a conflict waits for it. */
+  onReload: () => void | Promise<unknown>;
+  /** Reads the settings as saved now without replacing the shown ones (the diff of a conflict). */
+  onReadLatest?: () => Promise<BoardSettingsDto | null>;
   boardHref?: string;
   onBack: () => void;
   /** Opens the board's access dialog. */
   onOpenAccess?: () => void;
+  /** Opens the move-to-Space dialog; absent = the move button stays locked. */
+  onMoveBoard?: () => void;
   /** The board was archived or deleted: leave the page. */
   onLeave?: (reason: "archived" | "deleted") => void;
   /** For stories and tests: start with the field-type picker open. */

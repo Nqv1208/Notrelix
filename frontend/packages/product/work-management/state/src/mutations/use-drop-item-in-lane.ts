@@ -46,17 +46,21 @@ interface LaneDropWriter {
   updateStatus(
     cardId: string,
     statusOptionId: string,
+    expectedVersion: number,
     options?: ApiRequestOptions,
-  ): Promise<void>;
-  updateFieldValue(payload: UpdateFieldValueInput): Promise<void>;
+  ): Promise<unknown>;
+  updateFieldValue(
+    payload: UpdateFieldValueInput,
+    options: ApiRequestOptions & { readonly expectedVersion: number },
+  ): Promise<unknown>;
 }
 
 /**
  * A card dropped between two cards of another lane: it takes the lane's value
  * and the new place in its group in one optimistic step, so it sits exactly
- * where the drag showed it. The server gets the move first (it needs the item's
- * version, which the value write then changes; the value write takes none) and
- * the lane's value second. A failure of the move changes nothing on the server.
+ * where the drag showed it. The server gets the move first (it names the version
+ * the person saw) and the lane's value second (it names the version the move
+ * returned). A failure of the move changes nothing on the server.
  * A failure of the value write after the move puts the card back in its old
  * place on the server too (best effort, with the version the move returned), so
  * the card is not left reordered in the lane it never left. Either failure
@@ -133,17 +137,27 @@ export function runDropItemInLane(
         },
         context,
       );
+      const version = moved && "version" in moved ? moved.version : undefined;
       try {
+        if (typeof version !== "number") {
+          throw new UnknownItemVersionError(variables.cardId);
+        }
         if (variables.lane.viaStatusEndpoint) {
-          await cards.updateStatus(variables.cardId, variables.lane.optionId, {
-            correlationId: context.correlationId,
-            idempotencyKey: cardCommandId("item-status", variables.cardId),
-          });
+          await cards.updateStatus(
+            variables.cardId,
+            variables.lane.optionId,
+            version,
+            {
+              correlationId: context.correlationId,
+              idempotencyKey: cardCommandId("item-status", variables.cardId),
+            },
+          );
         } else {
-          await cards.updateFieldValue(payload);
+          await cards.updateFieldValue(payload, {
+            expectedVersion: version,
+          });
         }
       } catch (error) {
-        const version = moved && "version" in moved ? moved.version : undefined;
         if (typeof version === "number") {
           await cards
             .moveCard(

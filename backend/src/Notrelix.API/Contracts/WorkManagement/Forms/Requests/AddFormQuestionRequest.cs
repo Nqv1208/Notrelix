@@ -6,6 +6,7 @@ public record AddFormQuestionRequest(
     string QuestionKey,
     FormQuestionType QuestionType,
     string Label,
+    long ExpectedVersion,
     bool IsRequired = false,
     string? ConfigJson = null,
     string? Position = null,

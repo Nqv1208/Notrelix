@@ -35,6 +35,13 @@ import {
   INPUT_CLASS,
   TEXTAREA_CLASS,
 } from "../board-settings/board-settings-parts";
+import {
+  CHANGED_INPUT_CLASS,
+  ConflictFieldNote,
+  ConflictNotice,
+  timeOf,
+  type ConflictDiffRow,
+} from "../board-settings/board-settings-conflict-parts";
 import { FormFillSurface } from "./form-fill-surface";
 import { Chip, FormAlert, FormStatusChip } from "./forms-parts";
 import { fillFormsCopy, type FormsCopy } from "./forms.copy";
@@ -79,9 +86,30 @@ export interface FormBuilderSurfaceProps {
   readonly onPublish: () => Promise<FormWriteResult>;
   readonly onClose: () => Promise<FormWriteResult>;
   readonly onCopyLink: () => Promise<boolean>;
-  readonly onReload: () => void;
+  readonly onReload: () => void | Promise<unknown>;
+  /** Reads the form as saved now without replacing the one shown (the diff of a stale save). */
+  readonly onReadLatest?: () => Promise<FormDetail | null>;
   readonly onBack: () => void;
 }
+
+/** What the person's refused write would have changed, one line of the diff. */
+interface MinePart {
+  readonly id: string;
+  readonly value: string;
+}
+
+type Problem =
+  | { kind: "save" | "publish" | "stale"; retry?: () => void }
+  | {
+      kind: "conflict";
+      redo: () => Promise<FormWriteResult>;
+      byName: string | null;
+      at: string | null;
+      mine: readonly MinePart[];
+      editingId: string | null;
+      latest: FormDetail | null | undefined;
+      busy: "mine" | "theirs" | null;
+    };
 
 const BUILT_IN_TYPE: Readonly<Record<BuiltInTarget, FormQuestionType>> = {
   title: "text",
@@ -184,10 +212,18 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
   const [title, setTitle] = useState(form.title);
   const [description, setDescription] = useState(form.description);
   const [titleError, setTitleError] = useState(false);
-  const [problem, setProblem] = useState<null | {
-    kind: "conflict" | "save" | "publish";
-    retry?: () => void;
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [outcome, setOutcome] = useState<null | {
+    kind: "mine" | "theirs";
+    by: string | null;
   }>(null);
+  const cn_ = copy.builder.conflictNotice;
+  const conflict = problem?.kind === "conflict" ? problem : null;
+  const latestById = new Map(conflict?.latest?.questions.map((q) => [q.id, q]));
+  const differs = (q: FormQuestion) => {
+    const other = latestById.get(q.id);
+    return Boolean(other) && JSON.stringify(other) !== JSON.stringify(q);
+  };
   const [adding, setAdding] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -197,23 +233,72 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
 
   // A newer read replaces the drafts of the name and description.
   useEffect(() => {
-    if (form.version === syncedVersion.current) return;
+    if (conflict || form.version === syncedVersion.current) return;
     syncedVersion.current = form.version;
     setTitle(form.title);
     setDescription(form.description);
-  }, [form.version, form.title, form.description]);
+  }, [form.version, form.title, form.description, conflict]);
 
-  function settle(result: FormWriteResult, retry: () => void): boolean {
+  function settle(
+    result: FormWriteResult,
+    redo: () => Promise<FormWriteResult>,
+    mine: readonly MinePart[] = [],
+  ): boolean {
     if (result.ok) {
       setProblem(null);
       return true;
     }
+    if (result.reason === "conflict" && result.conflict) {
+      setOutcome(null);
+      setProblem({
+        kind: "conflict",
+        redo,
+        byName: result.conflict.byName,
+        at: result.conflict.at,
+        mine,
+        editingId: props.selectedId,
+        latest: undefined,
+        busy: null,
+      });
+      void props
+        .onReadLatest?.()
+        .then((latest) =>
+          setProblem((held) =>
+            held?.kind === "conflict" && held.redo === redo
+              ? { ...held, latest }
+              : held,
+          ),
+        );
+      return false;
+    }
     setProblem(
       result.reason === "conflict"
-        ? { kind: "conflict" }
-        : { kind: "save", retry },
+        ? { kind: "stale" }
+        : {
+            kind: "save",
+            retry: () => void redo().then((next) => settle(next, redo, mine)),
+          },
     );
     return false;
+  }
+
+  async function takeTheirs() {
+    if (problem?.kind !== "conflict") return;
+    const by = problem.byName;
+    setProblem({ ...problem, busy: "theirs" });
+    await props.onReload();
+    setProblem(null);
+    setOutcome({ kind: "theirs", by });
+  }
+
+  async function keepMine() {
+    if (problem?.kind !== "conflict") return;
+    const held = problem;
+    setProblem({ ...held, busy: "mine" });
+    await props.onReload();
+    const result = await held.redo();
+    if (settle(result, held.redo, held.mine))
+      setOutcome({ kind: "mine", by: held.byName });
   }
 
   async function saveDetails() {
@@ -222,7 +307,14 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
     setTitleError(false);
     if (title.trim() === form.title && description === form.description) return;
     const send = () => props.onUpdateDetails(title.trim(), description);
-    settle(await send(), () => void saveDetails());
+    settle(await send(), send, [
+      ...(title.trim() !== form.title
+        ? [{ id: "title", value: title.trim() }]
+        : []),
+      ...(description !== form.description
+        ? [{ id: "description", value: description }]
+        : []),
+    ]);
   }
 
   async function add(input: {
@@ -248,8 +340,9 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
       boardFieldId: null,
       position: orderKeyBetween(last?.position ?? null, null),
     };
-    const result = await props.onAddQuestion(draft);
-    if (settle(result, () => void add(input))) setJustPublished(false);
+    const send = () => props.onAddQuestion(draft);
+    const result = await send();
+    if (settle(result, send)) setJustPublished(false);
   }
 
   async function move(question: FormQuestion, toIndex: number) {
@@ -260,7 +353,9 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
     );
     const send = () =>
       props.onUpdateQuestion(question, changesOf(question, { position }));
-    settle(await send(), () => void move(question, toIndex));
+    settle(await send(), send, [
+      { id: "order", value: b.conflictNotice.reordered },
+    ]);
   }
 
   async function publish() {
@@ -268,12 +363,8 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
     if (result.ok) {
       setProblem(null);
       setJustPublished(true);
-    } else
-      setProblem(
-        result.reason === "conflict"
-          ? { kind: "conflict" }
-          : { kind: "publish", retry: () => void publish() },
-      );
+    } else if (result.reason === "conflict") settle(result, props.onPublish);
+    else setProblem({ kind: "publish", retry: () => void publish() });
   }
 
   async function copyLink() {
@@ -346,7 +437,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
             {form.status === "draft" ? (
               <button
                 type="button"
-                disabled={blocked}
+                disabled={blocked || conflict !== null}
                 onClick={() => void publish()}
                 className={BUTTON_CLASS.primary}
               >
@@ -381,6 +472,28 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
           ) : null}
 
           <div className="flex flex-col gap-4 p-4 sm:p-5">
+            {conflict ? (
+              <FormConflict
+                copy={cn_}
+                form={form}
+                conflict={conflict}
+                questions={questions}
+                timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                onTakeTheirs={() => void takeTheirs()}
+                onKeepMine={() => void keepMine()}
+              />
+            ) : outcome ? (
+              <p
+                role="status"
+                className="m-0 flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground"
+              >
+                <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                {fillFormsCopy(
+                  outcome.kind === "mine" ? cn_.savedMine : cn_.tookTheirs,
+                  { by: outcome.by ?? cn_.someone },
+                )}
+              </p>
+            ) : null}
             {form.status === "published" ? (
               <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-success-subtle/40 p-3">
                 <span className="min-w-[200px] flex-1">
@@ -410,7 +523,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                 <span>{b.closedNote}</span>
               </div>
             ) : null}
-            {problem?.kind === "conflict" ? (
+            {problem?.kind === "stale" ? (
               <div
                 role="alert"
                 className="flex flex-col gap-2 rounded-[10px] bg-warning-subtle p-3 text-item-small"
@@ -426,14 +539,14 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                   type="button"
                   onClick={() => {
                     setProblem(null);
-                    props.onReload();
+                    void props.onReload();
                   }}
                   className={cn(BUTTON_CLASS.outline, "h-7 self-start")}
                 >
                   {b.reload}
                 </button>
               </div>
-            ) : problem ? (
+            ) : problem && problem.kind !== "conflict" ? (
               <FormAlert
                 message={
                   problem.kind === "publish" ? b.publishFailed : b.saveFailed
@@ -525,6 +638,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                       last={index === questions.length - 1}
                       selected={q.id === props.selectedId}
                       duplicate={duplicateIds.has(q.id)}
+                      differs={differs(q) ? cn_.differs : null}
                       readOnly={closed}
                       dragging={dragId === q.id}
                       target={targetName(q, fields, copy)}
@@ -560,22 +674,30 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
 
         {selected ? (
           <QuestionPanel
-            key={selected.id}
+            key={`${selected.id}:${form.version}`}
             copy={copy}
             q={selected}
+            latestLabel={
+              conflict && latestById.get(selected.id)?.label !== selected.label
+                ? (latestById.get(selected.id)?.label ?? null)
+                : null
+            }
+            savedBy={conflict?.byName ?? cn_.someone}
             n={questions.findIndex((q) => q.id === selected.id) + 1}
             fields={fields}
             questions={questions}
             readOnly={closed}
-            onSave={async (changes) =>
-              settle(
-                await props.onUpdateQuestion(selected, changes),
-                () => void props.onUpdateQuestion(selected, changes),
-              )
-            }
+            onSave={async (changes) => {
+              const send = () => props.onUpdateQuestion(selected, changes);
+              return settle(await send(), send, minesOf(selected, changes));
+            }}
             onRemove={async () => {
-              const result = await props.onRemoveQuestion(selected);
-              if (settle(result, () => void props.onRemoveQuestion(selected)))
+              const send = () => props.onRemoveQuestion(selected);
+              if (
+                settle(await send(), send, [
+                  { id: `q:${selected.id}:gone`, value: cn_.removed },
+                ])
+              )
                 props.onSelect(null);
             }}
           />
@@ -683,6 +805,7 @@ function QuestionRow({
   last,
   selected,
   duplicate,
+  differs,
   readOnly,
   dragging,
   target,
@@ -700,6 +823,8 @@ function QuestionRow({
   last: boolean;
   selected: boolean;
   duplicate: boolean;
+  /** "Differs from the new version" while a stale save is open, else null. */
+  differs: string | null;
   readOnly: boolean;
   dragging: boolean;
   target: string | null;
@@ -760,6 +885,11 @@ function QuestionRow({
         </small>
       </button>
       <span className="flex items-center gap-1">
+        {differs ? (
+          <span className="inline-flex h-5 shrink-0 items-center rounded-[6px] bg-warning-subtle px-[7px] text-metadata font-semibold whitespace-nowrap text-warning-text">
+            {differs}
+          </span>
+        ) : null}
         {q.required ? <Chip tone="brand">{b.required}</Chip> : null}
         {duplicate ? <Chip tone="danger">{b.duplicate}</Chip> : null}
         {readOnly ? null : (
@@ -792,6 +922,8 @@ function QuestionRow({
 function QuestionPanel({
   copy,
   q,
+  latestLabel,
+  savedBy,
   n,
   fields,
   questions,
@@ -801,6 +933,9 @@ function QuestionPanel({
 }: {
   copy: FormsCopy;
   q: FormQuestion;
+  /** The label the other person saved, while a stale save is open and it differs. */
+  latestLabel: string | null;
+  savedBy: string;
   n: number;
   fields: readonly FormBoardField[];
   questions: readonly FormQuestion[];
@@ -894,8 +1029,19 @@ function QuestionPanel({
             if (label.trim() === "") return setLabelError(true);
             if (label.trim() !== q.label) void save({ label: label.trim() });
           }}
-          className={INPUT_CLASS}
+          className={cn(
+            INPUT_CLASS,
+            latestLabel !== null && CHANGED_INPUT_CLASS,
+          )}
         />
+        {latestLabel !== null ? (
+          <ConflictFieldNote>
+            {fillFormsCopy(b.conflictNotice.labelChanged, {
+              by: savedBy,
+              value: latestLabel,
+            })}
+          </ConflictFieldNote>
+        ) : null}
         {labelError ? (
           <span
             role="alert"
@@ -1246,4 +1392,195 @@ function QuestionPanel({
       )}
     </aside>
   );
+}
+
+/** The line of the diff a refused question update stands for. */
+function minesOf(q: FormQuestion, changes: FormQuestionChanges): MinePart[] {
+  const parts: MinePart[] = [];
+  if (changes.label !== q.label)
+    parts.push({ id: `q:${q.id}:label`, value: changes.label });
+  if (changes.required !== q.required)
+    parts.push({ id: `q:${q.id}:required`, value: String(changes.required) });
+  if (changes.position !== q.position) parts.push({ id: "order", value: "" });
+  const rest = changesOf(q, {});
+  const touched = (Object.keys(rest) as (keyof FormQuestionChanges)[]).some(
+    (key) =>
+      !["label", "required", "position"].includes(key) &&
+      JSON.stringify(changes[key]) !== JSON.stringify(rest[key]),
+  );
+  if (touched) parts.push({ id: `q:${q.id}:settings`, value: "" });
+  return parts;
+}
+
+type ConflictCopy = FormsCopy["builder"]["conflictNotice"];
+
+/** The notice of a stale save in the builder, with the diff against the latest saved form. */
+function FormConflict({
+  copy,
+  form,
+  conflict,
+  questions,
+  timeZone,
+  onTakeTheirs,
+  onKeepMine,
+}: {
+  copy: ConflictCopy;
+  form: FormDetail;
+  conflict: Extract<Problem, { kind: "conflict" }>;
+  questions: readonly FormQuestion[];
+  timeZone: string;
+  onTakeTheirs: () => void;
+  onKeepMine: () => void;
+}) {
+  const by = conflict.byName ?? copy.someone;
+  const time = timeOf(conflict.at, timeZone);
+  const editingN = questions.findIndex((q) => q.id === conflict.editingId) + 1;
+  const mine = new Map(conflict.mine.map((part) => [part.id, part.value]));
+  const rows = conflict.latest
+    ? formDiffRows(form, conflict.latest, mine, copy)
+    : undefined;
+  return (
+    <ConflictNotice
+      copy={{
+        ...copy,
+        title: fillFormsCopy(time ? copy.title : copy.titleNoTime, {
+          by,
+          time: time ?? "",
+        }),
+        body: fillFormsCopy(copy.body, {
+          editing:
+            editingN > 0 ? fillFormsCopy(copy.editing, { n: editingN }) : "",
+        }),
+        columns: {
+          ...copy.columns,
+          latest: fillFormsCopy(copy.columns.latest, { by }),
+        },
+        diffHint: fillFormsCopy(copy.diffHint, { by }),
+      }}
+      busy={conflict.busy}
+      rows={rows}
+      onTakeTheirs={onTakeTheirs}
+      onKeepMine={onKeepMine}
+    />
+  );
+}
+
+function formDiffRows(
+  base: FormDetail,
+  latest: FormDetail,
+  mine: ReadonlyMap<string, string>,
+  t: ConflictCopy,
+): ConflictDiffRow[] {
+  const rows: ConflictDiffRow[] = [];
+  const add = (
+    id: string,
+    label: string,
+    theirs: string | null,
+    own?: string,
+    keep?: "mine" | "latest",
+  ) => {
+    const owned = own ?? mine.get(id) ?? null;
+    if (theirs === null && owned === null) return;
+    rows.push({
+      id,
+      label,
+      mine: owned,
+      latest: theirs,
+      keep: keep ?? (owned !== null ? "mine" : "latest"),
+    });
+  };
+
+  add("title", t.partTitle, latest.title !== base.title ? latest.title : null);
+  add(
+    "description",
+    t.partDescription,
+    latest.description !== base.description ? latest.description : null,
+  );
+  const before = new Map(base.questions.map((q) => [q.id, q]));
+  const after = new Map(latest.questions.map((q) => [q.id, q]));
+  latest.questions.forEach((q, index) => {
+    const old = before.get(q.id);
+    const n = index + 1;
+    if (!old) {
+      add(
+        `new:${q.id}`,
+        fillFormsCopy(t.partNew, { n }),
+        q.label,
+        t.none,
+        "latest",
+      );
+      return;
+    }
+    const what = (key: string, text: string) =>
+      fillFormsCopy(t.partQuestion, {
+        n: base.questions.indexOf(old) + 1,
+        what: text,
+      });
+    if (q.label !== old.label)
+      add(`q:${q.id}:label`, what("label", t.whatLabel), q.label);
+    if (q.required !== old.required)
+      add(
+        `q:${q.id}:required`,
+        what("required", t.whatRequired),
+        q.required ? t.yes : t.no,
+      );
+    if (q.boardFieldId !== old.boardFieldId)
+      add(`q:${q.id}:mapping`, what("mapping", t.whatMapping), t.whatMapping);
+    if (q.type !== old.type)
+      add(`q:${q.id}:type`, what("type", t.whatType), q.type);
+  });
+  base.questions.forEach((q, index) => {
+    if (!after.has(q.id))
+      add(
+        `gone:${q.id}`,
+        fillFormsCopy(t.partGone, { n: index + 1 }),
+        t.removed,
+      );
+  });
+  const common = (
+    list: readonly FormQuestion[],
+    other: ReadonlyMap<string, FormQuestion>,
+  ) =>
+    list
+      .filter((q) => other.has(q.id))
+      .map((q) => q.id)
+      .join(",");
+  add(
+    "order",
+    t.partOrder,
+    common(base.questions, after) !== common(latest.questions, before)
+      ? t.reordered
+      : null,
+  );
+  // What the person changed that the other did not touch still shows, to be kept.
+  for (const [id, value] of mine) {
+    if (rows.some((row) => row.id === id) || id === "order") continue;
+    const match = /^q:(.+):(label|required|settings|gone)$/.exec(id);
+    const n = match
+      ? base.questions.findIndex((q) => q.id === match[1]) + 1
+      : 0;
+    const what =
+      match?.[2] === "label"
+        ? t.whatLabel
+        : match?.[2] === "required"
+          ? t.whatRequired
+          : t.whatSettings;
+    add(
+      id,
+      n > 0
+        ? fillFormsCopy(t.partQuestion, { n, what })
+        : id === "title"
+          ? t.partTitle
+          : t.partDescription,
+      null,
+      match?.[2] === "required"
+        ? value === "true"
+          ? t.yes
+          : t.no
+        : value === ""
+          ? t.whatSettings
+          : value,
+    );
+  }
+  return rows;
 }

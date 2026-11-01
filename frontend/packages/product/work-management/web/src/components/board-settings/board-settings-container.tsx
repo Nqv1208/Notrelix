@@ -3,6 +3,7 @@ import {
   useBoardAccess,
   useBoardLabels,
   useBoardLabelWrites,
+  useDeletedFields,
   useBoardTemplates,
   useBoardTemplateWrites,
   useBoardSettings,
@@ -12,6 +13,7 @@ import {
   useSavedViews,
   useWorkspaceAutomations,
 } from "@notrelix/work-management-state";
+import type { BoardSettingsFieldType } from "@notrelix/work-management-core";
 import {
   resolveKanbanSettings,
   type BoardSettingsDto,
@@ -29,6 +31,7 @@ import type {
   BoardSettingsSection,
   BoardSettingsSpace,
   BoardLabelsPanelProps,
+  DeletedFieldsPanelProps,
   BoardTemplatesPanelProps,
   WorkspaceRulesPanelProps,
 } from "./board-settings-types";
@@ -41,6 +44,8 @@ export interface BoardSettingsHost {
   readonly onOpenAccess?: () => void;
   /** The board was archived or deleted: leave the page. */
   readonly onLeave?: (reason: "archived" | "deleted") => void;
+  /** Opens the dialog that places the board in another Space; absent when the host has none. */
+  readonly onMoveBoard?: () => void;
   /** Opens a form of the board in its builder. */
   readonly onOpenForm: (formId: string) => void;
   /** Opens the response inbox of a form. */
@@ -90,7 +95,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const { workspaceId, boardId } = props;
   const copy = useBoardSettingsCopy();
   const laneCopy = useKanbanLaneCopy();
-  const { board, groups } = useFullBoard(boardId, workspaceId);
+  const { board, groups, paging } = useFullBoard(boardId, workspaceId);
   // The Kanban panel edits the Kanban view that is open (or the board's first one).
   const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId, {
     viewId: props.viewId ?? undefined,
@@ -99,14 +104,22 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const savedViews = useSavedViews(boardId, workspaceId);
   const kanban = useMemo(() => resolveKanbanSettings(viewConfig), [viewConfig]);
   const { access, error: accessError } = useBoardAccess(boardId, workspaceId);
-  const { settings, isLoading, isError, forbidden, refetch, write } =
-    useBoardSettings(boardId, workspaceId);
+  const {
+    settings,
+    isLoading,
+    isError,
+    forbidden,
+    refetch,
+    write,
+    readLatest,
+  } = useBoardSettings(boardId, workspaceId);
 
   const actions = useMemo<BoardSettingsActions>(
     () => ({
       updateGeneral: (changes) =>
         write((api, s) => api.updateGeneral(s, changes)),
       archiveBoard: () => write((api, s) => api.archiveBoard(s)),
+      unarchiveBoard: () => write((api, s) => api.unarchiveBoard(s)),
       deleteBoard: () => write((api, s) => api.deleteBoard(s)),
       createField: (type, input) =>
         write((api, s) =>
@@ -156,18 +169,70 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       },
       setDefaultView: (viewId) =>
         write((api, s) => api.setDefaultView(s, viewId)),
-      deleteView: (viewId) => write((api, s) => api.deleteView(s, viewId)),
+      deleteView: (viewId, newDefaultViewId) =>
+        write((api, s) => api.deleteView(s, viewId, newDefaultViewId)),
       createGroup: (name) => write((api, s) => api.createGroup(s, name)),
       reorderGroups: (ids) => write((api, s) => api.reorderGroups(s, ids)),
       updateGroup: (groupId, changes) =>
         write((api, s) => api.updateGroup(s, groupId, changes)),
       deleteGroup: (groupId, moveToGroupId) =>
         write((api, s) => api.deleteGroup(s, groupId, moveToGroupId)),
+      duplicateGroup: (groupId, title) =>
+        write((api, s) => api.duplicateGroup(s, groupId, title)),
+      archiveGroup: (groupId) =>
+        write((api, s) => api.archiveGroup(s, groupId)),
+      unarchiveGroup: (groupId) =>
+        write((api, s) => api.unarchiveGroup(s, groupId)),
       setAutomationEnabled: unsupported,
     }),
     [copy, savedViews.views, write],
   );
 
+  const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
+  const deletedFields = useMemo<DeletedFieldsPanelProps>(
+    () => ({
+      status: deletedList.isError
+        ? "error"
+        : deletedList.fields
+          ? "ready"
+          : "loading",
+      fields: (deletedList.fields ?? []).flatMap((field) =>
+        field.id && field.deletedAt && field.restorableUntil
+          ? [
+              {
+                id: field.id,
+                name: field.name ?? "",
+                type: (
+                  field.fieldType ?? "text"
+                ).toLowerCase() as BoardSettingsFieldType,
+                deletedAt: field.deletedAt,
+                restorableUntil: field.restorableUntil,
+                deletedByName: field.deletedByName ?? null,
+                valueCount: field.valueCount ?? 0,
+              },
+            ]
+          : [],
+      ),
+      restoringId: deletedList.restoringId,
+      onReload: () => void deletedList.refetch(),
+      onRestore: async (fieldId) => {
+        try {
+          await deletedList.restore(fieldId);
+          return "restored";
+        } catch (error) {
+          const failure = error as { code?: string; status?: number } | null;
+          if (failure?.code === "work-management.field.name-taken")
+            return "name-taken";
+          if (failure?.code === "work-management.field.restore-window-closed")
+            return "expired";
+          if (failure?.status === 403 || failure?.status === 404)
+            return "forbidden";
+          return "failed";
+        }
+      },
+    }),
+    [deletedList],
+  );
   const boardLabels = useBoardLabels(boardId, workspaceId);
   const labelWrites = useBoardLabelWrites(boardId, workspaceId);
   const labels = useMemo<BoardLabelsPanelProps>(() => {
@@ -209,8 +274,8 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
   const templates = useMemo<BoardTemplatesPanelProps>(() => {
     let itemCount: number | undefined;
     if (board) {
-      itemCount = 0;
-      for (const group of groups) itemCount += group.cards.length;
+      itemCount = paging?.totalItems ?? 0;
+      if (!paging) for (const group of groups) itemCount += group.cards.length;
     }
     return {
       status: boardTemplates.isError
@@ -228,7 +293,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onArchive: templateWrites.archive,
       onDelete: templateWrites.remove,
     };
-  }, [board, boardId, boardTemplates, groups, templateWrites]);
+  }, [board, boardId, boardTemplates, groups, paging, templateWrites]);
 
   const rules = useWorkspaceAutomations(
     workspaceId,
@@ -308,6 +373,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       actions={actions}
       workspaceRules={workspaceRules}
       labels={labels}
+      deletedFields={deletedFields}
       forms={forms}
       templates={templates}
       kanbanSettings={
@@ -323,11 +389,13 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
           }
         />
       }
-      onReload={() => void refetch()}
+      onReload={refetch}
+      onReadLatest={readLatest}
       boardHref={props.boardHref}
       onBack={props.onBack}
       onOpenAccess={props.onOpenAccess}
       onLeave={props.onLeave}
+      onMoveBoard={props.onMoveBoard}
     />
   );
 }

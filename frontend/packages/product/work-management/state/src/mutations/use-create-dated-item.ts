@@ -28,8 +28,12 @@ interface DatedItemWriter {
     boardId: string,
     payload: { listId: string; title: string },
     options?: ApiRequestOptions,
-  ): Promise<string | undefined>;
-  updateCard(cardId: string, patch: UpdateCardInput): Promise<void>;
+  ): Promise<{ id: string; version: number } | undefined>;
+  updateCard(
+    cardId: string,
+    patch: UpdateCardInput,
+    options: ApiRequestOptions & { readonly expectedVersion: number },
+  ): Promise<void>;
 }
 
 /**
@@ -67,13 +71,18 @@ export function runCreateDatedItem(
       );
     },
     send: async (context) => {
-      const createdId = await cards.createCard(
+      const created = await cards.createCard(
         variables.boardId,
         { listId: variables.listId, title: variables.title },
         context,
       );
-      if (!createdId) return;
-      await cards.updateCard(createdId, { dueDate: variables.dueDate });
+      if (!created) return;
+      // The create answers the item's first version, which the date write names.
+      await cards.updateCard(
+        created.id,
+        { dueDate: variables.dueDate },
+        { expectedVersion: created.version },
+      );
     },
   });
 }

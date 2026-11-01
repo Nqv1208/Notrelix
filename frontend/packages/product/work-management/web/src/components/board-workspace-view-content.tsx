@@ -30,8 +30,6 @@ export interface BoardScreenProps {
   /** The route `groupBy` parameter: a field id (Kanban). */
   groupBy?: string;
   onGroupByChange?: (fieldId: string) => void;
-  /** Opens an item's own page from the Kanban sheet. */
-  onOpenItemPage?: (itemId: string) => void;
   /** Switches the board to another view by type (the Timeline's undated link). */
   onViewChange?: (view: string) => void;
   /**
@@ -67,7 +65,6 @@ function BoardViewSwitch({
   workspaceId,
   boardId,
   view,
-  onOpenItemPage,
   onViewChange,
   currentUserId,
   ...kanbanParams
@@ -89,7 +86,6 @@ function BoardViewSwitch({
         mode="kanban"
         kanbanParams={kanbanParams}
         currentUserId={currentUserId}
-        onOpenItemPage={onOpenItemPage}
       />
     );
   if (view.type === "calendar")
@@ -129,7 +125,6 @@ function BoardFullDataView({
   mode,
   kanbanParams,
   currentUserId,
-  onOpenItemPage,
   onOpenCalendar,
 }: {
   workspaceId: string;
@@ -137,7 +132,6 @@ function BoardFullDataView({
   mode: "kanban" | "calendar" | "timeline";
   kanbanParams?: KanbanParams;
   currentUserId?: string | null;
-  onOpenItemPage?: (itemId: string) => void;
   onOpenCalendar?: () => void;
 }) {
   const { board, isLoading, error } = useFullBoard(boardId, workspaceId);
@@ -163,7 +157,6 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             {...kanbanParams}
             currentUserId={currentUserId}
-            onOpenItemPage={onOpenItemPage}
           />
         ) : mode === "calendar" ? (
           <BoardCalendarView
@@ -181,6 +174,8 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             selectedItemId={kanbanParams?.selectedItemId}
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            filter={kanbanParams?.filter}
+            onFilterChange={kanbanParams?.onFilterChange}
             currentUserId={currentUserId}
             onOpenCalendar={onOpenCalendar}
           />

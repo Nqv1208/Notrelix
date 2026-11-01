@@ -20,19 +20,38 @@ import { withItemStatus } from "../cache/item-status";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
+import { seenItemVersion } from "./seen-version";
+import { UnknownItemVersionError } from "./use-move-card";
 import type { CardWriteHookOptions } from "./use-update-item-status";
 
 interface FieldValueWriter {
   updateFieldValue(
     payload: UpdateFieldValueInput,
-    options?: ApiRequestOptions & { readonly expectedVersion?: number },
-  ): Promise<void>;
+    options: ApiRequestOptions & { readonly expectedVersion: number },
+  ): Promise<unknown>;
   /** Writes the item's own assignee members (the Assignee system field). */
   setAssignees?(
     cardId: string,
     next: readonly string[],
     current: readonly string[],
-  ): Promise<void>;
+    expectedVersion: number,
+  ): Promise<unknown>;
+}
+
+/**
+ * Formula and Rollup results of a card whose source value was just written:
+ * kept as shown but `stale` until the board read comes back with the new result.
+ */
+function markComputedStale(
+  computed: Card["computedValues"],
+): Card["computedValues"] {
+  if (!computed) return computed;
+  return Object.fromEntries(
+    Object.entries(computed).map(([id, value]) => [
+      id,
+      value.state === "ok" ? { state: "stale", value: value.value } : value,
+    ]),
+  );
 }
 
 /**
@@ -52,11 +71,16 @@ export function applyFieldValue<T extends Card>(
   const priorityField = findPriorityField(fields);
   const isStatus = field !== undefined && field.id === statusField?.id;
   const isPriority = field !== undefined && field.id === priorityField?.id;
+  // Only the item's own Due (first Date field) and Assignee (first Person field)
+  // move its due date and members; a custom Date or Person field is a plain value.
   const isDue =
-    field?.fieldType === "date" ||
+    (field !== undefined &&
+      field.id === fields.find((entry) => entry.fieldType === "date")?.id) ||
     payload.fieldDefinitionId.endsWith("field-due-date");
   const memberIds =
-    field?.fieldType === "person" && Array.isArray(payload.value)
+    field !== undefined &&
+    field.id === fields.find((entry) => entry.fieldType === "person")?.id &&
+    Array.isArray(payload.value)
       ? (payload.value as string[])
       : undefined;
 
@@ -93,6 +117,7 @@ export function applyFieldValue<T extends Card>(
       ...base.fieldValues,
       [payload.fieldDefinitionId]: payload.value,
     },
+    computedValues: markComputedStale(base.computedValues),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -114,6 +139,15 @@ export function runFieldValueCommand(
   const board = queryClient.getQueryData<FullBoardResponse>(
     wmQueryKeys.fullBoard(workspaceId, boardId),
   );
+  // The write names the version the person saw (the cache the screen renders from).
+  const expectedVersion = seenItemVersion(queryClient, {
+    workspaceId,
+    boardId,
+    cardId: payload.cardId,
+  });
+  if (expectedVersion === undefined) {
+    return Promise.reject(new UnknownItemVersionError(payload.cardId));
+  }
   const fields = board?.board.fieldDefinitions ?? [];
   const members = board?.board.members ?? [];
   return runCardCommand({
@@ -144,13 +178,23 @@ export function runFieldValueCommand(
         const current = (findBoardCard(board, payload.cardId)?.members ?? [])
           .map((member) => member.userId)
           .filter((id): id is string => typeof id === "string");
-        return cards.setAssignees(payload.cardId, next, current);
+        return cards
+          .setAssignees(payload.cardId, next, current, expectedVersion)
+          .then(() => undefined);
       }
-      return cards.updateFieldValue(payload, {
-        ...context,
-        expectedVersion:
-          findBoardCard(board, payload.cardId)?.version ?? undefined,
-      });
+      // The server keeps a date field as an instant; the editors pick a day.
+      const value =
+        field?.fieldType === "date" &&
+        typeof payload.value === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(payload.value)
+          ? `${payload.value}T00:00:00.000Z`
+          : payload.value;
+      return cards
+        .updateFieldValue(
+          { ...payload, value },
+          { ...context, expectedVersion },
+        )
+        .then(() => undefined);
     },
   });
 }

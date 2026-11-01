@@ -178,7 +178,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
                 .Set(idempotencyKey, IdempotencyExecutionSource.Internal);
 
             var first = await scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new SetBoardItemDueDateCommand(boardItemId, DateTime.UtcNow.Date.AddDays(1), null));
+                .Send(new SetBoardItemDueDateCommand(boardItemId, DateTime.UtcNow.Date.AddDays(1), null, ExpectedVersion: 1));
             first.Succeeded.Should().BeTrue();
         }
 
@@ -190,7 +190,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
                 .Set(idempotencyKey, IdempotencyExecutionSource.Internal);
 
             var second = await scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new SetBoardItemDueDateCommand(boardItemId, DateTime.UtcNow.Date.AddDays(1), null));
+                .Send(new SetBoardItemDueDateCommand(boardItemId, DateTime.UtcNow.Date.AddDays(1), null, ExpectedVersion: 1));
             second.Succeeded.Should().BeTrue();
         }
 

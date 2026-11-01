@@ -31,6 +31,8 @@ import {
   itemPageTones,
   identity,
   labelTones,
+  COVER_COLOR_IDS,
+  coverFills,
   markTones,
   neutrals,
   priorityHigh,
@@ -212,6 +214,10 @@ export function buildAppearanceColors(
   for (const id of LABEL_TONE_IDS) {
     roles[`label-${id}`] = labelTones[id][appearance].fill;
     roles[`label-${id}-foreground`] = labelTones[id][appearance].onFill;
+  }
+
+  for (const id of COVER_COLOR_IDS) {
+    roles[`cover-${id}`] = coverFills[id];
   }
 
   roles["priority-high"] = priorityHigh[appearance].fill;

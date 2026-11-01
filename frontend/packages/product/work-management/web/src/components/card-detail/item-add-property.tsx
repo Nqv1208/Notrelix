@@ -8,10 +8,15 @@ import type { ItemSheetNewField } from "./task-detail-types";
 
 const TYPES = [
   "text",
+  "long_text",
   "number",
   "checkbox",
   "select",
   "multi_select",
+  "date",
+  "person",
+  "link",
+  "vote",
 ] as const satisfies readonly ItemSheetNewField["fieldType"][];
 
 const OPTION_COLORS = Object.values(ITEM_LABEL_COLORS);
@@ -33,9 +38,15 @@ export function AddPropertyPopover({
   onCreated,
   manageHref,
   triggerClassName,
+  triggerLabel,
+  initialName,
 }: {
   /** Classes of the "+" trigger the popover renders itself. */
   triggerClassName: string;
+  /** Words beside the "+"; absent: the icon alone. */
+  triggerLabel?: string;
+  /** A name already typed (the popup menu's "Tạo trường “…”"): the panel opens on the new-field form with it. */
+  initialName?: string;
   t: ItemSheetCopy["properties"];
   /** Custom properties with no value on this item. */
   emptyFields: readonly FieldDefinition[];
@@ -46,13 +57,14 @@ export function AddPropertyPopover({
   /** Board settings › Fields; absent: no "Quản lý trường" link. */
   manageHref?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
+  const [open, setOpen] = useState(initialName !== undefined);
+  const [creating, setCreating] = useState(initialName !== undefined);
+  const [name, setName] = useState(initialName ?? "");
   const [type, setType] = useState<(typeof TYPES)[number]>("select");
   const [choices, setChoices] = useState(["", ""]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [nameTaken, setNameTaken] = useState(false);
   const errorId = useId();
   const nameId = useId();
   const typeId = useId();
@@ -67,12 +79,15 @@ export function AddPropertyPopover({
     setType("select");
     setChoices(["", ""]);
     setFailed(false);
+    setNameTaken(false);
   }
 
   async function submit() {
     if (!canSubmit) return;
     setBusy(true);
     setFailed(false);
+    setNameTaken(false);
+    let taken = false;
     const id = await onCreate({
       name: name.trim(),
       fieldType: type,
@@ -82,13 +97,21 @@ export function AddPropertyPopover({
             color: OPTION_COLORS[index % OPTION_COLORS.length] ?? "",
           }))
         : [],
-    }).catch(() => null);
+    }).catch((error: unknown) => {
+      taken =
+        typeof error === "object" &&
+        error !== null &&
+        (error as { code?: unknown }).code ===
+          "work-management.field.name-taken";
+      return null;
+    });
     setBusy(false);
     if (id) {
       setOpen(false);
       reset();
       onCreated(id);
-    } else setFailed(true);
+    } else if (taken) setNameTaken(true);
+    else setFailed(true);
   }
 
   return (
@@ -107,6 +130,7 @@ export function AddPropertyPopover({
           className={triggerClassName}
         >
           <Plus aria-hidden="true" className="size-4" />
+          {triggerLabel}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-1">
@@ -130,8 +154,8 @@ export function AddPropertyPopover({
               autoFocus
               value={name}
               maxLength={100}
-              aria-invalid={failed ? true : undefined}
-              aria-describedby={failed ? errorId : undefined}
+              aria-invalid={failed || nameTaken ? true : undefined}
+              aria-describedby={failed || nameTaken ? errorId : undefined}
               onChange={(event) => {
                 setName(event.target.value);
                 setFailed(false);
@@ -195,6 +219,15 @@ export function AddPropertyPopover({
                   {t.addOption}
                 </button>
               </fieldset>
+            ) : null}
+            {nameTaken ? (
+              <p
+                id={errorId}
+                role="alert"
+                className="m-0 text-xs text-danger-text"
+              >
+                {t.createPropertyNameTaken}
+              </p>
             ) : null}
             {failed ? (
               <p

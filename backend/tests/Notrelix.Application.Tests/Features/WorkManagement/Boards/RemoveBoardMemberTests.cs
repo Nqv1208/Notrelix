@@ -18,7 +18,9 @@ public class RemoveBoardMemberTests : WorkManagementHandlerTestBase
         _handler = new RemoveBoardMemberCommandHandler(
             DbContextMock.Object,
             _currentUserMock.Object,
-            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object));
+            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object),
+            DateTimeProviderMock.Object,
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object);
     }
 
     [Fact]
@@ -30,7 +32,7 @@ public class RemoveBoardMemberTests : WorkManagementHandlerTestBase
         var member = BoardMember.Create(board.Id, TestUserId, BoardRole.Member, TestNow);
         SetupBoardMembers(member);
 
-        var command = new RemoveBoardMemberCommand(board.Id, TestUserId);
+        var command = new RemoveBoardMemberCommand(board.Id, TestUserId, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -40,7 +42,7 @@ public class RemoveBoardMemberTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new RemoveBoardMemberCommand(Guid.CreateVersion7(), TestUserId);
+        var command = new RemoveBoardMemberCommand(Guid.CreateVersion7(), TestUserId, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -52,7 +54,7 @@ public class RemoveBoardMemberTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new RemoveBoardMemberCommand(board.Id, Guid.CreateVersion7());
+        var command = new RemoveBoardMemberCommand(board.Id, Guid.CreateVersion7(), ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

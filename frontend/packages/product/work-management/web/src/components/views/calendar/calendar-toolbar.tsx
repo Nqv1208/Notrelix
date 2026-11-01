@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Filter,
   Plus,
 } from "lucide-react";
 import {
@@ -16,17 +15,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@notrelix/ui-web";
-import { type KanbanFilterState } from "../kanban/kanban-filter";
-import {
-  KanbanFilterMenuContent,
-  type KanbanToolbarFilterOptions,
-} from "../kanban/kanban-filter-menu";
 import {
   kanbanPillClass,
   kanbanPrimaryButtonClass,
 } from "../kanban/kanban-chrome";
 import { calendarOutlineButtonClass } from "./calendar-chrome";
-import { filterSegments } from "../kanban/kanban-toolbar";
 import type { CalendarCopy } from "./calendar.copy";
 import type { CalendarDateBasis, CalendarRange } from "./calendar-model";
 
@@ -46,16 +39,13 @@ export interface CalendarToolbarProps {
   onStep: (direction: -1 | 1) => void;
   dateBasis: CalendarDateBasis;
   onDateBasisChange: (basis: CalendarDateBasis) => void;
-  filter: KanbanFilterState;
-  filterOptions: KanbanToolbarFilterOptions;
-  onFilterChange: (filter: KanbanFilterState) => void;
   /** The time zone line ("Giờ Hà Nội (GMT+7)"). */
   zoneLabel: string;
   /** False for a viewer who cannot add items: the add button is not shown. */
   canAdd: boolean;
   onAddItem: () => void;
-  /** The saved-filter controls, after the filter pill. */
-  savedFilters?: ReactNode;
+  /** The view controls: filter, personal-state chip and saved filters. */
+  viewBar?: ReactNode;
 }
 
 /**
@@ -72,16 +62,11 @@ export function CalendarToolbar({
   onStep,
   dateBasis,
   onDateBasisChange,
-  filter,
-  filterOptions,
-  onFilterChange,
   zoneLabel,
   canAdd,
   onAddItem,
-  savedFilters,
+  viewBar,
 }: CalendarToolbarProps) {
-  const segments = filterSegments(copy.filter, filter, filterOptions);
-  const filtered = segments.length > 0;
   const rangeButtons = useRef<Array<HTMLButtonElement | null>>([]);
 
   const onRangeKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -201,44 +186,13 @@ export function CalendarToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              kanbanPillClass,
-              "leading-[1.45] font-normal",
-              filtered &&
-                "bg-state-selected text-state-selected-foreground hover:bg-state-selected hover:text-state-selected-foreground",
-            )}
-          >
-            <Filter className="size-4" aria-hidden="true" />
-            {filtered ? (
-              <>
-                {copy.filter.activePrefix}{" "}
-                <b className="max-w-64 truncate font-semibold">
-                  {segments.join(copy.filterSeparator)}
-                </b>
-              </>
-            ) : (
-              copy.filter.trigger
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <KanbanFilterMenuContent
-          copy={copy.filter}
-          filter={filter}
-          options={filterOptions}
-          onFilterChange={onFilterChange}
-        />
-      </DropdownMenu>
+      {viewBar}
 
-      {savedFilters}
-
-      <span className="flex-1" />
-
-      <span className="text-xs leading-[1.45] text-meta-foreground">
+      {/* The zone line gives way (clipped, full text in the title) so the bar stays on one row. */}
+      <span
+        title={zoneLabel}
+        className="min-w-0 flex-1 basis-0 truncate text-right text-xs leading-[1.45] text-meta-foreground"
+      >
         {zoneLabel}
       </span>
 

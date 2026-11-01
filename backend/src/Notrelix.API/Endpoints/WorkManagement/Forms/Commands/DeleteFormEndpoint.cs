@@ -17,10 +17,11 @@ public static class DeleteFormEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid formId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteFormCommand(formId), cancellationToken);
+        var result = await sender.Send(new DeleteFormCommand(formId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

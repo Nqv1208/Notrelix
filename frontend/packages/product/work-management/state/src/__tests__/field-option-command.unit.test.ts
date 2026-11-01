@@ -96,6 +96,7 @@ describe("field option commands", () => {
       moveOption: vi.fn(),
       addOption: vi.fn(async () => {
         during = options(queryClient, key);
+        return { optionId: "o-new", version: 2 };
       }),
       updateOption: vi.fn(),
     };

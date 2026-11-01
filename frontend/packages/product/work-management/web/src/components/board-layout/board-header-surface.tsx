@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  Archive,
   Building2,
   Eye,
   Link2,
@@ -91,6 +92,15 @@ export interface BoardHeaderPerson {
  */
 export type BoardHeaderVisibility = "space" | "workspace" | "private";
 
+/**
+ * An archived board: it reads, nobody writes. A Manager may unarchive it (`onUnarchive` present);
+ * `state` tells the banner what the last attempt did.
+ */
+export interface BoardHeaderArchived {
+  readonly onUnarchive?: () => void;
+  readonly state?: "idle" | "pending" | "conflict" | "denied" | "failed";
+}
+
 /** The route-composed header data (see `BoardHeaderDataContext`). */
 export interface BoardHeaderData {
   /** The board's Space; `null` for a board at the workspace level. */
@@ -109,6 +119,18 @@ export interface BoardHeaderData {
   readonly onCopyLink?: () => void;
   /** Opens the board's deleted items; absent: no "Deleted items" entry. */
   readonly onOpenTrash?: () => void;
+  /** Opens the board's archived items; absent: no entry in the menu. */
+  readonly onOpenArchive?: () => void;
+  /** Opens the Leave board dialog; absent: no entry in the menu. */
+  readonly onLeave?: () => void;
+  /** Opens the Duplicate board dialog (a Manager); absent: no entry in the menu. */
+  readonly onDuplicate?: () => void;
+  /** Opens the Import items dialog (someone who may create items); absent: no entry in the menu. */
+  readonly onImport?: () => void;
+  /** Opens the Export dialog (anyone who sees the board, not a guest); absent: no entry in the menu. */
+  readonly onExport?: () => void;
+  /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
+  readonly archived?: BoardHeaderArchived;
 }
 
 export interface BoardHeaderSurfaceProps extends BoardHeaderData {
@@ -357,7 +379,13 @@ export function BoardHeaderSurface({
   onOpenSettings,
   onOpenShare,
   onCopyLink,
+  onLeave,
+  onDuplicate,
+  onImport,
+  onExport,
   onOpenTrash,
+  onOpenArchive,
+  archived,
 }: BoardHeaderSurfaceProps) {
   const shareReasonId = React.useId();
   const settingsReasonId = React.useId();
@@ -481,7 +509,13 @@ export function BoardHeaderSurface({
           </>
         ) : null}
 
-        {onCopyLink || canManage || (onOpenTrash && canEditItems) ? (
+        {onCopyLink ||
+        onLeave ||
+        (onDuplicate && canManage) ||
+        (onImport && canEditItems) ||
+        onExport ||
+        canManage ||
+        ((onOpenTrash || onOpenArchive) && canEditItems) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -513,6 +547,11 @@ export function BoardHeaderSurface({
                   {h.copyLink}
                 </DropdownMenuItem>
               ) : null}
+              {onOpenArchive && canEditItems ? (
+                <DropdownMenuItem onSelect={onOpenArchive}>
+                  {h.archivedItems}
+                </DropdownMenuItem>
+              ) : null}
               {onOpenTrash && canEditItems ? (
                 <DropdownMenuItem onSelect={onOpenTrash}>
                   {h.deletedItems}
@@ -535,6 +574,29 @@ export function BoardHeaderSurface({
                   </DropdownMenuItem>
                 </>
               ) : null}
+              {onDuplicate && canManage ? (
+                <DropdownMenuItem onSelect={onDuplicate}>
+                  {h.duplicateBoard}
+                </DropdownMenuItem>
+              ) : null}
+              {onImport && canEditItems ? (
+                <DropdownMenuItem onSelect={onImport}>
+                  {h.importItems}
+                </DropdownMenuItem>
+              ) : null}
+              {onExport ? (
+                <DropdownMenuItem onSelect={onExport}>
+                  {h.exportItems}
+                </DropdownMenuItem>
+              ) : null}
+              {onLeave ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onLeave}>
+                    {h.leaveBoard}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
@@ -550,6 +612,39 @@ export function BoardHeaderSurface({
           </span>
         ) : null}
       </div>
+
+      {archived ? (
+        <div className="mx-4 mt-3 flex flex-wrap items-center gap-2.5 rounded-[9px] border border-line bg-state-hover px-3 py-[9px] text-compact leading-[1.45] font-medium text-foreground sm:mx-6">
+          <Archive aria-hidden="true" className="size-4 shrink-0" />
+          <span className="min-w-0 flex-1">
+            {archived.onUnarchive
+              ? h.archived.bannerManager
+              : h.archived.banner}
+          </span>
+          {archived.onUnarchive ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={archived.state === "pending"}
+              onClick={archived.onUnarchive}
+            >
+              {archived.state === "pending"
+                ? h.archived.unarchiving
+                : h.archived.unarchive}
+            </Button>
+          ) : null}
+          {archived.state &&
+          archived.state !== "idle" &&
+          archived.state !== "pending" ? (
+            <span
+              role="alert"
+              className="basis-full text-crumb text-danger-text"
+            >
+              {h.archived[archived.state]}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {banner ? (
         <div

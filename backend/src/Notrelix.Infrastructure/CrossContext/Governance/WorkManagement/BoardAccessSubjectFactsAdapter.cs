@@ -5,7 +5,7 @@ namespace Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
 
 /// <summary>
 /// Work Management-owned implementation of the published Board access facts
-/// (version and members of an active Board) consumed by the Governance access
+/// (version and members of a Board that is not deleted) consumed by the Governance access
 /// summary. Reads only Work persistence through the Work port; Governance
 /// never touches it.
 /// </summary>
@@ -22,7 +22,7 @@ public sealed class BoardAccessSubjectFactsAdapter : IBoardAccessSubjectFacts
     {
         var board = await _context.Boards
             .AsNoTracking()
-            .Where(b => b.Id == boardId && b.WorkspaceId == workspaceId && !b.IsArchived && b.DeletedAt == null)
+            .Where(b => b.Id == boardId && b.WorkspaceId == workspaceId && b.DeletedAt == null)
             .Select(b => new { b.Id, b.Version, b.Visibility })
             .FirstOrDefaultAsync(cancellationToken);
         if (board is null)

@@ -16,8 +16,11 @@ public static class MapBoardItemEndpoints
 
         boardItems.MapCreateBoardItem();
         boardItems.MapListBoardItems();
+        boardItems.MapListBoardLaneItems();
+        boardItems.MapListBoardDependencies();
         boardItems.MapBulkUpdateBoardItems();
         boardItems.MapListBoardItemTrash();
+        boardItems.MapListArchivedBoardItems();
 
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}")
@@ -51,6 +54,14 @@ public static class MapBoardItemEndpoints
         itemGroup.MapListBoardItemLinks();
         itemGroup.MapCreateBoardItemLink();
         itemGroup.MapDeleteBoardItemLink();
+        itemGroup.MapClearBoardItemLinks();
+        itemGroup.MapSetBoardItemCover();
+        itemGroup.MapSetBoardItemRepeat();
+        itemGroup.MapSetBoardItemReminder();
+        itemGroup.MapSetBoardItemVote();
+        itemGroup.MapListBoardItemVotes();
+        itemGroup.MapRecordBoardItemView();
+        itemGroup.MapListBoardItemViewers();
         itemGroup.MapCreateChildItem();
         itemGroup.MapListChildItems();
         itemGroup.MapMoveChildItem();

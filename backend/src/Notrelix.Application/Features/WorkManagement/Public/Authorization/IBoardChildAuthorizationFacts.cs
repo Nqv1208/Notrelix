@@ -5,7 +5,9 @@ namespace Notrelix.Application.Features.WorkManagement.Public.Authorization;
 /// resource lives in. Governance decides every Board child resource on its
 /// parent Board (GOV-033) and reads that relation through this contract,
 /// never through Work persistence. Deleted children are resolved too (restore
-/// flows); the Board's own lifecycle is decided by the access facts.
+/// flows); the Board's own lifecycle is decided by the access facts. An Item (and
+/// its checklists) also reports whether its Group is archived, so the same
+/// decision can keep it read-only.
 /// </summary>
 public interface IBoardChildAuthorizationFacts
 {
@@ -15,7 +17,8 @@ public interface IBoardChildAuthorizationFacts
 
 /// <param name="IsBoardChild">The kind is a Board child kind (Item, Group, Field, View, Label, Checklist, Checklist item).</param>
 /// <param name="BoardId">The parent Board; null when a Board child does not exist.</param>
-public sealed record BoardChildScope(bool IsBoardChild, Guid? BoardId)
+/// <param name="InArchivedGroup">The child is an Item, or belongs to one, whose Group is archived.</param>
+public sealed record BoardChildScope(bool IsBoardChild, Guid? BoardId, bool InArchivedGroup = false)
 {
     public static readonly BoardChildScope NotBoardChild = new(false, null);
 }

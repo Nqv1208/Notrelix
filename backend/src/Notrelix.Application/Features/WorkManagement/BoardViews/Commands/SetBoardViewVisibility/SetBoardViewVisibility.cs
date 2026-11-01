@@ -8,8 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetBo
 /// sees a view, so another member's private view is not found and a Board view someone else made is refused.
 /// </summary>
 [IdempotencyOperation("work-management.board-views.set-board-view-visibility.v1")]
-public record SetBoardViewVisibilityCommand(Guid BoardId, Guid ViewId, string Visibility)
-    : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+public record SetBoardViewVisibilityCommand(Guid BoardId, Guid ViewId, string Visibility, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
@@ -20,18 +20,28 @@ public class SetBoardViewVisibilityCommandHandler : IRequestHandler<SetBoardView
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public SetBoardViewVisibilityCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(SetBoardViewVisibilityCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(SetBoardViewVisibilityCommand request, CancellationToken ct)
     {
         var view = await _context.BoardViews
             .FirstOrDefaultAsync(v => v.Id == request.ViewId && v.BoardId == request.BoardId, ct);

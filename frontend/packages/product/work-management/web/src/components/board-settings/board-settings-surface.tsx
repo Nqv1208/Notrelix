@@ -131,6 +131,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
             timeZone={props.timeZone}
             defaultFeedback={props.defaultFeedback}
             onReload={props.onReload}
+            readLatest={props.onReadLatest}
           >
             <ReadyBody {...props} />
           </BoardSettingsProvider>
@@ -296,7 +297,13 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
 
   let content: ReactNode;
   if (section === "general")
-    content = <GeneralSection onLeave={props.onLeave} space={props.space} />;
+    content = (
+      <GeneralSection
+        onLeave={props.onLeave}
+        space={props.space}
+        onMove={props.onMoveBoard}
+      />
+    );
   else if (section === "views")
     content = (
       <ViewsSection
@@ -354,6 +361,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
         onSelectField={props.onSelectField}
         defaultPickerOpen={props.defaultPickerOpen}
         defaultArchiveFieldId={props.defaultArchiveFieldId}
+        deleted={props.deletedFields}
       />
     );
 

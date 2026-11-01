@@ -22,7 +22,7 @@ public static class MoveBoardToSpaceEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveBoardToSpaceCommand(boardId, body.SpaceId, body.ExpectedVersion), cancellationToken);
+        var result = await sender.Send(new MoveBoardToSpaceCommand(boardId, body.SpaceId, body.ExpectedVersion, body.AddUserIds), cancellationToken);
         return result.ToNoContentResult();
     }
 }

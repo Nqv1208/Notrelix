@@ -5,6 +5,7 @@
  * No production dependency on this package.
  */
 
+export { itemCapabilitiesStub } from "./mocks/item-capabilities-stub";
 export { boardFixture, boardGroupFixture } from "./fixtures/board.fixture";
 export { cardFixture } from "./fixtures/card.fixture";
 export {

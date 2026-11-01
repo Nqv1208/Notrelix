@@ -19,7 +19,7 @@ public class DeleteLabelTests : WorkManagementHandlerTestBase
             "Bug", LabelColor.Create("#FF0000"), TestUserId, TestNow);
         SetupLabels(label);
 
-        var command = new DeleteLabelCommand(label.Id);
+        var command = new DeleteLabelCommand(label.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -38,7 +38,7 @@ public class DeleteLabelTests : WorkManagementHandlerTestBase
             .ToArray();
         SetupBoardItemLabels(links);
 
-        var result = await _handler.Handle(new DeleteLabelCommand(label.Id), CancellationToken.None);
+        var result = await _handler.Handle(new DeleteLabelCommand(label.Id, ExpectedVersion: 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         var facts = links.SelectMany(l => l.DomainEvents).OfType<BoardItemLabelRemovedDomainEvent>().ToList();
@@ -49,7 +49,7 @@ public class DeleteLabelTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_LabelNotFound_ThrowsNotFoundException()
     {
-        var command = new DeleteLabelCommand(Guid.CreateVersion7());
+        var command = new DeleteLabelCommand(Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

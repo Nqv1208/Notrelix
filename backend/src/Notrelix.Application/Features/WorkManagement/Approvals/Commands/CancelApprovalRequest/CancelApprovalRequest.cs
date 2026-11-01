@@ -32,6 +32,7 @@ public class CancelApprovalRequestCommandHandler : IRequestHandler<CancelApprova
     private readonly IExecutionContextReader _executionContext;
     private readonly IAccessFactsProvider _facts;
     private readonly IAccessPolicyEvaluator _policy;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CancelApprovalRequestCommandHandler(
         IWorkManagementDbContext context,
@@ -40,8 +41,10 @@ public class CancelApprovalRequestCommandHandler : IRequestHandler<CancelApprova
         IResourceVisibility visibility,
         IExecutionContextReader executionContext,
         IAccessFactsProvider facts,
-        IAccessPolicyEvaluator policy)
+        IAccessPolicyEvaluator policy,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -67,6 +70,13 @@ public class CancelApprovalRequestCommandHandler : IRequestHandler<CancelApprova
         RequiresExpectedVersion: false);
 
     public async Task<Result> Handle(CancelApprovalRequestCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(CancelApprovalRequestCommand request, CancellationToken ct)
     {
         var approvalRequest = await _context.ApprovalRequests
             .FirstOrDefaultAsync(r => r.Id == request.RequestId, ct);

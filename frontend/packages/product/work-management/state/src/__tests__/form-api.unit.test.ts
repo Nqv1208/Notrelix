@@ -76,15 +76,19 @@ describe("createFormApi", () => {
 
   it("sends a new question with the producer's enum index and its config", async () => {
     const post = vi.fn(async () => undefined);
-    await apiWith({ post }).addQuestion("f-1", {
-      key: "q_1",
-      type: "select",
-      label: "Ưu tiên",
-      required: true,
-      boardFieldId: null,
-      position: "a0",
-      options: [{ key: "o_1", label: "Cao" }],
-    });
+    await apiWith({ post }).addQuestion(
+      "f-1",
+      {
+        key: "q_1",
+        type: "select",
+        label: "Ưu tiên",
+        required: true,
+        boardFieldId: null,
+        position: "a0",
+        options: [{ key: "o_1", label: "Cao" }],
+      },
+      3,
+    );
     expect(post).toHaveBeenCalledWith("/forms/f-1/questions", {
       questionKey: "q_1",
       questionType: 4,
@@ -96,6 +100,7 @@ describe("createFormApi", () => {
       }),
       position: "a0",
       boardFieldId: null,
+      expectedVersion: 3,
     });
   });
 

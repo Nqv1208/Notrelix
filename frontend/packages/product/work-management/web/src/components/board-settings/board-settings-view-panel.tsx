@@ -58,6 +58,11 @@ export function ViewPanel({
   );
   const [visibility, setVisibility] = useState(view.visibility);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // The default view leaves only with a next one: a shared view that is not it.
+  const nextChoices = settings.views.filter(
+    (entry) => entry.id !== view.id && entry.visibility === "board",
+  );
+  const [nextDefaultId, setNextDefaultId] = useState(nextChoices[0]?.id ?? "");
   const [saving, setSaving] = useState(false);
 
   const Icon = VIEW_ICON[view.kind];
@@ -116,7 +121,9 @@ export function ViewPanel({
   }
 
   async function remove() {
-    const result = await run(() => actions.deleteView(view.id));
+    const result = await run(() =>
+      actions.deleteView(view.id, view.isDefault ? nextDefaultId : undefined),
+    );
     if (result.ok) onClose();
   }
 
@@ -362,6 +369,31 @@ export function ViewPanel({
           <Callout icon={TriangleAlert} tone="warning" role="alert">
             <span className="flex flex-1 flex-col gap-2">
               <span>{fillCopy(t.deleteConfirm, { name: view.name })}</span>
+              {view.isDefault ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  <label
+                    htmlFor={`${nameId}-next`}
+                    className="text-item-small font-medium"
+                  >
+                    {t.nextDefault}
+                  </label>
+                  <Select
+                    value={nextDefaultId}
+                    onValueChange={setNextDefaultId}
+                  >
+                    <SelectTrigger id={`${nameId}-next`} className="w-[220px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nextChoices.map((entry) => (
+                        <SelectItem key={entry.id} value={entry.id}>
+                          {entry.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </span>
+              ) : null}
               <span className="flex gap-2">
                 <button
                   type="button"
@@ -373,6 +405,7 @@ export function ViewPanel({
                 <button
                   type="button"
                   onClick={() => void remove()}
+                  disabled={view.isDefault && nextDefaultId === ""}
                   className={cn(BUTTON_CLASS.danger, "h-7")}
                 >
                   {broken ? t.deleteView : t.delete}
@@ -384,7 +417,7 @@ export function ViewPanel({
       </div>
 
       <div className="flex items-center gap-2 border-t border-line px-[18px] py-3">
-        {view.isDefault ? (
+        {view.isDefault && nextChoices.length === 0 ? (
           <DisabledControl reason={t.deleteDefault}>
             <button
               type="button"

@@ -28,14 +28,17 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public AddBoardMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess,
-        BoardAccessChangeLog changeLog)
+        BoardAccessChangeLog changeLog,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
         _currentUser = currentUser;
@@ -44,6 +47,13 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     }
 
     public async Task<Result> Handle(AddBoardMemberCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(AddBoardMemberCommand request, CancellationToken ct)
     {
         var board = await _context.Boards
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
@@ -66,6 +76,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
 
         var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
         _context.BoardMembers.Add(member);
+        board.RecordAccessChange(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _changeLog.MemberAddedAsync(board.Id, request.UserId, role, ct);
 
         return Result.Success();

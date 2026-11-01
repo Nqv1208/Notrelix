@@ -23,3 +23,4 @@
 \i 023_custom_role_assignments.sql
 \i 024_membership_end_access.sql
 \i 025_invitee_invitations.sql
+\i 026_authz_access_helpers_static.sql

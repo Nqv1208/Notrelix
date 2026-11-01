@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
 
@@ -59,7 +60,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             var permission = EvaluatePermission(descriptor, facts, request, context.UserId);
             if (permission.Kind != AccessDecisionKind.Allowed)
             {
-                return permission;
+                // A deleted Board is NotFound to everyone who cannot manage it (S1).
+                return facts.BoardDeleted && permission.Kind == AccessDecisionKind.Forbidden
+                    ? AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.")
+                    : permission;
             }
         }
 
@@ -100,7 +104,39 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 $"Feature '{code}' is not enabled for this account or usage limit reached.");
         }
 
-        return AccessDecision.Allow();
+        return RefuseWriteOnArchived(facts, request) ?? AccessDecision.Allow();
+    }
+
+    /// <summary>
+    /// GOV-025 step 1 / GOV-033, decided only after every other rule allowed the request, so a
+    /// caller without access still gets the identical NotFound and never learns the Board is
+    /// archived. An archived Board and its children stay readable; any write on them, and any
+    /// write on an Item inside an archived Group, is refused with a stable code. The Board
+    /// lifecycle commands (<see cref="IBoardLifecycleRequest"/>) are the way back and pass, and so
+    /// do a person's own preferences and follows (<see cref="IPersonalBoardRequest"/>), which
+    /// change nothing on the Board.
+    /// </summary>
+    private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
+    {
+        if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)
+        {
+            return null;
+        }
+
+        if (facts.BoardArchived)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This board is archived. Unarchive it to make changes.",
+                WorkManagementDenialCodes.BoardArchived);
+        }
+
+        return facts.ChildInArchivedGroup
+            ? AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This group is archived. Unarchive it to make changes.",
+                WorkManagementDenialCodes.GroupArchived)
+            : null;
     }
 
     private static AccessDecision EvaluatePermission(
@@ -123,8 +159,9 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        // Resource lifecycle comes before every authority fast-path: a
-        // missing/archived/deleted resource is NotFound even for owners.
+        // Resource lifecycle comes before every authority fast-path: a missing or
+        // deleted resource is NotFound even for owners. An archived Board is
+        // reachable; writes on it are refused after the decision (RefuseWriteOnArchived).
         if (descriptor.Scope == ApplicationScopeKind.Resource
             && !facts.ResourceExists)
         {

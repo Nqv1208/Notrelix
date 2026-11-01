@@ -11,6 +11,13 @@ namespace Notrelix.Application.Features.Governance.Abstractions;
 public interface IResourceAccessEntriesReader
 {
     Task<ResourceAccessEntries> ReadAsync(ResourceAccessEntriesRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Active Workspace Owners and Admins: they reach every Workspace-visible resource whatever its Space, so a
+    /// placement never costs them access.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ReadWorkspaceAdminsAsync(ResourceAccessEntriesRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Guid>>([]);
 }
 
 /// <param name="SpaceId">The Space whose direct entries reach the resource, or null when none does.</param>

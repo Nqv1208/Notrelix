@@ -18,7 +18,6 @@ using Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
-using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 
 namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 
@@ -65,7 +64,7 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendAsync(provider, CreateCommentCommand.ForBoardItem(item, "Looks fine", null));
         await FluentActions.Awaiting(() => UpdateBoardAsync(provider, board, "Renamed by a commenter"))
             .Should().ThrowAsync<AppForbidden>("a Commenter cannot edit the Board (Editor action)");
-        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardItemStatusCommand(item, "Done")))
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardItemStatusCommand(item, "Done", ExpectedVersion: 1)))
             .Should().ThrowAsync<AppForbidden>("a Commenter cannot update an item");
         (await OrgTreeTestHost.QueryAsync(provider, new GetBoardAccessQuery(board))).MyLevel.Should().Be("commenter");
     }
@@ -148,18 +147,21 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ArchivedBoard_IsNotFound_ForTheAccessRead_AsForTheFullRead()
+    public async Task ArchivedBoard_IsReadable_ByTheAccessRead_AsByTheFullRead_AndTakesNoWrite()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var board = await _host.SeedBoardAsync(stack, "Old", transition: b => b.Archive(stack.OwnerId, OrgTreeTestHost.BaseTime));
 
         using var provider = CreateProvider(stack, stack.OwnerId);
 
-        var full = await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetFullBoardQuery(board)))
-            .Should().ThrowAsync<AppNotFound>();
-        var access = await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetBoardAccessQuery(board)))
-            .Should().ThrowAsync<AppNotFound>();
-        access.Which.GetType().Should().Be(full.Which.GetType());
+        var full = await OrgTreeTestHost.QueryAsync(provider, new GetFullBoardQuery(board));
+        var access = await OrgTreeTestHost.QueryAsync(provider, new GetBoardAccessQuery(board));
+        full.IsArchived.Should().BeTrue();
+        access.MyLevel.Should().Be("manager");
+
+        var refused = await FluentActions.Awaiting(() => UpdateBoardAsync(provider, board, "Renamed"))
+            .Should().ThrowAsync<AppForbidden>();
+        refused.Which.Code.Should().Be("WorkManagement_Board_Archived");
     }
 
     private async Task UpdateItemAsync(ServiceProvider provider, Guid itemId, string title)

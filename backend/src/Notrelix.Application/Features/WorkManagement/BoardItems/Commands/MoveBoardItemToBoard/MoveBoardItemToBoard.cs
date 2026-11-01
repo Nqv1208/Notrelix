@@ -17,8 +17,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveB
 /// dropped is named in the result. Comments, links and time entries stay with the item.
 /// </summary>
 [IdempotencyOperation("work-management.board-items.move-board-item-to-board.v1")]
-public record MoveBoardItemToBoardCommand(Guid ItemId, Guid TargetBoardId)
-    : ICommand<MoveBoardItemToBoardResult>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+public record MoveBoardItemToBoardCommand(Guid ItemId, Guid TargetBoardId, long ExpectedVersion)
+    : ICommand<MoveBoardItemToBoardResult>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
@@ -38,6 +38,7 @@ public sealed class MoveBoardItemToBoardCommandValidator : AbstractValidator<Mov
 {
     public MoveBoardItemToBoardCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ItemId).NotEmpty();
         RuleFor(x => x.TargetBoardId).NotEmpty();
     }
@@ -52,6 +53,7 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
     private readonly IBoardItemKeyAllocator _keys;
     private readonly IBoardItemTargetAuthorizer _targetAuthorizer;
     private readonly IResourceVisibility _visibility;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveBoardItemToBoardCommandHandler(
         IWorkManagementDbContext context,
@@ -60,8 +62,10 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
         WorkPlacementResolver placement,
         IBoardItemKeyAllocator keys,
         IBoardItemTargetAuthorizer targetAuthorizer,
-        IResourceVisibility visibility)
+        IResourceVisibility visibility,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -73,8 +77,21 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
 
     public async Task<MoveBoardItemToBoardResult> Handle(MoveBoardItemToBoardCommand request, CancellationToken ct)
     {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null)
+        {
+            // The item left its board and joined the target: both boards' viewers refetch.
+            await _realtime.NotifyAsync(request, response, ct);
+            await _realtime.NotifyBoardAsync(request.TargetBoardId, "MoveBoardItemToBoard", ct);
+        }
+        return response;
+    }
+
+    private async Task<MoveBoardItemToBoardResult> HandleCore(MoveBoardItemToBoardCommand request, CancellationToken ct)
+    {
+        // The values are not loaded with the items: they are read and deleted below, so the move's own clearing
+        // of the item's values has nothing tracked to orphan.
         var item = await _context.BoardItems
-            .Include(i => i.FieldValues)
             .FirstOrDefaultAsync(i => i.Id == request.ItemId && i.DeletedAt == null, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.ItemId);
 
@@ -123,17 +140,22 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
         var targetStatus = WorkItemSemanticFields.ResolveStatusField(targetFields);
 
         var children = await _context.BoardItems
-            .Include(c => c.FieldValues)
             .Where(c => c.ParentItemId == item.Id && c.DeletedAt == null)
             .ToListAsync(ct);
         var moving = new List<BoardItem> { item };
         moving.AddRange(children);
         var movingIds = moving.Select(i => i.Id).ToList();
 
+        var held = await _context.BoardItemValues.AsNoTracking()
+            .Where(v => movingIds.Contains(v.ItemId))
+            .Select(v => new { v.ItemId, v.FieldId, v.Value })
+            .ToListAsync(ct);
         var oldValues = moving.ToDictionary(
             i => i.Id,
-            i => i.FieldValues.Select(v => (v.FieldId, v.Value)).ToList());
-        _context.BoardItemValues.RemoveRange(moving.SelectMany(i => i.FieldValues).ToList());
+            i => held.Where(v => v.ItemId == i.Id).Select(v => (v.FieldId, v.Value)).ToList());
+        // Deleted now, while the items are still on their board: a value row is only visible through the board
+        // its field belongs to, so a delete the save orders after the items' move would match no row.
+        await _context.BoardItemValues.Where(v => movingIds.Contains(v.ItemId)).ExecuteDeleteAsync(ct);
 
         var position = await _placement.ResolveAsync(
             new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, targetGroup.Id),
@@ -146,6 +168,21 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
         item.MoveToBoard(targetRef, position, keys[0].Key, keys[0].Sequence, userId, now);
         for (var i = 0; i < children.Count; i++)
             children[i].FollowParentToBoard(targetRef, keys[i + 1].Key, keys[i + 1].Sequence, userId, now);
+
+        // The items' own move is written before their new values: a value row is only visible through the board of
+        // its field, so the insert the save would otherwise order first is refused for an item still on its old board.
+        foreach (var moved in moving)
+        {
+            var (boardId, groupId, itemKey, sequence, at) = (moved.BoardId, moved.GroupId, moved.ItemKey, moved.ItemSequence, moved.Position);
+            await _context.BoardItems.Where(i => i.Id == moved.Id).ExecuteUpdateAsync(
+                set => set
+                    .SetProperty(i => i.BoardId, boardId)
+                    .SetProperty(i => i.GroupId, groupId)
+                    .SetProperty(i => i.ItemKey, itemKey)
+                    .SetProperty(i => i.ItemSequence, sequence)
+                    .SetProperty(i => i.Position, at),
+                ct);
+        }
 
         var dropped = new List<string>();
         foreach (var moved in moving)

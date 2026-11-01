@@ -50,6 +50,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly IBoardSharingSummary _sharing;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
@@ -57,8 +58,10 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
         IResourceAccessChangeRecorder changes,
-        IWorkspaceAccessResolver workspaceAccess)
+        IWorkspaceAccessResolver workspaceAccess,
+        IBoardSharingSummary sharing)
     {
+        _sharing = sharing;
         _workspaceAccess = workspaceAccess;
         _changes = changes;
         _context = context;
@@ -126,6 +129,12 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
 
                 var previous = existingPermission.Level;
                 previousLevel = AccessLevels.OfRank((int)previous);
+                // Lowering the only Manager would leave the Board without one.
+                if (isBoard && previous >= PermissionLevel.Manager && level < PermissionLevel.Manager)
+                {
+                    await BoardManagerFloor.EnsureAnotherManagerAsync(
+                        _sharing, request.ResourceId, subjectType, request.SubjectId, cancellationToken);
+                }
                 existingPermission.ChangeLevel(level, actorId, now);
                 permission = existingPermission;
                 if (isBoard)

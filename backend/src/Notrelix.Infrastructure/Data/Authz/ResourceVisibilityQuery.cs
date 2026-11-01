@@ -22,6 +22,8 @@ namespace Notrelix.Infrastructure.Data.Authz;
 ///   Guests need explicit access.</item>
 /// </list>
 /// A Space is visible when the principal's Space level on it is above zero.
+/// An archived Board is reached by the same single read (GOV-025 step 1: only a missing or
+/// deleted resource is NotFound), so the archived list applies these rules to archived Boards.
 /// The PostgreSQL parity suites (CollectionVisibilityIntegrationTests,
 /// SpaceAccessMatrixIntegrationTests) assert list membership equals the
 /// single-read decision; change both authorities together.
@@ -143,6 +145,14 @@ public static class ResourceVisibilityQuery
                       OR (res.visibility = 'Workspace' AND res.space_id IS NULL AND m.role <> 'Guest')
                       OR (res.visibility = 'Workspace' AND res.space_id IS NOT NULL AND COALESCE(sl.level, 0) >= 1))))
         """;
+
+    /// <summary>
+    /// The archived (not deleted) Boards the principal may see: the <see cref="VisibleBoardsSql"/>
+    /// rules, unchanged, over archived Boards. An archived Board is read by the same decision as
+    /// an active one.
+    /// </summary>
+    public static readonly string VisibleArchivedBoardsSql =
+        VisibleBoardsSql.Replace("res.is_archived = false", "res.is_archived = true", StringComparison.Ordinal);
 
     public const string VisiblePagesSql = Principal + "\n" + """
 

@@ -23,7 +23,7 @@ public static class RenameBoardViewEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RenameBoardViewCommand(viewId, body.Name), cancellationToken);
+        var result = await sender.Send(new RenameBoardViewCommand(viewId, body.Name, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

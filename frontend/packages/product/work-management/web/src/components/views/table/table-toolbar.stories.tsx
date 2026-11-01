@@ -21,11 +21,6 @@ function ToolbarStory({ base }: { base: MainTableToolbarProps }) {
           setState((s) => ({ ...s, searchQuery }))
         }
         onShowDone={() => setState((s) => ({ ...s, hideDone: false }))}
-        onFilterChange={(filter) => setState((s) => ({ ...s, filter }))}
-        onGroupByChange={(groupByFieldId) =>
-          setState((s) => ({ ...s, groupByFieldId }))
-        }
-        onSortChange={(sort) => setState((s) => ({ ...s, sort }))}
         onColumnVisibleChange={(id, visible) =>
           setState((s) => ({
             ...s,

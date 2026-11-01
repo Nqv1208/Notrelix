@@ -1,8 +1,6 @@
-using Notrelix.Domain.WorkManagement.Views;
-
 namespace Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests;
 
+/// <summary>A member's personal state of one view: the opaque criteria and columns JSON (an empty string clears the criteria).</summary>
 public record CreateOrUpdateBoardPreferenceRequest(
-    List<FilterRule>? Filters = null,
-    List<SortRule>? Sorts = null,
-    GroupRule? Group = null);
+    string? Criteria = null,
+    string? Columns = null);

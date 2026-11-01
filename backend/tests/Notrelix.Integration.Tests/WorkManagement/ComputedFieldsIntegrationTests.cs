@@ -199,7 +199,7 @@ public sealed class ComputedFieldsIntegrationTests : IAsyncLifetime
                 (IReadOnlyDictionary<Guid, WorkItemCollaborationCounts>)ids.ToDictionary(id => id, _ => new WorkItemCollaborationCounts(0, 0)));
         var request = new FakeCurrentRequestContext().AsUser(_userId);
         request.Tenant.SetWorkspace(_accountId, workspaceId, _userId);
-        return new GetFullBoardQueryHandler(context, actors.Object, collaboration.Object, visibility.Object, request);
+        return new GetFullBoardQueryHandler(context, actors.Object, new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(context, actors.Object, collaboration.Object, request), new Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader(context), visibility.Object, request);
     }
 
     private BoardField Field(Guid workspaceId, Guid boardId, string name, FieldType type, string settings, string position) =>

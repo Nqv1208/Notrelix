@@ -27,6 +27,7 @@
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
 
+import { projectComputedValues } from "../../state/mock-computed-values";
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
   BoardDtoApi,
@@ -42,6 +43,10 @@ import {
   validationError,
 } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
+import {
+  projectCardSettings,
+  projectVoteValues,
+} from "./item-capabilities.handlers";
 import { savedViewTypeName } from "../../state/mock-board-saved-views";
 import type { MockBoardRecord, MockCardRecord } from "../../state/records";
 import {
@@ -117,11 +122,15 @@ const FIELD_TYPE_NAMES: Record<string, string> = {
   status: "Status",
   select: "Select",
   multi_select: "MultiSelect",
+  long_text: "LongText",
+  link: "Link",
+  formula: "Formula",
   user: "Person",
   person: "Person",
   date: "Date",
   number: "Number",
   checkbox: "Checkbox",
+  vote: "Vote",
   text: "Text",
 };
 
@@ -238,6 +247,16 @@ function projectItemSummary(
     updatedAt: card.updatedAt,
     version: card.version ?? 1,
     ...projectItemReadValues(card, store),
+    // The stored custom values and the Formula results, evaluated on each read.
+    ...projectCardSettings(store, card.id),
+    fieldValues: {
+      ...store.getFieldValues(card.id),
+      ...projectVoteValues(store, card.id, card.boardId),
+    },
+    computedValues: projectComputedValues(
+      store.getColumns(card.boardId),
+      store.getFieldValues(card.id),
+    ),
   };
 }
 
@@ -268,7 +287,9 @@ function projectField(
     isSystem: fieldType === "Status",
     isDeleted: false,
     version: column.version ?? 1,
-    ...(fieldType === "Status" || fieldType === "Select"
+    ...(fieldType === "Status" ||
+    fieldType === "Select" ||
+    fieldType === "MultiSelect"
       ? {
           options: (column.options ?? []).map((option) => ({
             id: option.id,

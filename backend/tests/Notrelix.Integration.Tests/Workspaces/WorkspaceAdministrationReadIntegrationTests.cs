@@ -496,6 +496,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
                 sp.GetRequiredService<IPageAuthorizationFacts>(),
                 new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
+        services.AddSingleton(new Mock<global::Notrelix.Application.Common.Context.IClientMetadata>().Object);
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();

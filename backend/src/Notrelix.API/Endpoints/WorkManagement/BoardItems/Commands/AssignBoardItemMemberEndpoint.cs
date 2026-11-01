@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
@@ -11,6 +12,7 @@ public static class AssignBoardItemMemberEndpoint
         group.MapResourcePost("/assignees", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.AssignMember")
+            .Produces<BoardItemVersionDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Assign a member to board item");
         return group;
@@ -22,8 +24,8 @@ public static class AssignBoardItemMemberEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AssignBoardItemMemberCommand(itemId, body.UserId), cancellationToken);
-        return result.ToNoContentResult();
+        var result = await sender.Send(new AssignBoardItemMemberCommand(itemId, body.UserId, body.ExpectedVersion), cancellationToken);
+        return result.ToItemVersionResult();
     }
 }
 

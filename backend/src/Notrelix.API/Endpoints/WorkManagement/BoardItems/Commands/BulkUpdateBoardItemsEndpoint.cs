@@ -26,6 +26,7 @@ public static class BulkUpdateBoardItemsEndpoint
             boardId,
             body.Operation,
             body.ItemIds,
+            body.ExpectedVersions,
             body.Status,
             body.DueDate,
             body.AssigneeUserId,

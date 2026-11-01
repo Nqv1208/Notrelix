@@ -22,6 +22,24 @@ export function createCommentApi(client: NotrelixClient) {
       );
     },
 
+    /** One page of the comments, oldest first; `nextCursor` goes back as `cursor` for the next one. */
+    async getCardUpdatesPage(cardId: string, cursor?: string) {
+      const page = await api.get<{
+        items?: unknown[] | null;
+        nextCursor?: string | null;
+      }>(
+        `${endpoints.boardItems.commentsPage(cardId)}${
+          cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""
+        }`,
+      );
+      return {
+        items: (page?.items ?? []).map((comment: any) =>
+          mapCommentDtoToCardUpdate(comment, cardId),
+        ),
+        nextCursor: page?.nextCursor ?? null,
+      };
+    },
+
     async createCardUpdate(input: CreateCardUpdateInput) {
       const body: CreateCommentBody = {
         contentMd: input.body,

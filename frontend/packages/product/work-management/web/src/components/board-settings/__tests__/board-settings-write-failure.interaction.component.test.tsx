@@ -149,9 +149,17 @@ describe("a failed settings write", () => {
     fireEvent.click(
       within(panel).getByRole("button", { name: copy.common.save }),
     );
+    // A stale save of a field is settled in the panel: the latest is loaded, who changed it is named,
+    // and the person picks to keep theirs or take the new version.
     const alert = await within(panel).findByRole("alert");
-    expect(alert.textContent).toContain(copy.feedback.conflictReloaded);
-    expect(onReload).toHaveBeenCalledTimes(1);
-    expect(within(alert).queryByRole("button")).toBeNull();
+    expect(alert.textContent).toContain(
+      fillCopy(copy.conflict.titleField, { by: copy.conflict.someone }),
+    );
+    // Nothing is overwritten or dropped until the person chooses: the typed value stays in the form.
+    expect(onReload).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(alert).getByRole("button", { name: copy.conflict.takeTheirs }),
+    );
+    await waitFor(() => expect(onReload).toHaveBeenCalledTimes(1));
   });
 });

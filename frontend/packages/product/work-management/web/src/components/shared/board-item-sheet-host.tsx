@@ -1,16 +1,10 @@
 import { useMemo } from "react";
-import {
-  useBoardAccess,
-  useBoardKanban,
-} from "@notrelix/work-management-state";
-import type {
-  ItemSheetGroup,
-  ItemSheetMark,
-} from "../card-detail/task-detail-types";
+import { useBoardKanban } from "@notrelix/work-management-state";
+import type { ItemSheetGroup } from "../card-detail/task-detail-types";
 import { emptyKanbanFilter } from "../views/kanban/kanban-filter";
 import { KanbanSelectedItem } from "../views/kanban/kanban-view";
 import { BoardViewerContext } from "./board-viewer";
-import { boardCapabilities } from "./board-capabilities";
+import { useBoardCapabilities } from "./board-capabilities";
 import { useItemSheetActions } from "./use-item-sheet-actions";
 
 const NEVER_OVERDUE = () => false;
@@ -19,12 +13,9 @@ export interface BoardItemSheetHostProps {
   readonly workspaceId: string;
   readonly boardId: string;
   readonly itemId: string;
-  /** The department (Space) mark before the Board name in the sheet's crumb. */
-  readonly departmentMark?: ItemSheetMark;
   readonly onClose: () => void;
   /** Gives focus back to the opener as the sheet closes. */
   readonly onRestoreFocus: (itemId: string) => void;
-  readonly onOpenFullPage?: (itemId: string) => void;
   /** The signed-in member, for the approval buttons of the sheet. */
   readonly viewerUserId?: string | null;
 }
@@ -39,10 +30,8 @@ export function BoardItemSheetHost({
   workspaceId,
   boardId,
   itemId,
-  departmentMark,
   onClose,
   onRestoreFocus,
-  onOpenFullPage,
   viewerUserId,
 }: BoardItemSheetHostProps) {
   const filter = useMemo(() => emptyKanbanFilter(), []);
@@ -50,8 +39,7 @@ export function BoardItemSheetHost({
     filter,
     isOverdue: NEVER_OVERDUE,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
   const { board } = kanban;
   const groups = useMemo<ItemSheetGroup[]>(
@@ -69,12 +57,10 @@ export function BoardItemSheetHost({
         board={board}
         cardId={itemId}
         capabilities={capabilities}
-        departmentMark={departmentMark}
         groups={groups}
         onClose={onClose}
         onRestoreFocus={onRestoreFocus}
         onCopyLink={sheet.onCopyLink}
-        onOpenFullPage={onOpenFullPage}
         onMoveToGroup={sheet.onMoveToGroup}
         onUpdateFieldValue={sheet.onUpdateFieldValue}
         onDuplicate={sheet.onDuplicate}

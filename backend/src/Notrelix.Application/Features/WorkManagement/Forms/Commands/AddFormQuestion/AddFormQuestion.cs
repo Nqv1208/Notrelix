@@ -13,11 +13,14 @@ public record AddFormQuestionCommand(
     bool IsRequired,
     string? ConfigJson,
     string? Position,
-    Guid? BoardFieldId = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    Guid? BoardFieldId = null,
+    long? ExpectedVersion = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionCommand, Result>
@@ -42,9 +45,16 @@ public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionComm
             .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
 
-        if (request.BoardFieldId is { } fieldId
-            && !await _context.BoardFields.AsNoTracking().AnyAsync(f => f.Id == fieldId && f.BoardId == form.BoardId && f.DeletedAt == null, ct))
-            throw new NotFoundException("BoardField", fieldId);
+        FormQuestionRules.EnsureSupported(request.QuestionType);
+        if (request.BoardFieldId is { } fieldId)
+        {
+            var target = await _context.BoardFields.AsNoTracking()
+                .Where(f => f.Id == fieldId && f.BoardId == form.BoardId && f.DeletedAt == null)
+                .Select(f => (FieldType?)f.Type)
+                .FirstOrDefaultAsync(ct);
+            if (target is null) throw new NotFoundException("BoardField", fieldId);
+            FormQuestionRules.EnsureFieldCompatible(request.QuestionType, target.Value);
+        }
 
         var accountId = _requestContext.RequireAccountId();
         var position = FractionalIndex.Create(request.Position ?? FractionalIndex.Initial().Value);

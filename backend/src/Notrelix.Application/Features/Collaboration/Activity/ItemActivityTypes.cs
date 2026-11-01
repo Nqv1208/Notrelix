@@ -13,6 +13,7 @@ public static class ItemActivityTypes
     public const string Renamed = "work.item-renamed";
     public const string StatusChanged = "work.item-status-changed";
     public const string FieldChanged = "work.item-field-changed";
+    public const string DatesChanged = "work.item-dates-changed";
     public const string Assigned = "work.item-assigned";
     public const string Unassigned = "work.item-unassigned";
     public const string LabelAdded = "work.item-label-added";

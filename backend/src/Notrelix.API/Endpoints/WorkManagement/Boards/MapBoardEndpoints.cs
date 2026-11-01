@@ -1,5 +1,6 @@
 using Notrelix.API.Endpoints.WorkManagement.Boards.Commands;
 using Notrelix.API.Endpoints.WorkManagement.Boards.Queries;
+using Notrelix.API.Endpoints.WorkManagement.Transfer;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards;
 
@@ -13,6 +14,7 @@ public static class MapBoardEndpoints
             .WithOpenApi();
 
         wsGroup.MapListWorkspaceBoards();
+        wsGroup.MapListRetiredBoards();
         wsGroup.MapCreateBoard();
 
         var boardGroup = app
@@ -25,6 +27,10 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoardOverview();
         boardGroup.MapGetBoardAccess();
         boardGroup.MapGetBoardSharing();
+        boardGroup.MapGetBoardLifecycleImpact();
+        boardGroup.MapGetBoardMoveImpact();
+        boardGroup.MapGetBoardDuplicatePreview();
+        boardGroup.MapDuplicateBoard();
         boardGroup.MapMakeBoardPrivate();
         boardGroup.MapArchiveBoard();
         boardGroup.MapUnarchiveBoard();
@@ -32,6 +38,8 @@ public static class MapBoardEndpoints
         boardGroup.MapRestoreBoard();
         boardGroup.MapUpdateBoardVisibility();
         boardGroup.MapMoveBoardToSpace();
+
+        app.MapBoardTransfer();
 
         var members = app
             .MapGroup("/api/v1/boards/{boardId:guid}/members")

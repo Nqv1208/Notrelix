@@ -1,10 +1,11 @@
 namespace Notrelix.Application.Features.WorkManagement.Public.BoardAccess;
 
 /// <summary>
-/// Work Management-published facts about one active Board for access
-/// summaries: its version and its members. Governance consumes it instead of
-/// reading Work persistence; returns null for a Board that is missing,
-/// archived, deleted or in another Workspace.
+/// Work Management-published facts about one Board for access summaries: its
+/// version and its members. Governance consumes it instead of reading Work
+/// persistence; returns null for a Board that is missing, deleted or in
+/// another Workspace. An archived Board is returned: it is read like any other
+/// (GOV-025 step 1).
 /// </summary>
 public interface IBoardAccessSubjectFacts
 {

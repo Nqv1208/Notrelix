@@ -64,8 +64,14 @@ export function useBoardSharing(
     });
   }, [boardId, client, workspaceId]);
 
+  // The board version the list showed: a stale one changes nothing, and the list is read again.
+  const seenVersion = query.data?.version ?? 0;
   const run = useCallback(
     async (write: SharingWrite) => {
+      const version = () => {
+        if (seenVersion <= 0) throw new Error("The board version is unknown.");
+        return seenVersion;
+      };
       switch (write.kind) {
         case "grant": {
           const body: OperationRequestBody<"Governance.ResourcePermissions.Grant"> =
@@ -92,7 +98,7 @@ export function useBoardSharing(
           return;
         case "member-role": {
           const body: OperationRequestBody<"WorkManagement.Boards.UpdateMemberRole"> =
-            { role: write.role };
+            { role: write.role, expectedVersion: version() };
           await api.api.patch(
             endpoints.boards.memberRole(boardId, write.userId),
             body,
@@ -101,13 +107,14 @@ export function useBoardSharing(
           return;
         }
         case "member-remove":
-          await api.api.delete(endpoints.boards.member(boardId, write.userId), {
-            headers: { "Idempotency-Key": crypto.randomUUID() },
-          });
+          await api.api.delete(
+            `${endpoints.boards.member(boardId, write.userId)}?expectedVersion=${version()}`,
+            { headers: { "Idempotency-Key": crypto.randomUUID() } },
+          );
           return;
       }
     },
-    [api, boardId],
+    [api, boardId, seenVersion],
   );
 
   const runAll = useCallback(

@@ -152,7 +152,7 @@ public class SubItemTests : WorkManagementHandlerTestBase
         store.Single(i => i.Id == own.Id).ArchivedWithParent.Should().BeFalse();
 
         var unarchive = new UnarchiveBoardItemCommandHandler(DbContextMock.Object, _currentUser.Object, DateTimeProviderMock.Object);
-        await unarchive.Handle(new UnarchiveBoardItemCommand(_parent.Id), CancellationToken.None);
+        await unarchive.Handle(new UnarchiveBoardItemCommand(_parent.Id, ExpectedVersion: 1), CancellationToken.None);
 
         _parent.IsArchived.Should().BeFalse();
         store.Single(i => i.Id == taken.Id).IsArchived.Should().BeFalse();

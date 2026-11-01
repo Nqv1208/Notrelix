@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Plus, X } from "lucide-react";
 import { Button, Input } from "@notrelix/ui-web";
 import { fillCopy } from "./kanban-card.copy";
@@ -22,12 +22,16 @@ export function KanbanAddCard({
   copy: KanbanLaneCopy;
   /** Changing this number opens the field (the toolbar's add button). */
   openRequest?: number;
-  onSubmit: (title: string) => void;
+  onSubmit: (title: string) => void | Promise<unknown>;
   /** Opens the full form with the typed title; absent: no "Thêm chi tiết". */
   onExpand?: (title: string) => void;
 }) {
+  const errorId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
+  // The title of a write that failed: it stays in the field with an inline
+  // error and a retry, so nothing typed is lost.
+  const [failed, setFailed] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
@@ -51,11 +55,30 @@ export function KanbanAddCard({
     }
   }, [isOpen]);
 
+  function send(nextTitle: string) {
+    setFailed(null);
+    const written = onSubmit(nextTitle);
+    if (written instanceof Promise) {
+      written.catch(() => {
+        setFailed(nextTitle);
+        setTitle((current) => current || nextTitle);
+      });
+    }
+  }
+
   function submit() {
     const nextTitle = title.trim();
     if (!nextTitle) return;
-    onSubmit(nextTitle);
+    send(nextTitle);
     setTitle("");
+    inputRef.current?.focus();
+  }
+
+  function retry() {
+    if (failed === null) return;
+    const again = failed;
+    if (title.trim() === again) setTitle("");
+    send(again);
     inputRef.current?.focus();
   }
 
@@ -68,6 +91,7 @@ export function KanbanAddCard({
 
   function cancel() {
     setTitle("");
+    setFailed(null);
     restoreFocus.current = true;
     setIsOpen(false);
   }
@@ -115,8 +139,24 @@ export function KanbanAddCard({
         }}
         placeholder={copy.newItemPlaceholder}
         aria-label={fillCopy(copy.newItemLabel, values)}
+        aria-invalid={failed !== null || undefined}
+        aria-describedby={failed !== null ? errorId : undefined}
         className="h-8 border-0 bg-transparent px-1 text-label font-medium shadow-none focus-visible:ring-0"
       />
+      {failed !== null ? (
+        <p
+          id={errorId}
+          role="alert"
+          className="flex items-center gap-1.5 px-1 text-compact text-destructive"
+        >
+          <span className="min-w-0 flex-1">
+            {fillCopy(copy.createFailed, { title: failed })}
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={retry}>
+            {copy.addRetry}
+          </Button>
+        </p>
+      ) : null}
       <div className="flex items-center gap-1.5">
         <Button type="submit" size="sm" disabled={!title.trim()}>
           {copy.addSubmit}

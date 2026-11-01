@@ -26,9 +26,17 @@ public class RequestItemApprovalCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
     IDateTimeProvider clock,
-    IResourceVisibility visibility) : IRequestHandler<RequestItemApprovalCommand, Result<ApprovalRequestIdDto>>
+    IResourceVisibility visibility,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<RequestItemApprovalCommand, Result<ApprovalRequestIdDto>>
 {
     public async Task<Result<ApprovalRequestIdDto>> Handle(RequestItemApprovalCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<ApprovalRequestIdDto>> HandleCore(RequestItemApprovalCommand request, CancellationToken ct)
     {
         var item = await context.BoardItems.AsNoTracking()
             .FirstOrDefaultAsync(i => i.Id == request.ItemId && i.DeletedAt == null, ct)

@@ -219,6 +219,8 @@ export type BoardMemberRoleName =
   "Owner" | "Admin" | "Member" | "Observer" | "Guest";
 
 export interface BoardSharingData {
+  /** The board version of this read: a member role change or removal sends it back. */
+  readonly version?: number;
   /** `Private`, `Workspace` or `PublicLink`, as the producer names it. */
   readonly visibility: string;
   readonly spaceName: string | null;
@@ -274,6 +276,7 @@ export interface BoardSharingData {
 
 /** The producer's sharing read, every field optional as the contract draws it. */
 export interface BoardSharingWire {
+  readonly version?: number;
   readonly canManage?: boolean;
   readonly entriesDisclosed?: boolean;
   readonly visibility?: string | null;
@@ -356,6 +359,7 @@ function levelOrNull(value: string | null | undefined): SharingLevel | null {
 /** The one place the producer's sharing read becomes the dialog's model. */
 export function toBoardSharingData(wire: BoardSharingWire): BoardSharingData {
   return {
+    version: wire.version ?? 0,
     visibility: wire.visibility ?? "Workspace",
     spaceName: wire.spaceName ?? null,
     spacePeople: wire.spacePeople ?? null,

@@ -50,6 +50,10 @@ export interface KanbanViewSettings {
   readonly keyboardMove: boolean;
   /** Lane value id (status or Select option) to its WIP limit; absent: none. */
   readonly wipLimits: Readonly<Record<string, number>>;
+  /** Field ids shown on the card face, in order. */
+  readonly cardFieldIds?: string[];
+  /** Face fields hidden while the card has no value. */
+  readonly cardHideEmpty?: string[];
 }
 
 const wipLimitsSchema = z.record(
@@ -68,7 +72,12 @@ export function resolveKanbanSettings(config: {
   readonly statusManageRoles?: unknown;
   readonly keyboardMove?: unknown;
   readonly wipLimits?: unknown;
+  readonly cardFieldIds?: unknown;
+  readonly cardHideEmpty?: unknown;
 }): KanbanViewSettings {
+  const ids = z.array(z.string());
+  const faceIds = ids.safeParse(config.cardFieldIds);
+  const hideEmpty = ids.safeParse(config.cardHideEmpty);
   const wip = wipLimitsSchema.safeParse(config.wipLimits);
   const limit = config.laneCardLimit;
   const roles = z
@@ -88,6 +97,8 @@ export function resolveKanbanSettings(config: {
     keyboardMove:
       typeof config.keyboardMove === "boolean" ? config.keyboardMove : true,
     wipLimits: wip.success ? wip.data : {},
+    cardFieldIds: faceIds.success ? faceIds.data : [],
+    cardHideEmpty: hideEmpty.success ? hideEmpty.data : [],
   };
 }
 
@@ -113,6 +124,8 @@ export const viewConfigSchema = z.object({
     .transform(normalizeStatusManageRoles),
   keyboardMove: z.boolean().default(true),
   wipLimits: wipLimitsSchema.optional(),
+  cardFieldIds: z.array(z.string()).optional(),
+  cardHideEmpty: z.array(z.string()).optional(),
 });
 
 export type ViewConfigInput = z.infer<typeof viewConfigSchema>;

@@ -18,13 +18,16 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -32,6 +35,13 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardFieldCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateBoardFieldCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BoardId && !b.IsArchived, ct);
@@ -41,6 +51,9 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
         if (!FieldTypeNames.TryParse(request.FieldType, out var type))
             return Result<Guid>.Failure(new ApplicationError(
                 "work.board-field.unknown-type", $"Unknown field type '{request.FieldType}'.", ApplicationErrorType.Validation));
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            await FieldNameGuard.EnsureNameFreeAsync(_context, board.Id, null, request.Name, ct);
 
         var now = _dateTimeProvider.UtcNow;
         var position = await _placement.ResolveAsync(

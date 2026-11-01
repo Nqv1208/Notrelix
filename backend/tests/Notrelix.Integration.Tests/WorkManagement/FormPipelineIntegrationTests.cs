@@ -77,8 +77,8 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
         }
 
         _formId = (await SendAsync<Result<Guid>>(_ownerId, new CreateFormCommand(_boardId, "Yêu cầu mới"))).Data;
-        await SendAsync<Result>(_ownerId, new AddFormQuestionCommand(_formId, "title", FormQuestionType.ShortText, "Tiêu đề", true, null, null));
-        await SendAsync<Result>(_ownerId, new AddFormQuestionCommand(_formId, "qty", FormQuestionType.Number, "Số lượng", false, "{\"minValue\":1,\"maxValue\":10}", "a1"));
+        await SendAsync<Result>(_ownerId, new AddFormQuestionCommand(_formId, "title", FormQuestionType.ShortText, "Tiêu đề", true, null, null, ExpectedVersion: await FormVersionAsync()));
+        await SendAsync<Result>(_ownerId, new AddFormQuestionCommand(_formId, "qty", FormQuestionType.Number, "Số lượng", false, "{\"minValue\":1,\"maxValue\":10}", "a1", ExpectedVersion: await FormVersionAsync()));
         await SendAsync<Result>(_ownerId, new PublishFormCommand(_formId, await FormVersionAsync()));
     }
 
@@ -108,14 +108,15 @@ public sealed class FormPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Rejecting_KeepsTheReason_AndMemberCannotReject()
+    public async Task Rejecting_KeepsTheReason_AnEditorCanReject_AndAPrincipalWithoutBoardAccessCannot()
     {
         var id = (await SendAsync<Result<Guid>>(_memberId, new SubmitFormCommand(_formId, Answers("{\"title\":\"x\"}")))).Data;
 
-        var act = () => SendAsync<Result>(_memberId, new Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand(id, "không được"));
+        // Handling responses is an editor action (owner decision on form responses); a guest holds no access to the board.
+        var act = () => SendAsync<Result>(_guestId, new Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand(id, "không được"));
         await act.Should().ThrowAsync<Exception>();
 
-        await SendAsync<Result>(_ownerId, new Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand(id, "Trùng ERP-168"));
+        await SendAsync<Result>(_memberId, new Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand(id, "Trùng ERP-168"));
         (await SendAsync<Result<List<FormSubmissionDto>>>(_ownerId, new ListFormSubmissionsQuery(_formId))).Data!
             .Should().ContainSingle(s => s.Id == id && s.Status == "Rejected" && s.Reason == "Trùng ERP-168");
     }

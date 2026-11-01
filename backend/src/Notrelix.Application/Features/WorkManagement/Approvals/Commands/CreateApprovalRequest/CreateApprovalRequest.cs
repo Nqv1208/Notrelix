@@ -26,18 +26,28 @@ public class CreateApprovalRequestCommandHandler : IRequestHandler<CreateApprova
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateApprovalRequestCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreateApprovalRequestCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateApprovalRequestCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.TargetResourceId, ct);

@@ -11,7 +11,7 @@ public class CreateBoardInWorkspaceCommandValidator : AbstractValidator<CreateBo
 
         RuleFor(x => x.Title)
             .NotEmpty()
-            .MaximumLength(255);
+            .MaximumLength(Board.MaxTitleLength);
 
         RuleFor(x => x.Description)
             .MaximumLength(5000);

@@ -4,8 +4,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel;
 
 [IdempotencyOperation("work-management.labels.update-label.v1")]
-public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color, long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     // A label is part of the Board schema: an Editor change, not Board management.
     public PermissionAction Action => PermissionAction.UpdateField;
@@ -17,15 +17,24 @@ public class UpdateLabelCommandHandler : IRequestHandler<UpdateLabelCommand, Res
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public UpdateLabelCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public UpdateLabelCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(UpdateLabelCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateLabelCommand request, CancellationToken ct)
     {
         var label = await _context.Labels.FirstOrDefaultAsync(l => l.Id == request.LabelId, ct);
         if (label is null) throw new NotFoundException(nameof(Label), request.LabelId);

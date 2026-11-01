@@ -49,6 +49,7 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
 
         if (group == null)
             throw new NotFoundException("BoardGroup", request.GroupId);
+        group.EnsureCanReceiveItems();
 
         var now = _timeProvider.UtcNow;
         var position = await _placement.ResolveAsync(

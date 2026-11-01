@@ -1,5 +1,6 @@
 import type { Card, KanbanStatusLane } from "@notrelix/work-management-core";
 import { generatePosition } from "@notrelix/work-management-core";
+import type { Announcements } from "@dnd-kit/core";
 
 /**
  * What a card drop asks for:
@@ -274,3 +275,14 @@ export function moveCardByKey(
     ? null
     : { arrangement: next, laneKey, index: at };
 }
+
+/**
+ * The board speaks for itself ("Moved “Card” to Doing", the swimlane hints);
+ * dnd-kit's own announcements would read the item and lane ids aloud.
+ */
+export const SILENT_DND_ANNOUNCEMENTS: Announcements = {
+  onDragStart: () => undefined,
+  onDragOver: () => undefined,
+  onDragEnd: () => undefined,
+  onDragCancel: () => undefined,
+};

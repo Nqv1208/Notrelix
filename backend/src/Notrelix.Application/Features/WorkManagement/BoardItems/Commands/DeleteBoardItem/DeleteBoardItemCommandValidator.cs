@@ -4,6 +4,7 @@ public class DeleteBoardItemCommandValidator : AbstractValidator<DeleteBoardItem
 {
     public DeleteBoardItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
     }
 }

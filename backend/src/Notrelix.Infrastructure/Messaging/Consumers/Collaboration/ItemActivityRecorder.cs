@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Notrelix.Application.Features.Automation.Public.ActivityAttribution;
 using Notrelix.Application.Features.Collaboration.Activity;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Projections.Activity;
@@ -17,9 +18,11 @@ public sealed class ItemActivityRecorder
 
     private readonly IActivityProjectionDbContext _context;
     private readonly ILogger<ItemActivityRecorder> _logger;
+    private readonly IAutomationActivityFacts _automation;
 
-    public ItemActivityRecorder(IActivityProjectionDbContext context, ILogger<ItemActivityRecorder> logger)
+    public ItemActivityRecorder(IActivityProjectionDbContext context, ILogger<ItemActivityRecorder> logger, IAutomationActivityFacts automation)
     {
+        _automation = automation;
         _context = context;
         _logger = logger;
     }
@@ -35,7 +38,8 @@ public sealed class ItemActivityRecorder
         string title,
         string? itemTitle,
         IReadOnlyDictionary<string, string?>? data,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? automationExecutionId = null)
     {
         var alreadyRecorded = await _context.WorkspaceActivityLogs.AnyAsync(
             r => r.SourceEventId == sourceEventId && r.ActivityType == activityType, cancellationToken);
@@ -43,6 +47,13 @@ public sealed class ItemActivityRecorder
         {
             _logger.LogDebug("Item activity {ActivityType} for event {EventId} already recorded", activityType, sourceEventId);
             return;
+        }
+
+        // A change an Automation rule made carries the execution as its causation: the history says which rule.
+        if (automationExecutionId is { } execution
+            && await _automation.FindRuleNameAsync(workspaceId, execution, cancellationToken) is { } ruleName)
+        {
+            data = new Dictionary<string, string?>(data ?? new Dictionary<string, string?>()) { ["rule"] = ruleName };
         }
 
         var detail = data is null

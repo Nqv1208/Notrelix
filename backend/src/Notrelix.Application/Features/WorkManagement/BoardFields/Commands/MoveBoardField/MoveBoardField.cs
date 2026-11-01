@@ -23,13 +23,16 @@ public class MoveBoardFieldCommandHandler : IRequestHandler<MoveBoardFieldComman
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -37,6 +40,13 @@ public class MoveBoardFieldCommandHandler : IRequestHandler<MoveBoardFieldComman
     }
 
     public async Task<Result> Handle(MoveBoardFieldCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(MoveBoardFieldCommand request, CancellationToken ct)
     {
         var field = await _context.BoardFields
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == request.BoardId, ct)

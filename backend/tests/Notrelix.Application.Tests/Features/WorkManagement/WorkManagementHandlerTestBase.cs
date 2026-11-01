@@ -383,6 +383,12 @@ internal class TestAsyncQueryProvider<T> : IAsyncQueryProvider
     {
         var resultType = typeof(TResult);
 
+        // A set-based delete cannot run over an in-memory list: it matches and removes nothing here, and
+        // its effect is proved by the integration tests against a real database.
+        // A set-based update is the same: the tracked entities the handler already changed carry the new values.
+        if (expression is MethodCallExpression { Method.Name: "ExecuteDelete" or "ExecuteUpdate" } && resultType == typeof(Task<int>))
+            return (TResult)(object)Task.FromResult(0);
+
         if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Task<>))
         {
             var innerType = resultType.GenericTypeArguments[0];

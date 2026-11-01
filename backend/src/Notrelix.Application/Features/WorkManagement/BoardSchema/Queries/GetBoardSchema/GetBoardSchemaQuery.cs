@@ -46,7 +46,7 @@ public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, B
 
         var groups = await _context.BoardGroups
             .AsNoTracking()
-            .Where(g => g.BoardId == boardId)
+            .Where(g => g.BoardId == boardId && !g.IsArchived)
             .OrderBy(g => g.Position)
             .Select(g => new BoardGroupSchemaDto(
                 g.Id,

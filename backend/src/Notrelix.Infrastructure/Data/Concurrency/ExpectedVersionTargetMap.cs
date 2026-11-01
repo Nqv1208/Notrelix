@@ -3,7 +3,9 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoar
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
@@ -12,16 +14,45 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveChild
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel;
+using Notrelix.Domain.WorkManagement.Labels;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DeleteBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItemToBoard;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ReopenBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemCover;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnarchiveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemReminder;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemRepeat;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetChecklistItemAssignee;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.SetChecklistItemDue;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.WorkManagement.Checklists.Events;
 using Notrelix.Domain.WorkManagement.Approvals;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RenameBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetBoardViewVisibility;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDefaultView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.ArchiveBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UnarchiveBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RestoreBoardView;
+using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Forms;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest;
@@ -31,10 +62,20 @@ using Notrelix.Application.Features.WorkManagement.Approvals.Commands.RejectAppr
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.AddFormQuestion;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.RemoveFormQuestion;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormQuestion;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormDetails;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSavedFilter;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.RenameSavedFilter;
@@ -43,7 +84,6 @@ using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFil
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterSorts;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
@@ -146,7 +186,9 @@ public sealed class ExpectedVersionTargetMap
     private const string ApprovalRequestKind = "work-management.approval-request";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
+    private const string LabelKind = "work-management.label";
     private const string BoardGroupKind = "work-management.board-group";
+    private const string BoardViewKind = "work-management.board-view";
     private const string BoardItemKind = "work-management.board-item";
     private const string ChecklistKind = "work-management.checklist";
     private const string ChecklistItemKind = "work-management.checklist-item";
@@ -154,6 +196,12 @@ public sealed class ExpectedVersionTargetMap
     // A method, not a static field: Default is initialized before later static fields.
     private static bool ChecklistOwnsItem(AggregateRoot aggregate, Guid itemId) =>
         aggregate is Checklist checklist && checklist.Items.Any(item => item.Id == itemId);
+
+    /// <summary>Like <see cref="ChecklistOwnsItem"/>, and after the item was removed: the removal is recorded as an event.</summary>
+    private static bool ChecklistOwnedOrRemovedItem(AggregateRoot aggregate, Guid itemId) =>
+        ChecklistOwnsItem(aggregate, itemId)
+        || (aggregate is Checklist checklist
+            && checklist.DomainEvents.OfType<ChecklistItemRemovedDomainEvent>().Any(removed => removed.ItemId == itemId));
     private const string FormKind = "work-management.form";
     private const string SavedFilterKind = "work-management.saved-filter";
     private const string WorkspaceKind = "workspaces.workspace";
@@ -181,7 +229,17 @@ public sealed class ExpectedVersionTargetMap
         // (the P3 versioned-request manifest, SPEC WM-V3-DEC-007 / WM-V3-CONC-001)
         [typeof(UpdateBoardCommand)] = new(BoardKind, typeof(Board)),
         [typeof(MoveBoardToSpaceCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(ArchiveBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(UnarchiveBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(DeleteBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(RestoreBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(UpdateBoardMemberRoleCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(UpdateBoardVisibilityCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(RemoveBoardMemberCommand)] = new(BoardKind, typeof(Board)),
         [typeof(UpdateBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(DeleteBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(UpdateLabelCommand)] = new(LabelKind, typeof(Label)),
+        [typeof(DeleteLabelCommand)] = new(LabelKind, typeof(Label)),
         [typeof(MoveBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(AddFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(MoveFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
@@ -190,6 +248,16 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(MoveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(DeleteBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(ArchiveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(UnarchiveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(RenameBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(UpdateBoardViewConfigCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(SetBoardViewVisibilityCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(SetDefaultViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(DeleteBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(ArchiveBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(UnarchiveBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
+        [typeof(RestoreBoardViewCommand)] = new(BoardViewKind, typeof(BoardView)),
         [typeof(UpdateBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ArchiveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(MoveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
@@ -197,20 +265,38 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateBoardItemFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(UpdateBoardItemFieldValuesCommand)] = new(BoardItemKind, typeof(BoardItem)),
         [typeof(ClearFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(CompleteBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(ReopenBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(AssignBoardItemMemberCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UnassignBoardItemMemberCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UpdateBoardItemStatusCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemDueDateCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(MoveBoardItemToBoardCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(DeleteBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UnarchiveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemCoverCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemRepeatCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(SetBoardItemReminderCommand)] = new(BoardItemKind, typeof(BoardItem)),
         // Work Management — checklists; item mutations are guarded by the owning Checklist
         [typeof(UpdateChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
+        [typeof(DeleteChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(MoveChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(CreateChecklistItemCommand)] = new(ChecklistKind, typeof(Checklist)),
         [typeof(MoveChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(UpdateChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
         [typeof(ToggleChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
-        [typeof(DeleteChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(DeleteChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnedOrRemovedItem),
+        [typeof(SetChecklistItemDueCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(SetChecklistItemAssigneeCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
 
         // Work Management — forms
         [typeof(UpdateFormDetailsCommand)] = new(FormKind, typeof(Form)),
         [typeof(PublishFormCommand)] = new(FormKind, typeof(Form)),
         [typeof(CloseFormCommand)] = new(FormKind, typeof(Form)),
         [typeof(DeleteFormCommand)] = new(FormKind, typeof(Form)),
+        [typeof(AddFormQuestionCommand)] = new(FormKind, typeof(Form)),
+        [typeof(UpdateFormQuestionCommand)] = new(FormKind, typeof(Form)),
+        [typeof(RemoveFormQuestionCommand)] = new(FormKind, typeof(Form)),
 
         // Work Management — saved filters (board views)
         [typeof(RenameSavedFilterCommand)] = new(SavedFilterKind, typeof(SavedFilter)),

@@ -27,6 +27,12 @@ export interface TaskDetailCapabilities {
    * follows `canEditFields`.
    */
   readonly canComment?: boolean;
+  /**
+   * The board, or the item's group, is archived: the server refuses every write
+   * on it except a person's own preference and follow, so remind is off while a
+   * plain viewer, who cannot remind either, keeps follow.
+   */
+  readonly frozen?: boolean;
 }
 
 /**
@@ -88,6 +94,8 @@ export interface ItemSheetLinkCandidate {
   readonly key: string | null;
   readonly title: string;
   readonly statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
+  /** The column the card sits in (its status on a status-grouped board). */
+  readonly statusName?: string | null;
 }
 
 /** A person who follows the item. */
@@ -127,6 +135,11 @@ export interface ItemSheetMark {
 export interface TaskDetailData {
   readonly updates: readonly CardUpdate[];
   readonly updatesLoading: boolean;
+  /** More comments wait on the server: "Show more" reads the next page. */
+  readonly updatesMore?: {
+    readonly loading: boolean;
+    readonly onMore: () => void;
+  };
   readonly files: readonly CardFile[];
   readonly filesLoading: boolean;
   readonly activity: readonly CardActivity[];
@@ -170,7 +183,16 @@ export interface TaskDetailData {
 export interface ItemSheetNewField {
   readonly name: string;
   readonly fieldType:
-    "text" | "number" | "checkbox" | "select" | "multi_select";
+    | "text"
+    | "long_text"
+    | "number"
+    | "checkbox"
+    | "select"
+    | "multi_select"
+    | "date"
+    | "person"
+    | "link"
+    | "vote";
   /** Select and MultiSelect only: the first choices, each with its colour. */
   readonly options: readonly {
     readonly name: string;
@@ -185,7 +207,10 @@ export interface TaskDetailCallbacks {
    * Patches the item itself (title, start and due date). The item page's
    * "Ngày bắt đầu" uses it; the control stays disabled without it.
    */
-  readonly onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
+  readonly onUpdateItem?: (
+    cardId: string,
+    patch: UpdateCardInput,
+  ) => void | Promise<unknown>;
   readonly onToggleWatch: (watched: boolean) => void;
   /** Asks a board member to approve the item; "Request approval" is absent without it. */
   readonly onRequestApproval?: (approverUserId: string) => void;
@@ -225,7 +250,9 @@ export interface TaskDetailCallbacks {
   readonly onDelete?: (cardId: string) => void;
   /** Opens the board picker for moving the item to another board; absent: no menu entry. */
   readonly onMoveToBoard?: (cardId: string) => void;
-  readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  readonly onUpdateFieldValue: (
+    payload: UpdateFieldValueInput,
+  ) => void | Promise<unknown>;
   /** Puts a board label on the item or takes it off; labels stay read-only without it. */
   readonly onToggleLabel?: (labelId: string, on: boolean) => void;
   /**
@@ -265,14 +292,8 @@ export interface TaskDetailCallbacks {
   readonly onUpdateUpdate: (updateId: string, body: string) => void;
   readonly onDeleteUpdate: (updateId: string) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
-  /** Previous item in lane order ("K"); omitted at the first item. */
-  readonly onPrevious?: () => void;
-  /** Next item in lane order ("J"); omitted at the last item. */
-  readonly onNext?: () => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;
-  /** Opens the item's own page ("Mở toàn trang"); the button is disabled without it. */
-  readonly onOpenFullPage?: (cardId: string) => void;
   /** Moves the item to another board group ("Chuyển nhóm"). */
   readonly onMoveToGroup?: (cardId: string, groupId: string) => void;
 }

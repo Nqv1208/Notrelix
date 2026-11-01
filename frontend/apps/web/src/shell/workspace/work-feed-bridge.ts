@@ -33,7 +33,7 @@ import {
 import type { OperationResponse } from "@notrelix/contracts";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { priorityFromOptionName } from "@notrelix/work-management-core";
-import { wmQueryKeys } from "@notrelix/work-management-state";
+import { seenItemVersion, wmQueryKeys } from "@notrelix/work-management-state";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { myWorkQueryKey } from "./work-management-bridge";
 import {
@@ -752,6 +752,33 @@ export interface WorkFeedWrites {
 }
 
 /**
+ * The version of an item as the feed showed it: the My work read's row, else the
+ * Board read's or the item read's (the caches the screens render from). Throws
+ * when none holds one: a write never runs on a fresh or guessed version.
+ */
+function feedItemVersion(
+  queryClient: QueryClient,
+  workspaceId: string,
+  itemId: string,
+  boardId: string | null,
+): number {
+  const feed = queryClient.getQueryData<MyWorkExtendedDto>(
+    myWorkExtendedQueryKey(workspaceId),
+  );
+  const row = [...(feed?.items ?? []), ...(feed?.done ?? [])].find(
+    (candidate) => candidate.id === itemId,
+  );
+  const version =
+    row?.version ||
+    (boardId
+      ? seenItemVersion(queryClient, { workspaceId, boardId, cardId: itemId })
+      : undefined);
+  if (!version || version <= 0)
+    throw new Error(`The version of item ${itemId} is unknown; reload first.`);
+  return version;
+}
+
+/**
  * Every write of the work feed. Not optimistic: the producer answers, then the
  * reads of the three pages and the Board cache refetch (one source of truth).
  */
@@ -792,7 +819,7 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
         perform(
           () =>
             api.post<void>(
-              path.reopen(itemId),
+              `${path.reopen(itemId)}?expectedVersion=${feedItemVersion(queryClient, workspaceId, itemId, boardId)}`,
               {},
               {
                 idempotencyKey: attemptKey(),
@@ -803,7 +830,14 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
         ),
       setStatus: ({ itemId, boardId, bucket }) =>
         perform(
-          () => setItemBucket(api, { itemId, boardId, bucket }),
+          () =>
+            setItemBucket(api, {
+              itemId,
+              boardId,
+              bucket,
+              versionOf: (id) =>
+                feedItemVersion(queryClient, workspaceId, id, boardId),
+            }),
           [boardId],
         ),
       remind: (itemId) =>
@@ -825,6 +859,13 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
             itemIds,
             boardIdOf: (itemId) => boardOf.get(itemId) ?? null,
             action,
+            versionOf: (id) =>
+              feedItemVersion(
+                queryClient,
+                workspaceId,
+                id,
+                boardOf.get(id) ?? null,
+              ),
           });
         }, boardIds),
       createItem: ({ boardId, name, descriptionMd, dueDay }) =>
@@ -908,6 +949,6 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
           }),
       },
     }),
-    [api, perform, userId, workspaceId],
+    [api, perform, queryClient, userId, workspaceId],
   );
 }

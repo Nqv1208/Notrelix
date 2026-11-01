@@ -25,7 +25,8 @@ public static class UpdateBoardViewConfigEndpoint
         var result = await sender.Send(new UpdateBoardViewConfigCommand(
             boardId,
             viewId,
-            body.ConfigJson), cancellationToken);
+            body.ConfigJson,
+            body.ExpectedVersion), cancellationToken);
         return Results.Ok(result);
     }
 }

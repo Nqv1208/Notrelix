@@ -8,6 +8,8 @@ import {
   useArchiveCard,
   useSeenItemVersion,
   useBoardTrash,
+  isVersionConflict,
+  UnknownItemVersionError,
   useDeleteCard,
   useDuplicateCard,
   useFullBoard,
@@ -48,6 +50,11 @@ import { useItemLifecycleCopy } from "./use-item-lifecycle-copy";
 interface Pending {
   readonly id: string;
   readonly title: string;
+}
+
+/** A delete waiting for its confirmation, with the item version the dialog opened on. */
+interface DeletePending extends Pending {
+  readonly version: number;
 }
 
 /** An archive waiting for its answer, with the item version the dialog opened on. */
@@ -122,7 +129,7 @@ export function useItemRemoval({
   const [archiving, setArchiving] = useState<ArchivePending | null>(null);
   const [archiveStatus, setArchiveStatus] =
     useState<ArchiveDialogStatus>("idle");
-  const [deleting, setDeleting] = useState<Pending | null>(null);
+  const [deleting, setDeleting] = useState<DeletePending | null>(null);
   const [moving, setMoving] = useState<Pending | null>(null);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [moveStatus, setMoveStatus] = useState<MoveDialogStatus>("idle");
@@ -133,7 +140,29 @@ export function useItemRemoval({
   const archiveCard = useArchiveCard(boardId, workspaceId);
   const seenVersion = useSeenItemVersion(boardId, workspaceId);
   const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
-  const deleteCard = useDeleteCard(boardId, workspaceId);
+  // Hook-level: the card sheet closes with the optimistic removal, which would drop the callbacks of `mutate`.
+  const deleteCard = useDeleteCard(boardId, workspaceId, {
+    onSuccess: ({ cardId, title = "" }) => {
+      toast.success(fillLifecycleCopy(copy.deleted, { title }), {
+        action: {
+          label: copy.deletedUndo,
+          onClick: () =>
+            void trash.restore(cardId).then(
+              () => toast.success(fillLifecycleCopy(copy.restored, { title })),
+              () =>
+                toast.error(fillLifecycleCopy(copy.restoreFailed, { title })),
+            ),
+        },
+      });
+      onGone?.(cardId);
+    },
+    onError: (error, { title = "" }) =>
+      isVersionConflict(error)
+        ? toast.error(copy.archiveConflictTitle, {
+            description: copy.deleteConflictBody,
+          })
+        : toast.error(fillLifecycleCopy(copy.deleteFailed, { title })),
+  });
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const trash = useBoardTrash(boardId, workspaceId, false);
   const boards = useWorkspaceBoards(workspaceId);
@@ -231,16 +260,17 @@ export function useItemRemoval({
     archiveCard.mutate(
       { cardId: id, expectedVersion: version },
       {
-        onSuccess: () => {
+        onSuccess: (archived) => {
           setArchiving(null);
           setArchiveStatus("idle");
           toast.success(fillLifecycleCopy(copy.archived, { title }), {
             action: {
               label: copy.archivedUndo,
+              // The undo names the version the archive returned.
               onClick: () =>
                 quick(
                   id,
-                  () => itemExtras.restoreItem(id),
+                  () => restore(id, archived.version),
                   actions.unarchived,
                   actions.archiveFailed,
                 ),
@@ -270,32 +300,9 @@ export function useItemRemoval({
 
   const confirmDelete = () => {
     if (!deleting) return;
-    const { id, title } = deleting;
+    const { id, title, version } = deleting;
     setDeleting(null);
-    deleteCard.mutate(id, {
-      onSuccess: () => {
-        toast.success(fillLifecycleCopy(copy.deleted, { title }), {
-          action: {
-            label: copy.deletedUndo,
-            onClick: () =>
-              void trash.restore(id).then(
-                () =>
-                  toast.success(fillLifecycleCopy(copy.restored, { title })),
-                () =>
-                  toast.error(fillLifecycleCopy(copy.restoreFailed, { title })),
-              ),
-          },
-        });
-        onGone?.(id);
-      },
-      onError: () =>
-        toast.error(fillLifecycleCopy(copy.deleteFailed, { title }), {
-          action: {
-            label: actions.retry,
-            onClick: () => setDeleting({ id, title }),
-          },
-        }),
-    });
+    deleteCard.mutate({ cardId: id, expectedVersion: version, title });
   };
 
   const confirmDuplicate = (name: string, choices: DuplicateChoices) => {
@@ -371,9 +378,15 @@ export function useItemRemoval({
     );
   };
 
+  /** Restores an archived item with the version the person saw; none known is refused. */
+  const restore = (itemId: string, version: number | undefined) =>
+    version === undefined
+      ? Promise.reject(new UnknownItemVersionError(itemId))
+      : itemExtras.restoreItem(itemId, version);
+
   const quick = (
     itemId: string,
-    run: () => Promise<void>,
+    run: () => Promise<unknown>,
     ok: string,
     failed: string,
   ) => {
@@ -498,8 +511,16 @@ export function useItemRemoval({
         version: seenVersion(itemId),
       });
     },
-    requestDelete: (itemId) =>
-      setDeleting({ id: itemId, title: titleOf(itemId) }),
+    requestDelete: (itemId) => {
+      const version = seenVersion(itemId);
+      if (version === undefined) {
+        toast.error(
+          fillLifecycleCopy(copy.deleteFailed, { title: titleOf(itemId) }),
+        );
+        return;
+      }
+      setDeleting({ id: itemId, title: titleOf(itemId), version });
+    },
     requestMove: (itemId) => {
       setMoveStatus("idle");
       setMoveTarget(null);
@@ -514,27 +535,40 @@ export function useItemRemoval({
       setRemindWhen(null);
       setReminding({ id: itemId, title: titleOf(itemId) });
     },
-    completeItem: (itemId) =>
+    completeItem: (itemId) => {
+      // Each of the three names the version the open item showed.
+      const version = seenVersion(itemId);
       quick(
         itemId,
-        () => itemExtras.completeItem(itemId),
+        () =>
+          version === undefined
+            ? Promise.reject(new UnknownItemVersionError(itemId))
+            : itemExtras.completeItem(itemId, version),
         actions.completed,
         actions.completeFailed,
-      ),
-    reopenItem: (itemId) =>
+      );
+    },
+    reopenItem: (itemId) => {
+      const version = seenVersion(itemId);
       quick(
         itemId,
-        () => itemExtras.reopenItem(itemId),
+        () =>
+          version === undefined
+            ? Promise.reject(new UnknownItemVersionError(itemId))
+            : itemExtras.reopenItem(itemId, version),
         actions.reopened,
         actions.completeFailed,
-      ),
-    unarchiveItem: (itemId) =>
+      );
+    },
+    unarchiveItem: (itemId) => {
+      const version = seenVersion(itemId);
       quick(
         itemId,
-        () => itemExtras.restoreItem(itemId),
+        () => restore(itemId, version),
         actions.unarchived,
         actions.archiveFailed,
-      ),
+      );
+    },
     dialogs: (
       <>
         <ArchiveItemDialog
@@ -585,10 +619,11 @@ export function useItemRemoval({
           onUnarchive={() => {
             if (!moving) return;
             const { id } = moving;
+            const version = seenVersion(id);
             closeMove();
             quick(
               id,
-              () => itemExtras.restoreItem(id),
+              () => restore(id, version),
               actions.unarchived,
               actions.archiveFailed,
             );

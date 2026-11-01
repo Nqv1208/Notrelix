@@ -34,9 +34,10 @@ public static class BulkBoardItemOperations
 /// throws before anything commits). The request is authorized once on the board, and board items take their
 /// access from their board, so that is the per-item check; every named item must be a live item of that
 /// board. The per-item writes are the ones their own commands make, so a change here is the change those
-/// commands would make one by one. None of these per-item commands carries an expected version, so neither
-/// does this one: the last writer wins, exactly as it does item by item.
+/// commands would make one by one. Each item carries the version the caller last read: one stale item refuses
+/// the whole request, names the first such item and changes nothing.
 /// </summary>
+/// <param name="ExpectedVersions">The version the caller last read of every named item, by item id.</param>
 /// <param name="Operation">One of <see cref="BulkBoardItemOperations.All"/>.</param>
 /// <param name="Status">The status option id for <c>set-status</c>.</param>
 /// <param name="DueDate">The due date (UTC) for <c>set-due-date</c>.</param>
@@ -47,6 +48,7 @@ public record BulkUpdateBoardItemsCommand(
     Guid BoardId,
     string Operation,
     IReadOnlyList<Guid> ItemIds,
+    IReadOnlyDictionary<Guid, long> ExpectedVersions,
     string? Status = null,
     DateTime? DueDate = null,
     Guid? AssigneeUserId = null,
@@ -76,6 +78,7 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
     private readonly IRequestHandler<AssignBoardItemMemberCommand, Result> _assign;
     private readonly IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto> _fieldValue;
     private readonly IRequestHandler<DeleteBoardItemCommand, Result> _delete;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public BulkUpdateBoardItemsCommandHandler(
         IWorkManagementDbContext context,
@@ -85,8 +88,10 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         IRequestHandler<ArchiveBoardItemCommand, Result> archive,
         IRequestHandler<AssignBoardItemMemberCommand, Result> assign,
         IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto> fieldValue,
-        IRequestHandler<DeleteBoardItemCommand, Result> delete)
+        IRequestHandler<DeleteBoardItemCommand, Result> delete,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
@@ -99,6 +104,13 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
 
     public async Task<BulkUpdateBoardItemsResult> Handle(BulkUpdateBoardItemsCommand request, CancellationToken ct)
     {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<BulkUpdateBoardItemsResult> HandleCore(BulkUpdateBoardItemsCommand request, CancellationToken ct)
+    {
         var ids = request.ItemIds.Distinct().ToList();
 
         var items = await _context.BoardItems
@@ -107,6 +119,18 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
         // An item of another board, or one that is gone, is not found: nothing is revealed about it.
         var missing = ids.FirstOrDefault(id => items.All(i => i.Id != id));
         if (missing != Guid.Empty) throw new NotFoundException(nameof(BoardItem), missing);
+
+        // A stale item refuses the whole batch before anything is written; the first one is named.
+        foreach (var id in ids)
+        {
+            var current = items.Single(i => i.Id == id).Version;
+            if (request.ExpectedVersions.TryGetValue(id, out var seen) && seen == current) continue;
+            throw new PreconditionFailedException(
+                "An item was changed by someone else. Reload and retry.", "common.precondition-failed", request.ExpectedVersions.GetValueOrDefault(id), current)
+            {
+                Extensions = new Dictionary<string, object?> { ["itemId"] = id },
+            };
+        }
 
         var priorityField = request.Operation == BulkBoardItemOperations.SetPriority
             ? await ResolvePriorityFieldAsync(request.BoardId, ct)
@@ -118,7 +142,7 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
             switch (request.Operation)
             {
                 case BulkBoardItemOperations.SetStatus:
-                    Require(await _status.Handle(new UpdateBoardItemStatusCommand(id, request.Status!), ct));
+                    Require(await _status.Handle(new UpdateBoardItemStatusCommand(id, request.Status!, 0), ct));
                     break;
 
                 case BulkBoardItemOperations.Archive:
@@ -131,7 +155,7 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
                     break;
 
                 case BulkBoardItemOperations.Delete:
-                    Require(await _delete.Handle(new DeleteBoardItemCommand(id), ct));
+                    Require(await _delete.Handle(new DeleteBoardItemCommand(id, 0), ct));
                     break;
 
                 case BulkBoardItemOperations.SetDueDate:
@@ -174,7 +198,7 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
     private async Task ReplaceAssigneesAsync(Guid itemId, Guid userId, CancellationToken ct)
     {
         await ClearAssigneesAsync(itemId, keep: userId, ct);
-        Require(await _assign.Handle(new AssignBoardItemMemberCommand(itemId, userId), ct));
+        Require(await _assign.Handle(new AssignBoardItemMemberCommand(itemId, userId, 0), ct));
     }
 
     private async Task ClearAssigneesAsync(Guid itemId, Guid? keep, CancellationToken ct)
@@ -183,6 +207,11 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
             .Where(m => m.ItemId == itemId && (keep == null || m.UserId != keep))
             .ToListAsync(ct);
         _context.BoardItemMembers.RemoveRange(others);
+        if (others.Count > 0)
+        {
+            var item = await _context.BoardItems.FirstAsync(i => i.Id == itemId, ct);
+            item.NoteAssigneesChanged(_currentUser.UserId, _timeProvider.UtcNow);
+        }
     }
 
     // A refusal rolls the whole request back: the session commits on a returned result, so it has to throw.

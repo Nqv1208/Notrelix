@@ -1,7 +1,10 @@
 import {
+  cellValueOf,
   inferStatusCategory,
   isTableCardDone,
   type Card,
+  type ComputedValue,
+  type FieldDefinition,
   type KanbanStatusLane,
   type WorkStatusCategory,
 } from "@notrelix/work-management-core";
@@ -56,6 +59,13 @@ export interface TableRowModel {
   readonly startText: string | null;
   readonly createdText: string | null;
   readonly completedText: string | null;
+  /** What each custom field column shows, by field id. */
+  readonly fields: Readonly<
+    Record<
+      string,
+      { readonly value: unknown; readonly computed?: ComputedValue }
+    >
+  >;
 }
 
 /** One group of the table: a lane of the board and its rows. */
@@ -68,6 +78,21 @@ export interface TableGroupModel {
   readonly total: number;
   readonly overdueCount: number;
   readonly rows: readonly TableRowModel[];
+  /** A board read in pages: rows of the group that pass the filter, loaded or not. Absent: the group holds them all. */
+  readonly filteredTotal?: number;
+  /** The server holds more rows of the group than are loaded. */
+  readonly hasMore?: boolean;
+}
+
+/** A count in the active language ("5.000" in Vietnamese). */
+export function formatTableCount(value: number): string {
+  const lang =
+    typeof document === "undefined" ? undefined : document.documentElement.lang;
+  try {
+    return value.toLocaleString(lang || undefined);
+  } catch {
+    return String(value);
+  }
 }
 
 /**
@@ -118,11 +143,13 @@ export interface BuildTableRowOptions {
   readonly timeZone?: string;
   /** Status options of the board by id. */
   readonly statuses: ReadonlyMap<string, TableStatusOption>;
+  /** Custom fields shown as columns. */
+  readonly customFields?: readonly FieldDefinition[];
 }
 
 export function buildTableRow(
   card: Card,
-  { now, copy, timeZone, statuses }: BuildTableRowOptions,
+  { now, copy, timeZone, statuses, customFields = [] }: BuildTableRowOptions,
 ): TableRowModel {
   const done = isTableCardDone(card);
   const dueIso = card.dueAt ?? card.dueDate;
@@ -205,6 +232,9 @@ export function buildTableRow(
     completedText: card.completedAt
       ? formatItemDate(card.completedAt, now, timeZone)
       : null,
+    fields: Object.fromEntries(
+      customFields.map((field) => [field.id, cellValueOf(field, card)]),
+    ),
   };
 }
 
@@ -232,6 +262,8 @@ export function buildTableGroup(
     readonly total: number;
     readonly overdueCount: number;
     readonly cards: readonly Card[];
+    readonly filteredTotal?: number;
+    readonly hasMore?: boolean;
   },
   name: string,
   options: BuildTableRowOptions,
@@ -244,5 +276,9 @@ export function buildTableGroup(
     total: lane.total,
     overdueCount: lane.overdueCount,
     rows: lane.cards.map((card) => buildTableRow(card, options)),
+    ...(lane.filteredTotal === undefined
+      ? {}
+      : { filteredTotal: lane.filteredTotal }),
+    hasMore: lane.hasMore === true,
   };
 }

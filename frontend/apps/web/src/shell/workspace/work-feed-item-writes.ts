@@ -60,6 +60,25 @@ function bucketOfCategory(category: string | null | undefined): WorkBucket {
   return BUCKET_OF_CATEGORY[key] ?? "todo";
 }
 
+/**
+ * The version of an item as the feed showed it (the caller reads it from the cache the screen renders
+ * from and throws when it holds none). A feed write names it, so a colleague's change in between is
+ * refused (412) and never overwritten; no write reads a fresh version.
+ */
+export type SeenVersion = (itemId: string) => number;
+
+/** What a status or assignee write answers: the item's new version. */
+interface VersionAnswer {
+  readonly version?: number | null;
+}
+
+/** The version a chained write names: the one the server returned for the write before it. */
+function nextVersion(answer: VersionAnswer | null | undefined): number {
+  if (typeof answer?.version !== "number")
+    throw new Error("The server sent no version for the item after a write.");
+  return answer.version;
+}
+
 function readBoard(api: FeedApi, boardId: string): Promise<FullBoardLike> {
   return api.get<FullBoardLike>(`/boards/${boardId}/full`, QUIET);
 }
@@ -85,12 +104,13 @@ async function setStatusOnBoard(
   itemId: string,
   board: FullBoardLike,
   bucket: WorkBucket,
+  expectedVersion: number,
 ): Promise<"ok" | "invalid"> {
   const optionId = statusOptionOf(board, bucket);
   if (!optionId) return "invalid";
-  await api.patch<void>(
+  await api.patch<VersionAnswer | null>(
     `/board-items/${itemId}/status`,
-    { status: optionId },
+    { status: optionId, expectedVersion },
     { idempotencyKey: newKey(), ...QUIET },
   );
   return "ok";
@@ -99,14 +119,21 @@ async function setStatusOnBoard(
 /** Sets an item's status to the Board's option for the bucket. */
 export async function setItemBucket(
   api: FeedApi,
-  input: { itemId: string; boardId: string; bucket: WorkBucket },
+  input: {
+    itemId: string;
+    boardId: string;
+    bucket: WorkBucket;
+    versionOf: SeenVersion;
+  },
 ): Promise<void> {
+  const expectedVersion = input.versionOf(input.itemId);
   const board = await readBoard(api, input.boardId);
   const outcome = await setStatusOnBoard(
     api,
     input.itemId,
     board,
     input.bucket,
+    expectedVersion,
   );
   if (outcome === "invalid") {
     throw new Error("The board has no status for that step.");
@@ -136,7 +163,7 @@ export async function createAssignedItem(
   );
   if (!group?.id) throw new Error("The board has no group to put the item in.");
 
-  const created = await api.post<{ id: string }>(
+  const created = await api.post<{ id: string; version?: number | null }>(
     `/boards/${input.boardId}/items`,
     {
       groupId: group.id,
@@ -150,12 +177,13 @@ export async function createAssignedItem(
     },
     { idempotencyKey: newKey(), ...QUIET },
   );
-  await api.post<void>(
+  // The create answers the item's first version; the assign answers the one the status write names.
+  const assigned = await api.post<VersionAnswer | null>(
     `/board-items/${created.id}/assignees`,
-    { userId: input.userId },
+    { userId: input.userId, expectedVersion: nextVersion(created) },
     { idempotencyKey: newKey(), ...QUIET },
   );
-  await setStatusOnBoard(api, created.id, board, "todo");
+  await setStatusOnBoard(api, created.id, board, "todo", nextVersion(assigned));
   return { id: created.id, key: null };
 }
 
@@ -169,6 +197,7 @@ export async function bulkEach(
     itemIds: readonly string[];
     boardIdOf: (itemId: string) => string | null;
     action: BulkAction;
+    versionOf: SeenVersion;
   },
 ): Promise<BulkResult> {
   const { action } = input;
@@ -192,14 +221,21 @@ export async function bulkEach(
       case "set-due":
         await api.patch<void>(
           `/board-items/${itemId}/due-date`,
-          { dueDate: action.dueAt, startDate: null },
+          {
+            dueDate: action.dueAt,
+            startDate: null,
+            expectedVersion: input.versionOf(itemId),
+          },
           { idempotencyKey: newKey(), ...QUIET },
         );
         return "ok";
       case "assign":
         await api.post<void>(
           `/board-items/${itemId}/assignees`,
-          { userId: action.assigneeId },
+          {
+            userId: action.assigneeId,
+            expectedVersion: input.versionOf(itemId),
+          },
           { idempotencyKey: newKey(), ...QUIET },
         );
         return "ok";
@@ -211,6 +247,7 @@ export async function bulkEach(
           itemId,
           await boardOf(boardId),
           action.bucket,
+          input.versionOf(itemId),
         );
       }
     }

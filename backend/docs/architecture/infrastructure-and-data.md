@@ -791,6 +791,12 @@ How they work together:
   accept by id) runs in the token and invitee scopes above, so the events of the answer and the acceptance
   writes use the policies they already have. Deploy: run `--rls-apply`; the script is additive and the policy is
   unused by the previous runtime, so it can go before the API that reads through it. No schema migration.
+- The five grant helpers (`has_account_access`, `has_workspace_access`, `is_account_admin`, `is_workspace_admin`,
+  `has_permission`) are static `LANGUAGE sql` bodies in `RlsSqlScripts/026_authz_access_helpers_static.sql`, which
+  runs after the schema-aware `003` versions and leaves its bodies installed. A row policy calls them once per row, so
+  they must not build SQL or probe the catalog per call (the dynamic versions cost about 0.18 ms per row). An active
+  grant is `revoked_at IS NULL AND membership_status = 'Active'`; a column of `authz.access_grants` that goes missing
+  fails the apply instead of changing who has access. Any change keeps the old/new truth table at zero differences.
 - `enter_registration_scope(user)` is refused for an id that already exists. A registration may insert exactly
   that user (and, when it carries an invitation binding, only with the invited address) and exactly the one
   account named by its first grant. Whether an address is already registered is answered by

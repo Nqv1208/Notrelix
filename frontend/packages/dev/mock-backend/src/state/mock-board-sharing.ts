@@ -347,6 +347,8 @@ export function boardSharing(
     peopleCount: (spacePeople ?? 0) + list.length - guests,
     guestCount: guests,
     peopleCountComplete: true,
+    // The version the member writes name (adding or removing a member, changing a role).
+    version: board.version ?? 1,
     entries: disclosed ? entries : [],
     log: canManage
       ? store.sharing.logOf(boardId).map((item) => ({

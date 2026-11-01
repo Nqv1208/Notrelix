@@ -53,10 +53,11 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (Title == normalizedTitle) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldTitle = Title;
         Title = normalizedTitle;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Title, normalizedTitle, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldTitle, normalizedTitle, updatedBy, updatedAt));
     }
 
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
@@ -161,9 +162,19 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
+    /// <summary>
+    /// An archived group keeps its items but takes no new ones: nothing is created in it and nothing
+    /// moves into it until it is unarchived.
+    /// </summary>
+    public void EnsureCanReceiveItems()
+    {
+        if (IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Group_CannotReceiveItemsArchived, "An archived group cannot receive items.");
+    }
+
     private void EnsureNotArchived()
     {
         if (IsArchived)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board group.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Group_CannotModifyArchived, "Cannot modify an archived board group.");
     }
 }

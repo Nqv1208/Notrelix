@@ -9,6 +9,7 @@ import {
 } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
+import { neededVersion } from "./seen-version";
 import {
   CHECKLIST_UNDO_MS,
   checklistQueueFor,
@@ -92,7 +93,7 @@ export function useChecklistWrites(
           api.updateChecklist({
             checklistId,
             title: text,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -111,7 +112,11 @@ export function useChecklistWrites(
           checklistId,
           text: removed.title,
           apply: (lists) => lists.filter((list) => list.id !== checklistId),
-          send: () => api.deleteChecklist(checklistId),
+          send: (version) =>
+            api.deleteChecklist(
+              checklistId,
+              neededVersion(version ?? removed.version, cardId),
+            ),
         },
         {
           delayMs: CHECKLIST_UNDO_MS,
@@ -137,7 +142,7 @@ export function useChecklistWrites(
         send: (version) =>
           api.moveChecklist({
             checklistId,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
             ...placementOf(moved, checklistId),
           }),
       });
@@ -173,7 +178,7 @@ export function useChecklistWrites(
           api.createChecklistItem({
             checklistId,
             title: text,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -204,7 +209,7 @@ export function useChecklistWrites(
           api.renameChecklistItem({
             itemId,
             title: text,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
           }),
       });
     },
@@ -230,7 +235,70 @@ export function useChecklistWrites(
             ),
           })),
         send: (version) =>
-          api.toggleChecklistItem({ itemId, expectedVersion: version ?? 0 }),
+          api.toggleChecklistItem({
+            itemId,
+            expectedVersion: neededVersion(version, cardId),
+          }),
+      });
+    },
+    [api, checklists, queue],
+  );
+
+  const setItemAssignee = useCallback(
+    (checklistId: string, itemId: string, assigneeId: string | null) => {
+      const current = checklists
+        .find((list) => list.id === checklistId)
+        ?.items.find((item) => item.id === itemId);
+      if (!current || (current.assigneeId ?? null) === assigneeId) return;
+      queue.schedule({
+        id: opId("assign-item"),
+        kind: "assign-item",
+        checklistId,
+        itemId,
+        text: current.title,
+        apply: (lists) =>
+          mapList(lists, checklistId, (list) => ({
+            ...list,
+            items: list.items.map((item) =>
+              item.id === itemId ? { ...item, assigneeId } : item,
+            ),
+          })),
+        send: (version) =>
+          api.setChecklistItemAssignee({
+            itemId,
+            assigneeUserId: assigneeId,
+            expectedVersion: neededVersion(version, cardId),
+          }),
+      });
+    },
+    [api, checklists, queue],
+  );
+
+  const setItemDue = useCallback(
+    (checklistId: string, itemId: string, dueAt: string | null) => {
+      const current = checklists
+        .find((list) => list.id === checklistId)
+        ?.items.find((item) => item.id === itemId);
+      if (!current || (current.dueAt ?? null) === dueAt) return;
+      queue.schedule({
+        id: opId("due-item"),
+        kind: "due-item",
+        checklistId,
+        itemId,
+        text: current.title,
+        apply: (lists) =>
+          mapList(lists, checklistId, (list) => ({
+            ...list,
+            items: list.items.map((item) =>
+              item.id === itemId ? { ...item, dueAt } : item,
+            ),
+          })),
+        send: (version) =>
+          api.setChecklistItemDue({
+            itemId,
+            dueAt,
+            expectedVersion: neededVersion(version, cardId),
+          }),
       });
     },
     [api, checklists, queue],
@@ -261,7 +329,10 @@ export function useChecklistWrites(
               items: entry.items.filter((item) => item.id !== itemId),
             })),
           send: (version) =>
-            api.deleteChecklistItem({ itemId, expectedVersion: version ?? 0 }),
+            api.deleteChecklistItem({
+              itemId,
+              expectedVersion: neededVersion(version, cardId),
+            }),
         },
         undoable
           ? {
@@ -304,7 +375,7 @@ export function useChecklistWrites(
         send: (version) =>
           api.moveChecklistItem({
             itemId,
-            expectedVersion: version ?? 0,
+            expectedVersion: neededVersion(version, cardId),
             ...placementOf(moved, itemId),
           }),
       });
@@ -357,6 +428,8 @@ export function useChecklistWrites(
     addItem,
     renameItem,
     toggleItem,
+    setItemAssignee,
+    setItemDue,
     deleteItem,
     moveItem,
     convertItem,

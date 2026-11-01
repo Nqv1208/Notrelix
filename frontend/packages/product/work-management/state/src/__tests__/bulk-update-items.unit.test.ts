@@ -9,10 +9,12 @@ function apiWith(post: ReturnType<typeof vi.fn>) {
 describe("createCardApi.bulkUpdate", () => {
   it("sends one request naming the board, the items and the change", async () => {
     const post = vi.fn(async (..._args: unknown[]) => ({ updated: 2 }));
-    const updated = await apiWith(post).bulkUpdate("b-1", ["i-1", "i-2"], {
-      type: "set-status",
-      statusOptionId: "opt-done",
-    });
+    const updated = await apiWith(post).bulkUpdate(
+      "b-1",
+      ["i-1", "i-2"],
+      { type: "set-status", statusOptionId: "opt-done" },
+      { "i-1": 4, "i-2": 7 },
+    );
     expect(updated).toBe(2);
     expect(post).toHaveBeenCalledTimes(1);
     const [path, body, options] = post.mock.calls[0] as unknown as [
@@ -24,6 +26,7 @@ describe("createCardApi.bulkUpdate", () => {
     expect(body).toEqual({
       operation: "set-status",
       itemIds: ["i-1", "i-2"],
+      expectedVersions: { "i-1": 4, "i-2": 7 },
       status: "opt-done",
     });
     expect(options.idempotencyKey).toBeTruthy();
@@ -48,7 +51,11 @@ describe("createCardApi.bulkUpdate", () => {
     [{ type: "delete" } as const, { operation: "delete" }],
   ])("maps %j to the request body", async (change, expected) => {
     const post = vi.fn(async (..._args: unknown[]) => ({ updated: 1 }));
-    await apiWith(post).bulkUpdate("b-1", ["i-1"], change);
-    expect(post.mock.calls[0]?.[1]).toEqual({ itemIds: ["i-1"], ...expected });
+    await apiWith(post).bulkUpdate("b-1", ["i-1"], change, { "i-1": 2 });
+    expect(post.mock.calls[0]?.[1]).toEqual({
+      itemIds: ["i-1"],
+      expectedVersions: { "i-1": 2 },
+      ...expected,
+    });
   });
 });

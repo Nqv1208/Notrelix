@@ -42,6 +42,13 @@ public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
     private static readonly RoleCheckException[] ApprovedBusinessInvariantRoleChecks =
     [
         new(
+            "LeaveBoard.cs",
+            "LeaveBoardCommandHandler.HandleCore",
+            "member.Role == BoardRole.Owner (another owner exists)",
+            "Last-owner protection: a board must keep an explicit owner after its member leaves; the check constrains the board-membership transition of the person leaving, after the pipeline authorized the leave.",
+            "Work Management bounded context — Board membership lifecycle",
+            "Review if Board membership semantics change or a Governance-managed ownership flow replaces last-owner protection."),
+        new(
             "RemoveMember.cs",
             "RemoveMemberCommandHandler.Handle",
             "m.Role == WorkspaceRole.Owner (active owner count)",

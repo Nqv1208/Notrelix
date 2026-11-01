@@ -1,4 +1,6 @@
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
+import type { KanbanCardSelection } from "./kanban-selection";
+import { useHoldRealtimeRefetch } from "@notrelix/work-management-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -42,6 +44,7 @@ import {
   kanbanLaneKey,
   laneKeyOfCard,
   moveCardByKey,
+  SILENT_DND_ANNOUNCEMENTS,
   moveCardInArrangement,
   type KanbanArrangement,
   type KanbanMoveDirection,
@@ -81,7 +84,10 @@ export interface KanbanBoardProps {
   onOpenDetails: (cardId: string) => void;
   /** A card was dropped: another lane's value, a place in a lane, or a reorder. */
   onDropCard: (drop: KanbanLaneDrop) => void;
-  onCreateItem: (lane: KanbanStatusLane, title: string) => void;
+  onCreateItem: (
+    lane: KanbanStatusLane,
+    title: string,
+  ) => void | Promise<unknown>;
   /**
    * The status form's copy. With it (and the callbacks below) the viewer can
    * add a lane after the last one and rename or recolour a lane.
@@ -120,6 +126,8 @@ export interface KanbanBoardProps {
   keyboardMove?: boolean;
   /** Hover and focus actions of the cards; absent: none. */
   cardActions?: KanbanCardActions;
+  /** Picking cards for the bulk bar. */
+  cardSelection?: KanbanCardSelection;
   /** Lane value id to its WIP limit (a warning number); absent: no limits. */
   wipLimits?: Readonly<Record<string, number>>;
   /** Set or (null) remove a lane's limit; absent: the viewer cannot. */
@@ -128,6 +136,12 @@ export interface KanbanBoardProps {
   onRequestCreate?: (lane: KanbanStatusLane) => void;
   /** Quick add handed over to the full form with the typed title. */
   onExpandCreate?: (lane: KanbanStatusLane, title: string) => void;
+  /** A board read in pages: reads a lane's next page; `loading` and `failed` name lanes by key (`none` for no value). */
+  lanePaging?: {
+    readonly loadMore: (lane: KanbanStatusLane) => void;
+    readonly loading: ReadonlySet<string>;
+    readonly failed: ReadonlySet<string>;
+  };
   /** The lanes collapsed when the board opens (the member's own preference). */
   initialCollapsed?: ReadonlySet<string>;
   /** The collapsed lanes changed: the container remembers them per member and view. */
@@ -191,10 +205,12 @@ export function KanbanBoard({
   laneCardLimit = DEFAULT_KANBAN_LANE_CARD_LIMIT,
   keyboardMove = true,
   cardActions,
+  cardSelection,
   wipLimits,
   onWipLimitChange,
   onRequestCreate,
   onExpandCreate,
+  lanePaging,
   initialCollapsed,
   onCollapsedChange,
 }: KanbanBoardProps) {
@@ -203,6 +219,7 @@ export function KanbanBoard({
   );
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
+  useHoldRealtimeRefetch(drag !== null);
   // The arrangement of a card just dropped, kept on screen until the lanes
   // as stored show it too: the write lands in the cache a moment after the
   // drop, and without this the card would sit back in its old place until then.
@@ -466,6 +483,7 @@ export function KanbanBoard({
         acceleration: 12,
         interval: 5,
       }}
+      accessibility={{ announcements: SILENT_DND_ANNOUNCEMENTS }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -502,8 +520,14 @@ export function KanbanBoard({
               canDrag={canDrag}
               dropTarget={drag !== null && currentLaneKey === key}
               laneCardLimit={laneCardLimit}
+              onLoadMore={
+                lanePaging ? () => lanePaging.loadMore(lane) : undefined
+              }
+              loadingMore={lanePaging?.loading.has(key) ?? false}
+              loadFailed={lanePaging?.failed.has(key) ?? false}
               draggedCardId={drag?.cardId ?? movedId ?? undefined}
               cardActions={cardActions}
+              cardSelection={cardSelection}
               onMoveCardByKey={
                 canDrag && keyboardMove ? handleMoveByKey : undefined
               }

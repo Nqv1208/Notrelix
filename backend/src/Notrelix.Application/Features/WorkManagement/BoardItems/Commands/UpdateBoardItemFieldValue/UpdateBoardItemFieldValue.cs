@@ -20,19 +20,28 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
-    private readonly IRealtimeChangeMapper<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>? _realtime;
-    private readonly IIntegrationEventCollector? _events;
+    private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IActorLookupService? _actors;
+    private readonly ICurrentRequestContext? _requestContext;
 
-    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IRealtimeChangeMapper<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>? realtime = null, IIntegrationEventCollector? events = null)
+    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null)
     {
+        _actors = actors;
+        _requestContext = requestContext;
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
-        _realtime = realtime;
-        _events = events;
     }
 
     public async Task<BoardItemSlimDto> Handle(UpdateBoardItemFieldValueCommand request, CancellationToken cancellationToken)
+    {
+        var response = await HandleCore(request, cancellationToken);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, cancellationToken);
+        return response;
+    }
+
+    private async Task<BoardItemSlimDto> HandleCore(UpdateBoardItemFieldValueCommand request, CancellationToken cancellationToken)
     {
         var item = await _context.BoardItems
             // The value collection and the field options are loaded: an existing value
@@ -49,7 +58,9 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, cancellationToken);
 
         if (field == null)
-            throw new NotFoundException("BoardField", request.FieldId);
+            throw _requestContext is null
+                ? new NotFoundException("BoardField", request.FieldId)
+                : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
 
         var now = _timeProvider.UtcNow;
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);
@@ -77,15 +88,6 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             labelIds,
             item.Version
         );
-        if (_realtime is not null && _events is not null)
-            _events.Add(_realtime.Map(request, response, item.Version));
         return response;
     }
-}
-
-public sealed class UpdateBoardItemFieldValueRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
-    : RealtimeChangeMapper<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>(context, time)
-{
-    public override RealtimeResourceChangedV1 Map(UpdateBoardItemFieldValueCommand request, BoardItemSlimDto response, long streamVersion) =>
-        Create("board", "BoardItem", request.ItemId, "UpdateBoardItemFieldValue", response, streamVersion);
 }

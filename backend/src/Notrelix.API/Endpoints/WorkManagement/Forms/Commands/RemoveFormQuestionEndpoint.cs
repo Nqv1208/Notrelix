@@ -15,9 +15,9 @@ public static class RemoveFormQuestionEndpoint
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid formId, Guid questionId, ISender sender, CancellationToken cancellationToken)
+    private static async Task<IResult> HandleAsync(Guid formId, Guid questionId, [FromQuery] long expectedVersion, ISender sender, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RemoveFormQuestionCommand(formId, questionId), cancellationToken);
+        var result = await sender.Send(new RemoveFormQuestionCommand(formId, questionId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

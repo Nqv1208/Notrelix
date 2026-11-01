@@ -15,7 +15,8 @@ public sealed record UpdateAccountPreferencesRequest(
     string? Timezone = null,
     string? Theme = null,
     string? Phone = null,
-    bool? PhoneVisibleToWorkspaceMembers = null);
+    bool? PhoneVisibleToWorkspaceMembers = null,
+    bool? ColourBlindLabels = null);
 
 public static class AccountPreferencesEndpoints
 {
@@ -57,7 +58,8 @@ public static class AccountPreferencesEndpoints
             Timezone = request.Timezone,
             Theme = request.Theme,
             Phone = request.Phone,
-            PhoneVisibleToWorkspaceMembers = request.PhoneVisibleToWorkspaceMembers
+            PhoneVisibleToWorkspaceMembers = request.PhoneVisibleToWorkspaceMembers,
+            ColourBlindLabels = request.ColourBlindLabels
         });
         return result.ToApiResult();
     }

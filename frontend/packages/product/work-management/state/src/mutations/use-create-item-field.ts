@@ -20,9 +20,9 @@ export interface CreateItemFieldInput {
 
 /**
  * Creates a custom field of a board and its first options. Not optimistic:
- * every option write needs the field's version from a fresh board read, so the
- * board is read again after the field and after each option. Resolves with the
- * new field's id; throws when any step fails (the field may then exist
+ * the first option write names the field's version from a fresh board read,
+ * each next one the version the add before it answered; the board is read
+ * again at the end. Resolves with the new field's id; throws when any step fails (the field may then exist
  * without all its options, and the board read shows what was kept).
  */
 export function useCreateItemField(boardId: string, workspaceId: string) {
@@ -45,16 +45,20 @@ export function useCreateItemField(boardId: string, workspaceId: string) {
         fieldType: input.fieldType,
       });
       try {
+        // The first add names the version of a fresh board read; each next one
+        // names the version the add before it answered.
+        let expectedVersion: number | undefined;
         for (const option of input.options ?? []) {
-          const expectedVersion = await reread(fieldId);
+          expectedVersion ??= await reread(fieldId);
           if (!expectedVersion) throw new Error("field version unknown");
-          await fieldOptions.addOption({
+          const added = await fieldOptions.addOption({
             boardId,
             fieldId,
             name: option.name,
             color: option.color,
             expectedVersion,
           });
+          expectedVersion = added.version;
         }
       } finally {
         await queryClient.refetchQueries({ queryKey: boardKey });

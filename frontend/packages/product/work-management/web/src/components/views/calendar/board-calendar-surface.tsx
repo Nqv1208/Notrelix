@@ -9,11 +9,6 @@ import {
 } from "react";
 import { Button } from "@notrelix/ui-web";
 import { calendarOutlineButtonClass } from "./calendar-chrome";
-import {
-  emptyKanbanFilter,
-  type KanbanFilterState,
-} from "../kanban/kanban-filter";
-import type { KanbanToolbarFilterOptions } from "../kanban/kanban-filter-menu";
 import { CalendarAgenda } from "./calendar-agenda";
 import { CalendarDatesDialog } from "./calendar-dates-dialog";
 import { CalendarAside } from "./calendar-aside";
@@ -69,12 +64,11 @@ export interface BoardCalendarSurfaceProps {
   entries: readonly CalendarEntry[];
   undatedTotal: number;
   undated: readonly CalendarUndated[];
-  filter: KanbanFilterState;
   filterActive: boolean;
-  filterOptions: KanbanToolbarFilterOptions;
-  onFilterChange: (filter: KanbanFilterState) => void;
-  /** The saved-filter controls, shown in the toolbar after the filter pill. */
-  savedFilters?: ReactNode;
+  /** Clears the filter conditions. */
+  onClearFilter: () => void;
+  /** The view controls shown in the toolbar: filter, personal-state chip, saved filters. */
+  viewBar?: ReactNode;
   /** Items the filter hides; with `entries` empty it shows "no results". */
   hiddenCount: number;
   /** False for a viewer: no add, no drag, no quick create. */
@@ -124,11 +118,9 @@ export function BoardCalendarSurface({
   entries,
   undatedTotal,
   undated,
-  filter,
   filterActive,
-  filterOptions,
-  onFilterChange,
-  savedFilters,
+  onClearFilter,
+  viewBar,
   hiddenCount,
   canEdit,
   onOpenItem,
@@ -381,10 +373,7 @@ export function BoardCalendarSurface({
         }
         dateBasis={dateBasis}
         onDateBasisChange={onDateBasisChange}
-        filter={filter}
-        filterOptions={filterOptions}
-        onFilterChange={onFilterChange}
-        savedFilters={savedFilters}
+        viewBar={viewBar}
         zoneLabel={zoneLabel}
         canAdd={canEdit}
         onAddItem={addItem}
@@ -484,7 +473,7 @@ export function BoardCalendarSurface({
                   variant="outline"
                   size="sm"
                   className={calendarOutlineButtonClass}
-                  onClick={() => onFilterChange(emptyKanbanFilter())}
+                  onClick={onClearFilter}
                 >
                   {copy.noResults.clear}
                 </Button>

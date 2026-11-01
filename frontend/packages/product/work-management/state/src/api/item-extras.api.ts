@@ -79,6 +79,8 @@ export interface ItemChildItemDto {
     readonly name: string;
     readonly initials: string;
   } | null;
+  /** The version the list showed; ticking the child names it. */
+  readonly version: number | null;
 }
 
 /** A child item as `WorkManagement.BoardItems.ListChildren` sends it. */
@@ -90,6 +92,7 @@ interface ChildItemWire {
   readonly dueAt?: string | null;
   readonly assigneeUserId?: string | null;
   readonly assigneeName?: string | null;
+  readonly version?: number | null;
 }
 
 function toChildItem(wire: ChildItemWire): ItemChildItemDto {
@@ -100,6 +103,7 @@ function toChildItem(wire: ChildItemWire): ItemChildItemDto {
     title: wire.title,
     done: wire.done === true,
     dueAt: wire.dueAt ?? null,
+    version: wire.version ?? null,
     assignee: wire.assigneeUserId
       ? {
           id: wire.assigneeUserId,
@@ -216,6 +220,8 @@ function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
 export interface ItemLifecycleDto {
   readonly archived: { readonly at: string; readonly byName: string } | null;
   readonly completed: { readonly at: string; readonly byName: string } | null;
+  /** The item version this read showed; reopen and restore name it. */
+  readonly version: number | null;
 }
 
 /**
@@ -255,6 +261,17 @@ export interface MoveToBoardResultDto {
   readonly droppedAssignees: number;
 }
 
+/** An item in a board's archive. */
+export interface BoardArchivedEntryDto {
+  readonly id: string;
+  readonly name: string;
+  readonly itemKey: string | null;
+  readonly groupId: string;
+  readonly archivedAt: string;
+  readonly archivedBy: string | null;
+  readonly version: number;
+}
+
 /** An item in a board's trash. */
 export interface BoardTrashEntryDto {
   readonly id: string;
@@ -266,6 +283,14 @@ export interface BoardTrashEntryDto {
   readonly restorableUntil: string;
 }
 
+/** The version an item has after a lifecycle write, for the write that undoes it. */
+export interface ItemVersionDto {
+  readonly version?: number;
+}
+type VersionBody = { version?: number | null } | null | undefined;
+const versionOf = (body: VersionBody): ItemVersionDto =>
+  typeof body?.version === "number" ? { version: body.version } : {};
+
 export function createItemExtrasApi(
   client: NotrelixClient,
   options: { readonly planProduced?: boolean } = {},
@@ -273,9 +298,9 @@ export function createItemExtrasApi(
   const { api } = client;
   const quiet = { skipGlobalErrorToast: true } as const;
   const key = () => crypto.randomUUID();
-  // A backend without a plan producer is not asked at all (`planProduced: false`);
-  // one that answers 404 anyway is asked once. The calendar and the timeline
-  // then show the board's items alone.
+  // Every item write names the version the person saw; the caller takes it from the cache, none reads a fresh one.
+  // A backend without a plan producer is not asked at all (`planProduced: false`) and gives the
+  // dependencies from the items; one that answers 404 anyway is asked once.
   let planProduced = options.planProduced ?? true;
   return {
     async getPlan(boardId: string): Promise<BoardPlanDto> {
@@ -291,6 +316,19 @@ export function createItemExtrasApi(
           if (status !== 404) throw error;
           planProduced = false;
         }
+      }
+      // The real backend has no plan producer; the board's dependencies are read from the items.
+      if (!planProduced) {
+        const read = await api
+          .get<{
+            dependencies?: readonly { from: string; to: string }[];
+          } | null>(`/boards/${boardId}/items/dependencies`, quiet)
+          .catch((error: unknown) => {
+            if ((error as { status?: number } | null)?.status === 404)
+              return null;
+            throw error;
+          });
+        dto = { links: read?.dependencies ?? [] };
       }
       return {
         items: dto?.items ?? [],
@@ -408,8 +446,10 @@ export function createItemExtrasApi(
         completedAt?: string | null;
         completedByName?: string | null;
         updatedAt?: string | null;
+        version?: number | null;
       } | null>(`/board-items/${itemId}`);
       return {
+        version: dto?.version ?? null,
         archived: dto?.isArchived
           ? {
               at: dto.archivedAt ?? dto.updatedAt ?? "",
@@ -425,19 +465,29 @@ export function createItemExtrasApi(
      * `WorkManagement.BoardItems.Reopen`: a completed item returns to the status
      * it had before it was completed, else to the board's first open status.
      */
-    async reopenItem(itemId: string): Promise<void> {
-      await api.post<void>(
-        `/board-items/${itemId}/reopen`,
-        {},
-        { idempotencyKey: key(), ...quiet },
+    async reopenItem(
+      itemId: string,
+      expectedVersion: number,
+    ): Promise<ItemVersionDto> {
+      return versionOf(
+        await api.post<VersionBody>(
+          `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
+          {},
+          { idempotencyKey: key(), ...quiet },
+        ),
       );
     },
     /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
-    async restoreItem(itemId: string): Promise<void> {
-      await api.post<void>(
-        `/board-items/${itemId}/unarchive`,
-        {},
-        { idempotencyKey: key(), ...quiet },
+    async restoreItem(
+      itemId: string,
+      expectedVersion: number,
+    ): Promise<ItemVersionDto> {
+      return versionOf(
+        await api.post<VersionBody>(
+          `/board-items/${itemId}/unarchive?expectedVersion=${expectedVersion}`,
+          {},
+          { idempotencyKey: key(), ...quiet },
+        ),
       );
     },
     /**
@@ -513,10 +563,11 @@ export function createItemExtrasApi(
     async moveToBoard(
       itemId: string,
       boardId: string,
+      expectedVersion: number,
     ): Promise<MoveToBoardResultDto> {
       const result = await api.post<Partial<MoveToBoardResultDto>>(
         `/board-items/${itemId}/move-to-board`,
-        { boardId },
+        { boardId, expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
       return {
@@ -532,6 +583,18 @@ export function createItemExtrasApi(
     async listTrash(boardId: string): Promise<BoardTrashEntryDto[]> {
       const rows = await api.get<BoardTrashEntryDto[]>(
         `/boards/${boardId}/items/trash`,
+        quiet,
+      );
+      return rows ?? [];
+    },
+    /** `WorkManagement.BoardItems.Archived`: the board's archived items, newest first, optionally narrowed by name. */
+    async listArchived(
+      boardId: string,
+      search?: string,
+    ): Promise<BoardArchivedEntryDto[]> {
+      const q = search?.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
+      const rows = await api.get<BoardArchivedEntryDto[]>(
+        `/boards/${boardId}/items/archived${q}`,
         quiet,
       );
       return rows ?? [];
@@ -561,11 +624,16 @@ export function createItemExtrasApi(
       };
     },
     /** `WorkManagement.BoardItems.Complete`: marks the item done. */
-    async completeItem(itemId: string): Promise<void> {
-      await api.post<void>(
-        `/board-items/${itemId}/complete`,
-        {},
-        { idempotencyKey: key(), ...quiet },
+    async completeItem(
+      itemId: string,
+      expectedVersion: number,
+    ): Promise<ItemVersionDto> {
+      return versionOf(
+        await api.post<VersionBody>(
+          `/board-items/${itemId}/complete`,
+          { expectedVersion },
+          { idempotencyKey: key(), ...quiet },
+        ),
       );
     },
     /** `WorkManagement.BoardItems.ListLinkedPages`: pages the caller may open, plus how many are hidden. */
@@ -582,15 +650,26 @@ export function createItemExtrasApi(
      */
     async listWorkspacePages(
       workspaceId: string,
-    ): Promise<{ id: string; title: string }[]> {
+    ): Promise<{ id: string; title: string; parentTitle?: string }[]> {
       const rows = await api.get<
-        { id?: string; title?: string | null }[] | null
+        | { id?: string; title?: string | null; parentTitle?: string | null }[]
+        | null
       >(endpoints.pages.list(workspaceId), quiet);
       return (rows ?? [])
-        .filter((row): row is { id: string; title?: string | null } =>
-          Boolean(row.id),
+        .filter(
+          (
+            row,
+          ): row is {
+            id: string;
+            title?: string | null;
+            parentTitle?: string | null;
+          } => Boolean(row.id),
         )
-        .map((row) => ({ id: row.id, title: row.title?.trim() || "" }));
+        .map((row) => ({
+          id: row.id,
+          title: row.title?.trim() || "",
+          ...(row.parentTitle ? { parentTitle: row.parentTitle } : {}),
+        }));
     },
     /** `WorkManagement.BoardItems.LinkPage`: linking a page twice changes nothing. */
     async linkPage(itemId: string, pageId: string): Promise<void> {
@@ -608,16 +687,20 @@ export function createItemExtrasApi(
       });
     },
     /** Ticks (`done`) or unticks a child item. */
-    async setChildDone(childId: string, done: boolean): Promise<void> {
+    async setChildDone(
+      childId: string,
+      done: boolean,
+      expectedVersion: number,
+    ): Promise<void> {
       if (done)
         await api.post<void>(
           `/board-items/${childId}/complete`,
-          {},
+          { expectedVersion },
           { idempotencyKey: key(), ...quiet },
         );
       else
         await api.post<void>(
-          `/board-items/${childId}/reopen`,
+          `/board-items/${childId}/reopen?expectedVersion=${expectedVersion}`,
           {},
           { idempotencyKey: key(), ...quiet },
         );

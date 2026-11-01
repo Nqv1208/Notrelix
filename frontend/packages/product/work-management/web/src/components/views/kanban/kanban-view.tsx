@@ -1,24 +1,18 @@
-import { useItemPageCopy } from "../../item-page/use-item-page-copy";
-import { ItemCreateHost } from "../../item-create/item-create-host";
-import { useNoGroupNotice } from "../../item-create/use-no-group-notice";
-import { useAddGroup } from "../../status-option/use-add-group";
 import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+  FaceFieldsPopover,
+  KanbanFaceProvider,
+} from "../../card-popup/capabilities";
+import { useItemPageCopy } from "../../item-page/use-item-page-copy";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
+import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
+import { useAddGroup } from "../../status-option/use-add-group";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
   useBoardLabels,
   useCardLabelWrites,
-  dropUnknownFilterIds,
-  useBoardAccess,
   useBoardKanban,
   useBoardView,
   useCard,
@@ -42,7 +36,12 @@ import {
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
+  groupCardsByField,
+  groupableFields,
   resolveKanbanSettings,
+  withReservedFieldValues,
+  serializeCompoundFilter,
+  type FilterField,
   type Board,
   type BoardGroup,
   type Card,
@@ -50,11 +49,9 @@ import {
   type KanbanStatusLane,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import type {
   ItemSheetGroup,
   ItemSheetLinkCandidate,
-  ItemSheetMark,
   TaskDetailCapabilities,
 } from "../../card-detail/task-detail-types";
 import type { StatusOptionDraft } from "../../status-option/status-option-form";
@@ -63,26 +60,33 @@ import { findItemFields } from "../../card-detail/item-field-editors";
 import { useItemSheetExtras } from "../../card-detail/use-item-sheet-extras";
 import { useBoardViewerId } from "../../shared/board-viewer";
 import { KanbanBoard } from "./kanban-board";
+import { KanbanBulkBar } from "./kanban-bulk-bar";
+import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
+import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneDrop } from "./kanban-dnd";
-import {
-  isKanbanCardOverdue,
-  parseKanbanFilter,
-  serializeKanbanFilter,
-  type KanbanFilterState,
-} from "./kanban-filter";
+import { emptyKanbanFilter, isKanbanCardOverdue } from "./kanban-filter";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanToolbar } from "./kanban-toolbar";
 import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
+import { fillFiltersCopy } from "../../filters/filters.copy";
+import { useBoardViewState } from "../../filters/use-board-view-state";
+import { ViewStateBar } from "../../filters/view-state-bar";
+import {
+  KanbanSwimlaneBoard,
+  type SwimlaneDrop,
+  type SwimlaneRefusal,
+} from "./kanban-swimlane-board";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { buildCardLink } from "./kanban-view-helpers";
 import {
-  boardCapabilities,
   canManageStatuses,
+  useBoardCapabilities,
+  useItemCapabilities,
 } from "../../shared/board-capabilities";
 import { nextLabelColor } from "../../shared/item-display";
 import {
@@ -124,11 +128,6 @@ export interface KanbanViewProps {
   /** The route `groupBy` parameter: a field id (Status by default). */
   groupBy?: string;
   onGroupByChange?: (fieldId: string) => void;
-  /**
-   * Opens the selected item's own page (the sheet's "Mở toàn trang"). Without
-   * it the sheet shows that button disabled with the reason.
-   */
-  onOpenItemPage?: (itemId: string) => void;
 }
 
 function laneName(
@@ -147,27 +146,6 @@ type CreateRequest =
       readonly lane: KanbanStatusLane;
       readonly title: string;
     };
-
-/** The colour of a lane's dot, as the lane header draws it. */
-function laneDot(lane: KanbanStatusLane): {
-  dotClassName: string;
-  dotStyle?: CSSProperties;
-} {
-  const base =
-    lane.category === "todo"
-      ? "border-2 border-work-status-todo"
-      : lane.category === "in_progress"
-        ? "bg-work-status-doing"
-        : lane.category === "review"
-          ? "bg-work-status-review"
-          : lane.category === "done"
-            ? "bg-work-status-done"
-            : "bg-muted-foreground";
-  if (!lane.color) return { dotClassName: base };
-  return lane.category === "todo"
-    ? { dotClassName: "border-2", dotStyle: { borderColor: lane.color } }
-    : { dotClassName: "", dotStyle: { backgroundColor: lane.color } };
-}
 
 /** The board group a new item of a lane goes into: the lane's last card's. */
 function groupForNewItem(
@@ -196,7 +174,6 @@ export function KanbanView({
   onFilterChange,
   groupBy: groupByParam,
   onGroupByChange,
-  onOpenItemPage,
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
@@ -204,7 +181,6 @@ export function KanbanView({
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
   const statusFormCopy = useStatusOptionFormCopy();
-  const header = useContext(BoardHeaderDataContext);
 
   const [localFilter, setLocalFilter] = useState<string | undefined>();
   const [localGroupBy, setLocalGroupBy] = useState<string | undefined>();
@@ -218,9 +194,30 @@ export function KanbanView({
     [onFilterChange],
   );
 
-  const parsedFilter = useMemo(
-    () => parseKanbanFilter(filterValue),
-    [filterValue],
+  const setGroupByValue = useCallback(
+    (fieldId: string) => {
+      if (onGroupByChange) onGroupByChange(fieldId);
+      else setLocalGroupBy(fieldId);
+    },
+    [onGroupByChange],
+  );
+  const noLegacyFilter = useMemo(() => emptyKanbanFilter(), []);
+  const {
+    copy: filtersCopy,
+    view,
+    kanbanView,
+  } = useBoardViewState({
+    boardId,
+    workspaceId,
+    routeFilter: filterValue,
+    onRouteFilterChange: setFilterValue,
+    routeGroupBy: groupByValue,
+    onRouteGroupByChange: setGroupByValue,
+  });
+  // The Kanban's columns are a Status or Select field: no person or date split.
+  const columnView = useMemo(
+    () => ({ ...kanbanView, flatGroups: false }),
+    [kanbanView],
   );
   const isOverdue = useCallback(
     (card: Card) => isKanbanCardOverdue(card, now),
@@ -235,15 +232,38 @@ export function KanbanView({
   );
   const laneCopyRef = useRef(laneCopy);
   laneCopyRef.current = laneCopy;
+  // Set once the board is read: who last changed a card and the lane it is in.
+  const conflictRef = useRef<
+    ((card: Card) => { actor: string; lane: string }) | undefined
+  >(undefined);
   const onWriteError = useCallback((failure: KanbanWriteFailure) => {
     const copy = laneCopyRef.current;
-    if (failure.kind === "create") {
-      toast.error(fillCopy(copy.createFailed, { title: failure.title ?? "" }));
-      return;
-    }
+    // A failed quick add shows inline in the lane's add field, with a retry.
+    if (failure.kind === "create") return;
     const cardId = failure.cardId ?? "";
     const origin = writeOrigins.current.get(cardId);
     writeOrigins.current.delete(cardId);
+    // Lost to someone else's change: name who, and where the card now is.
+    const seen = failure.conflict
+      ? conflictRef.current?.(failure.conflict.card)
+      : undefined;
+    if (seen) {
+      const values = {
+        actor: seen.actor || copy.someone,
+        title: origin?.title ?? failure.conflict?.card.title ?? "",
+        lane: seen.lane,
+      };
+      toast.error(
+        fillCopy(
+          failure.kind !== "field" && seen.lane
+            ? copy.conflictMoved
+            : copy.conflictChanged,
+          values,
+        ),
+        { id: `kanban-write-${cardId}` },
+      );
+      return;
+    }
     const message =
       failure.kind === "field"
         ? fillCopy(copy.saveFailed, { title: origin?.title ?? "" })
@@ -256,13 +276,13 @@ export function KanbanView({
   }, []);
 
   const kanban = useBoardKanban(boardId, workspaceId, {
-    groupBy: groupByValue,
-    filter: parsedFilter,
+    groupBy: view.applied.group?.fieldId,
+    filter: noLegacyFilter,
+    view: columnView,
     isOverdue,
     onWriteError,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const { access, capabilities } = useBoardCapabilities(boardId, workspaceId);
   const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   // The view's Kanban settings (lane limit, who sees the status controls,
   // keyboard move). A view saved without them gives today's behaviour. The
@@ -277,10 +297,9 @@ export function KanbanView({
     () => resolveKanbanSettings(viewConfig),
     [viewConfig],
   );
-  const showStatusControls = canManageStatuses(
-    access?.myLevel,
-    kanbanSettings.statusManageRoles,
-  );
+  const showStatusControls =
+    capabilities.canEditFields &&
+    canManageStatuses(access?.myLevel, kanbanSettings.statusManageRoles);
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -340,21 +359,7 @@ export function KanbanView({
   const isNarrow = useIsMobile();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
 
-  const { board, filterChoices } = kanban;
-  // The filter as it applies: ids the board no longer has are dropped, and
-  // the route parameter is rewritten (history replace) to match.
-  const filter = useMemo(
-    () =>
-      board ? dropUnknownFilterIds(parsedFilter, filterChoices) : parsedFilter,
-    [board, parsedFilter, filterChoices],
-  );
-  useEffect(() => {
-    if (!board || filterValue === undefined) return;
-    const canonical = serializeKanbanFilter(filter);
-    if (canonical !== filterValue) {
-      setFilterValue(canonical || undefined, { replace: true });
-    }
-  }, [board, filter, filterValue, setFilterValue]);
+  const { board } = kanban;
 
   const boardRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -430,16 +435,35 @@ export function KanbanView({
 
   const isStatusGrouping =
     !kanban.groupByField || kanban.groupByField.id === kanban.statusField?.id;
+  conflictRef.current = (card) => {
+    const optionId = isStatusGrouping
+      ? card.statusOptionId
+      : kanban.groupByField
+        ? card.fieldValues[kanban.groupByField.id]
+        : null;
+    const lane = kanban.allLanes.find((entry) => entry.optionId === optionId);
+    return {
+      actor: card.updatedByName ?? "",
+      lane: lane ? laneName(lane, laneCopyRef.current, isStatusGrouping) : "",
+    };
+  };
   const allCards = useMemo(
     () => kanban.allLanes.flatMap((lane) => lane.cards),
     [kanban.allLanes],
   );
-  // K/J follow the lanes as shown: lane order, then card order.
-  const laneOrder = useMemo(
+  // Hooks sit above the loading and error returns below, so the order never changes between renders.
+  const faceFieldDefinitions = useMemo(
+    () =>
+      kanban.filterFields
+        .filter((entry) => !entry.builtin)
+        .map((entry) => entry.field),
+    [kanban.filterFields],
+  );
+  const orderedCardIds = useMemo(
     () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
     [kanban.lanes],
   );
-
+  const picking = useKanbanSelection(orderedCardIds);
   const lanesReady = !kanban.isLoading && Boolean(board);
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -474,43 +498,84 @@ export function KanbanView({
   };
 
   /** Writes a lane's value for a card: Status, or the grouping Select field. */
-  const writeLaneValue = (cardId: string, optionId: string) => {
+  const writeLaneValue = (
+    cardId: string,
+    optionId: string,
+    onSuccess?: () => void,
+  ) => {
     noteOrigin(cardId);
     if (isStatusGrouping) {
-      kanban.updateStatus.mutate({ cardId, statusOptionId: optionId });
+      kanban.updateStatus.mutate(
+        { cardId, statusOptionId: optionId },
+        { onSuccess },
+      );
       return;
     }
     if (!kanban.groupByField) return;
-    kanban.updateFieldValue.mutate({
-      cardId,
-      fieldDefinitionId: kanban.groupByField.id,
-      value: optionId,
-    });
+    kanban.updateFieldValue.mutate(
+      {
+        cardId,
+        fieldDefinitionId: kanban.groupByField.id,
+        value: optionId,
+      },
+      { onSuccess },
+    );
+  };
+
+  /**
+   * Once the server has kept the move, says where the card went and keeps "Hoàn tác" for a few seconds:
+   * it puts the lane's value back. A refused drop says nothing here (its failure toast does).
+   */
+  const announceLaneMove = (cardId: string, toOptionId: string) => {
+    const from = lanesByCard.get(cardId)?.optionId;
+    if (!from || from === toOptionId) return () => undefined;
+    const t = filtersCopy.lane.toast;
+    return () =>
+      toast(
+        fillFiltersCopy(t.movedColumn, {
+          title:
+            allCards.find((candidate) => candidate.id === cardId)?.title ?? "",
+          column: columnLabel(toOptionId),
+        }),
+        {
+          action: {
+            label: t.undo,
+            onClick: () => writeLaneValue(cardId, from),
+          },
+        },
+      );
   };
 
   const handleDrop = (drop: KanbanLaneDrop) => {
     if (!capabilities.canMoveCard) return;
     if (drop.kind === "status") {
-      writeLaneValue(drop.cardId, drop.optionId);
+      writeLaneValue(
+        drop.cardId,
+        drop.optionId,
+        announceLaneMove(drop.cardId, drop.optionId),
+      );
       return;
     }
     if (drop.kind === "place") {
       if (!kanban.groupByField) return;
       noteOrigin(drop.cardId);
-      kanban.dropItemInLane.mutate({
-        cardId: drop.cardId,
-        lane: {
-          fieldDefinitionId: kanban.groupByField.id,
-          optionId: drop.optionId,
-          viaStatusEndpoint: isStatusGrouping,
+      kanban.dropItemInLane.mutate(
+        {
+          cardId: drop.cardId,
+          lane: {
+            fieldDefinitionId: kanban.groupByField.id,
+            optionId: drop.optionId,
+            viaStatusEndpoint: isStatusGrouping,
+          },
+          placement: {
+            listId: drop.listId,
+            position: drop.position,
+            previousSiblingId: drop.previousSiblingId,
+            nextSiblingId: drop.nextSiblingId,
+          },
         },
-        placement: {
-          listId: drop.listId,
-          position: drop.position,
-          previousSiblingId: drop.previousSiblingId,
-          nextSiblingId: drop.nextSiblingId,
-        },
-      });
+        { onSuccess: announceLaneMove(drop.cardId, drop.optionId) },
+      );
       return;
     }
     noteOrigin(drop.cardId);
@@ -521,6 +586,147 @@ export function KanbanView({
       previousSiblingId: drop.previousSiblingId,
       nextSiblingId: drop.nextSiblingId,
     });
+  };
+
+  // Swimlanes: rows of a second field under the columns. The lane field can
+  // never be the column field.
+  const columnFields = groupableFields(kanban.filterFields).filter((field) =>
+    kanban.groupByFields.some((candidate) => candidate.id === field.id),
+  );
+  const laneRef = view.applied.lane;
+  const laneField: FilterField | undefined =
+    laneRef && laneRef.fieldId !== kanban.groupByField?.id
+      ? kanban.filterFields.find((field) => field.id === laneRef.fieldId)
+      : undefined;
+  const swimlanes: KanbanStatusLane[] = laneField
+    ? groupCardsByField(
+        kanban.lanes.flatMap((lane) => lane.cards),
+        laneField,
+        laneRef?.bucket,
+        { person: kanban.memberName, bucket: kanbanView.bucketLabel },
+      )
+    : [];
+  const swimlaneLabel = (lane: KanbanStatusLane | undefined) =>
+    lane?.name ||
+    (laneField?.field.fieldType === "person"
+      ? filtersCopy.lane.unassigned
+      : filtersCopy.lane.none_);
+  const columnLabel = (optionId: string | null) => {
+    const column = kanban.allLanes.find((lane) => lane.optionId === optionId);
+    return column ? laneName(column, laneCopy, isStatusGrouping) : "";
+  };
+
+  /**
+   * Writes the column and/or the lane value of a card. The two are separate
+   * writes, one after the other: the second names the version the first
+   * answered. Resolves false when one failed (its failure toast is shown).
+   */
+  const writeCell = async (
+    cardId: string,
+    column: { set: boolean; value: string | null },
+    lane: { set: boolean; value: unknown },
+    /** The column the card was in: put back when the lane write fails after the column write kept (both or neither). */
+    columnBefore?: string | null,
+  ): Promise<boolean> => {
+    noteOrigin(cardId);
+    let columnKept = false;
+    try {
+      if (column.set) {
+        if (!isStatusGrouping && kanban.groupByField)
+          await kanban.updateFieldValue.mutateAsync({
+            cardId,
+            fieldDefinitionId: kanban.groupByField.id,
+            value: column.value,
+          });
+        else if (column.value !== null)
+          await kanban.updateStatus.mutateAsync({
+            cardId,
+            statusOptionId: column.value,
+          });
+        columnKept = true;
+      }
+      if (lane.set && laneField)
+        await kanban.updateFieldValue.mutateAsync({
+          cardId,
+          fieldDefinitionId: laneField.id,
+          value: lane.value,
+        });
+      return true;
+    } catch {
+      if (columnKept && columnBefore !== undefined)
+        await writeCell(
+          cardId,
+          { set: true, value: columnBefore },
+          { set: false, value: null },
+        );
+      return false;
+    }
+  };
+
+  const handleSwimlaneDrop = ({
+    card,
+    plan,
+    toColumn,
+    toLane,
+  }: SwimlaneDrop) => {
+    if (!capabilities.canMoveCard || !laneField) return;
+    const previous = {
+      column: lanesByCard.get(card.id)?.optionId ?? null,
+      lane: laneField.read(card),
+    };
+    const t = filtersCopy.lane.toast;
+    const values = {
+      title: card.title,
+      column: columnLabel(toColumn),
+      field: laneField.name,
+      value: swimlaneLabel(swimlanes.find((lane) => lane.optionId === toLane)),
+    };
+    void writeCell(
+      card.id,
+      { set: plan.columnChanged, value: toColumn },
+      { set: plan.laneChanged, value: plan.lane },
+      previous.column,
+    ).then((kept) => {
+      if (!kept) return;
+      toast(
+        fillFiltersCopy(
+          plan.columnChanged && plan.laneChanged
+            ? t.moved
+            : plan.laneChanged
+              ? t.movedLane
+              : t.movedColumn,
+          values,
+        ),
+        {
+          action: {
+            label: t.undo,
+            onClick: () =>
+              void writeCell(
+                card.id,
+                { set: plan.columnChanged, value: previous.column },
+                { set: plan.laneChanged, value: previous.lane },
+              ),
+          },
+        },
+      );
+    });
+  };
+
+  const handleSwimlaneRefused = ({
+    reason,
+    toColumnName,
+    limit,
+  }: SwimlaneRefusal) => {
+    toast.error(
+      `${filtersCopy.lane.refused}. ${fillFiltersCopy(
+        filtersCopy.lane.refusal[reason],
+        {
+          field: laneField?.name ?? "",
+          column: toColumnName,
+          limit: limit ?? "",
+        },
+      )}`,
+    );
   };
 
   const handleCreateLane = (draft: StatusOptionDraft) => {
@@ -582,7 +788,7 @@ export function KanbanView({
       !isStatusGrouping && kanban.groupByField && lane.optionId
         ? { fieldDefinitionId: kanban.groupByField.id, value: lane.optionId }
         : null;
-    kanban.createItemInLane.mutate({
+    return kanban.createItemInLane.mutateAsync({
       listId,
       title,
       statusOptionId: isStatusGrouping ? lane.optionId : null,
@@ -610,14 +816,13 @@ export function KanbanView({
       typeof payload.value === "string"
     ) {
       noteOrigin(payload.cardId);
-      kanban.updateStatus.mutate({
+      return kanban.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
     noteOrigin(payload.cardId);
-    kanban.updateFieldValue.mutate(payload);
+    return kanban.updateFieldValue.mutateAsync(payload);
   };
 
   const handleMoveToGroup = (cardId: string, groupId: string) => {
@@ -650,6 +855,10 @@ export function KanbanView({
 
   /** The hover and focus actions of a card, each only when the viewer may do it. */
   const personField = board ? findItemFields(board).person : undefined;
+  // Picking cards: only an editor can change several items at once.
+  const cardSelection = capabilities.canEditFields
+    ? picking.selection
+    : undefined;
   const cardActions: KanbanCardActions | undefined = capabilities.canEditFields
     ? {
         currentUserId,
@@ -699,20 +908,6 @@ export function KanbanView({
       }
     : undefined;
 
-  const handleFilterChange = (next: KanbanFilterState) => {
-    setFilterValue(serializeKanbanFilter(next) || undefined);
-  };
-
-  const selectedIndex = selectedItemId ? laneOrder.indexOf(selectedItemId) : -1;
-  const previousId =
-    selectedIndex > 0 ? laneOrder[selectedIndex - 1] : undefined;
-  const nextId = selectedIndex >= 0 ? laneOrder[selectedIndex + 1] : undefined;
-  const step = (id: string | undefined) =>
-    id ? () => onSelectedItemChange?.(id, { replace: true }) : undefined;
-
-  const departmentMark: ItemSheetMark | undefined = header?.space
-    ? { initials: header.space.initials, tone: header.space.markTone }
-    : undefined;
   const linkCandidates: ItemSheetLinkCandidate[] = kanban.groups
     .flatMap((group) => group.cards)
     .filter((entry) => entry.id !== selectedItemId && !entry.parentItemId)
@@ -721,254 +916,327 @@ export function KanbanView({
       key: entry.itemKey ?? null,
       title: entry.title,
       statusCategory: entry.statusCategory ?? null,
+      statusName:
+        kanban.statusField?.options.find(
+          (option) => option.id === entry.fieldValues?.[kanban.statusField!.id],
+        )?.label ?? null,
     }));
   const sheetGroups: ItemSheetGroup[] = [...kanban.groups]
     .sort((a, b) => a.position - b.position)
     .map((group) => ({ id: group.id, title: group.title }));
 
   return (
-    <div
-      ref={boardRef}
-      data-kanban-board=""
-      tabIndex={-1}
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
+    <KanbanFaceProvider
+      fields={faceFieldDefinitions}
+      cardFieldIds={kanbanSettings.cardFieldIds ?? []}
+      cardHideEmpty={kanbanSettings.cardHideEmpty ?? []}
     >
       <div
-        className="px-4 sm:px-6"
-        inert={boardCovered || undefined}
-        aria-hidden={boardCovered || undefined}
-      >
-        <KanbanToolbar
-          copy={toolbarCopy}
-          searchQuery={kanban.search.query}
-          onSearchChange={kanban.search.setQuery}
-          filter={filter}
-          filterOptions={{
-            statuses: [...filterChoices.statuses],
-            assignees: [...filterChoices.assignees],
-            labels: [...filterChoices.labels],
-          }}
-          onFilterChange={handleFilterChange}
-          groupByFields={kanban.groupByFields}
-          groupByFieldId={kanban.groupByField?.id ?? null}
-          onGroupByChange={(fieldId) => {
-            if (onGroupByChange) onGroupByChange(fieldId);
-            else setLocalGroupBy(fieldId);
-          }}
-          savedFilters={
-            <SavedFiltersControl
-              workspaceId={workspaceId}
-              boardId={boardId}
-              filter={filterValue}
-              groupBy={kanban.groupByField?.id ?? null}
-              canEdit={capabilities.canEditFields}
-              onApply={(criteria) => {
-                setFilterValue(criteria.filter || undefined);
-                if (!criteria.groupBy) return;
-                if (onGroupByChange) onGroupByChange(criteria.groupBy);
-                else setLocalGroupBy(criteria.groupBy);
-              }}
-            />
-          }
-          canAdd={capabilities.canCreateCard}
-          onAddItem={() => setCreate({ kind: "toolbar" })}
-          noResults={
-            kanban.filterActive && kanban.visibleCount === 0
-              ? { hiddenCount: kanban.totalCount }
-              : null
-          }
-        />
-      </div>
-
-      <div
-        className="relative min-h-0 flex-1"
-        inert={boardCovered || undefined}
-        aria-hidden={boardCovered || undefined}
+        ref={boardRef}
+        data-kanban-board=""
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && picking.selectedIds.size > 0)
+            picking.clear();
+        }}
+        className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
       >
         <div
-          ref={scrollerRef}
-          data-kanban-scroller=""
-          onScroll={measureEdges}
-          className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
+          className="px-4 sm:px-6"
+          inert={boardCovered || undefined}
+          aria-hidden={boardCovered || undefined}
         >
-          <KanbanBoard
-            lanes={kanban.lanes}
-            groupOrder={kanban.groups}
-            copy={laneCopy}
-            cardCopy={cardCopy}
-            now={now}
-            selectedItemId={selectedItemId}
-            filterActive={kanban.filterActive}
-            canAdd={
-              capabilities.canCreateCard &&
-              !(kanban.filterActive && kanban.visibleCount === 0)
+          <KanbanToolbar
+            copy={toolbarCopy}
+            endActions={
+              <FaceFieldsPopover
+                fields={faceFieldDefinitions}
+                value={{
+                  cardFieldIds: kanbanSettings.cardFieldIds ?? [],
+                  cardHideEmpty: kanbanSettings.cardHideEmpty ?? [],
+                }}
+                canEdit={capabilities.canEditFields}
+                onChange={(next) => updateViewConfig(next)}
+              />
             }
-            canDrag={capabilities.canMoveCard}
-            groupKind={isStatusGrouping ? "status" : "select"}
-            addRequest={addRequest}
-            onOpenDetails={handleOpenDetail}
-            onDropCard={handleDrop}
-            onCreateItem={handleCreateItem}
-            formCopy={
-              showStatusControls && kanban.groupByField
-                ? statusFormCopy
-                : undefined
+            searchQuery={kanban.search.query}
+            onSearchChange={kanban.search.setQuery}
+            onClearFilter={() =>
+              view.setFilter({ ...view.state.filter, conditions: [] })
             }
-            onCreateLane={handleCreateLane}
-            onUpdateLane={handleUpdateLane}
-            lanePending={addOption.isPending}
-            onMoveLane={handleMoveLane}
-            onDeleteLane={handleDeleteLane}
-            laneWritePending={moveOption.isPending || removeOption.isPending}
-            onCreateGroup={
-              capabilities.canCreateCard
-                ? (draft) => addGroup(draft)
-                : undefined
+            viewBar={
+              <ViewStateBar
+                canSave={capabilities.canEditFields}
+                copy={filtersCopy}
+                view={view}
+                fields={kanban.filterFields}
+                memberName={kanban.memberName}
+                people={kanban.filterChoices.assignees}
+                counts={{
+                  shown: kanban.visibleCount,
+                  total: kanban.totalCount,
+                }}
+                now={now}
+                groupFields={columnFields}
+                groupFallback={
+                  kanban.groupByField
+                    ? { fieldId: kanban.groupByField.id }
+                    : undefined
+                }
+                laneFields={groupableFields(kanban.filterFields)}
+                blockedLaneFieldId={kanban.groupByField?.id}
+                savedFilters={(save) => (
+                  <SavedFiltersControl
+                    workspaceId={workspaceId}
+                    boardId={boardId}
+                    filter={serializeCompoundFilter(view.applied.filter)}
+                    groupBy={view.state.group?.fieldId ?? null}
+                    canEdit={capabilities.canEditFields}
+                    onApply={view.applyCriteria}
+                    {...save}
+                  />
+                )}
+              />
             }
-            groupTitles={kanban.groups.map((group) => group.title)}
-            groupPending={addingGroup}
-            laneCardLimit={kanbanSettings.laneCardLimit}
-            keyboardMove={kanbanSettings.keyboardMove}
-            cardActions={cardActions}
-            wipLimits={kanbanSettings.wipLimits}
-            onWipLimitChange={
-              showStatusControls ? handleWipLimitChange : undefined
+            canAdd={capabilities.canCreateCard}
+            onAddItem={() => setCreate({ kind: "toolbar" })}
+            noResults={
+              kanban.filterActive && kanban.visibleCount === 0
+                ? { hiddenCount: kanban.totalCount }
+                : null
             }
-            onRequestCreate={
-              capabilities.canCreateCard
-                ? (lane) => setCreate({ kind: "lane", lane, title: "" })
-                : undefined
-            }
-            onExpandCreate={
-              capabilities.canCreateCard
-                ? (lane, title) => setCreate({ kind: "quick", lane, title })
-                : undefined
-            }
-            initialCollapsed={collapsedLanes.initial}
-            onCollapsedChange={collapsedLanes.onChange}
           />
         </div>
-        {(["left", "right"] as const).map((side) =>
-          edges[side] ? (
-            <div
-              key={side}
-              data-scroll-edge={side}
-              className={cn(
-                "pointer-events-none absolute inset-y-0 z-10 flex w-14 items-center",
-                side === "right"
-                  ? "right-0 justify-end bg-gradient-to-l from-background via-background/70 to-transparent pr-2"
-                  : "left-0 justify-start bg-gradient-to-r from-background via-background/70 to-transparent pl-2",
-              )}
-            >
-              <button
-                type="button"
-                tabIndex={-1}
-                aria-label={
-                  side === "right" ? laneCopy.scrollRight : laneCopy.scrollLeft
-                }
-                onClick={() =>
-                  scrollerRef.current?.scrollBy({
-                    left:
-                      (side === "right" ? 1 : -1) *
-                      Math.max(
-                        280,
-                        Math.round(
-                          (scrollerRef.current?.clientWidth ?? 600) * 0.7,
-                        ),
-                      ),
-                    behavior: prefersReducedMotion() ? "auto" : "smooth",
-                  })
-                }
-                className="pointer-events-auto flex size-8 items-center justify-center rounded-full border border-line-strong bg-popover text-muted-foreground shadow-card-hover hover:text-foreground"
-              >
-                {side === "right" ? (
-                  <ChevronRight aria-hidden="true" className="size-4" />
-                ) : (
-                  <ChevronLeft aria-hidden="true" className="size-4" />
-                )}
-              </button>
-            </div>
-          ) : null,
-        )}
-      </div>
 
-      {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
-          open={createOpen}
-          onOpenChange={(next) => {
-            if (!next) setCreate(null);
-          }}
-          workspaceId={workspaceId}
-          board={board}
-          currentUserId={currentUserId}
-          groups={kanban.groups}
-          defaultGroupId={
-            create && create.kind !== "toolbar"
-              ? (groupForNewItem(create.lane, kanban.groups) ??
-                kanban.groups[0]?.id ??
-                "")
-              : (kanban.groups[0]?.id ?? "")
-          }
-          hideGroup={isStatusGrouping}
-          defaultStatusId={
-            create && create.kind !== "toolbar" && isStatusGrouping
-              ? create.lane.optionId
-              : null
-          }
-          defaultTitle={
-            create && create.kind !== "toolbar" ? create.title : undefined
-          }
-          laneValue={
-            create &&
-            create.kind !== "toolbar" &&
-            !isStatusGrouping &&
-            kanban.groupByField &&
-            create.lane.optionId
-              ? {
-                  fieldDefinitionId: kanban.groupByField.id,
-                  value: create.lane.optionId,
+        <div
+          className="relative min-h-0 flex-1"
+          inert={boardCovered || undefined}
+          aria-hidden={boardCovered || undefined}
+        >
+          <div
+            ref={scrollerRef}
+            data-kanban-scroller=""
+            onScroll={measureEdges}
+            className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
+          >
+            {laneField ? (
+              <>
+                {capabilities.canMoveCard ? null : (
+                  <p className="mb-2 text-compact text-muted-foreground">
+                    {filtersCopy.lane.viewerNote}
+                  </p>
+                )}
+                <KanbanSwimlaneBoard
+                  copy={filtersCopy}
+                  cardCopy={cardCopy}
+                  now={now}
+                  columns={kanban.lanes}
+                  swimlanes={swimlanes}
+                  laneField={laneField}
+                  columnName={(column) =>
+                    laneName(column, laneCopy, isStatusGrouping)
+                  }
+                  laneName={swimlaneLabel}
+                  wipLimits={kanbanSettings.wipLimits}
+                  selectedItemId={selectedItemId}
+                  canDrag={capabilities.canMoveCard}
+                  cardActions={cardActions}
+                  cardSelection={cardSelection}
+                  onOpenDetails={handleOpenDetail}
+                  onDrop={handleSwimlaneDrop}
+                  onRefused={handleSwimlaneRefused}
+                />
+              </>
+            ) : (
+              <KanbanBoard
+                lanes={kanban.lanes}
+                groupOrder={kanban.groups}
+                copy={laneCopy}
+                cardCopy={cardCopy}
+                now={now}
+                selectedItemId={selectedItemId}
+                filterActive={kanban.filterActive}
+                canAdd={
+                  capabilities.canCreateCard &&
+                  !(kanban.filterActive && kanban.visibleCount === 0)
                 }
-              : null
-          }
-          focusDescription={create?.kind === "quick"}
-          context={
-            create && create.kind !== "toolbar"
-              ? {
-                  kind: create.kind,
-                  name:
-                    create.lane.name ||
-                    (isStatusGrouping ? laneCopy.noStatus : laneCopy.noValue),
-                  ...laneDot(create.lane),
+                canDrag={capabilities.canMoveCard}
+                groupKind={isStatusGrouping ? "status" : "select"}
+                addRequest={addRequest}
+                onOpenDetails={handleOpenDetail}
+                onDropCard={handleDrop}
+                onCreateItem={handleCreateItem}
+                formCopy={
+                  showStatusControls && kanban.groupByField
+                    ? statusFormCopy
+                    : undefined
                 }
-              : undefined
-          }
-          onOpenItem={(itemId) => {
-            setCreate(null);
-            onSelectedItemChange?.(itemId);
-          }}
-        />
-      ) : null}
-      {selectedItemId ? (
-        <KanbanSelectedItem
-          board={board}
-          cardId={selectedItemId}
-          capabilities={capabilities}
-          departmentMark={departmentMark}
-          groups={sheetGroups}
-          linkCandidates={linkCandidates}
-          onClose={handleClosePanel}
-          onRestoreFocus={restoreFocus}
-          onPrevious={step(previousId)}
-          onNext={step(nextId)}
-          onCopyLink={handleCopyLink}
-          onOpenFullPage={onOpenItemPage}
-          onMoveToGroup={handleMoveToGroup}
-          onUpdateFieldValue={handleSheetFieldValue}
-          onDuplicate={removal.requestDuplicate}
-        />
-      ) : null}
-      {removal.dialogs}
-    </div>
+                onCreateLane={handleCreateLane}
+                onUpdateLane={handleUpdateLane}
+                lanePending={addOption.isPending}
+                onMoveLane={handleMoveLane}
+                onDeleteLane={handleDeleteLane}
+                laneWritePending={
+                  moveOption.isPending || removeOption.isPending
+                }
+                onCreateGroup={
+                  capabilities.canCreateCard
+                    ? (draft) => addGroup(draft)
+                    : undefined
+                }
+                groupTitles={kanban.groups.map((group) => group.title)}
+                groupPending={addingGroup}
+                laneCardLimit={kanbanSettings.laneCardLimit}
+                lanePaging={
+                  kanban.paging
+                    ? {
+                        loadMore: (lane) =>
+                          void kanban.loadMoreLane(lane.optionId),
+                        loading: kanban.lanePages.loading,
+                        failed: kanban.lanePages.failed,
+                      }
+                    : undefined
+                }
+                keyboardMove={kanbanSettings.keyboardMove}
+                cardActions={cardActions}
+                cardSelection={cardSelection}
+                wipLimits={kanbanSettings.wipLimits}
+                onWipLimitChange={
+                  showStatusControls ? handleWipLimitChange : undefined
+                }
+                onRequestCreate={
+                  capabilities.canCreateCard
+                    ? (lane) => setCreate({ kind: "lane", lane, title: "" })
+                    : undefined
+                }
+                onExpandCreate={
+                  capabilities.canCreateCard
+                    ? (lane, title) => setCreate({ kind: "quick", lane, title })
+                    : undefined
+                }
+                initialCollapsed={collapsedLanes.initial}
+                onCollapsedChange={collapsedLanes.onChange}
+              />
+            )}
+          </div>
+          {(["left", "right"] as const).map((side) =>
+            edges[side] ? (
+              <div
+                key={side}
+                data-scroll-edge={side}
+                className={cn(
+                  "pointer-events-none absolute inset-y-0 z-10 flex w-14 items-center",
+                  side === "right"
+                    ? "right-0 justify-end bg-gradient-to-l from-background via-background/70 to-transparent pr-2"
+                    : "left-0 justify-start bg-gradient-to-r from-background via-background/70 to-transparent pl-2",
+                )}
+              >
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={
+                    side === "right"
+                      ? laneCopy.scrollRight
+                      : laneCopy.scrollLeft
+                  }
+                  onClick={() =>
+                    scrollerRef.current?.scrollBy({
+                      left:
+                        (side === "right" ? 1 : -1) *
+                        Math.max(
+                          280,
+                          Math.round(
+                            (scrollerRef.current?.clientWidth ?? 600) * 0.7,
+                          ),
+                        ),
+                      behavior: prefersReducedMotion() ? "auto" : "smooth",
+                    })
+                  }
+                  className="pointer-events-auto flex size-8 items-center justify-center rounded-full border border-line-strong bg-popover text-muted-foreground shadow-card-hover hover:text-foreground"
+                >
+                  {side === "right" ? (
+                    <ChevronRight aria-hidden="true" className="size-4" />
+                  ) : (
+                    <ChevronLeft aria-hidden="true" className="size-4" />
+                  )}
+                </button>
+              </div>
+            ) : null,
+          )}
+        </div>
+
+        {board && cardSelection && picking.selectedIds.size > 0 ? (
+          <KanbanBulkBar
+            boardId={boardId}
+            workspaceId={workspaceId}
+            board={board}
+            capabilities={capabilities}
+            selectedIds={picking.selectedIds}
+            onClear={picking.clear}
+          />
+        ) : null}
+
+        {board && capabilities.canCreateCard ? (
+          <CardCreatePopup
+            open={createOpen}
+            onOpenChange={(next) => {
+              if (!next) setCreate(null);
+            }}
+            workspaceId={workspaceId}
+            board={board}
+            currentUserId={currentUserId}
+            groups={kanban.groups}
+            defaultGroupId={
+              create && create.kind !== "toolbar"
+                ? (groupForNewItem(create.lane, kanban.groups) ??
+                  kanban.groups[0]?.id ??
+                  "")
+                : (kanban.groups[0]?.id ?? "")
+            }
+            defaultStatusId={
+              create && create.kind !== "toolbar" && isStatusGrouping
+                ? create.lane.optionId
+                : null
+            }
+            defaultTitle={
+              create && create.kind !== "toolbar" ? create.title : undefined
+            }
+            laneValue={
+              create &&
+              create.kind !== "toolbar" &&
+              !isStatusGrouping &&
+              kanban.groupByField &&
+              create.lane.optionId
+                ? {
+                    fieldDefinitionId: kanban.groupByField.id,
+                    value: create.lane.optionId,
+                  }
+                : null
+            }
+            onOpenItem={(itemId) => {
+              setCreate(null);
+              onSelectedItemChange?.(itemId);
+            }}
+          />
+        ) : null}
+        {selectedItemId ? (
+          <KanbanSelectedItem
+            board={board}
+            cardId={selectedItemId}
+            capabilities={capabilities}
+            groups={sheetGroups}
+            linkCandidates={linkCandidates}
+            onClose={handleClosePanel}
+            onRestoreFocus={restoreFocus}
+            onCopyLink={handleCopyLink}
+            onMoveToGroup={handleMoveToGroup}
+            onUpdateFieldValue={handleSheetFieldValue}
+            onDuplicate={removal.requestDuplicate}
+          />
+        ) : null}
+        {removal.dialogs}
+      </div>
+    </KanbanFaceProvider>
   );
 }
 
@@ -976,18 +1244,16 @@ export interface SelectedItemProps {
   board: Board;
   cardId: string;
   capabilities: TaskDetailCapabilities;
-  departmentMark?: ItemSheetMark;
   groups: readonly ItemSheetGroup[];
   /** Items a new link can point at (the board's items that are not sub-items). */
   linkCandidates?: readonly ItemSheetLinkCandidate[];
   onClose: () => void;
   onRestoreFocus: (cardId: string) => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
   onCopyLink: (cardId: string) => void;
-  onOpenFullPage?: (cardId: string) => void;
   onMoveToGroup: (cardId: string, groupId: string) => void;
-  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  onUpdateFieldValue: (
+    payload: UpdateFieldValueInput,
+  ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
 }
 
@@ -1006,33 +1272,53 @@ export function KanbanSelectedItem({
   onRestoreFocus,
   ...rest
 }: SelectedItemProps) {
-  const { card, error } = useCard(cardId, board.workspaceId);
-  const notFound =
-    Boolean(error) ||
+  const { card, error, isLoading, refetch } = useCard(
+    cardId,
+    board.workspaceId,
+  );
+  // A card that is gone, moved to another board, or not for this viewer reads
+  // the same: one generic message, nothing about what or why.
+  const kind = (error as { kind?: string } | null)?.kind;
+  const gone =
+    kind === "not_found" ||
+    kind === "forbidden" ||
     (card !== undefined &&
       (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+  const failed = Boolean(error) && !gone;
   const lastShown = useRef<CardDetail | null>(null);
-  if (card && !notFound) lastShown.current = card;
-  const shown = notFound ? null : (card ?? lastShown.current);
+  if (card && !gone) lastShown.current = card;
+  const shown = gone
+    ? null
+    : failed && !card
+      ? null
+      : (card ?? lastShown.current);
+  const restore = (event: Event) => {
+    event.preventDefault();
+    onRestoreFocus(lastShown.current?.id ?? cardId);
+  };
+  const withValues = useMemo(
+    () =>
+      shown ? withReservedFieldValues(shown, board.fieldDefinitions) : null,
+    [shown, board.fieldDefinitions],
+  );
 
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
-  useEffect(() => {
-    if (notFound) onCloseRef.current();
-  }, [notFound, cardId]);
-
-  if (!shown) return null;
+  if (!withValues)
+    return (
+      <CardPopupSurface
+        status={
+          gone ? "gone" : failed ? "error" : isLoading ? "loading" : "loading"
+        }
+        onClose={onClose}
+        onRetry={refetch}
+        onCloseAutoFocus={restore}
+      />
+    );
   return (
     <KanbanSelectedItemReady
       board={board}
-      card={shown}
+      card={withValues}
       onClose={onClose}
-      onCloseAutoFocus={(event) => {
-        event.preventDefault();
-        onRestoreFocus(lastShown.current?.id ?? cardId);
-      }}
+      onCloseAutoFocus={restore}
       {...rest}
     />
   );
@@ -1041,22 +1327,25 @@ export function KanbanSelectedItem({
 function KanbanSelectedItemReady({
   board,
   card,
-  capabilities,
-  departmentMark,
+  capabilities: boardCapabilitiesOfViewer,
   groups,
   linkCandidates,
   onClose,
   onCloseAutoFocus,
-  onPrevious,
-  onNext,
   onCopyLink,
-  onOpenFullPage,
   onMoveToGroup,
   onUpdateFieldValue,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
 }) {
+  // An item inside an archived group stays readable and takes no write.
+  const capabilities = useItemCapabilities(
+    boardCapabilitiesOfViewer,
+    card.boardId,
+    card.workspaceId,
+    card.listId,
+  );
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
@@ -1096,7 +1385,6 @@ function KanbanSelectedItemReady({
         board={board}
         card={card}
         capabilities={capabilities}
-        departmentMark={departmentMark}
         groups={groups}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
@@ -1108,6 +1396,12 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          updatesMore: updates.hasNextPage
+            ? {
+                loading: updates.isFetchingNextPage,
+                onMore: () => void updates.fetchNextPage(),
+              }
+            : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,
@@ -1147,7 +1441,8 @@ function KanbanSelectedItemReady({
           onCancelApproval: (requestId) => approvals.cancel(requestId),
           onRenameTitle: (cardId, patch) =>
             updateCard.mutate({ cardId, patch }),
-          onUpdateItem: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+          onUpdateItem: (cardId, patch) =>
+            updateCard.mutateAsync({ cardId, patch }),
           onToggleLabel: (labelId, on) => labelWrites.mutate({ labelId, on }),
           onCreateLabel: (name, color) =>
             labelWrites
@@ -1181,10 +1476,7 @@ function KanbanSelectedItemReady({
             updateUpdate.mutate({ updateId, body }),
           onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
           onSelectTab: () => undefined,
-          onPrevious,
-          onNext,
           onCopyLink,
-          onOpenFullPage,
           onMoveToGroup,
           onDelete: removal.requestDelete,
           onMoveToBoard: removal.requestMove,

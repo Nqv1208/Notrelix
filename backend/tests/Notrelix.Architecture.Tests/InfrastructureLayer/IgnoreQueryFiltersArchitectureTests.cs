@@ -17,6 +17,7 @@ public class IgnoreQueryFiltersArchitectureTests
         "src/Notrelix.Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs",
         "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",
         "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAvatarReaperStore.cs",
+        "src/Notrelix.Infrastructure/CrossContext/Collaboration/Automation/AutomationActivityFactsAdapter.cs",
         "src/Notrelix.Infrastructure/CrossContext/Identity/Avatars/AvatarAudienceReadAdapter.cs",
         "src/Notrelix.Infrastructure/CrossContext/Identity/Bootstrap/IdentityBootstrapReadAdapter.cs",
         "src/Notrelix.Infrastructure/Integrations/Webhooks/CalendarWebhookBindingResolver.cs",

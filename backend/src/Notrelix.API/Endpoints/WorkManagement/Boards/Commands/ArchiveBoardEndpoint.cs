@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 
@@ -15,10 +16,11 @@ public static class ArchiveBoardEndpoint
 
     private static async Task<IResult> HandleArchiveBoard(
         Guid boardId,
+        BoardVersionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ArchiveBoardCommand(boardId), cancellationToken);
+        var result = await sender.Send(new ArchiveBoardCommand(boardId, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

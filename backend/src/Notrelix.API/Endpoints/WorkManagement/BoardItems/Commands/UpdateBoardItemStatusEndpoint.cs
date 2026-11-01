@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
@@ -11,6 +12,7 @@ public static class UpdateBoardItemStatusEndpoint
         group.MapResourcePatch("/status", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.UpdateStatus")
+            .Produces<BoardItemVersionDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Update the status of a board item");
         return group;
@@ -22,7 +24,7 @@ public static class UpdateBoardItemStatusEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateBoardItemStatusCommand(itemId, body.Status), cancellationToken);
-        return result.ToNoContentResult();
+        var result = await sender.Send(new UpdateBoardItemStatusCommand(itemId, body.Status, body.ExpectedVersion), cancellationToken);
+        return result.ToItemVersionResult();
     }
 }

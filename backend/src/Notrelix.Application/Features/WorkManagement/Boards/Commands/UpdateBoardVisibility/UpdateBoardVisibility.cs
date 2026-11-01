@@ -8,8 +8,9 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoa
 [IdempotencyOperation("work-management.boards.update-board-visibility.v1")]
 public record UpdateBoardVisibilityCommand(
     Guid BoardId,
-    BoardVisibility Visibility)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    BoardVisibility Visibility,
+    long ExpectedVersion)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -21,13 +22,16 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly BoardAccessChangeLog _changeLog;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardVisibilityCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        BoardAccessChangeLog changeLog)
+        BoardAccessChangeLog changeLog,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _changeLog = changeLog;
         _context = context;
         _requestContext = requestContext;
@@ -35,6 +39,13 @@ public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVi
     }
 
     public async Task<Result> Handle(UpdateBoardVisibilityCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateBoardVisibilityCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);

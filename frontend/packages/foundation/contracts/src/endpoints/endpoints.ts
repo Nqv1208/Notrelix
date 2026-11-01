@@ -191,12 +191,47 @@ export const endpoints = {
   boards: {
     listByWorkspaceId: (workspaceId: string) =>
       `/workspaces/${workspaceId}/boards`,
+    // WorkManagement.Boards.ListArchived / ListDeleted: boards that left the working set.
+    archivedByWorkspaceId: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/boards/archived`,
+    deletedByWorkspaceId: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/boards/deleted`,
     detail: (boardId: string) => `/boards/${boardId}`,
+    // WorkManagement.Boards.Archive / Unarchive / Restore carry the board version the person saw.
+    archive: (boardId: string) => `/boards/${boardId}/archive`,
+    unarchive: (boardId: string) => `/boards/${boardId}/unarchive`,
+    restore: (boardId: string) => `/boards/${boardId}/restore`,
+    lifecycleImpact: (boardId: string) => `/boards/${boardId}/lifecycle-impact`,
     full: (boardId: string) => `/boards/${boardId}/full`,
+    // WorkManagement.BoardItems.ListLane: the next page of a Status lane ("none" is the lane without a status).
+    lane: (boardId: string, lane: string) =>
+      `/boards/${boardId}/items/lanes/${lane}`,
     access: (boardId: string) => `/boards/${boardId}/access`,
     schema: (boardId: string) => `/boards/${boardId}/schema`,
     labels: (boardId: string) => `/boards/${boardId}/labels`,
     moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
+    // WorkManagement.Boards.GetMoveImpact: who gains and loses the board in another space (`?targetSpaceId=`).
+    moveImpact: (boardId: string) => `/boards/${boardId}/move-impact`,
+    // WorkManagement.Boards.Duplicate / GetDuplicatePreview (`?spaceId=`).
+    duplicate: (boardId: string) => `/boards/${boardId}/duplicate`,
+    duplicatePreview: (boardId: string) =>
+      `/boards/${boardId}/duplicate-preview`,
+    // WorkManagement.Imports.* (upload, preview, confirm, get, errors) and WorkManagement.Exports.* (create, list, summary, get, file).
+    imports: (boardId: string) => `/boards/${boardId}/imports`,
+    importPreview: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}/preview`,
+    importConfirm: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}/confirm`,
+    importJob: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}`,
+    importErrors: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/imports/${jobId}/errors`,
+    exports: (boardId: string) => `/boards/${boardId}/exports`,
+    exportSummary: (boardId: string) => `/boards/${boardId}/exports/summary`,
+    exportJob: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/exports/${jobId}`,
+    exportFile: (boardId: string, jobId: string) =>
+      `/boards/${boardId}/exports/${jobId}/file`,
     // WorkManagement.Boards.GetSharing / MakePrivate and the Board member writes.
     sharing: (boardId: string) => `/boards/${boardId}/sharing`,
     sharingPrivate: (boardId: string) => `/boards/${boardId}/sharing/private`,
@@ -204,6 +239,8 @@ export const endpoints = {
       `/boards/${boardId}/members/${userId}`,
     memberRole: (boardId: string, userId: string) =>
       `/boards/${boardId}/members/${userId}/role`,
+    // WorkManagement.Boards.Leave: ends the caller's own explicit membership.
+    leave: (boardId: string) => `/boards/${boardId}/members/leave`,
   },
   // Workspaces.Onboarding.* (draft and getting-started card).
   // Workspaces.Workspaces.* routes under an Account.
@@ -239,6 +276,10 @@ export const endpoints = {
     toggle: (itemId: string) => `/checklist-items/${itemId}/toggle`,
     // WorkManagement.Checklists.MoveItem
     move: (itemId: string) => `/checklist-items/${itemId}/move`,
+    // WorkManagement.Checklists.SetItemAssignee
+    assignee: (itemId: string) => `/checklist-items/${itemId}/assignee`,
+    // WorkManagement.Checklists.SetItemDue
+    due: (itemId: string) => `/checklist-items/${itemId}/due`,
   },
   comments: {
     detail: (commentId: string) => `/comments/${commentId}`,
@@ -262,6 +303,7 @@ export const endpoints = {
     duplicate: (groupId: string) => `/board-groups/${groupId}/duplicate`,
     move: (groupId: string) => `/board-groups/${groupId}/move`,
     archive: (groupId: string) => `/board-groups/${groupId}/archive`,
+    unarchive: (groupId: string) => `/board-groups/${groupId}/unarchive`,
   },
   boardItems: {
     create: (boardId: string) => `/boards/${boardId}/items`,
@@ -277,6 +319,7 @@ export const endpoints = {
     fieldValue: (itemId: string, fieldId: string) =>
       `/board-items/${itemId}/values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
+    commentsPage: (itemId: string) => `/board-items/${itemId}/comments/page`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
     attachmentFiles: (itemId: string) =>
       `/board-items/${itemId}/attachments/files`,
@@ -297,6 +340,10 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}`,
     move: (boardId: string, fieldId: string) =>
       `/boards/${boardId}/fields/${fieldId}/move`,
+    // WorkManagement.BoardFields.Deleted / .Restore: a deleted field is kept 30 days.
+    deleted: (boardId: string) => `/boards/${boardId}/fields/deleted`,
+    restore: (boardId: string, fieldId: string) =>
+      `/boards/${boardId}/fields/${fieldId}/restore`,
     options: (boardId: string, fieldId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>
@@ -327,6 +374,11 @@ export const endpoints = {
     reject: (submissionId: string) =>
       `/form-submissions/${submissionId}/reject`,
     spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
+  },
+  // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
+  boardPreferences: {
+    forView: (boardId: string, viewId: string) =>
+      `/boards/${boardId}/preferences/${viewId}`,
   },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
