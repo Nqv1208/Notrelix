@@ -4,7 +4,7 @@ import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-d
 /**
  * The pre-login pages of the Auth mockup on the mock world: sign in with an
  * email, a password and a second step; the company's single sign-on; the
- * lock after five wrong passwords; the password reset; a guest invitation.
+ * lock after ten wrong passwords; the password reset; a guest invitation.
  * The accounts are the mock's own (`mock-auth-directory.ts`).
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -104,12 +104,12 @@ test.describe("Sign-in pages (owner)", () => {
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
   });
 
-  test("five wrong passwords lock the account and the button waits with the time left", async ({
+  test("ten wrong passwords lock the account and the button waits with the time left", async ({
     page,
   }) => {
     await toPassword(page);
     const password = page.getByLabel("Mật khẩu", { exact: true });
-    for (let attempt = 1; attempt <= 4; attempt += 1) {
+    for (let attempt = 1; attempt <= 9; attempt += 1) {
       await password.fill(`sai-mat-khau-${attempt}`);
       await page.locator("form button[type=submit]").click();
       // The answer clears the field: the next try starts from an empty one.
@@ -120,8 +120,8 @@ test.describe("Sign-in pages (owner)", () => {
       // No answer counts the tries left.
       await expect(page.getByText(/lần thử/)).toHaveCount(0);
     }
-    // The fifth wrong try is throttled: the wait time shows, not a counter.
-    await password.fill("sai-mat-khau-5");
+    // The tenth wrong try is throttled: the wait time shows, not a counter.
+    await password.fill("sai-mat-khau-10");
     await page.locator("form button[type=submit]").click();
     await expect(page.getByText(/Thử lại sau \d+ giây/)).toBeVisible();
     const wait = page.locator("form button[type=submit]");
@@ -272,14 +272,14 @@ test.describe("Sign-in pages (owner)", () => {
     );
   });
 
-  test("password reset: the link goes out, the answer does not name the account, resend waits", async ({
+  test("password reset: the code goes out, the answer does not name the account, the code and a new password sign the person in again", async ({
     page,
   }) => {
     await toPassword(page);
     await page.getByRole("button", { name: "Quên mật khẩu?" }).click();
     await expect(page).toHaveURL(/\/forgot-password/);
     await expect(page.getByLabel("Email")).toHaveValue(MOCK_AUTH.personalEmail);
-    await page.getByRole("button", { name: "Gửi liên kết đặt lại" }).click();
+    await page.getByRole("button", { name: "Gửi mã", exact: true }).click();
     await expect(
       page.getByRole("heading", { level: 1, name: "Kiểm tra email của bạn" }),
     ).toBeVisible();
@@ -287,8 +287,24 @@ test.describe("Sign-in pages (owner)", () => {
     const resend = page.getByRole("button", { name: /Gửi lại/ });
     await expect(resend).toBeDisabled();
     await expect(resend).toContainText(/0:\d\d/);
-    await page.getByRole("button", { name: "Dùng email khác" }).click();
-    await expect(page.getByLabel("Email")).toHaveValue("");
+
+    // On to the code: the email comes along.
+    await page.getByRole("button", { name: "Nhập mã" }).click();
+    await expect(page).toHaveURL(/\/reset-password\?email=/);
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue(
+      MOCK_AUTH.personalEmail,
+    );
+    await page.getByLabel("Mã trong email").fill("111111");
+    await page.getByLabel("Mật khẩu mới").fill("mot-mat-khau-moi-2026");
+    await page.getByRole("button", { name: "Đổi mật khẩu" }).click();
+    await expect(page.getByRole("alert")).toContainText("Mã chưa đúng");
+
+    await page.getByLabel("Mã trong email").fill(MOCK_AUTH.resetCode);
+    await page.getByRole("button", { name: "Đổi mật khẩu" }).click();
+    await expect(page).toHaveURL(/\/sign-in\?reason=password-reset/);
+    await expect(
+      page.getByRole("status").filter({ hasText: "Mật khẩu đã được đổi" }),
+    ).toBeVisible();
   });
 
   test("a guest invitation: the form is checked, the email is fixed, accepting lands on the board", async ({

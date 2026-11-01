@@ -6,6 +6,7 @@ import {
   authForgotScenario,
   authInviteScenario,
   authRegisterDefaultScenario,
+  authResetScenario,
   authSignInScenario,
   authSsoStep,
   authVerifyEmailScenario,
@@ -16,6 +17,7 @@ import { fillAuthCopy } from "../../copy/fill-auth-copy";
 import { AuthForgotSurface } from "../auth-forgot-surface";
 import { AuthInviteSurface } from "../auth-invite-surface";
 import { AuthRegisterFormSurface } from "../auth-form-surfaces";
+import { AuthResetSurface } from "../auth-reset-surface";
 import { AuthShell } from "../auth-shell";
 import { AuthSignInSurface } from "../auth-sign-in-surface";
 import { AuthVerifyEmailSurface } from "../auth-verify-email-surface";
@@ -250,6 +252,20 @@ describe("auth forgot-password surface", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
+  it("FUI[auth.forgot:sent] sends the person on to the code with the email", () => {
+    const onEnterCode = vi.fn();
+    renderPureUi(
+      <AuthForgotSurface
+        {...authForgotScenario({
+          step: { kind: "sent", email: AUTH_PERSONAL_EMAIL, resendSeconds: 42 },
+          onEnterCode,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.sent.enterCode }));
+    expect(onEnterCode).toHaveBeenCalledWith(AUTH_PERSONAL_EMAIL);
+  });
+
   it("FUI[auth.forgot:sent] never says whether the email has an account, waits before sending again and then lets it", () => {
     const onResend = vi.fn();
     const { rerender } = renderPureUi(
@@ -340,6 +356,34 @@ describe("auth verify-email surface", () => {
       screen.getByRole("button", { name: copy.verifyEmail.back }),
     );
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("auth verify email: sending again", () => {
+  it("FUI[auth.verify-email:resend] waits with the time left after a new link went out, and says when asking is refused", () => {
+    const { rerender } = renderPureUi(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({
+          step: { kind: "failed" },
+          sent: true,
+          resendSeconds: 42,
+        })}
+      />,
+    );
+    const wait = screen.getByRole("button", { name: /dùng được sau 42 giây/ });
+    expect(wait.hasAttribute("disabled")).toBe(true);
+    expect(wait.textContent).toContain("0:42");
+    rerender(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({
+          step: { kind: "failed" },
+          error: "limited",
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.verifyEmail.limited,
+    );
   });
 });
 
@@ -480,5 +524,51 @@ describe("auth register surface", () => {
       email: "ada@notrelix.dev",
       password: "very-secure",
     });
+  });
+});
+
+describe("auth reset surface", () => {
+  it("FUI[auth.reset:form] checks the three fields before it sends and sends them trimmed", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(<AuthResetSurface {...authResetScenario({ onSubmit })} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.submit }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(copy.reset.invalidCode)).toBeTruthy();
+    expect(screen.getByText(copy.reset.shortPassword)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(copy.reset.codeLabel), {
+      target: { value: "12ab34 5678" },
+    });
+    fireEvent.change(screen.getByLabelText(copy.reset.passwordLabel), {
+      target: { value: "mot-mat-khau-du-dai" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.submit }));
+    // Only digits are kept, at most six.
+    expect(onSubmit).toHaveBeenCalledWith({
+      email: AUTH_PERSONAL_EMAIL,
+      code: "123456",
+      newPassword: "mot-mat-khau-du-dai",
+    });
+  });
+
+  it("FUI[auth.reset:refused] says the same thing for a wrong, used or expired code and offers a new one", () => {
+    const onSendAgain = vi.fn();
+    renderPureUi(
+      <AuthResetSurface
+        {...authResetScenario({ error: "rejected", onSendAgain })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.reset.rejected,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.sendAgain }));
+    expect(onSendAgain).toHaveBeenCalledWith(AUTH_PERSONAL_EMAIL);
+  });
+
+  it("FUI[auth.reset:pending] locks the button while the change is on its way", () => {
+    renderPureUi(
+      <AuthResetSurface {...authResetScenario({ pending: true })} />,
+    );
+    const button = screen.getByRole("button", { name: copy.reset.submitting });
+    expect(button.hasAttribute("disabled")).toBe(true);
   });
 });
