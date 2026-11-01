@@ -10,8 +10,10 @@ import {
   type AccountSection,
   type AccountWorkspaceTone,
   type AccountWorkspaceView,
+  type DeletedWorkspaceView,
 } from "@notrelix/features-account";
 import { workspaceQueryKeys } from "@notrelix/features-workspace";
+import { useLocale } from "@notrelix/i18n";
 import { useAccountId } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useRouteWorkspaceId, useToast } from "./use-account-pages";
@@ -36,6 +38,7 @@ function initialsOf(name: string): string {
 
 export function AccountWorkspacesPage() {
   const copy = useAccountWorkspacesCopy();
+  const { locale } = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
   const accountId = useAccountId();
@@ -51,9 +54,9 @@ export function AccountWorkspacesPage() {
   );
   const list = useAccountWorkspaces();
   const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<AccountLeaveFailure | null>(
-    null,
-  );
+  const [actionError, setActionError] = useState<
+    AccountLeaveFailure | "restore" | null
+  >(null);
   const [notice, showNotice] = useToast();
 
   const section = useMemo<AccountSection<readonly AccountWorkspaceView[]>>(
@@ -78,6 +81,34 @@ export function AccountWorkspacesPage() {
           ? { status: "error" }
           : { status: "loading" },
     [list.workspaces, list.isError, router],
+  );
+
+  const deleted = useMemo<AccountSection<readonly DeletedWorkspaceView[]>>(
+    () =>
+      list.deleted
+        ? {
+            status: "ready",
+            data: list.deleted.map((workspace, index) => ({
+              id: workspace.id,
+              name: workspace.name,
+              initials: initialsOf(workspace.name),
+              tone: TONES[index % TONES.length] ?? "blue",
+              deletedOn: new Intl.DateTimeFormat(locale, {
+                dateStyle: "medium",
+              }).format(new Date(workspace.deletedAt)),
+              daysLeft: Math.max(
+                1,
+                Math.ceil(
+                  (new Date(workspace.purgeAfter).getTime() - Date.now()) /
+                    86_400_000,
+                ),
+              ),
+            })),
+          }
+        : list.deletedIsError
+          ? { status: "error" }
+          : { status: "loading" },
+    [list.deleted, list.deletedIsError, locale],
   );
 
   const nameOf = (id: string) =>
@@ -116,6 +147,28 @@ export function AccountWorkspacesPage() {
         showNotice(copy.notice.unarchived.replace("{{name}}", name));
       } catch {
         setActionError("failed");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [list, queryClient, accountId, showNotice, copy],
+  );
+
+  const restore = useCallback(
+    async (id: string) => {
+      const entry = list.deleted?.find((workspace) => workspace.id === id);
+      if (!entry) return;
+      setBusy(true);
+      setActionError(null);
+      try {
+        await list.restore({ workspaceId: id, expectedVersion: entry.version });
+        // It is back in the rail and the switcher.
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
+        showNotice(copy.notice.restored.replace("{{name}}", entry.name));
+      } catch {
+        setActionError("restore");
       } finally {
         setBusy(false);
       }
@@ -178,6 +231,8 @@ export function AccountWorkspacesPage() {
         href: "/onboarding",
         onNavigate: () => void router.navigate({ to: "/onboarding" }),
       }}
+      deleted={deleted}
+      onRestore={(id) => void restore(id)}
       onSetDefault={(id) => void setDefault(id, nameOf(id))}
       onUnarchive={(id) => void unarchive(id, nameOf(id))}
       onLeave={(id) => void leave(id, nameOf(id))}

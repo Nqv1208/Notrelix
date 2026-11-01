@@ -139,6 +139,18 @@ export interface AccountWorkspaceEntry {
   readonly isArchived: boolean;
 }
 
+/**
+ * One workspace of the Owner's "Recently deleted" list (owner decision 2026-11-01): restorable until
+ * `purgeAfter`, then the producer erases it. `version` is what the restore write quotes.
+ */
+export interface DeletedWorkspaceEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly deletedAt: string;
+  readonly purgeAfter: string;
+  readonly version: number;
+}
+
 /** Why a profile photo was not changed. */
 export type AccountPhotoFailure = "unsupported" | "too-large" | "failed";
 

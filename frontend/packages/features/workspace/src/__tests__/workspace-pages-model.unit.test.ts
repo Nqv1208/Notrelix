@@ -539,6 +539,7 @@ describe("Producer adapters", () => {
         profile: (id) => `/workspaces/${id}/profile`,
         settings: (id) => `/workspaces/${id}/settings`,
         archive: (id) => `/workspaces/${id}/archive`,
+        remove: (id, version) => `/workspaces/${id}?expectedVersion=${version}`,
       },
     });
     await service.updateProfile("ws", {
@@ -565,6 +566,8 @@ describe("Producer adapters", () => {
     expect(api.post).toHaveBeenCalledWith("/workspaces/ws/archive", {
       expectedVersion: 4,
     });
+    await service.remove("ws", 6);
+    expect(api.delete).toHaveBeenCalledWith("/workspaces/ws?expectedVersion=6");
     expect(
       parseWorkspaceSettings({ defaultMemberRole: "Owner" }).defaultMemberRole,
     ).toBe("member");

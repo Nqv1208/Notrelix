@@ -318,6 +318,11 @@ export class MockStore {
   private workspaceDescriptionById = new Map<string, string>();
   /** Archived workspaces drop out of the list and detail reads. */
   private archivedWorkspaceIds = new Set<string>();
+  /** Deleted workspaces (id -> when): hidden from everyone, restorable by an Owner for 30 days. */
+  private deletedWorkspaceAt = new Map<
+    string,
+    { deletedAt: string; purgeAfter: string }
+  >();
   /** Items completed through `WorkManagement.BoardItems.Complete`. */
   private completedCardIds = new Set<string>();
   /** The item history ("Lịch sử"): one line per recorded change, by card. */
@@ -1928,6 +1933,7 @@ export class MockStore {
     this.workspaceVersionById.clear();
     this.workspaceDescriptionById.clear();
     this.archivedWorkspaceIds.clear();
+    this.deletedWorkspaceAt.clear();
     this.boardMembersByBoardId.clear();
     this.boardGrantsByBoardId.clear();
     this.sharing.clear();
@@ -3755,6 +3761,8 @@ export class MockStore {
 
   /** True when the current member belongs to the workspace. */
   isCurrentMemberOf(workspaceId: string): boolean {
+    // A deleted workspace answers NotFound to everyone: nobody is a member of it any more.
+    if (this.isWorkspaceDeleted(workspaceId)) return false;
     const userId = this.getCurrentUser().id;
     return this.getWorkspaceMembers(workspaceId).some(
       (m) => m.userId === userId,
@@ -3835,6 +3843,7 @@ export class MockStore {
   getCurrentMemberRole(
     workspaceId: string,
   ): MockMembershipRecord["role"] | null {
+    if (this.isWorkspaceDeleted(workspaceId)) return null;
     return (
       this.findMembership(workspaceId, this.getCurrentUser().id)?.role ?? null
     );
@@ -4029,6 +4038,83 @@ export class MockStore {
     return this.archivedWorkspaceIds.has(workspaceId);
   }
 
+  isWorkspaceDeleted(workspaceId: string): boolean {
+    return this.deletedWorkspaceAt.has(workspaceId);
+  }
+
+  /**
+   * Deletes the workspace (Owner only, checked by the handler): it vanishes for everyone at once and stays
+   * restorable for 30 days. A personal workspace is refused by the caller.
+   */
+  deleteWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      this.deletedWorkspaceAt.set(workspaceId, {
+        deletedAt: this.clock.isoNow(),
+        purgeAfter: this.clock.offsetDays(30),
+      });
+    });
+  }
+
+  /** Restores a deleted workspace the current person owns; an active one stays as it is (no version step). */
+  restoreWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    const deleted = this.deletedWorkspaceAt.get(workspaceId);
+    if (!this.getWorkspace(workspaceId)) return "not-found";
+    if (deleted === undefined) return "ok";
+    if (!this.isCurrentOwnerOf(workspaceId)) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    if (!this.insideRestoreWindow(deleted.purgeAfter)) return "not-found";
+    this.deletedWorkspaceAt.delete(workspaceId);
+    this.workspaceVersionById.set(
+      workspaceId,
+      this.getWorkspaceVersion(workspaceId) + 1,
+    );
+    return "ok";
+  }
+
+  private insideRestoreWindow(purgeAfter: string): boolean {
+    return Date.parse(purgeAfter) >= this.clock.now().getTime();
+  }
+
+  /** The current person's deleted workspaces inside the 30-day window, newest first. */
+  listDeletedWorkspaces(): {
+    id: string;
+    name: string;
+    slug: string;
+    deletedAt: string;
+    purgeAfter: string;
+    version: number;
+  }[] {
+    return [...this.deletedWorkspaceAt.entries()]
+      .filter(
+        ([id, deleted]) =>
+          this.insideRestoreWindow(deleted.purgeAfter) &&
+          this.isCurrentOwnerOf(id),
+      )
+      .sort((a, b) => b[1].deletedAt.localeCompare(a[1].deletedAt))
+      .map(([id, deleted]) => ({
+        id,
+        name: this.getWorkspace(id)!.name,
+        slug: this.getWorkspace(id)!.slug,
+        deletedAt: deleted.deletedAt,
+        purgeAfter: deleted.purgeAfter,
+        version: this.getWorkspaceVersion(id),
+      }));
+  }
+
+  private isCurrentOwnerOf(workspaceId: string): boolean {
+    return (
+      this.findMembership(workspaceId, this.getCurrentUser().id)?.role ===
+      "owner"
+    );
+  }
+
   /** Runs `apply` only when `expectedVersion` is current, then advances it. */
   private versionedWorkspaceWrite(
     workspaceId: string,
@@ -4037,7 +4123,8 @@ export class MockStore {
   ): MockVersionedWrite {
     if (
       !this.getWorkspace(workspaceId) ||
-      this.isWorkspaceArchived(workspaceId)
+      this.isWorkspaceArchived(workspaceId) ||
+      this.isWorkspaceDeleted(workspaceId)
     )
       return "not-found";
     if (expectedVersion !== this.getWorkspaceVersion(workspaceId))

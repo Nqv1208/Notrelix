@@ -728,6 +728,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.DeleteWorkspace",
+    operationId: "Workspaces.Workspaces.DeleteWorkspace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "restoreWorkspace",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Workspaces.Workspaces.RestoreWorkspace",
+    operationId: "Workspaces.Workspaces.RestoreWorkspace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listDeletedWorkspaces",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Workspaces.Workspaces.GetDeletedWorkspaces",
+    operationId: "Workspaces.Workspaces.GetDeletedWorkspaces",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "unarchiveWorkspace",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",

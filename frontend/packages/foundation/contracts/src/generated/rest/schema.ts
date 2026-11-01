@@ -6368,7 +6368,7 @@ export interface paths {
         get: operations["Workspaces.Workspaces.GetWorkspace"];
         put?: never;
         post?: never;
-        /** Permanently delete a workspace */
+        /** Delete a workspace (Owner only). Restorable for 30 days, then purged */
         delete: operations["Workspaces.Workspaces.DeleteWorkspace"];
         options?: never;
         head?: never;
@@ -6438,7 +6438,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Restore a soft-deleted workspace */
+        /** Restore a deleted workspace within 30 days (Owner only) */
         post: operations["Workspaces.Workspaces.RestoreWorkspace"];
         delete?: never;
         options?: never;
@@ -6475,6 +6475,23 @@ export interface paths {
         put?: never;
         /** Create a new workspace */
         post: operations["Workspaces.Workspaces.CreateWorkspace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{accountId}/workspaces/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the workspaces the caller owns that were deleted inside the 30-day restore window */
+        get: operations["Workspaces.Workspaces.GetDeletedWorkspaces"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9541,6 +9558,18 @@ export interface components {
             isDefault?: boolean;
             canLeave?: boolean;
             isArchived?: boolean;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.DeletedWorkspaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            slug?: string | null;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: date-time */
+            purgeAfter?: string;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
             /** Format: uuid */
@@ -25161,6 +25190,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Workspaces.Workspaces.GetDeletedWorkspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.DeletedWorkspaceDto"][];
+                };
             };
         };
     };

@@ -8,6 +8,7 @@ import {
 import type {
   AccountWorkspaceView,
   AccountWorkspacesSurfaceProps,
+  DeletedWorkspaceView,
 } from "../web/workspaces/account-workspaces-surface";
 
 export function workspacesCopyFixture(
@@ -65,9 +66,23 @@ export function workspaceListFixture(): AccountWorkspaceView[] {
   ];
 }
 
+export function deletedWorkspaceFixture(
+  overrides: Partial<DeletedWorkspaceView> = {},
+): DeletedWorkspaceView {
+  return {
+    id: "workspace-old",
+    name: "Minh An Sales",
+    initials: "MS",
+    tone: "coral",
+    deletedOn: "2 Nov 2026",
+    daysLeft: 29,
+    ...overrides,
+  };
+}
+
 export type WorkspacesScenario = Omit<
   AccountWorkspacesSurfaceProps,
-  "onSetDefault" | "onUnarchive" | "onLeave" | "onRetry"
+  "onSetDefault" | "onUnarchive" | "onLeave" | "onRetry" | "onRestore"
 >;
 
 export function workspacesDefaultScenario(
@@ -80,6 +95,30 @@ export function workspacesDefaultScenario(
     actionError: null,
     notice: null,
     create: { href: "/onboarding", onNavigate: noop },
+    deleted: { status: "ready", data: [] },
+  };
+}
+
+/** The Owner has deleted two workspaces: one has a single day left. */
+export function workspacesRecentlyDeletedScenario(
+  locale: "en" | "vi" = "en",
+): WorkspacesScenario {
+  return {
+    ...workspacesDefaultScenario(locale),
+    deleted: {
+      status: "ready",
+      data: [
+        deletedWorkspaceFixture(),
+        deletedWorkspaceFixture({
+          id: "workspace-older",
+          name: "Minh An Lab",
+          initials: "ML",
+          tone: "sage",
+          deletedOn: "4 Oct 2026",
+          daysLeft: 1,
+        }),
+      ],
+    },
   };
 }
 

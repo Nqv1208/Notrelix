@@ -22,6 +22,7 @@ const noop = () => undefined;
 const callbacks = {
   onSetDefault: noop,
   onUnarchive: noop,
+  onRestore: noop,
   onLeave: noop,
   onRetry: noop,
 };
