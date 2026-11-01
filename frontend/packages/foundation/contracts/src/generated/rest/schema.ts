@@ -4493,7 +4493,10 @@ export interface paths {
         /** Get workspace members */
         get: operations["Workspaces.Members.ListMembers"];
         put?: never;
-        /** Invite a member to workspace */
+        /**
+         * Invite a member to workspace
+         * @description A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.
+         */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
         options?: never;
@@ -19382,6 +19385,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
