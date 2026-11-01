@@ -20,7 +20,7 @@ import type { TaskDetailCapabilities } from "../../../card-detail/task-detail-ty
 
 function renderPanel(
   capabilities: TaskDetailCapabilities,
-  overrides: { isArchived?: boolean } = {},
+  overrides: { isArchived?: boolean; archivedByName?: string | null } = {},
 ) {
   const item = { ...erpSheetItem(), ...overrides };
   return renderPureUi(
@@ -90,5 +90,16 @@ describe("KanbanCardDetailPanel capabilities", () => {
         .readOnly,
     ).toBe(true);
     expect(screen.queryByRole("button", { name: "Thêm" })).toBeNull();
+  });
+
+  it("names who archived the card when the server says, and keeps the plain notice when it does not", () => {
+    const named = renderPanel(editorSheetCapabilities, {
+      isArchived: true,
+      archivedByName: "Ada Lovelace",
+    });
+    expect(screen.getByText("Ada Lovelace đã lưu trữ thẻ này")).toBeTruthy();
+    named.unmount();
+    renderPanel(editorSheetCapabilities, { isArchived: true });
+    expect(screen.getByText("Thẻ này đã lưu trữ")).toBeTruthy();
   });
 });

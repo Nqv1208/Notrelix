@@ -115,6 +115,8 @@ export interface CardPopupModel {
   readonly track: (key: string, run: () => Promise<unknown>) => void;
   /** A write was refused because someone else saved first. */
   readonly conflict: boolean;
+  /** Who saved first, when the server named them; null: no one named. */
+  readonly conflictBy: string | null;
   readonly clearConflict: () => void;
   /** Fields another person changed while the person was editing them: each keeps its draft and shows a choice. */
   readonly fieldConflicts: readonly FieldConflict[];
