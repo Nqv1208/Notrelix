@@ -11,7 +11,8 @@ const baseEnv = {
   VITE_APP_URL: `http://127.0.0.1:${PORT}`,
   VITE_RELEASE_SHA: "mock-e2e",
   VITE_MOCK_API: "true",
-  VITE_MOCK_LATENCY: "instant",
+  // A set VITE_MOCK_LATENCY (slow: 1.4 s) holds a write open long enough to measure its pending state.
+  VITE_MOCK_LATENCY: process.env.VITE_MOCK_LATENCY ?? "instant",
   VITE_MOCK_SEED: "1001",
 };
 

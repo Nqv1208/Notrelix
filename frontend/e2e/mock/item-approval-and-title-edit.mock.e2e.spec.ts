@@ -40,7 +40,7 @@ test.describe("Item approval and Table title edit (owner)", () => {
   }) => {
     await open(page, `${BOARD}/items/mock-erp-item-138`);
     await expect(approval(page)).toBeVisible();
-    await expect(approval(page).getByText(/Đang chờ/)).toBeVisible();
+    await expect(approval(page).getByText(/nhờ bạn duyệt/)).toBeVisible();
     // Not the requester: no Cancel.
     await expect(
       approval(page).getByRole("button", { name: "Hủy yêu cầu" }),
@@ -85,7 +85,7 @@ test.describe("Item approval and Table title edit (owner)", () => {
     page,
   }) => {
     await open(page, `${BOARD}/items/mock-erp-item-142`);
-    await page.getByRole("button", { name: "Thêm thao tác" }).click();
+    await page.getByRole("button", { name: "Thao tác trên thẻ" }).click();
     await page
       .getByRole("menuitem", { name: "Yêu cầu phê duyệt" })
       .press("ArrowRight");
@@ -107,7 +107,8 @@ test.describe("Item approval and Table title edit (owner)", () => {
   }) => {
     await open(page, `${BOARD}?view=table`);
     const title = page.getByRole("button", {
-      name: /Chuyển dữ liệu khách hàng từ hệ thống cũ/,
+      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      exact: true,
     });
     await title.click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -127,16 +128,18 @@ test.describe("Item approval and Table title edit (owner)", () => {
     await input.fill("  Tên đã đổi tại chỗ  ");
     await page.keyboard.press("Enter");
     await expect(
-      page.getByRole("button", { name: "Tên đã đổi tại chỗ" }),
+      page.getByRole("button", { name: "Tên đã đổi tại chỗ", exact: true }),
     ).toBeVisible();
 
     // Blank input is refused: the title stays.
-    await page.getByRole("button", { name: "Tên đã đổi tại chỗ" }).focus();
+    await page
+      .getByRole("button", { name: "Tên đã đổi tại chỗ", exact: true })
+      .focus();
     await page.keyboard.press("Enter");
     await input.fill("   ");
     await page.keyboard.press("Enter");
     await expect(
-      page.getByRole("button", { name: "Tên đã đổi tại chỗ" }),
+      page.getByRole("button", { name: "Tên đã đổi tại chỗ", exact: true }),
     ).toBeVisible();
   });
 });

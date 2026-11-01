@@ -93,7 +93,8 @@ test.describe("Board table interaction (owner)", () => {
     expect(rest[3]).toBeLessThan(0.35);
 
     // The cells keep their x positions: the edge sits over the row, not in it.
-    const checkbox = target.getByRole("checkbox");
+    // The row's selection box (a boolean field of the row is a checkbox too).
+    const checkbox = target.getByRole("checkbox", { name: /^Chọn ERP-151/ });
     const checkboxX = (await checkbox.boundingBox())!.x;
 
     await target.hover();
@@ -121,7 +122,7 @@ test.describe("Board table interaction (owner)", () => {
     const scroll = page.locator("[data-table-scroll]");
     const target = row(page, "ERP-151");
     const tracked = [
-      target.getByRole("checkbox"),
+      target.getByRole("checkbox", { name: /^Chọn ERP-151/ }),
       target.getByRole("cell").nth(1),
       target.getByRole("cell").nth(2),
       page.getByRole("columnheader").nth(0),
@@ -183,7 +184,7 @@ test.describe("Board table interaction (owner)", () => {
       "aria-selected",
       "true",
     );
-    await page.getByRole("tab", { name: "Table" }).click();
+    await page.getByRole("tab", { name: "Bảng" }).click();
     await expect(
       page.getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" }),
     ).toHaveAttribute("aria-valuenow", "380");
