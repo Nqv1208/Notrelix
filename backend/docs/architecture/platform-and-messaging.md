@@ -564,6 +564,41 @@ The Succeeded marker is advanced only after the protected command returned (NRX-
 expected consumer execution; the idempotency result retention (`Idempotency:ResultExpiry`) bounds how long replay is
 guaranteed, after which the consumer's own domain idempotency (for example an existing personal Workspace) applies.
 
+### Outbox dispatch: ordered stream batches
+
+The outbox dispatcher (`OutboxDispatcher`) polls `messaging.outbox_messages`. Rows without a `stream_key` have no order contract and are claimed oldest first, 20 per claim. Rows with a `stream_key` (today the `realtime.resource-changed` fan-out of a board or workspace) are an ordered stream: stream versions order the messages of one stream and nothing orders two streams.
+
+```text
+poll
+→ claim: per stream, the head (earliest message not Processed) plus the consecutive run behind it
+→ lock the run (FOR UPDATE SKIP LOCKED), mark Processing under one lock id, commit
+→ per stream, strictly in stream version order, for each message:
+     renew its lease only while this lock id still owns it   (fence)
+     hand it to the bus
+     save Processed / Failed in one transaction              (one commit per message)
+     stop the stream at the first message that is not Processed
+→ release the unattempted rest of the run back to Pending
+```
+
+Bounds (`Messaging:Outbox`, validated on start):
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `StreamBatchSize` | 100 | most consecutive messages of one stream per poll |
+| `MaxStreamMessagesPerPoll` | 500 | most ordered messages per poll across all streams |
+
+Contract:
+
+- **Order.** Message k+1 of a stream is handed to the bus only after message k was saved Processed. A run is a consecutive prefix: it is cut at the first message that is not itself claimable, and a stream whose head is not claimable (Failed in backoff, dead-lettered, held by a live lease) contributes nothing, so a later version is never claimed over an outstanding earlier one.
+- **Failure inside a batch.** The first message that ends Failed, dead-lettered (unknown event type) or without its lease stops that stream. The messages behind it were never attempted: they go back to Pending (only the rows this lock id still owns). Retry count, backoff, the retry budget and the dead-letter terminal state are unchanged; a dead-lettered head still blocks only its own stream. Other streams in the same poll are unaffected.
+- **At-least-once, no early success.** A message is marked Processed only after the bus accepted it, in its own transaction, together with its delivery attempt and the dispatcher dedup marker. A crash redelivers at most the message that was in flight; consumer dedup by event id absorbs it. A crashed claim becomes reclaimable after the 60 s processing timeout, and the head is reclaimed before anything behind it.
+- **Multi-instance.** Two instances never work one stream at the same time. The claim locks rows with `SKIP LOCKED` and keeps a run only as a prefix of what it locked; the strict-order guard hides every message behind an unprocessed head. Before each message the dispatcher renews that row's lease with `UPDATE ... WHERE lock_id = <mine> AND status = 'Processing'`; an instance whose lease was taken (expired and reclaimed elsewhere) matches no row, stops, and releases its rest. This fence relies on one publish finishing inside the processing timeout; a longer stall can redeliver a message (dedup absorbs it) but cannot interleave a stream.
+- **Fairness.** Streams are served oldest head first, each at most `StreamBatchSize` per poll, the whole poll at most `MaxStreamMessagesPerPoll`. One hot stream takes at most a fifth of a default poll, so other streams are served in the same poll and the loop continues immediately while a bound was reached.
+- **Consumer side.** Handing messages to the bus back to back no longer leaves a second between two messages of a stream, so a consumer whose effect order should follow the stream is partitioned by stream key (`RealtimeResourceChangedConsumerDefinition`: serial per stream, parallel across streams). A MassTransit retry of a failed delivery re-enters that partition behind later messages; consumers still declare `[OrderingNotApplicable]` because none of them needs order for correctness.
+- **Transport.** With the in-memory transport the bus accepts a message into a process-local queue: a process crash loses the messages that were accepted but not yet consumed, exactly as before batching. Delivery durability across a crash needs the RabbitMQ transport (BE-PLT-037).
+
+Finding the heads is a skip scan over `ix_outbox_messages_stream_unprocessed` (one index probe per stream with outstanding messages), so the claim does not grow with the backlog of a stream. Measured on a 5,121-message stream: about 1 message per second before, 5,121 messages in 16.6 s now (one instance); a poll claims in 25 to 35 ms and dispatches a run of 100 in 250 to 450 ms.
+
 ---
 
 # 30. At-least-once posture
