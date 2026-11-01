@@ -30,6 +30,7 @@ function inviteOf(preview: InvitePreview) {
     email: preview.email ?? "",
     name: preview.name ?? "",
     hasAccount: preview.hasAccount,
+    workspaceRole: preview.workspaceRole,
   };
 }
 

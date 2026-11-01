@@ -8,6 +8,7 @@ import {
   verifyEmailRoute,
   homeRoute,
   inviteRoute,
+  inviteLinkRoute,
   onboardingRoute,
   welcomeRoute,
   workspaceRoute,
@@ -58,6 +59,7 @@ export const routeTree = rootRoute.addChildren([
   verifyEmailRoute,
   homeRoute,
   inviteRoute,
+  inviteLinkRoute,
   onboardingRoute,
   welcomeRoute,
   workspaceRoute.addChildren([

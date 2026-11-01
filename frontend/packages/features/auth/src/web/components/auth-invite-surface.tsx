@@ -31,6 +31,8 @@ export interface AuthInvite {
   readonly name: string;
   /** The email already has an account: no password to create. */
   readonly hasAccount: boolean;
+  /** Set for an invitation to the whole workspace (it names a role, not a board). */
+  readonly workspaceRole?: "member" | "guest" | null;
 }
 
 export type AuthInviteView =
@@ -80,6 +82,7 @@ function InviteForm({
 }) {
   const t = copy.invite;
   const { invite } = view;
+  const role = invite.workspaceRole ?? null;
   const [name, setName] = useState(invite.name);
   const [password, setPassword] = useState("");
   const [tried, setTried] = useState(false);
@@ -105,15 +108,24 @@ function InviteForm({
       </span>
       <AuthHeading
         medium
-        title={fillAuthCopy(t.title, {
-          inviter: invite.inviterName,
-          board: invite.boardTitle,
-          org: invite.orgName,
-        })}
+        title={
+          role
+            ? fillAuthCopy(t.workspaceTitle, {
+                inviter: invite.inviterName,
+                org: invite.orgName,
+              })
+            : fillAuthCopy(t.title, {
+                inviter: invite.inviterName,
+                board: invite.boardTitle,
+                org: invite.orgName,
+              })
+        }
       />
       <span className="inline-flex h-7 items-center gap-1.5 self-start rounded-full bg-brand-subtle px-2.75 text-item-small font-semibold text-brand-subtle-foreground">
         <UserRound aria-hidden="true" className="size-3.5" />
-        {t.guest} · {t.levels[invite.level]}
+        {role
+          ? t.workspaceRoles[role]
+          : `${t.guest} · ${t.levels[invite.level]}`}
         {invite.until
           ? ` · ${fillAuthCopy(t.until, { date: invite.until })}`
           : ""}
@@ -129,7 +141,9 @@ function InviteForm({
           <Eye aria-hidden="true" className="size-4" />
           {t.seeTitle}
         </h2>
-        <p className="m-0 text-item-ui text-muted-foreground">{t.seeBody}</p>
+        <p className="m-0 text-item-ui text-muted-foreground">
+          {role ? t.workspaceSee[role] : t.seeBody}
+        </p>
       </section>
       <form
         noValidate

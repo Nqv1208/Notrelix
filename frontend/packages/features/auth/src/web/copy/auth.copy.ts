@@ -158,6 +158,12 @@ export const en = {
   },
   invite: {
     title: "{{inviter}} invited you to the board {{board}} of {{org}}",
+    workspaceTitle: "{{inviter}} invited you to join {{org}}",
+    workspaceRoles: { member: "Member", guest: "Guest" },
+    workspaceSee: {
+      member: "The Boards and Docs of the workspace that are open to members.",
+      guest: "Only the Boards and Docs that are shared with you.",
+    },
     guest: "Guest",
     levels: {
       viewer: "Can view",
@@ -354,6 +360,12 @@ export const vi: AuthCopy = {
   },
   invite: {
     title: "{{inviter}} mời bạn vào board {{board}} của {{org}}",
+    workspaceTitle: "{{inviter}} mời bạn tham gia {{org}}",
+    workspaceRoles: { member: "Thành viên", guest: "Khách" },
+    workspaceSee: {
+      member: "Các Board và Doc của không gian làm việc mở cho thành viên.",
+      guest: "Chỉ các Board và Doc được chia sẻ với bạn.",
+    },
     guest: "Khách",
     levels: {
       viewer: "Chỉ xem",
