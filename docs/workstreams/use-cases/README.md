@@ -120,7 +120,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 
 | Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | BLOCKED |
 |---|---|---|---|---|---|---|
-| Accounts | 42 | 15 | 22 | 2 | 0 | 3 |
+| Accounts | 42 | 15 | 22 | 2 | 2 | 1 |
 | Identity | 61 | 6 | 12 | 25 | 14 | 4 |
 | Workspaces | 91 | 5 | 14 | 60 | 7 | 5 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 6 |
@@ -129,10 +129,10 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Collaboration | 85 | 17 | 7 | 37 | 17 | 7 |
 | Automation | 79 | 11 | 26 | 21 | 20 | 1 |
 | Integrations | 55 | 13 | 20 | 11 | 11 | 0 |
-| Billing | 99 | 57 | 27 | 4 | 7 | 4 |
+| Billing | 99 | 56 | 27 | 8 | 7 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **959** | **193** | **208** | **241** | **278** | **39** |
+| **Total** | **959** | **192** | **208** | **245** | **280** | **34** |
 
 No use case is DONE: none has a recorded owner check or design-fidelity proof.
 
@@ -151,7 +151,7 @@ These block use cases in several contexts. They are security-principal, tenant o
 
 | # | Decision | Blocks |
 |---|---|---|
-| 1 | Platform operator principal: who it is, how it signs in outside a tenant session, which database role it uses, where its audit trail lives and what the customer sees | UC-ACC-D01, UC-ACC-D02, UC-BIL-D02, UC-BIL-D03, UC-BIL-L05, UC-BIL-R09, UC-ANA-X02 |
+| 1 | Platform operator principal: decided and built 2026-10-31 (a separate account, its own sign-in scheme and database login, an audit row per action; UC-ACC-D01, D02 HARDENING, UC-BIL-A03, D02, D03, R09 INTEGRATING). Still open: what the customer sees as the audit actor, consent-based support access, operator MFA | UC-BIL-L05, UC-ANA-X02 |
 | 2 | Anonymous principal and abuse controls (rate limit, captcha, spam handling) for public forms, share links, public pages and public comments | UC-WM-N06, UC-GOV-G03, UC-GOV-G05, UC-DCT-A15, UC-COL-H08 |
 | 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization | UC-ACC-D05, UC-WSP-D03, UC-WSP-D04, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05 |
 | 4 | Custom roles: place in the Governance decision order, reach into Private resources, relation to Deny rules; the moderator permission for comments | UC-GOV-C04, UC-GOV-C05, UC-COL-C02, UC-COL-F07 |

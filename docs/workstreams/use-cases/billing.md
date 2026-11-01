@@ -37,9 +37,9 @@ Two numbering systems meet in this file. `BIL-001` to `BIL-033` in the product d
 
 ## 1.1 Where Billing stands
 
-Billing is the thinnest delivered context compared with its domain model. The backend serves three endpoints: read the plan, read the capabilities, and a development-only plan switch. The plan catalog is a code constant of three plans. Entitlement, usage and capacity logic that other contexts need (seat gate, automation rule capacity) works. The domain aggregates for plans, prices, invoices, payment methods, customers, provider events and metered usage exist but no handler uses them. No payment provider exists, by owner decision.
+Billing is the thinnest delivered context compared with its domain model. The tenant API serves two reads: the plan and the capabilities. The platform operator console (`/operator/v1`, a separate principal and database login) serves the plan catalog by revision, the plan change, manual overrides and subscription termination, each audited. The plan catalog is in the database (revisions, never hard-coded). Entitlement, usage and capacity logic that other contexts need (seat gate, automation rule capacity) works. The domain aggregates for plans, prices, invoices, payment methods, customers, provider events and metered usage exist but no handler uses them. No payment provider exists, by owner decision.
 
-The frontend has two worlds. The real route shows a capabilities page with a dev plan switcher. A full "Plans and billing" experience (overview, comparison, invoices, seat purchase, downgrade, past due) runs only on mock handlers behind `backendCapabilities.billingPlans`.
+The frontend has two worlds. The real route shows a capabilities page with a read-only plan card (the plan is the operator's to change); the operator console is its own host (`frontend/apps/operator`). A full "Plans and billing" experience (overview, comparison, invoices, seat purchase, downgrade, past due) runs only on mock handlers behind `backendCapabilities.billingPlans`.
 
 ## 1.2 Capabilities and state counts
 
@@ -47,10 +47,10 @@ Letter maps to the team spec capability. Total use cases: **99**.
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | BIL-001 Plan/catalog model | 5 | 2 | 2 | 0 | 1 | 0 | 0 |
+| A | BIL-001 Plan/catalog model | 5 | 1 | 2 | 1 | 1 | 0 | 0 |
 | B | BIL-002 Subscription lifecycle | 6 | 5 | 1 | 0 | 0 | 0 | 0 |
 | C | BIL-003 Subscription transition policy | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| D | BIL-004 Entitlement model | 3 | 1 | 0 | 0 | 0 | 0 | 2 |
+| D | BIL-004 Entitlement model | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
 | E | BIL-005 Entitlement evaluation | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
 | F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 1 | 0 | 0 | 0 |
 | G | BIL-007 Usage event/record contract | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
@@ -64,21 +64,21 @@ Letter maps to the team spec capability. Total use cases: **99**.
 | O | BIL-015 Provider webhook verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | P | BIL-016 Provider webhook idempotency | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | Q | BIL-017 Provider state reconciliation | 3 | 2 | 1 | 0 | 0 | 0 | 0 |
-| R | BIL-018 Upgrade/downgrade/cancel | 12 | 5 | 5 | 0 | 1 | 0 | 1 |
+| R | BIL-018 Upgrade/downgrade/cancel | 12 | 5 | 5 | 1 | 1 | 0 | 0 |
 | S | BIL-019 Trial/grace/delinquency | 6 | 5 | 1 | 0 | 0 | 0 | 0 |
 | T | BIL-020 Billing frontend | 4 | 0 | 2 | 0 | 2 | 0 | 0 |
 | U | BIL-021 Billing events | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | V | BIL-022 Billing observability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | W | BIL-023 Migration/backfill | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | X | BIL-024 Hardening/security | 6 | 4 | 2 | 0 | 0 | 0 | 0 |
-| | **All** | **99** | **57** | **27** | **4** | **7** | **0** | **4** |
+| | **All** | **99** | **56** | **27** | **8** | **7** | **0** | **1** |
 
-No use case is DONE: none has a recorded owner check or a 1-px design diff. HARDENING is given only where a spec under `frontend/e2e/real/` runs the path (`billing-plan.real.e2e.spec.ts`, `feature-availability.real.e2e.spec.ts`).
+No use case is DONE: none has a recorded owner check or a 1-px design diff. HARDENING is given only where a spec under `frontend/e2e/real/` runs the path (`billing-plan.real.e2e.spec.ts`, which now drives the operator console, and `feature-availability.real.e2e.spec.ts`).
 
 ## 1.3 The ten most important gaps
 
 1. **The real product is mock-only.** Overview, comparison, invoices, seat quote and purchase, downgrade, contact sales and past due have no backend endpoint (UC-BIL-A02, B02, L01, R03, R10, R11).
-2. **No billing permission.** The plan and capability reads now use `ViewBilling` (Owner only, a custom role may add it; owner-approved tightening 2026-10-31, an Admin no longer reads billing); the plan switch still uses `ManageWorkspaceSettings`; billing managers and delegation do not exist (UC-BIL-J02, J05).
+2. **No billing permission.** The plan and capability reads now use `ViewBilling` (Owner only, a custom role may add it; owner-approved tightening 2026-10-31, an Admin no longer reads billing); a tenant has no plan switch, the platform operator changes the plan; billing managers and delegation do not exist (UC-BIL-J02, J05).
 3. **No payment provider, no money path.** Payment methods, invoices, payments, checkout, webhooks and reconciliation are DEFINED only (capabilities K to Q). Decision 46 defers it; the domain is ready, the handlers are not.
 4. **No lifecycle worker.** Renewal, trial end, scheduled downgrade, cancellation and expiry never run (UC-BIL-B04 to B06, C02, R08).
 5. **Delinquency is not enforced.** Past due is a domain state with no trigger, and the seat gate ignores it (UC-BIL-S01, S02).
@@ -92,9 +92,7 @@ No use case is DONE: none has a recorded owner check or a 1-px design diff. HARD
 
 | Defect | Where |
 |---|---|
-| Plan change carries no expected version and no idempotency key; two owners racing is last-write-wins. | `backend/src/Notrelix.Application/Features/Billing/Plans/Commands/ChangeAccountPlan/ChangeAccountPlan.cs` |
-| Two concurrent first plan changes can create two active account subscriptions: the handler adds a row when none is found and the subscription table has no unique index on active account rows (only `WorkspaceId` and `PlanId` indexes). The resolver hides it by taking the newest. | same handler; `backend/src/Notrelix.Infrastructure/Data/Configurations/Billing/SubscriptionConfiguration.cs` |
-| Environment-forbidden plan change throws Forbidden (403) rather than the identical NotFound. | same handler |
+| Two concurrent first plan changes by operators can create two active account subscriptions: the operator service adds a row when none is found and the subscription table has no unique index on active account rows (only `WorkspaceId` and `PlanId` indexes). The resolver hides it by taking the newest. | `backend/src/Notrelix.Application/Features/Billing/Operator/OperatorAccountBillingService.cs` (`ChangePlanAsync`); `backend/src/Notrelix.Infrastructure/Data/Configurations/Billing/SubscriptionConfiguration.cs` |
 | Seat gate is an optional constructor argument; if it is not registered, invitation acceptance skips the check (fail open). | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Services/InvitationAcceptanceService.cs`, `.../Commands/AcceptInvitation/AcceptInvitation.cs` |
 | Storage limit is read and shown but no producer enforces it. | `backend/src/Notrelix.Application/Features/Billing/Entitlements/Services/BillingCapabilityFactsProvider.cs` (no caller outside Billing) |
 | Capability list reads four capabilities one by one, each re-reading account usage (bounded at four, but three reads for seats and storage). | `backend/src/Notrelix.Application/Features/Billing/Entitlements/Queries/GetWorkspaceBillingCapabilities/GetWorkspaceBillingCapabilities.cs` |
@@ -115,7 +113,7 @@ Compared against Stripe Billing, Atlassian Cloud and Slack. Sources: [Stripe: ca
 | Trial with reminder before the end and a rule for no payment method (Stripe). | None. | UC-BIL-B03, B04, S06 |
 | Retries and notices while payment fails, states past due then unpaid (Stripe). | Past due state only. | UC-BIL-S01 to S05 |
 | Dedicated billing admin role, several allowed; invoices and payment method under a billing profile (Atlassian). | None; interim permission. | UC-BIL-J02, J04, J05 |
-| Change plan from Billing, Enterprise by contact form, monthly to annual by request (Atlassian). | Dev switch; contact sales mock. | UC-BIL-R01, R02, A05 |
+| Change plan from Billing, Enterprise by contact form, monthly to annual by request (Atlassian). | Operator plan change (the tenant has no switch); contact sales mock. | UC-BIL-R01, R02, A05 |
 | Member changes prorated with credits; minimum of one paid member; downgrade at renewal or now (Slack). | Seat purchase mock only. | UC-BIL-R11, R12 |
 | Hosted portal for payment details; no card data in the app (Stripe, Slack). | None. | UC-BIL-K01, N03, X02 |
 
@@ -131,7 +129,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 |---|---|---|---|---|---|---|---|---|---|
 | UC-BIL-A01 | See the current plan and the plan catalog | A | Workspace Owner (`ViewBilling` on the workspace; a custom role may add it; owner-approved tightening 2026-10-31, was Owner and Admin; see UC-BIL-J05) | Yes | Real | tong-quan | billing-plan | HARDENING | Catalog is a code constant (`BillingPlanCatalog`), not the Plan aggregate |
 | UC-BIL-A02 | Compare plans side by side | A | Billing managers (Owner, delegated manager) | No | Mock | so-sanh-goi | No | IMPLEMENTING | Mock-only (`backendCapabilities.billingPlans` equals the mock flag). Backend must serve plans with price rows |
-| UC-BIL-A03 | Maintain the plan catalog by revision | A | Platform catalog operator (system or admin) | Dom | No | No | No | DEFINED | Catalog is code-defined |
+| UC-BIL-A03 | Maintain the plan catalog by revision | A | Platform operator | Yes | Real | No | No | INTEGRATING | No real spec publishes a revision; no design artboard; prices are 0 VND placeholders |
 | UC-BIL-A04 | Keep price history readable after a price change | A | System; read by billing managers on invoices | Dom | No | No | No | DEFINED | No price source exists |
 | UC-BIL-A05 | Ask sales about Enterprise | A | Billing managers | No | Mock | so-sanh-goi | No | IMPLEMENTING | No endpoint `POST .../billing/contact-sales` |
 | UC-BIL-B01 | Give every account a deterministic default subscription | B | System | Part | No | No | No | DEFINED | Bootstrap is only a read-time fallback |
@@ -143,8 +141,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-C01 | Refuse an invalid subscription transition | C | System | Dom | No | No | No | IMPLEMENTING | Transition table is not closed or tested for Trialing, PastDue, Unpaid, Incomplete |
 | UC-BIL-C02 | Apply a scheduled change at the period boundary | C | System | No | No | No | No | DEFINED | No worker |
 | UC-BIL-D01 | Derive entitlements from a subscription | D | System | Dom | No | No | No | DEFINED | No derivation |
-| UC-BIL-D02 | Grant a manual entitlement override | D | Platform or support operator | Dom | No | No | No | BLOCKED | Decide who the privileged principal is, how it authenticates, and which audit store records it (security-principal choice) |
-| UC-BIL-D03 | Revoke or let a manual override expire | D | Same operator as UC-BIL-D02 | Part | No | No | No | BLOCKED | Same decision as UC-BIL-D02 |
+| UC-BIL-D02 | Grant a manual entitlement override | D | Platform operator | Yes | Real | No | No | INTEGRATING | Account scope only (workspace scope not built); no real spec; no design artboard |
+| UC-BIL-D03 | Revoke or let a manual override expire | D | Same operator as UC-BIL-D02 | Yes | Real | No | No | INTEGRATING | Only Manual overrides are revoked from the console; no real spec |
 | UC-BIL-E01 | Resolve a capability decision for a workspace | E | Any product context through `IBillingCapabilityFacts` (server only) | Yes | No | No | feature-availability | HARDENING | Seat and storage usage is computed per call (up to three reads) |
 | UC-BIL-E02 | See what billing grants, with limit and use | E | Workspace Owner and Admin | Yes | Real | tong-quan | feature-availability, billing-plan | HARDENING | Four capabilities read one by one (bounded) |
 | UC-BIL-E03 | Fail closed when the decision cannot be made | E | System | Part | No | No | No | DEFINED | No fault-injection test |
@@ -194,7 +192,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-Q01 | Reconcile a subscription with the provider | Q | System; scoped repair by privileged operator | No | No | No | No | DEFINED | Provider not chosen (owner decision 46: no payment provider yet) |
 | UC-BIL-Q02 | Resolve an operation with unknown outcome | Q | System | No | No | No | No | DEFINED | Provider not chosen (owner decision 46: no payment provider yet) |
 | UC-BIL-Q03 | Check a seat purchase that is still waiting for the bank | Q | Billing managers | No | Mock | dang-xu-ly | No | IMPLEMENTING | Mock-only |
-| UC-BIL-R01 | Switch the account's plan in development | R | Account owner who also holds `ManageWorkspaceSettings`; development and Testing environments only | Yes | Real | so-sanh-goi | billing-plan | HARDENING | Development-only by decision |
+| UC-BIL-R01 | Move an account to another plan (platform operator) | R | Platform operator | Yes | Real | so-sanh-goi | billing-plan | HARDENING | First plan change can race; design not diffed |
 | UC-BIL-R02 | Upgrade to a paid plan with payment | R | Billing managers | No | No | so-sanh-goi | No | DEFINED | Needs a provider (decision 46) and a price source |
 | UC-BIL-R03 | Preview a downgrade | R | Billing managers | No | Mock | ha-goi | No | IMPLEMENTING | Mock-only |
 | UC-BIL-R04 | Schedule a downgrade for the period end | R | Billing managers | No | Mock | ha-goi | No | IMPLEMENTING | Mock-only |
@@ -202,7 +200,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-R06 | Schedule cancellation at the period end | R | Billing managers | Dom | No | No | No | DEFINED | No handler or endpoint |
 | UC-BIL-R07 | Resume a scheduled cancellation | R | Billing managers | No | No | No | No | DEFINED | No domain method to clear the flag |
 | UC-BIL-R08 | Apply cancellation at the period end | R | System | Dom | No | No | No | DEFINED | No worker |
-| UC-BIL-R09 | Terminate a subscription immediately | R | Platform operator | Dom | No | No | No | BLOCKED | Same principal decision as UC-BIL-D02 |
+| UC-BIL-R09 | Terminate a subscription immediately | R | Platform operator | Yes | Real | No | No | INTEGRATING | No real spec; no design artboard |
 | UC-BIL-R10 | Get a quote for extra seats | R | Billing managers | No | Mock | mua-cho | No | IMPLEMENTING | Mock-only |
 | UC-BIL-R11 | Buy extra seats | R | Billing managers | No | Mock | mua-cho, dang-xu-ly | No | IMPLEMENTING | Mock-only |
 | UC-BIL-R12 | Reduce seats at renewal (enterprise baseline) | R | Billing managers | No | No | No | No | DEFINED | No flow or artboard |
@@ -221,7 +219,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-V01 | Trace one billing operation end to end | V | Engineers on call | No | No | No | No | DEFINED | No operation model yet |
 | UC-BIL-V02 | Alert on reconciliation lag and entitlement errors | V | Engineers on call | No | No | No | No | DEFINED | No signals defined |
 | UC-BIL-W01 | Backfill subscriptions, entitlements and lineage | W | System (migration) | No | No | No | No | DEFINED | `Account.PlanCode` migration not planned in code |
-| UC-BIL-W02 | Replace the hard-coded frontend catalog with the API | W | Frontend team | Part | Mock | No | No | IMPLEMENTING | The package stub is dead code with prices that match nothing |
+| UC-BIL-W02 | Replace the hard-coded frontend catalog with the API | W | Frontend team | Part | Real | No | No | IMPLEMENTING | The tenant plan card and the operator console read the catalog from the API; the dead package stub (`features-billing`, prices that match nothing) is still there |
 | UC-BIL-X01 | Keep one account's billing data from another | X | System | Yes | No | No | No | IMPLEMENTING | No cross-tenant test per billing endpoint |
 | UC-BIL-X02 | Never touch card data or secrets | X | System | Dom | No | No | No | DEFINED | No redaction test |
 | UC-BIL-X03 | Make commercial commands idempotent and rate-limited | X | System | Part | Mock | No | No | IMPLEMENTING | No key on `PUT .../billing/plan` |
@@ -263,17 +261,17 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 
 ### UC-BIL-A03 Maintain the plan catalog by revision
 - Capability: A. BIL-001 Plan/catalog model
-- Actors and permission: Platform catalog operator (system or admin). Principal not defined; see Part 4.
+- Actors and permission: the platform operator (owner decision 2026-10-31).
 - Preconditions: Plan family exists or is being created.
 - Input: Plan family key, revision, display name, FeatureCode limits with unit and scope, status.
 - Output: A new immutable plan revision; an older revision deprecated or archived. Existing subscriptions keep their revision.
 - Main flow: 1. Operator creates a revision. 2. Billing validates limit units and stable FeatureCodes. 3. Operator deprecates or archives an old revision; sales stop, subscriptions continue.
 - No-op / rejection / concurrency / retry: Referenced plan history is never deleted. Re-submitting the same revision is a no-op. Duplicate FeatureCode on one plan is rejected.
-- UI states: Not a customer screen.
+- UI states: Operator console, plan catalog screen (table of revisions, publish dialog, deprecate and archive with a reason). Not a customer screen.
 - Rules: Product §9 plan lifecycle, §10 BIL-003, §13, §14 BIL-005, §15, §16 BIL-006, §17; spec BILREQ001-003, BILREQ006-007, BILREQ132.
 - Acceptance: Given an archived revision, when a subscription still references it, then entitlements still resolve. Given two limits for one FeatureCode, when saved, then it is rejected.
-- Evidence: BE none (aggregate `backend/src/Notrelix.Domain/Billing/``Plans/Plan.cs` has `Archive`, `Deprecate`, `AddLimit`; no handler, no endpoint) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Catalog is code-defined; the Plan aggregate and `PlanPrice` are unused by any handler.
+- Evidence: BE `POST /operator/v1/billing/plans` (`Operator.Billing.Plans.CreateRevision`), `.../{planId}/deprecate`, `.../archive`, `GET /operator/v1/billing/plans`; `Plan.Create(familyKey, revision, ...)`, `billing.plans.family_key/revision/tier` unique per family, baseline `free`, `pro`, `enterprise` inserted only when absent (`PlanCatalogSeed`) · FE `frontend/apps/operator` plan catalog screen · Design none · Tests Domain `PlanRevisionTests`, Application `OperatorBillingServiceTests` (21: same content is idempotent, explicit next revision, unknown FeatureCode, last active `free` protected, stale version) and `BillingPlanTests` (12), Integration `OperatorConsoleIntegrationTests` (29) · Real e2e none
+- State: INTEGRATING — Backend and operator screen connect and are tested against a real Postgres; no real spec publishes a revision; no design artboard; the baseline prices are 0 VND placeholders; units and scope of limits beyond the five FeatureCodes are not modelled.
 
 ### UC-BIL-A04 Keep price history readable after a price change
 - Capability: A. BIL-001 Plan/catalog model
@@ -437,31 +435,31 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 
 ### UC-BIL-D02 Grant a manual entitlement override
 - Capability: D. BIL-004 Entitlement model
-- Actors and permission: Platform or support operator. Principal undefined.
+- Actors and permission: the platform operator (owner decision 2026-10-31); support access to tenant data is a later, consent-based step and is not part of this.
 - Preconditions: Account exists.
-- Input: Account or workspace scope, FeatureCode, limit or unlimited, reason, expiry.
+- Input: Account scope (workspace scope is not built), FeatureCode, limit or unlimited, reason, optional expiry.
 - Output: An Entitlement with source Manual and an audit entry.
 - Main flow: 1. Operator submits. 2. Billing validates. 3. Row is created and audited.
-- No-op / rejection / concurrency / retry: BLOCKED until the operator principal is decided.
-- UI states: Operator tool only.
+- No-op / rejection / concurrency / retry: a reason is required; an unknown FeatureCode is a validation error; an active override for the same feature is replaced and the change audited; no reason or an unknown account writes nothing.
+- UI states: Operator console, tenant detail (overrides table and grant form).
 - Rules: Product §40, §41; spec BILREQ029, BILREQ030, BILREQ103.
 - Acceptance: Given an operator, when they grant an override, then it wins by precedence and is audited.
-- Evidence: BE none (`Entitlement` entity and `EntitlementSource.Manual`) · FE none · Design none · Tests none · Real e2e none
-- State: BLOCKED — Decide who the privileged principal is, how it authenticates, and which audit store records it (security-principal choice).
+- Evidence: BE `POST /operator/v1/accounts/{accountId}/billing/overrides` (`Operator.Billing.GrantOverride`), `BillingCapabilityFactsProvider` (an active entitlement is the effective limit) · FE `frontend/apps/operator` tenant detail · Design none · Tests Application `OperatorBillingServiceTests` (21), Integration `OperatorConsoleIntegrationTests` (29: the tenant sees the overridden limit, audit row with before and after) · Real e2e none
+- State: INTEGRATING — Backend and operator screen connect and are tested; account scope only; no real spec; no design artboard.
 
 ### UC-BIL-D03 Revoke or let a manual override expire
 - Capability: D. BIL-004 Entitlement model
-- Actors and permission: Same operator as UC-BIL-D02.
+- Actors and permission: the platform operator, as UC-BIL-D02.
 - Preconditions: An override exists.
 - Input: Entitlement id, reason.
 - Output: Status Revoked or Expired; decisions fall back to the plan.
 - Main flow: 1. Operator revokes, or time passes. 2. Resolution ignores it. 3. Fact is published.
-- No-op / rejection / concurrency / retry: BLOCKED with UC-BIL-D02. Second revoke is a no-op.
-- UI states: Operator tool only.
+- No-op / rejection / concurrency / retry: only Manual overrides are revoked from the console (a subscription-sourced entitlement is refused); a reason and the expected version are required; a second revoke is a no-op that writes no audit row.
+- UI states: Operator console, tenant detail (revoke with a reason).
 - Rules: Product §43; spec BILREQ030, BILREQ031.
 - Acceptance: Given an expired override, when a decision is made, then the plan limit applies.
-- Evidence: BE partial: `Entitlement.Revoke`, `MarkExpired`, `IsActiveAt` and the expiry filter in `BillingCapabilityFactsProvider` · FE none · Design none · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingCapabilityFactsProviderTests.cs` · Real e2e none
-- State: BLOCKED — Same decision as UC-BIL-D02.
+- Evidence: BE `POST /operator/v1/billing/overrides/{entitlementId}/revoke` (`Operator.Billing.RevokeOverride`), `Entitlement.Revoke`, `MarkExpired`, `IsActiveAt` and the expiry filter in `BillingCapabilityFactsProvider` · FE `frontend/apps/operator` tenant detail · Design none · Tests Application `OperatorBillingServiceTests` (21), `BillingCapabilityFactsProviderTests`, Integration `OperatorConsoleIntegrationTests` (29) · Real e2e none
+- State: INTEGRATING — Backend and operator screen connect and are tested; expiry is evaluated at read time (no sweep marks the row Expired); no real spec.
 
 ## E. BIL-005 Entitlement evaluation
 
@@ -808,7 +806,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Permission denied, read-only.
 - Rules: Product §78, §79 BIL-028; spec BILREQ054, BILREQ055, BILREQ092; Part 5.
 - Acceptance: Given a person with a paid feature but no billing permission, when they read invoices, then NotFound.
-- Evidence: BE partial: the two billing reads use `PermissionAction.ViewBilling` (Owner only; custom roles may add it), the dev plan switch keeps `ManageWorkspaceSettings` · FE none · Design none · Tests none · Real e2e none
+- Evidence: BE partial: the two billing reads use `PermissionAction.ViewBilling` (Owner only; custom roles may add it) · FE none · Design none · Tests none · Real e2e none
 - State: DEFINED — Owner of Governance permission list must add the actions.
 
 ## K. BIL-011 Payment-method lifecycle
@@ -1177,19 +1175,19 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 
 ## R. BIL-018 Upgrade/downgrade/cancel
 
-### UC-BIL-R01 Switch the account's plan in development
+### UC-BIL-R01 Move an account to another plan (platform operator)
 - Capability: R. BIL-018 Upgrade/downgrade/cancel
-- Actors and permission: Account owner who also holds `ManageWorkspaceSettings`; development and Testing environments only.
-- Preconditions: Environment allows plan change; target code is in the catalog.
-- Input: Workspace id, plan code.
-- Output: The account's active subscription moves to the target plan (created if none); the new overview is returned; limits follow.
-- Main flow: 1. Policy checks the environment. 2. Handler checks the plan and the account owner. 3. Handler creates or changes the subscription; a lapsed term is renewed.
-- No-op / rejection / concurrency / retry: Elsewhere: 403. Unknown plan: validation error. Non-owner: 403. Same plan: no-op without a version bump. No expected version and no idempotency key; two owners racing last-write-wins. A downgrade deletes nothing.
-- UI states: Loading, success, pending, error, permission denied, read-only (no switcher).
-- Rules: Product §31-§34 BIL-012; owner decision 46 (plan change dev-only); spec BILREQ016.
-- Acceptance: Given the owner on Pro, when they switch to Free, then limits show 10 seats and 2 GB. Given a workspace Admin who is not owner, then no switcher.
-- Evidence: BE `PUT /api/v1/workspaces/{workspaceId}/billing/plan` (Billing.Plan.Change, `ChangeAccountPlanCommandHandler`) · FE `billing/billing-capabilities-page.tsx`, `billing/billing-api.ts` (`changePlan`) · Design `Final-Billing.dc.html` `so-sanh-goi` · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingPlanTests.cs` · Real e2e `frontend/e2e/real/billing-plan.real.e2e.spec.ts`
-- State: HARDENING — Development-only by decision; no expected version or idempotency; 403 (not NotFound) when the environment forbids; no audit entry beyond the domain event; design not diffed.
+- Actors and permission: the platform operator (owner decision 2026-10-31). A tenant, an Account Owner included, has no plan switch: the development-only tenant switch and its endpoint were removed.
+- Preconditions: The target is an active catalog revision; the Account exists.
+- Input: Account id, plan revision id, reason (required), optional expected subscription version.
+- Output: The account's subscription moves to the revision (created if none; a lapsed term is renewed); the new billing state is returned; limits follow at once; an audit row records actor, reason, before, after and time.
+- Main flow: 1. Operator opens the tenant. 2. Picks a revision and confirms with a reason. 3. Billing validates, changes the subscription and audits it in one transaction.
+- No-op / rejection / concurrency / retry: Same revision with a live term: no-op, no audit. A revision that is no longer sold: 409. Stale version: 409. The first plan change can race (no unique index on active account subscriptions, see Part 2 defects).
+- UI states: Operator console, tenant detail (select, reason dialog); the tenant sees a read-only plan card.
+- Rules: Product §31-§34 BIL-012; owner decision 2026-10-31 (the platform operator changes plans); spec BILREQ016.
+- Acceptance: Given a tenant on Pro, when the operator moves it to Free, then the tenant's billing page shows the Free limits. Given a workspace Admin who is not the Owner, then no switcher and no plan read.
+- Evidence: BE `PUT /operator/v1/accounts/{accountId}/billing/plan` (`Operator.Billing.ChangePlan`, `OperatorAccountBillingService.ChangePlanAsync`) · FE `frontend/apps/operator` tenant detail; `billing/billing-capabilities-page.tsx` (read-only card) · Design `Final-Billing.dc.html` `so-sanh-goi` (tenant side only) · Tests Application `OperatorBillingServiceTests` (21), `BillingPlanTests` (12), Integration `OperatorConsoleIntegrationTests` (29: plan change and override change the entitlement the tenant sees) · Real e2e `frontend/e2e/real/billing-plan.real.e2e.spec.ts` (passed 2026-11-01: operator signs in, moves the tenant Free, Enterprise, Pro; the tenant owner sees 10, unlimited, 500; the audit row shows the reason)
+- State: HARDENING — Runs end to end on the real stack; design not diffed (no operator artboard); first-change race; the tenant UI says nothing about who changed the plan.
 
 ### UC-BIL-R02 Upgrade to a paid plan with payment
 - Capability: R. BIL-018 Upgrade/downgrade/cancel
@@ -1291,17 +1289,17 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 
 ### UC-BIL-R09 Terminate a subscription immediately
 - Capability: R. BIL-018 Upgrade/downgrade/cancel
-- Actors and permission: Platform operator. Principal undefined.
+- Actors and permission: the platform operator (owner decision 2026-10-31).
 - Preconditions: Fraud, legal or account closure.
 - Input: Subscription id, reason.
 - Output: Subscription Canceled now; audited.
 - Main flow: 1. Operator submits. 2. Billing cancels. 3. Fact published.
-- No-op / rejection / concurrency / retry: BLOCKED until the operator principal is decided.
-- UI states: Operator tool only.
+- No-op / rejection / concurrency / retry: a reason and the expected version are required; terminating a Canceled or Expired subscription is a no-op that writes no audit row; a stale version is 409.
+- UI states: Operator console, tenant detail (destructive confirmation with a reason).
 - Rules: Product §76 BIL-027; spec BILREQ020.
 - Acceptance: Given an operator, when they terminate, then the account is on Free and an audit row exists.
-- Evidence: BE partial: `Subscription.CancelImmediately` · FE none · Design none · Tests none · Real e2e none
-- State: BLOCKED — Same principal decision as UC-BIL-D02.
+- Evidence: BE `POST /operator/v1/accounts/{accountId}/billing/terminate` (`Operator.Billing.Terminate`), `Subscription.CancelImmediately` · FE `frontend/apps/operator` tenant detail · Design none · Tests Application `OperatorBillingServiceTests` (21), Integration `OperatorConsoleIntegrationTests` (29) · Real e2e none
+- State: INTEGRATING — Backend and operator screen connect and are tested; the account then resolves to the default plan limits; no real spec; the fact published to other contexts is the domain event only.
 
 ### UC-BIL-R10 Get a quote for extra seats
 - Capability: R. BIL-018 Upgrade/downgrade/cancel
@@ -1576,8 +1574,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Loading, error.
 - Rules: Product §105; spec BILREQ096, BILREQ111.
 - Acceptance: Given a catalog change in the backend, then the page shows it without a frontend release.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/billing/plan` (Billing.Plan.Get, `GetWorkspaceBillingPlanQueryHandler`) · FE `frontend/packages/features/billing/src/web/billing-page.tsx` (constants Free, Pro, Business), `src/core/types/billing.ts` (unused types) · Design none · Tests `frontend/packages/features/billing/src/__tests__/billing.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING — The package stub is dead code with prices that match nothing; the route uses other components.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/billing/plan` (Billing.Plan.Get, `GetWorkspaceBillingPlanQueryHandler`; the plan name comes from the database catalog), `GET /operator/v1/billing/plans` · FE the route's plan card (`billing/billing-api.ts`, `currentName`) and `frontend/apps/operator` read the catalog from the API; the stub `frontend/packages/features/billing/src/web/billing-page.tsx` (constants Free, Pro, Business) and `src/core/types/billing.ts` remain · Design none · Tests `frontend/packages/features/billing/src/__tests__/billing.unit.test.ts`, `frontend/packages/dev/mock-backend/src/__tests__/billing-plan.unit.test.ts` · Real e2e `billing-plan.real.e2e.spec.ts`
+- State: IMPLEMENTING — No route or screen uses a hard-coded catalog any more, but the package stub with its story, fixtures and ui-evidence case is still in the tree (removing it is a ui-evidence change, left out of the operator lane).
 
 ## X. BIL-024 Hardening/security
 
@@ -1671,7 +1669,7 @@ None. All three Billing endpoints appear in Evidence lines: `GET .../billing/pla
 
 # 4. Product decisions applied
 
-- Product decision (owner, 2026-10-26): Billing options accepted: the artboard's four tiers, account-level scope, no payment provider yet and payments mock-only, overdue blocks new members only and never data, plan change is development-only, contact sales is stored as a request. Used by UC-BIL-A05, F01, R01, R11, S02, S04, K01.
+- Product decision (owner, 2026-10-26): Billing options accepted: the artboard's four tiers, account-level scope, no payment provider yet and payments mock-only, overdue blocks new members only and never data, plan change is development-only (superseded 2026-10-31: the platform operator changes the plan, a tenant never does), contact sales is stored as a request. Used by UC-BIL-A05, F01, R01, R11, S02, S04, K01.
 - Product decision (owner, 2026-10-26): no billing plan gates in Work Management for now; capability checks stay behind the entitlement port and allow. Used by UC-BIL-F02.
 - Lead decision (2026-10-30): Notrelix has three roles for billing today. The account owner may switch plan in development. Workspace Owner and Admin may read billing (interim). Billing managers (owner plus delegates) become the managing role when Governance adds billing actions (UC-BIL-J05).
 - Lead decision (2026-10-30): one trial per account per plan family, 14 days, no card required, on conversion without a payment method the account moves to Free (Stripe pause-style behavior, [Stripe test guidance](https://tessl.io/registry/testland/stripe-subscription-billing-test-author)). Used by UC-BIL-B03, B04.
@@ -1679,7 +1677,7 @@ None. All three Billing endpoints appear in Evidence lines: `GET .../billing/pla
 - Lead decision (2026-10-30): late usage after period close is applied to the next period and flagged as late; a correction row is available to move it. Used by UC-BIL-H02.
 - Lead decision (2026-10-30): invoices, payments and usage evidence are kept 10 years; personal data on them is minimized on user deletion. Used by UC-BIL-X06.
 - Lead decision (2026-10-30): seat removal applies at renewal and never below seats in use; credits are not cash. Used by UC-BIL-R12.
-- Lead decision (2026-10-30): privileged billing actions (manual override, void or credit, immediate termination, repairs) need a platform operator principal that does not exist. They stay BLOCKED: UC-BIL-D02, D03, L05, R09. What must be decided: who the operator is, how it authenticates outside tenant sessions, and where its audit trail lives.
+- Lead decision (2026-10-30): privileged billing actions (manual override, void or credit, immediate termination, repairs) need a platform operator principal that does not exist. UC-BIL-D02, D03 and R09 were built on that principal 2026-10-31 (owner decision: a separate operator account, its own sign-in and database login, an audit row per action) and are INTEGRATING; UC-BIL-L05 stays BLOCKED (it also needs invoices).
 
 # 5. Canonical updates required
 

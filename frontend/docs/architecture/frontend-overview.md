@@ -174,6 +174,9 @@ apps/marketing
 
 They have intentionally different runtime/framework requirements.
 
+A fourth, internal host exists for platform staff: `apps/operator` (`@notrelix/app-operator`, Vite + React), the operator
+console. It is not a product surface and has no tenant runtime; see `hosts-composition-routing.md` section 3.1.
+
 ---
 
 # 6. Web host
@@ -1108,6 +1111,7 @@ Foundation/product core/state MUST NOT import:
 apps/web
 apps/mobile
 apps/marketing
+apps/operator
 ```
 
 Apps are outer composition roots.
