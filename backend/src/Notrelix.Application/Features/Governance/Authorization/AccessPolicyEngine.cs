@@ -55,6 +55,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 $"{descriptor.RequestType.Name} requires workspace context.");
         }
 
+        // Defense in depth for the descriptor rule: a tenant-scoped write that did not load the access facts
+        // cannot be checked for account suspension, so it is refused instead of waved through.
+        if (request is IWriteRequest
+            && descriptor.Scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && !descriptor.Access.RequiresDatastoreFacts)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.SecurityMisconfiguration,
+                $"{descriptor.RequestType.Name} is a tenant-scoped write without access facts.");
+        }
+
         if (descriptor.Access.RequiresPermission)
         {
             var permission = EvaluatePermission(descriptor, facts, request, context.UserId);

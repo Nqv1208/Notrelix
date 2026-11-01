@@ -77,17 +77,32 @@ public static class RequestDescriptorValidator
             throw Misconfigured(requestType, "ExpectedVersion command must be Resource or Workspace scoped, not Global.");
         }
 
+        var access = new AccessRequirements(
+            typeof(IRequirePermission).IsAssignableFrom(requestType),
+            typeof(IRequireVerifiedEmail).IsAssignableFrom(requestType),
+            typeof(IRequireSubscription).IsAssignableFrom(requestType),
+            typeof(IRequireFeature).IsAssignableFrom(requestType));
+
+        // An authenticated write inside an Account, Workspace or Resource must read the access facts: that read
+        // is where a suspended account is found, and a write that skipped it would stay writable while its
+        // account is suspended (fail open). Declaring the permission is what makes the facts load.
+        if (principal == ApplicationPrincipalKind.Authenticated
+            && scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && dataAccess == ApplicationDataAccessKind.Write
+            && !access.RequiresDatastoreFacts)
+        {
+            throw Misconfigured(
+                requestType,
+                "A tenant-scoped write must require a permission so the access facts, and with them account suspension, are always evaluated.");
+        }
+
         return new RequestDescriptor(
             requestType,
             kind,
             principal,
             scope,
             dataAccess,
-            new AccessRequirements(
-                typeof(IRequirePermission).IsAssignableFrom(requestType),
-                typeof(IRequireVerifiedEmail).IsAssignableFrom(requestType),
-                typeof(IRequireSubscription).IsAssignableFrom(requestType),
-                typeof(IRequireFeature).IsAssignableFrom(requestType)),
+            access,
             isIdempotent,
             requiresExpectedVersion);
     }

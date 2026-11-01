@@ -14,7 +14,7 @@ public sealed class RequestContractBehaviorTests
     }
 
     private sealed record VersionedRequest(long ExpectedVersion)
-        : IRequest<string>, IAuthenticatedRequest, IResourceScopedRequest, IWriteRequest, IExpectedVersionRequest
+        : IRequest<string>, IAuthenticatedRequest, IResourceScopedRequest, IWriteRequest, IExpectedVersionRequest, IRequireVerifiedEmail
     {
         public ResourceRef Resource => ResourceRef.Create(
             ResourceKind.Create("work-management.board"), Guid.NewGuid());

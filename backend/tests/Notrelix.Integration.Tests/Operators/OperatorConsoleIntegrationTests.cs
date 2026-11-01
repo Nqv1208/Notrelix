@@ -206,7 +206,7 @@ public sealed class OperatorConsoleIntegrationTests : IAsyncLifetime
 
         await using (var owner = _fixture.CreateOwnerContext(new FakeCurrentTenantContext()))
         {
-            await owner.Database.ExecuteSqlAsync($"UPDATE operators.operator_accounts SET status = 'Disabled' WHERE id = '{_operatorId}'");
+            await owner.Database.ExecuteSqlAsync($"UPDATE operators.operator_accounts SET status = 'Disabled' WHERE id = {_operatorId}");
         }
 
         (await op.GetAsync("/operator/v1/auth/me")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -364,6 +364,34 @@ public sealed class OperatorConsoleIntegrationTests : IAsyncLifetime
         var lift = await op.PostAsJsonAsync($"/operator/v1/accounts/{_tenant.AccountId}/lift-suspension", new { reason = "dispute settled", expectedVersion = version + 1 });
         lift.StatusCode.Should().Be(HttpStatusCode.OK);
         (await TenantCreateBoardAsync()).StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task A_suspended_account_refuses_a_resource_scoped_write_too()
+    {
+        // A resource-scoped write (archive a board) reads the suspension through the access facts like the
+        // workspace-scoped create above; the descriptor rule (a tenant-scoped write must require a permission,
+        // so the facts are always read) is pinned by the architecture and unit tests.
+        var created = await TenantCreateBoardAsync();
+        var board = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var boardId = board.ValueKind == JsonValueKind.String
+            ? board.GetGuid()
+            : (board.TryGetProperty("id", out var id) ? id : board.GetProperty("boardId")).GetGuid();
+
+        using var op = As(await SignInAsync());
+        var version = await AccountVersionAsync(op);
+        (await op.PostAsJsonAsync($"/operator/v1/accounts/{_tenant.AccountId}/suspend", new { reason = "scope check", expectedVersion = version }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var tenant = As(TenantToken());
+        using var archive = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/boards/{boardId}/archive")
+        {
+            Content = JsonContent.Create(new { expectedVersion = 1 }),
+        };
+        archive.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        var archived = await tenant.SendAsync(archive);
+        archived.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await archived.Content.ReadAsStringAsync()).Should().Contain("account.suspended");
     }
 
     [Fact]
