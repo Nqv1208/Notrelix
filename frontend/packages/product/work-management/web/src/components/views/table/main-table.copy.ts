@@ -299,6 +299,9 @@ export const en = {
     move: "Couldn't move “{{title}}” to the other board.",
     create: "Couldn't add “{{title}}”.",
     save: "Couldn't save the change to “{{title}}”.",
+    conflict:
+      "{{actor}} changed “{{title}}” first. Your change was not saved and the row shows theirs.",
+    someone: "Someone",
     addGroup: "Couldn't add “{{name}}”.",
     moveGroup: "Couldn't move “{{name}}”.",
     deleteGroup: "Couldn't delete “{{name}}”.",
@@ -588,6 +591,9 @@ export const vi: MainTableCopy = {
     move: "Không chuyển được “{{title}}” sang board khác.",
     create: "Không thêm được “{{title}}”.",
     save: "Không lưu được thay đổi của “{{title}}”.",
+    conflict:
+      "{{actor}} vừa sửa “{{title}}” trước bạn. Thay đổi của bạn chưa được lưu và hàng đang hiện bản của họ.",
+    someone: "Có người",
     addGroup: "Không thêm được “{{name}}”.",
     moveGroup: "Không chuyển được “{{name}}”.",
     deleteGroup: "Không xoá được “{{name}}”.",

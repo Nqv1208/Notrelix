@@ -323,6 +323,80 @@ describe("MainTableView on the ERP board", () => {
     await waitFor(() => expect(rowsOf("Cần làm")).toBe(6));
   });
 
+  const lostRace = (by: string | null) =>
+    Object.assign(new Error("stale"), {
+      status: 412,
+      kind: "conflict",
+      details: by ? { changedByName: by } : {},
+    });
+
+  it("names who changed the item first when the status write lost the race, and the row shows theirs", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateStatus.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn. Thay đổi của bạn chưa được lưu và hàng đang hiện bản của họ.",
+    );
+    await waitFor(() => expect(rowsOf("Cần làm")).toBe(6));
+  });
+
+  it("says someone changed the item first when the server names no one", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateStatus.mockRejectedValueOnce(lostRace(null));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(String(toast.error.mock.calls[0]?.[0])).toMatch(/^Có người vừa sửa/);
+  });
+
+  const renameErp149 = async (title: string) => {
+    await ready();
+    const cell = within(row("ERP-149")!).getByRole("button", {
+      name: /Viết tài liệu quy trình/,
+    });
+    fireEvent.doubleClick(cell);
+    const input = screen.getByRole("textbox", { name: "Sửa tên ERP-149" });
+    fireEvent.change(input, { target: { value: title } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  };
+
+  it("tells the person when a rename lost the race and names who won", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await renameErp149("Tên của tôi");
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(
+      /^Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn/,
+    );
+  });
+
+  it("tells the person when a rename is refused for another reason, and the old title stays", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(new Error("forbidden"));
+    await renameErp149("Tên của tôi");
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Không lưu được thay đổi của “Viết tài liệu quy trình nhập hoá đơn đầu vào”.",
+    );
+    expect(
+      within(row("ERP-149")!).getByRole("button", {
+        name: /Viết tài liệu quy trình/,
+      }),
+    ).toBeTruthy();
+  });
+
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("archives selected rows after the undo window, not before", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
