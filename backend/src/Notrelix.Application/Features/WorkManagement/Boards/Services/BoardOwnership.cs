@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Domain.WorkManagement;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Services;

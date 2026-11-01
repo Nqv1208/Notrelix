@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.Realtime.Gateway;
 
 namespace Notrelix.Application.Common.Realtime;

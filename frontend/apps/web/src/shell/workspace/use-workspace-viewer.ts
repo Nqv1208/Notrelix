@@ -38,7 +38,13 @@ export function useWorkspaceViewer(workspaceId: string) {
   // "access-changed" push that revalidates the workspace scope at once; the slow poll and the focus refetch
   // only back it up (Redis pub/sub is at-most-once).
   const access = useQuery({
-    queryKey: workspaceQueryKey(workspaceId, "workspace", "members", "me", "access"),
+    queryKey: workspaceQueryKey(
+      workspaceId,
+      "workspace",
+      "members",
+      "me",
+      "access",
+    ),
     queryFn: () =>
       runtimeClient.api.get<{ removedActions?: string[] | null }>(
         `/workspaces/${workspaceId}/members/me/access`,

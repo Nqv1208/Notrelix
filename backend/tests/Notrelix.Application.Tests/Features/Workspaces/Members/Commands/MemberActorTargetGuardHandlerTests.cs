@@ -37,15 +37,18 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
     }
 
     private RemoveMemberCommandHandler Remove() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object,
+        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
     private SuspendMemberCommandHandler Suspend() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object,
+        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
     private ActivateMemberCommandHandler Activate() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object,
         Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g =>
-            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
+            g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)),
+        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
     [Theory]
     [MemberData(nameof(OrdinaryTargets))]

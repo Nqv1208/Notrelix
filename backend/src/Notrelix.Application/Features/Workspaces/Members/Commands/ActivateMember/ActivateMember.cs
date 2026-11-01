@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;

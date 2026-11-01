@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Realtime;
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;

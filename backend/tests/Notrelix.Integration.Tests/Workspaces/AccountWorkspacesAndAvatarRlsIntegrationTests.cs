@@ -471,7 +471,8 @@ public sealed class AccountWorkspacesAndAvatarRlsIntegrationTests : IAsyncLifeti
                 context, request, Clock().Object,
                 new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
                 new WorkspaceOwnerUpdateLocker(context),
-                new IdentityDefaultWorkspaceProvider(context, Clock().Object));
+                new IdentityDefaultWorkspaceProvider(context, Clock().Object),
+                new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
             return (await handler.Handle(new LeaveWorkspaceCommand(workspaceId), default)).Succeeded;
         });
 

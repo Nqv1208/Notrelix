@@ -1975,6 +1975,256 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Commands.ArchiveCustomRole.ArchiveCustomRoleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Commands.ArchiveCustomRole.ArchiveCustomRoleCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Commands.AssignCustomRole.AssignCustomRoleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Commands.AssignCustomRole.AssignCustomRoleCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Commands.CreateCustomRole.CreateCustomRoleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Commands.CreateCustomRole.CreateCustomRoleCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Commands.RemoveCustomRoleAssignment.RemoveCustomRoleAssignmentCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Commands.RemoveCustomRoleAssignment.RemoveCustomRoleAssignmentCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Commands.UpdateCustomRole.UpdateCustomRoleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Commands.UpdateCustomRole.UpdateCustomRoleCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Queries.ExplainAccess.ExplainAccessQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Queries.ExplainAccess.ExplainAccessQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Queries.GetMyEffectiveAccess.GetMyEffectiveAccessQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Queries.GetMyEffectiveAccess.GetMyEffectiveAccessQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Queries.GetPermissionCatalog.GetPermissionCatalogQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Queries.GetPermissionCatalog.GetPermissionCatalogQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Queries.ListCustomRoles.ListCustomRolesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Queries.ListCustomRoles.ListCustomRolesQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Governance.Roles.Queries.ListWorkspaceRoles.ListWorkspaceRolesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Governance.Roles.Queries.ListWorkspaceRoles.ListWorkspaceRolesQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink.CreateShareLinkCommand",
     "kind": "Command",
     "principalMarkers": [

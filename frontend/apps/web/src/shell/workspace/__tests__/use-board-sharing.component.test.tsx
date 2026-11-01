@@ -122,7 +122,7 @@ describe("useBoardSharing", () => {
       ),
     ).toBe(true);
     await act(async () => {
-      await result.current.makePrivate(["mock-user-erp-quan"]);
+      await result.current.makePrivate(["mock-user-erp-quan"], false);
     });
     await settled(
       () =>
@@ -150,7 +150,7 @@ describe("useBoardSharing", () => {
     const { result, requests } = renderSharing();
     await settled(() => result.current.data !== null);
     await act(async () => {
-      await result.current.makePrivate(["mock-user-erp-quan"]);
+      await result.current.makePrivate(["mock-user-erp-quan"], false);
     });
     expect(requests).toContain(`POST /api/v1/boards/${BOARD}/sharing/private`);
     await settled(() => result.current.data?.visibility === "Private");

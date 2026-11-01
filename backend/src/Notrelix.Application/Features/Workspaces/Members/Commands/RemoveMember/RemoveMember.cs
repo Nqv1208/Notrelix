@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Realtime;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;

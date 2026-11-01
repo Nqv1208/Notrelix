@@ -25,7 +25,8 @@ public class SpaceHierarchyHandlerTests : WorkspaceHandlerTestBase
         new(DbContextMock.Object, _spaces, RequestContextMock.Object, DateTimeProviderMock.Object);
 
     private MoveSpaceCommandHandler MoveHandler() =>
-        new(_spaces, _targetAuthorizer.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        new(_spaces, _targetAuthorizer.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
+            new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
 
     private async Task<Guid> CreateAsync(string name, Guid? parent = null, string? type = null, string? visibility = null, Guid? previous = null, Guid? next = null)
     {

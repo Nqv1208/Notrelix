@@ -501,7 +501,9 @@ export function planLevelChange(
     const writes: SharingWrite[] = [];
     const next = ROLE_OF_LEVEL[level];
     const roleWrite: SharingWrite | null =
-      next !== role ? { kind: "member-role", userId: entry.id, role: next } : null;
+      next !== role
+        ? { kind: "member-role", userId: entry.id, role: next }
+        : null;
     const grantWrite = entry.permissionId !== null ? grant : null;
     // Raising: the role first, so a grant above Can view never meets a read-only role. Lowering to
     // Can view: the grant first, because the role cannot become read-only while a higher grant stands.

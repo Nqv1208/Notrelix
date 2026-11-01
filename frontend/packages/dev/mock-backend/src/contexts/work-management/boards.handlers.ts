@@ -1317,10 +1317,17 @@ export const boardsOperations = [
 ];
 
 /** The board's people as the producer reads them: members, or Viewers (Observer, Guest) listed apart. */
-function projectBoardPeople(boardId: string, store: MockStore, viewers: boolean) {
+function projectBoardPeople(
+  boardId: string,
+  store: MockStore,
+  viewers: boolean,
+) {
   return store
     .getBoardMembers(boardId)
-    .filter((member) => (member.role === "Observer" || member.role === "Guest") === viewers)
+    .filter(
+      (member) =>
+        (member.role === "Observer" || member.role === "Guest") === viewers,
+    )
     .flatMap((member) => {
       const user = store.getUser(member.userId);
       return user

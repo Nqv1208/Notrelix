@@ -1,8 +1,16 @@
 using Notrelix.API.Contracts.Governance.Roles.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.Roles;
-using Notrelix.Application.Features.Governance.Roles.Commands;
-using Notrelix.Application.Features.Governance.Roles.Queries;
+using Notrelix.Application.Features.Governance.Roles.Commands.CreateCustomRole;
+using Notrelix.Application.Features.Governance.Roles.Commands.UpdateCustomRole;
+using Notrelix.Application.Features.Governance.Roles.Commands.ArchiveCustomRole;
+using Notrelix.Application.Features.Governance.Roles.Commands.AssignCustomRole;
+using Notrelix.Application.Features.Governance.Roles.Commands.RemoveCustomRoleAssignment;
+using Notrelix.Application.Features.Governance.Roles.Queries.GetPermissionCatalog;
+using Notrelix.Application.Features.Governance.Roles.Queries.ListCustomRoles;
+using Notrelix.Application.Features.Governance.Roles.Queries.ListWorkspaceRoles;
+using Notrelix.Application.Features.Governance.Roles.Queries.GetMyEffectiveAccess;
+using Notrelix.Application.Features.Governance.Roles.Queries.ExplainAccess;
 
 namespace Notrelix.API.Endpoints.Governance.Roles;
 

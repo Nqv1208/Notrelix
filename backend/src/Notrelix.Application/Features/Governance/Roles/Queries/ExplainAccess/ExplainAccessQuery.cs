@@ -1,13 +1,10 @@
-using Notrelix.Application.Common.Auditing;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Execution;
-using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 
-namespace Notrelix.Application.Features.Governance.Roles.Queries;
+namespace Notrelix.Application.Features.Governance.Roles.Queries.ExplainAccess;
 
 public sealed record ExplainStepDto(int Order, string Code, string Outcome, string Detail);
 
@@ -52,21 +49,6 @@ public sealed class ExplainAccessQueryValidator : AbstractValidator<ExplainAcces
         RuleFor(x => x.ResourceKind).Must(k => k is null || Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(k, out _))
             .WithMessage("'ResourceKind' must be a canonical resource kind.");
     }
-}
-
-internal sealed record ExplainProbe(Guid WorkspaceId, PermissionAction Action)
-    : IAuthenticatedRequest, IWorkspaceRequest, IReadRequest, IRequirePermission
-{
-    // A workspace-level action is asked of the workspace itself, as the real requests do.
-    public ResourceRef? Resource => ResourceRef.Create(
-        Notrelix.Domain.SharedKernel.ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
-}
-
-internal sealed record ExplainResourceProbe(PermissionAction Action, ResourceRef Target)
-    : IAuthenticatedRequest, IResourceScopedRequest, IReadRequest, IRequirePermission
-{
-    public ResourceRef Resource => Target;
-    ResourceRef? IRequirePermission.Resource => Target;
 }
 
 public sealed class ExplainAccessQueryHandler : IRequestHandler<ExplainAccessQuery, Result<AccessExplanationDto>>

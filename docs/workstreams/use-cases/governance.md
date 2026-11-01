@@ -400,7 +400,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, empty, permission denied, error
 - Rules: [Governance §43-§44, §100](../../product/governance.md); WGREQ064-WGREQ065.
 - Acceptance: Given an Admin, When they open Roles, Then they see built-in and custom roles; Given a Guest, Then 403.
-- Evidence: BE `Features/Governance/Roles/Queries/CustomRoleQueries.cs`, `GET /api/v1/permissions/catalog`, `GET /api/v1/accounts/roles`, `GET /api/v1/workspaces/{workspaceId}/roles`, `GET /api/v1/workspaces/{workspaceId}/members/me/access` · FE words in `frontend/packages/features/governance/src/web/permission-labels.catalog.ts`; no screen · Tests none yet · Real e2e none · real-stack check 2026-10-31: catalog 200 with level, canAdd, canRemove and locked per action; the workspace list showed built-in and custom roles with the workspace's holder count; a Member got 403, commit 3bdc36caf
+- Evidence: BE `Features/Governance/Roles/Queries/CustomRoleQueries.cs`, `GET /api/v1/permissions/catalog`, `GET /api/v1/accounts/roles`, `GET /api/v1/workspaces/{workspaceId}/roles`, `GET /api/v1/workspaces/{workspaceId}/members/me/access` · FE words in `frontend/packages/features/governance/src/web/permission-labels.ts`; no screen · Tests none yet · Real e2e none · real-stack check 2026-10-31: catalog 200 with level, canAdd, canRemove and locked per action; the workspace list showed built-in and custom roles with the workspace's holder count; a Member got 403, commit 3bdc36caf
 - State: HARDENING - tests and owner check.
 
 ## Capability D: Permission assignment

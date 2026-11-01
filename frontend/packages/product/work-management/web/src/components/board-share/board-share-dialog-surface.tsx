@@ -557,8 +557,7 @@ function ShareBody({
                 ) : null}
               </div>
             )}
-            {view.canManage &&
-            !view.rows.some((row) => row.owner === true) ? (
+            {view.canManage && !view.rows.some((row) => row.owner === true) ? (
               <div
                 data-f="noowner"
                 role="status"
@@ -611,6 +610,8 @@ function ShareBody({
                       setMenu={(open) => setMenuFor(open ? row.id : null)}
                       onChangeLevel={onChangeLevel}
                       onRemove={onRemove}
+                      locked={false}
+                      onAddManager={addManager}
                       onMakeOwner={onMakeOwner}
                     />
                   ))}
@@ -1598,7 +1599,9 @@ function PrivateBody({
                 : copy.general.changeUnavailable
           }
           onClick={
-            onConfirmPrivate && !blocked ? () => confirm([...chosen]) : undefined
+            onConfirmPrivate && !blocked
+              ? () => confirm([...chosen])
+              : undefined
           }
           className={cn(BTN_PRIMARY, FOCUS)}
         >

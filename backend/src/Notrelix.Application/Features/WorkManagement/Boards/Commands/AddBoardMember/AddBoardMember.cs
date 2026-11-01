@@ -1,7 +1,6 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;

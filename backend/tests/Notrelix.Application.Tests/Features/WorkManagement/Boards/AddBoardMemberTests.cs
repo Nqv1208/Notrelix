@@ -27,7 +27,9 @@ public class AddBoardMemberTests : WorkManagementHandlerTestBase
             _currentUserMock.Object,
             DateTimeProviderMock.Object,
             _workspaceAccessMock.Object,
-            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object));
+            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object),
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object,
+            new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
     }
 
     [Fact]
