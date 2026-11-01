@@ -15,7 +15,7 @@ interface UseAccountWorkspacesDeps {
 
 /**
  * The person's own workspaces with the way to choose the default one, to
- * leave one and to bring an archived one back. The producer owns every fact: after a change the list is read
+ * leave one, to bring an archived one back and to restore a deleted one. The producer owns every fact: after a change the list is read
  * again. Leaving answers the list that remains, so the host can decide where
  * to go next; clearing the left workspace's scoped data and navigating are the
  * host's (workspace transition).
@@ -61,6 +61,29 @@ export function createUseAccountWorkspaces({
       onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
     });
 
+    const deletedKey = accountQueryKeys.deletedWorkspaces(accountId);
+    const deleted = useQuery({
+      queryKey: deletedKey,
+      queryFn: () => service.listDeletedWorkspaces(),
+      retry: false,
+    });
+
+    const restore = useMutation({
+      mutationFn: ({
+        workspaceId,
+        expectedVersion,
+      }: {
+        workspaceId: string;
+        expectedVersion: number;
+      }) => service.restoreWorkspace(workspaceId, expectedVersion),
+      // Whatever the answer, the producer's lists are the truth about what is deleted and what is back.
+      onSettled: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: deletedKey }),
+          queryClient.invalidateQueries({ queryKey: key }),
+        ]),
+    });
+
     const leave = useMutation({
       mutationFn: async (
         workspaceId: string,
@@ -81,7 +104,14 @@ export function createUseAccountWorkspaces({
       setDefault: setDefault.mutateAsync,
       leave: leave.mutateAsync,
       unarchive: unarchive.mutateAsync,
-      isBusy: setDefault.isPending || leave.isPending || unarchive.isPending,
+      deleted: deleted.data,
+      deletedIsError: deleted.isError,
+      restore: restore.mutateAsync,
+      isBusy:
+        setDefault.isPending ||
+        leave.isPending ||
+        unarchive.isPending ||
+        restore.isPending,
     };
   };
 }

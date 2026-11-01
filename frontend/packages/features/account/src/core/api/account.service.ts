@@ -3,6 +3,7 @@ import type {
   AccountLeaveFailure,
   AccountPhotoFailure,
   AccountWorkspaceEntry,
+  DeletedWorkspaceEntry,
   AccountWorkspaceRole,
   AccountActivityEntry,
   AccountActivityPage,
@@ -52,6 +53,8 @@ export interface AccountApiClient {
 
 export interface AccountEndpoints {
   auth: {
+    /** Names the member's own Account (`accountId`); the client's cache scope id is not it. */
+    bootstrap: string;
     profile: string;
     securitySummary: string;
     securityActivity: string;
@@ -77,9 +80,14 @@ export interface AccountEndpoints {
     defaultWorkspace: string;
     leaveWorkspace: (workspaceId: string) => string;
   };
+  /** `Workspaces.Workspaces.GetDeletedWorkspaces`: the Owner's Recently deleted list. */
+  accounts: {
+    deletedWorkspaces: (accountId: string) => string;
+  };
   workspaces: {
     detail: (workspaceId: string) => string;
     unarchive: (workspaceId: string) => string;
+    restore: (workspaceId: string) => string;
     myJobTitle: (workspaceId: string) => string;
     myMembership: (workspaceId: string) => string;
   };
@@ -420,6 +428,57 @@ export function createAccountService(
         throw new Error("The workspace version is not known");
       await api.post<void>(
         endpoints.workspaces.unarchive(workspaceId),
+        { expectedVersion },
+        PAGE_QUIET,
+      );
+    },
+
+    /**
+     * The workspaces of the Account that the person owns and deleted inside the last 30 days, newest first.
+     * Anyone who owns none gets an empty list. The producer owns every fact; nothing is derived here.
+     */
+    async listDeletedWorkspaces(): Promise<DeletedWorkspaceEntry[]> {
+      // The list lives under the member's Account, which the bootstrap names.
+      const bootstrap = await api.get<{ accountId?: string | null }>(
+        endpoints.auth.bootstrap,
+        PAGE_QUIET,
+      );
+      if (!bootstrap?.accountId) return [];
+      const wire = await api.get<readonly Partial<DeletedWorkspaceEntry>[]>(
+        endpoints.accounts.deletedWorkspaces(bootstrap.accountId),
+        PAGE_QUIET,
+      );
+      return (Array.isArray(wire) ? wire : []).flatMap((row) =>
+        typeof row.id === "string" &&
+        typeof row.name === "string" &&
+        typeof row.deletedAt === "string" &&
+        typeof row.purgeAfter === "string" &&
+        typeof row.version === "number" &&
+        row.version > 0
+          ? [
+              {
+                id: row.id,
+                name: row.name,
+                deletedAt: row.deletedAt,
+                purgeAfter: row.purgeAfter,
+                version: row.version,
+              },
+            ]
+          : [],
+      );
+    },
+
+    /**
+     * Restores a deleted workspace (Owner only, inside the window): everything comes back as it was.
+     * The write quotes the version the list carried; a version that moved answers 412 and an expired
+     * window or a workspace the person does not own answers a refusal, and the list is read again.
+     */
+    async restoreWorkspace(
+      workspaceId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.post<void>(
+        endpoints.workspaces.restore(workspaceId),
         { expectedVersion },
         PAGE_QUIET,
       );

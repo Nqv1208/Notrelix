@@ -15,6 +15,9 @@ export const accountQueryKeys = {
   /** The workspaces the person belongs to (account-scoped: it is their own list). */
   workspaces: (accountId: string) =>
     accountQueryKey(accountId, "account", "workspaces"),
+  /** The Owner's Recently deleted workspaces (restorable for 30 days). */
+  deletedWorkspaces: (accountId: string) =>
+    accountQueryKey(accountId, "account", "deleted-workspaces"),
   /** The member's job title is a workspace fact of the person's own row. */
   memberProfile: (accountId: string, workspaceId: string) =>
     accountQueryKey(accountId, "account", "member-profile", workspaceId),

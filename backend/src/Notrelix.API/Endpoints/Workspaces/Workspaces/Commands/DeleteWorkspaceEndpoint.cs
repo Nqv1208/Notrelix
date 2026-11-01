@@ -10,7 +10,7 @@ public static class DeleteWorkspaceEndpoint
         group.MapWorkspaceDelete("/", HandleAsync)
             .WithName("Workspaces.Workspaces.DeleteWorkspace")
             .WithTags("Workspaces.Workspaces")
-            .WithSummary("Permanently delete a workspace");
+            .WithSummary("Delete a workspace (Owner only). Restorable for 30 days, then purged");
         return group;
     }
 

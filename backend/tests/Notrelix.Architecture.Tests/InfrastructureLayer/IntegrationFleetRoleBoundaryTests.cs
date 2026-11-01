@@ -29,6 +29,7 @@ public class IntegrationFleetRoleBoundaryTests
         Path.Combine("WorkManagement", "WorkOrderingPreflightIntegrationTests.cs"),
         Path.Combine("WorkManagement", "WorkChildTableRlsIntegrationTests.cs"),
         Path.Combine("Workspaces", "AccountWorkspacesAndAvatarRlsIntegrationTests.cs"),
+        Path.Combine("Workspaces", "DeletedWorkspaceIntegrationTests.cs"),
         Path.Combine("Containers", "PostgresTestContainer.cs"),
     ];
 

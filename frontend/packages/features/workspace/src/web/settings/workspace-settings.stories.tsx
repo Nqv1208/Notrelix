@@ -24,6 +24,7 @@ const callbacks = {
   onSaveProfile: noop,
   onSaveDefaults: noop,
   onArchive: noop,
+  onDelete: noop,
   onReload: noop,
   onRetryDefaults: noop,
 };

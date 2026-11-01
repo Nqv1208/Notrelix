@@ -87,3 +87,16 @@ public record AccountWorkspaceDto(
     bool CanLeave,
     bool IsArchived = false
 );
+
+/// <summary>One entry of the Owner's "Recently deleted" list.</summary>
+/// <param name="DeletedAt">When the workspace was deleted.</param>
+/// <param name="PurgeAfter">The end of the 30-day restore window; after it the purge job removes the workspace's data.</param>
+/// <param name="Version">The Workspace aggregate version (the delete advanced it), sent back as <c>expectedVersion</c> by restore.</param>
+public record DeletedWorkspaceDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    DateTime DeletedAt,
+    DateTime PurgeAfter,
+    long Version
+);

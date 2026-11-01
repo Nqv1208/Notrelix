@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   describeWorkspaceFailure,
@@ -53,6 +54,7 @@ export function SettingsPage() {
     useWorkspaceContext();
   const copy = useWorkspaceSettingsCopy();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { api: runtimeClient } = useAppRuntime();
   const hooks = useMemo(() => {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
@@ -139,6 +141,36 @@ export function SettingsPage() {
     });
   };
 
+  const onDelete = async () => {
+    if (version === undefined || !workspace) return;
+    const values = { workspace: workspace.name };
+    const id = workspaceId;
+    try {
+      await mutations.remove.mutateAsync(version);
+    } catch (error) {
+      toastFailure(
+        formatCopy(copy.toasts.deleteFailed, values),
+        error,
+        (failure) =>
+          failure.kind === "conflict"
+            ? formatCopy(copy.toasts.deleteConflict, values)
+            : failure.kind === "rule"
+              ? (failure.detail ?? copy.toasts.deletePersonal)
+              : failure.kind === "forbidden"
+                ? copy.toasts.forbidden
+                : copy.toasts.unknown,
+      );
+      return;
+    }
+    // The workspace is gone for everyone, this person included: leave its scope first, then drop what the
+    // old scope still has in flight so a late answer cannot land anywhere. The page may already be
+    // unmounted by now, so this does not hang on the component.
+    await navigate({ to: "/home" });
+    await queryClient.cancelQueries({ queryKey: ["workspace", id] });
+    queryClient.removeQueries({ queryKey: ["workspace", id] });
+    toast.success(formatCopy(copy.toasts.deleted, values));
+  };
+
   return (
     <WorkspaceSettingsSurface
       copy={copy}
@@ -150,9 +182,13 @@ export function SettingsPage() {
       profileStatus={profileStatus}
       defaultsStatus={defaultsStatus}
       archiving={mutations.archive.isPending}
+      canDelete={viewer.role === "owner"}
+      isPersonal={workspace?.isPersonal === true}
+      deleting={mutations.remove.isPending}
       onSaveProfile={onSaveProfile}
       onSaveDefaults={onSaveDefaults}
       onArchive={onArchive}
+      onDelete={() => void onDelete()}
       onReload={() => {
         setProfileStatus({ state: "idle" });
         setDefaultsStatus({ state: "idle" });

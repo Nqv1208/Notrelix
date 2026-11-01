@@ -54,16 +54,32 @@ export interface AccountWorkspaceView {
   readonly open: { readonly href: string; readonly onNavigate: () => void };
 }
 
+/** One row of the Recently deleted list: the host formats the date and counts the days. */
+export interface DeletedWorkspaceView {
+  readonly id: string;
+  readonly name: string;
+  readonly initials: string;
+  readonly tone: AccountWorkspaceTone;
+  /** When it was deleted, already formatted for the person's locale. */
+  readonly deletedOn: string;
+  /** Whole days until the producer erases it; at least 1 while it is listed. */
+  readonly daysLeft: number;
+}
+
 export interface AccountWorkspacesSurfaceProps {
   readonly copy: AccountWorkspacesCopy;
   readonly workspaces: AccountSection<readonly AccountWorkspaceView[]>;
   /** An action is running: its buttons wait. */
   readonly busy: boolean;
   /** Why the last action did not happen; `null` = no error to show. */
-  readonly actionError: AccountLeaveFailure | null;
+  readonly actionError: AccountLeaveFailure | "restore" | null;
   /** The text of the toast at the foot of the page; `null` = none. */
   readonly notice: string | null;
   readonly create: { readonly href: string; readonly onNavigate: () => void };
+  /** The Owner's Recently deleted workspaces; the section shows only when there are some (or the read failed). */
+  readonly deleted: AccountSection<readonly DeletedWorkspaceView[]>;
+  /** Restores a deleted workspace (Owner only, inside 30 days). */
+  readonly onRestore: (workspaceId: string) => void;
   readonly onSetDefault: (workspaceId: string) => void;
   /** Brings an archived workspace back (offered to its owners and admins). */
   readonly onUnarchive: (workspaceId: string) => void;
@@ -106,6 +122,63 @@ function metaOf(copy: AccountWorkspacesCopy, view: AccountWorkspaceView) {
       ),
     );
   return parts.join(" · ");
+}
+
+function DeletedCard({
+  copy,
+  view,
+  busy,
+  onRestore,
+}: {
+  copy: AccountWorkspacesCopy;
+  view: DeletedWorkspaceView;
+  busy: boolean;
+  onRestore: (id: string) => void;
+}) {
+  const titleId = React.useId();
+  return (
+    <section
+      aria-labelledby={titleId}
+      data-f="wsd"
+      className="flex items-center gap-3.5 rounded-[12px] border border-line bg-popover px-4 py-3.5 max-md:flex-wrap dark:bg-card"
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid size-11 shrink-0 place-items-center rounded-[12px] text-compact font-bold opacity-70",
+          MARK[view.tone],
+        )}
+      >
+        {view.initials}
+      </span>
+      <div className="min-w-0">
+        <h3
+          id={titleId}
+          className="m-0 text-item-heading leading-[1.45] font-[650] text-foreground"
+        >
+          {view.name}
+        </h3>
+        <span className="mt-0.5 block text-crumb leading-[1.45] text-meta-foreground">
+          {fillCopy(copy.deletedMeta, {
+            date: view.deletedOn,
+            left: pluralCopy(
+              { one: copy.daysLeft_one, other: copy.daysLeft_other },
+              view.daysLeft,
+            ),
+          })}
+        </span>
+      </div>
+      <button
+        type="button"
+        disabled={busy}
+        aria-label={fillCopy(copy.restoreLabel, { name: view.name })}
+        onClick={() => onRestore(view.id)}
+        className={cn(BTN_SM, FOCUS, "ml-auto shrink-0")}
+      >
+        {copy.restore}
+      </button>
+    </section>
+  );
 }
 
 function noteOf(copy: AccountWorkspacesCopy, view: AccountWorkspaceView) {
@@ -244,6 +317,8 @@ export function AccountWorkspacesSurface({
   actionError,
   notice,
   create,
+  deleted,
+  onRestore,
   onSetDefault,
   onUnarchive,
   onLeave,
@@ -251,6 +326,7 @@ export function AccountWorkspacesSurface({
 }: AccountWorkspacesSurfaceProps) {
   const titleId = React.useId();
   const archivedTitleId = React.useId();
+  const deletedTitleId = React.useId();
   const [leaving, setLeaving] = React.useState<AccountWorkspaceView | null>(
     null,
   );
@@ -335,11 +411,42 @@ export function AccountWorkspacesSurface({
           ) : null}
         </>
       )}
+      {deleted.status === "ready" && deleted.data.length > 0 ? (
+        <section
+          aria-labelledby={deletedTitleId}
+          className="mt-2 flex flex-col gap-3"
+        >
+          <h2
+            id={deletedTitleId}
+            className="m-0 text-item-heading leading-[1.45] font-[650] text-foreground"
+          >
+            {copy.deletedTitle}
+          </h2>
+          <Note>{copy.deletedNote}</Note>
+          {deleted.data.map((view) => (
+            <DeletedCard
+              key={view.id}
+              copy={copy}
+              view={view}
+              busy={busy}
+              onRestore={onRestore}
+            />
+          ))}
+        </section>
+      ) : deleted.status === "error" ? (
+        <LoadError
+          message={copy.deletedLoadError}
+          retry={copy.retry}
+          onRetry={onRetry}
+        />
+      ) : null}
       {actionError ? (
         <p role="alert" className="m-0 text-crumb text-danger-text">
           {actionError === "last-owner"
             ? copy.lastOwnerError
-            : copy.actionError}
+            : actionError === "restore"
+              ? copy.restoreError
+              : copy.actionError}
         </p>
       ) : null}
       <AlertDialog

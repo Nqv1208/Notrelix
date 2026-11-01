@@ -8,6 +8,7 @@ import {
   workspacesErrorScenario,
   workspacesLoadingScenario,
   workspacesNoticeScenario,
+  workspacesRecentlyDeletedScenario,
   workspacesSoleOwnerScenario,
   type WorkspacesScenario,
 } from "../../../verification/account-workspaces-fixtures";
@@ -24,6 +25,7 @@ function renderWorkspaces(scenario: WorkspacesScenario) {
     ...scenario,
     onSetDefault: vi.fn(),
     onUnarchive: vi.fn(),
+    onRestore: vi.fn(),
     onLeave: vi.fn(),
     onRetry: vi.fn(),
   };
@@ -176,5 +178,43 @@ describe("AccountWorkspacesSurface", () => {
     ])
       expect(text).not.toContain(literal);
     view.unmount();
+  });
+
+  it("FUI[account.workspaces:recently-deleted] lists deleted workspaces with the days left and restores one", () => {
+    for (const locale of LOCALES) {
+      const copy = workspacesCopyFixture(locale);
+      const { props, view } = renderWorkspaces(
+        workspacesRecentlyDeletedScenario(locale),
+      );
+      expect(
+        screen.getByRole("heading", { level: 2, name: copy.deletedTitle }),
+      ).toBeTruthy();
+      const body = document.body.textContent ?? "";
+      expect(body).toContain("Minh An Sales");
+      expect(body).toContain(copy.daysLeft_other.replace("{{count}}", "29"));
+      expect(body).toContain(copy.daysLeft_one.replace("{{count}}", "1"));
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: copy.restoreLabel.replace("{{name}}", "Minh An Sales"),
+        }),
+      );
+      expect(props.onRestore).toHaveBeenCalledWith("workspace-old");
+      view.unmount();
+    }
+  });
+
+  it("FUI[account.workspaces:recently-deleted] shows no section when nothing was deleted, and a restore refusal in words", () => {
+    const copy = workspacesCopyFixture("en");
+    const empty = renderWorkspaces(workspacesDefaultScenario("en"));
+    expect(
+      screen.queryByRole("heading", { level: 2, name: copy.deletedTitle }),
+    ).toBeNull();
+    empty.view.unmount();
+
+    renderWorkspaces({
+      ...workspacesRecentlyDeletedScenario("en"),
+      actionError: "restore",
+    });
+    expect(screen.getByRole("alert").textContent).toBe(copy.restoreError);
   });
 });

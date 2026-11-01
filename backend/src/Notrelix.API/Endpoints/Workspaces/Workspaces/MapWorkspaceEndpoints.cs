@@ -34,6 +34,7 @@ public static class MapWorkspaceEndpoints
 
         accountGroup.MapCreateWorkspace();
         accountGroup.MapGetAccountWorkspaces();
+        accountGroup.MapGetDeletedWorkspaces();
         accountGroup.MapCheckWorkspaceSlug();
 
         app.MapResolveSlug();

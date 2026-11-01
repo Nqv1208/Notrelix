@@ -93,6 +93,7 @@ export {
   AccountWorkspacesSurface,
   type AccountWorkspaceTone,
   type AccountWorkspaceView,
+  type DeletedWorkspaceView,
   type AccountWorkspacesSurfaceProps,
 } from "./workspaces/account-workspaces-surface";
 

@@ -77,6 +77,13 @@ public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
             "Workspaces bounded context — workspace ownership lifecycle",
             "Review if ownership transfer moves to a dedicated Governance action or dedicated PermissionAction."),
         new(
+            "GetDeletedWorkspaces.cs",
+            "GetDeletedWorkspacesQueryHandler.Handle",
+            "m.Role == WorkspaceRole.Owner (the caller's own owned workspaces)",
+            "Recently deleted list (owner decision 2026-11-01): a deleted workspace is NotFound to every request, so the list is the one read that selects workspaces by the caller's own Owner standing in each; the check is a read filter on the caller's memberships (never a decision about another actor), and RLS repeats it on the workspace row.",
+            "Workspaces bounded context — workspace deletion lifecycle",
+            "Review if the list moves to a Governance-owned resource listing."),
+        new(
             "RemoveBoardMember.cs",
             "RemoveBoardMemberCommandHandler.HandleCore",
             "member.Role == BoardRole.Owner (ownership transition, another owner remains)",

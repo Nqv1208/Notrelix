@@ -301,6 +301,23 @@ Several API instances may sweep at once (rows are claimed with `FOR UPDATE SKIP 
 under the explicit system (worker) tenant context and RLS worker scope and touches only
 `identity.user_security_activity`.
 
+`Workspaces:Deletion:Purge` (Infrastructure, `DeletedWorkspacePurgeOptions`, validated on start by
+`DeletedWorkspacePurgeOptionsValidator`) configures the purge of deleted workspaces
+(`DeletedWorkspacePurgeService`, a hosted service; the window itself is the Domain constant of 30 days after the
+delete, `Workspace.RestoreWindow`). Each pass claims, under the system context with the RLS worker scope, one workspace
+deleted more than 30 days ago with `FOR UPDATE SKIP LOCKED` and, in one transaction, empties every table outside the
+`audit`, `billing`, `messaging`, `events`, `ops` and `operators` schemas that has a uuid `workspace_id` column (children
+before parents, ordered from the live foreign keys; a cycle stops the pass), clears the default-workspace pointers,
+deletes the workspace row and writes an audit fact `PurgeWorkspace` (actor type System, Critical). A failure rolls the
+whole workspace back and the next pass retries; a purged workspace is gone, so a second pass finds nothing. Files in
+object storage are reclaimed by the attachment orphan sweep once no row references them.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is purged. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 10 | Workspaces purged per pass, each in its own transaction. Range 1 to 1000. |
+
 `Collaboration:DueDateNotifications` (Infrastructure, `DueDateNotificationOptions`, validated on start by
 `DueDateNotificationOptionsValidator`) configures the due-date notifications (`DueDateNotificationService`, a hosted
 service): an assignee of an open, unarchived Item gets one in-app notification that it is due tomorrow and one that it

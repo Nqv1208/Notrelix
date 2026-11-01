@@ -40,6 +40,8 @@ export interface WorkspaceSettingsEndpoints {
     profile: (workspaceId: string) => string;
     settings: (workspaceId: string) => string;
     archive: (workspaceId: string) => string;
+    /** The delete write quotes the workspace version in the query (`DeleteWorkspace`). */
+    remove: (workspaceId: string, expectedVersion: number) => string;
   };
 }
 
@@ -191,6 +193,17 @@ export function createWorkspaceSettingsService(
     async archive(workspaceId: string, expectedVersion: number): Promise<void> {
       const body: ArchiveBody = { expectedVersion };
       await api.post<void>(endpoints.workspaces.archive(workspaceId), body);
+    },
+
+    /**
+     * Deletes the workspace (Owner only; `DeleteWorkspace`). It is restorable for 30 days from the
+     * Recently deleted list, then the producer purges it. Answers 204; a version that moved meanwhile
+     * answers 412 and a personal workspace is refused with its rule code.
+     */
+    async remove(workspaceId: string, expectedVersion: number): Promise<void> {
+      await api.delete<void>(
+        endpoints.workspaces.remove(workspaceId, expectedVersion),
+      );
     },
   };
 }

@@ -4,7 +4,9 @@ import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 import {
   settingsCopyFixture,
   settingsDefaultScenario,
+  settingsAdminScenario,
   settingsErrorScenario,
+  settingsPersonalScenario,
   settingsReadOnlyScenario,
   settingsSuccessScenario,
   settingsVersionUnavailableScenario,
@@ -31,6 +33,7 @@ function renderSettings(
     onSaveProfile: vi.fn(),
     onSaveDefaults: vi.fn(),
     onArchive: vi.fn(),
+    onDelete: vi.fn(),
     onReload: vi.fn(),
     onRetryDefaults: vi.fn(),
     ...overrides,
@@ -219,5 +222,60 @@ describe("WorkspaceSettingsSurface", () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+  });
+
+  it("FUI[workspace.settings:delete] deletes only after the workspace name is typed, and says what happens", () => {
+    const props = renderSettings();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.danger.deleteAction }),
+    );
+    const dialog = screen.getByRole("alertdialog");
+    expect(
+      within(dialog).getByRole("heading", {
+        name: copy.danger.deleteConfirmTitle.replace(
+          "{{workspace}}",
+          "Product",
+        ),
+      }),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByText(copy.danger.deleteConfirmDescription),
+    ).toBeTruthy();
+    const confirm = within(dialog).getByRole("button", {
+      name: copy.danger.deleteConfirmAction,
+    }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+
+    fireEvent.change(within(dialog).getByLabelText(copy.danger.confirmLabel), {
+      target: { value: "Produc" },
+    });
+    expect(confirm.disabled).toBe(true);
+    fireEvent.change(within(dialog).getByLabelText(copy.danger.confirmLabel), {
+      target: { value: "Product" },
+    });
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
+    expect(props.onDelete).toHaveBeenCalledTimes(1);
+    expect(props.onArchive).not.toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.settings:delete] offers delete to the Owner only, and never on a personal workspace", () => {
+    const admin = renderSettings(settingsAdminScenario());
+    expect(
+      screen.queryByRole("button", { name: copy.danger.deleteAction }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: copy.danger.archiveAction }),
+    ).toBeTruthy();
+    expect(admin.onDelete).not.toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.settings:delete] explains why a personal workspace cannot be deleted", () => {
+    renderSettings(settingsPersonalScenario());
+    const button = screen.getByRole("button", {
+      name: copy.danger.deleteAction,
+    }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(screen.getByText(copy.danger.deletePersonal)).toBeTruthy();
   });
 });

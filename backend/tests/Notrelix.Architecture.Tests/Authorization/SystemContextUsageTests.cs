@@ -23,6 +23,7 @@ public class SystemContextUsageTests
         "ApplicationDbContextInitialiser.cs",
         "WorkspaceAccessResolver.cs",
         "RestoreWorkspace.cs",
+        "GetDeletedWorkspaces.cs",
         "RestoreSpace.cs",
         "RestoreTeam.cs",
         "RestoreBoard.cs",

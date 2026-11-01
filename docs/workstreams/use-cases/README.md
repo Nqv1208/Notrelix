@@ -122,7 +122,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 |---|---|---|---|---|---|---|
 | Accounts | 42 | 16 | 22 | 2 | 2 | 0 |
 | Identity | 61 | 6 | 12 | 25 | 14 | 4 |
-| Workspaces | 91 | 8 | 14 | 60 | 7 | 2 |
+| Workspaces | 91 | 6 | 14 | 60 | 9 | 2 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 6 |
 | Work Management | 171 | 10 | 1 | 13 | 146 | 1 |
 | Documents | 82 | 12 | 4 | 43 | 20 | 3 |
@@ -132,7 +132,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Billing | 99 | 56 | 27 | 8 | 7 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **959** | **198** | **207** | **243** | **285** | **26** |
+| **Total** | **959** | **196** | **207** | **243** | **287** | **26** |
 
 No use case is DONE: none has a recorded lead acceptance or design-fidelity proof.
 
@@ -153,7 +153,7 @@ These block use cases in several contexts. They are security-principal, tenant o
 |---|---|---|
 | 1 | Platform operator principal: decided and built 2026-10-31 (a separate account, its own sign-in scheme and database login, an audit row per action; UC-ACC-D01, D02 HARDENING, UC-BIL-A03, D02, D03, R09 INTEGRATING). Still open: what the customer sees as the audit actor, consent-based support access, operator MFA | UC-BIL-L05, UC-ANA-X02 |
 | 2 | Anonymous principal and abuse controls (rate limit, captcha, spam handling) for public forms, share links, public pages and public comments | UC-WM-N06, UC-GOV-G03, UC-GOV-G05, UC-DCT-A15, UC-COL-H08 |
-| 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization. Decided 2026-11-01: one rule everywhere, a 30-day recoverable window, then purge. Workspace delete is Owner-only with typed-name confirmation, members lose access at once, the Owner can restore for 30 days and export during the window, and a purge job hard-deletes after 30 days with an audit fact. Account delete: the account Owner, takes its workspaces, same window. Pages and comments: trash 30 days, then purge. Identity deletion anonymizes (name "Deleted user", email replaced by a non-reversible hash; content and audit keep the user id). Not built | none now; was UC-ACC-D05, UC-WSP-D03, UC-WSP-D04, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05, now DEFINED |
+| 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization. Decided 2026-11-01: one rule everywhere, a 30-day recoverable window, then purge. Workspace delete is Owner-only with typed-name confirmation, members lose access at once, the Owner can restore for 30 days and export during the window, and a purge job hard-deletes after 30 days with an audit fact. Account delete: the account Owner, takes its workspaces, same window. Pages and comments: trash 30 days, then purge. Identity deletion anonymizes (name "Deleted user", email replaced by a non-reversible hash; content and audit keep the user id). Workspace delete and restore are built (HARDENING); the rest is not built | none now; was UC-ACC-D05, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05, now DEFINED; UC-WSP-D03 and UC-WSP-D04 are now built (HARDENING) |
 | 4 | Custom roles: place in the Governance decision order, reach into Private resources, relation to Deny rules; the moderator permission for comments | UC-GOV-C04, UC-GOV-C05, UC-COL-C02, UC-COL-F07 |
 | 5 | Sign-in policy: company SSO enforcement and the verified-domain rule, required MFA owner, SCIM provisioning principal, second-factor recovery | UC-IDN-B08, UC-IDN-J04, UC-IDN-J05, UC-WSP-F10, UC-WSP-J04 |
 | 6 | API token scope vocabulary and whether a token may call person-level routes | UC-IDN-L05 |
