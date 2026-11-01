@@ -44,25 +44,25 @@ Letters follow the Identity list in the team spec (section 4, Identity), in orde
 | Letter | Capability (team spec) | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | Session bootstrap | 4 | 1 | 1 | 0 | 2 | 0 | 0 |
-| B | Login (with registration, email confirmation, password recovery, company SSO) | 9 | 0 | 1 | 3 | 4 | 0 | 1 |
-| C | Logout (with the device list) | 4 | 0 | 0 | 3 | 0 | 1 | 0 |
-| D | Session expiration | 5 | 0 | 1 | 3 | 0 | 1 | 0 |
+| B | Login (with registration, email confirmation, password recovery, company SSO) | 9 | 0 | 0 | 0 | 8 | 0 | 1 |
+| C | Logout (with the device list) | 4 | 0 | 0 | 0 | 3 | 1 | 0 |
+| D | Session expiration | 5 | 0 | 1 | 1 | 2 | 1 | 0 |
 | E | OAuth start | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | F | OAuth callback | 2 | 0 | 0 | 2 | 0 | 0 | 0 |
 | G | Provider linking and unlinking | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| H | MFA enrollment | 3 | 0 | 0 | 1 | 0 | 2 | 0 |
-| I | MFA challenge | 2 | 0 | 0 | 2 | 0 | 0 | 0 |
-| J | MFA recovery (with disable) | 5 | 0 | 0 | 2 | 0 | 1 | 2 |
+| H | MFA enrollment | 3 | 0 | 0 | 0 | 1 | 2 | 0 |
+| I | MFA challenge | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
+| J | MFA recovery (with disable) | 5 | 0 | 0 | 0 | 2 | 1 | 2 |
 | K | Security settings (with step-up, password, sign-in email) | 11 | 2 | 2 | 3 | 1 | 3 | 0 |
 | L | API token lifecycle | 8 | 3 | 4 | 0 | 0 | 0 | 1 |
 | M | Identity profile read and update | 5 | 0 | 0 | 5 | 0 | 0 | 0 |
-| | Total | 61 | 6 | 11 | 25 | 7 | 8 | 4 |
+| | Total | 61 | 6 | 10 | 12 | 21 | 8 | 4 |
 
-Eight use cases are DONE (C03, D02, H01, H02, J03, K03, K04, K05): six accepted 2026-11-01 by an acceptance agent against §7 of the catalog README, and H02 and K03, rejected that day on one line each, accepted again by the fix lane that closed those lines (the lead reviews their Evidence lines at merge); the rest have no recorded owner check or 1 px design diff yet. HARDENING means a `frontend/e2e/real` spec runs the flow against the real backend: the password sign-in (every real spec signs in through `frontend/e2e/real/support/real-session.ts`) the sign-up with email confirmation (`email-confirmation.real.e2e.spec.ts`), the session read and a session revoked from another device (`session-bootstrap.real.e2e.spec.ts`: A01, A03, C03, D02) and turning two-factor on and off with step-up (`mfa-enrollment-step-up.real.e2e.spec.ts`: H01, H02, J03, K03, K04, K05) and a person with only a provider (`provider-step-up.real.e2e.spec.ts`: K03, K06; no provider runs on the development stack, so only the offer and the refusal run). The provider sign-in has a real spec only for the refusal (`microsoft-sign-in.real.e2e.spec.ts`), so E01 stays INTEGRATING. Nothing else in Identity has a real end-to-end spec.
+Eight use cases are DONE (C03, D02, H01, H02, J03, K03, K04, K05): six accepted 2026-11-01 by an acceptance agent against §7 of the catalog README, and H02 and K03, rejected that day on one line each, accepted again by the fix lane that closed those lines (the lead reviews their Evidence lines at merge); the rest have no recorded owner check or 1 px design diff yet. HARDENING means a `frontend/e2e/real` spec runs the flow against the real backend: the password sign-in (every real spec signs in through `frontend/e2e/real/support/real-session.ts`) the sign-up with email confirmation (`email-confirmation.real.e2e.spec.ts`), the session read and a session revoked from another device (`session-bootstrap.real.e2e.spec.ts`: A01, A03, C03, D02) and turning two-factor on and off with step-up (`mfa-enrollment-step-up.real.e2e.spec.ts`: H01, H02, J03, K03, K04, K05) and a person with only a provider (`provider-step-up.real.e2e.spec.ts`: K03, K06; no provider runs on the development stack, so only the offer and the refusal run). The provider sign-in has a real spec only for the refusal (`microsoft-sign-in.real.e2e.spec.ts`), so E01 stays INTEGRATING. Since 2026-11-02 the real stack also runs password reset with the ten-wrong-password lock (`password-reset.real.e2e.spec.ts`: B06, B07, B09), the second step at sign-in, recovery codes and their renewal (`second-step-sign-in.real.e2e.spec.ts`: H03, I01, I02, J01, J02), the confirmation link sent again (`email-confirmation-resend.real.e2e.spec.ts`: B05; `email-confirmation.real.e2e.spec.ts` was fixed to read the masked address of the development log: B04), and sign-out, the device list, sign-out of all other devices and refresh rotation with replay (`sign-out-and-sessions.real.e2e.spec.ts`: C01, C02, C04, D01, D03). Nothing else in Identity has a real end-to-end spec.
 
 ## 1.2 The ten most important gaps
 
-1. **Password reset cannot be finished in the web app.** The backend sends a one-time code (`ForgotPassword.cs`, `ResetPassword.cs` take email and code); the web page says "link" and no route or surface takes the code. Only `createUseResetPassword` exists in the package (UC-IDN-B07).
+1. **Password reset could not be finished in the web app.** Built: the reset screen takes email, code and new password, the sent step says code, and a real spec runs the whole reset (UC-IDN-B06, B07). The unused `createUseResetPassword` hook is still in the package.
 2. **API token scopes are never enforced.** Tokens are issued with `scopes: null` and the authentication handler builds a principal for the issuing user with the workspace claim; no code reads `ApiTokenScopes.Allows`. ID-010 says a token is never "full user access" (UC-IDN-L05).
 3. **No API token UI.** Three endpoints exist, no screen (UC-IDN-L01 to L03).
 4. **Company single sign-on is a stub.** `IdentifySignIn` always answers "password"; the mock backend invents an SSO path that the real backend cannot serve (UC-IDN-B08).
@@ -77,7 +77,7 @@ Eight use cases are DONE (C03, D02, H01, H02, J03, K03, K04, K05): six accepted 
 
 | Defect | Where | Use case |
 |---|---|---|
-| Reset flow mismatch: email carries a code, the page promises a link, no reset page | `backend/src/Notrelix.Application/Features/Identity/Auth/Commands/ForgotPassword/ForgotPassword.cs`; `frontend/packages/features/auth/src/web/components/auth-forgot-surface.tsx`; `frontend/apps/web/src/routes/` | B07 |
+| Reset flow mismatch (fixed in this build): email carries a code, the page promised a link, no reset page | `backend/src/Notrelix.Application/Features/Identity/Auth/Commands/ForgotPassword/ForgotPassword.cs`; `frontend/packages/features/auth/src/web/components/auth-forgot-surface.tsx`; `frontend/apps/web/src/routes/` | B07 |
 | Forgot-password answers an error only when the account exists and the mail fails to send: a side channel that names real accounts | `ForgotPassword.cs` (`email-send-failed` branch) | B06 |
 | Register answers "Email is already in use" (accepted trade-off, owner sign-off pending) | `backend/src/Notrelix.Application/Features/Identity/Registration/Commands/Register/RegisterCommandHandler.cs` | B03 |
 | Same disclosure on email change, to a signed-in person | `Profiles/Commands/UpdateEmail/UpdateEmail.cs` | K09 |
@@ -117,27 +117,27 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
 | UC-IDN-A01 | Read the signed-in person | A | Signed-in person | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
-| UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | IMPLEMENTING | no caller, no consumer decision |
+| UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | IMPLEMENTING | consumers exist (onboarding, account page); the payload carries workspaces with roles, which the acceptance line forbids: decision needed |
 | UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes | HARDENING | tests and owner check |
 | UC-IDN-A04 | Mobile token transport | A | Mobile client | no | no | Final-M-Auth | no | DEFINED | header and body transport absent |
 | UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests and owner check; the SSO branch waits on B08 |
 | UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
 | UC-IDN-B03 | Register | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests, owner check, email disclosure decision |
 | UC-IDN-B04 | Confirm the email from the link | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
-| UC-IDN-B05 | Request or resend the confirmation | B | Visitor, signed-in person | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the onboarding notice shows no countdown |
-| UC-IDN-B06 | Ask for a password reset | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the reset screen is B07 |
-| UC-IDN-B07 | Complete a password reset | B | Visitor | yes | no | none | no | IMPLEMENTING | no reset screen, code versus link |
+| UC-IDN-B05 | Request or resend the confirmation | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | HARDENING | tests, real spec; the countdown states are undrawn and not yet screenshot-reviewed |
+| UC-IDN-B06 | Ask for a password reset | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests, real spec; the sent step now has an extra button, so its Final-Auth baseline needs regenerating |
+| UC-IDN-B07 | Complete a password reset | B | Visitor | yes | no | none | yes | HARDENING | real spec; the screen is undrawn (reviewed: 1440, 1024, 390, light and dark, axe clean) |
 | UC-IDN-B08 | Sign in through the company provider | B | Visitor | no | mock only | Final-Auth | no | BLOCKED | Accounts enforcement fact, protocol |
-| UC-IDN-B09 | Lock sign-in after repeated failures | B | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; the mock locks after five, the rule is ten |
-| UC-IDN-C01 | Sign out this device | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
-| UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-B09 | Lock sign-in after repeated failures | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | real spec; the mock now locks after ten like the rule |
+| UC-IDN-C01 | Sign out this device | C | Signed-in person | yes | yes | Final-Account | yes | HARDENING | real spec; 1 px diff not recorded for the confirmation |
+| UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | yes | HARDENING | real spec; empty and error states not re-measured |
 | UC-IDN-C03 | Sign out one other device | C | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-C04 | Sign out all other devices | C | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
-| UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | no | INTEGRATING | tests and owner check |
+| UC-IDN-C04 | Sign out all other devices | C | Signed-in person | yes | yes | Final-Account | yes | HARDENING | real spec; the step-up prompt states are those of C03, K05 (measured there) |
+| UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | yes | HARDENING | real spec; a transient refresh failure still signs the person out (owner check) |
 | UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-D03 | Reject a replayed refresh credential | D | System | yes | n/a | n/a | no | INTEGRATING | tests and owner check |
+| UC-IDN-D03 | Reject a replayed refresh credential | D | System | yes | n/a | n/a | yes | HARDENING | real spec; line 3 n/a (no screen), line 2 n/a |
 | UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | no caller, no revocation |
-| UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | INTEGRATING | tests and owner check |
+| UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | INTEGRATING | Domain tests; no real proof of a 91-day chain |
 | UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | yes | none | no | INTEGRATING | tests, owner check and an artboard |
@@ -145,11 +145,11 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-G02 | Unlink a provider | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
 | UC-IDN-H01 | Start second-factor enrollment | H | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01, see the Evidence line |
 | UC-IDN-H02 | Verify and activate the second factor | H | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01 by the fix lane for the lead to review; wrong-code and backup-codes states not drawn (reviewed) |
-| UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
-| UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
-| UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
-| UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check |
-| UC-IDN-J02 | Regenerate recovery codes | J | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | yes | HARDENING | real spec; the status card states were measured with H01, H02 |
+| UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | yes | HARDENING | real spec |
+| UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | yes | HARDENING | real spec |
+| UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | yes | HARDENING | real spec |
+| UC-IDN-J02 | Regenerate recovery codes | J | Signed-in person | yes | yes | Final-Account | yes | HARDENING | real spec; the proof prompt states are those of K04 |
 | UC-IDN-J03 | Turn the second factor off | J | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01; the policy-blocked refusal waits on J05 |
 | UC-IDN-J04 | Recover an account that lost both factors | J | Person, Account admin | no | no | none | no | BLOCKED | who may reset another person |
 | UC-IDN-J05 | Enforce an account-required second factor | J | System | no | no | none | no | BLOCKED | Accounts policy fact |
@@ -209,8 +209,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, error.
 - Rules: IAREQ018; ID-017 (no current workspace in identity truth).
 - Acceptance: Given a signed-in person, when the client reads bootstrap, then it gets no workspace role and no entitlement. Given no session, then 401.
-- Evidence: BE `Auth/Queries/GetBootstrap/GetBootstrap.cs`; API `Auth/Queries/GetBootstrapEndpoint.cs` (`GET /api/v1/auth/bootstrap`) · FE none (no caller found; the web app reads `/auth/me`) · Design none · Tests Application `GetBootstrapTests`, Integration `GetBootstrapQueryHandlerTests` · Real e2e none
-- State: IMPLEMENTING. Missing: decide whether a client needs it; if not, delete the endpoint (dead code); if yes, build the consumer.
+- Evidence: BE `Auth/Queries/GetBootstrap/GetBootstrap.cs`; API `Auth/Queries/GetBootstrapEndpoint.cs` (`GET /api/v1/auth/bootstrap`) · FE `packages/features/workspace/src/web/onboarding/onboarding-api.ts`, `packages/features/account/src/core/api/account.service.ts` (they read `accountId`) · Design none · Tests Application `GetBootstrapTests`, Integration `GetBootstrapQueryHandlerTests` · Real e2e none
+- State: IMPLEMENTING. Missing: the acceptance line says the answer holds no workspace role and no entitlement, but `BootstrapResult` returns `Workspaces` with `Role` and `AccountId` and the web app uses `AccountId`. Either the acceptance line or the payload changes (ID-017, product decision); not touched in this pass.
 
 ### UC-IDN-A03 Get and send the CSRF token
 - Capability: A Session bootstrap
@@ -309,8 +309,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: pending, sent with countdown, rate limited.
 - Rules: ID sections 14 and 15, 67.
 - Acceptance: Given an unconfirmed account, when the person resends twice, then only the latest link confirms. Given an unknown email, then the answer equals the known case.
-- Evidence: BE `Verification/Commands/RequestEmailVerification`, `ResendEmailVerification`; API `Auth/Commands/EmailVerificationEndpoints.cs` (`POST /api/v1/auth/email-verification/request`, `POST /api/v1/auth/email-verification/resend`) · FE `packages/features/auth/src/core/api/auth-flow.service.ts` · Design Final-Auth · Tests Application `RequestEmailVerificationTests`, `ResendEmailVerificationTests` · Real e2e none
-- State: INTEGRATING. Built: `request` carries the `AuthSensitiveByUser` limit (429 documented). Missing: tests and owner check; the onboarding notice shows no countdown, and the resend answer stays generic when throttled.
+- Evidence: BE `Verification/Commands/RequestEmailVerification`, `ResendEmailVerification`; API `Auth/Commands/EmailVerificationEndpoints.cs` (`POST /api/v1/auth/email-verification/request`, `POST /api/v1/auth/email-verification/resend`) · FE `packages/features/auth/src/core/api/auth-flow.service.ts` · Design Final-Auth · Tests Application `RequestEmailVerificationTests`, `ResendEmailVerificationTests` · Real e2e `email-confirmation-resend.real.e2e.spec.ts` (1 passed: the onboarding notice sends the link again, says so and waits with the time left; a third ask from the resend route replaces the second; the first and second links are refused with the same 400 and only the newest confirms; an unknown and a known address get the same answer; a confirmed address sends nothing). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Built: the sign-up page and the onboarding notice wait 60 seconds after a send and say when asking is refused (429); the onboarding notice used to disappear when the new link went out, so the person was told nothing, and now stays and says it went out; the token of a link is spent once however many times the page mounts (the page called confirm twice and showed a dead link over a confirmed address; found by the real spec). Backend: Application `ResendEmailVerificationTests` 4 (known, rate limited, unknown and confirmed answer success and issue nothing), `EmailVerificationTokenIssuerTests` 1 (an earlier link is revoked by the next). Frontend: web component tests for both countdowns. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-B06 Ask for a password reset
 - Capability: B Login
@@ -323,8 +323,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: pending, sent with countdown, rate limited.
 - Rules: ID sections 13 and 66; IAREQ014.
 - Acceptance: Given a known and an unknown email, when each is submitted, then the answer is identical, including when the mail provider fails.
-- Evidence: BE `Auth/Commands/ForgotPassword/ForgotPassword.cs`; API `Auth/Commands/ForgotPasswordEndpoint.cs` (`POST /api/v1/auth/forgot-password`) · FE `packages/features/auth/src/web/components/auth-forgot-surface.tsx`, route `forgot-password.tsx` · Design Final-Auth · Tests Application `ForgotPasswordTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Built: a failed send is logged and answered like an unknown email; the request limit answers 429 `identity.auth.rate-limited` as the contract says; the page shows a rate-limited message and keeps the person on the sent step when a send again is refused. Missing: tests and owner check (the existing send-failure and limit assertions of `ForgotPasswordTests` need updating); the mail time still differs for a known account, which needs an asynchronous send; the web copy says link while the mail carries a code (B07).
+- Evidence: BE `Auth/Commands/ForgotPassword/ForgotPassword.cs`; API `Auth/Commands/ForgotPasswordEndpoint.cs` (`POST /api/v1/auth/forgot-password`) · FE `packages/features/auth/src/web/components/auth-forgot-surface.tsx`, route `forgot-password.tsx` · Design Final-Auth · Tests Application `ForgotPasswordTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e `password-reset.real.e2e.spec.ts` (1 passed: ten wrong passwords lock the account, the page shows the time left; Forgot password asks for the email and says a code went out with a resend countdown; a known and an unknown address get the identical answer; the fourth request in an hour is 429; a second request replaces the first code). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Built: the sent step says code, not link, and offers 'Enter the code'; Backend tests already cover the identical answer when the mail fails and the limit (`ForgotPasswordTests` 5 pass). The sent step's visual baselines (`forgot-sent`, `forgot-sent-ready`) change with the copy and the new button and must be regenerated by the owner's baseline job. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-B07 Complete a password reset
 - Capability: B Login
@@ -337,8 +337,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: pending, validation error, code no longer works, success.
 - Rules: ID sections 13, 15, 20; ID-006; IAREQ014, IAREQ021.
 - Acceptance: Given a valid code, when the person resets, then old sessions end and the code fails on reuse. Given a stale code, then no change and the generic answer.
-- Evidence: BE `Auth/Commands/ResetPassword/ResetPassword.cs`; API `Auth/Commands/ResetPasswordEndpoint.cs` (`POST /api/v1/auth/reset-password`) · FE `packages/features/auth/src/web/hooks/use-reset-password.ts` (hook only; no route or surface) · Design none · Tests Application `ResetPasswordTests`; Domain `PasswordResetTokenTests` · Real e2e none
-- State: IMPLEMENTING. Missing: the reset screen (code entry), a design artboard, real spec. Lead decision (2026-10-30): the mail carries a code, the screen takes email, code and new password; the "link" wording in the web copy is corrected to "code".
+- Evidence: BE `Auth/Commands/ResetPassword/ResetPassword.cs`; API `Auth/Commands/ResetPasswordEndpoint.cs` (`POST /api/v1/auth/reset-password`) · FE `packages/features/auth/src/web/hooks/use-reset-password.ts` (hook only; no route or surface) · Design none · Tests Application `ResetPasswordTests`; Domain `PasswordResetTokenTests` · Real e2e `password-reset.real.e2e.spec.ts` (shared with B06: a wrong code is refused in words; the right code changes the password and sign-in shows the notice; device B and the old password stop working; the code works once; five wrong codes kill the code and a right one is refused with `identity.auth.too-many-attempts`); mock walk `auth-reset-states.mock.e2e.spec.ts` (6 passed: form, validation, refused and the sign-in notice at 1440, 1024 and 390 px in light and dark: no sideways scroll, 44 px targets at 390 except the shared 36 px show-password eye, axe no serious or critical violation). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Built: the reset screen `/reset-password` (email, code, new password; `ResetFlow`, `AuthResetSurface`), reached from the sent step with the email carried over; sign-in says the password changed and every device signed out; the copy says code and ten minutes. Lead decision applied: no artboard exists, so the screen is built from the Auth components on the pattern of the forgot screen and reviewed. Tests: Application `ResetPasswordTests` 5, Domain `PasswordResetTokenTests`; web component tests for the surface (3) and the flow (7: success, the four refusals, new code). Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-B08 Sign in through the company provider
 - Capability: B Login
@@ -365,8 +365,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: locked with time left, generic failure.
 - Rules: ID section 67 (D10, accepted 2026-10-23); IAREQ014.
 - Acceptance: Given ten wrong passwords, when the right one follows within the lock, then it is refused with the generic lock answer. Given a reset, then the account signs in again.
-- Evidence: BE `Auth/Throttling/` (`ILoginThrottle`), `Auth/Commands/Login/Login.cs` · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests Domain `UserLoginAttemptTests`, Application `SecurityStepUpServiceThrottleTests`, `LoginTests`; mock e2e `auth-flow.mock.e2e.spec.ts` ("five wrong passwords lock") · Real e2e none
-- State: INTEGRATING. Missing: real spec; the mock e2e locks after five attempts while the product value is ten, so the mock differs from the rule.
+- Evidence: BE `Auth/Throttling/` (`ILoginThrottle`), `Auth/Commands/Login/Login.cs` · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests Domain `UserLoginAttemptTests`, Application `SecurityStepUpServiceThrottleTests`, `LoginTests`; mock e2e `auth-flow.mock.e2e.spec.ts` ("five wrong passwords lock") · Real e2e `password-reset.real.e2e.spec.ts` (shared with B06, B07: ten wrong passwords, then the right password is refused with 429 and the page shows 'Try again in N seconds' without signing in; a reset lifts the account lock and the new password signs in). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Built: the mock backend and its mock e2e now lock after ten wrong passwords for 15 minutes, like the product rule (it locked after five for a minute). The address lock (fifty from one address) has no real proof here. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ## Capability C: Logout
 
@@ -381,8 +381,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: pending, signed out, failed (the server session may still be alive: the person is told, stays signed in and may retry).
 - Rules: ID-005; sections 16 to 19; IAREQ020.
 - Acceptance: Given a session, when the person signs out, then the next call with the old cookies is 401. Given a second logout, then success and no second activity line.
-- Evidence: BE `Auth/Commands/Logout/Logout.cs`; API `Auth/Commands/LogoutEndpoint.cs` (`POST /api/v1/auth/logout`) · FE `packages/features/auth/src/web/hooks/use-logout.ts`, `apps/web/src/shell/workspace/workspace-shell.tsx` (failure toast) · Design Final-Account · Tests Application `LogoutTests` (written before the change, needs updating) · Real e2e none
-- State: INTEGRATING. Built: sign-out is scoped to the caller's own sessions and no longer fails without a refresh cookie; a failed call (not a 401) keeps the person on the page with a failure toast instead of showing the sign-in page over a live session. Missing: tests and owner check (`LogoutTests` and Integration `LogoutCommandHandlerTests` build the handler without the current-request context and need updating), real spec, 1 px diff. A rate-limit attribute is not needed (own session). Two parallel sign-outs of one session may meet an optimistic-concurrency refusal on the second; not yet proven.
+- Evidence: BE `Auth/Commands/Logout/Logout.cs`; API `Auth/Commands/LogoutEndpoint.cs` (`POST /api/v1/auth/logout`) · FE `packages/features/auth/src/web/hooks/use-logout.ts`, `apps/web/src/shell/workspace/workspace-shell.tsx` (failure toast) · Design Final-Account · Tests Application `LogoutTests` (written before the change, needs updating) · Real e2e `sign-out-and-sessions.real.e2e.spec.ts` test 2 (1 passed: the row of this device asks first, then returns to sign-in; the next call is 401, the old refresh credential no longer refreshes, a second sign-out answers 401 and revives nothing). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Backend tests: Application `LogoutTests` pass. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-C02 List my sessions and devices
 - Capability: C Logout
@@ -395,8 +395,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, empty (only this device), success, error.
 - Rules: section 67 (account security facts); owner decision 48 (a device is a session; address and user agent only); IAREQ023.
 - Acceptance: Given two signed-in devices, when the list is read, then both show and one is marked current. Given another person, then none of my rows appear.
-- Evidence: BE `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; API `Auth/Commands/SessionEndpoints.cs` (`GET /api/v1/auth/sessions`) · FE `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` · Design Final-Account · Tests Domain `UserSessionTests`; Integration `UserScopeIsolationTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Built: the list is bounded (live sessions plus the 20 most recent ended ones) and reads expiry from the end time. Missing: tests and owner check, real spec. The producer has no last-seen time (each refresh starts a new session), so the page shows the sign-in time of the current session of the chain.
+- Evidence: BE `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; API `Auth/Commands/SessionEndpoints.cs` (`GET /api/v1/auth/sessions`) · FE `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` · Design Final-Account · Tests Domain `UserSessionTests`; Integration `UserScopeIsolationTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e `sign-out-and-sessions.real.e2e.spec.ts` test 1 (1 passed: three live sessions with one marked this device, the page says '3 sessions are active', another person's sessions never appear). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-C03 Sign out one other device
 - Capability: C Logout
@@ -423,8 +423,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: step-up prompt, pending, success, error.
 - Rules: ID-006; owner decision 48; IAREQ021, IAREQ056.
 - Acceptance: Given three sessions, when the person steps up and revokes others, then one remains. Given no proof, then 4xx and all three remain.
-- Evidence: BE `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs`, `Security/DTOs/StepUpTypes.cs` (`RevokeOtherSessions`); API `Auth/Commands/SessionEndpoints.cs` (`POST /api/v1/auth/sessions/revoke-others`, body `{ stepUpToken }`, answer `{ revokedCount }`) · FE `.../account/security.tsx`, `packages/features/account/src/core/api/account.service.ts`, mock `account-security.handlers.ts` · Design Final-Account · Tests mock e2e `account-pages.mock.e2e.spec.ts` and web `account-pages.component.test.tsx` (both call revoke-others without a proof and need updating) · Real e2e none
-- State: INTEGRATING. Built: the endpoint needs a single-use proof of purpose `RevokeOtherSessions` bound to the user and the current session; with no other live session it is a no-op that spends no proof and records nothing; the page runs the step-up, then shows how many devices ended. Missing: tests and owner check (Application and API tests, real spec). A client older than this change posts no body and is refused with 412.
+- Evidence: BE `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs`, `Security/DTOs/StepUpTypes.cs` (`RevokeOtherSessions`); API `Auth/Commands/SessionEndpoints.cs` (`POST /api/v1/auth/sessions/revoke-others`, body `{ stepUpToken }`, answer `{ revokedCount }`) · FE `.../account/security.tsx`, `packages/features/account/src/core/api/account.service.ts`, mock `account-security.handlers.ts` · Design Final-Account · Tests mock e2e `account-pages.mock.e2e.spec.ts` and web `account-pages.component.test.tsx` (both call revoke-others without a proof and need updating) · Real e2e `sign-out-and-sessions.real.e2e.spec.ts` test 1 (shared with C02: a call with no proof is refused and every device stays; a wrong password changes nothing; the right password signs out both other devices, this one stays, the page says 'Signed out of 2 other devices.'; with none left the page says no other device is signed in). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ## Capability D: Session expiration
 
@@ -439,8 +439,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: invisible on success; session expired on failure (UC-IDN-D02).
 - Rules: ID-005; section 18; IAREQ017, IAREQ019.
 - Acceptance: Given a valid credential, when the client refreshes, then the old credential fails afterwards. Given a suspended user, then 401 and the session ends.
-- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs`, `Auth/Services/IRefreshRotationLedger.cs`, Infrastructure `Identity/Auth/RefreshRotationLedger.cs`, Domain `Identity/Sessions/UserSession.cs` (`Rotate`), `SessionLifetimePolicy.cs`, migration `AddSessionRefreshRotation`, RLS `014_anonymous_scopes.sql` (refresh-token scope matches the current and the just-replaced digest); API `Auth/Commands/RefreshTokenEndpoint.cs` (`POST /api/v1/auth/refresh`) · FE `packages/foundation/contracts/src/client/api-client.ts` · Design n/a · Tests Application `RefreshTokenTests` (4: they build the handler without the ledger, the blacklist and the activity recorder and expect a second session row), Domain `RefreshTokenHashTests`, Domain tests calling `UpdateRefreshToken` (replaced by `Rotate`) · Real e2e none
-- State: INTEGRATING. Built: one session row for the life of a sign-in (it used to be revoked and replaced at every refresh, which also filled the session list with ended rows); the refresh digest and the previous digest are indexed. Missing: tests and owner check, real spec. A refresh that fails for any reason, a network drop included, signs the person out (`api-client.ts` publishes the session-expired event for every non-ok answer): a transient failure should not, owner check.
+- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs`, `Auth/Services/IRefreshRotationLedger.cs`, Infrastructure `Identity/Auth/RefreshRotationLedger.cs`, Domain `Identity/Sessions/UserSession.cs` (`Rotate`), `SessionLifetimePolicy.cs`, migration `AddSessionRefreshRotation`, RLS `014_anonymous_scopes.sql` (refresh-token scope matches the current and the just-replaced digest); API `Auth/Commands/RefreshTokenEndpoint.cs` (`POST /api/v1/auth/refresh`) · FE `packages/foundation/contracts/src/client/api-client.ts` · Design n/a · Tests Application `RefreshTokenTests` (4: they build the handler without the ledger, the blacklist and the activity recorder and expect a second session row), Domain `RefreshTokenHashTests`, Domain tests calling `UpdateRefreshToken` (replaced by `Rotate`) · Real e2e `sign-out-and-sessions.real.e2e.spec.ts` test 3 (1 passed: a refresh answers a new credential, the session keeps its id). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Domain `UserSessionTests` +4 (rotation keeps the session and the idle expiry, the cap at 90 days, refused after the limit and for a revoked session). Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance. The client still ends the session on any failed refresh, a network drop included (`api-client.ts`).
 
 ### UC-IDN-D02 Session expired or revoked
 - Capability: D Session expiration
@@ -467,8 +467,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: session expired.
 - Rules: ID section 18; ID-005; enterprise baseline (Auth0, Okta).
 - Acceptance: Given a rotated credential, when it is replayed after the window, then the chain ends and the next refresh fails.
-- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs` (`HandleReplacedCredentialAsync`, `ServeGraceAsync`, `ServeRacedRotationAsync`), `Auth/Services/IRefreshRotationLedger.cs`, Infrastructure `Identity/Auth/RefreshRotationLedger.cs`, Domain `UserSession.cs` (`IsWithinRotationGrace`), `SessionRevocationReasons.RefreshTokenReuse` · FE none (the client already ends the session on a 401 from refresh) · Design n/a · Tests none · Real e2e none
-- State: INTEGRATING. Built. Missing: tests and owner check. Lead decision (2026-10-30): window 10 seconds, then revoke the chain. Security note: the new refresh credential sits in Redis for 15 seconds so a retry can be answered with it, encrypted under a key only a presenter of the replaced credential can derive, so reading Redis yields no live credential; a thief who holds the replaced credential and replays inside the window still gets the new one, which is the cost of the window the lead chose.
+- Evidence: BE `Auth/Commands/RefreshToken/RefreshToken.cs` (`HandleReplacedCredentialAsync`, `ServeGraceAsync`, `ServeRacedRotationAsync`), `Auth/Services/IRefreshRotationLedger.cs`, Infrastructure `Identity/Auth/RefreshRotationLedger.cs`, Domain `UserSession.cs` (`IsWithinRotationGrace`), `SessionRevocationReasons.RefreshTokenReuse` · FE none (the client already ends the session on a 401 from refresh) · Design n/a · Tests none · Real e2e `sign-out-and-sessions.real.e2e.spec.ts` test 3 (shared with D01: inside ten seconds the replaced credential is answered with the new one; after eleven seconds its use is 401 and the session ends, the other device's next call is 401). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Backend: Application `RefreshTokenTests` +2 (a replaced credential after the window revokes the session, cuts off its access credentials and records it; a never-issued credential changes nothing), Domain `UserSessionTests` (grace window). The parallel-refresh race is covered by the rotation ledger, which has no test of its own here. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-D04 End access when a person is disabled
 - Capability: D Session expiration
@@ -495,8 +495,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: session expired.
 - Rules: ID-005; IAREQ019; enterprise baseline (Auth0, Notion).
 - Acceptance: Given a chain of 91 days, when it refreshes, then 401.
-- Evidence: BE Domain `Identity/Sessions/SessionLifetimePolicy.cs` (`IdleLifetime`, `AbsoluteLifetime`, `ExpiryAfterRefresh`), `UserSession.Rotate`, `Auth/Sessions/AuthSessionIssuer.cs` · FE none · Design n/a · Tests none · Real e2e none
-- State: INTEGRATING. Built. Missing: tests and owner check. Lead decision (2026-10-30): absolute 90 days, idle 30 days. The web refresh cookie lives 7 days (`JwtSettings:RefreshTokenExpireDays`), shorter than the idle limit, so a browser left alone for 8 days signs in again; left as is, owner check.
+- Evidence: BE Domain `Identity/Sessions/SessionLifetimePolicy.cs` (`IdleLifetime`, `AbsoluteLifetime`, `ExpiryAfterRefresh`), `UserSession.Rotate`, `Auth/Sessions/AuthSessionIssuer.cs` · FE none · Design n/a · Tests Domain `UserSessionTests` (the idle expiry, the cap at 90 days, refused after 90 days) · Real e2e none
+- State: INTEGRATING. Built. Missing: a real proof (a chain of 91 days cannot be aged on the real stack without a clock fixture), owner check. Lead decision (2026-10-30): absolute 90 days, idle 30 days. The web refresh cookie lives 7 days (`JwtSettings:RefreshTokenExpireDays`), shorter than the idle limit, so a browser left alone for 8 days signs in again; left as is, owner check.
 
 ## Capability E: OAuth start
 
@@ -615,8 +615,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, off, on, error.
 - Rules: ID-014; IAREQ053.
 - Acceptance: Given an active factor, when status is read, then no secret or code is in the body.
-- Evidence: BE `Mfa/Queries`, `Mfa/Services/MfaStatusProjection.cs`; API `Auth/Queries/GetMfaStatusEndpoint.cs` (`GET /api/v1/auth/mfa/status`) · FE `packages/features/account/src/core/api/account.service.ts` · Design Final-Account · Tests API `AuthenticatedAuthEndpointTests` · Real e2e none
-- State: INTEGRATING. Built: the endpoint carries the `GeneralAuthenticated` limit; the body holds only the flag, the method name and the number of codes left. Missing: tests and owner check, real spec; the page reads the summary (UC-IDN-K01), so this call has no web caller yet. After an activation the page re-reads the summary and the session list, so the status and the ended devices show at once.
+- Evidence: BE `Mfa/Queries`, `Mfa/Services/MfaStatusProjection.cs`; API `Auth/Queries/GetMfaStatusEndpoint.cs` (`GET /api/v1/auth/mfa/status`) · FE `packages/features/account/src/core/api/account.service.ts` · Design Final-Account · Tests API `AuthenticatedAuthEndpointTests` · Real e2e `second-step-sign-in.real.e2e.spec.ts` (shared: after turning the factor on the summary says it is on and the page shows 'N backup codes left'). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ## Capability I: MFA challenge
 
@@ -631,8 +631,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: code entry, wrong code (the boxes empty and focus returns to the first), expired (the verify button is off; "Back to sign-in" is the way on), pending.
 - Rules: ID-007; section 22; IAREQ050.
 - Acceptance: Given a challenge, when the right code is sent, then a session opens. Given no challenge cookie, then the expired state.
-- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`, `Mfa/Services/MfaCodeVerifier.cs`, `Mfa/Abstractions/IMfaCodeUseGuard.cs`; Infrastructure `Identity/Mfa/MfaCodeUseGuard.cs`, `MfaTotpService.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` (`POST /api/v1/auth/mfa/verify`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; Infrastructure `CookieServiceMfaChallengeTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Built: TOTP replay protection and the one-time claim of a recovery code (Redis claims, so no schema change; a code just used at sign-in is refused for the rest of its window, also at step-up, and the wrong-code sentence says so); the wrong-code boxes clear. Missing: tests and owner check (Application tests for the claim, the replay and the parallel recovery code; `MfaCodeVerifier` and `IMfaTotpService` doubles need the new members), real spec. A code that enrols the factor (UC-IDN-H02) is not claimed, so it can still be replayed once at the next sign-in inside its window.
+- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`, `Mfa/Services/MfaCodeVerifier.cs`, `Mfa/Abstractions/IMfaCodeUseGuard.cs`; Infrastructure `Identity/Mfa/MfaCodeUseGuard.cs`, `MfaTotpService.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` (`POST /api/v1/auth/mfa/verify`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; Infrastructure `CookieServiceMfaChallengeTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e `second-step-sign-in.real.e2e.spec.ts` (1 passed: a wrong code is refused in words, a right code opens the session; a code that already opened a session is not accepted by a second request). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Backend: Application `CompleteMfaChallengeTests` 7 (right code, wrong code counted as a failed sign-in, a claimed code opens one session, a step-up challenge is refused like an expired one, a locked account checks no code). Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-I02 Expire a challenge after wrong codes
 - Capability: I MFA challenge
@@ -645,8 +645,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: wrong code, expired.
 - Rules: ID section 67; IAREQ050.
 - Acceptance: Given five wrong codes, when the right one follows, then it is refused.
-- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` · FE `auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; mock e2e `auth-flow.mock.e2e.spec.ts` ("a wrong second-step code is refused") · Real e2e none
-- State: INTEGRATING. Built: the challenge dies at the fifth wrong code (the mock already did). Missing: tests and owner check (an Application test of five wrong codes then the right one), real spec. The step-up challenge (UC-IDN-K04) still removes its challenge on the attempt after the fifth.
+- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`; API `Auth/Commands/CompleteMfaChallengeEndpoint.cs` · FE `auth-sign-in-surface.tsx` · Design Final-Auth · Tests API `MfaChallengeCookieTests`; mock e2e `auth-flow.mock.e2e.spec.ts` ("a wrong second-step code is refused") · Real e2e `second-step-sign-in.real.e2e.spec.ts` (shared: wrong codes until `identity.mfa.challenge-invalid`, the page says the verification expired and the button is off, a right code afterwards is refused with 400 and no session opens). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Backend: Application `CompleteMfaChallengeTests` (fifth wrong code kills the challenge; a killed challenge refuses a right code). The step-up challenge (K04) still removes its challenge on the attempt after the fifth. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ## Capability J: MFA recovery
 
@@ -661,8 +661,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: code entry, wrong code, success.
 - Rules: ID-004; IAREQ051.
 - Acceptance: Given a recovery code, when it is used twice, then the second use fails.
-- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`, `Mfa/Services/MfaCodeVerifier.cs` (recovery code claim, then `MfaRecoveryBatch.TryConsume`) · FE `auth-sign-in-surface.tsx` (`OtpStep`, backup mode) · Design Final-Auth · Tests Domain `MfaRecoveryBatchTests`; Infrastructure `MfaRecoveryCodeGeneratorTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING. Built end to end (nothing left to build; a code is matched without case, spaces or dashes). Missing: tests and owner check, real spec.
+- Evidence: BE `Mfa/Commands/CompleteMfaChallenge/CompleteMfaChallenge.cs`, `Mfa/Services/MfaCodeVerifier.cs` (recovery code claim, then `MfaRecoveryBatch.TryConsume`) · FE `auth-sign-in-surface.tsx` (`OtpStep`, backup mode) · Design Final-Auth · Tests Domain `MfaRecoveryBatchTests`; Infrastructure `MfaRecoveryCodeGeneratorTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e `second-step-sign-in.real.e2e.spec.ts` (shared: a recovery code signs in, the same code is refused on the next device). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-J02 Regenerate recovery codes
 - Capability: J MFA recovery
@@ -675,8 +675,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: step-up prompt, success with codes, error.
 - Rules: ID-004, ID-006; IAREQ051, IAREQ056.
 - Acceptance: Given step-up, when codes regenerate, then old codes fail and new codes work.
-- Evidence: BE `Mfa/Commands/RegenerateRecoveryCodes/RegenerateRecoveryCodes.cs`; API `Auth/Commands/RegenerateRecoveryCodesEndpoint.cs` (`POST /api/v1/auth/mfa/recovery-codes/regenerate`) · FE `packages/features/account/src/web/security/account-security-surface.tsx`, `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` (`finishStepUp`) · Design Final-Account · Tests Domain `MfaRecoveryBatchTests` · Real e2e none
-- State: INTEGRATING. Built: the endpoint carries the `AuthSensitiveByUser` limit and answers `Cache-Control: no-store` (the answer holds the codes); two regenerations at once meet the old batch's version and one answers 409; a refusal after the proof is in hand shows the generic error, not "that code is wrong"; the mock refuses with 412 when the factor is off. Missing: tests and owner check (Application and API tests, real spec). Not decided and left alone: no security-activity line is recorded for a regeneration (the product list of recorded facts has none).
+- Evidence: BE `Mfa/Commands/RegenerateRecoveryCodes/RegenerateRecoveryCodes.cs`; API `Auth/Commands/RegenerateRecoveryCodesEndpoint.cs` (`POST /api/v1/auth/mfa/recovery-codes/regenerate`) · FE `packages/features/account/src/web/security/account-security-surface.tsx`, `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` (`finishStepUp`) · Design Final-Account · Tests Domain `MfaRecoveryBatchTests` · Real e2e `second-step-sign-in.real.e2e.spec.ts` (shared: new codes ask for a proof (a recovery code here), the page shows the new codes once, an old code is refused at sign-in). Real stack, run at the head of `idn/scope-0-1` on develop `6ac912d0c`: `password-reset`, `second-step-sign-in`, `email-confirmation`, `email-confirmation-resend`, `sign-out-and-sessions`, `session-bootstrap` and `mfa-enrollment-step-up` real specs, 11 of 11 passed in one run.
+- State: HARDENING. Not proven: a call without a valid proof is refused (asserted) but no Application test exists for `RegenerateRecoveryCodes`. Line 3 is not proven: no artboard measurement or 1024 / 390 screenshot review of this state is recorded yet; line 5 is pending independent acceptance.
 
 ### UC-IDN-J03 Turn the second factor off
 - Capability: J MFA recovery
