@@ -4428,6 +4428,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_user_mfa_methods_user_id");
 
+                    b.HasIndex("UserId", "Type")
+                        .IsUnique()
+                        .HasDatabaseName("ux_user_mfa_methods_active_per_type")
+                        .HasFilter("status = 'Active'");
+
                     b.ToTable("user_mfa_methods", "identity");
                 });
 
