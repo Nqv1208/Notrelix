@@ -19,7 +19,7 @@ interface Children {
   readonly items: readonly Child[];
 }
 
-test("a member adds sub-items on the item page, a sub-item has none of its own, and archiving the parent takes them and restoring brings them back", async ({
+test("a member adds sub-items from the card popup, a sub-item has none of its own, and archiving the parent takes them and restoring brings them back", async ({
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -46,12 +46,15 @@ test("a member adds sub-items on the item page, a sub-item has none of its own, 
   expect(parent.status).toBeLessThan(300);
   const parentId = parent.data!.id;
 
-  // The page lists no sub-items yet and adds one on Enter.
+  // The card popup lists no sub-items yet and adds one from its Add menu on Enter.
   await page.goto(
-    `/workspaces/${workspace.id}/boards/${board.id}/items/${parentId}`,
+    `/workspaces/${workspace.id}/boards/${board.id}?item=${parentId}`,
   );
-  await page.getByRole("button", { name: "Add a sub-item" }).click();
-  const input = page.getByRole("textbox", { name: "Sub-items" });
+  const popup = page.getByRole("dialog");
+  await expect(popup.getByText("Sub-items", { exact: true })).toHaveCount(0);
+  await popup.getByTitle("Add to card").click();
+  await page.getByRole("option", { name: "Sub-item" }).click();
+  const input = page.getByRole("textbox", { name: "Sub-item" });
   await expect(input).toBeVisible();
   const created = page.waitForResponse(
     (response) =>
@@ -61,7 +64,8 @@ test("a member adds sub-items on the item page, a sub-item has none of its own, 
   await input.fill(`First ${unique}`);
   await input.press("Enter");
   expect((await created).status()).toBeLessThan(300);
-  await expect(page.getByText(`First ${unique}`)).toBeVisible();
+  await expect(popup.getByText("Sub-items", { exact: true })).toBeVisible();
+  await expect(popup.getByText(`First ${unique}`)).toBeVisible();
 
   // A second one goes after it, and moving it first reorders them.
   expect(
@@ -135,9 +139,16 @@ test("a member adds sub-items on the item page, a sub-item has none of its own, 
     `/board-items/${parentId}/child-items`,
   );
   expect(children.items).toEqual([]);
-  expect(
-    (await apiWrite(page, "POST", `/board-items/${parentId}/unarchive`)).status,
-  ).toBeLessThan(300);
+  const archivedRead = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${parentId}`,
+  );
+  const restored = await apiWrite(
+    page,
+    "POST",
+    `/board-items/${parentId}/unarchive?expectedVersion=${archivedRead.version}`,
+  );
+  expect(restored.status, JSON.stringify(restored.data)).toBeLessThan(300);
   children = await apiRead<Children>(
     page,
     `/board-items/${parentId}/child-items`,
