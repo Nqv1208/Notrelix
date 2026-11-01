@@ -326,6 +326,11 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
 
         await AssignAsync(bob.Id);
         (await MemberActionAsync(owner, bob.Id, "suspend")).IsSuccessStatusCode.Should().BeTrue();
+        // Adding back is for a person already in the Account.
+        await OwnerScalarAsync(
+            "INSERT INTO account.account_members (id, account_id, user_id, role, status, created_at) " +
+            "VALUES (gen_random_uuid(), @a, @u, 'Member', 'Active', now()) RETURNING 1",
+            ("a", _a.AccountId), ("u", bob.Id));
         var readd = await owner.PostAsJsonAsync($"{path}/add", new { userId = bob.Id, role = "Member" });
         readd.IsSuccessStatusCode.Should().BeTrue(await readd.Content.ReadAsStringAsync());
         (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a suspended member added back is configured again");
