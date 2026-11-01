@@ -13,7 +13,7 @@ test.setTimeout(180_000);
 
 /**
  * UC-WSP-F02 and UC-WSP-F05 on the real stack, in the browser: a write that carries an out-of-date version
- * answers the backend's own 412 and the roster says so and keeps the old role; with the network gone nothing is
+ * answers the backend's own 412 and the roster says so and keeps the old role; with the server unreachable nothing is
  * changed and the roster says that; the row menu works from the keyboard and axe finds nothing serious with it open.
  */
 test("the roster reports a version conflict and an offline write, and its row menu works by keyboard", async ({
@@ -69,14 +69,19 @@ test("the roster reports a version conflict and an offline write, and its row me
     )?.role,
   ).toBe("Member");
 
-  // Offline: the request never leaves the browser; nothing changes and the roster says the server was not reached.
-  await page.context().setOffline(true);
+  // Server unreachable: the write is refused before it reaches the backend; nothing changes and the roster says the server was not reached.
+  const unreachable = async (route: import("@playwright/test").Route) =>
+    route.request().method() === "GET"
+      ? route.continue()
+      : route.abort("internetdisconnected");
+  const members = `**/workspaces/${workspace.id}/members/*`;
+  await page.route(members, unreachable);
   await roleSelect.click();
   await page.getByRole("option", { name: /^Admin/ }).click();
   await expect(
     page.getByText(/The server couldn't be reached/).first(),
   ).toBeVisible();
-  await page.context().setOffline(false);
+  await page.unroute(members, unreachable);
   await expect(roleSelect).toContainText("Member");
 
   // Keyboard and axe: the row menu opens from its button, moves with the arrows, closes with Escape and gives
@@ -106,7 +111,7 @@ test("the roster reports a version conflict and an offline write, and its row me
 
 /**
  * UC-WSP-G04, G05 and G06 in the browser on the real stack: a role change that carries an out-of-date version
- * answers the backend's 412 and the list says so; with the network gone a resend and a revoke change nothing and
+ * answers the backend's 412 and the list says so; with the server unreachable a resend and a revoke change nothing and
  * say so; the row's controls reach and run from the keyboard, and axe finds nothing serious on the list.
  */
 test("the invitation rows report a version conflict and an offline write, and work by keyboard", async ({
@@ -147,8 +152,13 @@ test("the invitation rows report a version conflict and an offline write, and wo
       ?.role,
   ).toBe("Member");
 
-  // G05 and G06 offline: nothing leaves the browser, nothing changes, and the page says so.
-  await page.context().setOffline(true);
+  // G05 and G06 with the server unreachable: the writes never arrive, nothing changes, and the page says so.
+  const unreachable = async (route: import("@playwright/test").Route) =>
+    route.request().method() === "GET"
+      ? route.continue()
+      : route.abort("internetdisconnected");
+  const writes = `**/workspaces/${workspace.id}/invitations/**`;
+  await page.route(writes, unreachable);
   await row
     .getByRole("button", { name: `Resend invitation to ${email}` })
     .click();
@@ -165,7 +175,7 @@ test("the invitation rows report a version conflict and an offline write, and wo
   await expect(
     page.getByText(`The invitation to ${email} wasn't revoked.`),
   ).toBeVisible();
-  await page.context().setOffline(false);
+  await page.unroute(writes, unreachable);
   expect(
     (await invitationsOf(page, workspace.id)).find((r) => r.email === email)
       ?.status,

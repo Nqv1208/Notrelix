@@ -251,6 +251,7 @@ export function MoveToSpaceDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="max-md:h-touch"
             >
               {copy.move.cancel}
             </Button>
@@ -258,6 +259,7 @@ export function MoveToSpaceDialog({
               type="submit"
               variant={footerExtra ? "outline" : "default"}
               disabled={!canSubmit}
+              className="max-md:h-touch"
             >
               {pending
                 ? copy.move.submitting

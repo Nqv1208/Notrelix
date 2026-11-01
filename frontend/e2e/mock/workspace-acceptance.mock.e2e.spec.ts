@@ -49,7 +49,7 @@ async function prepare(
   );
 }
 
-/** The visible controls under `scope` whose smaller side is under 44 px. */
+/** The visible controls under `scope` whose smaller side is under 44 px or that end beyond the viewport. */
 async function undersized(scope: Locator) {
   return scope.evaluate((root, selector) => {
     const found: string[] = [];
@@ -64,6 +64,12 @@ async function undersized(scope: Locator) {
       if (box.width === 0 || box.height === 0) continue;
       if (style.visibility === "hidden" || style.display === "none") continue;
       if (element.closest(".sr-only, [aria-hidden='true']")) continue;
+      if (box.right > window.innerWidth + 1) {
+        found.push(
+          `${element.tagName.toLowerCase()} "${element.getAttribute("aria-label") ?? (element.textContent ?? "").trim().slice(0, 30)}" ends at ${Math.round(box.right)} of ${window.innerWidth}`,
+        );
+        continue;
+      }
       if (Math.min(box.width, box.height) >= 43.5) continue;
       const label =
         element.getAttribute("aria-label") ??

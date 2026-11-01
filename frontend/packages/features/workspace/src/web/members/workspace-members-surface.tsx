@@ -221,7 +221,7 @@ function MemberRow({
           />
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-label text-foreground">
+              <span className="truncate text-label text-foreground max-md:line-clamp-2 max-md:whitespace-normal max-md:break-words">
                 {member.name}
               </span>
               {isSelf ? (
@@ -774,7 +774,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                   </th>
                   <th
                     scope="col"
-                    className="h-9 px-2 text-metadata font-medium text-muted-foreground"
+                    className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground sm:table-cell"
                   >
                     {copy.invitations.columns.expires}
                   </th>
@@ -798,9 +798,17 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                         expired && "text-muted-foreground",
                       )}
                     >
-                      <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle">
+                      <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle max-md:min-w-24">
                         <span className="block truncate text-label">
                           {invitation.email}
+                        </span>
+                        <span className="block truncate text-metadata tabular-nums text-muted-foreground sm:hidden">
+                          {expired
+                            ? copy.invitations.expired
+                            : formatters.relativeTime(
+                                invitation.expiresAt,
+                                now,
+                              )}
                         </span>
                       </td>
                       <td className="px-2 py-2.5 align-middle whitespace-nowrap text-body">
@@ -821,7 +829,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                           >
                             <SelectTrigger
                               size="sm"
-                              className="w-36 max-md:h-touch!"
+                              className="w-36 max-md:h-touch! max-md:w-28"
                               aria-label={formatCopy(
                                 copy.invitations.roleOfInvitation,
                                 { email: invitation.email },
@@ -844,7 +852,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                       <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground sm:table-cell">
                         {formatters.date(invitation.createdAt, DATE_FORMAT)}
                       </td>
-                      <td className="px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums">
+                      <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums sm:table-cell">
                         {expired ? (
                           <Badge variant="outline">
                             {copy.invitations.expired}
