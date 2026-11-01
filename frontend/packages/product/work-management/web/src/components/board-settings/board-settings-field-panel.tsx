@@ -241,7 +241,7 @@ export function FieldPanel({
   return (
     <aside
       aria-label={fillCopy(t.label, { name: field.name })}
-      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover"
+      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover max-md:absolute max-md:inset-0 max-md:z-10 max-md:w-full max-md:border-l-0"
     >
       <div className="flex items-center gap-2.5 border-b border-line px-[18px] py-3.5">
         <TypeMark icon={Icon} size="md" />
@@ -710,7 +710,7 @@ function OptionRow({
     <SortableRow
       id={option.id}
       handleLabel={`${copy.common.dragHandle}: ${option.name}`}
-      className="group flex h-[37px] items-center gap-[9px] border-t border-line bg-popover pr-2.5 pl-1.5 text-item-small first:h-9 first:border-t-0"
+      className="group flex h-[37px] items-center gap-[9px] border-t border-line bg-popover pr-2.5 pl-1.5 text-item-small first:h-9 first:border-t-0 max-md:h-11 max-md:first:h-11"
     >
       {(handle) => (
         <>
@@ -720,7 +720,7 @@ function OptionRow({
               <button
                 type="button"
                 aria-label={fillCopy(t.optionColor, { name: option.name })}
-                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:size-11"
               >
                 <ColorSquare color={option.color} />
               </button>
@@ -741,7 +741,7 @@ function OptionRow({
                       scope,
                     )
                   }
-                  className="size-5.5 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
+                  className="size-5.5 max-md:size-11 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
                   style={{ backgroundColor: color }}
                 />
               ))}
@@ -760,7 +760,7 @@ function OptionRow({
                 setName(option.name);
               }
             }}
-            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-item-small outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-item-small outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-11"
           />
           <span className="ml-auto shrink-0 text-metadata text-meta-foreground">
             {plural(t.optionCount_one, t.optionCount_other, option.itemCount)}
@@ -772,7 +772,7 @@ function OptionRow({
               onClick={() =>
                 void run(() => actions.deleteOption(field.id, option.id), scope)
               }
-              className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-meta-foreground opacity-0 outline-none group-hover:opacity-100 hover:text-danger-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-meta-foreground opacity-0 outline-none group-hover:opacity-100 hover:text-danger-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring max-md:size-11 max-md:opacity-100"
             >
               <X aria-hidden="true" className="size-3" />
             </button>

@@ -31,7 +31,7 @@ import type {
 
 /** 32 px button (mockup `.btn`). */
 const BTN =
-  "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[7px] border px-3 text-item-small font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0";
+  "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[7px] border px-3 max-md:h-11 text-item-small font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0";
 
 export const BUTTON_CLASS = {
   outline: cn(
@@ -160,7 +160,7 @@ export function SectionLine({
   note?: ReactNode;
 }) {
   return (
-    <div className="mt-[18px] mb-1.5 flex items-center gap-2 text-crumb font-semibold text-meta-foreground">
+    <div className="mt-[18px] mb-1.5 flex flex-wrap items-center gap-x-2 text-crumb font-semibold text-meta-foreground">
       {title}
       {count !== undefined ? (
         <span className="font-medium">{count}</span>
@@ -183,8 +183,8 @@ export function SectionHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-3.5 flex items-start gap-3">
-      <div>
+    <div className="mb-3.5 flex items-start gap-3 max-md:flex-wrap">
+      <div className="max-md:min-w-0 max-md:basis-full">
         <h2 id={id} className="m-0 text-[17px] leading-[1.45] font-[650]">
           {title}
         </h2>
