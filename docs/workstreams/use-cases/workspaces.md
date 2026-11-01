@@ -49,7 +49,7 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 | A | Workspace create | 4 | 1 | 0 | 3 | 0 | 0 | 0 |
 | B | Workspace read / resolve | 4 | 0 | 3 | 1 | 0 | 0 | 0 |
 | C | Workspace update | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
-| D | Workspace lifecycle transition | 6 | 0 | 2 | 1 | 2 | 0 | 1 |
+| D | Workspace lifecycle transition | 6 | 1 | 2 | 1 | 2 | 0 | 0 |
 | E | Membership read | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | F | Membership add / remove / change | 10 | 1 | 2 | 6 | 0 | 0 | 1 |
 | G | Invitation create | 9 | 1 | 3 | 5 | 0 | 0 | 0 |
@@ -60,7 +60,7 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 | L | Teams (added by this catalog) | 10 | 0 | 1 | 9 | 0 | 0 | 0 |
 | M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 7 | 0 | 0 | 0 |
 | N | Home, navigation, search and activity (added by this catalog) | 6 | 1 | 1 | 4 | 0 | 0 | 0 |
-| | Total | 91 | 5 | 14 | 60 | 9 | 0 | 3 |
+| | Total | 91 | 6 | 14 | 60 | 9 | 0 | 2 |
 
 No use case is DONE: none has a recorded owner check or a 1-px design diff. Nine use cases are HARDENING because a real spec runs them against the real backend: C01 (settings), D03 and D04 (`workspace-delete-restore.real.e2e.spec.ts`, delete, gone for a member, restore), E01 and E02 (members read), I01 (`workspace-isolation.real.e2e.spec.ts`, a switch) and H02, H05, H06 (`workspace-invitations-answer.real.e2e.spec.ts`, the invitee declines, is invited again and accepts from the rail list). Every other use case that the web app calls is INTEGRATING: the generated client reaches the real producer (`frontend/tooling/contracts/enabled-consumer-surface.ts`), mock end-to-end specs under `frontend/e2e/mock` exercise the screens, but no real spec does. Use cases with a producer and no frontend caller are IMPLEMENTING.
 
@@ -76,7 +76,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 6. **Entitlement and account checks are missing or fail open.** `AddMember` now requires an active Account membership (`Workspaces_Member_NotInAccount`) and a seat (`Workspaces_Member_SeatUnavailable`) (fixed for direct add); the seat gate on acceptance is an optional dependency (`IBillingSeatGate? = null`); creation has no plan limit (WSP-004, WSP-011). Gap: seat checks on direct add and on acceptance do not serialize admissions, so two concurrent admissions can exceed the seat limit by one; a separate use case.
 7. **Invitations are readable by Guests.** Fixed: `GetWorkspaceInvitations` needs `ViewMembers`, so a Guest gets 403 (section 82). Members still see invited emails; the list stays unbounded.
 8. **Account-wide policy sits in workspace settings.** `EnforceMfa` is stored and returned but enforced nowhere (WSP-012). J04 is BLOCKED.
-9. **Offboarding is incomplete.** Removing or leaving does not clean Space and Team entries (F09); SCIM provisioning has no principal (F10 BLOCKED); Account suspension has no effect on workspaces (D06 BLOCKED).
+9. **Offboarding is incomplete.** Removing or leaving does not clean Space and Team entries (F09); SCIM provisioning has no principal (F10 BLOCKED); Account suspension has no effect on workspaces (D06 DEFINED, decided 2026-11-01, not built).
 10. **Almost no real end-to-end proof.** Four real specs touch Workspaces (switch, members read and active-member refusal, invitee answers). Create, invite by form, leave, Space and Team flows rely on mock specs only. Twenty operations have no frontend caller (list in 1.3).
 
 ## 1.3 Defects in shipped code
@@ -150,7 +150,7 @@ Products compared and what was taken:
 | UC-WSP-D03 | Delete a workspace | D | Owner | yes | yes | none (no workspace danger-zone artboard; built from the archive pattern of the same page) | workspace-delete-restore.real.e2e.spec.ts | HARDENING | Owner check; an approved artboard; no workspace export exists (left out); no downstream reaction in the other contexts; open realtime sockets are not closed. |
 | UC-WSP-D04 | Restore a deleted workspace | D | Owner | yes | yes | none (the Recently deleted list reuses the archived-workspaces pattern) | workspace-delete-restore.real.e2e.spec.ts | HARDENING | Owner check; an approved artboard; a person with no workspace left cannot reach the list (account page lives inside a workspace). |
 | UC-WSP-D05 | Transfer workspace ownership | D | Current Owner | yes | no | none | none | IMPLEMENTING | Screen (members page or settings); artboard; step-up for the Owner. |
-| UC-WSP-D06 | React to Account suspension or closure | D | System | no | no | Final-States | none | BLOCKED | Decision with Accounts: effect of Suspended and Closed on workspace access. |
+| UC-WSP-D06 | React to Account suspension or closure | D | System | no | no | Final-States | none | DEFINED | decided 2026-11-01, not built (owner decision 7, §9 of the README): A suspended Account is read-only end to end: automation runs and outbound webhooks are skipped and recorded with reason account.suspended, public forms and share-link writes refuse, reads stay open, nothing is deleted. The effect of Closed is not covered by this decision. |
 | UC-WSP-E01 | List workspace members | E | Owner, Admin, Member | yes | yes | none for the roster (`Final-Members`, `Final-M-Members` are the department Members tab) | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; an approved roster artboard and its diff at 3 widths and both themes; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
 | UC-WSP-E02 | Read my own membership | E | Any active member, Guest included | yes | yes | none | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
 | UC-WSP-F01 | Add an existing user as a member directly | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | Kept for admin use; no screen. Account-membership and seat checks are merged; tests. |
@@ -456,12 +456,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: Account id, new status.
 - Output: Workspace operations are limited as policy says; Workspaces keeps its own lifecycle.
 - Main flow: 1. Accounts publishes the fact. 2. A Workspaces consumer applies the approved policy. 3. Members see a clear state.
-- No-op / rejection / concurrency / retry: BLOCKED: which operations stop (read-only, no read, no sign-in), who may still export, and the principal that applies it are not decided. Tenant-isolation choice.
+- No-op / rejection / concurrency / retry: Decided 2026-11-01 (see State); was open: which operations stop (read-only, no read, no sign-in), who may still export, and the principal that applies it are not decided. Tenant-isolation choice.
 - UI states: Read-only banner or unavailable page (I05).
 - Rules: [workspaces](../../product/workspaces.md) sections 7, 59; WSP-003; see [accounts](accounts.md).
 - Acceptance: Not testable until the policy exists.
 - Evidence: BE none · FE none · Design `Final-States` (generic) · Tests none · Real e2e none
-- State: BLOCKED — Decision with Accounts: effect of Suspended and Closed on workspace access.
+- State: DEFINED — decided 2026-11-01, not built (owner decision 7, §9 of the README): A suspended Account is read-only end to end: automation runs and outbound webhooks are skipped and recorded with reason account.suspended, public forms and share-link writes refuse, reads stay open, nothing is deleted. The effect of Closed is not covered by this decision.
 
 ## E. Membership read
 
@@ -1566,7 +1566,7 @@ For `docs/product/workspaces.md`:
 
 1. Section 6 and 60: "An archived workspace is read-only for every member and keeps its history. Owners and Admins see it in an Archived group of their workspace list and may unarchive it. Participant contexts reject writes with an archived reason and pause automation and integration sync."
 2. Section 19.1: replace "A Workspace that ... is archived or deleted never appears" with "an archived workspace appears only to its Owners and Admins, in an Archived group".
-3. Sections 61 to 63: record that delete stays BLOCKED until the retention window, the delete authority, the downstream workflow and the export are decided; state that today no deletion process exists.
+3. Sections 61 to 63: record the delete rule decided 2026-11-01 (Owner only, typed-name confirmation, 30-day recoverable window with export and restore, then a purge with an audit fact); state that today no purge exists.
 4. Section 73: "Workspace creation and invitation creation are idempotent requests keyed by the client's idempotency key. The same key and body return the first result; the same key with another body is refused."
 5. Section 70: "Creating a workspace takes a Billing slot and fails closed when Billing cannot answer."
 6. Section 26: "A second invitation for an email with a pending one answers 409 `workspaces.invitation.pending-exists`. A resend replaces the token at most once a minute. A pending invitation past its expiry reads as Expired."
@@ -1595,7 +1595,7 @@ For `docs/product/governance.md`: none beyond the permissions named in use cases
 | 31, 32 and 70 (Billing relation) | Billing owns entitlement; the gates are A03, F01, F04, H02. |
 | 33 to 38 (Work Management, Documents, Collaboration, Automation, Integrations, Analytics relations) | Owned by those contexts; Workspaces supplies facts (K15, I04). |
 | 57, 58 (workspace facts and events) | Emitted facts are listed in each Output line; no consumer-facing catalog is needed. |
-| 59 (Account lifecycle effects) | D06, BLOCKED. |
+| 59 (Account lifecycle effects) | D06, DEFINED (decided 2026-11-01). |
 | 80 (audit) | Governance owns audit evidence; see [governance.md](governance.md). |
 | 81 (activity) | N03 records the stub; Collaboration owns the feed. |
 | 82 (privacy) | Applied as rules inside E01, G03, K02, K14, L10. |

@@ -57,10 +57,10 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | C | COL-003 Comment authorization | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
 | D | COL-004 Comment activity/events | 14 | 5 | 1 | 5 | 3 | 0 | 0 |
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
-| F | COL-006 Target deletion/retention | 7 | 1 | 2 | 1 | 0 | 0 | 3 |
+| F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 7 | 6 | 0 | 0 |
 | H | COL-008 Collaboration hardening | 8 | 3 | 2 | 1 | 0 | 0 | 2 |
-| | Total | 85 | 17 | 8 | 36 | 17 | 0 | 7 |
+| | Total | 85 | 19 | 8 | 36 | 17 | 0 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -190,8 +190,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-F01 | Item deleted or archived: comments follow the item | F | System | partial | no | partial | no | IMPLEMENTING | No purge consumer; orphan Collaboration rows remain after purge; no test. |
 | UC-COL-F02 | Page removed or block deleted: comments stay as history | F | System | partial | yes | yes | no | IMPLEMENTING | Server side lifecycle missing; no real e2e. |
 | UC-COL-F03 | Purge attachment objects after retention | F | System (background job) | yes | no | no | no | INTEGRATING | Retention default and operator doc not checked here. |
-| UC-COL-F04 | A person is anonymized or leaves: history stays | F | System, on an Identity event | partial | partial | no | no | BLOCKED | Needs Identity's deletion and anonymization contract ([identity.md](identity.md)); privacy policy is not decided. |
-| UC-COL-F05 | Workspace deleted or archived: retention, export and purge | F | System | no | no | no | no | BLOCKED | Destructive data policy; needs the Workspaces deletion workflow ([workspaces.md](workspaces.md)). |
+| UC-COL-F04 | A person is anonymized or leaves: history stays | F | System, on an Identity event | partial | partial | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Identity deletion anonymizes the person (name "Deleted user", email replaced by a non-reversible hash); comments and audit keep the user id. |
+| UC-COL-F05 | Workspace deleted or archived: retention, export and purge | F | System | no | no | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): A deleted workspace follows the workspace rule (30-day recoverable window, then purge); comments are trashed 30 days, then purged. |
 | UC-COL-F06 | Notification retention | F | System (daily job) | no | no | no | no | DEFINED | Job missing; the table grows without bound. |
 | UC-COL-F07 | Restore a deleted comment | F | A moderator or the author within a window (undecided) | partial | no | no | no | BLOCKED | Depends on UC-COL-C02 (who may restore). |
 | UC-COL-G01 | List the comments of an item or page | G | ViewBoard on the item or view on the page | yes | yes | yes | partial | INTEGRATING | Unbounded read; page comments read under the ViewBoard action name instead of ViewPage (confirm the engine maps it). |
@@ -1043,7 +1043,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-027, Identity deletion (91); team COL-006 historical attribution; spec DCREQ050.
 - Acceptance: Given an erased user, then their comments remain readable with a placeholder author and no profile data.
 - Evidence: BE partial: GetCommentsQueryHandler shows "Unknown" when the actor cannot be resolved; no lifecycle rule · FE comment surface shows the name returned · Design none · Tests none · Real e2e none
-- State: BLOCKED — Needs Identity's deletion and anonymization contract ([identity.md](identity.md)); privacy policy is not decided.
+- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): Identity deletion anonymizes the person (name "Deleted user", email replaced by a non-reversible hash); comments and audit keep the user id.
 
 ### UC-COL-F05 Workspace deleted or archived: retention, export and purge
 - Capability: F, COL-006 Target deletion/retention
@@ -1057,7 +1057,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Workspace deletion (93); spec DCREQ213.
 - Acceptance: Not defined.
 - Evidence: BE none · FE none · Design none · Tests none · Real e2e none
-- State: BLOCKED — Destructive data policy; needs the Workspaces deletion workflow ([workspaces.md](workspaces.md)).
+- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): A deleted workspace follows the workspace rule (30-day recoverable window, then purge); comments are trashed 30 days, then purged.
 
 ### UC-COL-F06 Notification retention
 - Capability: F, COL-006 Target deletion/retention
