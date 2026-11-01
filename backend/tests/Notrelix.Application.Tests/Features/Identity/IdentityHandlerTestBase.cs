@@ -290,7 +290,7 @@ internal class TestAsyncQueryProvider<T> : IAsyncQueryProvider
     }
 }
 
-internal class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IQueryable<T>
+internal class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IOrderedQueryable<T>
 {
     private readonly IQueryable<T> _queryable;
 
@@ -314,7 +314,8 @@ internal class EfToLinqExpressionVisitor : ExpressionVisitor
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         if (node.Method.DeclaringType == typeof(EntityFrameworkQueryableExtensions) &&
-            node.Method.Name == nameof(EntityFrameworkQueryableExtensions.AsNoTracking))
+            (node.Method.Name == nameof(EntityFrameworkQueryableExtensions.AsNoTracking) ||
+             node.Method.Name == nameof(EntityFrameworkQueryableExtensions.Include)))
         {
             return Visit(node.Arguments[0]);
         }
