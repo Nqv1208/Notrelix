@@ -20,7 +20,6 @@ public class PermissionActionInventoryTests
     private static readonly string[] DocumentedUnconsumedActions =
     [
         "ArchiveWorkspace",
-        "RestoreWorkspace",
     ];
 
     private static readonly string[] HttpVerbs =

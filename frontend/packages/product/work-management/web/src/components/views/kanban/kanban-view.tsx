@@ -33,6 +33,7 @@ import {
   useUpdateCardUpdate,
   useUpdateFieldOption,
   type KanbanWriteFailure,
+  deletedItemOf,
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
@@ -1284,6 +1285,8 @@ export function KanbanSelectedItem({
     kind === "forbidden" ||
     (card !== undefined &&
       (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+  // A deleted card answers not-found with its own code to a person who reads the board: it says who deleted it.
+  const deleted = deletedItemOf(error);
   const failed = Boolean(error) && !gone;
   const lastShown = useRef<CardDetail | null>(null);
   if (card && !gone) lastShown.current = card;
@@ -1306,8 +1309,17 @@ export function KanbanSelectedItem({
     return (
       <CardPopupSurface
         status={
-          gone ? "gone" : failed ? "error" : isLoading ? "loading" : "loading"
+          deleted
+            ? "deleted"
+            : gone
+              ? "gone"
+              : failed
+                ? "error"
+                : isLoading
+                  ? "loading"
+                  : "loading"
         }
+        deletedBy={deleted?.byName ?? null}
         onClose={onClose}
         onRetry={refetch}
         onCloseAutoFocus={restore}

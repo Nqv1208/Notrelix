@@ -61,6 +61,7 @@ export const fontSizeDense = {
   "15p5": 0.96875,
   "19": 1.1875,
   "20": 1.25,
+  "22": 1.375,
   "26": 1.625,
 } as const;
 
@@ -467,6 +468,14 @@ export const textRoles = {
   "list-title": {
     size: "2xl",
     lineHeight: 1.875,
+    weight: 650,
+    letterSpacing: "-0.015em",
+    family: "sans",
+  },
+  /** Title of the account pages (Final-Account h1, 22px / 650, line 1.25). */
+  "account-title": {
+    size: "22",
+    lineHeight: 1.71875,
     weight: 650,
     letterSpacing: "-0.015em",
     family: "sans",

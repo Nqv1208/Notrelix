@@ -11,6 +11,8 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Workspace_CannotUpdateDescriptionArchived = "Workspaces_Workspace_CannotUpdateDescriptionArchived";
     public const string Workspaces_Workspace_CannotUpdateSettingsArchived = "Workspaces_Workspace_CannotUpdateSettingsArchived";
     public const string Workspaces_Workspace_CannotUnarchiveNonArchived = "Workspaces_Workspace_CannotUnarchiveNonArchived";
+    public const string Workspaces_Workspace_CannotDeletePersonal = "Workspaces_Workspace_CannotDeletePersonal";
+    public const string Workspaces_Workspace_RestoreWindowExpired = "Workspaces_Workspace_RestoreWindowExpired";
     public const string Workspaces_Workspace_SlugTooShort = "Workspaces_Workspace_SlugTooShort";
     public const string Workspaces_Workspace_SlugTooLong = "Workspaces_Workspace_SlugTooLong";
     public const string Workspaces_Workspace_SlugReserved = "Workspaces_Workspace_SlugReserved";

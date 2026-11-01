@@ -85,6 +85,16 @@ export const en = {
     confirmAction: "Archive workspace",
     archiving: "Archiving…",
     cancel: "Cancel",
+    deleteTitle: "Delete this workspace",
+    deleteDescription:
+      "Deleting {{workspace}} cuts every member off at once. Its content is kept for 30 days, and you can restore it from Recently deleted in your account.",
+    deleteAction: "Delete workspace",
+    deleteConfirmTitle: "Delete {{workspace}}?",
+    deleteConfirmDescription:
+      "Every member loses access now, including you. After 30 days the workspace and everything in it is erased for good. Type the workspace name to confirm.",
+    deleteConfirmAction: "Delete workspace",
+    deleting: "Deleting…",
+    deletePersonal: "A personal workspace can't be deleted.",
   },
   toasts: {
     profileSaved: "Profile saved.",
@@ -92,6 +102,12 @@ export const en = {
     saveFailed: "Your changes weren't saved.",
     archived: "{{workspace}} was archived.",
     archiveFailed: "{{workspace}} wasn't archived.",
+    deleted:
+      "{{workspace}} was deleted. You can restore it from Recently deleted for 30 days.",
+    deleteFailed: "{{workspace}} wasn't deleted.",
+    deleteConflict:
+      "{{workspace}} changed since you opened this page. Reload and try again.",
+    deletePersonal: "A personal workspace can't be deleted.",
     forbidden: "You don't have permission to change these settings.",
     network: "The server couldn't be reached. Nothing was changed; try again.",
     unknown:
@@ -186,6 +202,16 @@ export const vi: WorkspaceSettingsCopy = {
     confirmAction: "Lưu trữ không gian làm việc",
     archiving: "Đang lưu trữ…",
     cancel: "Hủy",
+    deleteTitle: "Xóa không gian làm việc này",
+    deleteDescription:
+      "Xóa {{workspace}} sẽ ngắt quyền của mọi thành viên ngay lập tức. Nội dung được giữ 30 ngày và bạn có thể khôi phục trong mục Đã xóa gần đây của tài khoản.",
+    deleteAction: "Xóa không gian làm việc",
+    deleteConfirmTitle: "Xóa {{workspace}}?",
+    deleteConfirmDescription:
+      "Mọi thành viên, kể cả bạn, mất quyền truy cập ngay bây giờ. Sau 30 ngày, không gian làm việc và mọi thứ trong đó bị xóa vĩnh viễn. Nhập tên không gian làm việc để xác nhận.",
+    deleteConfirmAction: "Xóa không gian làm việc",
+    deleting: "Đang xóa…",
+    deletePersonal: "Không thể xóa không gian làm việc cá nhân.",
   },
   toasts: {
     profileSaved: "Đã lưu hồ sơ.",
@@ -193,6 +219,12 @@ export const vi: WorkspaceSettingsCopy = {
     saveFailed: "Chưa lưu được thay đổi.",
     archived: "Đã lưu trữ {{workspace}}.",
     archiveFailed: "Chưa lưu trữ được {{workspace}}.",
+    deleted:
+      "Đã xóa {{workspace}}. Bạn có thể khôi phục trong mục Đã xóa gần đây trong 30 ngày.",
+    deleteFailed: "Chưa xóa được {{workspace}}.",
+    deleteConflict:
+      "{{workspace}} đã thay đổi từ khi bạn mở trang này. Hãy tải lại rồi thử lại.",
+    deletePersonal: "Không thể xóa không gian làm việc cá nhân.",
     forbidden: "Bạn không có quyền thay đổi các cài đặt này.",
     network: "Không kết nối được máy chủ. Chưa có gì thay đổi; hãy thử lại.",
     unknown: "Máy chủ gặp sự cố. Chưa có gì thay đổi; hãy thử lại.",

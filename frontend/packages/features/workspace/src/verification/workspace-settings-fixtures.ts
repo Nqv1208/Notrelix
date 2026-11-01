@@ -34,6 +34,7 @@ type SettingsScenario = Omit<
   | "onSaveProfile"
   | "onSaveDefaults"
   | "onArchive"
+  | "onDelete"
   | "onReload"
   | "onRetryDefaults"
 >;
@@ -57,7 +58,20 @@ export function settingsDefaultScenario(
     profileStatus: { state: "idle" },
     defaultsStatus: { state: "idle" },
     archiving: false,
+    canDelete: true,
+    isPersonal: false,
+    deleting: false,
   };
+}
+
+/** An admin who is not the Owner: the delete action is not offered at all. */
+export function settingsAdminScenario(): SettingsScenario {
+  return { ...settingsDefaultScenario(), canDelete: false };
+}
+
+/** A personal workspace: the Owner sees the action explained and off. */
+export function settingsPersonalScenario(): SettingsScenario {
+  return { ...settingsDefaultScenario(), isPersonal: true };
 }
 
 export function settingsLoadingScenario(): SettingsScenario {

@@ -58,6 +58,7 @@ function myWorkspaces(store: MockStore) {
   const user = store.getCurrentUser();
   const mine = store.getWorkspaces().filter((workspace) => {
     if (!store.isCurrentMemberOf(workspace.id)) return false;
+    if (store.isWorkspaceDeleted(workspace.id)) return false;
     if (!store.isWorkspaceArchived(workspace.id)) return true;
     const role = store.getCurrentMemberRole(workspace.id);
     return role === "owner" || role === "admin";

@@ -49,7 +49,7 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 | A | Workspace create | 4 | 1 | 0 | 3 | 0 | 0 | 0 |
 | B | Workspace read / resolve | 4 | 0 | 3 | 1 | 0 | 0 | 0 |
 | C | Workspace update | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
-| D | Workspace lifecycle transition | 6 | 3 | 2 | 1 | 0 | 0 | 0 |
+| D | Workspace lifecycle transition | 6 | 1 | 2 | 1 | 2 | 0 | 0 |
 | E | Membership read | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
 | F | Membership add / remove / change | 10 | 1 | 2 | 6 | 0 | 0 | 1 |
 | G | Invitation create | 9 | 1 | 3 | 5 | 0 | 0 | 0 |
@@ -60,15 +60,15 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 | L | Teams (added by this catalog) | 10 | 0 | 1 | 9 | 0 | 0 | 0 |
 | M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 7 | 0 | 0 | 0 |
 | N | Home, navigation, search and activity (added by this catalog) | 6 | 1 | 1 | 4 | 0 | 0 | 0 |
-| | Total | 91 | 8 | 14 | 60 | 7 | 0 | 2 |
+| | Total | 91 | 6 | 14 | 60 | 9 | 0 | 2 |
 
-No use case is DONE: none has a recorded owner check or a 1-px design diff. Seven use cases are HARDENING because a real spec runs them against the real backend: C01 (settings), E01 and E02 (members read), I01 (`workspace-isolation.real.e2e.spec.ts`, a switch) and H02, H05, H06 (`workspace-invitations-answer.real.e2e.spec.ts`, the invitee declines, is invited again and accepts from the rail list). Every other use case that the web app calls is INTEGRATING: the generated client reaches the real producer (`frontend/tooling/contracts/enabled-consumer-surface.ts`), mock end-to-end specs under `frontend/e2e/mock` exercise the screens, but no real spec does. Use cases with a producer and no frontend caller are IMPLEMENTING.
+No use case is DONE: none has a recorded owner check or a 1-px design diff. Nine use cases are HARDENING because a real spec runs them against the real backend: C01 (settings), D03 and D04 (`workspace-delete-restore.real.e2e.spec.ts`, delete, gone for a member, restore), E01 and E02 (members read), I01 (`workspace-isolation.real.e2e.spec.ts`, a switch) and H02, H05, H06 (`workspace-invitations-answer.real.e2e.spec.ts`, the invitee declines, is invited again and accepts from the rail list). Every other use case that the web app calls is INTEGRATING: the generated client reaches the real producer (`frontend/tooling/contracts/enabled-consumer-surface.ts`), mock end-to-end specs under `frontend/e2e/mock` exercise the screens, but no real spec does. Use cases with a producer and no frontend caller are IMPLEMENTING.
 
 The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Members, Space and Command at 1440 px and some narrower sizes. No Workspaces screen has a recorded diff at 1440, 1024 and 390 px in both themes, so Design is never DONE.
 
 ## 1.2 The ten most important gaps
 
-1. **No deletion process.** `DeleteWorkspace` and `RestoreWorkspace` only flip a marker. There is no retention window, no purge, no export and no downstream reaction: lifecycle events go to `WorkspacesStubConsumers`. Any user with `ManageWorkspace` can delete. D03 and D04 are DEFINED: the data-destruction rule is decided 2026-11-01 (README §9, decision 3) and not built.
+1. **Deletion is built, but its downstream reaction is not.** Delete is Owner-only with a typed-name confirmation, a deleted workspace is NotFound to everyone, it is restorable by its Owner for 30 days from Recently deleted, and a purge job erases its data after that and writes an audit fact (D03, D04, owner decision 2026-11-01). Still open: no workspace export exists, the other contexts only have stub consumers for the lifecycle events (`WorkspacesStubConsumers`), provider-side integration cleanup and open realtime sockets are not handled.
 2. **Archive is a dead end in the UI.** An archived workspace leaves every list, nothing calls `UnarchiveWorkspace`, and the settings copy says every member loses access while the product says archive keeps history readable (section 60).
 3. **Competing writes without an expected version.** Member role, suspend, activate and remove; invitation role, resend and revoke; Space rename, description, type, visibility, archive, delete and restore; Team restore. Two admins can silently overwrite each other (NRX-011).
 4. **No retry safety on creation.** `CreateWorkspace` and `InviteMember` are not idempotent requests; a double submit creates `acme` and `acme-3f9a1c`, or a second invitation attempt fails with unstable text.
@@ -120,7 +120,7 @@ Products compared and what was taken:
 | Table-stakes feature | Product doc | This catalog |
 |---|---|---|
 | Ownership transfer, single accountable owner | Sections 17, 18 | D05 |
-| Typed-name confirmation and a defined restore window for delete | Section 61 to 63 (open) | D03, D04 DEFINED (decided 2026-11-01) |
+| Typed-name confirmation and a defined restore window for delete | Section 61 to 63 (decided 2026-11-01, built) | D03, D04 HARDENING |
 | Deactivate and restore a member without losing history | Sections 20, 21 | F03, F04, F05 |
 | Reassign a removed person's work | Not stated | Not covered: Work Management owns it (Part 6) |
 | Clean a person's access when they leave | Section 19 (open) | F09 |
@@ -147,8 +147,8 @@ Products compared and what was taken:
 | UC-WSP-C02 | Change the workspace address (enterprise baseline) | C | Owner, Admin | no | no | none | none | DEFINED | Command, endpoint, event, settings field. |
 | UC-WSP-D01 | Archive a workspace | D | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | UI copy says every member loses access, the product says read-only (fix copy); participant contexts only have stub consumers (`WorkspacesStubConsumers`); real e2e. |
 | UC-WSP-D02 | Unarchive a workspace | D | Owner, Admin | yes | no | none | none | IMPLEMENTING | Frontend entry for an archived workspace (it vanishes from lists); banner; copy. |
-| UC-WSP-D03 | Delete a workspace | D | Owner | yes | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Owner only, typed-name confirmation; members lose access at once; the Owner can export and restore for 30 days; a purge job hard-deletes after 30 days with an audit fact. Today any ManageWorkspace holder can delete and there is no window or purge. |
-| UC-WSP-D04 | Restore a deleted workspace | D | Owner | yes | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): The Owner restores within the 30-day window (same rule as D03). |
+| UC-WSP-D03 | Delete a workspace | D | Owner | yes | yes | none (no workspace danger-zone artboard; built from the archive pattern of the same page) | workspace-delete-restore.real.e2e.spec.ts | HARDENING | Owner check; an approved artboard; no workspace export exists (left out); no downstream reaction in the other contexts; open realtime sockets are not closed. |
+| UC-WSP-D04 | Restore a deleted workspace | D | Owner | yes | yes | none (the Recently deleted list reuses the archived-workspaces pattern) | workspace-delete-restore.real.e2e.spec.ts | HARDENING | Owner check; an approved artboard; a person with no workspace left cannot reach the list (account page lives inside a workspace). |
 | UC-WSP-D05 | Transfer workspace ownership | D | Current Owner | yes | no | none | none | IMPLEMENTING | Screen (members page or settings); artboard; step-up for the Owner. |
 | UC-WSP-D06 | React to Account suspension or closure | D | System | no | no | Final-States | none | DEFINED | decided 2026-11-01, not built (owner decision 7, §9 of the README): A suspended Account is read-only end to end: automation runs and outbound webhooks are skipped and recorded with reason account.suspended, public forms and share-link writes refuse, reads stay open, nothing is deleted. The effect of Closed is not covered by this decision. |
 | UC-WSP-E01 | List workspace members | E | Owner, Admin, Member | yes | yes | none for the roster (`Final-Members`, `Final-M-Members` are the department Members tab) | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; an approved roster artboard and its diff at 3 widths and both themes; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
@@ -409,31 +409,31 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 
 ### UC-WSP-D03 Delete a workspace
 - Capability: D Workspace lifecycle transition
-- Actors and permission: Owner (decision needed: Admin too?)
-- Preconditions: Workspace exists; caller holds the current version.
-- Input: `expectedVersion`.
-- Output: Today: a soft-delete marker, version +1, `WorkspaceDeleted`. No retention window, no purge, no downstream process.
-- Main flow: 1. `DELETE /api/v1/workspaces/{id}?expectedVersion=`. 2. Domain marks it deleted. 3. Fact is published to stub consumers.
-- No-op / rejection / concurrency / retry: Decided 2026-11-01 (see State); the questions that were open: who may delete (today `ManageWorkspace`, so an Admin can), the restore window, what happens to members, Boards, Documents, Collaboration, Automation, Integrations, Billing association, Analytics, audit and export (section 61), and that deletion is a process, not a cascade (WSP-018).
-- UI states: Typed-name confirmation, consequence list, pending, success; deleted state for members.
-- Rules: [workspaces](../../product/workspaces.md) sections 61, 62, 64; WSP-018; WGREQ006; NRX-011.
-- Acceptance: Not testable until the retention process is decided.
-- Evidence: BE `DELETE /api/v1/workspaces/{id}`, `DeleteWorkspaceCommandHandler`, `WorkspaceDeletionAtomicityTests` · FE none · Design none · Tests `WorkspaceLifecycleTests` · Real e2e none
-- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): Owner only, typed-name confirmation; members lose access at once; the Owner can export and restore for 30 days; a purge job hard-deletes after 30 days with an audit fact. Today any ManageWorkspace holder can delete and there is no window or purge.
+- Actors and permission: Owner only (`DeleteWorkspace`, Owner-only in the engine: no rule, grant, custom role or level can lend it). An Admin, a Member and a Guest of an active workspace get 403.
+- Preconditions: Workspace exists, is not personal and is not deleted; caller holds the current version.
+- Input: `expectedVersion` in the query.
+- Output: 204. The workspace carries `deleted_at`, `deleted_by`, version +1, `WorkspaceDeleted`, and a Critical audit entry `DeleteWorkspace`. Its content is kept for 30 days.
+- Main flow: 1. `DELETE /api/v1/workspaces/{id}?expectedVersion=`. 2. The engine checks the Owner role. 3. `Workspace.Delete` marks it. 4. From the commit on, every request on the workspace, in its Workspace scope or on a resource inside it (reads, writes, search, realtime subscription), is the identical NotFound for its Owner, Admins, Members, Guests and strangers; the database policy shows the row to its Owner only. 5. After 30 days the purge job removes its data (D04 describes the window).
+- No-op / rejection / concurrency / retry: A repeat delete is the domain no-op (no version bump, no event, no second audit entry), though once deleted the pipeline answers NotFound first. A personal workspace is refused `Workspaces_Workspace_CannotDeletePersonal` (400). A stale version is 412 `common.precondition-failed` and nothing changes. Not a member or not an Owner of a deleted workspace: NotFound.
+- UI states: Settings, Danger zone, second card "Delete this workspace" (shown to the Owner only; disabled with a reason on a personal workspace); destructive confirmation dialog with the consequence text and a typed workspace name (confirm stays off until the name matches exactly); pending ("Deleting..."); success toast and the person leaves the workspace (the switcher and rail drop it at once, its cached answers are removed); conflict and failure toasts. vi and en.
+- Rules: [workspaces](../../product/workspaces.md) sections 61, 62, 64; WSP-018; WGREQ006; NRX-003, NRX-004, NRX-011; owner decision 2026-11-01 (delete is a process: members cut at once, content kept, restorable 30 days, then purged).
+- Acceptance: Given an Owner and a Member of a workspace, When the Owner deletes it with its name typed, Then the Member's reads of it, its boards and its list entry answer NotFound at once and the Owner finds it in Recently deleted with 30 days left. Given an Admin, Then delete is 403. Given a personal workspace, Then delete is refused with its rule code. Given a stale version, Then 412.
+- Evidence: BE `DELETE /api/v1/workspaces/{id}`, `DeleteWorkspaceCommandHandler`, `Workspace.Delete` and `RestoreWindow`, `AccessPolicyEngine` (Owner-only rule and the deleted-workspace NotFound), `028_deleted_workspaces.sql` (`ops.is_workspace_owner`, the narrowed `workspace.workspaces` policies), `DeletedWorkspacePurger` (the 30-day purge) · FE `workspace-settings-surface.tsx` (`DangerFlow`), `settings.tsx`, `use-workspace-settings-mutations.ts` (`remove`) · Design none: no workspace danger-zone artboard exists; built from the archive card of the same page · Tests `WorkspaceDeletionAtomicityTests` (personal, window, version, no-op), `DeleteWorkspaceCommandHandlerTests`, `DeletedWorkspaceAccessTests` (Application, every role and scope), `DeletedWorkspaceIntegrationTests` (real PostgreSQL under the application and worker logins: row hidden from members, strangers and another tenant, a non-Owner cannot delete even with raw SQL, stale version, personal refusal), `DeletedWorkspacePipelineIntegrationTests` (real pipeline: identical NotFound for Owner, Admin and Member on a workspace, its boards and a delete repeat), `workspace-settings.interaction.component.test.tsx` · Real e2e `workspace-delete-restore.real.e2e.spec.ts`
+- State: HARDENING — Owner check and an approved artboard (none exists); no workspace export exists, so none is offered in the 30 days; the other contexts have no reaction to `WorkspaceDeleted` (stub consumers); provider-side cleanup of integrations is not done; sockets already open when the workspace is deleted are not closed (new subscriptions are refused).
 
 ### UC-WSP-D04 Restore a deleted workspace
 - Capability: D Workspace lifecycle transition
-- Actors and permission: Owner (decision needed)
-- Preconditions: Workspace deleted inside the restore window.
-- Input: `expectedVersion`.
-- Output: Workspace not deleted again; members and child access return as defined.
-- Main flow: 1. `POST /api/v1/workspaces/{id}/restore`. 2. Domain clears the delete marker. 3. Fact published.
-- No-op / rejection / concurrency / retry: Decided with D03 on 2026-11-01 (see State); was open: window, membership restoration, child-resource access, what stays irreversible (section 63). Today a deleted workspace is NotFound to everyone, so nobody can call restore through the normal pipeline.
-- UI states: Restore entry for Owner; success; expired-window state.
-- Rules: [workspaces](../../product/workspaces.md) section 63; WGREQ006.
-- Acceptance: Not testable until D03 is decided.
-- Evidence: BE `POST /api/v1/workspaces/{id}/restore`, `RestoreWorkspaceCommandHandler` · FE none · Design none · Tests `RestoreWorkspaceCommandHandlerTests`, `WorkspaceLifecycleTests` · Real e2e none
-- State: DEFINED — decided 2026-11-01, not built (owner decision 3, §9 of the README): The Owner restores within the 30-day window (same rule as D03).
+- Actors and permission: The workspace Owner (`RestoreWorkspace`, Owner-only like delete). The Owner finds it in the account-level Recently deleted list (`GET /api/v1/accounts/{accountId}/workspaces/deleted`, rows of the Account the person owns, deleted inside the last 30 days, newest first); anyone else gets an empty list.
+- Preconditions: Workspace deleted less than 30 days ago (`Workspace.RestoreWindow`); caller holds the version the list carried.
+- Input: `expectedVersion` in the body.
+- Output: 204. The delete marker is cleared, version +1, `WorkspaceRestored` and a Warning audit entry `RestoreWorkspace`. Status (Active or Archived), memberships, grants, Spaces, Boards and pages are exactly as they were: nothing was touched at delete.
+- Main flow: 1. Account page "Your workspaces", Recently deleted. 2. `POST /api/v1/workspaces/{id}/restore`. 3. The request marker `IWorkspaceReachesDeletedRequest` lets the Owner past the deleted-workspace NotFound; everyone else still gets it. 4. `Workspace.Restore` checks the window and clears the marker.
+- No-op / rejection / concurrency / retry: Restoring an active workspace is the domain no-op (no version bump, no event, no audit). After the window the rule `Workspaces_Workspace_RestoreWindowExpired` refuses it (the entry is gone from the list at the same instant). A stale version is 412. A non-Owner, or a stranger, gets NotFound whether the workspace is deleted or not. Purge and restore race on the row lock: the purge claims the row `FOR UPDATE SKIP LOCKED`, so a restore waits for it and then finds NotFound.
+- UI states: Recently deleted section on the account workspaces page (only when there are rows; a read failure shows a retry), each row with name, deleted date and the days left ("1 day left" at the last), Restore button; success notice; refusal text; vi and en.
+- Rules: [workspaces](../../product/workspaces.md) section 63; WGREQ006; NRX-003, NRX-011; owner decision 2026-11-01.
+- Acceptance: Given a deleted workspace inside the window, When its Owner restores it, Then its Members read it, its boards and its list entry again and it leaves Recently deleted. Given 31 days, Then restore is refused with its rule code. Given an Admin or a Member, Then restore is NotFound.
+- Evidence: BE `POST /api/v1/workspaces/{id}/restore`, `RestoreWorkspaceCommandHandler`, `GET /api/v1/accounts/{accountId}/workspaces/deleted`, `GetDeletedWorkspacesQueryHandler`, `Workspace.Restore` · FE `account-workspaces-surface.tsx` (`DeletedCard`), `use-account-workspaces.ts` (`deleted`, `restore`), `account.service.ts` (`listDeletedWorkspaces`, `restoreWorkspace`, the Account named by the bootstrap) · Design none: no artboard for it; reuses the archived-workspaces group · Tests `WorkspaceDeletionAtomicityTests`, `DeletedWorkspaceIntegrationTests` (round trip with RLS, expired window, the Recently deleted list for an Owner, a member and another tenant), `DeletedWorkspacePipelineIntegrationTests` (restore by the Owner only, then every request answers again), `account-workspaces.interaction.component.test.tsx`, `account-deleted-workspaces.unit.test.ts` · Real e2e `workspace-delete-restore.real.e2e.spec.ts`
+- State: HARDENING — Owner check and an approved artboard (none exists); a person left with no workspace cannot reach the page (the account page lives inside a workspace); no story and no design diff for the new rows.
 
 ### UC-WSP-D05 Transfer workspace ownership
 - Capability: D Workspace lifecycle transition
@@ -1600,7 +1600,7 @@ For `docs/product/governance.md`: none beyond the permissions named in use cases
 | 81 (activity) | N03 records the stub; Collaboration owns the feed. |
 | 82 (privacy) | Applied as rules inside E01, G03, K02, K14, L10. |
 | 87 (service extraction) | Architecture, not a use case. |
-| 63 (restore details) | D04, DEFINED with D03 (decided 2026-11-01). |
+| 63 (restore details) | D04, HARDENING (restore window 30 days, Owner only; owner decision 2026-11-01). |
 | 21, 22 (suspend member, guests) | F03 and G07. Guest vocabulary stays in Governance. |
 | Reassigning a removed person's work (enterprise baseline) | Work Management owns assignment; request it in [work-management.md](work-management.md). |
 | "Suspended" as a workspace state (section 6) | The product says "where product defines them"; none is defined, only Active and Archived exist. |

@@ -58,6 +58,10 @@ test("a signed-in person reads only their own facts, and a revoked session ends 
   await expect(page).toHaveURL(/\/sign-in\?/);
   expect(new URL(page.url()).searchParams.get("redirect")).toBe(hereAddress);
   await expect(page.getByLabel("Email")).toBeVisible();
+  // The page says why: the session ended, calmly, in words.
+  await expect(
+    page.getByRole("status").filter({ hasText: "Your session ended" }),
+  ).toBeVisible();
 
   // Signing in again returns to the page the person was on.
   await page.getByLabel("Email").fill(realUsers.admin.email);
@@ -70,6 +74,86 @@ test("a signed-in person reads only their own facts, and a revoked session ends 
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(here.origin + hereAddress);
   expect((await page.request.get(`${apiUrl}/auth/me`)).status()).toBe(200);
+});
+
+test("the device row signs another device out at once; another person's or an unknown session id reads as not found and changes nothing", async ({
+  page,
+  browser,
+}, testInfo) => {
+  await signIn(page, realUsers.workspaceAdmin);
+  const workspaceId = /\/workspaces\/([^/]+)/.exec(page.url())![1];
+
+  const otherContext = await browser.newContext({
+    baseURL: testInfo.project.use.baseURL,
+  });
+  try {
+    const otherDevice = await otherContext.newPage();
+    await signIn(otherDevice, realUsers.workspaceAdmin);
+    expect((await otherDevice.request.get(`${apiUrl}/auth/me`)).status()).toBe(
+      200,
+    );
+
+    // Main flow: the person chooses Sign out on the other device's row.
+    await page.goto(`/workspaces/${workspaceId}/account/security`);
+    const otherRows = page.locator(
+      'button[aria-label^="Sign out "]:not([aria-label*="(this device)"])',
+    );
+    await expect(otherRows.first()).toBeVisible();
+    const before = await otherRows.count();
+    await otherRows.first().click();
+    await expect(page.getByText("Signed out.")).toBeVisible();
+    await expect(otherRows).toHaveCount(before - 1);
+
+    // The ended device's next call is refused.
+    await expect
+      .poll(async () =>
+        (await otherDevice.request.get(`${apiUrl}/auth/me`)).status(),
+      )
+      .toBe(401);
+    // This device stays signed in.
+    expect((await page.request.get(`${apiUrl}/auth/me`)).status()).toBe(200);
+  } finally {
+    await otherContext.close();
+  }
+
+  // Rejection: another person's session id answers the same 404 as an id that never existed,
+  // and the other person's session stays active.
+  const mine = await apiRead<{ id: string; isCurrent: boolean }[]>(
+    page,
+    "/auth/sessions",
+  );
+  const foreignContext = await browser.newContext({
+    baseURL: testInfo.project.use.baseURL,
+  });
+  try {
+    const foreign = await foreignContext.newPage();
+    await signIn(foreign, realUsers.admin);
+    const foreignSessions = await apiRead<{ id: string; isCurrent: boolean }[]>(
+      foreign,
+      "/auth/sessions",
+    );
+    const foreignId = foreignSessions.find((entry) => entry.isCurrent)!.id;
+    expect(mine.some((entry) => entry.id === foreignId)).toBe(false);
+
+    const otherPersons = await apiWrite(
+      page,
+      "POST",
+      `/auth/sessions/${foreignId}/revoke`,
+    );
+    const unknown = await apiWrite(
+      page,
+      "POST",
+      `/auth/sessions/${randomUUID()}/revoke`,
+    );
+    expect(otherPersons.status).toBe(404);
+    expect(unknown.status).toBe(404);
+    expect(otherPersons.data).toMatchObject({
+      errorCode: (unknown.data as { errorCode: string }).errorCode,
+    });
+    expect((await foreign.request.get(`${apiUrl}/auth/me`)).status()).toBe(200);
+  } finally {
+    await foreignContext.close();
+  }
 });
 
 test("an unsafe request without the CSRF token is refused and changes nothing, and a stale token is recovered once", async ({

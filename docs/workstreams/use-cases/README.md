@@ -110,7 +110,7 @@ A use case is DONE only when all of these hold on the same commit (`docs/deliver
 
 1. **Backend**: the server authorizes every actor and returns the identical NotFound to people without access. Competing writes carry the expected version, and a stale write changes nothing. A retry with the same idempotency key has no second effect. A semantic no-op bumps no version and emits nothing. Tests cover success, each rejection, the no-op and the conflict; tenant-scoped data has a cross-tenant negative test.
 2. **Frontend**: the UI uses the generated API client. Every applicable state is built: loading, empty, success, validation error, permission denied, read-only, conflict, pending, offline and destructive confirmation. Optimistic writes roll back on rejection. Keyboard and screen reader complete the flow, and axe reports no serious violation.
-3. **Design**: an approved artboard exists for each screen and state, and the build matches it within 1 px at 1440, 1024 and 390 px, in light and dark.
+3. **Design**: every screen and state that has an artboard matches it within 1 px, proven by a box-tree comparison, at each width and theme the artboard draws. A state or width the canvas does not draw is built from design-system components and tokens on the pattern of the nearest drawn state, and the acceptance screenshots at 1440, 1024 and 390 px in light and dark show no overflow, clipping or squeezed columns, 44 px targets at 390 px and no serious axe violation. The Evidence line names which states were measured and which were reviewed.
 4. **End to end**: one journey per use case runs against the real backend and covers the main flow and one rejection.
 5. **Lead acceptance**: the lead, or an acceptance agent that did not build the use case, runs the use case on the development stack against every acceptance line and records the evidence (the real e2e spec and its pass count, screenshots or the box-tree report) in the use case's Evidence line. The owner tests released versions as a user and files what they find as defects, not as a gate.
 
@@ -118,23 +118,23 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 
 ## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01; Accounts, Workspaces, Documents, Collaboration and Work Management adjusted again 2026-11-01 for decisions 3 and 7 and the Work Management index fixes)
 
-| Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | BLOCKED |
-|---|---|---|---|---|---|---|
-| Accounts | 42 | 16 | 22 | 2 | 2 | 0 |
-| Identity | 61 | 6 | 12 | 25 | 14 | 4 |
-| Workspaces | 91 | 8 | 14 | 60 | 7 | 2 |
-| Governance | 75 | 15 | 19 | 14 | 21 | 6 |
-| Work Management | 171 | 11 | 1 | 15 | 143 | 1 |
-| Documents | 82 | 12 | 4 | 43 | 20 | 3 |
-| Collaboration | 85 | 19 | 7 | 37 | 17 | 5 |
-| Automation | 79 | 11 | 26 | 21 | 20 | 1 |
-| Integrations | 55 | 13 | 20 | 11 | 11 | 0 |
-| Billing | 99 | 56 | 27 | 8 | 7 | 1 |
-| Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
-| Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **959** | **199** | **207** | **245** | **282** | **26** |
+| Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
+|---|---|---|---|---|---|---|---|
+| Accounts | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
+| Identity | 61 | 6 | 12 | 25 | 8 | 6 | 4 |
+| Workspaces | 91 | 6 | 14 | 60 | 9 | 0 | 2 |
+| Governance | 75 | 15 | 19 | 14 | 21 | 0 | 6 |
+| Work Management | 171 | 10 | 1 | 13 | 145 | 1 | 1 |
+| Documents | 82 | 12 | 4 | 43 | 20 | 0 | 3 |
+| Collaboration | 85 | 19 | 7 | 37 | 17 | 0 | 5 |
+| Automation | 79 | 11 | 26 | 21 | 20 | 0 | 1 |
+| Integrations | 55 | 13 | 20 | 11 | 11 | 0 | 0 |
+| Billing | 99 | 56 | 27 | 8 | 7 | 0 | 1 |
+| Analytics | 61 | 28 | 22 | 5 | 4 | 0 | 2 |
+| Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
+| **Total** | **959** | **196** | **207** | **243** | **280** | **7** | **26** |
 
-No use case is DONE: none has a recorded lead acceptance or design-fidelity proof.
+Seven use cases are DONE, each accepted by an acceptance agent that did not build it and recorded in its Evidence line: Identity C03, D02, H01, J03, K04, K05 and Work Management A24 (2026-11-01). Identity H02 was rejected for DONE on a concurrency gap and K03 on the missing provider step-up screen (see their State lines).
 
 Patterns that repeat across contexts, each detailed with file paths in the context files:
 
@@ -153,7 +153,7 @@ These block use cases in several contexts. They are security-principal, tenant o
 |---|---|---|
 | 1 | Platform operator principal: decided and built 2026-10-31 (a separate account, its own sign-in scheme and database login, an audit row per action; UC-ACC-D01, D02 HARDENING, UC-BIL-A03, D02, D03, R09 INTEGRATING). Still open: what the customer sees as the audit actor, consent-based support access, operator MFA | UC-BIL-L05, UC-ANA-X02 |
 | 2 | Anonymous principal and abuse controls (rate limit, captcha, spam handling) for public forms, share links, public pages and public comments | UC-WM-N06, UC-GOV-G03, UC-GOV-G05, UC-DCT-A15, UC-COL-H08 |
-| 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization. Decided 2026-11-01: one rule everywhere, a 30-day recoverable window, then purge. Workspace delete is Owner-only with typed-name confirmation, members lose access at once, the Owner can restore for 30 days and export during the window, and a purge job hard-deletes after 30 days with an audit fact. Account delete: the account Owner, takes its workspaces, same window. Pages and comments: trash 30 days, then purge. Identity deletion anonymizes (name "Deleted user", email replaced by a non-reversible hash; content and audit keep the user id). Not built | none now; was UC-ACC-D05, UC-WSP-D03, UC-WSP-D04, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05, now DEFINED |
+| 3 | Deletion and retention: account, workspace and page deletion windows, export before deletion, identity anonymization. Decided 2026-11-01: one rule everywhere, a 30-day recoverable window, then purge. Workspace delete is Owner-only with typed-name confirmation, members lose access at once, the Owner can restore for 30 days and export during the window, and a purge job hard-deletes after 30 days with an audit fact. Account delete: the account Owner, takes its workspaces, same window. Pages and comments: trash 30 days, then purge. Identity deletion anonymizes (name "Deleted user", email replaced by a non-reversible hash; content and audit keep the user id). Workspace delete and restore are built (HARDENING); the rest is not built | none now; was UC-ACC-D05, UC-DCT-A17, UC-DCT-L05, UC-COL-F04, UC-COL-F05, now DEFINED; UC-WSP-D03 and UC-WSP-D04 are now built (HARDENING) |
 | 4 | Custom roles: place in the Governance decision order, reach into Private resources, relation to Deny rules; the moderator permission for comments | UC-GOV-C04, UC-GOV-C05, UC-COL-C02, UC-COL-F07 |
 | 5 | Sign-in policy: company SSO enforcement and the verified-domain rule, required MFA owner, SCIM provisioning principal, second-factor recovery | UC-IDN-B08, UC-IDN-J04, UC-IDN-J05, UC-WSP-F10, UC-WSP-J04 |
 | 6 | API token scope vocabulary and whether a token may call person-level routes | UC-IDN-L05 |

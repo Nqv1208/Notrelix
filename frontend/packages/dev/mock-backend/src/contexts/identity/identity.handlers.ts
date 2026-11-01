@@ -57,7 +57,11 @@ export const identityOperations = [
       const accountId = `account-${user.id}`;
       const workspaces = store
         .getWorkspaces()
-        .filter((workspace) => !store.isWorkspaceArchived(workspace.id));
+        .filter(
+          (workspace) =>
+            !store.isWorkspaceArchived(workspace.id) &&
+            !store.isWorkspaceDeleted(workspace.id),
+        );
       const personal = workspaces.find((workspace) => workspace.isPersonal);
       return ok({
         user: {

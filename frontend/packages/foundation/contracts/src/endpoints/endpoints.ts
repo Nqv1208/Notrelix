@@ -67,6 +67,11 @@ export const endpoints = {
     archive: (workspaceId: string) => `/workspaces/${workspaceId}/archive`,
     unarchive: (workspaceId: string) =>
       `/workspaces/${workspaceId}/archive/unarchive`,
+    // Workspaces.Workspaces.DeleteWorkspace (Owner only, expectedVersion in the query) / RestoreWorkspace
+    // (Owner only, inside the 30-day window).
+    remove: (workspaceId: string, expectedVersion: number) =>
+      `/workspaces/${workspaceId}?expectedVersion=${expectedVersion}`,
+    restore: (workspaceId: string) => `/workspaces/${workspaceId}/restore`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,
@@ -248,6 +253,9 @@ export const endpoints = {
     workspaces: (accountId: string) => `/accounts/${accountId}/workspaces`,
     workspaceSlugCheck: (accountId: string) =>
       `/accounts/${accountId}/workspaces/slug-check`,
+    // Workspaces.Workspaces.GetDeletedWorkspaces: the "Recently deleted" list of the Owner.
+    deletedWorkspaces: (accountId: string) =>
+      `/accounts/${accountId}/workspaces/deleted`,
   },
   onboarding: {
     draft: "/workspaces/onboarding-draft",

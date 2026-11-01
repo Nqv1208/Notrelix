@@ -53,7 +53,7 @@ export function AuthShell({
             {children}
           </div>
         </div>
-        <footer className="flex items-center justify-between gap-4 text-crumb text-meta-foreground">
+        <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-crumb text-meta-foreground">
           <nav aria-label={t.footerLabel} className="flex items-center gap-1.5">
             {[t.terms, t.privacy, t.help].map((label, index) => (
               <span key={label} className="contents">
@@ -77,7 +77,7 @@ export function AuthShell({
                 aria-pressed={locale === entry}
                 onClick={() => onLocaleChange(entry)}
                 className={cn(
-                  "h-7 cursor-pointer rounded-[6px] border-0 bg-transparent px-2.5 text-crumb font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                  "h-7 cursor-pointer rounded-[6px] border-0 bg-transparent px-2.5 text-crumb whitespace-nowrap max-sm:h-11 font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                   locale === entry &&
                     "bg-state-hover-strong font-semibold text-foreground",
                 )}

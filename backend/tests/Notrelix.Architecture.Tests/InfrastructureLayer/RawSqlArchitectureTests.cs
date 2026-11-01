@@ -68,6 +68,9 @@ public class RawSqlArchitectureTests
         // Onboarding draft sweep: bounded DELETE ... FOR UPDATE SKIP LOCKED of expired
         // workspace.onboarding_drafts rows under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/OnboardingDraftSweep.cs",
+        // Deleted workspace purge: DELETE ... WHERE workspace_id for each table the catalog lists, the
+        // identifier quoted by format('%I'), under the system context; the claim is FOR UPDATE SKIP LOCKED.
+        "src/Notrelix.Infrastructure/BackgroundJobs/DeletedWorkspacePurge.cs",
         // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).

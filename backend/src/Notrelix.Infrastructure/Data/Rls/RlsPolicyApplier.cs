@@ -34,6 +34,7 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.025_invitee_invitations.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.026_authz_access_helpers_static.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.027_operator_console.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.028_deleted_workspaces.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

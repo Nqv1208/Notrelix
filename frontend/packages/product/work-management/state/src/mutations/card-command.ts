@@ -9,7 +9,7 @@ import { wmQueryKeys } from "../queries/keys";
 import {
   isVersionConflict,
   reportItemConflict,
-  staleSchemaOf,
+  conflictDetailOf,
 } from "../queries/use-item-conflict";
 
 /**
@@ -116,7 +116,7 @@ export async function runCardCommand<T>({
         queryClient,
         workspaceId,
         cardId,
-        staleSchemaOf(error),
+        conflictDetailOf(error),
       );
     throw error;
   } finally {

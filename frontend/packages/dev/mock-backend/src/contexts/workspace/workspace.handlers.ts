@@ -320,7 +320,11 @@ export const workspaceOperations = [
       return ok(
         store
           .getWorkspaces()
-          .filter((w) => !store.isWorkspaceArchived(w.id))
+          .filter(
+            (w) =>
+              !store.isWorkspaceArchived(w.id) &&
+              !store.isWorkspaceDeleted(w.id),
+          )
           .map((w) => workspaceDto(store, w.id)),
       );
     },
@@ -338,6 +342,7 @@ export const workspaceOperations = [
       // An archived workspace is still read by its members (read-only); anyone else finds nothing.
       if (
         !w ||
+        store.isWorkspaceDeleted(w.id) ||
         (store.isWorkspaceArchived(w.id) && !store.isCurrentMemberOf(w.id))
       )
         return notFound(`Workspace "${params.id}" not found`);
@@ -515,6 +520,62 @@ export const workspaceOperations = [
       if (!canManageMembers(store, params.workspaceId)) return forbidden();
       return versionedWriteResult(
         store.unarchiveWorkspace(params.workspaceId, body?.expectedVersion),
+      );
+    },
+  }),
+
+  // ─── Delete, Recently deleted and restore (owner decision 2026-11-01) ─────
+
+  defineMockOperation<{ workspaceId: string }, never, void>({
+    id: "workspace.delete",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.DeleteWorkspace",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId",
+    async handle({ params, store, request }) {
+      if (store.getCurrentMemberRole(params.workspaceId) !== "owner")
+        return store.isCurrentMemberOf(params.workspaceId)
+          ? forbidden()
+          : notFound();
+      if (store.getWorkspace(params.workspaceId)?.isPersonal)
+        return ruleViolation("A personal workspace cannot be deleted.");
+      const expected = Number(request.searchParams.get("expectedVersion"));
+      return versionedWriteResult(
+        store.deleteWorkspace(params.workspaceId, expected),
+      );
+    },
+  }),
+
+  defineMockOperation<{ accountId: string }, never, unknown>({
+    id: "workspace.deleted.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.GetDeletedWorkspaces",
+    },
+    method: "GET",
+    route: "/accounts/:accountId/workspaces/deleted",
+    async handle({ store }) {
+      return ok(store.listDeletedWorkspaces());
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { expectedVersion?: number },
+    void
+  >({
+    id: "workspace.restore",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.RestoreWorkspace",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/restore",
+    async handle({ params, body, store }) {
+      return versionedWriteResult(
+        store.restoreWorkspace(params.workspaceId, body?.expectedVersion),
       );
     },
   }),

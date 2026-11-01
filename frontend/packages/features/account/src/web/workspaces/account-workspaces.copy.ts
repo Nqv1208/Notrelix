@@ -18,6 +18,17 @@ export const en = {
   archivedTitle: "Archived workspaces",
   archivedNote:
     "Read-only for everyone. You see these because you own or administer them.",
+  deletedTitle: "Recently deleted",
+  deletedNote:
+    "Only you, as the owner, see these. Everyone lost access when they were deleted. Restore one within 30 days and everything comes back as it was; after that it is erased for good.",
+  deletedMeta: "Deleted {{date}} · {{left}}",
+  daysLeft_one: "{{count}} day left",
+  daysLeft_other: "{{count}} days left",
+  restore: "Restore",
+  restoreLabel: "Restore the workspace {{name}}",
+  deletedLoadError: "We couldn't load your recently deleted workspaces.",
+  restoreError:
+    "We couldn't restore that workspace. It may have changed or its 30 days may be over.",
   unarchive: "Unarchive",
   unarchiveLabel: "Unarchive the workspace {{name}}",
   roles: {
@@ -48,6 +59,7 @@ export const en = {
     defaultSet: "{{name}} now opens by default.",
     left: "You left {{name}}.",
     unarchived: "{{name}} is active again.",
+    restored: "{{name}} was restored. Its members have access again.",
   },
 };
 
@@ -68,6 +80,17 @@ export const vi: AccountWorkspacesCopy = {
   archivedTitle: "Workspace đã lưu trữ",
   archivedNote:
     "Chỉ đọc với mọi người. Bạn thấy các workspace này vì bạn là chủ sở hữu hoặc quản trị.",
+  deletedTitle: "Đã xóa gần đây",
+  deletedNote:
+    "Chỉ bạn, với tư cách chủ sở hữu, thấy các workspace này. Mọi người đã mất quyền vào khi chúng bị xóa. Khôi phục trong 30 ngày thì mọi thứ trở lại như cũ; sau đó chúng bị xóa vĩnh viễn.",
+  deletedMeta: "Đã xóa {{date}} · {{left}}",
+  daysLeft_one: "còn {{count}} ngày",
+  daysLeft_other: "còn {{count}} ngày",
+  restore: "Khôi phục",
+  restoreLabel: "Khôi phục workspace {{name}}",
+  deletedLoadError: "Không thể tải các workspace đã xóa gần đây.",
+  restoreError:
+    "Chưa khôi phục được workspace này. Có thể nó đã thay đổi hoặc đã quá 30 ngày.",
   unarchive: "Bỏ lưu trữ",
   unarchiveLabel: "Bỏ lưu trữ workspace {{name}}",
   roles: {
@@ -98,6 +121,7 @@ export const vi: AccountWorkspacesCopy = {
     defaultSet: "{{name}} sẽ là nơi mở mặc định.",
     left: "Bạn đã rời {{name}}.",
     unarchived: "{{name}} đã hoạt động trở lại.",
+    restored: "Đã khôi phục {{name}}. Các thành viên đã có quyền vào lại.",
   },
 };
 

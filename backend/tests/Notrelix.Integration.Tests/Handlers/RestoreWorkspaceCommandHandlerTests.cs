@@ -45,7 +45,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
-        var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
+        var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now), new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id, 1L), CancellationToken.None);
 
@@ -62,7 +62,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
-        var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
+        var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             handler.Handle(new RestoreWorkspaceCommand(Guid.NewGuid(), 1L), CancellationToken.None));
@@ -81,7 +81,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
-        var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
+        var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now), new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
         var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id, 1L), CancellationToken.None);
 

@@ -64,9 +64,15 @@ export interface WorkspaceSettingsSurfaceProps {
   readonly profileStatus: SaveStatus;
   readonly defaultsStatus: SaveStatus;
   readonly archiving: boolean;
+  /** Only a workspace Owner deletes the workspace (`DeleteWorkspace`, owner decision 2026-11-01). */
+  readonly canDelete: boolean;
+  /** A personal workspace is never deleted: the action is explained and off. */
+  readonly isPersonal: boolean;
+  readonly deleting: boolean;
   readonly onSaveProfile: (values: WorkspaceProfileValues) => void;
   readonly onSaveDefaults: (settings: WorkspaceSettings) => void;
   readonly onArchive: () => void;
+  readonly onDelete: () => void;
   /** Re-reads the workspace after a conflict. */
   readonly onReload: () => void;
   readonly onRetryDefaults: () => void;
@@ -588,47 +594,71 @@ function DefaultsForm({
   );
 }
 
-function ArchiveFlow({
+interface DangerFlowCopy {
+  readonly title: string;
+  readonly description: string;
+  readonly action: string;
+  readonly pending: string;
+  readonly confirmTitle: string;
+  readonly confirmDescription: string;
+  readonly confirmAction: string;
+}
+
+/**
+ * One destructive workspace action behind a typed-name confirmation. Archive and delete share it:
+ * the button opens a dialog whose confirm button stays off until the workspace name is typed exactly.
+ */
+function DangerFlow({
   copy,
+  texts,
   workspaceName,
   disabled,
-  archiving,
-  onArchive,
+  pending,
+  note,
+  onConfirm,
 }: {
   copy: WorkspaceSettingsCopy;
+  texts: DangerFlowCopy;
   workspaceName: string;
   disabled: boolean;
-  archiving: boolean;
-  onArchive: () => void;
+  pending: boolean;
+  /** Why the action is not offered (shown instead of the button's promise), or null. */
+  note?: string | null;
+  onConfirm: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
   const [typed, setTyped] = React.useState("");
   const inputId = React.useId();
   const mismatchId = React.useId();
+  const noteId = React.useId();
   const matches = typed.trim() === workspaceName.trim() && workspaceName !== "";
   const values = { workspace: workspaceName };
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-danger-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <h3 className="text-label text-foreground">
-          {copy.danger.archiveTitle}
-        </h3>
+        <h3 className="text-label text-foreground">{texts.title}</h3>
         <p className="text-metadata text-muted-foreground">
-          {formatCopy(copy.danger.archiveDescription, values)}
+          {formatCopy(texts.description, values)}
         </p>
+        {note ? (
+          <p id={noteId} className="text-metadata text-muted-foreground">
+            {note}
+          </p>
+        ) : null}
       </div>
       <Button
         variant="destructive"
         size="sm"
-        disabled={disabled || archiving}
+        disabled={disabled || pending}
+        aria-describedby={note ? noteId : undefined}
         onClick={() => {
           setTyped("");
           setOpen(true);
         }}
         className="shrink-0"
       >
-        {archiving ? copy.danger.archiving : copy.danger.archiveAction}
+        {pending ? texts.pending : texts.action}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
@@ -638,16 +668,16 @@ function ArchiveFlow({
               event.preventDefault();
               if (!matches) return;
               setOpen(false);
-              onArchive();
+              onConfirm();
             }}
             className="flex flex-col gap-4"
           >
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {formatCopy(copy.danger.confirmTitle, values)}
+                {formatCopy(texts.confirmTitle, values)}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                {copy.danger.confirmDescription}
+                {texts.confirmDescription}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <Field data-invalid={typed && !matches ? true : undefined}>
@@ -673,7 +703,7 @@ function ArchiveFlow({
                 {copy.danger.cancel}
               </AlertDialogCancel>
               <Button type="submit" variant="destructive" disabled={!matches}>
-                {copy.danger.confirmAction}
+                {texts.confirmAction}
               </Button>
             </AlertDialogFooter>
           </form>
@@ -686,7 +716,7 @@ function ArchiveFlow({
 /**
  * Workspace settings (WX-SET-001) in grouped sections — Profile, Defaults,
  * Danger zone — each saved on its own with bound labels, inline validation
- * and conflict recovery. Archiving confirms by typing the workspace name.
+ * and conflict recovery. Archiving and deleting (Owner only) confirm by typing the workspace name.
  */
 export function WorkspaceSettingsSurface({
   copy,
@@ -698,9 +728,13 @@ export function WorkspaceSettingsSurface({
   profileStatus,
   defaultsStatus,
   archiving,
+  canDelete,
+  isPersonal,
+  deleting,
   onSaveProfile,
   onSaveDefaults,
   onArchive,
+  onDelete,
   onReload,
   onRetryDefaults,
 }: WorkspaceSettingsSurfaceProps) {
@@ -791,13 +825,41 @@ export function WorkspaceSettingsSurface({
             description={copy.danger.description}
             tone="danger"
           >
-            <ArchiveFlow
+            <DangerFlow
               copy={copy}
+              texts={{
+                title: copy.danger.archiveTitle,
+                description: copy.danger.archiveDescription,
+                action: copy.danger.archiveAction,
+                pending: copy.danger.archiving,
+                confirmTitle: copy.danger.confirmTitle,
+                confirmDescription: copy.danger.confirmDescription,
+                confirmAction: copy.danger.confirmAction,
+              }}
               workspaceName={workspaceName ?? ""}
               disabled={!versionAvailable || !workspaceName}
-              archiving={archiving}
-              onArchive={onArchive}
+              pending={archiving}
+              onConfirm={onArchive}
             />
+            {canDelete ? (
+              <DangerFlow
+                copy={copy}
+                texts={{
+                  title: copy.danger.deleteTitle,
+                  description: copy.danger.deleteDescription,
+                  action: copy.danger.deleteAction,
+                  pending: copy.danger.deleting,
+                  confirmTitle: copy.danger.deleteConfirmTitle,
+                  confirmDescription: copy.danger.deleteConfirmDescription,
+                  confirmAction: copy.danger.deleteConfirmAction,
+                }}
+                workspaceName={workspaceName ?? ""}
+                disabled={!versionAvailable || !workspaceName || isPersonal}
+                pending={deleting}
+                note={isPersonal ? copy.danger.deletePersonal : null}
+                onConfirm={onDelete}
+              />
+            ) : null}
           </SettingsSection>
         ) : null}
       </div>

@@ -8,7 +8,7 @@ public record DeleteWorkspaceCommand(
     long ExpectedVersion
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
+    public PermissionAction Action => PermissionAction.DeleteWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
@@ -19,12 +19,14 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAuditService _auditService;
 
-    public DeleteWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public DeleteWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAuditService auditService)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _auditService = auditService;
     }
 
     public async Task<Result> Handle(DeleteWorkspaceCommand request, CancellationToken ct)
@@ -35,7 +37,22 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
+        var versionBefore = workspace.Version;
         workspace.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+
+        // A repeated delete is the domain no-op and records nothing. Deleting starts a 30-day purge clock.
+        if (workspace.Version != versionBefore)
+        {
+            await _auditService.RecordAsync(
+                workspace.Id,
+                _requestContext.UserId,
+                "DeleteWorkspace",
+                ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), workspace.Id, workspace.Id),
+                AuditMetadata.Create(),
+                AuditSeverity.Critical,
+                cancellationToken: ct);
+        }
+
         return Result.Success();
     }
 }
