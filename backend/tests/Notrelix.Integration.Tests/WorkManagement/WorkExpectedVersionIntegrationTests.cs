@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Requests;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Domain.Common;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;

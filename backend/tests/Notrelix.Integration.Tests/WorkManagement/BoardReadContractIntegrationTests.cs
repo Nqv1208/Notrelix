@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
