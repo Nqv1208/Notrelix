@@ -516,28 +516,34 @@ for (const dark of [false, true]) {
         page.getByRole("heading", { level: 1 }).filter({ hasText: "một lần" }),
       ).toBeVisible();
       await page.waitForTimeout(700);
-      await expectBox("h1", heading(page), {
-        x: 836.8,
-        y: 274.8,
-        width: 400,
-        height: 60.7,
-      });
-      expect(await style(heading(page), "font-size")).toBe("23px");
-      await expectBox("lead", lead(page), {
-        y: 341.5,
-        width: 400,
-        height: 43.5,
-      });
-      await expectBox("continue", link(page, "Tiếp tục với Microsoft Entra"), {
-        y: 467,
-        width: 400,
-        height: 44,
-      });
-      await expectBox("other email", link(page, "Dùng email khác"), {
-        y: 629.5,
-        width: 109.8,
-        height: 24.3,
-      });
+      // The page title is the 24 px product token where the artboard draws 23 px: the heading is
+      // 2.7 px taller (two lines of 1.32), so the centred column starts 1.35 px higher and the
+      // boxes below sit 1.35 px lower.
+      await expectBox(
+        "h1",
+        heading(page),
+        { x: 836.8, y: 274.8, width: 400, height: 63.4 },
+        -1.35,
+      );
+      expect(await style(heading(page), "font-size")).toBe("24px");
+      await expectBox(
+        "lead",
+        lead(page),
+        { y: 341.5, width: 400, height: 43.5 },
+        1.35,
+      );
+      await expectBox(
+        "continue",
+        link(page, "Tiếp tục với Microsoft Entra"),
+        { y: 467, width: 400, height: 44 },
+        1.35,
+      );
+      await expectBox(
+        "other email",
+        link(page, "Dùng email khác"),
+        { y: 629.5, width: 109.8, height: 24.3 },
+        1.35,
+      );
     });
   });
 }

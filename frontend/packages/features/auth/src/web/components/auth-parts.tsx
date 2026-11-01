@@ -47,7 +47,7 @@ export function AuthHeading({
         className={cn(
           "m-0 tracking-tight",
           medium
-            ? "text-[23px] leading-[1.32] font-[650]"
+            ? "text-page-title leading-[1.32] font-[650]"
             : "text-item-title leading-tight font-[650]",
         )}
       >
@@ -73,7 +73,7 @@ export function FieldError({
     <p
       id={id}
       role="alert"
-      className="m-0 flex items-start gap-1.5 text-[13px] leading-normal font-medium text-danger-text"
+      className="m-0 flex items-start gap-1.5 text-item-small leading-normal font-medium text-danger-text"
     >
       <CircleAlert aria-hidden="true" className="mt-0.5 size-3.75 shrink-0" />
       {children}

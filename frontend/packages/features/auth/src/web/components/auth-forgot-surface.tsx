@@ -117,7 +117,7 @@ function AskStep({
           {pending ? t.sending : t.send}
         </button>
       </form>
-      <div className="flex items-start gap-2.5 rounded-[10px] bg-state-hover px-3.5 py-3 text-[13px] leading-normal text-muted-foreground">
+      <div className="flex items-start gap-2.5 rounded-[10px] bg-state-hover px-3.5 py-3 text-item-small leading-normal text-muted-foreground">
         <Info
           aria-hidden="true"
           className="mt-0.5 size-4 shrink-0 text-meta-foreground"

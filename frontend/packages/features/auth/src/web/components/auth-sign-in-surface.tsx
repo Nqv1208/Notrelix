@@ -316,7 +316,7 @@ function CredentialsStep({
                 onClick={onForgot}
                 className={cn(
                   LINK_BUTTON_CLASS,
-                  "py-0 text-[13px] max-md:-my-1.5",
+                  "py-0 text-item-small max-md:-my-1.5",
                 )}
               >
                 {tp.forgot}
@@ -496,7 +496,7 @@ function WhoRow({
       >
         <Mail className="size-4" />
       </span>
-      <span className="min-w-0 flex-1 truncate text-[14px] leading-normal font-medium">
+      <span className="min-w-0 flex-1 truncate text-body leading-normal font-medium">
         {email}
       </span>
       {onChange ? (
@@ -724,12 +724,12 @@ function OtpStep({
                     onKeyDown={(event) => onKeyDown(index, event)}
                     onPaste={(event) => onPaste(index, event)}
                     onFocus={(event) => event.target.select()}
-                    className="box-border h-14.5 w-13 min-w-0 rounded-[10px] border border-input bg-popover p-0 text-center font-mono text-[24px] font-medium text-foreground outline-none focus:border-focus-ring focus:ring-[3px] focus:ring-brand-subtle aria-invalid:border-danger-text"
+                    className="box-border h-14.5 w-13 min-w-0 rounded-[10px] border border-input bg-popover p-0 text-center font-mono text-page-title font-medium text-foreground outline-none focus:border-focus-ring focus:ring-[3px] focus:ring-brand-subtle aria-invalid:border-danger-text"
                   />
                 </span>
               ))}
             </div>
-            <p className="mt-2 mb-0 text-[12.5px] leading-normal text-meta-foreground">
+            <p className="mt-2 mb-0 text-crumb leading-normal text-meta-foreground">
               {t.hint}
             </p>
           </fieldset>
