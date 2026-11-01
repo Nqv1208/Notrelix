@@ -24,6 +24,8 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly IRequestRollbackCompensations? _compensations;
     private readonly IIdempotencyExecutionContext? _idempotency;
     private readonly IActorLookupService? _actors;
+    private readonly IWorkspaceAccessResolver? _workspaceAccess;
+    private readonly ICurrentRequestContext? _request;
 
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
@@ -35,9 +37,13 @@ public sealed class EfRequestDataSession : IRequestDataSession
         Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null,
         IRequestRollbackCompensations? compensations = null,
         IIdempotencyExecutionContext? idempotency = null,
-        IActorLookupService? actors = null)
+        IActorLookupService? actors = null,
+        IWorkspaceAccessResolver? workspaceAccess = null,
+        ICurrentRequestContext? request = null)
     {
         _actors = actors;
+        _workspaceAccess = workspaceAccess;
+        _request = request;
         _idempotency = idempotency;
         _compensations = compensations;
         _orderingMetrics = orderingMetrics;
@@ -170,7 +176,8 @@ public sealed class EfRequestDataSession : IRequestDataSession
     /// <summary>
     /// Who saved the resource that won the race, and when: the last writer of the stale aggregate as the
     /// database holds it now. The name comes through the co-member profile lookup, so a person the caller may
-    /// not see stays absent and the client says "someone else". Best effort: any failure leaves the answer plain.
+    /// not see stays absent and the client says "someone else"; a Workspace Guest caller never gets a name.
+    /// Best effort: any failure leaves the answer plain.
     /// </summary>
     private async Task<IReadOnlyDictionary<string, object?>> LastWriterAsync(
         DbUpdateConcurrencyException concurrency, CancellationToken ct)
@@ -185,7 +192,14 @@ public sealed class EfRequestDataSession : IRequestDataSession
             var at = current.GetValue<DateTimeOffset?>(nameof(AuditableEntity.UpdatedAt));
             string? name = null;
             if (by is { } actorId && _actors is not null)
-                name = (await _actors.FindManyAsync([actorId], ct)).FirstOrDefault()?.Name;
+            {
+                var workspaceId = entry.Metadata.FindProperty("WorkspaceId") is null
+                    ? (Guid?)null
+                    : current.GetValue<Guid>("WorkspaceId");
+                name = _workspaceAccess is not null && _request is not null && workspaceId is { } workspace
+                    ? await ActorNotice.NameAsync(_actors, _workspaceAccess, workspace, _request.UserId, actorId, ct)
+                    : (await _actors.FindManyAsync([actorId], ct)).FirstOrDefault()?.Name;
+            }
             return new Dictionary<string, object?>
             {
                 ["changedByName"] = name,

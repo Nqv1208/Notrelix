@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import {
   apiRead,
   apiWrite,
@@ -17,6 +17,15 @@ interface ItemRead {
   readonly version: number;
   readonly itemKey: string;
   readonly dueAt: string | null;
+}
+
+/** A second member of Workspace 3 in its own browser context: the "someone else" of a notice, and the name it must show. */
+async function otherMember(browser: Browser) {
+  const context = await browser.newContext();
+  const other = await context.newPage();
+  await signIn(other, realUsers.workspaceOwner);
+  const { name } = await apiRead<{ name: string }>(other, "/auth/me");
+  return { other, name, close: () => context.close() };
 }
 
 /** A scratch item in the first lane of the board: its id, key and read version. */
@@ -41,7 +50,8 @@ async function deleteItem(page: Page, item: ItemRead) {
   );
 }
 
-test("the card actions menu lists one ordered set and an item deleted while its card is open turns the card into the gone state", async ({
+test("the card actions menu lists one ordered set and an item deleted by someone else while its card is open says who deleted it", async ({
+  browser,
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -78,12 +88,17 @@ test("the card actions menu lists one ordered set and an item deleted while its 
   expect(positions).toEqual([...positions].sort((a, b) => a - b));
   await page.keyboard.press("Escape");
 
-  // Someone else deletes the item while the card is open: the card says it is gone and shows nothing of it.
-  expect((await deleteItem(page, item)).status).toBe(204);
+  // Another member deletes the item while the card is open: the card names them and shows nothing of the item.
+  const deleter = await otherMember(browser);
+  expect((await deleteItem(deleter.other, item)).status).toBe(204);
+  await deleter.close();
   const gone = page.getByRole("dialog", { name: "Card" });
+  await expect(gone.getByText(`${deleter.name} deleted this card`)).toBeVisible(
+    { timeout: 15_000 },
+  );
   await expect(
     gone.getByText("The card is gone, or you no longer have access"),
-  ).toBeVisible({ timeout: 15_000 });
+  ).toHaveCount(0);
   await expect(gone.getByText(`Open then gone ${unique}`)).toHaveCount(0);
   await gone.getByRole("button", { name: "Back to the board" }).click();
   await expect(gone).toHaveCount(0);
@@ -378,7 +393,8 @@ test("a link is removed once, a second removal is not found, and a trashed targe
   expect((Array.isArray(after) ? after : (after.links ?? [])).length).toBe(0);
 });
 
-test("a card save that carries a stale version is refused, changes nothing and shows the conflict notice", async ({
+test("a card save that carries a stale version is refused, changes nothing and the conflict notice names who saved first", async ({
+  browser,
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -396,15 +412,17 @@ test("a card save that carries a stale version is refused, changes nothing and s
   const title = dialog.getByRole("textbox", { name: "Card title" });
   await expect(title).toBeVisible();
 
-  // Someone else saved first: the item moves on while the page still holds the version it read.
+  // Another member saved first: the item moves on while the page still holds the version it read.
+  const writer = await otherMember(browser);
   expect(
     (
-      await apiWrite(page, "PATCH", `/board-items/${item.id}`, {
+      await apiWrite(writer.other, "PATCH", `/board-items/${item.id}`, {
         title: `Stale save ${unique} by someone else`,
         expectedVersion: item.version,
       })
     ).status,
   ).toBeLessThan(300);
+  await writer.close();
   await page.route(`**/board-items/${item.id}`, async (route) => {
     if (route.request().method() !== "PATCH") return route.continue();
     const body = route.request().postDataJSON() as Record<string, unknown>;
@@ -422,7 +440,7 @@ test("a card save that carries a stale version is refused, changes nothing and s
   await title.blur();
   expect((await refused).status()).toBe(412);
   await expect(
-    dialog.getByText("Someone else just edited this card"),
+    dialog.getByText(`${writer.name} just edited this card`),
   ).toBeVisible();
   await page.unroute(`**/board-items/${item.id}`);
   const after = await apiRead<{ name: string }>(

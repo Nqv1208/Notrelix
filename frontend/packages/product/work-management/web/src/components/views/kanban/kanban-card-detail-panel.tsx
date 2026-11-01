@@ -86,6 +86,7 @@ export function KanbanCardDetailPanel({
       status="ready"
       model={model}
       conflict={model.conflict || shared.conflict}
+      conflictBy={model.conflictBy ?? shared.changedBy}
       staleSchema={shared.staleSchema}
       onReloadConflict={() => {
         refetch();

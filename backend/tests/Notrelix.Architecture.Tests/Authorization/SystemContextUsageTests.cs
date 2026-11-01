@@ -27,6 +27,7 @@ public class SystemContextUsageTests
         "RestoreTeam.cs",
         "RestoreBoard.cs",
         "StaleFieldGuard.cs",
+        "GetBoardItem.cs",
         "ListDeletedBoards.cs",
         "DeleteBoard.cs",
         "ListDeletedBoardFields.cs",

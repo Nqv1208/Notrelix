@@ -43,6 +43,14 @@ const columns = {
   },
 };
 
+const itemConflict = vi.hoisted(() => ({
+  current: {
+    conflict: false,
+    staleSchema: null as unknown,
+    changedBy: null as string | null,
+  },
+}));
+
 const cardQuery = vi.hoisted(() => ({
   current: {
     card: undefined as unknown,
@@ -211,8 +219,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useArchiveCard: () => ({ mutate: cardQuery.deleteMutate }),
     useSeenItemVersion: () => () => 7,
     useItemConflict: () => ({
-      conflict: false,
-      staleSchema: null,
+      ...itemConflict.current,
       clear: vi.fn(),
       report: vi.fn(),
     }),
@@ -313,6 +320,11 @@ describe("KanbanView item detail through selectedItemId", () => {
     cardQuery.useCard.mockClear();
     cardQuery.deleteMutate.mockClear();
     boardState.showCards = true;
+    itemConflict.current = {
+      conflict: false,
+      staleSchema: null,
+      changedBy: null,
+    };
   });
 
   it("opens the detail sheet with the selected card's title", () => {
@@ -352,6 +364,71 @@ describe("KanbanView item detail through selectedItemId", () => {
     };
     renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
     expect(GONE()).toBeTruthy();
+  });
+
+  it("names who deleted the card to a person who reads its board", () => {
+    cardQuery.current = {
+      card: undefined,
+      isLoading: false,
+      error: Object.assign(new Error("not found"), {
+        kind: "not_found",
+        code: "work-management.item.deleted",
+        details: { deletedByName: "Ada Lovelace" },
+      }),
+    };
+    renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
+    expect(screen.getByText("Ada Lovelace deleted this card")).toBeTruthy();
+    expect(GONE()).toBeNull();
+  });
+
+  it("says someone else deleted the card when the server names no one (a Guest, or a person out of reach)", () => {
+    cardQuery.current = {
+      card: undefined,
+      isLoading: false,
+      error: Object.assign(new Error("not found"), {
+        kind: "not_found",
+        code: "work-management.item.deleted",
+        details: { deletedByName: null },
+      }),
+    };
+    renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
+    expect(screen.getByText("Someone else deleted this card")).toBeTruthy();
+  });
+
+  it("keeps an ordinary not-found as the one generic message", () => {
+    cardQuery.current = {
+      card: undefined,
+      isLoading: false,
+      error: Object.assign(new Error("not found"), {
+        kind: "not_found",
+        code: "common.resource-not-found",
+      }),
+    };
+    renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
+    expect(GONE()).toBeTruthy();
+    expect(screen.queryByText(/deleted this card/)).toBeNull();
+  });
+
+  it("names who saved first on the conflict notice, and falls back to someone else", () => {
+    cardQuery.current = { card: existingCard(), isLoading: false, error: null };
+    itemConflict.current = {
+      conflict: true,
+      staleSchema: null,
+      changedBy: "Ada Lovelace",
+    };
+    const { unmount } = renderView({
+      selectedItemId: "card-item",
+      onSelectedItemChange: vi.fn(),
+    });
+    expect(screen.getByText("Ada Lovelace just edited this card")).toBeTruthy();
+    unmount();
+    itemConflict.current = {
+      conflict: true,
+      staleSchema: null,
+      changedBy: null,
+    };
+    renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
+    expect(screen.getByText("Someone else just edited this card")).toBeTruthy();
   });
 
   it("renders no sheet when no item is selected", () => {
