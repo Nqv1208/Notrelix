@@ -420,7 +420,7 @@ describe("auth invite surface", () => {
     fireEvent.click(accept);
     expect(onAccept).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
-      target: { value: NEW_PASSWORD },
+      target: { value: "mot-mat-khau-du-dai" },
     });
     fireEvent.click(accept);
     expect(onAccept).toHaveBeenCalledWith({

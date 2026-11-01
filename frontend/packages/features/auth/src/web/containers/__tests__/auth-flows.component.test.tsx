@@ -246,7 +246,7 @@ function fillAndAccept() {
     target: { value: "Tuấn" },
   });
   fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
-    target: { value: NEW_PASSWORD },
+    target: { value: "mot-mat-khau-du-dai" },
   });
   fireEvent.click(screen.getByRole("button", { name: copy.invite.accept }));
 }
