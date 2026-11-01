@@ -32,7 +32,7 @@ import {
 import { SortableList, SortableRow } from "./board-settings-sortable";
 
 const ROW_GRID =
-  "grid grid-cols-[22px_minmax(0,1fr)_150px_132px_104px] items-center gap-2.5 min-h-[45px] first:min-h-[44px] pr-3 pl-2 text-item-small";
+  "grid grid-cols-[22px_minmax(0,1fr)_150px_132px_104px] items-center gap-2.5 min-h-[45px] first:min-h-[44px] pr-3 pl-2 text-item-small max-md:grid-cols-[22px_minmax(0,1fr)_84px_minmax(0,72px)] max-md:[&>:nth-child(4)]:hidden";
 const HEAD_ROW =
   "min-h-[34px] first:min-h-[34px] bg-background text-metadata font-semibold text-meta-foreground";
 
@@ -160,7 +160,7 @@ export function FieldsSection({
                 aria-controls="bs-fields-panel"
                 onClick={() => setTab(key)}
                 className={cn(
-                  "-mb-px inline-flex h-[38px] items-center gap-2 border-0 border-b-2 border-transparent bg-transparent px-3 text-[13.5px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                  "-mb-px inline-flex h-[38px] items-center gap-2 whitespace-nowrap border-0 max-md:h-11 border-b-2 border-transparent bg-transparent px-3 text-[13.5px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                   tab === key && "border-primary font-semibold text-foreground",
                 )}
               >

@@ -161,7 +161,10 @@ export function MainTableToolbar({
       ) : null}
       {viewBar}
 
-      <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
+      <span
+        aria-hidden="true"
+        className="mx-1 h-5 w-px bg-border max-md:hidden"
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
