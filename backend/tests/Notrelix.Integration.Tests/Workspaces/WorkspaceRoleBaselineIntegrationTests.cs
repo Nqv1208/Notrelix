@@ -252,7 +252,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Owner_StillSuspendsAnAdmin_AndLastOwnerStaysProtected()
+    public async Task Owner_StillSuspendsAnAdmin_AndCannotRemoveThemselfHere()
     {
         var (stack, admin, _, _) = await SeedAsync();
         using var asOwner = As(stack, stack.OwnerId);
@@ -263,7 +263,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         var ownerVersion = (await MemberRowAsync(stack, stack.OwnerId)).Version;
         var act = () => OrgTreeTestHost.SendAsync(asOwner, new RemoveMemberCommand(stack.WorkspaceId, stack.OwnerId, ownerVersion));
         (await act.Should().ThrowAsync<DomainBusinessRuleException>())
-            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner);
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_CannotActOnSelf, "leaving is the self path; the last Owner cannot leave");
     }
 
     [Fact]

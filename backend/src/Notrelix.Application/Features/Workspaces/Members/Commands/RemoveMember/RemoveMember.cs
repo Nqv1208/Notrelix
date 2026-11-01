@@ -61,6 +61,8 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
         if (member is null)
             throw new NotFoundException("WorkspaceMember", request.UserId);
 
+        WorkspaceMemberRules.EnsureActorIsNotTarget(_requestContext.UserId, member.UserId);
+
         var actorRole = await WorkspaceActorRoleLookup.GetActiveActorRoleAsync(
             _context, workspace.Id, _requestContext.UserId, ct);
         WorkspaceMemberRules.EnsureActorCanActOnMember(actorRole, member.Role);
