@@ -278,7 +278,7 @@ test("the Owner of a seeded workspace opens their account page and the Recently 
   expect(deleted.status()).toBe(200);
   await page.goto(`/workspaces/${home!.id}/account/workspaces`);
   await expect(
-    page.getByRole("heading", { level: 1, name: /workspaces/i }),
+    page.getByRole("heading", { level: 2, name: "Your workspaces" }),
   ).toBeVisible();
   await expect(
     page.getByText(/couldn't load your recently deleted/),
