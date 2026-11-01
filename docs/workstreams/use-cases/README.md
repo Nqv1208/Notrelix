@@ -181,7 +181,8 @@ A use case belongs to the first version whose scope lists it. The catalog state 
 
 ### 12.1 Version 0.1.0: Work Management core, sign-in and session, workspaces and members
 
-Scope as the owner approved it, pinned to use-case IDs. Spaces, Teams, onboarding and Home, comments and attachments on items, provider sign-in, profile and API tokens are not in it unless the owner adds them. Use cases BLOCKED on an owner decision (§9) are outside it until the owner decides.
+Scope as the owner approved it, pinned to use-case IDs. Teams, onboarding and Home, the rest of Spaces, comments and attachments on items, provider sign-in, profile and API tokens are not in it unless the owner adds them. Use cases BLOCKED on an owner decision (§9) are outside it until the owner decides.
+Workspace delete and restore (UC-WSP-D03, D04) wait on owner decision 3 in §9 and join 0.1.0 if the owner rules before the cut.
 
 **Identity (`identity.md`)**
 
@@ -191,10 +192,11 @@ Scope as the owner approved it, pinned to use-case IDs. Spaces, Teams, onboardin
 | B | Login | B01-B07, B09 | 8 |
 | C | Logout | C01-C04 | 4 |
 | D | Session expiration | D01-D05 | 5 |
-| H | MFA enrollment | H01-H02 | 2 |
-| J | MFA recovery (turn off only) | J03 | 1 |
+| H | MFA enrollment | H01-H03 | 3 |
+| I | MFA challenge | I01-I02 | 2 |
+| J | MFA recovery (with disable) | J01-J03 | 3 |
 | K | Security settings (step-up only) | K03-K05 | 3 |
-| | Total | | 26 |
+| | Total | | 31 |
 
 **Workspaces (`workspaces.md`)**
 
@@ -208,14 +210,15 @@ Scope as the owner approved it, pinned to use-case IDs. Spaces, Teams, onboardin
 | G | Invitation create | G01, G03-G06 | 5 |
 | H | Invitation accept / reject / revoke | H01-H03, H05-H06 | 5 |
 | I | Workspace selection / switch integration | I01-I02, I04 | 3 |
-| | Total | | 23 |
+| K | Spaces (minimal: create, read, place a board) | K01-K02, K15 | 3 |
+| | Total | | 26 |
 
 **Work Management (`work-management.md`)**
 
 | Capability | Name | Use cases | Count |
 |---|---|---|---|
-| A | Board lifecycle | A01-A10, A12-A18, A21-A22, A24 | 20 |
-| B | BoardItem lifecycle | B01-B16, B18, B20, B22, B24-B26, B28-B31, B35-B36 | 28 |
+| A | Board lifecycle | A01-A10, A12-A18, A21-A22, A24, A26 | 21 |
+| B | BoardItem lifecycle | B01-B16, B18-B20, B22-B26, B28-B31, B33-B36 | 32 |
 | C | BoardField definitions | C01-C02, C04, C06-C16, C22 | 15 |
 | D | Field values | D01-D12 | 12 |
 | E | Groups and grouping | E01-E06 | 6 |
@@ -230,9 +233,9 @@ Scope as the owner approved it, pinned to use-case IDs. Spaces, Teams, onboardin
 | O | Activity and event production | O01, O04 | 2 |
 | P | Realtime synchronization | P01-P04 | 4 |
 | T | Performance and hardening | T01 | 1 |
-| | Total | | 129 |
+| | Total | | 134 |
 
-Version 0.1.0 holds 178 use cases.
+Version 0.1.0 holds 191 use cases.
 
 ### 12.2 Later versions (capabilities only)
 
