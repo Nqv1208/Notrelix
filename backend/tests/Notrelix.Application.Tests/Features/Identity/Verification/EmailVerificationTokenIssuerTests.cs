@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
