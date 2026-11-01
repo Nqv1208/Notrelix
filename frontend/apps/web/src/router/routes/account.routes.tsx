@@ -22,6 +22,13 @@ export const accountProfileRoute = createRoute({
 export const accountSecurityRoute = createRoute({
   getParentRoute: () => accountRoute,
   path: "/security",
+  // Back from a provider re-authentication: which action asked for it, and whether the provider refused.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { stepUp?: string; stepUpResult?: "failed" } => ({
+    ...(typeof search.stepUp === "string" ? { stepUp: search.stepUp } : {}),
+    ...(search.stepUpResult === "failed" ? { stepUpResult: "failed" } : {}),
+  }),
   component: AccountSecurityPage,
 });
 

@@ -18,10 +18,12 @@ const runtime = vi.hoisted(() => ({
   upload: undefined as
     ((url: string, form: FormData, options: unknown) => unknown) | undefined,
   navigate: undefined as unknown as (options: { to: string }) => unknown,
+  search: {} as Record<string, unknown>,
 }));
 
 vi.mock("@notrelix/runtime-web", () => ({
   useAppRuntime: () => ({
+    env: { mockApi: false, apiUrl: "https://api.test" },
     api: {
       api: {
         get: async (url: string) => runtime.get?.(url),
@@ -40,6 +42,9 @@ vi.mock("@notrelix/runtime-web", () => ({
           stepUpRequirement: "/auth/security/step-up/requirement",
           stepUpCompleteMfa: "/auth/security/step-up/complete-mfa",
           stepUpCompletePassword: "/auth/security/step-up/complete-password",
+          stepUpClaimProvider: "/auth/security/step-up/claim-provider",
+          oauthStepUpStart: (provider: string) =>
+            `/auth/oauth/${provider}/step-up/start`,
           sessions: "/auth/sessions",
           sessionRevoke: (id: string) => `/auth/sessions/${id}/revoke`,
           sessionsRevokeOthers: "/auth/sessions/revoke-others",
@@ -80,6 +85,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
   useParams: () => ({ workspaceId: "w-1" }),
   useNavigate: () => vi.fn(),
+  useSearch: () => runtime.search,
   useRouter: () => ({
     navigate: (options: { to: string }) => runtime.navigate(options),
   }),
@@ -110,6 +116,7 @@ afterEach(() => {
   runtime.del = undefined;
   runtime.upload = undefined;
   runtime.navigate = vi.fn();
+  runtime.search = {};
 });
 
 async function mount(page: React.ReactElement, locale: Locale) {
@@ -685,6 +692,132 @@ describe("AccountSecurityPage container", () => {
       stepUpToken: "proof-2",
     });
     expect(text()).toContain("2 other devices were signed out.");
+  });
+
+  describe("a person who signs in with a provider and has no password", () => {
+    const providerOnly = {
+      ...summary,
+      hasPasswordCredential: false,
+      mfa: { isEnabled: false, recoveryCodesRemaining: 0 },
+      linkedProviders: ["Google"],
+    };
+    const providerTable = { ...table, "/auth/security/summary": providerOnly };
+    const enrolment = {
+      mfaMethodId: "method-1",
+      secret: "JBSWY3DPEHPK3PXP",
+      otpAuthUri:
+        "otpauth://totp/Notrelix:ada%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Notrelix",
+    };
+
+    it("is offered the provider, never a password prompt, and leaves for the provider with the page to come back to", async () => {
+      const assign = vi.fn();
+      vi.stubGlobal("location", { ...window.location, assign });
+      runtime.get = reads(providerTable);
+      runtime.post = vi.fn((url: string) =>
+        url === "/auth/security/step-up/requirement"
+          ? { requiredFactor: "OAuth", challengeToken: null }
+          : undefined,
+      );
+      await mount(<AccountSecurityPage />, "en");
+      await until(() =>
+        expect(text()).toContain("Turn on two-factor authentication"),
+      );
+      await clickButton("Turn on two-factor authentication");
+      await until(() =>
+        expect(text()).toContain(
+          "Confirm to turn on two-factor authentication",
+        ),
+      );
+      expect(host?.querySelector('input[type="password"]')).toBeNull();
+      expect(text()).toContain("there is no password to enter");
+
+      await clickButton("Confirm with Google");
+      expect(assign).toHaveBeenCalledWith(
+        "https://api.test/auth/oauth/Google/step-up/start?purpose=EnrollMfa&returnUrl=%2Fworkspaces%2Fw-1%2Faccount%2Fsecurity%3FstepUp%3Denroll",
+      );
+      vi.unstubAllGlobals();
+    });
+
+    it("comes back with the provider's proofs: the first starts the enrolment, the second activates it", async () => {
+      runtime.search = { stepUp: "enroll" };
+      runtime.get = reads(providerTable);
+      const post = vi.fn((url: string) =>
+        url === "/auth/security/step-up/claim-provider"
+          ? { proofToken: "proof-1", spareProofToken: "proof-2" }
+          : url === "/auth/mfa/enrollment/start"
+            ? enrolment
+            : {
+                mfaMethodId: "method-1",
+                recoveryCodes: ["AAAA-1111"],
+                otherSessionsEnded: 0,
+              },
+      );
+      runtime.post = post;
+      await mount(<AccountSecurityPage />, "en");
+      await until(() => expect(text()).toContain("JBSWY3DPEHPK3PXP"));
+      expect(post).toHaveBeenCalledWith("/auth/mfa/enrollment/start", {
+        stepUpToken: "proof-1",
+      });
+
+      await typeInFirstField("482931");
+      await clickButton("Confirm");
+      await until(() => expect(text()).toContain("AAAA-1111"));
+      expect(post).toHaveBeenCalledWith("/auth/mfa/enrollment/verify", {
+        mfaMethodId: "method-1",
+        code: "482931",
+        stepUpToken: "proof-2",
+      });
+    });
+
+    it("spends the proof on the action that asked for it (sign out the other devices)", async () => {
+      runtime.search = { stepUp: "others" };
+      runtime.get = reads(providerTable);
+      const post = vi.fn((url: string) =>
+        url === "/auth/security/step-up/claim-provider"
+          ? { proofToken: "proof-1", spareProofToken: null }
+          : { revokedCount: 1 },
+      );
+      runtime.post = post;
+      await mount(<AccountSecurityPage />, "en");
+      await until(() =>
+        expect(post).toHaveBeenCalledWith("/auth/sessions/revoke-others", {
+          stepUpToken: "proof-1",
+        }),
+      );
+    });
+
+    it("says the provider could not confirm the person, and asks nothing of the backend", async () => {
+      runtime.search = { stepUp: "others", stepUpResult: "failed" };
+      runtime.get = reads(providerTable);
+      const post = vi.fn();
+      runtime.post = post;
+      await mount(<AccountSecurityPage />, "en");
+      await until(() =>
+        expect(host?.querySelector('[role="alert"]')?.textContent).toContain(
+          "We could not confirm you with Google",
+        ),
+      );
+      expect(host?.querySelector('input[type="password"]')).toBeNull();
+      expect(post).not.toHaveBeenCalled();
+    });
+
+    it("says so when the proof is gone (the claim is refused), and offers the provider again", async () => {
+      runtime.search = { stepUp: "enroll" };
+      runtime.get = reads(providerTable);
+      runtime.post = vi.fn(() => {
+        throw Object.assign(new Error("invalid"), {
+          status: 400,
+          code: "identity.security.step-up-invalid",
+        });
+      });
+      await mount(<AccountSecurityPage />, "en");
+      await until(() =>
+        expect(host?.querySelector('[role="alert"]')?.textContent).toContain(
+          "We could not confirm you with Google",
+        ),
+      );
+      expect(text()).toContain("Confirm with Google");
+    });
   });
 
   it("changes the password with a second-factor proof, then tells the person every session ended", async () => {

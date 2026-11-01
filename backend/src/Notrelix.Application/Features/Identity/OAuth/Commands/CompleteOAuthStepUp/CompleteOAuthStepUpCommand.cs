@@ -15,7 +15,7 @@ namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthSte
 /// session; it only grants a purpose-bound step-up proof for the bound user.
 /// </summary>
 public sealed record CompleteOAuthStepUpCommand
-    : ICommand<Result<StepUpProofResult>>,
+    : ICommand<Result<OAuthStepUpResult>>,
       IAnonymousRequest,
       IGlobalRequest,
       IWriteRequest
@@ -28,7 +28,7 @@ public sealed record CompleteOAuthStepUpCommand
 }
 
 public sealed class CompleteOAuthStepUpCommandHandler
-    : IRequestHandler<CompleteOAuthStepUpCommand, Result<StepUpProofResult>>
+    : IRequestHandler<CompleteOAuthStepUpCommand, Result<OAuthStepUpResult>>
 {
     private readonly IOAuthStateStore _stateStore;
     private readonly IOAuthProviderClient _providerClient;
@@ -59,7 +59,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         _logger = logger;
     }
 
-    public async Task<Result<StepUpProofResult>> Handle(
+    public async Task<Result<OAuthStepUpResult>> Handle(
         CompleteOAuthStepUpCommand request,
         CancellationToken cancellationToken)
     {
@@ -67,21 +67,21 @@ public sealed class CompleteOAuthStepUpCommandHandler
         {
             _logger.LogInformation("OAuth step-up callback error: {Error} ({ErrorDescription})",
                 OAuthCallbackLog.Sanitize(request.Error), OAuthCallbackLog.Sanitize(request.ErrorDescription));
-            return Result<StepUpProofResult>.Failure("OAuth provider returned an error.");
+            return Result<OAuthStepUpResult>.Failure("OAuth provider returned an error.");
         }
 
         var storedState = await _stateStore.ConsumeAsync(request.State, cancellationToken);
         if (storedState is null || storedState.Flow != OAuthFlowKind.StepUp)
         {
             _logger.LogWarning("OAuth step-up with invalid or expired state");
-            return Result<StepUpProofResult>.Failure("Invalid or expired OAuth state.");
+            return Result<OAuthStepUpResult>.Failure("Invalid or expired OAuth state.");
         }
 
         if (storedState.Provider != request.Provider)
         {
             _logger.LogWarning("OAuth provider mismatch: stored={Stored}, request={Request}",
                 storedState.Provider, request.Provider);
-            return Result<StepUpProofResult>.Failure("OAuth provider mismatch.");
+            return Result<OAuthStepUpResult>.Failure("OAuth provider mismatch.");
         }
 
         if (storedState.BoundUserId is not { } userId
@@ -89,7 +89,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
             || storedState.StepUpPurpose is not { } stepUpPurpose)
         {
             _logger.LogWarning("OAuth step-up state missing user/session/purpose binding");
-            return Result<StepUpProofResult>.Failure("Invalid or expired OAuth state.");
+            return Result<OAuthStepUpResult>.Failure("Invalid or expired OAuth state.");
         }
 
         // The state record is server-held: the request acts for exactly the user it was bound to.
@@ -102,7 +102,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         if (user is null || user.Status != UserStatus.Active)
         {
             _logger.LogWarning("OAuth step-up blocked: user {UserId} is {Status}", userId, user?.Status);
-            return Result<StepUpProofResult>.Failure("Account is not active.");
+            return Result<OAuthStepUpResult>.Failure("Account is not active.");
         }
 
         var redirectUri = _optionsProvider.GetRedirectUri(request.Provider);
@@ -118,7 +118,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "OAuth code redemption failed for provider {Provider}", request.Provider);
-            return Result<StepUpProofResult>.Failure("Failed to authenticate with OAuth provider.");
+            return Result<OAuthStepUpResult>.Failure("Failed to authenticate with OAuth provider.");
         }
 
         var accountLinked = await _identityContext.OAuthAccounts
@@ -134,14 +134,32 @@ public sealed class CompleteOAuthStepUpCommandHandler
             _logger.LogWarning(
                 "OAuth step-up rejected: subject {Subject} is not linked to user {UserId}",
                 profile.Subject, userId);
-            return Result<StepUpProofResult>.Failure("Unable to verify identity with the OAuth provider.");
+            return Result<OAuthStepUpResult>.Failure("Unable to verify identity with the OAuth provider.");
         }
 
         var purpose = StepUpPurposeMapping.FromChallengePurpose(stepUpPurpose);
         var proof = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, cancellationToken);
+        if (!proof.Succeeded)
+        {
+            return Result<OAuthStepUpResult>.Failure(proof.TypedErrors);
+        }
+
+        // Turning two-factor on spends two proofs (the start, then the activation); one fresh
+        // re-authentication buys both, as one password entry does.
+        StepUpProofResult? spare = null;
+        if (purpose == StepUpPurpose.EnrollMfa)
+        {
+            var second = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, cancellationToken);
+            if (!second.Succeeded)
+            {
+                return Result<OAuthStepUpResult>.Failure(second.TypedErrors);
+            }
+
+            spare = second.Data;
+        }
 
         _logger.LogInformation("OAuth step-up completed for {UserId}", userId);
 
-        return proof;
+        return Result<OAuthStepUpResult>.Success(new OAuthStepUpResult(proof.Data!, spare));
     }
 }

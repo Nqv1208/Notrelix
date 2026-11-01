@@ -232,6 +232,13 @@ export const authFlowOperations = [
         });
       }
       store.loginCurrentUser();
+      // The mock's Google account has no password and no second factor: only its provider.
+      if (params.provider === "google")
+        store.accountPages.becomeProviderOnly(
+          store.getCurrentUser().id,
+          "Google",
+          (minutes) => store.getClock().offsetMinutes(minutes),
+        );
       return ok({
         redirectTo: `/auth/callback${suffix ? `?${suffix}` : ""}`,
       });

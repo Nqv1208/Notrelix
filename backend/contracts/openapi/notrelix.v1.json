@@ -6658,7 +6658,7 @@
           "Identity.Auth"
         ],
         "summary": "Complete OAuth step-up callback",
-        "description": "Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof.",
+        "description": "Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof. The proof travels in a short-lived httpOnly cookie read once by POST /security/step-up/claim-provider, never in the URL; the browser returns to the internal path given at start (stepUpResult=failed is appended on failure).",
         "operationId": "Identity.Auth.OAuth.StepUpCallback",
         "parameters": [
           {
@@ -8083,6 +8083,67 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/step-up/claim-provider": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "Claim the proof a provider re-authentication granted",
+        "description": "Reads the httpOnly proof cookie that GET /oauth/{provider}/step-up/callback set, deletes it and returns the single-use proof(s) once. Without the cookie it answers 400 identity.security.step-up-invalid. The proof stays bound to its user, session and purpose and is checked when it is spent.",
+        "operationId": "Identity.Security.StepUpClaimProvider",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Security.DTOs.ProviderStepUpClaimResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -32347,6 +32408,20 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Security.DTOs.ProviderStepUpClaimResult": {
+        "type": "object",
+        "properties": {
+          "proofToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "spareProofToken": {
+            "type": "string",
             "nullable": true
           }
         },

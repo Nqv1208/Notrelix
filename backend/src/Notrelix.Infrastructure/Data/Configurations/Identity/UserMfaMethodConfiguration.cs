@@ -26,5 +26,11 @@ public class UserMfaMethodConfiguration : IEntityTypeConfiguration<UserMfaMethod
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_user_mfa_methods_user_id");
+
+        // One active factor of a kind per person: two pending methods activated in parallel cannot both win.
+        builder.HasIndex(x => new { x.UserId, x.Type })
+            .IsUnique()
+            .HasFilter("status = 'Active'")
+            .HasDatabaseName("ux_user_mfa_methods_active_per_type");
     }
 }

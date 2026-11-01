@@ -63,7 +63,36 @@ public static class SecurityStepUpEndpoints
             .WithDescription("Verifies the current password and issues a single-use step-up proof.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
 
+        group.MapAuthenticatedPost("/security/step-up/claim-provider", ClaimProviderProof)
+            .WithName("Identity.Security.StepUpClaimProvider")
+            .Produces<ProviderStepUpClaimResult>(StatusCodes.Status200OK, "application/json")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
+            .WithTags("Identity.Security")
+            .WithSummary("Claim the proof a provider re-authentication granted")
+            .WithDescription(
+                "Reads the httpOnly proof cookie that GET /oauth/{provider}/step-up/callback set, deletes it and returns the single-use proof(s) once. " +
+                "Without the cookie it answers 400 identity.security.step-up-invalid. The proof stays bound to its user, session and purpose and is checked when it is spent.")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
+
         return group;
+    }
+
+    private static IResult ClaimProviderProof(ICookieService cookieService)
+    {
+        var held = cookieService.GetStepUpProofCookie();
+        cookieService.DeleteStepUpProofCookie();
+
+        var tokens = held?.Split('.', 2);
+        if (tokens is null || tokens[0].Length == 0)
+        {
+            return Result<ProviderStepUpClaimResult>.Failure(new ApplicationError(
+                "identity.security.step-up-invalid",
+                "Step-up verification is invalid or expired.",
+                ApplicationErrorType.Validation)).ToApiResult();
+        }
+
+        return Result<ProviderStepUpClaimResult>.Success(new ProviderStepUpClaimResult(
+            tokens[0], tokens.Length > 1 && tokens[1].Length > 0 ? tokens[1] : null)).ToApiResult();
     }
 
     private static async Task<IResult> GetSummaryAsync(ISender sender)

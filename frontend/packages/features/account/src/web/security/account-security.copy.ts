@@ -64,6 +64,13 @@ export const en = {
     codeText:
       "Enter a 6-digit code from your authenticator app or a backup code.",
     passwordText: "Enter your current password.",
+    providerText:
+      "You signed in with a provider, so there is no password to enter. Confirm it is you with the same account.",
+    providerButton: "Confirm with {{provider}}",
+    providerFailed:
+      "We could not confirm you with {{provider}}. Try again, or use another way to sign in.",
+    providerNone:
+      "Set a password or turn on two-factor authentication to change security settings.",
     codeLabel: "Code",
     passwordLabel: "Current password",
     confirm: "Confirm",
@@ -226,6 +233,13 @@ export const vi: AccountSecurityCopy = {
     signOutThisConfirm: "Đăng xuất",
     codeText: "Nhập mã 6 số từ ứng dụng xác thực hoặc một mã dự phòng.",
     passwordText: "Nhập mật khẩu hiện tại của bạn.",
+    providerText:
+      "Bạn đăng nhập bằng nhà cung cấp nên không có mật khẩu để nhập. Hãy xác nhận đó là bạn bằng cùng tài khoản đó.",
+    providerButton: "Xác nhận bằng {{provider}}",
+    providerFailed:
+      "Chưa xác nhận được bạn với {{provider}}. Hãy thử lại hoặc dùng cách đăng nhập khác.",
+    providerNone:
+      "Hãy đặt mật khẩu hoặc bật xác thực hai lớp để đổi cài đặt bảo mật.",
     codeLabel: "Mã",
     passwordLabel: "Mật khẩu hiện tại",
     confirm: "Xác nhận",

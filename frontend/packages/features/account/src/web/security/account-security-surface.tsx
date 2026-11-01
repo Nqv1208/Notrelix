@@ -74,7 +74,9 @@ export type AccountSecurityFlow =
       readonly kind: "stepUp";
       /** What the proof is for: two-factor on or off, fresh backup codes, or ending every other device. */
       readonly purpose: "enroll" | "disable" | "renew" | "others";
-      readonly factor: "code" | "password";
+      readonly factor: "code" | "password" | "provider";
+      /** `provider`: the linked providers the person can confirm with (the producer names them). */
+      readonly providers?: readonly string[];
       /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. */
       readonly error: "wrong" | "wait" | "failed" | "expired" | null;
       readonly wait?: number;
@@ -136,6 +138,8 @@ export interface AccountSecuritySurfaceProps {
   /** Answers the open step: the authenticator's digits or a backup code. */
   readonly onSubmitCode?: (code: string) => void;
   readonly onSubmitPassword?: (password: string) => void;
+  /** Leaves for the provider to confirm there (the step's `factor` is `provider`). */
+  readonly onStartProviderStepUp?: (provider: string) => void;
   readonly onCloseFlow?: () => void;
   /** Signs this device out after the confirmation. */
   readonly onConfirmSignOutThis?: () => void;
@@ -261,6 +265,7 @@ function FlowPanel({
   busy,
   onSubmitCode,
   onSubmitPassword,
+  onStartProvider,
   onClose,
 }: {
   copy: AccountSecurityCopy;
@@ -274,11 +279,14 @@ function FlowPanel({
   busy: boolean;
   onSubmitCode?: (code: string) => void;
   onSubmitPassword?: (password: string) => void;
+  onStartProvider?: (provider: string) => void;
   onClose?: () => void;
 }) {
   const [value, setValue] = React.useState("");
   const inputId = React.useId();
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const providerRef = React.useRef<HTMLButtonElement>(null);
+  const usesProvider = flow.kind === "stepUp" && flow.factor === "provider";
   const doneRef = React.useRef<HTMLButtonElement>(null);
   const t = copy.flow;
   // The step opens in place: focus lands on what the person does next (the code field, or the
@@ -287,8 +295,13 @@ function FlowPanel({
     flow.kind === "stepUp" ? `stepUp-${flow.purpose}` : flow.kind;
   const confirmsCodes = flow.kind === "codes";
   React.useEffect(() => {
-    (confirmsCodes ? doneRef : inputRef).current?.focus();
-  }, [focusKey, confirmsCodes]);
+    (confirmsCodes
+      ? doneRef
+      : usesProvider
+        ? providerRef
+        : inputRef
+    ).current?.focus();
+  }, [focusKey, confirmsCodes, usesProvider]);
   if (flow.kind === "codes")
     return (
       <section
@@ -330,17 +343,20 @@ function FlowPanel({
       </section>
     );
   const usesPassword = flow.kind === "stepUp" && flow.factor === "password";
+  const providers = flow.kind === "stepUp" ? (flow.providers ?? []) : [];
   const failure =
     flow.error === "wrong"
       ? usesPassword
         ? t.wrongPassword
         : t.wrongCode
-      : flow.error === "expired"
+      : flow.error === "expired" && !usesProvider
         ? t.expired
         : flow.error === "wait"
           ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
-          : flow.error === "failed"
-            ? copy.actionError
+          : flow.error === "failed" || flow.error === "expired"
+            ? usesProvider && providers.length > 0
+              ? fillCopy(t.providerFailed, { provider: providers.join(" / ") })
+              : copy.actionError
             : null;
   const title =
     flow.kind === "enroll"
@@ -384,52 +400,78 @@ function FlowPanel({
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
           {flow.purpose === "disable" ? `${t.disableText} ` : null}
           {flow.purpose === "enroll" ? `${t.enrollProofText} ` : null}
-          {usesPassword ? t.passwordText : t.codeText}
+          {usesProvider
+            ? providers.length > 0
+              ? t.providerText
+              : t.providerNone
+            : usesPassword
+              ? t.passwordText
+              : t.codeText}
         </p>
       )}
-      <form
-        noValidate
-        className="mt-2.5 flex flex-wrap items-end gap-2.5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!value) return;
-          if (usesPassword) onSubmitPassword?.(value);
-          else onSubmitCode?.(value);
-          setValue("");
-        }}
-      >
-        <div className="flex flex-col gap-1">
-          <label htmlFor={inputId} className="text-xs font-semibold">
-            {usesPassword ? t.passwordLabel : t.codeLabel}
-          </label>
-          <input
-            ref={inputRef}
-            id={inputId}
-            type={usesPassword ? "password" : "text"}
-            autoComplete={usesPassword ? "current-password" : "one-time-code"}
-            inputMode={usesPassword ? undefined : "numeric"}
-            value={value}
-            aria-invalid={failure ? true : undefined}
-            onChange={(event) => setValue(event.target.value)}
-            className={cn(INPUT, "min-w-[200px]")}
-          />
+      {usesProvider ? (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+          {providers.map((provider, index) => (
+            <button
+              key={provider}
+              ref={index === 0 ? providerRef : undefined}
+              type="button"
+              disabled={busy}
+              onClick={() => onStartProvider?.(provider)}
+              className={cn(BTN_PRIMARY, FOCUS)}
+            >
+              {fillCopy(t.providerButton, { provider })}
+            </button>
+          ))}
+          <button type="button" onClick={onClose} className={cn(BTN_SM, FOCUS)}>
+            {t.cancel}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={busy || !value || flow.error === "wait"}
-          className={cn(
-            flow.kind === "stepUp" && flow.purpose === "disable"
-              ? BTN_DANGER
-              : BTN_PRIMARY,
-            FOCUS,
-          )}
+      ) : (
+        <form
+          noValidate
+          className="mt-2.5 flex flex-wrap items-end gap-2.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!value) return;
+            if (usesPassword) onSubmitPassword?.(value);
+            else onSubmitCode?.(value);
+            setValue("");
+          }}
         >
-          {t.confirm}
-        </button>
-        <button type="button" onClick={onClose} className={cn(BTN_SM, FOCUS)}>
-          {t.cancel}
-        </button>
-      </form>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={inputId} className="text-xs font-semibold">
+              {usesPassword ? t.passwordLabel : t.codeLabel}
+            </label>
+            <input
+              ref={inputRef}
+              id={inputId}
+              type={usesPassword ? "password" : "text"}
+              autoComplete={usesPassword ? "current-password" : "one-time-code"}
+              inputMode={usesPassword ? undefined : "numeric"}
+              value={value}
+              aria-invalid={failure ? true : undefined}
+              onChange={(event) => setValue(event.target.value)}
+              className={cn(INPUT, "min-w-[200px]")}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={busy || !value || flow.error === "wait"}
+            className={cn(
+              flow.kind === "stepUp" && flow.purpose === "disable"
+                ? BTN_DANGER
+                : BTN_PRIMARY,
+              FOCUS,
+            )}
+          >
+            {t.confirm}
+          </button>
+          <button type="button" onClick={onClose} className={cn(BTN_SM, FOCUS)}>
+            {t.cancel}
+          </button>
+        </form>
+      )}
       {failure ? (
         <p role="alert" className="m-0 mt-2 text-crumb text-danger-text">
           {failure}
@@ -538,6 +580,7 @@ function SecurityBody({
   onSetTwoFactor,
   onSubmitCode,
   onSubmitPassword,
+  onStartProviderStepUp,
   onCloseFlow,
   onConfirmSignOutThis,
   onLoadMoreActivity,
@@ -718,6 +761,7 @@ function SecurityBody({
           busy={busy}
           onSubmitCode={onSubmitCode}
           onSubmitPassword={onSubmitPassword}
+          onStartProvider={onStartProviderStepUp}
           onClose={onCloseFlow}
         />
       ) : null}
