@@ -123,7 +123,12 @@ export function StepBar({
                   position + 1
                 )}
               </span>
-              {copy.frame.steps[id]}
+              {/* On a phone only the current step names itself; the others keep their number. */}
+              <span
+                className={state === "current" ? undefined : "max-sm:sr-only"}
+              >
+                {copy.frame.steps[id]}
+              </span>
               <span className="sr-only">
                 ,{" "}
                 {state === "done"
@@ -170,18 +175,23 @@ export function OnboardingFrame({
 }: OnboardingFrameProps) {
   return (
     <div className="flex min-h-screen flex-col bg-popover text-foreground">
-      <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line bg-popover px-6">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-popover px-4 sm:gap-4 sm:px-6">
         <span className="flex items-center gap-2.5">
           <NotrelixLogoMark className="h-auto w-6.5" aria-hidden="true" />
           <b className="text-dialog-title font-bold tracking-tight">
             {copy.frame.brand}
           </b>
         </span>
-        <span aria-hidden="true" className="h-5.5 w-px bg-line" />
-        <span className="text-item-prose text-muted-foreground">
+        <span
+          aria-hidden="true"
+          className="hidden h-5.5 w-px bg-line sm:block"
+        />
+        <span className="text-item-prose whitespace-nowrap text-muted-foreground">
           <b className="font-semibold text-foreground">{stepLabel}</b>
-          {" · "}
-          {stepName}
+          <span className="max-sm:sr-only">
+            {" · "}
+            {stepName}
+          </span>
         </span>
         <span className="flex-1" />
         <span className="hidden text-item-ui text-muted-foreground sm:inline">
@@ -192,7 +202,7 @@ export function OnboardingFrame({
             type="button"
             disabled={exit.disabled}
             onClick={exit.onClick}
-            className="inline-flex h-9 cursor-pointer items-center rounded-[8px] border border-line-strong bg-popover px-3.5 text-item-ui font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center rounded-[8px] border border-line-strong bg-popover px-3.5 text-item-ui font-medium whitespace-nowrap text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50 max-md:h-touch"
           >
             {exit.label}
           </button>

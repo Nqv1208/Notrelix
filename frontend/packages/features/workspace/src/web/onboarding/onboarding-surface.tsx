@@ -391,7 +391,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
               type="button"
               disabled={resend.status === "sending" || resend.secondsLeft > 0}
               onClick={props.onResendConfirmation}
-              className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground underline disabled:cursor-not-allowed disabled:text-state-disabled-foreground disabled:no-underline"
+              className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground underline max-md:inline-flex max-md:min-h-touch max-md:items-center disabled:cursor-not-allowed disabled:text-state-disabled-foreground disabled:no-underline"
             >
               {resend.status === "sending"
                 ? copy.frame.resendSending

@@ -190,6 +190,68 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     expect(windowEventSpy).not.toHaveBeenCalled();
   });
 
+  function refreshWith(refresh: () => Promise<Response>) {
+    const sessionExpiredSpy = vi.fn();
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/csrf"))
+        return Promise.resolve(
+          new Response(JSON.stringify({ token: "test-csrf-token" }), {
+            status: 200,
+          }),
+        );
+      if (url.includes("/auth/refresh")) return refresh();
+      return Promise.resolve(new Response("Unauthorized", { status: 401 }));
+    });
+    const client = createNotrelixClient({
+      baseUrl: "http://api.test",
+      fetchImpl: mockFetch as unknown as typeof fetch,
+      onSessionExpired: sessionExpiredSpy,
+    });
+    return { client, sessionExpiredSpy };
+  }
+
+  it("keeps the session when the connection drops during the refresh: offline failure, no session-expired event", async () => {
+    const { client, sessionExpiredSpy } = refreshWith(() =>
+      Promise.reject(new TypeError("Failed to fetch")),
+    );
+
+    await expect(client.api.get("/resource")).rejects.toMatchObject({
+      kind: "network",
+    });
+    expect(sessionExpiredSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session when the refresh is limited or the server fails; only a 401 ends it", async () => {
+    for (const status of [429, 500, 503]) {
+      const { client, sessionExpiredSpy } = refreshWith(() =>
+        Promise.resolve(new Response("busy", { status })),
+      );
+      await expect(client.api.get("/resource")).rejects.toMatchObject({
+        kind: "server",
+        status,
+      });
+      expect(sessionExpiredSpy, `status ${status}`).not.toHaveBeenCalled();
+    }
+  });
+
+  it("asks again with the same session once the connection is back", async () => {
+    let attempts = 0;
+    const { client, sessionExpiredSpy } = refreshWith(() => {
+      attempts += 1;
+      return attempts === 1
+        ? Promise.reject(new TypeError("Failed to fetch"))
+        : Promise.resolve(new Response("OK", { status: 200 }));
+    });
+
+    await expect(client.api.get("/resource")).rejects.toMatchObject({
+      kind: "network",
+    });
+    // The retry's own call still answers 401 in this stub, but the refresh went through.
+    await expect(client.api.get("/resource")).rejects.toThrow();
+    expect(attempts).toBe(2);
+    expect(sessionExpiredSpy).not.toHaveBeenCalled();
+  });
+
   it("ensures separate client instances do NOT share refresh promises", async () => {
     let client1Refresh = 0;
     let client2Refresh = 0;
