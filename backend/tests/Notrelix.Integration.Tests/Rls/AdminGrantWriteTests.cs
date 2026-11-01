@@ -93,6 +93,15 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
             "SELECT version FROM workspace.workspace_members WHERE workspace_id = @w AND user_id = @u",
             ("w", workspaceId), ("u", userId));
 
+    private async Task<HttpResponseMessage> MemberActionAsync(HttpClient owner, Guid userId, string action) =>
+        await owner.PostAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{userId}/{action}",
+            new { expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, userId)) });
+
+    private async Task<HttpResponseMessage> RemoveMemberAsync(HttpClient owner, Guid userId) =>
+        await owner.DeleteAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{userId}?expectedVersion={await MemberVersionAsync(_a.WorkspaceId, userId)}");
+
     private Task<string> GrantOfAsync(Guid workspaceId, Guid userId, string column) =>
         OwnerScalarAsync(
             $"SELECT {column} FROM authz.access_grants WHERE workspace_id = @w AND user_id = @u",
@@ -283,8 +292,8 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
         using var owner = ClientFor(factory, _a.User);
 
-        (await owner.DeleteAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{plain.Id}")).IsSuccessStatusCode.Should().BeTrue();
-        (await owner.DeleteAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{admin.Id}")).IsSuccessStatusCode.Should().BeTrue();
+        (await RemoveMemberAsync(owner, plain.Id)).IsSuccessStatusCode.Should().BeTrue();
+        (await RemoveMemberAsync(owner, admin.Id)).IsSuccessStatusCode.Should().BeTrue();
 
         (await AccountGrantStateAsync(plain.Id)).Should().Be("revoked");
         (await AccountGrantStateAsync(admin.Id)).Should().Be("active", "an account administrator's grant is an Account role");
@@ -310,19 +319,19 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         var path = $"/api/v1/workspaces/{_a.WorkspaceId}/members";
 
         await AssignAsync(bob.Id);
-        (await owner.PostAsync($"{path}/{bob.Id}/suspend", null)).IsSuccessStatusCode.Should().BeTrue();
+        (await MemberActionAsync(owner, bob.Id, "suspend")).IsSuccessStatusCode.Should().BeTrue();
         (await AssignmentCountAsync(bob.Id)).Should().Be("1", "a suspension is reversible and keeps the configuration until reactivation");
-        (await owner.PostAsync($"{path}/{bob.Id}/activate", null)).IsSuccessStatusCode.Should().BeTrue();
+        (await MemberActionAsync(owner, bob.Id, "activate")).IsSuccessStatusCode.Should().BeTrue();
         (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a reactivated member returns to the built-in role");
 
         await AssignAsync(bob.Id);
-        (await owner.PostAsync($"{path}/{bob.Id}/suspend", null)).IsSuccessStatusCode.Should().BeTrue();
+        (await MemberActionAsync(owner, bob.Id, "suspend")).IsSuccessStatusCode.Should().BeTrue();
         var readd = await owner.PostAsJsonAsync($"{path}/add", new { userId = bob.Id, role = "Member" });
         readd.IsSuccessStatusCode.Should().BeTrue(await readd.Content.ReadAsStringAsync());
         (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a suspended member added back is configured again");
 
         await AssignAsync(bob.Id);
-        (await owner.DeleteAsync($"{path}/{bob.Id}")).IsSuccessStatusCode.Should().BeTrue();
+        (await RemoveMemberAsync(owner, bob.Id)).IsSuccessStatusCode.Should().BeTrue();
         (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a removed member keeps no custom role");
 
     }
