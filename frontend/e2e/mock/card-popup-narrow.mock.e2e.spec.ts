@@ -118,10 +118,13 @@ for (const [width, height] of [
         await page.getByRole("button", { name: CARD, exact: true }).click();
         const dialog = page.getByRole("dialog", { name: CARD });
         await expect(dialog).toBeVisible();
-        await dialog.getByRole("button", { name: "Thao tác trên thẻ" }).click();
-        await page
-          .getByRole("menuitem", { name: /^Sao chép liên kết/ })
-          .click();
+        // Keyboard only: focus the actions button, open the menu with Enter, activate the item with Enter.
+        await dialog.getByRole("button", { name: "Thao tác trên thẻ" }).focus();
+        await page.keyboard.press("Enter");
+        const item = page.getByRole("menuitem", { name: /^Sao chép liên kết/ });
+        await expect(item).toBeVisible();
+        await item.focus();
+        await page.keyboard.press("Enter");
         const toast = page.getByText(
           blocked ? "Không sao chép được liên kết" : "Đã sao chép liên kết",
         );
@@ -137,6 +140,85 @@ for (const [width, height] of [
           box.x + box.width,
           "toast inside the viewport",
         ).toBeLessThanOrEqual(width);
+        await page.waitForTimeout(500);
+        const results = await new AxeBuilder({ page }).analyze();
+        expect(
+          results.violations
+            .filter((v) => v.impact === "serious" || v.impact === "critical")
+            .map((v) => ({
+              id: v.id,
+              nodes: v.nodes.map((n) => n.target.join(" ")),
+            })),
+        ).toEqual([]);
+      });
+    }
+  }
+}
+
+for (const [width, height] of [
+  [390, 844],
+  [1440, 900],
+] as const) {
+  for (const dark of [false, true]) {
+    for (const blocked of [false, true]) {
+      test(`copy board link from the board header: ${blocked ? "a blocked clipboard says so" : "the toast confirms"}, ${width} ${dark ? "dark" : "light"}`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height });
+        await page.addInitScript(
+          ({ theme, mode, deny }) => {
+            try {
+              window.localStorage.setItem("notrelix-locale", "vi");
+              window.localStorage.setItem(theme, mode);
+            } catch {
+              // Private mode: defaults apply.
+            }
+            const writes: string[] = [];
+            (window as unknown as { __clip: string[] }).__clip = writes;
+            Object.defineProperty(navigator, "clipboard", {
+              configurable: true,
+              value: {
+                writeText: (text: string) => {
+                  if (deny) return Promise.reject(new Error("blocked"));
+                  writes.push(text);
+                  return Promise.resolve();
+                },
+              },
+            });
+          },
+          { theme: THEME_KEY, mode: dark ? "dark" : "light", deny: blocked },
+        );
+        await page.goto(BOARD);
+        await expect(
+          page.getByRole("button", { name: CARD, exact: true }),
+        ).toBeVisible();
+        // The board header comes first in the page; the cards below carry their own "more" buttons.
+        const more = page
+          .getByRole("button", { name: "Thêm tuỳ chọn" })
+          .first();
+        await more.focus();
+        await page.keyboard.press("Enter");
+        const item = page.getByRole("menuitem", {
+          name: "Sao chép liên kết board",
+        });
+        await expect(item).toBeVisible();
+        await item.focus();
+        await page.keyboard.press("Enter");
+        const toast = page.getByText(
+          blocked ? "Không sao chép được liên kết" : "Đã sao chép liên kết",
+        );
+        await expect(toast).toBeVisible();
+        const written = await page.evaluate(
+          () => (window as unknown as { __clip: string[] }).__clip,
+        );
+        if (blocked) expect(written).toEqual([]);
+        else {
+          expect(written[0]).toContain("/boards/mock-board-erp");
+          expect(written[0]).not.toContain("item=");
+        }
+        const box = (await toast.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
         await page.waitForTimeout(500);
         const results = await new AxeBuilder({ page }).analyze();
         expect(
