@@ -36,7 +36,11 @@ import { statusOptionFormCatalog } from "../../../status-option/status-option-fo
 import { mainTableCatalog } from "../main-table.catalog";
 import { ARCHIVE_UNDO_MS, MainTableView } from "../main-table-view";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 beforeAll(() => {

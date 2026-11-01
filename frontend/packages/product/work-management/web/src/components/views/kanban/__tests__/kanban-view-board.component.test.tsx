@@ -34,7 +34,11 @@ import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 beforeAll(() => {

@@ -31,7 +31,11 @@ import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
 import { BoardTimelineView } from "../board-timeline-view";
 import { timelineCatalog } from "../timeline.catalog";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 /** Monday 12/10/2026 10:40 in Hanoi. */
