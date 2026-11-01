@@ -34,7 +34,7 @@ test("a network drop during the refresh keeps the session and the retry opens it
     .getByRole("alert")
     .getByRole("button", { name: /retry|try again/i })
     .click();
-  await expect(page).toHaveURL(new RegExp(at.replace(/\//g, "\\/")), {
+  await expect(page).toHaveURL((url) => url.pathname === at, {
     timeout: 20_000,
   });
   await expect(page).not.toHaveURL(/\/sign-in/);
