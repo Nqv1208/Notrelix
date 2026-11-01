@@ -29,6 +29,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
+  Skeleton,
 } from "@notrelix/ui-web";
 import {
   fillBoardShareCopy as fill,
@@ -160,6 +161,12 @@ export interface BoardShareDialogSurfaceProps {
     /** The refusal offers "Add a Manager": it focuses the add field at Manager level. */
     readonly addManager?: boolean;
   } | null;
+  /**
+   * The Board's sharing read: `loading` while it is on its way, `error` when it failed (the list is then not
+   * drawn and the dialog offers `onRetryPeople`); absent once it has answered.
+   */
+  readonly peopleState?: "loading" | "error";
+  readonly onRetryPeople?: () => void;
   readonly initialView?: "share" | "private" | "log";
   readonly initialLevelMenu?: string | null;
 }
@@ -308,6 +315,8 @@ function ShareBody({
   notice,
   managerToken,
   addManager,
+  peopleState,
+  onRetryPeople,
 }: BodyProps & {
   menuFor: string | null;
   setMenuFor: (id: string | null) => void;
@@ -490,7 +499,46 @@ function ShareBody({
           </div>
         </div>
 
-        {view.hiddenCounts ? (
+        {peopleState === "loading" ? (
+          <div
+            role="status"
+            aria-label={copy.people.loading}
+            aria-busy="true"
+            className="flex flex-col gap-2"
+          >
+            <Skeleton className="h-3 w-48" />
+            {[0, 1, 2].map((row) => (
+              <div
+                key={row}
+                className="flex min-h-[50px] items-center gap-[11px]"
+              >
+                <Skeleton className="size-[30px] shrink-0 rounded-full" />
+                <span className="flex flex-1 flex-col gap-1.5">
+                  <Skeleton className="h-3.5 w-1/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </span>
+                <Skeleton className="h-[30px] w-20 rounded-[9px]" />
+              </div>
+            ))}
+            <span className="sr-only">{copy.people.loading}</span>
+          </div>
+        ) : peopleState === "error" ? (
+          <div
+            data-f="perror"
+            className="flex items-center gap-3 rounded-[10px] border border-line bg-background p-3 text-compact leading-normal text-muted-foreground max-md:flex-wrap"
+          >
+            <p role="alert" className="m-0 min-w-0 flex-1">
+              {copy.people.loadError}
+            </p>
+            <button
+              type="button"
+              onClick={onRetryPeople}
+              className={cn(BTN, FOCUS)}
+            >
+              {copy.people.retry}
+            </button>
+          </div>
+        ) : view.hiddenCounts ? (
           <p
             data-f="pcounts"
             className="m-0 text-compact leading-[1.45] text-meta-foreground"
@@ -999,7 +1047,7 @@ function PersonRow({
       <span data-f="who" className="min-w-0 flex-1">
         <b
           data-f="wname"
-          className="block truncate text-nav leading-[1.45] font-semibold text-foreground"
+          className="block truncate text-nav leading-[1.45] font-semibold text-foreground max-md:overflow-visible max-md:whitespace-normal max-md:break-words"
         >
           {row.name}
           {row.isYou ? (
@@ -1009,7 +1057,7 @@ function PersonRow({
             <span
               data-f="badge"
               className={cn(
-                "ml-1.5 rounded-[4px] px-1.5 py-px align-[1px] text-key leading-[1.45] font-semibold",
+                "ml-1.5 rounded-[4px] px-1.5 py-px align-[1px] text-key leading-[1.45] font-semibold whitespace-nowrap",
                 row.badge === "outside"
                   ? "bg-danger-subtle text-danger-text"
                   : "bg-warning-subtle text-warning-text",
