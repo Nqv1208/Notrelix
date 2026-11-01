@@ -42,3 +42,7 @@ docs/superpowers/
 .turbo/
 .playwright-mcp/
 .impeccable/
+
+# Local API run output (OpenAPI export copy, uploaded files)
+backend/src/Notrelix.API/Contracts/openapi/
+backend/src/Notrelix.API/storage/
