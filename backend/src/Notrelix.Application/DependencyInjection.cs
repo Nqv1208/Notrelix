@@ -187,8 +187,23 @@ public static class DependencyInjection
         // Producer-owned public projection source (WorkManagement placement facts)
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
 
+        // Platform operator console: the operator's use cases are plain services, not pipeline requests.
+        // They run only on operator routes under the operator database login, after the operator's own
+        // authentication; the tenant pipeline (execution context, tenant data session, tenant authorization)
+        // never carries them.
+        services.AddScoped<Notrelix.Application.Features.Operators.Public.Audit.IOperatorAuditTrail,
+            Notrelix.Application.Features.Operators.Audit.OperatorAuditTrail>();
+        services.AddScoped<Notrelix.Application.Features.Operators.Public.Audit.IOperatorChangeCommit,
+            Notrelix.Application.Features.Operators.Audit.OperatorChangeCommit>();
+        services.AddScoped<Notrelix.Application.Features.Operators.Auth.OperatorSignInService>();
+        services.AddScoped<Notrelix.Application.Features.Operators.Audit.OperatorAuditReader>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Operator.OperatorAccountService>();
+        services.AddScoped<Notrelix.Application.Features.Billing.Operator.OperatorPlanCatalogService>();
+        services.AddScoped<Notrelix.Application.Features.Billing.Operator.OperatorAccountBillingService>();
+
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Billing.Plans.BillingPlanCatalogReader>();
         services.AddScoped<Notrelix.Application.Features.Billing.Plans.BillingPlanResolver>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.Reports.IWorkReportFacts,
             Notrelix.Application.Features.WorkManagement.BoardItems.Services.WorkReportFactsService>();

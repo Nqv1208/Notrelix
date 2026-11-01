@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Billing.Abstractions;
 
 namespace Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan;
 
@@ -10,18 +9,16 @@ public sealed record BillingPlanLimitDto(string Code, bool IsUnlimited, int? Lim
 public sealed record BillingPlanDto(string Code, string Name, IReadOnlyList<BillingPlanLimitDto> Limits);
 
 /// <summary>
-/// The plan the workspace's account is on, the catalog it can move within, and whether the
-/// caller may change the plan (account owner, in an environment that allows it).
+/// The plan the workspace's account is on and the catalog's sellable plans. A plan change is made by the
+/// platform operator, never from a tenant session, so the answer carries no change right.
 /// </summary>
 public sealed record WorkspaceBillingPlanDto(
     BillingPlanDto CurrentPlan,
-    IReadOnlyList<BillingPlanDto> AvailablePlans,
-    bool CanChangePlan);
+    IReadOnlyList<BillingPlanDto> AvailablePlans);
 
 /// <summary>
 /// Reads the account's plan for a workspace. Workspace Owners and Admins may view billing
-/// (the permission that manages the features these limits gate); changing the plan is a
-/// separate command that needs the account owner.
+/// (the permission that manages the features these limits gate).
 /// </summary>
 public record GetWorkspaceBillingPlanQuery(Guid WorkspaceId)
     : IQuery<Result<WorkspaceBillingPlanDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
@@ -38,30 +35,20 @@ public static class BillingPlanMapper
         plan.Limits
             .Select(l => new BillingPlanLimitDto(l.Key, l.Value is null, l.Value))
             .ToList());
-
-    public static WorkspaceBillingPlanDto ToOverview(BillingPlanDefinition current, bool canChange) => new(
-        ToDto(current),
-        BillingPlanCatalog.All.Select(ToDto).ToList(),
-        canChange);
 }
 
 public class GetWorkspaceBillingPlanQueryHandler
     : IRequestHandler<GetWorkspaceBillingPlanQuery, Result<WorkspaceBillingPlanDto>>
 {
     private readonly BillingPlanResolver _resolver;
-    private readonly IBillingUsageReader _reader;
-    private readonly IBillingPlanChangePolicy _policy;
+    private readonly BillingPlanCatalogReader _catalog;
     private readonly ICurrentRequestContext _requestContext;
 
     public GetWorkspaceBillingPlanQueryHandler(
-        BillingPlanResolver resolver,
-        IBillingUsageReader reader,
-        IBillingPlanChangePolicy policy,
-        ICurrentRequestContext requestContext)
+        BillingPlanResolver resolver, BillingPlanCatalogReader catalog, ICurrentRequestContext requestContext)
     {
         _resolver = resolver;
-        _reader = reader;
-        _policy = policy;
+        _catalog = catalog;
         _requestContext = requestContext;
     }
 
@@ -70,9 +57,10 @@ public class GetWorkspaceBillingPlanQueryHandler
     {
         var accountId = _requestContext.RequireAccountId();
         var plan = await _resolver.ResolveAsync(accountId, cancellationToken);
-        var canChange = _policy.IsPlanChangeEnabled
-            && await _reader.IsAccountOwnerAsync(accountId, _requestContext.UserId, cancellationToken);
+        var available = await _catalog.ListSellableAsync(cancellationToken);
 
-        return Result<WorkspaceBillingPlanDto>.Success(BillingPlanMapper.ToOverview(plan, canChange));
+        return Result<WorkspaceBillingPlanDto>.Success(new WorkspaceBillingPlanDto(
+            BillingPlanMapper.ToDto(plan),
+            available.Select(BillingPlanMapper.ToDto).ToList()));
     }
 }

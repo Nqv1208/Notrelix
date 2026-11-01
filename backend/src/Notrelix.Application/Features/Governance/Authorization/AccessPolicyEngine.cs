@@ -119,6 +119,16 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// </summary>
     private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
     {
+        // A suspended or closed account is read-only for everyone in it, whatever the request (owner decision:
+        // the platform operator suspends an account; its content stays and nothing is deleted).
+        if (request is IWriteRequest && facts.AccountSuspended)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This account is suspended. It is read-only until the suspension is lifted.",
+                AccessDenialCodes.AccountSuspended);
+        }
+
         if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)
         {
             return null;

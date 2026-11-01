@@ -48,6 +48,12 @@ public sealed class PostgresTestContainer : IAsyncLifetime
     public string WorkerConnectionString { get; private set; } = string.Empty;
 
     /// <summary>
+    /// The platform operator console's login: the real <c>notrelix_operator</c> LOGIN role, provisioned the way
+    /// <c>--rls-apply</c> provisions it, so <c>session_user</c> is the operator role itself.
+    /// </summary>
+    public string OperatorConnectionString { get; private set; } = string.Empty;
+
+    /// <summary>
     /// Applies the row-level-security policy pack (roles, helpers, policies, owner-defined functions) as the
     /// owner. The fixture applies it once after migrating, because adapters call pack functions (for
     /// example the co-member profile resolver); the owner connection bypasses the policies themselves.
@@ -72,6 +78,20 @@ public sealed class PostgresTestContainer : IAsyncLifetime
             AppConnectionString = await AppRoleLogin.CreateAsync(OwnerConnectionString, "notrelix_test_app_login");
             WorkerConnectionString = await AppRoleLogin.CreateAsync(
                 OwnerConnectionString, "notrelix_test_worker_login", AppRoleLogin.WorkerRole);
+
+            var operatorSecret = Guid.NewGuid().ToString("N");
+            await using (var provisioning = new NpgsqlConnection(OwnerConnectionString))
+            {
+                await RlsLoginRoleProvisioner.ProvisionAsync(
+                    provisioning, [new LoginRoleCredential(RlsLoginRoleProvisioner.OperatorRoleName, operatorSecret)],
+                    NullLogger.Instance);
+            }
+
+            OperatorConnectionString = new NpgsqlConnectionStringBuilder(OwnerConnectionString)
+            {
+                Username = RlsLoginRoleProvisioner.OperatorRoleName,
+                Password = operatorSecret,
+            }.ConnectionString;
         }
     }
 

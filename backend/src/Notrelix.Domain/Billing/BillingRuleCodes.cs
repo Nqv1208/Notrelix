@@ -9,6 +9,8 @@ public static class BillingRuleCodes
     public const string Billing_Plan_PriceCannotBeNegative = "Billing_Plan_PriceCannotBeNegative";
     public const string Billing_Plan_LimitCannotBeNegative = "Billing_Plan_LimitCannotBeNegative";
     public const string Billing_Plan_FeatureAlreadyAdded = "Billing_Plan_FeatureAlreadyAdded";
+    public const string Billing_Plan_FamilyKeyInvalid = "Billing_Plan_FamilyKeyInvalid";
+    public const string Billing_Plan_RevisionInvalid = "Billing_Plan_RevisionInvalid";
 
     // ── Subscription ──────────────────────────────────────────────────────
     public const string Billing_Subscription_PeriodStartMustBeBeforeEnd = "Billing_Subscription_PeriodStartMustBeBeforeEnd";

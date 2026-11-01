@@ -31,6 +31,7 @@ public class BillingCapabilityFactsProviderTests
     {
         _clockMock.Setup(c => c.UtcNow).Returns(TestNow);
         _contextMock.Setup(c => c.Subscriptions).Returns(TestBillingDbSet.Create(new List<Subscription>()).Object);
+        _contextMock.Setup(c => c.Plans).Returns(TestBillingDbSet.Create(TestBaselinePlans.All()).Object);
         _usageReader
             .Setup(r => r.GetAccountUsageAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new BillingAccountUsage(0, 0, 0));
@@ -38,7 +39,7 @@ public class BillingCapabilityFactsProviderTests
             _contextMock.Object,
             _clockMock.Object,
             _usageReader.Object,
-            new BillingPlanResolver(_contextMock.Object, _clockMock.Object));
+            new BillingPlanResolver(_contextMock.Object, _clockMock.Object, new BillingPlanCatalogReader(_contextMock.Object)));
     }
 
     private void SetupEntitlements(params Entitlement[] entitlements)
@@ -390,10 +391,10 @@ public class BillingCapabilityFactsProviderTests
             "the capability fact carries stable capability meaning only");
     }
 
-    private void OnPlan(BillingPlanDefinition plan) =>
+    private void OnPlan(Plan plan) =>
         _contextMock.Setup(c => c.Subscriptions).Returns(TestBillingDbSet.Create(new List<Subscription>
         {
-            Subscription.Create(AccountId, plan.PlanId, plan.Tier, TestNow.AddDays(-1), TestNow.AddYears(1), null, TestNow.AddDays(-1))
+            Subscription.Create(AccountId, plan.Id, plan.Tier, TestNow.AddDays(-1), TestNow.AddYears(1), null, TestNow.AddDays(-1))
         }).Object);
 
     [Theory]
@@ -416,7 +417,7 @@ public class BillingCapabilityFactsProviderTests
     {
         SetupEntitlements();
         SetupUsage();
-        OnPlan(BillingPlanCatalog.Pro);
+        OnPlan(TestBaselinePlans.Pro);
 
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.MemberSeat, 1, CancellationToken.None);
@@ -429,7 +430,7 @@ public class BillingCapabilityFactsProviderTests
     {
         SetupEntitlements();
         SetupUsage();
-        OnPlan(BillingPlanCatalog.Enterprise);
+        OnPlan(TestBaselinePlans.Enterprise);
 
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.MemberSeat, 1, CancellationToken.None);

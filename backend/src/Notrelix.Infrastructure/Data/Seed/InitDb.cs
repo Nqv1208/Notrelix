@@ -1,5 +1,4 @@
-using Notrelix.Application.Features.Billing.Plans;
-using Notrelix.Domain.Billing.Subscriptions;
+using Notrelix.Infrastructure.Billing;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Collaboration.Comments;
@@ -152,9 +151,7 @@ internal static class InitDb
             return;
         }
 
-        var pro = BillingPlanCatalog.Pro;
-        context.Subscriptions.Add(Subscription.Create(
-            account.Id, pro.PlanId, pro.Tier, Epoch, Epoch.AddYears(10), createdBy: null, Epoch));
+        context.Subscriptions.Add(PlanCatalogSeed.CreateProSubscription(account.Id, Epoch, Epoch.AddYears(10)));
         await ClearAndSaveAsync(context, ct);
     }
 

@@ -82,6 +82,8 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
         EnsureNotDeleted();
         Guard.NotEmpty(suspendedBy);
         if (Status == AccountStatus.Suspended) return;
+        if (Status == AccountStatus.Closed)
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Account_ClosedCannotBeSuspended, "A closed account cannot be suspended.");
 
         var previousStatus = Status;
         var pending = PrepareAuditUpdate(suspendedBy, suspendedAt);
@@ -96,6 +98,8 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
         EnsureNotDeleted();
         Guard.NotEmpty(activatedBy);
         if (Status == AccountStatus.Active || Status == AccountStatus.Trialing) return;
+        if (Status == AccountStatus.Closed)
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Account_ClosedCannotBeActivated, "A closed account is reopened only by its owner, not by lifting a suspension.");
 
         var previousStatus = Status;
         var pending = PrepareAuditUpdate(activatedBy, activatedAt);

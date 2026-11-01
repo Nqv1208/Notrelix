@@ -14,7 +14,9 @@ public class PlanLimitConfiguration : IEntityTypeConfiguration<PlanLimit>
         builder.Property(x => x.PlanId).HasColumnName("plan_id").IsRequired();
         builder.Property(x => x.Feature).HasColumnName("feature_code").HasConversion(v => v.Code, v => FeatureCode.Create(v)).IsRequired().HasMaxLength(128);
         builder.Property(x => x.Limit).HasColumnName("limit_value").IsRequired();
+        builder.Property(x => x.IsUnlimited).HasColumnName("is_unlimited").IsRequired().HasDefaultValue(false);
 
         builder.HasIndex(x => x.PlanId).HasDatabaseName("idx_plan_limits_plan_id");
+        builder.HasIndex(x => new { x.PlanId, x.Feature }).IsUnique().HasDatabaseName("ux_plan_limits_plan_feature");
     }
 }

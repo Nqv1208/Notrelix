@@ -11,6 +11,9 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.FamilyKey).HasColumnName("family_key").IsRequired().HasMaxLength(64);
+        builder.Property(x => x.Revision).HasColumnName("revision").IsRequired();
+        builder.Property(x => x.Tier).HasColumnName("tier").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(2000);
         builder.Property(x => x.Period).HasColumnName("period").HasConversion<string>().IsRequired().HasMaxLength(50);
@@ -21,6 +24,8 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
             p.Property(m => m.Amount).HasColumnName("price_amount").HasColumnType("decimal(18,2)").IsRequired();
             p.Property(m => m.Currency).HasColumnName("price_currency").IsRequired().HasMaxLength(3).HasDefaultValue("USD");
         });
+
+        builder.HasIndex(x => new { x.FamilyKey, x.Revision }).IsUnique().HasDatabaseName("ux_plans_family_revision");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");

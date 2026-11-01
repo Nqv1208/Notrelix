@@ -87,6 +87,12 @@ public sealed record AccessFacts(
     /// It replaces the built-in workspace role for the decision (owner decision 2026-10-31).
     /// </summary>
     public AccessCustomRole? CustomRole { get; init; }
+
+    /// <summary>
+    /// The request's account is Suspended or Closed (set by the platform operator). Reads stay open; the policy
+    /// refuses every write once the normal decision is Allow, so a caller without access still gets NotFound.
+    /// </summary>
+    public bool AccountSuspended { get; init; }
 }
 
 /// <summary>A custom role as access facts: its fixed built-in base and the actions it adds and removes.</summary>

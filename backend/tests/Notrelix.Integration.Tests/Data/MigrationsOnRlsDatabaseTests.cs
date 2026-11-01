@@ -20,7 +20,7 @@ public sealed class MigrationsOnRlsDatabaseTests
 {
     // The policy pack targets the current schema, so the anchor must be recent enough to have the columns it reads.
     // When the pack outgrows the anchor, the policy apply step fails: move the anchor to a newer migration.
-    private const string Anchor = "20261028180000_ScopeBoardTemplatesToWorkspace";
+    private const string Anchor = "20261101110000_AddCustomRoleAccountScope";
 
     [Fact]
     public async Task EveryMigrationAfterTheAnchor_AppliesOnADatabaseThatAlreadyHasRlsPolicies()

@@ -310,4 +310,7 @@ public partial class ApplicationDbContext
     public DbSet<WorkspaceActivityLogRecord> WorkspaceActivityLogs => Set<WorkspaceActivityLogRecord>();
     public DbSet<ActivityReadStateRecord> ActivityReadStates => Set<ActivityReadStateRecord>();
 
+    // Platform operator console
+    public DbSet<Notrelix.Domain.Operators.OperatorAccount> OperatorAccounts => Set<Notrelix.Domain.Operators.OperatorAccount>();
+    public DbSet<Notrelix.Domain.Operators.OperatorAuditEntry> OperatorAudit => Set<Notrelix.Domain.Operators.OperatorAuditEntry>();
 }
