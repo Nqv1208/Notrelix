@@ -24,7 +24,7 @@ public class UpdateLabelTests : WorkManagementHandlerTestBase
             "Bug", LabelColor.Create("#FF0000"), TestUserId, TestNow);
         SetupLabels(label);
 
-        var command = new UpdateLabelCommand(label.Id, "Feature", "#00FF00");
+        var command = new UpdateLabelCommand(label.Id, "Feature", "#00FF00", ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -39,7 +39,7 @@ public class UpdateLabelTests : WorkManagementHandlerTestBase
             "Bug", LabelColor.Create("#FF0000"), TestUserId, TestNow);
         SetupLabels(label);
 
-        var command = new UpdateLabelCommand(label.Id, null, "#0000FF");
+        var command = new UpdateLabelCommand(label.Id, null, "#0000FF", ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -54,7 +54,7 @@ public class UpdateLabelTests : WorkManagementHandlerTestBase
             "Bug", LabelColor.Create("#FF0000"), TestUserId, TestNow);
         SetupLabels(label);
 
-        var command = new UpdateLabelCommand(label.Id, "Enhancement", null);
+        var command = new UpdateLabelCommand(label.Id, "Enhancement", null, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -64,7 +64,7 @@ public class UpdateLabelTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_LabelNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateLabelCommand(Guid.CreateVersion7(), "Name", "#FF0000");
+        var command = new UpdateLabelCommand(Guid.CreateVersion7(), "Name", "#FF0000", ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

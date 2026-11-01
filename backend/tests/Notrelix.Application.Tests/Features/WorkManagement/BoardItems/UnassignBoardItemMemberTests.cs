@@ -8,7 +8,7 @@ public class UnassignBoardItemMemberTests : WorkManagementHandlerTestBase
 
     public UnassignBoardItemMemberTests()
     {
-        _handler = new UnassignBoardItemMemberCommandHandler(DbContextMock.Object);
+        _handler = new UnassignBoardItemMemberCommandHandler(DbContextMock.Object, new Mock<ICurrentUser>().Object, DateTimeProviderMock.Object);
     }
 
     [Fact]
@@ -19,7 +19,7 @@ public class UnassignBoardItemMemberTests : WorkManagementHandlerTestBase
         var member = CreateBoardItemMember(itemId: item.Id, userId: targetUserId);
         SetupBoardItemMembers(member);
 
-        var command = new UnassignBoardItemMemberCommand(item.Id, targetUserId);
+        var command = new UnassignBoardItemMemberCommand(item.Id, targetUserId, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -29,7 +29,7 @@ public class UnassignBoardItemMemberTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_MemberNotFound_ReturnsSuccess()
     {
-        var command = new UnassignBoardItemMemberCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var command = new UnassignBoardItemMemberCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

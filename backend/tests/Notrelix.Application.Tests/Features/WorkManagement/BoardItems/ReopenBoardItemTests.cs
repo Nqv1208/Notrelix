@@ -34,11 +34,11 @@ public class ReopenBoardItemTests : WorkManagementHandlerTestBase
 
     private Task<Result> Status(Guid optionId) =>
         new UpdateBoardItemStatusCommandHandler(DbContextMock.Object, _currentUser.Object, DateTimeProviderMock.Object)
-            .Handle(new UpdateBoardItemStatusCommand(_item.Id, optionId.ToString()), CancellationToken.None);
+            .Handle(new UpdateBoardItemStatusCommand(_item.Id, optionId.ToString(), ExpectedVersion: 1), CancellationToken.None);
 
     private Task<Result> Reopen() =>
         new ReopenBoardItemCommandHandler(DbContextMock.Object, _currentUser.Object, DateTimeProviderMock.Object)
-            .Handle(new ReopenBoardItemCommand(_item.Id), CancellationToken.None);
+            .Handle(new ReopenBoardItemCommand(_item.Id, ExpectedVersion: 1), CancellationToken.None);
 
     private Guid? CurrentStatus() => _item.FieldValues.SingleOrDefault(v => v.FieldId == _status.Id) is { } v
         ? Guid.Parse(v.Value.Data.Value.Trim('"'))

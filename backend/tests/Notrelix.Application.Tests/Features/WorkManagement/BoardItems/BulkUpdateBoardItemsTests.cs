@@ -45,6 +45,12 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
             _delete.Object);
     }
 
+    private IReadOnlyDictionary<Guid, long> Versions(IEnumerable<Guid> ids)
+    {
+        var all = DbContextMock.Object.BoardItems.ToList();
+        return ids.ToDictionary(id => id, id => all.FirstOrDefault(i => i.Id == id)?.Version ?? 1L);
+    }
+
     private BoardItem[] ItemsOnBoard(int count)
     {
         var items = Enumerable.Range(0, count).Select(i => CreateBoardItem(boardId: _boardId, position: $"a{i}")).ToArray();
@@ -58,7 +64,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         var items = ItemsOnBoard(3);
 
         var result = await _handler.Handle(
-            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetStatus, items.Select(i => i.Id).ToList(), Status: "opt-done"),
+            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetStatus, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList()), Status: "opt-done"),
             CancellationToken.None);
 
         result.Updated.Should().Be(3);
@@ -73,7 +79,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         var due = new DateTime(2026, 11, 3, 0, 0, 0, DateTimeKind.Utc);
 
         await _handler.Handle(
-            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetDueDate, items.Select(i => i.Id).ToList(), DueDate: due),
+            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetDueDate, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList()), DueDate: due),
             CancellationToken.None);
 
         items.Should().OnlyContain(i => i.DueAt == new DateTimeOffset(due, TimeSpan.Zero));
@@ -85,10 +91,10 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         var items = ItemsOnBoard(2);
         var ids = items.Select(i => i.Id).ToList();
         await _handler.Handle(
-            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetDueDate, ids, DueDate: new DateTime(2026, 11, 3, 0, 0, 0, DateTimeKind.Utc)),
+            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetDueDate, ids, Versions(ids), DueDate: new DateTime(2026, 11, 3, 0, 0, 0, DateTimeKind.Utc)),
             CancellationToken.None);
 
-        await _handler.Handle(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.ClearDueDate, ids), CancellationToken.None);
+        await _handler.Handle(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.ClearDueDate, ids, Versions(ids)), CancellationToken.None);
 
         items.Should().OnlyContain(i => i.DueAt == null);
     }
@@ -101,7 +107,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         SetupBoardItems(mine, foreign);
 
         await _handler.Invoking(h => h.Handle(
-                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, [mine.Id, foreign.Id]),
+                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, [mine.Id, foreign.Id], Versions([mine.Id, foreign.Id])),
                 CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
         _archive.Verify(h => h.Handle(It.IsAny<ArchiveBoardItemCommand>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -115,7 +121,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
             .ReturnsAsync(Result.Failure("No status field found on this board."));
 
         await _handler.Invoking(h => h.Handle(
-                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetStatus, items.Select(i => i.Id).ToList(), Status: "opt"),
+                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetStatus, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList()), Status: "opt"),
                 CancellationToken.None))
             .Should().ThrowAsync<BusinessRuleException>();
     }
@@ -127,7 +133,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         var user = Guid.CreateVersion7();
 
         await _handler.Handle(
-            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Assign, items.Select(i => i.Id).ToList(), AssigneeUserId: user),
+            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Assign, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList()), AssigneeUserId: user),
             CancellationToken.None);
 
         foreach (var item in items)
@@ -147,7 +153,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         SetupBoardFields(priority);
 
         var result = await _handler.Handle(
-            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, items.Select(i => i.Id).ToList(), Priority: "opt-high"),
+            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList()), Priority: "opt-high"),
             CancellationToken.None);
 
         result.Updated.Should().Be(2);
@@ -164,7 +170,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         SetupBoardFields();
 
         await _handler.Invoking(h => h.Handle(
-                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, items.Select(i => i.Id).ToList(), Priority: "opt-high"),
+                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList()), Priority: "opt-high"),
                 CancellationToken.None))
             .Should().ThrowAsync<BusinessRuleException>();
         _fieldValue.Verify(h => h.Handle(It.IsAny<UpdateBoardItemFieldValueCommand>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -176,7 +182,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         var items = ItemsOnBoard(3);
 
         var result = await _handler.Handle(
-            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, items.Select(i => i.Id).ToList()),
+            new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList())),
             CancellationToken.None);
 
         result.Updated.Should().Be(3);
@@ -192,7 +198,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         SetupBoardItems(mine, foreign);
 
         await _handler.Invoking(h => h.Handle(
-                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, [mine.Id, foreign.Id]),
+                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, [mine.Id, foreign.Id], Versions([mine.Id, foreign.Id])),
                 CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
         _delete.Verify(h => h.Handle(It.IsAny<DeleteBoardItemCommand>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -206,7 +212,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
             .ReturnsAsync(Result.Failure("Cannot delete."));
 
         await _handler.Invoking(h => h.Handle(
-                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, items.Select(i => i.Id).ToList()),
+                new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, items.Select(i => i.Id).ToList(), Versions(items.Select(i => i.Id).ToList())),
                 CancellationToken.None))
             .Should().ThrowAsync<BusinessRuleException>();
     }
@@ -222,7 +228,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
     [InlineData(BulkBoardItemOperations.Delete, false)]
     public void Authorization_NeedsUpdateItemOnTheBoard_AndAssignItemToo_WhenAssigneesChange(string operation, bool needsAssign)
     {
-        var command = new BulkUpdateBoardItemsCommand(_boardId, operation, [Guid.CreateVersion7()]);
+        var command = new BulkUpdateBoardItemsCommand(_boardId, operation, [Guid.CreateVersion7()], Versions([Guid.CreateVersion7()]));
 
         command.Action.Should().Be(PermissionAction.UpdateItem);
         command.AdditionalActionNames.Should().BeEquivalentTo(needsAssign ? new[] { "AssignItem" } : Array.Empty<string>());
@@ -235,16 +241,16 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         var validator = new BulkUpdateBoardItemsCommandValidator();
         var one = new List<Guid> { Guid.CreateVersion7() };
 
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, one)).IsValid.Should().BeTrue();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, [])).IsValid.Should().BeFalse();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, "explode", one)).IsValid.Should().BeFalse();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetStatus, one)).IsValid.Should().BeFalse();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Assign, one)).IsValid.Should().BeFalse();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, one)).IsValid.Should().BeFalse();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, one, Priority: "opt-high")).IsValid.Should().BeTrue();
-        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, one)).IsValid.Should().BeTrue();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, one, Versions(one))).IsValid.Should().BeTrue();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, [], Versions([]))).IsValid.Should().BeFalse();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, "explode", one, Versions(one))).IsValid.Should().BeFalse();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetStatus, one, Versions(one))).IsValid.Should().BeFalse();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Assign, one, Versions(one))).IsValid.Should().BeFalse();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, one, Versions(one))).IsValid.Should().BeFalse();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, one, Versions(one), Priority: "opt-high")).IsValid.Should().BeTrue();
+        validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, one, Versions(one))).IsValid.Should().BeTrue();
         validator.Validate(new BulkUpdateBoardItemsCommand(
             _boardId, BulkBoardItemOperations.Archive,
-            Enumerable.Range(0, BulkBoardItemOperations.MaxItems + 1).Select(_ => Guid.CreateVersion7()).ToList())).IsValid.Should().BeFalse();
+            Enumerable.Range(0, BulkBoardItemOperations.MaxItems + 1).Select(_ => Guid.CreateVersion7()).ToList(), Versions(Enumerable.Range(0, BulkBoardItemOperations.MaxItems + 1).Select(_ => Guid.CreateVersion7()).ToList()))).IsValid.Should().BeFalse();
     }
 }

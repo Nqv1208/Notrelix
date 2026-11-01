@@ -24,7 +24,7 @@ public class ArchiveBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new ArchiveBoardGroupCommand(group.Id);
+        var command = new ArchiveBoardGroupCommand(group.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -34,7 +34,7 @@ public class ArchiveBoardGroupTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_GroupNotFound_ThrowsNotFoundException()
     {
-        var command = new ArchiveBoardGroupCommand(Guid.CreateVersion7());
+        var command = new ArchiveBoardGroupCommand(Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -47,7 +47,7 @@ public class ArchiveBoardGroupTests : WorkManagementHandlerTestBase
         group.Archive(TestUserId, TestNow);
         SetupBoardGroups(group);
 
-        var command = new ArchiveBoardGroupCommand(group.Id);
+        var command = new ArchiveBoardGroupCommand(group.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

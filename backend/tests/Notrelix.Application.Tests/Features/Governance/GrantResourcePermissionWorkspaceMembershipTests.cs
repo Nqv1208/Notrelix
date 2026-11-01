@@ -27,7 +27,8 @@ public class GrantResourcePermissionWorkspaceMembershipTests
             new Mock<IDateTimeProvider>().Object,
             new Mock<IAuditService>().Object,
             new Mock<IResourceAccessChangeRecorder>().Object,
-            access.Object);
+            access.Object,
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object);
 
         var command = new GrantResourcePermissionCommand(
             "work-management.board", Guid.CreateVersion7(), "User", Guid.CreateVersion7(), "Viewer");

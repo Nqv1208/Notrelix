@@ -26,7 +26,7 @@ public class SetDefaultViewTests : WorkManagementHandlerTestBase
         SetupBoards(board);
         SetupBoardViews(view);
 
-        var command = new SetDefaultViewCommand(board.Id, view.Id);
+        var command = new SetDefaultViewCommand(board.Id, view.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -36,7 +36,7 @@ public class SetDefaultViewTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ViewNotFound_ThrowsNotFoundException()
     {
-        var command = new SetDefaultViewCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var command = new SetDefaultViewCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -50,7 +50,7 @@ public class SetDefaultViewTests : WorkManagementHandlerTestBase
         SetupBoards(board);
         SetupBoardViews(view);
 
-        var command = new SetDefaultViewCommand(board.Id, view.Id);
+        var command = new SetDefaultViewCommand(board.Id, view.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -66,7 +66,7 @@ public class SetDefaultViewTests : WorkManagementHandlerTestBase
         SetupBoards(board);
         SetupBoardViews(oldDefault, newDefault);
 
-        var command = new SetDefaultViewCommand(board.Id, newDefault.Id);
+        var command = new SetDefaultViewCommand(board.Id, newDefault.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

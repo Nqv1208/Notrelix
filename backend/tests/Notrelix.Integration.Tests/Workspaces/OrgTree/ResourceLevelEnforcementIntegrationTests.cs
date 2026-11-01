@@ -65,7 +65,7 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendAsync(provider, CreateCommentCommand.ForBoardItem(item, "Looks fine", null));
         await FluentActions.Awaiting(() => UpdateBoardAsync(provider, board, "Renamed by a commenter"))
             .Should().ThrowAsync<AppForbidden>("a Commenter cannot edit the Board (Editor action)");
-        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardItemStatusCommand(item, "Done")))
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardItemStatusCommand(item, "Done", ExpectedVersion: 1)))
             .Should().ThrowAsync<AppForbidden>("a Commenter cannot update an item");
         (await OrgTreeTestHost.QueryAsync(provider, new GetBoardAccessQuery(board))).MyLevel.Should().Be("commenter");
     }

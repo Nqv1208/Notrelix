@@ -56,7 +56,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_MovesTheItemAndMapsItsStatusByName()
     {
-        var result = await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id), CancellationToken.None);
+        var result = await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id, ExpectedVersion: 1), CancellationToken.None);
 
         _target.Verify(t => t.AuthorizeCreateAsync(_destination.Id, It.IsAny<CancellationToken>()), Times.Once);
         _item.BoardId.Should().Be(_destination.Id);
@@ -74,7 +74,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         var other = StatusField(_destination.Id, "New", "Review");
         SetupBoardFields(_sourceStatus, other);
 
-        await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id), CancellationToken.None);
+        await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id, ExpectedVersion: 1), CancellationToken.None);
 
         var first = other.Options.OrderBy(o => o.Position.Value, StringComparer.Ordinal).First().Id;
         _item.FieldValues.Single(v => v.FieldId == other.Id).Value.Data.Value.Should().Contain(first.ToString());
@@ -91,7 +91,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         _visibility.Setup(v => v.VisibleBoardIdsAsync(TestWorkspaceId, stays, It.IsAny<CancellationToken>())).ReturnsAsync([_destination.Id]);
         _visibility.Setup(v => v.VisibleBoardIdsAsync(TestWorkspaceId, leaves, It.IsAny<CancellationToken>())).ReturnsAsync([]);
 
-        var result = await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id), CancellationToken.None);
+        var result = await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id, ExpectedVersion: 1), CancellationToken.None);
 
         result.DroppedAssignees.Should().Be(1);
         DbContextMock.Object.BoardItemMembers.Single(m => m.UserId == stays).BoardId.Should().Be(_destination.Id);
@@ -100,7 +100,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_TheSameBoard_IsRefused()
     {
-        await _handler.Invoking(h => h.Handle(new MoveBoardItemToBoardCommand(_item.Id, _source.Id), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new MoveBoardItemToBoardCommand(_item.Id, _source.Id, ExpectedVersion: 1), CancellationToken.None))
             .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
     }
 
@@ -109,7 +109,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
     {
         _target.Setup(t => t.AuthorizeCreateAsync(_destination.Id, It.IsAny<CancellationToken>())).ThrowsAsync(new ForbiddenException("no"));
 
-        await _handler.Invoking(h => h.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id, ExpectedVersion: 1), CancellationToken.None))
             .Should().ThrowAsync<ForbiddenException>();
         _item.BoardId.Should().Be(_source.Id);
     }
@@ -119,7 +119,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
     {
         _item.Archive(TestUserId, TestNow);
 
-        await _handler.Invoking(h => h.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id, ExpectedVersion: 1), CancellationToken.None))
             .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
     }
 
