@@ -226,6 +226,25 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RemovingAMemberWithAssignedItems_KeepsTheAssigneeRow_AndTheRemovedPersonReadsNothing()
+    {
+        var (stack, _, member, _) = await SeedAsync();
+        var board = await _host.SeedBoardAsync(stack, "Assigned");
+        var item = await _host.SeedAssignedItemAsync(stack, board, member, "Kept work");
+        using var asOwner = As(stack, stack.OwnerId);
+
+        await OrgTreeTestHost.SendAsync(asOwner, new RemoveMemberCommand(stack.WorkspaceId, member, (await MemberRowAsync(stack, member)).Version));
+
+        (await MemberRowAsync(stack, member)).Status.Should().Be(WorkspaceMemberStatus.Removed);
+        var assignees = await _host.ReadAsync(c => c.BoardItemMembers.IgnoreQueryFilters()
+            .Where(m => m.ItemId == item).Select(m => m.UserId).ToListAsync());
+        assignees.Should().Equal(member);
+        using var asRemoved = As(stack, member);
+        await FluentActions.Awaiting(() => OrgTreeTestHost.QueryAsync(asRemoved, new GetBoardItemQuery(item)))
+            .Should().ThrowAsync<Exception>("a removed member reads nothing of the workspace");
+    }
+
+    [Fact]
     public async Task Admin_CannotRemoveSuspendOrActivate_OwnerOrAnotherAdmin()
     {
         var (stack, admin, _, _) = await SeedAsync();
