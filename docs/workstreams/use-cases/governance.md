@@ -118,12 +118,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | INTEGRATING | tests and owner check |
 | UC-GOV-B04 | A Guest does not enumerate the workspace | B | Guest | Yes | Yes | Yes | Yes | HARDENING | tests and owner check |
 | UC-GOV-B05 | A Guest's resource level is capped at Viewer | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
-| UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
-| UC-GOV-C02 | Change a custom role's name or actions | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
-| UC-GOV-C03 | Archive a custom role that has assignments | C | Workspace Owner | Part | No | No | No | DEFINED | No Application use case, no endpoint, no design. The frontend package calls non-existent routes (dead code). |
-| UC-GOV-C04 | Assign a custom role to a workspace member | C | Workspace Owner | Part | No | No | No | BLOCKED | Decision needed from the owner: at which step of the GOV-025 order a custom role's actions apply (as part of the workspace baseline ... |
-| UC-GOV-C05 | Remove a custom role from a member | C | Workspace Owner | Part | No | No | No | BLOCKED | Same decision as UC-GOV-C04. |
-| UC-GOV-C06 | List roles and the permission catalog | C | Workspace Owner, Admin | No | Part | No | No | DEFINED | No endpoint, no screen, no artboard. Package `features/governance` is not imported by any app. |
+| UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C02 | Change a custom role's name or actions | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C03 | Archive a custom role that has assignments | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C04 | Assign a custom role to a workspace member | C | Workspace Owner | Yes | Part | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C05 | Remove a custom role from a member | C | Workspace Owner | Yes | No | No | No | HARDENING | Tests and owner check. |
+| UC-GOV-C06 | List roles and the permission catalog | C | Account and workspace Owner, Admin | Yes | Part | No | No | HARDENING | Tests and owner check. |
 | UC-GOV-D01 | Give a workspace member access to a Board or Page | D | Board or Page manager | Yes | Yes | Yes | Yes | HARDENING | tests and owner check |
 | UC-GOV-D02 | Give a Team access to a Board or Page | D | Board or Page manager | Yes | Part | Part | No | INTEGRATING | Team picker, then tests and owner check |
 | UC-GOV-D03 | Change the level of an existing grant | D | Board or Page manager | Yes | Yes | Yes | Yes | HARDENING | tests and owner check |
