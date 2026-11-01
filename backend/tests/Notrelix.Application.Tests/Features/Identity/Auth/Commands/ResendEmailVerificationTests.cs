@@ -41,4 +41,31 @@ public class ResendEmailVerificationTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         TokenIssuerMock.Verify(t => t.IssueAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Handle_WhenEmailIsUnknown_AnswersSuccessAndIssuesNothing()
+    {
+        SetupUsers();
+        RateLimitServiceMock.Setup(r => r.IsRateLimitedAsync("email-verification-resend", TestEmail.ToLowerInvariant(), 5, TimeSpan.FromMinutes(15)))
+            .ReturnsAsync(false);
+
+        var result = await CreateSut().Handle(new ResendEmailVerificationCommand(TestEmail), CancellationToken.None);
+
+        // Same answer as a known account: nothing tells the two apart.
+        result.Succeeded.Should().BeTrue();
+        TokenIssuerMock.Verify(t => t.IssueAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailIsAlreadyConfirmed_AnswersSuccessAndSendsNothing()
+    {
+        SetupUsers(CreateUser(emailConfirmed: true));
+        RateLimitServiceMock.Setup(r => r.IsRateLimitedAsync("email-verification-resend", TestEmail.ToLowerInvariant(), 5, TimeSpan.FromMinutes(15)))
+            .ReturnsAsync(false);
+
+        var result = await CreateSut().Handle(new ResendEmailVerificationCommand(TestEmail), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        TokenIssuerMock.Verify(t => t.IssueAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

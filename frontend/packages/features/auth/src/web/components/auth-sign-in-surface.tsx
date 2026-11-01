@@ -47,6 +47,8 @@ export type AuthSignInStep =
         | "provider-email-unverified"
         /** The session the person was using ended: this page opened by itself. */
         | "session-ended"
+        /** A password reset just finished: sign in with the new password. */
+        | "password-reset"
         | null;
     }
   | {
@@ -278,6 +280,11 @@ function CredentialsStep({
           ) : null}
           {emailError === "mfa-required" ? (
             <FieldError>{te.mfaRequired}</FieldError>
+          ) : null}
+          {emailError === "password-reset" ? (
+            <p role="status" className="m-0 text-item-small text-success-text">
+              {te.passwordReset}
+            </p>
           ) : null}
           {emailError === "session-ended" ? (
             <p

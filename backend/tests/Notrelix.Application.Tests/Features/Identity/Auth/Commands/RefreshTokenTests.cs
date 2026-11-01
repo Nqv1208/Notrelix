@@ -196,4 +196,38 @@ public class RefreshTokenTests : IdentityHandlerTestBase
         session.ExpiresAt.Should().Be(signedInAt.Add(SessionLifetimePolicy.AbsoluteLifetime));
         session.ExpiresAt.Should().BeBefore(TestNow.Add(SessionLifetimePolicy.IdleLifetime));
     }
+
+    [Fact]
+    public async Task Handle_WhenAReplacedCredentialComesBackAfterTheGraceWindow_EndsTheSessionAndAnswersTheGenericRefusal()
+    {
+        var user = CreateUser();
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        SetupUsers(user);
+        SetupSessions(session);
+        // The person's own refresh replaced the credential; the old one comes back 11 seconds later.
+        session.Rotate(RefreshTokenHash.Create("rotated-refresh-token"), TestNow);
+        var replayAt = TestNow.AddSeconds(11);
+        DateTimeProviderMock.Setup(c => c.UtcNow).Returns(replayAt);
+
+        var result = await CreateSut().Handle(new RefreshTokenCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("invalid or expired"));
+        session.Status.Should().Be(SessionStatus.Revoked);
+        JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(session.Id, replayAt, It.IsAny<TimeSpan>()), Times.Once);
+        ActivityMock.Verify(a => a.Record(session.UserId, It.IsAny<Notrelix.Domain.Identity.Security.SecurityActivityType>(), replayAt, session.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenACredentialThatWasNeverIssuedIsPresented_AnswersTheSameRefusalAndEndsNothing()
+    {
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        SetupSessions(session);
+
+        var result = await CreateSut().Handle(new RefreshTokenCommand { RefreshToken = "someone-elses-guess" }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("invalid or expired"));
+        session.Status.Should().Be(SessionStatus.Active);
+    }
 }

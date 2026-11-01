@@ -15,6 +15,7 @@
 
 import type { User } from "@notrelix/features-auth";
 import { defineMockOperation } from "../../operations/types";
+import { MOCK_AUTH } from "../../state/mock-auth-directory";
 import { ok, unauthorized } from "../../transport/create-response";
 import {
   authFlowOperations,
@@ -199,7 +200,14 @@ export const identityOperations = [
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/reset-password",
-    async handle() {
+    async handle({ body }) {
+      const { code } = (body ?? {}) as { code?: string };
+      if (code !== MOCK_AUTH.resetCode)
+        return identityProblem(
+          400,
+          "identity.auth.invalid-code",
+          "Invalid or expired code.",
+        );
       return ok({ success: true });
     },
   }),
