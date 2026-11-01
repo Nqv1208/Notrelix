@@ -150,6 +150,7 @@ export async function apiWrite<T = unknown>(
   method: "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
+  idempotencyKey: string = crypto.randomUUID(),
 ): Promise<{ status: number; data: T | null }> {
   const csrf = (await (
     await page.request.get(`${apiUrl}/auth/csrf`)
@@ -158,7 +159,7 @@ export async function apiWrite<T = unknown>(
     method,
     headers: {
       "X-CSRF-Token": csrf.token,
-      "Idempotency-Key": crypto.randomUUID(),
+      "Idempotency-Key": idempotencyKey,
       "Content-Type": "application/json",
     },
     data: body === undefined ? undefined : JSON.stringify(body),

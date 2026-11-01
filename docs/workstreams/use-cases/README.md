@@ -122,7 +122,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 |---|---|---|---|---|---|---|---|
 | Accounts | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
 | Identity | 61 | 6 | 12 | 25 | 8 | 6 | 4 |
-| Workspaces | 91 | 6 | 14 | 60 | 9 | 0 | 2 |
+| Workspaces | 91 | 6 | 13 | 45 | 25 | 0 | 2 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 0 | 6 |
 | Work Management | 171 | 10 | 1 | 13 | 145 | 1 | 1 |
 | Documents | 82 | 12 | 4 | 43 | 20 | 0 | 3 |
@@ -132,7 +132,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Billing | 99 | 56 | 27 | 8 | 7 | 0 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 0 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
-| **Total** | **959** | **196** | **207** | **243** | **280** | **7** | **26** |
+| **Total** | **959** | **196** | **206** | **228** | **296** | **7** | **26** |
 
 Seven use cases are DONE, each accepted by an acceptance agent that did not build it and recorded in its Evidence line: Identity C03, D02, H01, J03, K04, K05 and Work Management A24 (2026-11-01). Identity H02 was rejected for DONE on a concurrency gap and K03 on the missing provider step-up screen (see their State lines).
 

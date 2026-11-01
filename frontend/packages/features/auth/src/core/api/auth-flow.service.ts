@@ -138,6 +138,8 @@ export interface InvitePreview {
   readonly name: string | null;
   /** The email already has a Notrelix account. */
   readonly hasAccount: boolean;
+  /** The role a workspace invitation offers; null for a guest invitation to one board. */
+  readonly workspaceRole: "member" | "guest" | null;
 }
 
 export interface InviteAcceptResult {
@@ -198,6 +200,15 @@ function levelOf(wire: string | null | undefined): InvitePreview["level"] {
   return level === "editor" || level === "commenter" ? level : "viewer";
 }
 
+/** A workspace invitation names no resource and offers a role; a board invitation names its board. */
+function workspaceRoleOf(
+  wire: InvitationPreviewWire,
+): InvitePreview["workspaceRole"] {
+  if (wire.resourceKind) return null;
+  const role = wire.role?.toLowerCase();
+  return role === "member" || role === "guest" ? role : null;
+}
+
 /** The one place the invitation preview is read into the page's model. */
 export function toInvitePreview(wire: InvitationPreviewWire): InvitePreview {
   const state =
@@ -215,6 +226,7 @@ export function toInvitePreview(wire: InvitationPreviewWire): InvitePreview {
     email: wire.email ?? null,
     name: null,
     hasAccount: wire.hasAccount ?? false,
+    workspaceRole: workspaceRoleOf(wire),
   };
 }
 

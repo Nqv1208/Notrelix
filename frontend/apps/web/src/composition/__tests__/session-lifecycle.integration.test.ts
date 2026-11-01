@@ -81,6 +81,27 @@ describe("application lifecycle — session invalidation", () => {
     lifecycle.dispose();
   });
 
+  it("LIFE-005b a terminal event on a signed-out page keeps the reads in flight", () => {
+    const queryClient = createQueryClient();
+    const sessionEvents = createSessionEventBus();
+    const realtime = createFakeRealtime();
+    queryClient.setQueryData(["invite-preview"], { state: "valid" });
+    const lifecycle = createApplicationLifecycle({
+      queryClient,
+      realtime,
+      sessionEvents,
+      navigateToSignedOut: vi.fn(),
+      onSignedOutRoute: () => true,
+    });
+
+    sessionEvents.publish(createTerminalEvent("evt-5b"));
+    expect(queryClient.getQueryData(["invite-preview"])).toEqual({
+      state: "valid",
+    });
+    expect(realtime.disconnect).not.toHaveBeenCalled();
+    lifecycle.dispose();
+  });
+
   it("LIFE-006 duplicate terminal event is idempotent", () => {
     const queryClient = createQueryClient();
     const sessionEvents = createSessionEventBus();

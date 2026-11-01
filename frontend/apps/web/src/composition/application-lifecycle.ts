@@ -34,6 +34,12 @@ export interface ApplicationLifecycleDependencies {
   readonly realtime: RealtimeTransport;
   readonly sessionEvents: SessionEventBus;
   readonly navigateToSignedOut: () => void;
+  /**
+   * True on a page a person without a session opens on purpose (sign-in, the
+   * invitation link). No session ended there, so nothing is cleared: a read in
+   * flight on that page must survive the 401 of the session probe.
+   */
+  readonly onSignedOutRoute?: () => boolean;
 }
 
 export interface ApplicationLifecycle {
@@ -69,6 +75,7 @@ export function createApplicationLifecycle(
       }
     }
 
+    if (deps.onSignedOutRoute?.()) return;
     clearApplicationCache(deps.queryClient, { sessionEnded: true });
     deps.realtime.disconnect("session-expired");
     deps.navigateToSignedOut();
