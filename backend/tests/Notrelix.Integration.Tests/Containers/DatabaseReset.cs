@@ -44,7 +44,21 @@ public sealed class DatabaseReset
         var tableNames = string.Join(", ",
             tables.Select(t => $"{QuoteIdentifier(t.Schema)}.{QuoteIdentifier(t.Name)}"));
         truncateCmd.CommandText = $"TRUNCATE TABLE {tableNames} CASCADE";
-        await truncateCmd.ExecuteNonQueryAsync(ct);
+
+        // A host from the previous test can still be writing in the background (outbox, consumers). Postgres then
+        // picks the TRUNCATE as the deadlock victim; it rolled back fully, so running it again is safe.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await truncateCmd.ExecuteNonQueryAsync(ct);
+                break;
+            }
+            catch (PostgresException e) when (e.SqlState == PostgresErrorCodes.DeadlockDetected && attempt < 5)
+            {
+                await Task.Delay(200 * attempt, ct);
+            }
+        }
 
         // A deployed database always holds the baseline plan catalog (an account without a subscription is on
         // its Free plan), so the reset restores that baseline instead of leaving the catalog empty.
