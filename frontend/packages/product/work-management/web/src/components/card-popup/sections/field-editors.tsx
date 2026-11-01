@@ -907,6 +907,7 @@ function TypedControl({
           readOnly={ro}
           aria-label={field.name}
           aria-invalid={Boolean(invalid) || undefined}
+          title={draft || undefined}
           placeholder={
             kind === "long_text" || kind === "text" ? f.textEmpty : undefined
           }
@@ -920,7 +921,7 @@ function TypedControl({
               setInvalid(undefined);
             }
           }}
-          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] text-foreground outline-none placeholder:text-meta-foreground"
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] text-ellipsis text-foreground outline-none placeholder:text-meta-foreground"
         />
         {saving ? (
           <Loader2
