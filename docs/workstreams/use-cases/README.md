@@ -118,23 +118,23 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 
 ## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01; Accounts, Workspaces, Documents, Collaboration and Work Management adjusted again 2026-11-01 for decisions 3 and 7 and the Work Management index fixes)
 
-| Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | BLOCKED |
-|---|---|---|---|---|---|---|
-| Accounts | 42 | 16 | 22 | 2 | 2 | 0 |
-| Identity | 61 | 6 | 12 | 25 | 14 | 4 |
-| Workspaces | 91 | 8 | 14 | 60 | 7 | 2 |
-| Governance | 75 | 15 | 19 | 14 | 21 | 6 |
-| Work Management | 171 | 10 | 1 | 13 | 146 | 1 |
-| Documents | 82 | 12 | 4 | 43 | 20 | 3 |
-| Collaboration | 85 | 19 | 7 | 37 | 17 | 5 |
-| Automation | 79 | 11 | 26 | 21 | 20 | 1 |
-| Integrations | 55 | 13 | 20 | 11 | 11 | 0 |
-| Billing | 99 | 56 | 27 | 8 | 7 | 1 |
-| Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
-| Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **959** | **198** | **207** | **243** | **285** | **26** |
+| Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
+|---|---|---|---|---|---|---|---|
+| Accounts | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
+| Identity | 61 | 6 | 12 | 25 | 7 | 7 | 4 |
+| Workspaces | 91 | 8 | 14 | 60 | 7 | 0 | 2 |
+| Governance | 75 | 15 | 19 | 14 | 21 | 0 | 6 |
+| Work Management | 171 | 10 | 1 | 13 | 145 | 1 | 1 |
+| Documents | 82 | 12 | 4 | 43 | 20 | 0 | 3 |
+| Collaboration | 85 | 19 | 7 | 37 | 17 | 0 | 5 |
+| Automation | 79 | 11 | 26 | 21 | 20 | 0 | 1 |
+| Integrations | 55 | 13 | 20 | 11 | 11 | 0 | 0 |
+| Billing | 99 | 56 | 27 | 8 | 7 | 0 | 1 |
+| Analytics | 61 | 28 | 22 | 5 | 4 | 0 | 2 |
+| Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
+| **Total** | **959** | **198** | **207** | **243** | **277** | **8** | **26** |
 
-No use case is DONE: none has a recorded lead acceptance or design-fidelity proof.
+Eight use cases are DONE, each accepted by an acceptance agent that did not build it and recorded in its Evidence line: Identity C03, D02, H01, J03, K03, K04, K05 and Work Management A24 (2026-11-01). Identity H02 was rejected for DONE on a concurrency gap (see its State line).
 
 Patterns that repeat across contexts, each detailed with file paths in the context files:
 
