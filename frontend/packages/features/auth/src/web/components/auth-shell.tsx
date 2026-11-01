@@ -43,7 +43,7 @@ export function AuthShell({
       </aside>
       <main className="flex min-w-0 flex-1 flex-col bg-popover px-5 pt-7 pb-6 leading-normal sm:px-12">
         <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-          <NotrelixLogoMark className="h-7 w-auto" aria-hidden="true" />
+          <NotrelixLogoMark className="size-7" aria-hidden="true" />
           <b className="text-dialog-title font-bold tracking-tight">
             {t.brand}
           </b>
