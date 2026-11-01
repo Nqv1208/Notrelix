@@ -5,9 +5,9 @@ name: Notrelix CI
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, 'release/**']
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'release/**']
   workflow_dispatch:
 
 concurrency:

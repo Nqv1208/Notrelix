@@ -47,14 +47,14 @@ The product doc also owns approvals, labels, templates, import, export, search a
 
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
-| A | Board lifecycle | WM-001 | 26 | 4 | 0 | 3 | 19 | 0 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 5 | 0 | 11 | 20 | 0 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 1 | 2 | 5 | 14 | 0 | 0 |
+| A | Board lifecycle | WM-001 | 27 | 3 | 0 | 2 | 22 | 0 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 2 | 0 | 6 | 28 | 0 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 1 | 1 | 4 | 16 | 0 | 0 |
 | D | Field values | WM-004 | 12 | 0 | 0 | 0 | 12 | 0 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 1 | 18 | 0 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 0 | 19 | 0 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
@@ -66,10 +66,10 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | Q | Automation handoff | WM-017 | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| T | Performance and hardening | WM-020 | 5 | 4 | 0 | 1 | 0 | 0 | 0 |
-| | Total | | 170 | 16 | 2 | 23 | 128 | 0 | 1 |
+| T | Performance and hardening | WM-020 | 5 | 3 | 0 | 1 | 1 | 0 | 0 |
+| | Total | | 171 | 11 | 1 | 15 | 143 | 0 | 1 |
 
-Counts cover the 170 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 178 use cases, all of the prior catalog. Seven of the 170 are enterprise-baseline additions.
+Counts cover the 171 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 179 use cases, all of the prior catalog. Seven of the 171 are enterprise-baseline additions.
 
 ## 1.2 The ten most important gaps
 
@@ -81,8 +81,8 @@ Counts cover the 170 live use cases. A further 8 are retired by decision and lis
 6. Approvals are inconsistent with the decided model. Team approvers can never decide, two decide paths exist (one without expected version), and a re-request does not link to the previous request (UC-WM-B25, UC-WM-B26, UC-WM-B27).
 7. ~~Link cycles are not blocked.~~ Fixed for creation: a link that would close a waits-on cycle on the board is refused naming the path (UC-WM-B20). Open: links across boards, and a kind change, for which no update command exists yet (UC-WM-B21).
 8. Forms do not match the decided model. A member submission records an Accepted entry only, but there is no inbox flow proven by a test, no API-level tests exist for Forms, and anonymous public forms are BLOCKED on an owner security decision (UC-WM-N01 to N06).
-9. Table-stakes functions are not built: import, export, duplicate board, Relation field, required fields, WIP limit, published limits, guest invitation to one board, last-manager protection, native mobile (UC-WM-B29 to B32, UC-WM-A11, UC-WM-C18, UC-WM-C19, UC-WM-J06, UC-WM-T03, UC-WM-A19, UC-WM-A26, UC-WM-T04).
-10. Proof is thin. Only 35 of 170 use cases touch a real e2e spec, 24 reach HARDENING, and none has a recorded 1-px design diff or owner check. About 40 contract operations have no mock handler, so mock e2e cannot prove those flows.
+9. Table-stakes functions are not built: provider import, Relation field, required fields, WIP limit, published limits, guest invitation to one board, last-manager protection, native mobile (UC-WM-B32, UC-WM-C18, UC-WM-C19, UC-WM-J06, UC-WM-T03, UC-WM-A19, UC-WM-A26, UC-WM-T04).
+10. Proof is thin. Of 171 use cases, 143 reach HARDENING, most on a recorded real-stack check rather than a committed real e2e spec, and none has a recorded 1-px design diff or owner check. About 40 contract operations have no mock handler, so mock e2e cannot prove those flows.
 
 No use case is DONE: DONE needs the recorded 1-px box-tree diff at 1440, 1024 and 390 px in light and dark, and the owner check on the development stack, and neither exists for any use case. A use case is HARDENING only when a real e2e spec proves its main flow; specs that only pass through it (marked implicit, smoke, negative only, count only or partial in the Real e2e cell) leave it INTEGRATING. A use case with an open-PR dependency is judged on `develop` only.
 
@@ -149,7 +149,7 @@ Table stakes (offered by at least 5 of 7 vendors) and where Notrelix stands on `
 
 | Capability (vendors of 7) | Use cases | Position |
 |---|---|---|
-| Board lifecycle with duplicate (7) | UC-WM-A01 to A11 | Create, rename, archive, delete built; duplicate missing (UC-WM-A11); restore and purge incomplete (UC-WM-A07, UC-WM-B17) |
+| Board lifecycle with duplicate (7) | UC-WM-A01 to A11 | Create, rename, archive, delete and duplicate built; restore and purge incomplete (UC-WM-A07, UC-WM-B17) |
 | Item CRUD and sub-items (7) | UC-WM-B01 to B04, UC-WM-B07 to B14 | Built; expected version missing on most writes (gap 1) |
 | Rich custom field types (6) | UC-WM-C01 to C19, UC-WM-D01, UC-WM-F01, UC-WM-H15 | Eleven types built; Relation (UC-WM-C18) and required fields (UC-WM-C19) missing |
 | Groups and sections (6) | UC-WM-E01 to E05, UC-WM-F02 | Built; group delete needs a target group (D76.6) |
@@ -158,12 +158,12 @@ Table stakes (offered by at least 5 of 7 vendors) and where Notrelix stands on `
 | Saved, shared and personal views (6) | UC-WM-H01 to H05, UC-WM-H09 to H11, UC-WM-I02 | Shared and private views built; personal state in open PR #201 |
 | Filter, sort, group (7) | UC-WM-H06 to H08, UC-WM-H15 | Client-side only; server-side on paged boards missing (gap 3) |
 | Bulk edit (7) | UC-WM-B14, UC-WM-I03 | Built all-or-nothing; no per-item version, no Kanban selection |
-| Trash and restore with 30-day window (6) | UC-WM-B11 to B13, UC-WM-A06, UC-WM-A07, UC-WM-C04, UC-WM-C05 | Items built; boards and fields incomplete |
+| Trash and restore with 30-day window (6) | UC-WM-B11 to B13, UC-WM-A06, UC-WM-A07, UC-WM-C04, UC-WM-C05 | Items and fields built; boards incomplete |
 | Item detail panel (6) | UC-WM-B18 to B23, UC-WM-G01 to G02, UC-WM-O01, UC-WM-R01 to R06 | Built; actor names on conflict notices missing |
 | Dependencies (7) | UC-WM-B20, UC-WM-B21, UC-WM-L01 | Built; cycle check runs on create (gap 7 fixed); kind change and cross-board open |
 | Templates (7) | UC-WM-A12 to A15 | Built; items-included option and 500-item refusal missing |
 | Forms (6) | UC-WM-N01 to N06 | Member forms built; public forms BLOCKED |
-| Import and export (7) | UC-WM-B29 to B32 | Not built |
+| Import and export (7) | UC-WM-B29 to B32 | Tabular import and export built; provider import (UC-WM-B32) not built |
 | Search (7) | UC-WM-H16 to H18 | Command search and My Work built; in-board text filter is client-side |
 | Realtime collaboration (7) | UC-WM-B33 to B36, UC-WM-D12, UC-WM-F04, UC-WM-P01 to P04 | Refetch only; adapter in open PR #193 |
 | Board roles and guests (7) | UC-WM-A16 to A26 | Roles built; guest invitation to one board and last-manager guard missing |
@@ -191,7 +191,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-A08 | List boards the person may see | A | Any member; Guest only shared boards | yes | yes | partial | guest-permission | HARDENING | Parity test: Private board absent for non-member; mock handler |
 | UC-WM-A09 | Open a board (read: schema, groups, items, preferences) | A | Viewer and above; Guest per grant | partial | partial | complete | board-views-and-settings | HARDENING | per-group paging (50, max 200) with filtered totals is not built (Q9; defect B-11); proof of the empty, archived and unknown-view states. |
 | UC-WM-A10 | Assign and keep the item key (prefix and sequence) | A | System on create | partial | yes | complete | work-board-management | HARDENING | no stored alias, so an old key does not resolve after a move (verified: no alias in Domain or Application); no concurrency test for the sequence. |
-| UC-WM-A11 | Duplicate a board | A | Manager (ManageBoard); CreateBoard in target Space | no | no | none | none | DEFINED | no endpoint, no UI, no design; behaviour is decided in D78.5. |
+| UC-WM-A11 | Duplicate a board | A | Manager (ManageBoard); CreateBoard in target Space | yes | yes | partial | none | HARDENING | tests and owner check; forms of the board are not copied; progress is an indeterminate bar. |
 | UC-WM-A12 | Save a board as a template | A | Manager of the board | partial | yes | complete | none | HARDENING | Include-items option and 500 refusal (D76.13, 66); design Er |
 | UC-WM-A13 | Publish a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | HARDENING | API tests; real e2e; the product doc says Owner or Admin publishes and D66 says ManageBoard on the template, so the product doc must align (part 5). |
 | UC-WM-A14 | Archive or delete a template | A | ManageBoard on the template (D66) | yes | yes | complete | none | HARDENING | API tests; real e2e; same ManageBoard rule as UC-WM-A13 (D66). |
@@ -236,9 +236,9 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B26 | Cancel a request | B | Requester or manager | yes | yes | none | none | HARDENING | Race test; real e2e; design |
 | UC-WM-B27 | Re-request after rejection or cancel | B | Requester | partial | partial | none | none | INTEGRATING | no link from the new request to the previous one (verified: no previous-request field in the Approvals domain); no design. |
 | UC-WM-B28 | See approval state and waiting-review figures | B | ViewBoard | yes | yes | partial | approvals | HARDENING | Tests for List; waiting-review count-once proof |
-| UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | no | no | none | none | HARDENING | Roadmap 05: CSV/XLSX import, 5,000 rows, all-or-nothing (D76.15); design, BE, FE |
-| UC-WM-B30 | Map import columns to fields | B | Editor | no | no | none | none | HARDENING | Part of D76.15 import; design, BE, FE |
-| UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | no | no | none | none | HARDENING | CSV/XLSX of the current view with filters (D76.15); design, BE, FE |
+| UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | yes | yes | partial | none | HARDENING | tests and owner check; the Assignee column cannot be imported yet (needs an owner decision on how a person is matched); import into a new board later (decision 11). |
+| UC-WM-B30 | Map import columns to fields | B | Editor | yes | yes | partial | none | HARDENING | tests and owner check. |
+| UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | yes | yes | partial | none | HARDENING | tests and owner check; no field-level view right exists so no field is hidden; sub-items are not exported. |
 | UC-WM-B32 | Provider/migration import | B | Integrations | no | no | none | none | DEFINED | Integrations-owned migration path; no WM work scheduled |
 | UC-WM-B33 | Handle a stale-version write conflict | B | Editor | partial | yes | complete | none | INTEGRATING | Actor on conflict (Q12 contract); EV gaps; real e2e |
 | UC-WM-B34 | Item deleted or archived by someone else while open | B | Any viewer (see UC-) | partial | yes | complete | none | INTEGRATING | actor name on the deleted notice needs the Q12 contract addition; live delivery needs open PR #193; real e2e. |
@@ -248,7 +248,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-C02 | Rename a field or change its settings | C | Editor | yes | yes | complete | none | HARDENING | Real e2e; stale-schema conflict proof |
 | UC-WM-C03 | Change a field default | C | Editor | yes | partial | complete | none | INTEGRATING | Test existing values unchanged; UI proof |
 | UC-WM-C04 | Archive or delete a custom field | C | Editor | partial | yes | none | work-board-management | HARDENING | Soft delete with 30-day restore (D76.5); dependents rejection; EV; design |
-| UC-WM-C05 | Restore an archived field | C | Editor | no | no | none | none | IMPLEMENTING | no restore endpoint although the domain event exists; field delete is a hard delete today (see Part 1 defects); the UI flag locks field archive. |
+| UC-WM-C05 | Restore an archived field | C | Editor | yes | yes | partial | none | HARDENING | tests and owner check; the 390 px sheet is not built (settings is a desktop surface, decision 10); the viewer-reads-list state is not built. |
 | UC-WM-C06 | Attempt to edit or delete a system field | C | Any (refused) | partial | yes | complete | none | HARDENING | API test: delete/edit system field refused |
 | UC-WM-C07 | Manage Select / Status / Priority options | C | Editor (statusManageRoles on views) | yes | yes | partial | board-settings | HARDENING | design for the replacement picker; live refresh needs open PR #193. |
 | UC-WM-C08 | Set a Status option's category | C | Editor | yes | yes | partial | none | HARDENING | API test 'last Done option'; e2e |
@@ -3067,7 +3067,7 @@ These were catalogued and then decided out of scope. They keep an id so none is 
 
 | Id | Use case | Capability | Deciding decision |
 |---|---|---|---|
-| UC-WM-A27 | Set or clear an expiry on access | A | D76.4: no expiry on board access in this scope |
+| UC-WM-A27 (retired; the id now names the live Leave a board) | Set or clear an expiry on access | A | D76.4: no expiry on board access in this scope |
 | UC-WM-A28 | Create, use and revoke a board share link | A | D76.4: public board share links are not built in Work Management |
 | UC-WM-B37 | Expire a request | B | D76.11: approvals never expire |
 | UC-WM-M02 | Set capacity | M | D76.12: workload belongs to a separate roadmap item and is out of board core |
