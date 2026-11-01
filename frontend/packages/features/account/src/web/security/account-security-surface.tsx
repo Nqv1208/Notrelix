@@ -184,7 +184,7 @@ function Icon({ icon: Glyph }: { icon: LucideIcon }) {
   return (
     <span
       aria-hidden="true"
-      className="grid size-[34px] shrink-0 place-items-center rounded-[9px] border border-line bg-background text-muted-foreground"
+      className="grid size-9 shrink-0 place-items-center rounded-[9px] border border-line bg-background text-muted-foreground"
     >
       <Glyph className="size-4" strokeWidth={1.8} />
     </span>
@@ -814,7 +814,7 @@ function SecurityBody({
 
       <div
         data-f="dz"
-        className="flex items-center gap-3.5 rounded-[12px] border border-danger bg-danger-subtle px-4 py-[13px]"
+        className="flex items-center gap-3.5 rounded-[12px] border border-danger-text bg-danger-subtle px-4 py-[13px]"
       >
         <span className="min-w-0 flex-1">
           <b
@@ -871,10 +871,7 @@ export function AccountSecuritySurface(props: AccountSecuritySurfaceProps) {
   const { copy, security } = props;
   const titleId = React.useId();
   return (
-    <section
-      aria-labelledby={titleId}
-      className="flex min-w-0 flex-col gap-[18px]"
-    >
+    <section aria-labelledby={titleId} className="flex min-w-0 flex-col gap-4">
       <PageHead
         id={titleId}
         title={copy.title}

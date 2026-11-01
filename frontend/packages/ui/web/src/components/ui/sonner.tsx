@@ -42,7 +42,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          // Final-States `.toast`: padding 10 10 10 14, the 16 px glyph flush at the left pad.
+          toast: "cn-toast border-0! py-2.5! pr-2.5! pl-3.5! leading-[1.45]",
+          icon: "ml-px! mr-[3px]!",
+          title: "font-normal! leading-[1.45]!",
           description: "text-inverse-muted!",
           actionButton:
             "bg-transparent! font-semibold! text-inverse-foreground! underline underline-offset-2",
