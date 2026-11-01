@@ -174,3 +174,69 @@ Architecture decisions that wait for a real consumer: ordered message delivery (
 - Change a use case's state when its evidence changes, in the same pull request.
 - Do not add sprint status, assignees or percentages (`docs/workstreams/README.md` §5).
 - When a capability reaches DONE for every use case, its durable rules belong in the product doc; the catalog keeps the evidence pointers only.
+
+## 12. Version scope
+
+A use case belongs to the first version whose scope lists it. The catalog state stays the single progress measure: a version is cut when every use case in its scope is DONE (`docs/delivery/ci-cd-architecture.md` §13). This section names scope; it carries no counts of progress, percentages, assignees or dates (§11).
+
+### 12.1 Version 0.1.0: Work Management core, sign-in and session, workspaces and members
+
+Scope as the owner approved it, pinned to use-case IDs. Spaces, Teams, onboarding and Home, comments and attachments on items, provider sign-in, profile and API tokens are not in it unless the owner adds them. Use cases BLOCKED on an owner decision (§9) are outside it until the owner decides.
+
+**Identity (`identity.md`)**
+
+| Capability | Name | Use cases | Count |
+|---|---|---|---|
+| A | Session bootstrap | A01-A03 | 3 |
+| B | Login | B01-B07, B09 | 8 |
+| C | Logout | C01-C04 | 4 |
+| D | Session expiration | D01-D05 | 5 |
+| H | MFA enrollment | H01-H02 | 2 |
+| J | MFA recovery (turn off only) | J03 | 1 |
+| K | Security settings (step-up only) | K03-K05 | 3 |
+| | Total | | 26 |
+
+**Workspaces (`workspaces.md`)**
+
+| Capability | Name | Use cases | Count |
+|---|---|---|---|
+| A | Workspace create | A01-A02, A04 | 3 |
+| B | Workspace read / resolve | B01, B04 | 2 |
+| C | Workspace update | C01 | 1 |
+| E | Membership read | E01-E02 | 2 |
+| F | Membership add / remove / change | F02, F05 | 2 |
+| G | Invitation create | G01, G03-G06 | 5 |
+| H | Invitation accept / reject / revoke | H01-H03, H05-H06 | 5 |
+| I | Workspace selection / switch integration | I01-I02, I04 | 3 |
+| | Total | | 23 |
+
+**Work Management (`work-management.md`)**
+
+| Capability | Name | Use cases | Count |
+|---|---|---|---|
+| A | Board lifecycle | A01-A10, A12-A18, A21-A22, A24 | 20 |
+| B | BoardItem lifecycle | B01-B16, B18, B20, B22, B24-B26, B28-B31, B35-B36 | 28 |
+| C | BoardField definitions | C01-C02, C04, C06-C16, C22 | 15 |
+| D | Field values | D01-D12 | 12 |
+| E | Groups and grouping | E01-E06 | 6 |
+| F | Ordering | F01-F04 | 4 |
+| G | Checklists | G01-G02 | 2 |
+| H | Query, filter and sort foundation | H01-H19 | 19 |
+| I | Table view | I01-I03 | 3 |
+| J | Kanban view | J01-J06 | 6 |
+| K | Calendar view | K01 | 1 |
+| L | Timeline view | L01 | 1 |
+| N | Form input | N01-N05 | 5 |
+| O | Activity and event production | O01, O04 | 2 |
+| P | Realtime synchronization | P01-P04 | 4 |
+| T | Performance and hardening | T01 | 1 |
+| | Total | | 129 |
+
+Version 0.1.0 holds 178 use cases.
+
+### 12.2 Later versions (capabilities only)
+
+- 0.2: Documents and Collaboration.
+- 0.3: Governance, Accounts and the operator console.
+- 0.4: Automation and Integrations.
+- 1.0: general availability, with real Billing, Analytics and the deploy pipeline.
