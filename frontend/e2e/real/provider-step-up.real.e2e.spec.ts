@@ -26,7 +26,8 @@ function sql(statement: string) {
   ]);
 }
 
-const user = realUsers.workspaceGuest;
+// Not the person the two-factor spec uses: step-up calls share a per-person limit of ten a minute.
+const user = realUsers.guest;
 const ofUser = `(select id from identity.users where email = '${user.email}')`;
 
 // The seeded person gets their password flag back, whatever the run did.
