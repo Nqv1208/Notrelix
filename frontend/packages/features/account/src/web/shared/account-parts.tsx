@@ -12,20 +12,20 @@ export const FOCUS =
 
 /** Final-Account `.btn`: 32 px, 1 px strong border, 13 px medium. */
 export const BTN =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-default disabled:opacity-60 dark:bg-card";
+  "inline-flex h-8 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-default disabled:opacity-60 dark:bg-card";
 export const BTN_PRIMARY =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-8 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 disabled:cursor-default disabled:opacity-60";
 export const BTN_SM =
-  "inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-default disabled:opacity-60 dark:bg-card";
+  "inline-flex h-7 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-default disabled:opacity-60 dark:bg-card";
 export const BTN_DANGER =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-danger bg-danger px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-danger-foreground hover:bg-danger/90 disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-8 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-danger-text bg-danger-text px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-danger-foreground hover:bg-danger-text/90 disabled:cursor-default disabled:opacity-60";
 /** Final-Account `.lnkb`: a text button, 12.5 px semibold. */
 export const LINK_BUTTON =
-  "border-0 bg-transparent p-0 text-crumb leading-[1.45] font-semibold text-link hover:underline disabled:cursor-not-allowed disabled:font-medium disabled:text-meta-foreground disabled:opacity-70 disabled:no-underline";
+  "border-0 bg-transparent p-0 max-sm:min-h-11 text-crumb leading-[1.45] font-semibold text-link hover:underline disabled:cursor-not-allowed disabled:font-medium disabled:text-meta-foreground disabled:opacity-70 disabled:no-underline";
 export const LINK_BUTTON_DANGER =
-  "border-0 bg-transparent p-0 text-crumb leading-[1.45] font-semibold text-danger-text hover:underline disabled:cursor-not-allowed disabled:font-medium disabled:text-meta-foreground disabled:opacity-70 disabled:no-underline";
+  "border-0 bg-transparent p-0 max-sm:min-h-11 text-crumb leading-[1.45] font-semibold text-danger-text hover:underline disabled:cursor-not-allowed disabled:font-medium disabled:text-meta-foreground disabled:opacity-70 disabled:no-underline";
 export const INPUT =
-  "box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-nav leading-[1.45] text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none dark:bg-card";
+  "box-border h-9 max-sm:h-11 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-nav leading-[1.45] text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none dark:bg-card";
 export const SELECT_SM =
   "h-8 min-w-[150px] rounded-[7px] border border-line-strong bg-popover px-2 text-compact leading-[1.45] text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring dark:bg-card";
 

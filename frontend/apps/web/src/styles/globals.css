@@ -170,6 +170,10 @@
   --text-list-title--line-height: var(--type-list-title-line-height);
   --text-list-title--font-weight: var(--type-list-title-weight);
   --text-list-title--letter-spacing: var(--type-list-title-tracking);
+  --text-account-title: var(--type-account-title-size);
+  --text-account-title--line-height: var(--type-account-title-line-height);
+  --text-account-title--font-weight: var(--type-account-title-weight);
+  --text-account-title--letter-spacing: var(--type-account-title-tracking);
   --text-greeting: var(--type-greeting-size);
   --text-greeting--line-height: var(--type-greeting-line-height);
   --text-greeting--font-weight: var(--type-greeting-weight);

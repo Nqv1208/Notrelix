@@ -774,6 +774,14 @@ describe("Home, My work and Inbox type roles", () => {
     expect(role.letterSpacing).toBe("-0.015em");
   });
 
+  it("sizes the account title as Final-Account's h1 (22px / 650, line 1.25)", () => {
+    const role = textRoles["account-title"];
+    expect(fontSizeDense[role.size as keyof typeof fontSizeDense]).toBe(1.375);
+    expect(role.lineHeight * 16).toBeCloseTo(27.5, 5);
+    expect(role.weight).toBe(650);
+    expect(role.letterSpacing).toBe("-0.015em");
+  });
+
   it("sizes the empty-page title as Final-MyWork's `.emp` h2 (19px / 650, line 1.45)", () => {
     const role = textRoles["empty-title"];
     expect(fontSizeDense[role.size as keyof typeof fontSizeDense]).toBe(1.1875);
@@ -801,7 +809,12 @@ describe("Home, My work and Inbox type roles", () => {
       resolve(here, "../../../../../apps/web/src/styles/globals.css"),
       "utf8",
     );
-    for (const role of ["greeting", "list-title", "empty-title"]) {
+    for (const role of [
+      "greeting",
+      "list-title",
+      "empty-title",
+      "account-title",
+    ]) {
       expect(globals, role).toContain(
         `--text-${role}: var(--type-${role}-size);`,
       );
