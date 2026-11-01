@@ -113,8 +113,8 @@ function order(queryClient: QueryClient, groupId: string): string[] {
 function deferred() {
   let resolve!: () => void;
   let reject!: (error: Error) => void;
-  const promise = new Promise<void>((res, rej) => {
-    resolve = res;
+  const promise = new Promise<{ version?: number }>((res, rej) => {
+    resolve = () => res({});
     reject = rej;
   });
   return { promise, resolve, reject };
@@ -237,7 +237,9 @@ describe("runMoveCardCommand", () => {
     const queryClient = seeded();
     const writeA = deferred();
     const moveCard = vi.fn(() => writeA.promise);
-    const updateStatus = vi.fn(() => new Promise<void>(() => undefined));
+    const updateStatus = vi.fn(
+      () => new Promise<{ version?: number }>(() => undefined),
+    );
     const move = runMoveCardCommand(
       queryClient,
       { moveCard },

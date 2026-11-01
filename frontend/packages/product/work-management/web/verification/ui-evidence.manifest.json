@@ -67,6 +67,261 @@
         "path": "src/components/forms/forms-containers.tsx",
         "category": "container",
         "reason": "Containers composing the forms surfaces with the form, board, access and response reads and every form write (useBoardForms, useForm, useFormSubmissions, useFormWrites, useSubmitForm), the undo wait of a decision on a response and the shared add-item dialog for \"create item from response\"."
+      },
+      {
+        "path": "src/components/board-layout/board-connection-notice.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/board-lifecycle/board-move-impact.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/board-lifecycle/retired-boards-surface.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-add-property.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-field-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-field-extra-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-field-more-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-labels-popover.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/update-composer.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/add-menu.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/card-cover.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/checklist-links-controls.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/colour-blind-label-mark.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/cover-picker.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/face-context.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/face-fields-button.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/face-fields-popover.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/repeat-reminder-select.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/use-capability-slots.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/vote-viewers-chips.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/card-popup-context.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/card-popup-surface.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/chips-row.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/comments/comments-column.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/markdown.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/attach-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/checklist-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/dates-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/labels-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/people-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/picker-bits.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-header.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-quick-row.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-title-row.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-ui.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/add-field-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/attachments-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/checklist-item-controls.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/checklists-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/description-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/field-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/fields-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/links-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/states/popup-states.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/checklists/item-checklists.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/comment-thread/reaction-bar.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/comment-thread/reply-box.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/item-page/item-page-mention.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/item-page/item-page-parts.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/item-page/item-pickers.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/shared/item-description-editor.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
       }
     ]
   },
@@ -509,7 +764,9 @@
         "src/components/views/kanban/kanban-add-lane.tsx",
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
         "src/components/views/kanban/kanban-empty-state.tsx",
-        "src/components/views/kanban/kanban-settings-panel.tsx"
+        "src/components/views/kanban/kanban-settings-panel.tsx",
+        "src/components/views/kanban/kanban-bulk-bar.tsx",
+        "src/components/views/kanban/kanban-swimlane-board.tsx"
       ],
       "stories": [
         {
@@ -994,7 +1251,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-filter-menu.tsx"],
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
@@ -1053,18 +1310,6 @@
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         },
         {
-          "id": "filter",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "filter-chip",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "group-by",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
           "id": "read-only",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         },
@@ -1079,7 +1324,12 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/saved-filters/saved-filters-menu.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/components/filters/field-ref-menu.tsx",
+        "src/components/filters/filter-builder.tsx",
+        "src/components/filters/sort-menu.tsx",
+        "src/components/filters/view-state-bar.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-saved-filters-menu--default",
@@ -1623,22 +1873,6 @@
         {
           "id": "group-delete",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "field-columns",
-          "testFile": "src/components/views/table/__tests__/main-table-view.fields.component.test.tsx"
-        },
-        {
-          "id": "field-edit",
-          "testFile": "src/components/views/table/__tests__/table-field-cell.interaction.component.test.tsx"
-        },
-        {
-          "id": "field-computed",
-          "testFile": "src/components/views/table/__tests__/table-field-cell.interaction.component.test.tsx"
-        },
-        {
-          "id": "field-write-states",
-          "testFile": "src/components/views/table/__tests__/table-field-cell.interaction.component.test.tsx"
         }
       ]
     },
@@ -1707,18 +1941,6 @@
         },
         {
           "id": "chips",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "filter",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "sort",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "group-by",
           "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
         },
         {
@@ -2558,7 +2780,10 @@
         "src/components/board-settings/board-settings-templates.tsx",
         "src/components/board-settings/board-settings-view-panel.tsx",
         "src/components/board-settings/board-settings-views.tsx",
-        "src/components/board-settings/board-settings-write-error.tsx"
+        "src/components/board-settings/board-settings-write-error.tsx",
+        "src/components/board-settings/board-settings-conflict-parts.tsx",
+        "src/components/board-settings/board-settings-conflict.tsx",
+        "src/components/board-settings/board-settings-deleted-fields.tsx"
       ],
       "stories": [
         {
@@ -3045,7 +3270,8 @@
         "src/components/item-actions/move-board-dialog.tsx",
         "src/components/item-actions/duplicate-item-dialog.tsx",
         "src/components/item-actions/remind-dialog.tsx",
-        "src/components/item-actions/item-actions-menu.tsx"
+        "src/components/item-actions/item-actions-menu.tsx",
+        "src/components/item-lifecycle/board-archive-host.tsx"
       ],
       "stories": [
         {

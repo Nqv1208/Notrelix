@@ -26,6 +26,10 @@ function clientFor(persona: MockPersona = "owner") {
   return { store, client };
 }
 
+/** The versions of the named items as the store holds them: what a bulk write names. */
+const seen = (store: MockStore, ids: readonly string[]) =>
+  Object.fromEntries(ids.map((id) => [id, store.getCard(id)?.version ?? 1]));
+
 describe("ERP board in the mock world", () => {
   it("serves the item detail with its assignee, priority option and description", async () => {
     const { client, store } = clientFor();
@@ -130,11 +134,14 @@ describe("ERP board in the mock world", () => {
       (card) => card.itemKey === "ERP-149",
     )!;
 
-    await createCardApi(client).updateFieldValue({
-      cardId: erp149.id,
-      fieldDefinitionId: statusField.id,
-      value: doing.optionId,
-    });
+    await createCardApi(client).updateFieldValue(
+      {
+        cardId: erp149.id,
+        fieldDefinitionId: statusField.id,
+        value: doing.optionId,
+      },
+      { expectedVersion: erp149.version ?? 1 },
+    );
 
     const after = groupCardsByStatus(
       await boards.getFullBoard(boardId, { workspaceId }),
@@ -225,7 +232,11 @@ describe("ERP board in the mock world", () => {
       });
     };
 
-    await cards.updateStatus(itemId("ERP-149"), "mock-erp-status-doing");
+    await cards.updateStatus(
+      itemId("ERP-149"),
+      "mock-erp-status-doing",
+      store.getCard(itemId("ERP-149"))!.version ?? 1,
+    );
     let lanes = await lanesOf();
     expect(lanes.map((lane) => lane.total)).toEqual([5, 4, 2, 5]);
     expect(lanes[1]!.cards.some((card) => card.itemKey === "ERP-149")).toBe(
@@ -233,11 +244,19 @@ describe("ERP board in the mock world", () => {
     );
     expect(store.getCard(itemId("ERP-149"))!.completedAt ?? null).toBeNull();
 
-    await cards.updateStatus(itemId("ERP-149"), "mock-erp-status-done");
+    await cards.updateStatus(
+      itemId("ERP-149"),
+      "mock-erp-status-done",
+      store.getCard(itemId("ERP-149"))!.version ?? 1,
+    );
     expect(store.getCard(itemId("ERP-149"))!.completedAt).toEqual(
       expect.any(String),
     );
-    await cards.updateStatus(itemId("ERP-149"), "mock-erp-status-todo");
+    await cards.updateStatus(
+      itemId("ERP-149"),
+      "mock-erp-status-todo",
+      store.getCard(itemId("ERP-149"))!.version ?? 1,
+    );
     expect(store.getCard(itemId("ERP-149"))!.completedAt ?? null).toBeNull();
     lanes = await lanesOf();
     expect(lanes.map((lane) => lane.total)).toEqual([6, 3, 2, 5]);
@@ -247,18 +266,22 @@ describe("ERP board in the mock world", () => {
     const { client, store } = clientFor();
     const card = store.getCards(store.getLists(boardId)[0]!.id)[0]!;
     await expect(
-      createCardApi(client).updateStatus(card.id, "not-an-option"),
+      createCardApi(client).updateStatus(
+        card.id,
+        "not-an-option",
+        card.version ?? 1,
+      ),
     ).rejects.toThrow();
   });
 
   it("returns the created item so a lane can set its status next", async () => {
     const { client, store } = clientFor();
     const groupId = store.getLists(boardId)[0]!.id;
-    const id = await createCardApi(client).createCard(boardId, {
+    const created = await createCardApi(client).createCard(boardId, {
       listId: groupId,
       title: "Rà soát quyền kế toán",
     });
-    expect(store.getCard(id!)).toMatchObject({
+    expect(store.getCard(created!.id)).toMatchObject({
       title: "Rà soát quyền kế toán",
       itemKey: "ERP-154",
     });
@@ -315,7 +338,11 @@ describe("ERP board in the mock world", () => {
       expect(access.myLevel).toBe("viewer");
       const item = erpCard(store, "ERP-149");
       await expect(
-        createCardApi(client).updateStatus(item.id, "mock-erp-status-doing"),
+        createCardApi(client).updateStatus(
+          item.id,
+          "mock-erp-status-doing",
+          item.version ?? 1,
+        ),
       ).rejects.toMatchObject({ kind: "forbidden" });
     });
 
@@ -324,7 +351,11 @@ describe("ERP board in the mock world", () => {
       const item = erpCard(store, "ERP-149");
       const before = store.getFieldValues(item.id);
       await expect(
-        createCardApi(client).updateStatus(item.id, "mock-erp-status-doing"),
+        createCardApi(client).updateStatus(
+          item.id,
+          "mock-erp-status-doing",
+          item.version ?? 1,
+        ),
       ).rejects.toMatchObject({ kind: "forbidden" });
       expect(store.getFieldValues(item.id)).toEqual(before);
     });
@@ -420,11 +451,14 @@ describe("ERP board in the mock world", () => {
       const person = store
         .getColumns(boardId)
         .find((column) => column.fieldType === "user")!;
-      await createCardApi(client).updateFieldValue({
-        cardId: item.id,
-        fieldDefinitionId: person.id,
-        value: [mockIds.users.owner],
-      });
+      await createCardApi(client).updateFieldValue(
+        {
+          cardId: item.id,
+          fieldDefinitionId: person.id,
+          value: [mockIds.users.owner],
+        },
+        { expectedVersion: item.version ?? 1 },
+      );
       expect(store.getCard(item.id)!.assigneeUserIds).toEqual([
         mockIds.users.owner,
       ]);
@@ -443,7 +477,11 @@ describe("ERP board in the mock world", () => {
           (candidate) =>
             candidate.id !== boardId && store.getLists(candidate.id).length > 0,
         )!;
-      await createItemExtrasApi(client).moveToBoard(item.id, target.id);
+      await createItemExtrasApi(client).moveToBoard(
+        item.id,
+        target.id,
+        item.version ?? 1,
+      );
       const moved = store.getCard(item.id)!;
       expect(moved.boardId).toBe(target.id);
       expect(moved.itemKey).not.toBe("ERP-142");
@@ -469,12 +507,20 @@ describe("ERP board in the mock world", () => {
         .getBoards(workspaceId)
         .find((candidate) => candidate.id !== boardId)!;
       await expect(
-        createItemExtrasApi(commenter.client).moveToBoard(theirs.id, other.id),
+        createItemExtrasApi(commenter.client).moveToBoard(
+          theirs.id,
+          other.id,
+          theirs.version ?? 1,
+        ),
       ).rejects.toBeTruthy();
       const owner = clientFor();
       const item = erpCard(owner.store, "ERP-151");
       await expect(
-        createItemExtrasApi(owner.client).moveToBoard(item.id, boardId),
+        createItemExtrasApi(owner.client).moveToBoard(
+          item.id,
+          boardId,
+          item.version ?? 1,
+        ),
       ).rejects.toBeTruthy();
     });
 
@@ -551,7 +597,11 @@ describe("ERP board in the mock world", () => {
       const children = await extras.getChildItems(id);
       expect(children).toHaveLength(6);
       expect(children[5]).toMatchObject({ key: "ERP-142.6", done: false });
-      await extras.setChildDone(children[3]!.id, true);
+      await extras.setChildDone(
+        children[3]!.id,
+        true,
+        store.getCard(children[3]!.id)?.version ?? 1,
+      );
       const last = store.getActivity(id).at(-1)!;
       expect(last).toMatchObject({
         verb: "đánh dấu xong việc con",
@@ -575,25 +625,40 @@ describe("ERP board in the mock world", () => {
     const api = createCardApi(client);
     const ids = ["mock-erp-item-142", "mock-erp-item-144"];
 
-    const updated = await api.bulkUpdate(boardId, ids, {
-      type: "set-due-date",
-      dueDate: "2026-11-03T10:00:00.000Z",
-    });
+    const updated = await api.bulkUpdate(
+      boardId,
+      ids,
+      {
+        type: "set-due-date",
+        dueDate: "2026-11-03T10:00:00.000Z",
+      },
+      seen(store, ids),
+    );
     expect(updated).toBe(2);
     for (const id of ids) {
       expect(store.getCard(id)?.dueAt).toBe("2026-11-03T10:00:00.000Z");
     }
 
-    await api.bulkUpdate(boardId, ids, { type: "clear-due-date" });
+    await api.bulkUpdate(
+      boardId,
+      ids,
+      { type: "clear-due-date" },
+      seen(store, ids),
+    );
     for (const id of ids) expect(store.getCard(id)?.dueAt ?? null).toBeNull();
 
     // An item that is not on the board stops the whole request: nothing is archived.
     await expect(
-      api.bulkUpdate(boardId, [ids[0]!, "no-such-item"], { type: "archive" }),
+      api.bulkUpdate(
+        boardId,
+        [ids[0]!, "no-such-item"],
+        { type: "archive" },
+        seen(store, [ids[0]!, "no-such-item"]),
+      ),
     ).rejects.toBeDefined();
     expect(store.getCard(ids[0]!)?.isArchived).toBeFalsy();
 
-    await api.bulkUpdate(boardId, ids, { type: "archive" });
+    await api.bulkUpdate(boardId, ids, { type: "archive" }, seen(store, ids));
     for (const id of ids) expect(store.getCard(id)?.isArchived).toBe(true);
   });
 
@@ -602,10 +667,15 @@ describe("ERP board in the mock world", () => {
     const api = createCardApi(client);
     const ids = ["mock-erp-item-146", "mock-erp-item-147"];
 
-    await api.bulkUpdate(boardId, ids, {
-      type: "set-priority",
-      priorityOptionId: "mock-erp-priority-urgent",
-    });
+    await api.bulkUpdate(
+      boardId,
+      ids,
+      {
+        type: "set-priority",
+        priorityOptionId: "mock-erp-priority-urgent",
+      },
+      seen(store, ids),
+    );
     for (const id of ids) {
       expect(store.getFieldValues(id)["mock-erp-col-priority"] ?? null).toBe(
         "mock-erp-priority-urgent",
@@ -613,11 +683,16 @@ describe("ERP board in the mock world", () => {
     }
 
     await expect(
-      api.bulkUpdate(boardId, [ids[0]!, "no-such-item"], { type: "delete" }),
+      api.bulkUpdate(
+        boardId,
+        [ids[0]!, "no-such-item"],
+        { type: "delete" },
+        seen(store, [ids[0]!, "no-such-item"]),
+      ),
     ).rejects.toBeDefined();
     expect(store.getCard(ids[0]!)).toBeDefined();
 
-    await api.bulkUpdate(boardId, ids, { type: "delete" });
+    await api.bulkUpdate(boardId, ids, { type: "delete" }, seen(store, ids));
     for (const id of ids) expect(store.getCard(id)).toBeUndefined();
   });
 });

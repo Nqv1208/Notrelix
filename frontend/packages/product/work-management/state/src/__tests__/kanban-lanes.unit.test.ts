@@ -319,7 +319,7 @@ function recordingClient(response: unknown = undefined) {
 describe("item status write", () => {
   it("sends PATCH /board-items/{id}/status with the option id and the command keys", async () => {
     const { client, calls } = recordingClient();
-    await createCardApi(client).updateStatus("item-1", "option-doing", {
+    await createCardApi(client).updateStatus("item-1", "option-doing", 4, {
       correlationId: "corr-1",
       idempotencyKey: "idem-key-1",
     });
@@ -327,7 +327,7 @@ describe("item status write", () => {
       {
         method: "PATCH",
         url: "/board-items/item-1/status",
-        body: { status: "option-doing" },
+        body: { status: "option-doing", expectedVersion: 4 },
         options: { correlationId: "corr-1", idempotencyKey: "idem-key-1" },
       },
     ]);

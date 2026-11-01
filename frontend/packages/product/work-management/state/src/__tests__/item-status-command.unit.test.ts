@@ -108,7 +108,10 @@ describe("runItemStatusCommand", () => {
     const { queryClient, boardKey, detailKey } = seeded();
     let release!: () => void;
     const updateStatus = vi.fn(
-      () => new Promise<void>((resolve) => (release = resolve)),
+      () =>
+        new Promise<{ version?: number }>(
+          (resolve) => (release = () => resolve({})),
+        ),
     );
     const pending = runItemStatusCommand(
       queryClient,
@@ -159,7 +162,7 @@ describe("runItemStatusCommand", () => {
 
   it("uses a fresh idempotency key for every command", async () => {
     const { queryClient } = seeded();
-    const updateStatus = vi.fn(async () => undefined);
+    const updateStatus = vi.fn(async () => ({}));
     const variables = {
       workspaceId: "ws-1",
       boardId: "b-1",
@@ -184,10 +187,11 @@ describe("runCreateItemInLane", () => {
     const services = {
       createCard: vi.fn(async () => {
         calls.push("create");
-        return "i-new";
+        return { id: "i-new", version: 1 };
       }),
       updateStatus: vi.fn(async () => {
         calls.push("status");
+        return {};
       }),
     };
     let optimisticLane: string | null | undefined;
@@ -197,7 +201,7 @@ describe("runCreateItemInLane", () => {
         card.id.startsWith("optimistic-"),
       )?.statusOptionId;
       calls.push("create");
-      return "i-new";
+      return { id: "i-new", version: 1 };
     });
     await runCreateItemInLane(queryClient, services, {
       workspaceId: "ws-1",
@@ -218,8 +222,8 @@ describe("runCreateItemInLane", () => {
   it("skips the status write when no status is asked for", async () => {
     const { queryClient } = seeded();
     const services = {
-      createCard: vi.fn(async () => "i-new"),
-      updateStatus: vi.fn(async () => undefined),
+      createCard: vi.fn(async () => ({ id: "i-new", version: 1 })),
+      updateStatus: vi.fn(async () => ({})),
     };
     await runCreateItemInLane(queryClient, services, {
       workspaceId: "ws-1",
@@ -240,10 +244,10 @@ describe("runCreateItemInLane", () => {
         optimisticValue = board.groups[0]!.cards.find((card) =>
           card.id.startsWith("optimistic-"),
         )?.fieldValues["field-priority"];
-        return "i-new";
+        return { id: "i-new", version: 1 };
       }),
-      updateStatus: vi.fn(async () => undefined),
-      updateFieldValue: vi.fn(async () => undefined),
+      updateStatus: vi.fn(async () => ({})),
+      updateFieldValue: vi.fn(async () => ({})),
     };
     await runCreateItemInLane(queryClient, services, {
       workspaceId: "ws-1",
@@ -268,7 +272,7 @@ describe("runCreateItemInLane", () => {
       createCard: vi.fn(async () => {
         throw new Error("offline");
       }),
-      updateStatus: vi.fn(async () => undefined),
+      updateStatus: vi.fn(async () => ({})),
     };
     await expect(
       runCreateItemInLane(queryClient, services, {
