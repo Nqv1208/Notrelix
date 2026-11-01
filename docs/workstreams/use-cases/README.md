@@ -116,15 +116,15 @@ A use case is DONE only when all of these hold on the same commit (`docs/deliver
 
 The design canvas holding the artboards is the owner's claude.ai artifact `18L4jUXGfdXh7Wn9YQvA2x`. Artboard ids in the catalog refer to it.
 
-## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces and Documents re-counted 2026-11-01 at `d99b4cca0`)
+## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01)
 
 | Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | BLOCKED |
 |---|---|---|---|---|---|---|
 | Accounts | 42 | 15 | 22 | 2 | 0 | 3 |
 | Identity | 61 | 6 | 12 | 25 | 14 | 4 |
 | Workspaces | 91 | 5 | 14 | 60 | 7 | 5 |
-| Governance | 74 | 19 | 19 | 15 | 14 | 7 |
-| Work Management | 170 | 22 | 14 | 109 | 24 | 1 |
+| Governance | 75 | 15 | 19 | 14 | 21 | 6 |
+| Work Management | 171 | 12 | 2 | 15 | 141 | 1 |
 | Documents | 82 | 10 | 4 | 43 | 20 | 5 |
 | Collaboration | 85 | 17 | 7 | 37 | 17 | 7 |
 | Automation | 79 | 11 | 26 | 21 | 20 | 1 |
@@ -132,7 +132,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Billing | 99 | 57 | 27 | 4 | 7 | 4 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
-| **Total** | **957** | **207** | **220** | **336** | **154** | **40** |
+| **Total** | **959** | **193** | **208** | **241** | **278** | **39** |
 
 No use case is DONE: none has a recorded owner check or design-fidelity proof.
 
