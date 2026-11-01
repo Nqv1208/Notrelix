@@ -33,6 +33,9 @@ export interface AuthResetSurfaceProps {
   readonly onBack: () => void;
 }
 
+/** The two links under the form: a full 44 px row, so a thumb finds them. */
+const FOOTER_LINK = `${LINK_BUTTON_CLASS} inline-flex min-h-11 items-center`;
+
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 const CODE_SHAPE = /^\d{6}$/;
 
@@ -187,13 +190,13 @@ export function AuthResetSurface({
         </button>
       </form>
       <div className="flex items-center justify-between gap-3">
-        <button type="button" onClick={onBack} className={LINK_BUTTON_CLASS}>
+        <button type="button" onClick={onBack} className={FOOTER_LINK}>
           {t.back}
         </button>
         <button
           type="button"
           onClick={() => onSendAgain(email.trim())}
-          className={LINK_BUTTON_CLASS}
+          className={FOOTER_LINK}
         >
           {t.sendAgain}
         </button>

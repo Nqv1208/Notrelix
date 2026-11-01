@@ -1,24 +1,9 @@
-import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { CONFIRMATION_LINK, devMails } from "./support/dev-mail";
 
-const backendContainer = "notrelix-fe-real-e2e-backend";
-
-/** No mail provider runs on a developer machine: the development backend logs the message text. */
 async function confirmationLinkFor(email: string): Promise<string> {
-  const pattern = new RegExp(
-    `Development email to ${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: .*?(http\\S*/verify-email#token=\\S+)`,
-  );
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const logs = execFileSync("docker", ["logs", backendContainer], {
-      encoding: "utf8",
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    const match = pattern.exec(logs);
-    if (match) return match[1];
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  throw new Error(`no confirmation email was logged for ${email}`);
+  return (await devMails(email, CONFIRMATION_LINK)).at(-1)!;
 }
 
 test("a new member confirms the email from the link and then creates the workspace", async ({
