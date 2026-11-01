@@ -66,6 +66,7 @@ async function init(): Promise<void> {
   const runtime = createAppRuntime(runtimeEnvironment, runtimeFactories);
 
   const services = createWebApplicationServices(runtime, {
+    onSignedOutRoute: () => isSignedOutRoute(window.location.pathname),
     navigateToSignedOut: () => {
       if (isSignedOutRoute(window.location.pathname)) return;
       const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;

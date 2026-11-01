@@ -6,6 +6,7 @@ import {
   invitationsOf,
   joinAs,
   uniqueEmail,
+  anonymousApi,
 } from "./support/real-workspace";
 
 test.setTimeout(240_000);
@@ -218,20 +219,9 @@ test("an Owner resends then revokes an invitation; the resend waits a minute and
   page,
 }) => {
   const { workspace, member } = await scene(browser, page, "Resend revoke");
-  const anonymous = await browser.newContext();
-  const stranger = await anonymous.newPage();
-  await stranger.goto("/sign-in");
-  const preview = async (token: string) => {
-    const read = await apiWrite<Preview>(
-      stranger,
-      "POST",
-      "/invitations/preview",
-      {
-        token,
-      },
-    );
-    return read;
-  };
+  const link = await anonymousApi();
+  const preview = (token: string) =>
+    link.post<Preview>("/invitations/preview", { token });
 
   const email = uniqueEmail("resend");
   expect(
@@ -331,16 +321,11 @@ test("an Owner resends then revokes an invitation; the resend waits a minute and
   const dead = await preview(renewed.token);
   expect(dead.data?.state).toBe("used");
   expect(dead.data?.email).toBeNull();
-  const register = await apiWrite(
-    stranger,
-    "POST",
-    "/invitations/accept-with-registration",
-    {
-      token: renewed.token,
-      name: "Late Arrival",
-      password: `Pw-${crypto.randomUUID()}`,
-    },
-  );
+  const register = await link.post("/invitations/accept-with-registration", {
+    token: renewed.token,
+    name: "Late Arrival",
+    password: `Pw-${crypto.randomUUID()}`,
+  });
   expect(register.status).toBeGreaterThanOrEqual(400);
   expect(
     (
@@ -351,5 +336,5 @@ test("an Owner resends then revokes an invitation; the resend waits a minute and
       )
     ).status,
   ).toBeGreaterThanOrEqual(400);
-  await anonymous.close();
+  await link.dispose();
 });

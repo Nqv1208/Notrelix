@@ -6,6 +6,7 @@ import {
   invitationsOf,
   membersOf,
   uniqueEmail,
+  anonymousApi,
 } from "./support/real-workspace";
 
 test.setTimeout(180_000);
@@ -37,11 +38,9 @@ test("a person with no account opens the link from the e-mail, sees the invitati
 
   const anonymousContext = await browser.newContext();
   const anonymous = await anonymousContext.newPage();
-  await anonymous.goto("/sign-in");
+  const link = await anonymousApi();
   const preview = (value: string) =>
-    apiWrite<Preview>(anonymous, "POST", "/invitations/preview", {
-      token: value,
-    });
+    link.post<Preview>("/invitations/preview", { token: value });
 
   // H01: the holder of the token reads the workspace, the role and the address, signed out.
   const read = await preview(token);
@@ -58,7 +57,7 @@ test("a person with no account opens the link from the e-mail, sees the invitati
   const unknown = await preview(`${token.slice(0, -4)}AAAA`);
   const malformed = await preview("not-a-token");
   expect(unknown.status).toBe(404);
-  expect(malformed.status).toBe(404);
+  expect(malformed.status, JSON.stringify(malformed.data)).toBe(404);
   const withoutTrace = (data: unknown) => ({
     ...(data as Record<string, unknown>),
     traceId: undefined,
@@ -106,5 +105,6 @@ test("a person with no account opens the link from the e-mail, sees the invitati
   // The link cannot be used twice: it reads as used and withholds the address.
   const reused = await preview(token);
   expect(reused.data).toMatchObject({ state: "used", email: null });
+  await link.dispose();
   await anonymousContext.close();
 });

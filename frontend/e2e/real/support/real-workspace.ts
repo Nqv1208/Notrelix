@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { expect, type Browser, type Page } from "@playwright/test";
+import {
+  expect,
+  request,
+  type APIRequestContext,
+  type Browser,
+  type Page,
+} from "@playwright/test";
 import { apiRead, apiWrite, realUsers, signIn } from "./real-session";
 
 const backendContainer = "notrelix-fe-real-e2e-backend";
@@ -135,6 +141,46 @@ export async function invitationTokenFor(
   throw new Error(`no invitation e-mail was logged for ${email}`);
 }
 
+// The development mail log writes only the first and last character of the local part, so each address
+// gets its own pair: a message for another invitation is never taken for this one (260 per run).
+let mailCounter = Math.floor(Math.random() * 260);
 export function uniqueEmail(label: string) {
-  return `${label}-${Date.now()}${Math.floor(Math.random() * 1000)}@example.com`;
+  const n = mailCounter++ % 260;
+  const first = String.fromCharCode(97 + (n % 26));
+  const last = String(Math.floor(n / 26));
+  return `${first}-${label}-${Date.now()}${last}@example.com`;
+}
+
+const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
+
+/**
+ * A client with no session and no page behind it, for the calls a person with
+ * only a link makes. It does not share cookies with a page, whose own CSRF
+ * bootstrap would otherwise replace the token between the read and the write.
+ */
+export async function anonymousApi() {
+  const context: APIRequestContext = await request.newContext();
+  return {
+    async post<T>(path: string, body: unknown) {
+      const csrf = (await (
+        await context.get(`${apiUrl}/auth/csrf`)
+      ).json()) as {
+        token: string;
+      };
+      const response = await context.post(`${apiUrl}${path}`, {
+        headers: {
+          "X-CSRF-Token": csrf.token,
+          "Idempotency-Key": crypto.randomUUID(),
+          "Content-Type": "application/json",
+        },
+        data: JSON.stringify(body),
+      });
+      const text = await response.text();
+      return {
+        status: response.status(),
+        data: text ? (JSON.parse(text) as T) : null,
+      };
+    },
+    dispose: () => context.dispose(),
+  };
 }
