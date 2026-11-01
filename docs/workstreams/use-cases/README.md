@@ -112,7 +112,7 @@ A use case is DONE only when all of these hold on the same commit (`docs/deliver
 2. **Frontend**: the UI uses the generated API client. Every applicable state is built: loading, empty, success, validation error, permission denied, read-only, conflict, pending, offline and destructive confirmation. Optimistic writes roll back on rejection. Keyboard and screen reader complete the flow, and axe reports no serious violation.
 3. **Design**: an approved artboard exists for each screen and state, and the build matches it within 1 px at 1440, 1024 and 390 px, in light and dark.
 4. **End to end**: one journey per use case runs against the real backend and covers the main flow and one rejection.
-5. **Owner check**: the product owner clicks through the use case on the development stack and accepts it.
+5. **Lead acceptance**: the lead, or an acceptance agent that did not build the use case, runs the use case on the development stack against every acceptance line and records the evidence (the real e2e spec and its pass count, screenshots or the box-tree report) in the use case's Evidence line. The owner tests released versions as a user and files what they find as defects, not as a gate.
 
 The design canvas holding the artboards is the owner's claude.ai artifact `18L4jUXGfdXh7Wn9YQvA2x`. Artboard ids in the catalog refer to it.
 
@@ -134,7 +134,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 1 |
 | **Total** | **959** | **199** | **207** | **245** | **282** | **26** |
 
-No use case is DONE: none has a recorded owner check or design-fidelity proof.
+No use case is DONE: none has a recorded lead acceptance or design-fidelity proof.
 
 Patterns that repeat across contexts, each detailed with file paths in the context files:
 
