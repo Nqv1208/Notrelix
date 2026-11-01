@@ -70,6 +70,8 @@ export interface Card {
   startDate?: string;
   completedAt?: string;
   isArchived: boolean;
+  /** Who archived the item, when the server names them (it names no one to a Guest reader). */
+  archivedByName?: string | null;
   isDeleted: boolean;
   members: CardMember[];
   labels: CardLabel[];

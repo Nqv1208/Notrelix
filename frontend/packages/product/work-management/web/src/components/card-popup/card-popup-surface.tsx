@@ -15,13 +15,15 @@ import { LinksSection } from "./sections/links-section";
 import { CommentsBar, CommentsColumn } from "./comments/comments-column";
 import {
   PopupBanners,
+  PopupDeleted,
   PopupGone,
   PopupLoadError,
   PopupSkeleton,
 } from "./states/popup-states";
 import { useCardPopupCopy } from "./use-card-popup-copy";
 
-export type CardPopupStatus = "loading" | "error" | "gone" | "ready";
+export type CardPopupStatus =
+  "loading" | "error" | "gone" | "deleted" | "ready";
 
 export interface CardPopupSurfaceProps {
   readonly status: CardPopupStatus;
@@ -35,6 +37,10 @@ export interface CardPopupSurfaceProps {
   readonly footer?: ReactNode;
   /** Another person's save won: the notice shows and the fields are fresh. */
   readonly conflict?: boolean;
+  /** Who saved first, when the server named them. */
+  readonly conflictBy?: string | null;
+  /** Who deleted the card (status `deleted`); null: the server named no one. */
+  readonly deletedBy?: string | null;
   /** The conflict is a field the board no longer has (D12): names who changed it. */
   readonly staleSchema?: { fieldName: string; byName: string | null } | null;
   readonly onReloadConflict?: () => void;
@@ -55,6 +61,8 @@ export function CardPopupSurface({
   onCloseAutoFocus,
   footer,
   conflict,
+  conflictBy,
+  deletedBy,
   staleSchema,
   onReloadConflict,
   overlays,
@@ -121,6 +129,7 @@ export function CardPopupSurface({
                 {model.slots.coverBanner}
                 <PopupBanners
                   conflict={conflict}
+                  conflictBy={conflictBy}
                   staleSchema={staleSchema}
                   onReload={onReloadConflict}
                 />
@@ -156,6 +165,9 @@ export function CardPopupSurface({
               <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
             ) : null}
             {status === "gone" ? <PopupGone onClose={onClose} /> : null}
+            {status === "deleted" ? (
+              <PopupDeleted by={deletedBy ?? null} onClose={onClose} />
+            ) : null}
           </>
         )}
       </DialogContent>

@@ -72,6 +72,7 @@ export const en = {
   readOnlyPermissionBody:
     "You need edit rights to change it. You can still read the whole card, its comments and links.",
   readOnlyItemArchivedTitle: "This card is archived",
+  readOnlyItemArchivedBy: "{{who}} archived this card",
   readOnlyItemArchivedBody:
     "The card is view-only. Choose Unarchive in the card actions to edit it again.",
   readOnlyArchivedTitle: "This board is archived",
@@ -90,8 +91,15 @@ export const en = {
     body: "It may have been deleted or moved to another board, or you were removed from the board. No information about the card is shown.",
     close: "Back to the board",
   },
+  deleted: {
+    title: "{{who}} deleted this card",
+    someone: "Someone else",
+    body: "It is no longer on the board, so changes to it cannot be saved.",
+    close: "Back to the board",
+  },
   conflict: {
-    title: "Someone else just edited this card",
+    title: "{{who}} just edited this card",
+    someone: "Someone else",
     body: "We refreshed the fields with their version. Your change was not saved.",
     reload: "Reload the card",
   },
@@ -183,6 +191,7 @@ export const vi: ShellCopy = {
   readOnlyPermissionBody:
     "Cần quyền sửa để đổi nội dung. Bạn vẫn đọc được toàn bộ thẻ, bình luận và liên kết.",
   readOnlyItemArchivedTitle: "Thẻ này đã lưu trữ",
+  readOnlyItemArchivedBy: "{{who}} đã lưu trữ thẻ này",
   readOnlyItemArchivedBody:
     "Thẻ ở chế độ chỉ xem. Chọn Bỏ lưu trữ trong thao tác trên thẻ để sửa lại.",
   readOnlyArchivedTitle: "Board này đã lưu trữ",
@@ -201,8 +210,15 @@ export const vi: ShellCopy = {
     body: "Thẻ có thể đã bị xoá hay chuyển sang board khác, hoặc bạn đã được gỡ khỏi board. Không có thông tin nào của thẻ được hiển thị.",
     close: "Về board",
   },
+  deleted: {
+    title: "{{who}} đã xoá thẻ này",
+    someone: "Một người khác",
+    body: "Thẻ không còn trên board nên không thể lưu thay đổi cho thẻ này.",
+    close: "Về board",
+  },
   conflict: {
-    title: "Người khác vừa sửa thẻ này",
+    title: "{{who}} vừa sửa thẻ này",
+    someone: "Một người khác",
     body: "Các ô đã cập nhật theo bản mới. Thay đổi của bạn chưa được lưu.",
     reload: "Tải lại thẻ",
   },

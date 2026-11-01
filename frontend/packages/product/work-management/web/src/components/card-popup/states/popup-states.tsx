@@ -164,6 +164,27 @@ export function PopupGone({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** The card was deleted by someone while it was open: names who, to a person who could read its board. */
+export function PopupDeleted({
+  by,
+  onClose,
+}: {
+  by: string | null;
+  onClose: () => void;
+}) {
+  const t = useCardPopupCopy().shell.deleted;
+  return (
+    <EmptyState
+      title={fillPopupCopy(t.title, { who: by ?? t.someone })}
+      body={t.body}
+    >
+      <PanelBtn variant="primary" onClick={onClose}>
+        {t.close}
+      </PanelBtn>
+    </EmptyState>
+  );
+}
+
 function Banner({
   tone,
   title,
@@ -200,14 +221,16 @@ function Banner({
 /** The notices at the top of the left column: someone else's save, or why nothing is editable. */
 export function PopupBanners({
   conflict,
+  conflictBy,
   staleSchema,
   onReload,
 }: {
   conflict?: boolean;
+  conflictBy?: string | null;
   staleSchema?: { fieldName: string; byName: string | null } | null;
   onReload?: () => void;
 }) {
-  const { copy, readOnly, fieldConflicts } = useCardPopup();
+  const { card, copy, readOnly, fieldConflicts } = useCardPopup();
   const t = copy.shell;
   return (
     <>
@@ -249,7 +272,13 @@ export function PopupBanners({
           ) : null}
         </Banner>
       ) : conflict ? (
-        <Banner tone="warn" title={t.conflict.title} body={t.conflict.body}>
+        <Banner
+          tone="warn"
+          title={fillPopupCopy(t.conflict.title, {
+            who: conflictBy ?? t.conflict.someone,
+          })}
+          body={t.conflict.body}
+        >
           {onReload ? (
             <div className="mt-2 flex flex-wrap gap-2">
               <PanelBtn small onClick={onReload}>
@@ -269,7 +298,13 @@ export function PopupBanners({
       {readOnly === "item-archived" ? (
         <Banner
           tone="info"
-          title={t.readOnlyItemArchivedTitle}
+          title={
+            card.archivedByName
+              ? fillPopupCopy(t.readOnlyItemArchivedBy, {
+                  who: card.archivedByName,
+                })
+              : t.readOnlyItemArchivedTitle
+          }
           body={t.readOnlyItemArchivedBody}
         />
       ) : null}

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { changedByNameOf } from "@notrelix/work-management-state";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
 import type {
@@ -76,6 +77,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
   );
   const [saves, setSaves] = useState<Record<string, FieldSave | undefined>>({});
   const [conflict, setConflict] = useState(false);
+  const [conflictBy, setConflictBy] = useState<string | null>(null);
   const [fieldConflicts, setFieldConflicts] = useState<
     readonly FieldConflict[]
   >([]);
@@ -104,6 +106,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
           if ((error as { kind?: string } | null)?.kind === "conflict") {
             if (mounted.current) {
               setConflict(true);
+              setConflictBy(changedByNameOf(error));
               setSaves((current) => ({ ...current, [key]: undefined }));
             }
             return;
@@ -159,7 +162,11 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     saves,
     track,
     conflict,
-    clearConflict: () => setConflict(false),
+    conflictBy,
+    clearConflict: () => {
+      setConflict(false);
+      setConflictBy(null);
+    },
     fieldConflicts,
     raiseFieldConflict,
     clearFieldConflict,

@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
@@ -45,6 +46,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     private BoardItem _archivedChild = null!;
     private BoardItem _archivedRoot = null!;
     private BoardItem _plain = null!;
+    private BoardItem _trashed = null!;
 
     public BoardReadContractIntegrationTests(PostgresTestContainer db)
     {
@@ -85,13 +87,15 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         _archivedRoot = Root("Archived root", "a4");
         _archivedRoot.Archive(_userId, Now);
         _plain = Root("Plain", "a5");
+        _trashed = Root("Trashed", "a6");
+        _trashed.Delete(_userId, Now);
 
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(_board);
         seed.BoardGroups.Add(_group);
         seed.BoardFields.AddRange(_status, _priority);
-        seed.BoardItems.AddRange(_parent, _doneChild, _todoChild, _archivedChild, _archivedRoot, _plain);
+        seed.BoardItems.AddRange(_parent, _doneChild, _todoChild, _archivedChild, _archivedRoot, _plain, _trashed);
         // Plain is blocked by the open Parent and by the completed child: only the open one counts.
         var itemKind = ResourceKind.Create("work-management.board-item");
         seed.BoardItemLinks.AddRange(
@@ -181,6 +185,43 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         child.ChildProgress.Should().BeNull();
     }
 
+    [Fact]
+    public async Task ItemDetail_ForADeletedItem_AnswersNotFoundWithTheDeleterName()
+    {
+        var act = () => ItemAsync(_trashed.Id, guest: false);
+
+        var missing = (await act.Should().ThrowAsync<NotFoundException>()).Which;
+        missing.ErrorCode.Should().Be(GetBoardItemQueryHandler.DeletedCode);
+        missing.Extensions["deletedByName"].Should().Be("Ada Lovelace");
+    }
+
+    [Fact]
+    public async Task ItemDetail_ForADeletedItem_NamesNoOneToAGuest()
+    {
+        var act = () => ItemAsync(_trashed.Id, guest: true);
+
+        var missing = (await act.Should().ThrowAsync<NotFoundException>()).Which;
+        missing.ErrorCode.Should().Be(GetBoardItemQueryHandler.DeletedCode);
+        missing.Extensions["deletedByName"].Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ItemDetail_ForAnIdThatNeverExisted_StaysThePlainNotFound()
+    {
+        var act = () => ItemAsync(Guid.NewGuid(), guest: false);
+
+        var missing = (await act.Should().ThrowAsync<NotFoundException>()).Which;
+        missing.ErrorCode.Should().BeNull();
+        missing.Extensions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ItemDetail_ForAnArchivedItem_NamesTheArchiverToAMemberButNotToAGuest()
+    {
+        (await ItemAsync(_archivedRoot.Id, guest: false)).ArchivedByName.Should().Be("Ada Lovelace");
+        (await ItemAsync(_archivedRoot.Id, guest: true)).ArchivedByName.Should().BeNull();
+    }
+
     private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces)
     {
         var visibility = new Mock<IResourceVisibility>();
@@ -192,10 +233,17 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         return result.Data!;
     }
 
-    private async Task<BoardItemDto> ItemAsync(Guid itemId)
+    private async Task<BoardItemDto> ItemAsync(Guid itemId, bool guest = false)
     {
         await using var context = _db.CreateOwnerContext(Tenant());
-        var result = await new GetBoardItemQueryHandler(context, Actors(), Collaboration(), Request())
+        var actors = new Mock<IActorLookupService>();
+        actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>
+                (IReadOnlyList<ActorSnapshot>)ids.Select(id => new ActorSnapshot(id, "Ada Lovelace", null)).ToList());
+        var access = new Mock<IWorkspaceAccessResolver>();
+        access.Setup(a => a.ResolveAsync(_workspaceId, _userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceAccessSnapshot(_accountId, _workspaceId, _userId, true, true, IsGuest: guest));
+        var result = await new GetBoardItemQueryHandler(context, actors.Object, Collaboration(), Request(), access.Object)
             .Handle(new GetBoardItemQuery(itemId), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;

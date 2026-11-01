@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Requests;
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Domain.Common;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
@@ -138,6 +139,54 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         var board = await verify.Boards.SingleAsync(b => b.Id == _boardId);
         board.Title.Should().Be("Renamed");
         board.Description.Should().Be("Described");
+    }
+
+    [Fact]
+    public async Task StaleVersion_NamesTheLastWriterToAMember_WhenTheRaceIsLostOnAnItem()
+    {
+        var readVersion = await VersionAsync<BoardItem>(_itemId);
+        await MoveAsync(_doneId, readVersion);
+
+        var problem = await StaleMoveProblemAsync(readVersion, guest: false);
+
+        problem.Extensions["changedByName"].Should().Be("Ada Lovelace");
+        problem.Extensions["currentVersion"].Should().Be(readVersion + 1);
+    }
+
+    [Fact]
+    public async Task StaleVersion_NamesNoOneToAGuest_ButStillAnswersTheCurrentVersion()
+    {
+        var readVersion = await VersionAsync<BoardItem>(_itemId);
+        await MoveAsync(_doneId, readVersion);
+
+        var problem = await StaleMoveProblemAsync(readVersion, guest: true);
+
+        problem.Extensions["changedByName"].Should().BeNull();
+        problem.Extensions["currentVersion"].Should().Be(readVersion + 1);
+    }
+
+    private async Task<PreconditionFailedException> StaleMoveProblemAsync(long staleVersion, bool guest)
+    {
+        await using var context = _db.CreateOwnerContext(Tenant());
+        var actors = new Mock<IActorLookupService>();
+        actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>
+                (IReadOnlyList<ActorSnapshot>)ids.Select(id => new ActorSnapshot(id, "Ada Lovelace", null)).ToList());
+        var access = new Mock<IWorkspaceAccessResolver>();
+        access.Setup(a => a.ResolveAsync(_workspaceId, _userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceAccessSnapshot(_accountId, _workspaceId, _userId, true, true, IsGuest: guest));
+        var session = new EfRequestDataSession(
+            context, Mock.Of<IRlsSessionContext>(), Mock.Of<ILogger<EfRequestDataSession>>(),
+            actors: actors.Object, workspaceAccess: access.Object, request: new FakeCurrentRequestContext().AsUser(_userId));
+        var command = new MoveBoardItemCommand(_itemId, _todoId, staleVersion);
+        var constraint = new ExpectedVersionConstraint(typeof(MoveBoardItemCommand), command.Resource, staleVersion);
+
+        var act = () => session.ExecuteAsync(
+            new RequestDataSessionOptions(RequestDataAccess.Transactional, ApplyTenantScope: false, ApplyResourceScope: false, ExpectedVersion: constraint),
+            _ => new MoveBoardItemCommandHandler(new MoveBoardItemUseCase(context, Clock(), new WorkPlacementResolver(new PostgresWorkOrderingScopeLock(context))), CurrentUser())
+                .Handle(command, CancellationToken.None),
+            CancellationToken.None);
+        return (await act.Should().ThrowAsync<PreconditionFailedException>()).Which;
     }
 
     private Task MoveAsync(Guid groupId, long expectedVersion) =>

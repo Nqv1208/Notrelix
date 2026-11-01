@@ -3,6 +3,7 @@ import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import type { FullBoardResponse } from "@notrelix/work-management-core";
 import {
+  conflictDetailOf,
   isVersionConflict,
   reportItemConflict,
 } from "../queries/use-item-conflict";
@@ -54,7 +55,12 @@ export function useDeleteCard(
     onError: (error, variables, context) => {
       queryClient.setQueryData(queryKey, context?.previous);
       if (workspaceId && isVersionConflict(error))
-        reportItemConflict(queryClient, workspaceId, variables.cardId);
+        reportItemConflict(
+          queryClient,
+          workspaceId,
+          variables.cardId,
+          conflictDetailOf(error),
+        );
       options.onError?.(error, variables);
     },
     onSuccess: (_data, variables) => options.onSuccess?.(variables),
