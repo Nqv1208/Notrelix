@@ -204,7 +204,9 @@ public class HandlerDataPortGateTests : ArchitectureTestBase
         // cross-context contracts (spec 3.2) and never the old foreign DbContexts.
         var expectations = new Dictionary<string, (string RequiredPort, string[] ForbiddenPorts)>(StringComparer.Ordinal)
         {
-            ["GetFullBoardQueryHandler"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
+            // The board read reaches Collaboration through the summary builder it injects.
+            ["GetFullBoardQueryHandler"] = ("IBoardItemSummaryBuilder", ["ICollaborationDbContext"]),
+            ["BoardItemSummaryBuilder"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
             ["GetBoardItemQueryHandler"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
             ["GetBootstrapQueryHandler"] = ("IIdentityBootstrapReadPort", ["IAccountDbContext", "IWorkspaceDbContext"]),
             ["RegisterCommandHandler"] = ("IAccountProvisioningActions", ["IAccountDbContext"]),

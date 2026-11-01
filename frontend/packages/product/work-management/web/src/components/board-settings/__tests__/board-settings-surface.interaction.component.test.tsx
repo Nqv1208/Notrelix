@@ -503,6 +503,28 @@ describe.each([
     );
   });
 
+  it(`renames a board that has no item key yet without asking for one (${locale})`, async () => {
+    const actions = spyActions();
+    const settings = erpBoardSettings();
+    renderPage(copy, {
+      section: "general",
+      settings: {
+        ...settings,
+        general: { ...settings.general, itemKeyPrefix: "" },
+      },
+      actions: actions as unknown as BoardSettingsActions,
+    });
+    fireEvent.change(screen.getByLabelText(copy.general.name), {
+      target: { value: "Triển khai ERP Q1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.common.save }));
+    await waitFor(() =>
+      expect(actions.updateGeneral).toHaveBeenCalledWith({
+        title: "Triển khai ERP Q1",
+      }),
+    );
+  });
+
   it(`${fui("wm.board-settings:groups", locale)}deletes a group by moving its items first (${locale})`, async () => {
     const actions = spyActions();
     renderPage(copy, {
@@ -580,10 +602,11 @@ describe.each([
     );
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain(copy.feedback.conflictTitle);
-    fireEvent.click(
-      within(alert).getByRole("button", { name: copy.feedback.conflictAction }),
-    );
+    // The latest settings were already read again when the write was refused.
     expect(pageProps.onReload).toHaveBeenCalledTimes(1);
+    fireEvent.click(
+      within(alert).getByRole("button", { name: copy.common.close }),
+    );
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   });
 

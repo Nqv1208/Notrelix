@@ -1,4 +1,9 @@
 import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
+import { threadEn, threadVi } from "../comment-thread/comment-thread.copy";
+import {
+  en as actionsEn,
+  vi as actionsVi,
+} from "../item-actions/item-actions.copy";
 
 /**
  * Item side sheet copy, vi and en, registered as the `item-sheet` catalog
@@ -8,6 +13,10 @@ import { ACTIVITY_WORDS_EN, ACTIVITY_WORDS_VI } from "./activity-words";
  * `fillSheetCopy`; counted messages carry `_one` / `_other` forms.
  */
 export const en = {
+  /** The item actions menu, shared by the sheet, the page and the board views. */
+  actions: actionsEn,
+  /** Replies and reactions of a comment. */
+  thread: threadEn,
   /** BCP 47 tag the sheet formats times with. */
   locale: "en",
   /** How the history lines read ({{placeholders}} filled by `describeActivityEvent`). */
@@ -60,6 +69,11 @@ export const en = {
     noLabels: "No labels",
     addLabel: "Add label",
     boardHasNoLabels: "This board has no labels yet.",
+    labelSearch: "Find or create a label",
+    labelSearchPlaceholder: "Find or create a label",
+    createLabel: "Create label “{{name}}”",
+    createLabelFailed: "The label could not be created. Try again.",
+    createLabelRetry: "Retry",
     priority: "Priority",
     noPriority: "No priority",
     priorities: {
@@ -70,7 +84,67 @@ export const en = {
     },
     labels: "Label",
     addProperty: "Add property",
-    addPropertyUnavailable: "Adding properties is not available yet",
+    newProperty: "New property",
+    propertyName: "Property name",
+    propertyType: "Type",
+    propertyTypes: {
+      text: "Text",
+      long_text: "Long text",
+      number: "Number",
+      checkbox: "Checkbox",
+      select: "Select one",
+      multi_select: "Select many",
+      date: "Date",
+      person: "Person",
+      link: "Link",
+      vote: "Vote",
+    },
+    propertyOptions: "Choices",
+    propertyOption: "Choice {{index}}",
+    addOption: "Add a choice",
+    createProperty: "Create property",
+    createPropertyFailed: "The property could not be created. Try again.",
+    createPropertyNameTaken:
+      "A property with this name already exists on the board. Choose another name.",
+    setValueFor: "Set a value",
+    editText: "Edit {{name}}",
+    editLongText: "Edit {{name}}",
+    editLink: "Edit {{name}}",
+    saveLongText: "Save",
+    cancelLongText: "Cancel",
+    invalidLink: "Use an http:// or https:// address",
+    invalidNumber: "Enter a number, for example 13 or 13.5",
+    computed: {
+      label: "Calculated, read only",
+      empty: "No value",
+      stale: "Updating",
+      error: "Error",
+      errors: {
+        "divide-by-zero": "Divided by zero",
+        "unknown-field": "A field this formula uses was not found",
+        cycle: "This field depends on itself",
+        type: "A value has the wrong type",
+        "unsupported-type":
+          "A field this formula uses cannot be calculated with",
+        "invalid-definition": "The formula or rollup is not valid",
+      } as Record<string, string>,
+      unknownError: "This value could not be calculated",
+    },
+    manageFields: "Manage fields",
+    newLabel: "Create label",
+    labelName: "Label name",
+    labelColor: "Colour",
+    labelColors: {
+      blue: "Blue",
+      red: "Red",
+      green: "Green",
+      amber: "Amber",
+      gray: "Gray",
+      violet: "Violet",
+    },
+    createLabelAction: "Create and add",
+    cancel: "Cancel",
+    manageLabels: "Manage labels",
   },
   sections: {
     description: "Description",
@@ -134,6 +208,8 @@ export const en = {
 export type ItemSheetCopy = typeof en;
 
 export const vi: ItemSheetCopy = {
+  actions: actionsVi,
+  thread: threadVi,
   locale: "vi",
   activityEvents: ACTIVITY_WORDS_VI,
   dialogLabel: "Chi tiết công việc",
@@ -185,6 +261,11 @@ export const vi: ItemSheetCopy = {
     noLabels: "Chưa có nhãn",
     addLabel: "Thêm nhãn",
     boardHasNoLabels: "Board này chưa có nhãn nào.",
+    labelSearch: "Tìm hoặc tạo nhãn",
+    labelSearchPlaceholder: "Tìm hoặc tạo nhãn",
+    createLabel: "Tạo nhãn “{{name}}”",
+    createLabelFailed: "Chưa tạo được nhãn. Hãy thử lại.",
+    createLabelRetry: "Thử lại",
     priority: "Ưu tiên",
     noPriority: "Chưa có ưu tiên",
     priorities: {
@@ -195,7 +276,66 @@ export const vi: ItemSheetCopy = {
     },
     labels: "Nhãn",
     addProperty: "Thêm thuộc tính",
-    addPropertyUnavailable: "Chưa thêm được thuộc tính mới",
+    newProperty: "Thuộc tính mới",
+    propertyName: "Tên thuộc tính",
+    propertyType: "Loại",
+    propertyTypes: {
+      text: "Văn bản",
+      long_text: "Văn bản dài",
+      number: "Số",
+      checkbox: "Hộp kiểm",
+      select: "Chọn một",
+      multi_select: "Chọn nhiều",
+      date: "Ngày",
+      person: "Người",
+      link: "Liên kết",
+      vote: "Bình chọn",
+    },
+    propertyOptions: "Các lựa chọn",
+    propertyOption: "Lựa chọn {{index}}",
+    addOption: "Thêm lựa chọn",
+    createProperty: "Tạo thuộc tính",
+    createPropertyFailed: "Chưa tạo được thuộc tính. Hãy thử lại.",
+    createPropertyNameTaken:
+      "Board đã có thuộc tính tên này. Hãy chọn tên khác.",
+    setValueFor: "Đặt giá trị",
+    editText: "Sửa {{name}}",
+    editLongText: "Sửa {{name}}",
+    editLink: "Sửa {{name}}",
+    saveLongText: "Lưu",
+    cancelLongText: "Huỷ",
+    invalidLink: "Dùng địa chỉ http:// hoặc https://",
+    invalidNumber: "Nhập một số, ví dụ 13 hoặc 13,5",
+    computed: {
+      label: "Tự tính, chỉ xem",
+      empty: "Chưa có giá trị",
+      stale: "Đang cập nhật",
+      error: "Lỗi",
+      errors: {
+        "divide-by-zero": "Chia cho 0",
+        "unknown-field": "Chưa tìm thấy trường mà công thức dùng",
+        cycle: "Trường này phụ thuộc vào chính nó",
+        type: "Một giá trị sai kiểu dữ liệu",
+        "unsupported-type": "Không tính được với một trường mà công thức dùng",
+        "invalid-definition": "Công thức hoặc tổng hợp không hợp lệ",
+      },
+      unknownError: "Không tính được giá trị này",
+    },
+    manageFields: "Quản lý trường",
+    newLabel: "Tạo nhãn",
+    labelName: "Tên nhãn",
+    labelColor: "Màu",
+    labelColors: {
+      blue: "Lam",
+      red: "Đỏ",
+      green: "Lục",
+      amber: "Vàng",
+      gray: "Xám",
+      violet: "Tím",
+    },
+    createLabelAction: "Tạo và gắn",
+    cancel: "Huỷ",
+    manageLabels: "Quản lý nhãn",
   },
   sections: {
     description: "Mô tả",

@@ -21,7 +21,7 @@ public static class UpdateSpaceDescriptionEndpoint
         UpdateSpaceDescriptionRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new UpdateSpaceDescriptionCommand(workspaceId, spaceId, request.Description));
+        var result = await sender.Send(new UpdateSpaceDescriptionCommand(workspaceId, spaceId, request.Description, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

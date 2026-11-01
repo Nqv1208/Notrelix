@@ -4,6 +4,7 @@ public class UnarchiveBoardGroupCommandValidator : AbstractValidator<UnarchiveBo
 {
     public UnarchiveBoardGroupCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.GroupId).NotEmpty();
     }
 }

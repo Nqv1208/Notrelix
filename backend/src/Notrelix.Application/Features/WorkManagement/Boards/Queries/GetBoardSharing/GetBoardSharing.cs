@@ -68,6 +68,7 @@ public class GetBoardSharingQueryHandler : IRequestHandler<GetBoardSharingQuery,
                 e.LevelCapped,
                 e.Source,
                 e.PermissionId,
+                e.PermissionVersion,
                 e.MemberRole,
                 e.SpaceRole,
                 e.OutsideSpace,
@@ -92,6 +93,10 @@ public class GetBoardSharingQueryHandler : IRequestHandler<GetBoardSharingQuery,
         var impact = sharing.CanManage
             ? await BuildImpactAsync(request.BoardId, sharing, ct)
             : null;
+        var boardVersion = await _context.Boards.AsNoTracking()
+            .Where(b => b.Id == request.BoardId)
+            .Select(b => b.Version)
+            .FirstOrDefaultAsync(ct);
 
         return Result<BoardSharingDto>.Success(new BoardSharingDto(
             request.BoardId,
@@ -106,7 +111,8 @@ public class GetBoardSharingQueryHandler : IRequestHandler<GetBoardSharingQuery,
             sharing.PeopleCountComplete,
             entries,
             log,
-            impact));
+            impact,
+            boardVersion));
     }
 
     /// <summary>

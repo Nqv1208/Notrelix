@@ -18,10 +18,13 @@ public static class GetBoardOverviewEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
+        int? pageSize,
+        string? filter,
+        string? sort,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetFullBoardQuery(boardId), cancellationToken);
+        var result = await sender.Send(new GetFullBoardQuery(boardId, pageSize, filter, sort), cancellationToken);
         return result.ToApiResult();
     }
 }

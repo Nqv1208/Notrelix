@@ -14,13 +14,21 @@ public record PageDto(
     long Version,
     // The Workspaces Space the page is placed in; null at the Workspace root
     // and also when the caller cannot see that Space (never disclosed, GOV-029).
-    Guid? SpaceId = null
+    Guid? SpaceId = null,
+    // The title of the parent page when the caller can see it, so a picker can say where a page sits;
+    // null at the top of a Space or when the parent is not visible (never disclosed). Set by the list read.
+    string? ParentTitle = null
 );
 
+/// <summary>
+/// One crumb of a page's path. A crumb the caller may not see carries no id, title or icon and
+/// <paramref name="Unavailable"/> set; consecutive hidden pages are one crumb.
+/// </summary>
 public record PageBreadcrumbDto(
-    Guid Id,
-    string Title,
-    string Icon
+    Guid? Id,
+    string? Title,
+    string? Icon,
+    bool Unavailable = false
 );
 
 public record PageHistoryDto(
@@ -38,7 +46,10 @@ public record PageBacklinkDto(
     string Icon,
     // The Space the mentioning page is placed in; null at the Workspace root
     // and when the caller cannot see that Space (never disclosed, GOV-029).
-    Guid? SpaceId = null
+    Guid? SpaceId = null,
+    // The title of the parent page when the caller can see it, so a picker can say where a page sits;
+    // null at the top of a Space or when the parent is not visible (never disclosed). Set by the list read.
+    string? ParentTitle = null
 );
 
 public record PageBacklinksDto(List<PageBacklinkDto> Docs);
@@ -52,7 +63,10 @@ public record PageTreeItemDto(
     // As PageDto.Version.
     long Version,
     // As PageDto.SpaceId: null at the root or when the Space is not visible.
-    Guid? SpaceId = null
+    Guid? SpaceId = null,
+    // The title of the parent page when the caller can see it, so a picker can say where a page sits;
+    // null at the top of a Space or when the parent is not visible (never disclosed). Set by the list read.
+    string? ParentTitle = null
 );
 
 /// <summary>

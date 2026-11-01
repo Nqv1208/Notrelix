@@ -1,7 +1,12 @@
-import type { NotrelixClient, OperationResponse } from "@notrelix/contracts";
+import type {
+  NotrelixClient,
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
+  BoardSettingsComputedDto,
   BoardSettingsFieldDto,
   BoardSettingsFieldPatch,
   BoardSettingsFieldType,
@@ -18,6 +23,18 @@ import type {
 import { defaultTableViewConfig, createBoardApi } from "./board.api";
 
 type Overview = OperationResponse<"WorkManagement.Boards.GetOverview">;
+export type BoardLifecycleImpact = OperationResponse<
+  "WorkManagement.Boards.GetLifecycleImpact",
+  200
+>;
+export type RetiredBoard = OperationResponse<
+  "WorkManagement.Boards.ListArchived",
+  200
+>[number];
+export type DeletedBoardField = OperationResponse<
+  "WorkManagement.BoardFields.Deleted",
+  200
+>[number];
 type OverviewField = NonNullable<Overview["columns"]>[number];
 type OverviewGroup = NonNullable<Overview["lists"]>[number];
 
@@ -116,7 +133,7 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     id: option.id ?? "",
     name: option.name ?? "",
     color: option.color ?? DEFAULT_COLOR,
-    itemCount: 0,
+    itemCount: option.itemCount ?? 0,
   }));
   return {
     id: column.id ?? "",
@@ -135,7 +152,42 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     required: false,
     guidance: "",
     usedIn: [],
+    ...computedOf(type, column.settings),
   };
+}
+
+/** The definition of a Formula or Rollup from its settings JSON. */
+function computedOf(
+  type: BoardSettingsFieldType,
+  settings: string | null | undefined,
+): { computed: BoardSettingsComputedDto } | Record<string, never> {
+  if ((type !== "formula" && type !== "rollup") || !settings) return {};
+  try {
+    const parsed = JSON.parse(settings) as Record<string, unknown>;
+    return type === "formula"
+      ? {
+          computed: {
+            ...(typeof parsed.expression === "string"
+              ? { expression: parsed.expression }
+              : {}),
+          },
+        }
+      : {
+          computed: {
+            ...(typeof parsed.function === "string"
+              ? {
+                  rollupFunction:
+                    parsed.function as BoardSettingsComputedDto["rollupFunction"],
+                }
+              : {}),
+            ...(typeof parsed.fieldId === "string"
+              ? { sourceFieldId: parsed.fieldId }
+              : {}),
+          },
+        };
+  } catch {
+    return {};
+  }
 }
 
 function mapSystemField(column: OverviewField): BoardSettingsSystemFieldDto {
@@ -155,7 +207,8 @@ function mapGroup(group: OverviewGroup): BoardSettingsGroupDto {
     version: group.version ?? 0,
     name: group.title ?? "",
     color: group.color ?? DEFAULT_COLOR,
-    itemCount: (group.boardItems ?? []).length,
+    // An archived group lists no items; the read carries its size.
+    itemCount: group.itemCount ?? (group.boardItems ?? []).length,
   };
 }
 
@@ -170,6 +223,7 @@ export function mapSettingsView(
   const sort = config.sortBy[0];
   return {
     id: view.id,
+    version: view.version,
     name: view.name,
     kind: view.viewMode,
     summary: [
@@ -193,7 +247,7 @@ export function mapSettingsView(
     sort: sort
       ? { fieldName: fieldName(sort.fieldId), text: sort.direction }
       : null,
-    cardFieldIds: [],
+    cardFieldIds: config.cardFieldIds ?? [],
     cardFieldChoices: [],
     lastEditedBy: "",
     createdBy: "",
@@ -214,6 +268,9 @@ export function mapBoardSettings(
   const groups = byPosition(
     (board.lists ?? []).filter((group) => group.isArchived !== true),
   ).map(mapGroup);
+  const archivedGroups = byPosition(
+    (board.lists ?? []).filter((group) => group.isArchived === true),
+  ).map(mapGroup);
   const fields = columns
     .filter((column) => !isLockedSystemField(column))
     .map(mapField);
@@ -232,13 +289,15 @@ export function mapBoardSettings(
       // Time zone and first day of the week are the workspace's; the board inherits them.
       timeZone: inherited.timeZone,
       weekStart: inherited.weekStart,
-      isArchived: false,
+      isArchived: board.isArchived === true,
     },
     fields,
+    fieldOrder: columns.map((column) => column.id ?? ""),
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
     archivedFields: [],
     views: savedViews.map((view) => mapSettingsView(view, fields)),
     groups,
+    archivedGroups,
     automations: [],
     unavailable: UNAVAILABLE,
   };
@@ -274,6 +333,19 @@ function movedId(
     return null;
   }
   return null;
+}
+
+function viewOf(s: BoardSettingsDto, viewId: string) {
+  const view = s.views.find((entry) => entry.id === viewId);
+  if (!view) throw new Error(`Unknown view ${viewId}`);
+  return view;
+}
+
+/** The version of the view the page read; every write on a view names it. */
+function viewVersion(s: BoardSettingsDto, viewId: string): number {
+  const version = viewOf(s, viewId).version;
+  if (!version) throw new Error(`The version of view ${viewId} is unknown`);
+  return version;
 }
 
 export function createBoardSettingsApi(client: NotrelixClient) {
@@ -313,7 +385,24 @@ export function createBoardSettingsApi(client: NotrelixClient) {
             .catch(() => DEFAULT_LOCALE)
         : DEFAULT_LOCALE;
       const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
-      return mapBoardSettings(boardId, board, inherited, savedViews);
+      // Only a manager reads the impact; the settings page is a manager's page, and without it the
+      // confirmations name the effect without counts.
+      const impact = await api
+        .get<BoardLifecycleImpact>(
+          endpoints.boards.lifecycleImpact(boardId),
+          quiet,
+        )
+        .then((counts) => ({
+          itemCount: counts.itemCount ?? 0,
+          openItemCount: counts.openItemCount ?? 0,
+          memberCount: counts.memberCount ?? 0,
+          viewCount: counts.viewCount ?? 0,
+        }))
+        .catch(() => undefined);
+      return {
+        ...mapBoardSettings(boardId, board, inherited, savedViews),
+        ...(impact ? { impact } : {}),
+      };
     },
 
     updateGeneral: (s: BoardSettingsDto, changes: BoardSettingsGeneralPatch) =>
@@ -328,24 +417,95 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         },
         quiet,
       ),
-    archiveBoard: (s: BoardSettingsDto) =>
-      api.post<void>(
-        `${endpoints.boards.detail(s.boardId)}/archive`,
-        {},
+    /** `POST /boards/{id}/archive` with the board version the person saw: a stale one changes nothing. */
+    archiveBoard: (s: BoardSettingsDto) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Archive"> = {
+        expectedVersion: s.version,
+      };
+      return api.post<void>(endpoints.boards.archive(s.boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    unarchiveBoard: (s: BoardSettingsDto) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Unarchive"> = {
+        expectedVersion: s.version,
+      };
+      return api.post<void>(endpoints.boards.unarchive(s.boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    /** What archiving or deleting the board touches, for the confirmation that names it. */
+    lifecycleImpact: (boardId: string) =>
+      api.get<BoardLifecycleImpact>(
+        endpoints.boards.lifecycleImpact(boardId),
         quiet,
       ),
+    /** The archived boards the person can see; they read, and a Manager unarchives them. */
+    listArchivedBoards: (workspaceId: string) =>
+      api.get<RetiredBoard[]>(
+        endpoints.boards.archivedByWorkspaceId(workspaceId),
+        quiet,
+      ),
+    /** The boards deleted in the last 30 days that the person can restore. */
+    listDeletedBoards: (workspaceId: string) =>
+      api.get<RetiredBoard[]>(
+        endpoints.boards.deletedByWorkspaceId(workspaceId),
+        quiet,
+      ),
+    unarchiveBoardById: (boardId: string, expectedVersion: number) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Unarchive"> = {
+        expectedVersion,
+      };
+      return api.post<void>(endpoints.boards.unarchive(boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    /** Refused after the 30-day window with the rule code `WorkManagement_Board_RestoreWindowElapsed`. */
+    restoreBoard: (boardId: string, expectedVersion: number) => {
+      const body: OperationRequestBody<"WorkManagement.Boards.Restore"> = {
+        expectedVersion,
+      };
+      return api.post<void>(endpoints.boards.restore(boardId), body, {
+        ...quiet,
+        idempotencyKey: crypto.randomUUID(),
+      });
+    },
+    /** `DELETE /boards/{id}?expectedVersion=n`: soft delete, restorable by a Manager for 30 days. */
     deleteBoard: (s: BoardSettingsDto) =>
-      api.delete<void>(endpoints.boards.detail(s.boardId), quiet),
+      api.delete<void>(
+        `${endpoints.boards.detail(s.boardId)}?expectedVersion=${s.version}`,
+        { ...quiet, idempotencyKey: crypto.randomUUID() },
+      ),
 
     createField: (
       s: BoardSettingsDto,
       type: BoardSettingsFieldType,
       name: string,
+      settings?: string,
     ) =>
       api.post<unknown>(
         endpoints.boardFields.create(s.boardId),
-        { name, type },
+        { name, type, ...(settings ? { settings } : {}) },
         quiet,
+      ),
+    /** The fields deleted in the last 30 days, newest first (a Manager reads it). */
+    listDeletedFields: (boardId: string) =>
+      api.get<DeletedBoardField[]>(
+        endpoints.boardFields.deleted(boardId),
+        quiet,
+      ),
+    /** Brings a deleted field and its values back; refused after 30 days or when its name is taken. */
+    restoreDeletedField: (boardId: string, fieldId: string) =>
+      api.post<void>(
+        endpoints.boardFields.restore(boardId, fieldId),
+        {},
+        {
+          ...quiet,
+          idempotencyKey: crypto.randomUUID(),
+        },
       ),
     deleteField: (s: BoardSettingsDto, fieldId: string) =>
       api.delete<void>(endpoints.boardFields.detail(s.boardId, fieldId), quiet),
@@ -355,11 +515,33 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         ids,
       );
       if (!moved) return;
+      // The page lists the board's own fields only; the server orders all of
+      // them, locked system fields included, and the neighbours named must be
+      // adjacent in that order: the listed neighbour the field lands next to,
+      // and what is on the other side of it on the server.
+      const server = (s.fieldOrder ?? s.fields.map((field) => field.id)).filter(
+        (id) => id !== moved,
+      );
+      const at = ids.indexOf(moved);
+      const side =
+        at < ids.length - 1
+          ? { listed: ids[at + 1]!, before: true }
+          : { listed: ids[at - 1]!, before: false };
+      const place = server.indexOf(side.listed);
+      const around = side.before
+        ? {
+            previousSiblingId: server[place - 1] ?? null,
+            nextSiblingId: side.listed,
+          }
+        : {
+            previousSiblingId: side.listed,
+            nextSiblingId: server[place + 1] ?? null,
+          };
       await api.post<void>(
         endpoints.boardFields.move(s.boardId, moved),
         {
           expectedVersion: fieldOf(s, moved).version ?? 0,
-          ...neighbours(ids, moved),
+          ...around,
         },
         quiet,
       );
@@ -374,6 +556,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         {
           expectedVersion: fieldOf(s, fieldId).version ?? 0,
           name: changes.name,
+          ...(changes.settings ? { settings: changes.settings } : {}),
         },
         quiet,
       ),
@@ -392,12 +575,22 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       fieldId: string,
       optionId: string,
       changes: { name?: string; color?: string },
-    ) =>
-      api.patch<void>(
+    ) => {
+      // The producer replaces name and colour together: send the one not edited too.
+      const current = fieldOf(s, fieldId).options.find(
+        (option) => option.id === optionId,
+      );
+      return api.patch<void>(
         endpoints.boardFields.option(s.boardId, fieldId, optionId),
-        { ...changes, expectedVersion: optionVersion(s, fieldId) },
+        {
+          name: current?.name,
+          color: current?.color,
+          ...changes,
+          expectedVersion: optionVersion(s, fieldId),
+        },
         quiet,
-      ),
+      );
+    },
     deleteOption: (s: BoardSettingsDto, fieldId: string, optionId: string) =>
       api.delete<void>(
         `${endpoints.boardFields.option(s.boardId, fieldId, optionId)}?expectedVersion=${optionVersion(s, fieldId)}`,
@@ -441,19 +634,53 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       viewId: string,
       changes: BoardSettingsViewPatch,
     ) => {
-      if (changes.name !== undefined)
-        await boardApi.renameSavedView(s.boardId, viewId, changes.name);
+      // A write bumps the view's version: the second one names the next.
+      let version = viewVersion(s, viewId);
+      if (changes.name !== undefined) {
+        await boardApi.renameSavedView(
+          s.boardId,
+          viewId,
+          changes.name,
+          version,
+        );
+        if (changes.name.trim() !== viewOf(s, viewId).name) version += 1;
+      }
       if (changes.visibility !== undefined)
         await boardApi.setSavedViewVisibility(
           s.boardId,
           viewId,
           changes.visibility,
+          version,
         );
+      if (changes.cardFieldIds !== undefined) {
+        // The card face fields live in the view's config, written whole like the card popover writes it. The
+        // view is read again so the write names the version the earlier writes left.
+        const current = (await boardApi.listSavedViews(s.boardId)).find(
+          (view) => view.id === viewId,
+        );
+        if (!current) throw new Error(`View ${viewId} is gone`);
+        await boardApi.updateSavedViewConfig(
+          s.boardId,
+          viewId,
+          { ...current.viewConfig, cardFieldIds: [...changes.cardFieldIds] },
+          current.version,
+        );
+      }
     },
     setDefaultView: (s: BoardSettingsDto, viewId: string) =>
-      boardApi.setDefaultSavedView(s.boardId, viewId),
-    deleteView: (s: BoardSettingsDto, viewId: string) =>
-      boardApi.deleteSavedView(s.boardId, viewId),
+      boardApi.setDefaultSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    /** The default view cannot leave without a next one: the server takes `newDefaultViewId`, else the oldest shared view. */
+    deleteView: (
+      s: BoardSettingsDto,
+      viewId: string,
+      newDefaultViewId?: string,
+    ) =>
+      boardApi.deleteSavedView(
+        s.boardId,
+        viewId,
+        viewVersion(s, viewId),
+        newDefaultViewId,
+      ),
 
     createGroup: (s: BoardSettingsDto, name: string) =>
       api.post<unknown>(
@@ -488,6 +715,24 @@ export function createBoardSettingsApi(client: NotrelixClient) {
           title: changes.name,
           color: changes.color,
         },
+        quiet,
+      ),
+    duplicateGroup: (_s: BoardSettingsDto, groupId: string, title: string) =>
+      api.post<unknown>(
+        endpoints.boardGroups.duplicate(groupId),
+        { title },
+        quiet,
+      ),
+    archiveGroup: (s: BoardSettingsDto, groupId: string) =>
+      api.post<void>(
+        endpoints.boardGroups.archive(groupId),
+        { expectedVersion: find([...s.groups], groupId).version ?? 0 },
+        quiet,
+      ),
+    unarchiveGroup: (s: BoardSettingsDto, groupId: string) =>
+      api.post<void>(
+        endpoints.boardGroups.unarchive(groupId),
+        { expectedVersion: find([...s.archivedGroups], groupId).version ?? 0 },
         quiet,
       ),
     /** Items of a group that has some move to `moveToGroupId` (a group of the same board). */

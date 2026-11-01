@@ -1,16 +1,19 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 
 [IdempotencyOperation("work-management.boards.archive-board.v1")]
-public record ArchiveBoardCommand(Guid BoardId)
+public record ArchiveBoardCommand(Guid BoardId, long ExpectedVersion)
     : ICommand<Result>,
       IWriteRequest, IAuthenticatedRequest,
       IResourceScopedRequest,
       IRequirePermission,
-      IIdempotentRequest
+      IExpectedVersionRequest,
+      IIdempotentRequest,
+      IBoardLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -21,18 +24,28 @@ public class ArchiveBoardCommandHandler : IRequestHandler<ArchiveBoardCommand, R
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public ArchiveBoardCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(ArchiveBoardCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(ArchiveBoardCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);

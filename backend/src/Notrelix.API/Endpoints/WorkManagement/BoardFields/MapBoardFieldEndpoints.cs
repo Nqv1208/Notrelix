@@ -4,6 +4,8 @@ using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
@@ -30,6 +32,14 @@ public static class MapBoardFieldEndpoints
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Delete")
             .WithSummary("Delete a field from a board");
+        group.MapResourcePost("/{fieldId:guid}/restore", HandleRestoreBoardField)
+            .WithIdempotencyKey()
+            .WithName("WorkManagement.BoardFields.Restore")
+            .WithSummary("Restore a field deleted in the last 30 days");
+        group.MapResourceGet("/deleted", HandleListDeletedBoardFields)
+            .WithName("WorkManagement.BoardFields.Deleted")
+            .Produces<List<DeletedBoardFieldDto>>(StatusCodes.Status200OK, "application/json")
+            .WithSummary("List the fields deleted from a board in the last 30 days");
         group.MapResourcePost("/{fieldId:guid}/move", HandleMoveBoardField)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Move")
@@ -96,12 +106,29 @@ public static class MapBoardFieldEndpoints
     private static async Task<IResult> HandleDeleteBoardField(
         Guid boardId,
         Guid fieldId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        await sender.Send(new DeleteBoardFieldCommand(boardId, fieldId), cancellationToken);
+        await sender.Send(new DeleteBoardFieldCommand(boardId, fieldId, expectedVersion), cancellationToken);
         return Results.NoContent();
     }
+
+    private static async Task<IResult> HandleRestoreBoardField(
+        Guid boardId,
+        Guid fieldId,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> HandleListDeletedBoardFields(
+        Guid boardId,
+        ISender sender,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await sender.Send(new ListDeletedBoardFieldsQuery(boardId), cancellationToken));
 
     private static async Task<IResult> HandleGetBoardSchema(
         Guid boardId,

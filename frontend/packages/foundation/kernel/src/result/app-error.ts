@@ -16,6 +16,8 @@ export class AppError extends Error {
   public kind: AppErrorKind;
   public status: number | undefined;
   public code: string | undefined;
+  /** The stable rule that refused the request, when the server names one (additive to `code`). */
+  public ruleCode: string | undefined;
   public details: unknown;
   public validationErrors: Record<string, string[]> | undefined;
   public correlationId: string | undefined;
@@ -26,6 +28,7 @@ export class AppError extends Error {
     message: string;
     status?: number;
     code?: string;
+    ruleCode?: string;
     details?: unknown;
     validationErrors?: Record<string, string[]>;
     correlationId?: string;
@@ -36,6 +39,7 @@ export class AppError extends Error {
     this.kind = params.kind;
     this.status = params.status;
     this.code = params.code;
+    this.ruleCode = params.ruleCode;
     this.details = params.details;
     this.validationErrors = params.validationErrors;
     this.correlationId = params.correlationId;

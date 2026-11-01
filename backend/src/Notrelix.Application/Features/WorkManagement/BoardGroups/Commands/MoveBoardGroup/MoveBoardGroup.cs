@@ -24,13 +24,16 @@ public class MoveBoardGroupCommandHandler : IRequestHandler<MoveBoardGroupComman
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public MoveBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -38,6 +41,13 @@ public class MoveBoardGroupCommandHandler : IRequestHandler<MoveBoardGroupComman
     }
 
     public async Task<Result> Handle(MoveBoardGroupCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(MoveBoardGroupCommand request, CancellationToken ct)
     {
         var group = await _context.BoardGroups.FirstOrDefaultAsync(g => g.Id == request.GroupId, ct)
             ?? throw new NotFoundException(nameof(BoardGroup), request.GroupId);

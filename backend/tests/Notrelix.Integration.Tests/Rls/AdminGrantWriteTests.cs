@@ -48,6 +48,8 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         system.SetSystem();
         await using var ctx = _fixture.CreateOwnerContext(system);
         ctx.AccountMembers.Add(AccountMember.Create(_a.AccountId, _a.User.Id, AccountRole.Owner, _a.User.Id, now));
+        // Bob belongs to the account (adding a member directly needs that) but to no workspace yet.
+        ctx.AccountMembers.Add(AccountMember.Create(_a.AccountId, _bob.Id, AccountRole.Member, _a.User.Id, now));
         ctx.AccessGrants.Add(new AccessGrant(
             accountId: _a.AccountId, workspaceId: null, userId: _a.User.Id, sourceContext: "Account",
             membershipStatus: "Active", roleCodes: ["Owner"], permissionCodes: [], isAccountAdmin: true,
@@ -85,6 +87,21 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         return Convert.ToString(await command.ExecuteScalarAsync()) ?? "";
     }
 
+    /// <summary>The member version an editor read before it writes.</summary>
+    private Task<string> MemberVersionAsync(Guid workspaceId, Guid userId) =>
+        OwnerScalarAsync(
+            "SELECT version FROM workspace.workspace_members WHERE workspace_id = @w AND user_id = @u",
+            ("w", workspaceId), ("u", userId));
+
+    private async Task<HttpResponseMessage> MemberActionAsync(HttpClient owner, Guid userId, string action) =>
+        await owner.PostAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{userId}/{action}",
+            new { expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, userId)) });
+
+    private async Task<HttpResponseMessage> RemoveMemberAsync(HttpClient owner, Guid userId) =>
+        await owner.DeleteAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{userId}?expectedVersion={await MemberVersionAsync(_a.WorkspaceId, userId)}");
+
     private Task<string> GrantOfAsync(Guid workspaceId, Guid userId, string column) =>
         OwnerScalarAsync(
             $"SELECT {column} FROM authz.access_grants WHERE workspace_id = @w AND user_id = @u",
@@ -117,23 +134,30 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         (await WorkspaceReadAsync(factory, _bob, _a.WorkspaceId)).Should().Be(HttpStatusCode.OK, "the new grant admits the member");
 
         // Change role
-        var role = await owner.PatchAsJsonAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}", new { role = "Admin" });
+        var role = await owner.PatchAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}",
+            new { role = "Admin", expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, _bob.Id)) });
         role.IsSuccessStatusCode.Should().BeTrue(await role.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "role_codes[1] || ':' || is_workspace_admin")).Should().Be("Admin:true");
 
         // Suspend
-        var suspend = await owner.PostAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/suspend", null);
+        var suspend = await owner.PostAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/suspend",
+            new { expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, _bob.Id)) });
         suspend.IsSuccessStatusCode.Should().BeTrue(await suspend.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "revoked_at IS NOT NULL")).Should().Be("True");
         (await WorkspaceReadAsync(factory, _bob, _a.WorkspaceId)).Should().NotBe(HttpStatusCode.OK, "a suspended member is out");
 
         // Activate
-        var activate = await owner.PostAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/activate", null);
+        var activate = await owner.PostAsJsonAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}/activate",
+            new { expectedVersion = long.Parse(await MemberVersionAsync(_a.WorkspaceId, _bob.Id)) });
         activate.IsSuccessStatusCode.Should().BeTrue(await activate.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "revoked_at IS NULL")).Should().Be("True");
 
         // Remove
-        var remove = await owner.DeleteAsync($"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}");
+        var remove = await owner.DeleteAsync(
+            $"/api/v1/workspaces/{_a.WorkspaceId}/members/{_bob.Id}?expectedVersion={await MemberVersionAsync(_a.WorkspaceId, _bob.Id)}");
         remove.IsSuccessStatusCode.Should().BeTrue(await remove.Content.ReadAsStringAsync());
         (await GrantOfAsync(_a.WorkspaceId, _bob.Id, "revoked_at IS NOT NULL")).Should().Be("True");
         (await WorkspaceReadAsync(factory, _bob, _a.WorkspaceId)).Should().NotBe(HttpStatusCode.OK);
@@ -159,8 +183,12 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
         using var client = ClientFor(factory, _a.User);
 
-        var response = await client.PostAsJsonAsync($"/api/v1/accounts/{_a.AccountId}/workspaces",
-            new { name = "Second Space", description = "d", isPersonal = false });
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/accounts/{_a.AccountId}/workspaces")
+        {
+            Content = JsonContent.Create(new { name = "Second Space", description = "d", isPersonal = false }),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        var response = await client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         var created = await response.Content.ReadFromJsonAsync<Guid>();
 
@@ -195,6 +223,134 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
             new { userId = _bob.Id, role = "Member" });
         add.IsSuccessStatusCode.Should().BeFalse();
         (await OwnerScalarAsync("SELECT count(*) FROM authz.access_grants WHERE user_id = @u", ("u", _bob.Id))).Should().Be("0");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Derived access ends with the membership, in the same write
+    // ------------------------------------------------------------------------------------------------
+
+    private async Task AddAccountGrantAsync(User user, bool admin)
+    {
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using var ctx = _fixture.CreateOwnerContext(system);
+        ctx.AccessGrants.Add(new AccessGrant(
+            accountId: _a.AccountId, workspaceId: null, userId: user.Id, sourceContext: "Account",
+            membershipStatus: "Active", roleCodes: [admin ? "Admin" : "Member"], permissionCodes: [], isAccountAdmin: admin,
+            isWorkspaceAdmin: false, grantedAt: DateTimeOffset.UtcNow));
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task<Guid> AddSecondWorkspaceAsync(User member)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var workspace = Notrelix.Domain.Workspaces.Workspaces.Workspace.Create(
+            _a.AccountId, _a.User.Id, "Second", $"ws2-{Guid.NewGuid():N}"[..16], now);
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using var ctx = _fixture.CreateOwnerContext(system);
+        ctx.Workspaces.Add(workspace);
+        ctx.WorkspaceMembers.Add(WorkspaceMember.Create(_a.AccountId, workspace.Id, member.Id, WorkspaceRole.Member, _a.User.Id, now));
+        ctx.AccessGrants.Add(new AccessGrant(
+            accountId: _a.AccountId, workspaceId: workspace.Id, userId: member.Id, sourceContext: "Workspace",
+            membershipStatus: "Active", roleCodes: ["Member"], permissionCodes: [], isAccountAdmin: false,
+            isWorkspaceAdmin: false, grantedAt: now));
+        await ctx.SaveChangesAsync();
+        return workspace.Id;
+    }
+
+    private Task<string> AccountGrantStateAsync(Guid userId) =>
+        OwnerScalarAsync(
+            "SELECT CASE WHEN revoked_at IS NULL THEN 'active' ELSE 'revoked' END FROM authz.access_grants " +
+            "WHERE account_id = @a AND workspace_id IS NULL AND user_id = @u",
+            ("a", _a.AccountId), ("u", userId));
+
+    [Fact]
+    public async Task ALeavingMember_LosesTheAccountGrant_OnlyWhenTheLastWorkspaceIsLeft()
+    {
+        var bob = await AppRoleMembers.AddAsync(_fixture, _a, "TwoSpaces", WorkspaceRole.Member, WorkspaceMemberStatus.Active, "hash");
+        await AddAccountGrantAsync(bob, admin: false);
+        var second = await AddSecondWorkspaceAsync(bob);
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        using var client = ClientFor(factory, bob);
+
+        (await client.DeleteAsync($"/api/v1/account/workspaces/{_a.WorkspaceId}")).IsSuccessStatusCode.Should().BeTrue();
+        (await AccountGrantStateAsync(bob.Id)).Should().Be("active", "another workspace of the account is still held");
+
+        var leaveLast = await client.DeleteAsync($"/api/v1/account/workspaces/{second}");
+        leaveLast.IsSuccessStatusCode.Should().BeTrue(await leaveLast.Content.ReadAsStringAsync());
+        (await AccountGrantStateAsync(bob.Id)).Should().Be("revoked", "no workspace of the account is held any more");
+    }
+
+    [Fact]
+    public async Task ARemovedMember_LosesTheAccountGrant_ButAnAccountAdministratorKeepsIt()
+    {
+        var plain = await AppRoleMembers.AddAsync(_fixture, _a, "PlainOne", WorkspaceRole.Member, WorkspaceMemberStatus.Active, "hash");
+        var admin = await AppRoleMembers.AddAsync(_fixture, _a, "AdminOne", WorkspaceRole.Member, WorkspaceMemberStatus.Active, "hash");
+        await AddAccountGrantAsync(plain, admin: false);
+        await AddAccountGrantAsync(admin, admin: true);
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        using var owner = ClientFor(factory, _a.User);
+
+        (await RemoveMemberAsync(owner, plain.Id)).IsSuccessStatusCode.Should().BeTrue();
+        (await RemoveMemberAsync(owner, admin.Id)).IsSuccessStatusCode.Should().BeTrue();
+
+        (await AccountGrantStateAsync(plain.Id)).Should().Be("revoked");
+        (await AccountGrantStateAsync(admin.Id)).Should().Be("active", "an account administrator's grant is an Account role");
+    }
+
+    private Task<string> AssignmentCountAsync(Guid userId) =>
+        OwnerScalarAsync(
+            "SELECT count(*) FROM governance.member_role_assignments WHERE member_id = @u AND workspace_id = @w",
+            ("u", userId), ("w", _a.WorkspaceId));
+
+    private Task AssignAsync(Guid userId) =>
+        OwnerScalarAsync(
+            "INSERT INTO governance.member_role_assignments (id, account_id, workspace_id, member_id, custom_role_id, assigned_at) " +
+            "SELECT gen_random_uuid(), account_id, workspace_id, user_id, gen_random_uuid(), now() FROM workspace.workspace_members " +
+            "WHERE user_id = @u AND workspace_id = @w RETURNING 1", ("u", userId), ("w", _a.WorkspaceId));
+
+    [Fact]
+    public async Task CustomRoleAssignments_AreClearedWhenAMemberIsRemoved_OrReactivated()
+    {
+        var bob = await AppRoleMembers.AddAsync(_fixture, _a, "Configured", WorkspaceRole.Member, WorkspaceMemberStatus.Active, "hash");
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        using var owner = ClientFor(factory, _a.User);
+        var path = $"/api/v1/workspaces/{_a.WorkspaceId}/members";
+
+        await AssignAsync(bob.Id);
+        (await MemberActionAsync(owner, bob.Id, "suspend")).IsSuccessStatusCode.Should().BeTrue();
+        (await AssignmentCountAsync(bob.Id)).Should().Be("1", "a suspension is reversible and keeps the configuration until reactivation");
+        (await MemberActionAsync(owner, bob.Id, "activate")).IsSuccessStatusCode.Should().BeTrue();
+        (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a reactivated member returns to the built-in role");
+
+        await AssignAsync(bob.Id);
+        (await MemberActionAsync(owner, bob.Id, "suspend")).IsSuccessStatusCode.Should().BeTrue();
+        // Adding back is for a person already in the Account.
+        await OwnerScalarAsync(
+            "INSERT INTO account.account_members (id, account_id, user_id, role, status, created_at) " +
+            "VALUES (gen_random_uuid(), @a, @u, 'Member', 'Active', now()) RETURNING 1",
+            ("a", _a.AccountId), ("u", bob.Id));
+        var readd = await owner.PostAsJsonAsync($"{path}/add", new { userId = bob.Id, role = "Member" });
+        readd.IsSuccessStatusCode.Should().BeTrue(await readd.Content.ReadAsStringAsync());
+        (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a suspended member added back is configured again");
+
+        await AssignAsync(bob.Id);
+        (await RemoveMemberAsync(owner, bob.Id)).IsSuccessStatusCode.Should().BeTrue();
+        (await AssignmentCountAsync(bob.Id)).Should().Be("0", "a removed member keeps no custom role");
+
+    }
+
+    [Fact]
+    public async Task ALeavingMember_LosesCustomRoleAssignments()
+    {
+        var bob = await AppRoleMembers.AddAsync(_fixture, _a, "LeaverRole", WorkspaceRole.Member, WorkspaceMemberStatus.Active, "hash");
+        await AssignAsync(bob.Id);
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        using var client = ClientFor(factory, bob);
+
+        (await client.DeleteAsync($"/api/v1/account/workspaces/{_a.WorkspaceId}")).IsSuccessStatusCode.Should().BeTrue();
+        (await AssignmentCountAsync(bob.Id)).Should().Be("0");
     }
 
     // ------------------------------------------------------------------------------------------------

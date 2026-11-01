@@ -4,6 +4,7 @@ public class UnarchiveBoardItemCommandValidator : AbstractValidator<UnarchiveBoa
 {
     public UnarchiveBoardItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
     }
 }

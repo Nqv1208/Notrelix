@@ -238,6 +238,9 @@ describe("mapFullBoardDto over the generated board read", () => {
       memberCount: 1,
       labels: [{ labelId: "l-data", name: "Dữ liệu", color: "#1E6FD0" }],
       commentCount: 4,
+      attachmentCount: 3,
+      openBlockerCount: 2,
+      checklistProgress: 1,
       checklistTotal: 2,
     }),
     item("i-1", "a0", { itemKey: "ERP-151", statusOptionId: TODO }),
@@ -282,7 +285,10 @@ describe("mapFullBoardDto over the generated board read", () => {
       startDate: "2026-10-01T02:00:00Z",
       childProgress: { done: 3, total: 5 },
       labels: [{ id: "l-data", name: "Dữ liệu", color: "#1E6FD0" }],
-      _count: { comments: 4, attachments: 0, checklistItems: 2 },
+      _count: { comments: 4, attachments: 3, checklistItems: 2 },
+      // The face's x/y: done over all checklist items of the item.
+      checklistProgress: { done: 1, total: 2 },
+      openBlockerCount: 2,
     });
     expect(card.members.map((member) => member.name)).toEqual([
       "Trần Minh Quân",
@@ -627,5 +633,50 @@ describe("mapCardDto over the generated item read", () => {
       childProgress: { done: 3, total: 5 },
       _count: { comments: 2, attachments: 1, checklistItems: 0 },
     });
+  });
+
+  it("carries the version of each checklist, item completion and the done/total", () => {
+    const detail = mapCardDto({
+      id: "i-1",
+      boardId: "board-1",
+      workspaceId: "workspace-1",
+      groupId: "group-1",
+      name: "Chuẩn bị go-live",
+      position: "a0",
+      members: [],
+      labels: [],
+      checklists: [
+        {
+          id: "l1",
+          title: "Trước go-live",
+          position: "a0",
+          version: 4,
+          items: [
+            { id: "c1", title: "Sao lưu", status: "Done", position: "a0" },
+            { id: "c2", title: "Chạy thử", status: "Open", position: "a1" },
+            {
+              id: "c3",
+              title: "Báo phòng ban",
+              status: "Open",
+              position: "a2",
+            },
+          ],
+        },
+      ],
+      commentCount: 0,
+      attachmentCount: 0,
+      createdAt: "2026-10-01T02:00:00Z",
+      version: 1,
+    } as never);
+    expect(detail.checklists[0]).toMatchObject({
+      id: "l1",
+      version: 4,
+      items: [
+        { id: "c1", isDone: true },
+        { id: "c2", isDone: false },
+        { id: "c3", isDone: false },
+      ],
+    });
+    expect(detail.checklistProgress).toEqual({ done: 1, total: 3 });
   });
 });

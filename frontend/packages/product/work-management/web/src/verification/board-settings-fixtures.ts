@@ -159,7 +159,7 @@ const views: BoardSettingsViewDto[] = [
     "sv-table",
     "Bảng",
     "table",
-    "Nhóm theo Trạng thái · 9/12 cột · Hạn ↑",
+    "Nhóm theo Trạng thái · 9/15 cột · Hạn ↑",
     "board",
     {
       isDefault: true,
@@ -385,6 +385,7 @@ export function erpBoardSettings(): BoardSettingsDto {
       },
     ],
     views,
+    archivedGroups: [],
     groups: [
       { id: "g-prep", name: "Chuẩn bị", color: "#1E6FD0", itemCount: 6 },
       { id: "g-data", name: "Dữ liệu", color: "#0E7490", itemCount: 3 },
@@ -426,6 +427,7 @@ export function noopSettingsActions(
   return {
     updateGeneral: ok,
     archiveBoard: ok,
+    unarchiveBoard: ok,
     deleteBoard: ok,
     createField: ok,
     reorderFields: ok,
@@ -447,6 +449,9 @@ export function noopSettingsActions(
     reorderGroups: ok,
     updateGroup: ok,
     deleteGroup: ok,
+    duplicateGroup: ok,
+    archiveGroup: ok,
+    unarchiveGroup: ok,
     setAutomationEnabled: ok,
     ...overrides,
   };

@@ -10,12 +10,19 @@ namespace Notrelix.Application.Features.Governance.Public.Visibility;
 /// memory, and they never re-derive permission semantics.
 /// </summary>
 /// <remarks>
-/// Only active resources are returned (not archived, not deleted). A principal
-/// without an active membership in the Workspace sees nothing.
+/// Only active resources are returned (not archived, not deleted) unless a member
+/// says otherwise. A principal without an active membership in the Workspace sees nothing.
 /// </remarks>
 public interface IResourceVisibility
 {
     Task<IReadOnlyList<Guid>> VisibleBoardIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The archived (not deleted) boards the principal may see: the same rules as
+    /// <see cref="VisibleBoardIdsAsync"/> applied to archived boards, because an archived
+    /// board is read by the same decision as an active one (GOV-025 step 1).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> VisibleArchivedBoardIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Guid>> VisiblePageIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 

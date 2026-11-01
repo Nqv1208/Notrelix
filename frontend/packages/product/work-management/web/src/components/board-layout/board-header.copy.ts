@@ -8,6 +8,14 @@
 export const en = {
   /** Accessible name of the view tab list. */
   boardViews: "Views",
+  /** The live connection: shown only while it is not connected (see `BoardConnectionNotice`). */
+  connection: {
+    reconnecting: "Reconnecting…",
+    lostTitle: "Connection lost since {{time}}. Data may be out of date",
+    lostBody:
+      "You can still read. Changes you make will fail and offer Try again.",
+    reconnect: "Reconnect",
+  },
   views: {
     table: "Table",
     kanban: "Kanban",
@@ -17,6 +25,8 @@ export const en = {
   /** Heading shown while the board title is not loaded. */
   untitledBoard: "Board",
   addView: "Add view",
+  /** One notice when the address names a saved view that no longer exists. */
+  viewGone: "That view no longer exists. Showing the default view.",
   /** Marks a saved view only its creator sees. */
   privateView: "Private view",
   header: {
@@ -27,9 +37,15 @@ export const en = {
     moreOptions: "More options",
     copyLink: "Copy board link",
     deletedItems: "Deleted items",
+    archivedItems: "Archived items",
+    formResponses: "Form responses",
     renameBoard: "Rename board…",
     archiveBoard: "Archive board…",
     deleteBoard: "Delete board…",
+    leaveBoard: "Leave board…",
+    duplicateBoard: "Duplicate board…",
+    importItems: "Import items from a file…",
+    exportItems: "Export items…",
     /** Access chip wording by board visibility. */
     scope: {
       space: "{{space}}",
@@ -63,6 +79,19 @@ export const en = {
     listPairSeparator: " and ",
     listLastSeparator: ", and ",
     moreAvatars: "+{{count}}",
+    /** The archived-board banner: read-only for everyone, Unarchive for a manager. */
+    archived: {
+      banner:
+        "This board is archived. It is read-only until a manager unarchives it.",
+      bannerManager:
+        "This board is archived and read-only. Unarchive it to let people write again.",
+      unarchive: "Unarchive",
+      unarchiving: "Unarchiving…",
+      conflict:
+        "Someone changed the board first. It was reloaded, check it and try again.",
+      denied: "Only a manager can unarchive this board.",
+      failed: "The board could not be unarchived. Nothing changed, try again.",
+    },
     /** Read-only banner by effective level. */
     banner: {
       commenter: "You can comment on this board",
@@ -76,6 +105,12 @@ export type BoardHeaderCopy = typeof en;
 
 export const vi: BoardHeaderCopy = {
   boardViews: "Chế độ xem",
+  connection: {
+    reconnecting: "Đang kết nối lại…",
+    lostTitle: "Mất kết nối từ {{time}}. Dữ liệu có thể đã cũ",
+    lostBody: "Bạn vẫn đọc được. Thay đổi bạn làm sẽ báo lỗi và cho Thử lại.",
+    reconnect: "Kết nối lại",
+  },
   views: {
     table: "Bảng",
     kanban: "Kanban",
@@ -84,6 +119,7 @@ export const vi: BoardHeaderCopy = {
   },
   untitledBoard: "Board",
   addView: "Thêm chế độ xem",
+  viewGone: "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
   privateView: "Chế độ xem riêng tư",
   header: {
     settings: "Thiết lập",
@@ -93,9 +129,15 @@ export const vi: BoardHeaderCopy = {
     moreOptions: "Thêm tuỳ chọn",
     copyLink: "Sao chép liên kết board",
     deletedItems: "Việc đã xoá",
+    archivedItems: "Việc đã lưu trữ",
+    formResponses: "Phản hồi biểu mẫu",
     renameBoard: "Đổi tên board…",
     archiveBoard: "Lưu trữ board…",
     deleteBoard: "Xoá board…",
+    leaveBoard: "Rời board…",
+    duplicateBoard: "Nhân bản board…",
+    importItems: "Nhập việc từ tệp…",
+    exportItems: "Xuất việc…",
     scope: {
       space: "{{space}}",
       workspace: "Cả workspace",
@@ -126,6 +168,18 @@ export const vi: BoardHeaderCopy = {
     listPairSeparator: " và ",
     listLastSeparator: " và ",
     moreAvatars: "+{{count}}",
+    archived: {
+      banner:
+        "Board này đã được lưu trữ. Board chỉ đọc cho đến khi quản lý bỏ lưu trữ.",
+      bannerManager:
+        "Board này đã lưu trữ và chỉ đọc. Bỏ lưu trữ để mọi người ghi lại được.",
+      unarchive: "Bỏ lưu trữ",
+      unarchiving: "Đang bỏ lưu trữ…",
+      conflict:
+        "Người khác vừa thay đổi board trước. Board đã được tải lại, hãy xem rồi thử lại.",
+      denied: "Chỉ quản lý mới bỏ lưu trữ được board này.",
+      failed: "Chưa bỏ lưu trữ được board. Chưa có gì thay đổi, hãy thử lại.",
+    },
     banner: {
       commenter: "Bạn có quyền bình luận trên board này",
       viewer: "Bạn có quyền xem board này",

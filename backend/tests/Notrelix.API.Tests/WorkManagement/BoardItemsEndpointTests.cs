@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Notrelix.API.Tests.Contracts;
@@ -54,7 +55,7 @@ public class BoardItemsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveItem_ReturnsNoContent()
     {
-        var response = await _client.PostAsync($"/api/v1/board-items/{ItemId}/archive", null);
+        var response = await _client.PostAsJsonAsync($"/api/v1/board-items/{ItemId}/archive", new { ExpectedVersion = 1 });
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -76,7 +77,7 @@ public class BoardItemsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task AssignMember_WithValidData_ReturnsNoContent()
     {
-        var body = new { UserId = UserId.ToString() };
+        var body = new { UserId = UserId.ToString(), ExpectedVersion = 1 };
         var response = await _client.PostAsync($"/api/v1/board-items/{ItemId}/assignees", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -84,7 +85,7 @@ public class BoardItemsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UnassignMember_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/board-items/{ItemId}/assignees/{UserId}");
+        var response = await _client.DeleteAsync($"/api/v1/board-items/{ItemId}/assignees/{UserId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

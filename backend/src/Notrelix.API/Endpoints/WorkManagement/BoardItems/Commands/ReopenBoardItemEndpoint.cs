@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ReopenBoardItem;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Commands;
@@ -10,6 +11,7 @@ public static class ReopenBoardItemEndpoint
         group.MapResourcePost("/reopen", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Reopen")
+            .Produces<BoardItemVersionDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Reopen a completed board item");
         return group;
@@ -17,10 +19,11 @@ public static class ReopenBoardItemEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid itemId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ReopenBoardItemCommand(itemId), cancellationToken);
-        return result.ToNoContentResult();
+        var result = await sender.Send(new ReopenBoardItemCommand(itemId, expectedVersion), cancellationToken);
+        return result.ToItemVersionResult();
     }
 }

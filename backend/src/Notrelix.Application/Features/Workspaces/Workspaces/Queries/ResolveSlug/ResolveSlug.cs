@@ -40,7 +40,7 @@ public class ResolveSlugQueryHandler : IRequestHandler<ResolveSlugQuery, Result<
             null,
             false,
             card.MemberCount,
-            card.CreatedAt.DateTime,
+            card.CreatedAt.UtcDateTime,
             null,
             card.Version,
             card.Size,

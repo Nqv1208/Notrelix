@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
-import { renderPureUi, screen, within } from "@notrelix/testing";
+import { itemCapabilitiesStub } from "@notrelix/work-management-testing";
+import { renderPureUi, screen } from "@notrelix/testing";
+import {
+  WorkManagementTestScope,
+  type WorkManagementServices,
+} from "@notrelix/work-management-state";
 import { KanbanCardDetailPanel } from "../kanban-card-detail-panel";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
-import { vi as viCopy } from "../../../card-detail/item-sheet.copy";
 import {
   ERP_SHEET_NOW,
   commenterSheetCapabilities,
@@ -17,53 +21,61 @@ import type { TaskDetailCapabilities } from "../../../card-detail/task-detail-ty
 function renderPanel(capabilities: TaskDetailCapabilities) {
   const item = erpSheetItem();
   return renderPureUi(
-    <I18nProvider catalogs={[itemSheetCatalog]} initialLocale="vi">
-      <KanbanCardDetailPanel
-        board={erpSheetBoard()}
-        card={item}
-        detailData={erpSheetDetailData(item)}
-        capabilities={capabilities}
-        now={ERP_SHEET_NOW}
-        callbacks={{
-          onClose: vi.fn(),
-          onRenameTitle: vi.fn(),
-          onToggleWatch: vi.fn(),
-          onDuplicate: vi.fn(),
-          onArchive: vi.fn(),
-          onUpdateFieldValue: vi.fn(),
-          onRefreshActivity: vi.fn(),
-          onCreateUpdate: vi.fn(),
-          onUpdateUpdate: vi.fn(),
-          onDeleteUpdate: vi.fn(),
-          onSelectTab: vi.fn(),
-        }}
-      />
-    </I18nProvider>,
+    <WorkManagementTestScope
+      services={
+        {
+          itemCapabilities: itemCapabilitiesStub(),
+        } as unknown as WorkManagementServices
+      }
+    >
+      <I18nProvider catalogs={[itemSheetCatalog]} initialLocale="vi">
+        <KanbanCardDetailPanel
+          board={erpSheetBoard()}
+          card={item}
+          detailData={erpSheetDetailData(item)}
+          capabilities={capabilities}
+          now={ERP_SHEET_NOW}
+          callbacks={{
+            onClose: vi.fn(),
+            onRenameTitle: vi.fn(),
+            onToggleWatch: vi.fn(),
+            onDuplicate: vi.fn(),
+            onArchive: vi.fn(),
+            onUpdateFieldValue: vi.fn(),
+            onRefreshActivity: vi.fn(),
+            onCreateUpdate: vi.fn(),
+            onUpdateUpdate: vi.fn(),
+            onDeleteUpdate: vi.fn(),
+            onSelectTab: vi.fn(),
+          }}
+        />
+      </I18nProvider>
+    </WorkManagementTestScope>,
   );
 }
 
 describe("KanbanCardDetailPanel capabilities", () => {
-  it("passes a commenter's capabilities to the sheet: read-only properties, composer kept", () => {
+  it("passes a commenter's capabilities to the popup: read-only card, comment composer kept", () => {
     renderPanel(commenterSheetCapabilities);
-    const properties = screen.getByRole("group", {
-      name: viCopy.properties.group,
-    });
-    for (const pill of within(properties).getAllByRole("button")) {
-      expect(pill.getAttribute("aria-disabled")).toBe("true");
-    }
     expect(
-      (
-        screen.getByRole("textbox", {
-          name: viCopy.composer.label,
-        }) as HTMLTextAreaElement
-      ).disabled,
-    ).toBe(false);
+      (screen.getByRole("textbox", { name: "Tên thẻ" }) as HTMLTextAreaElement)
+        .readOnly,
+    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "Thêm" })).toBeNull();
+    expect(
+      screen.getAllByRole("button", { name: "Viết bình luận…" }).length,
+    ).toBeGreaterThan(0);
   });
 
-  it("lets an editor change properties", () => {
+  it("lets an editor change the card", () => {
     renderPanel(editorSheetCapabilities);
+    expect(
+      (screen.getByRole("textbox", { name: "Tên thẻ" }) as HTMLTextAreaElement)
+        .readOnly,
+    ).toBe(false);
     const status = screen.getByRole("button", { name: /Đang làm/ });
     expect(status.getAttribute("aria-disabled")).toBeNull();
-    expect(status.getAttribute("aria-haspopup")).toBe("menu");
+    expect(status.getAttribute("aria-haspopup")).toBe("listbox");
+    expect(screen.getByRole("button", { name: "Thêm" })).toBeTruthy();
   });
 });

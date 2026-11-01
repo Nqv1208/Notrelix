@@ -135,7 +135,7 @@ describe("WorkspaceTeamSurface", () => {
     const props = renderTeam();
     fireEvent.click(screen.getByRole("button", { name: "Lưu trữ nhóm" }));
     const dialog = screen.getByRole("dialog", {
-      name: "Lưu trữ Nhóm Kỹ sư ERP?",
+      name: "Lưu trữ Nhóm Kỹ sư ERP trong Minh An Group?",
     });
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Lưu trữ nhóm" }),

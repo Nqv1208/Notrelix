@@ -18,8 +18,12 @@ export * from "./api/group.api";
 export * from "./api/item.api";
 export * from "./api/item-comments.api";
 export * from "./api/item-extras.api";
+export * from "./api/item-capabilities.api";
 export * from "./api/label.api";
+export * from "./api/template.api";
 export * from "./api/list.api";
+export * from "./api/saved-filter.api";
+export * from "./api/form.api";
 export * from "./services";
 
 // Query hooks
@@ -30,6 +34,11 @@ export * from "./mutations";
 
 // State hooks
 export * from "./hooks";
+
+export * from "./api/board-preference.api";
+
+// Realtime adapter
+export * from "./realtime";
 
 // Cache helpers
 export * from "./cache";

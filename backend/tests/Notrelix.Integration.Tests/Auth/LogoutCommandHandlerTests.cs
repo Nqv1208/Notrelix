@@ -42,7 +42,9 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var logger = NullLogger<LogoutCommandHandler>.Instance;
-        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object, logger);
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(x => x.UserId).Returns(user.Id);
+        var handler = new LogoutCommandHandler(context, requestContext.Object, jwtBlacklist.Object, dateTimeProvider.Object, logger);
 
         await handler.Handle(new LogoutCommand
         {
@@ -61,7 +63,9 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var logger = NullLogger<LogoutCommandHandler>.Instance;
-        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object, logger);
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(x => x.UserId).Returns(Guid.CreateVersion7());
+        var handler = new LogoutCommandHandler(context, requestContext.Object, jwtBlacklist.Object, dateTimeProvider.Object, logger);
 
         var result = await handler.Handle(new LogoutCommand
         {

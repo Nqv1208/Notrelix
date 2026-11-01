@@ -26,6 +26,16 @@ import {
   mapCardDto,
 } from "./board-api-mappers";
 
+/** What a duplicate takes along besides name, dates and description. */
+export interface DuplicateItemOptions {
+  readonly name?: string;
+  readonly includeFields?: boolean;
+  readonly includeChecklists?: boolean;
+  readonly includeSubItems?: boolean;
+  readonly includeLabels?: boolean;
+  readonly includeAssignees?: boolean;
+}
+
 /** How one user action sends a file (see `uploadCardFile`). */
 export interface UploadCardFileOptions {
   readonly idempotencyKey: string;
@@ -40,12 +50,22 @@ type CreateItemResponse = OperationResponse<CreateItemOp, 200>;
 type UpdateItemOp = "WorkManagement.BoardItems.Update";
 type UpdateItemBody = OperationRequestBody<UpdateItemOp>;
 
+type ArchiveItemOp = "WorkManagement.BoardItems.Archive";
+type ArchiveItemBody = OperationRequestBody<ArchiveItemOp>;
+
 type MoveItemOp = "WorkManagement.BoardItems.Move";
 type MoveItemBody = OperationRequestBody<MoveItemOp>;
 type MoveItemResponse = OperationResponse<MoveItemOp, 200>;
 
 type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
 type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
+type UpdateFieldValueResponse = OperationResponse<UpdateFieldValueOp, 200>;
+
+/** What a status or assignee write answers: the item's new version. */
+type VersionAnswer = OperationResponse<
+  "WorkManagement.BoardItems.UpdateStatus",
+  200
+>;
 
 type BulkUpdateOp = "WorkManagement.BoardItems.BulkUpdate";
 type BulkUpdateBody = OperationRequestBody<BulkUpdateOp>;
@@ -67,6 +87,8 @@ type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
 
 export function createCardApi(client: NotrelixClient) {
   const api = client.api;
+  // Every write names the item version the person saw (the caller takes it from the cache the screen renders
+  // from); none reads a fresh one, so a colleague's change in between is refused (412), never overwritten.
   return {
     async getCard(cardId: string): Promise<CardDetail> {
       const card = await api.get<CardDtoApi>(
@@ -75,12 +97,12 @@ export function createCardApi(client: NotrelixClient) {
       return mapCardDto(card);
     },
 
-    /** Creates the item and returns its id (absent when the server sends none). */
+    /** Creates the item and returns its id and first version (absent when the server sends none). */
     async createCard(
       boardId: string,
       payload: CreateCardInput,
       options?: ApiRequestOptions,
-    ): Promise<string | undefined> {
+    ): Promise<{ id: string; version: number } | undefined> {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
@@ -97,17 +119,17 @@ export function createCardApi(client: NotrelixClient) {
         body,
         options ?? { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
-      return created?.id ?? undefined;
+      return created?.id
+        ? { id: created.id, version: created.version ?? 1 }
+        : undefined;
     },
 
     async updateCard(
       cardId: string,
       patch: UpdateCardInput,
-      options?: ApiRequestOptions & { readonly expectedVersion?: number },
+      options: ApiRequestOptions & { readonly expectedVersion: number },
     ): Promise<void> {
-      const { expectedVersion: known, ...request } = options ?? {};
-      const expectedVersion =
-        known ?? (await this.getCard(cardId)).version ?? undefined;
+      const { expectedVersion, ...request } = options;
       // A null date means "remove it": the server reads an omitted/null date as
       // "unchanged", so a removal is sent as its own flag.
       const { dueDate, startDate, ...rest } = patch;
@@ -132,23 +154,45 @@ export function createCardApi(client: NotrelixClient) {
       );
     },
 
-    async deleteCard(cardId: string): Promise<void> {
-      await api.delete<void>(endpoints.boardItems.detail(cardId));
-    },
-
-    async archiveCard(
-      cardId: string,
-      options?: ApiRequestOptions,
-    ): Promise<void> {
-      await api.post<void>(
-        endpoints.boardItems.archive(cardId),
-        undefined,
-        options ?? { idempotencyKey: crypto.randomUUID() },
+    async deleteCard(cardId: string, expectedVersion: number): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.boardItems.detail(cardId)}?expectedVersion=${expectedVersion}`,
       );
     },
 
-    async duplicateCard(cardId: string): Promise<void> {
-      await api.post<void>(endpoints.boardItems.duplicate(cardId));
+    /**
+     * `POST /board-items/{id}/archive` with the item version the person saw: a
+     * stale version is refused (412) and nothing changes.
+     */
+    async archiveCard(
+      cardId: string,
+      expectedVersion: number,
+      options?: ApiRequestOptions,
+    ): Promise<{ version?: number }> {
+      const body: ArchiveItemBody = { expectedVersion };
+      const archived = await api.post<VersionAnswer | null | undefined>(
+        endpoints.boardItems.archive(cardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
+      return { version: archived?.version ?? undefined };
+    },
+
+    /**
+     * `POST /board-items/{id}/duplicate`. Without options the copy takes name,
+     * dates and description only; the options add what it takes along. Comments,
+     * history, files and links are never copied. Returns the copy's id.
+     */
+    async duplicateCard(
+      cardId: string,
+      options?: DuplicateItemOptions,
+    ): Promise<string | undefined> {
+      const created = await api.post<{ id?: string } | string | null>(
+        endpoints.boardItems.duplicate(cardId),
+        options,
+        { idempotencyKey: crypto.randomUUID() },
+      );
+      return typeof created === "string" ? created : (created?.id ?? undefined);
     },
 
     /**
@@ -182,21 +226,20 @@ export function createCardApi(client: NotrelixClient) {
 
     /**
      * `PATCH /board-items/{id}/values/{fieldId}`, based on the item version the
-     * caller last read; without one the item is read first so the write never
-     * runs on a guessed version.
+     * caller saw. Returns the item's new version for the next write of a chain.
      */
     async updateFieldValue(
       payload: UpdateFieldValueInput,
-      options?: ApiRequestOptions & { readonly expectedVersion?: number },
-    ): Promise<void> {
-      const { expectedVersion: known, ...request } = options ?? {};
-      const expectedVersion =
-        known ?? (await this.getCard(payload.cardId)).version ?? undefined;
+      options: ApiRequestOptions & { readonly expectedVersion: number },
+    ): Promise<{ version?: number }> {
+      const { expectedVersion, ...request } = options;
       const body: UpdateFieldValueBody = {
         value: payload.value,
         expectedVersion,
       };
-      await api.patch<void>(
+      const written = await api.patch<
+        UpdateFieldValueResponse | null | undefined
+      >(
         endpoints.boardItems.fieldValue(
           payload.cardId,
           payload.fieldDefinitionId,
@@ -204,35 +247,53 @@ export function createCardApi(client: NotrelixClient) {
         body,
         request.idempotencyKey ? request : undefined,
       );
+      return { version: written?.version ?? undefined };
     },
 
     /**
      * Makes `next` the item's assignees. The Assignee system field mirrors the
      * item's own members, so the backend refuses a field value for it: each
      * added person is `POST /board-items/{id}/assignees` and each removed one
-     * `DELETE /board-items/{id}/assignees/{userId}`.
+     * `DELETE /board-items/{id}/assignees/{userId}`. The first change names the
+     * version the person saw; each next one names the version the server
+     * returned for the one before. Returns the item's last version.
      */
     async setAssignees(
       cardId: string,
       next: readonly string[],
       current: readonly string[],
-    ): Promise<void> {
+      expectedVersion: number,
+    ): Promise<number> {
       const wanted = new Set(next);
       const held = new Set(current);
+      let version = expectedVersion;
+      const advance = (written: VersionAnswer | null | undefined) => {
+        if (typeof written?.version !== "number")
+          throw new Error(
+            `The server sent no version for item ${cardId} after an assignee change.`,
+          );
+        version = written.version;
+      };
       for (const userId of current) {
         if (wanted.has(userId)) continue;
-        await api.delete<void>(endpoints.boardItems.assignee(cardId, userId), {
-          idempotencyKey: crypto.randomUUID(),
-        });
+        advance(
+          await api.delete<VersionAnswer | null | undefined>(
+            `${endpoints.boardItems.assignee(cardId, userId)}?expectedVersion=${version}`,
+            { idempotencyKey: crypto.randomUUID() },
+          ),
+        );
       }
       for (const userId of next) {
         if (held.has(userId)) continue;
-        await api.post<void>(
-          endpoints.boardItems.assignees(cardId),
-          { userId },
-          { idempotencyKey: crypto.randomUUID() },
+        advance(
+          await api.post<VersionAnswer | null | undefined>(
+            endpoints.boardItems.assignees(cardId),
+            { userId, expectedVersion: version },
+            { idempotencyKey: crypto.randomUUID() },
+          ),
         );
       }
+      return version;
     },
 
     /**
@@ -244,11 +305,13 @@ export function createCardApi(client: NotrelixClient) {
       boardId: string,
       itemIds: readonly string[],
       change: BulkItemChange,
+      expectedVersions: Readonly<Record<string, number>>,
       options?: ApiRequestOptions,
     ): Promise<number> {
       const body: BulkUpdateBody = {
         operation: change.type,
         itemIds: [...itemIds],
+        expectedVersions: { ...expectedVersions },
         ...(change.type === "set-status"
           ? { status: change.statusOptionId }
           : {}),
@@ -273,14 +336,19 @@ export function createCardApi(client: NotrelixClient) {
     async updateStatus(
       cardId: string,
       statusOptionId: string,
+      expectedVersion: number,
       options?: ApiRequestOptions,
-    ): Promise<void> {
-      const body: UpdateStatusBody = { status: statusOptionId };
-      await api.patch<void>(
+    ): Promise<{ version?: number }> {
+      const body: UpdateStatusBody = {
+        status: statusOptionId,
+        expectedVersion,
+      };
+      const written = await api.patch<VersionAnswer | null | undefined>(
         endpoints.boardItems.status(cardId),
         body,
         options ?? { idempotencyKey: crypto.randomUUID() },
       );
+      return { version: written?.version ?? undefined };
     },
 
     async getCardFiles(cardId: string) {
@@ -322,6 +390,28 @@ export function createCardApi(client: NotrelixClient) {
       return mapAttachmentDtoToCardFile(dto, cardId);
     },
 
+    /**
+     * Attaches a web link: `POST /board-items/{id}/attachments` with the URL
+     * (`CreateBoardItemAttachment`). One key per user action.
+     */
+    async createCardLink(
+      cardId: string,
+      link: { url: string; name: string },
+      options: { idempotencyKey: string },
+    ): Promise<void> {
+      await api.post<void>(
+        endpoints.boardItems.attachments(cardId),
+        {
+          filename: link.name,
+          url: link.url,
+          sizeBytes: 0,
+          contentType: "text/uri-list",
+          source: "link",
+        },
+        { idempotencyKey: options.idempotencyKey },
+      );
+    },
+
     /** The bytes of a stored file, read with the session (never a URL token). */
     downloadCardFile(
       cardId: string,
@@ -331,6 +421,13 @@ export function createCardApi(client: NotrelixClient) {
       return api.getBlob(
         endpoints.boardItems.attachmentContent(cardId, attachmentId),
         options,
+      );
+    },
+
+    /** `DELETE /board-items/{id}/attachments/{attachmentId}`: removes a stored file. */
+    async deleteCardFile(cardId: string, attachmentId: string): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.boardItems.attachments(cardId)}/${attachmentId}`,
       );
     },
   };

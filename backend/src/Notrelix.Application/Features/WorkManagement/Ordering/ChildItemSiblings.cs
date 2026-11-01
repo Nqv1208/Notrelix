@@ -14,6 +14,6 @@ internal static class ChildItemSiblings
         await context.BoardItems
             .AsNoTracking()
             .Where(item => item.ParentItemId == parentItemId)
-            .Select(item => new OrderedSibling(item.Id, item.Position))
+            .Select(item => new OrderedSibling(item.Id, item.Position, item.IsArchived))
             .ToListAsync(cancellationToken);
 }

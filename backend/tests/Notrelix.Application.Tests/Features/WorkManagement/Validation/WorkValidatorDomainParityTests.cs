@@ -12,7 +12,7 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.Validation;
 /// </summary>
 public sealed class WorkValidatorDomainParityTests
 {
-    private const int BoardTitleMax = 255;
+    private const int BoardTitleMax = Board.MaxTitleLength;
     private const int BoardDescriptionMax = 5000;
     private const int FieldNameMax = 100;
 

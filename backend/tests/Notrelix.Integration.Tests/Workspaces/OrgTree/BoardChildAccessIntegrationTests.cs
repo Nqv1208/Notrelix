@@ -22,8 +22,8 @@ namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 /// without access to a Private Board gets NotFound for its Items and cannot
 /// comment; a Board Editor can update Items, Fields and Groups; a Commenter
 /// comments but cannot change anything; a Guest without explicit access sees
-/// nothing and a Guest Viewer cannot comment; a child of an archived Board is
-/// NotFound even for the Owner.
+/// nothing and a Guest Viewer cannot comment; a child of an archived Board stays
+/// readable and takes no write, and a person without access to it still gets NotFound.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
@@ -124,18 +124,28 @@ public sealed class BoardChildAccessIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ItemOfAnArchivedBoard_IsNotFound_EvenForTheOwner()
+    public async Task ItemOfAnArchivedBoard_StaysReadable_AndRefusesWrites_ForTheOwner_AndStaysNotFound_ForAnOutsider()
     {
         var stack = await _host.SeedWorkspaceAsync();
-        var board = await _host.SeedBoardAsync(stack, "Old");
+        var outsider = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Outsider");
+        var board = await _host.SeedBoardAsync(stack, "Old", BoardVisibility.Private);
         var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Old work");
         await _host.WithSystemContextAsync(async c =>
             (await c.Boards.SingleAsync(b => b.Id == board)).Archive(stack.OwnerId, OrgTreeTestHost.BaseTime));
 
-        using var provider = CreateProvider(stack.AccountId, stack.OwnerId);
+        using (var provider = CreateProvider(stack.AccountId, stack.OwnerId))
+        {
+            await OrgTreeTestHost.QueryAsync(provider, new GetBoardItemQuery(item));
+            var refused = await FluentActions.Awaiting(() => UpdateItemAsync(provider, item, "Renamed"))
+                .Should().ThrowAsync<AppForbidden>();
+            refused.Which.Code.Should().Be("WorkManagement_Board_Archived");
+        }
 
-        await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetBoardItemQuery(item)))
-            .Should().ThrowAsync<AppNotFound>();
+        using (var provider = CreateProvider(stack.AccountId, outsider))
+        {
+            await FluentActions.Awaiting(() => UpdateItemAsync(provider, item, "Renamed"))
+                .Should().ThrowAsync<AppNotFound>("a caller without access never learns the Board is archived");
+        }
     }
 
     /// <summary>The org-tree host plus the read ports the Item handlers need.</summary>

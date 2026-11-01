@@ -40,6 +40,12 @@ export interface NotrelixSystemRailSurfaceProps {
   readonly allInboxUnread: number | null;
   readonly onSwitchWorkspace: (workspaceId: string) => void;
   readonly onCreateWorkspace: () => void;
+  /**
+   * The signed-in person's pending invitations (an entry that opens its own flyout), shown after
+   * "Add". The flyout carries `data-rail-flyout`, so focus moving into it does not close an
+   * overlay rail.
+   */
+  readonly invitationsEntry?: React.ReactNode;
   readonly onOpenAllInbox: () => void;
   /**
    * Cross-workspace search. Omitted until a producer exists: the entry is
@@ -68,7 +74,7 @@ function withUnread(
     : label;
 }
 
-function UnreadBadge({ count }: { readonly count: number | null }) {
+export function UnreadBadge({ count }: { readonly count: number | null }) {
   if (!hasUnread(count)) return null;
   return (
     <span
@@ -87,9 +93,13 @@ function UnreadBadge({ count }: { readonly count: number | null }) {
  */
 const RAIL_ITEM_CLASS =
   "relative flex w-16 flex-col items-center gap-0.75 rounded-[10px] pt-1.75 pb-1.5 text-rail-label text-rail-foreground outline-none focus-visible:focus-ring [&_svg]:size-5 [&_svg]:stroke-[1.8]";
-const RAIL_ACTION_CLASS = `${RAIL_ITEM_CLASS} hover:bg-rail-hover hover:text-rail-active-foreground`;
+export const RAIL_ACTION_CLASS = `${RAIL_ITEM_CLASS} hover:bg-rail-hover hover:text-rail-active-foreground`;
 
-function RailLabel({ children }: { readonly children: React.ReactNode }) {
+export function RailLabel({
+  children,
+}: {
+  readonly children: React.ReactNode;
+}) {
   return <span className="block max-w-full truncate">{children}</span>;
 }
 
@@ -113,6 +123,7 @@ export function NotrelixSystemRailSurface({
   allInboxUnread,
   onSwitchWorkspace,
   onCreateWorkspace,
+  invitationsEntry,
   onOpenAllInbox,
   onOpenGlobalSearch,
   onOpenAccount,
@@ -154,6 +165,9 @@ export function NotrelixSystemRailSurface({
         if (!overlay) return;
         const next = event.relatedTarget;
         if (next instanceof Node && navRef.current?.contains(next)) return;
+        // A flyout opened from the rail (the invitations list) lives in a portal.
+        if (next instanceof Element && next.closest("[data-rail-flyout]"))
+          return;
         onClose();
       }}
       className={cn(
@@ -227,6 +241,8 @@ export function NotrelixSystemRailSurface({
         </span>
         <RailLabel>{copy.create.label}</RailLabel>
       </button>
+
+      {invitationsEntry}
 
       {drawer ? null : (
         <>

@@ -55,11 +55,13 @@ public class BoardReadContractOpenApiTests
     }
 
     [Fact]
-    public void FieldOptions_CarryIdentityLabelColorOrderAndStatusCategory()
+    public void FieldOptions_CarryIdentityLabelColorOrderStatusCategoryAndItemCount()
     {
-        Properties("BoardFieldOptionDto").Should().BeEquivalentTo(["id", "name", "color", "position", "category"]);
+        Properties("BoardFieldOptionDto").Should().BeEquivalentTo(["id", "name", "color", "position", "category", "itemCount"]);
         IsNullable(Schema("BoardFieldOptionDto").GetProperty("properties").GetProperty("category")).Should().BeTrue(
             "only options of a Status field carry a category");
+        Schema("BoardFieldOptionDto").GetProperty("properties").GetProperty("itemCount").GetProperty("type").GetString()
+            .Should().Be("integer", "the count of live items holding the option");
     }
 
     [Fact]
@@ -108,7 +110,7 @@ public class BoardReadContractOpenApiTests
     private static JsonElement Load()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "contracts", "openapi", "notrelix.v1.json")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "backend.slnx")))
             dir = dir.Parent;
         dir.Should().NotBeNull("the checked-in producer contract must be found");
         return JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!.FullName, "contracts", "openapi", "notrelix.v1.json"))).RootElement;

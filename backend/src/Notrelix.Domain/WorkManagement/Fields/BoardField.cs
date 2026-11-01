@@ -320,8 +320,9 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// <summary>
     /// Seeds a new, empty Status field with <see cref="DefaultWorkStatuses"/> in
     /// order (one category each, so the field starts with a Todo and a Done option).
+    /// <paramref name="creatorLocale"/> is the creator's profile language fact supplied by Application.
     /// </summary>
-    public void AddDefaultStatusOptions(Guid addedBy, DateTimeOffset addedAt)
+    public void AddDefaultStatusOptions(Guid addedBy, DateTimeOffset addedAt, string? creatorLocale = null)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(addedBy);
@@ -330,7 +331,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkManagementRuleCodes.WorkManagement_Field_DefaultStatusesRequireEmptyStatusField,
                 "Default statuses can only seed a Status field that has no options.");
 
-        var defaults = DefaultWorkStatuses.All;
+        var defaults = DefaultWorkStatuses.For(creatorLocale);
         var positions = FractionalIndexGenerator.GenerateNKeysBetween(lower: null, upper: null, count: defaults.Count);
         for (var i = 0; i < defaults.Count; i++)
             AddOption(defaults[i].Name, Color.Create(defaults[i].Color), positions[i], addedBy, addedAt, defaults[i].Category);

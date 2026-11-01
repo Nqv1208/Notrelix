@@ -15,6 +15,7 @@ import {
 import type { BoardSettingsGroupDto } from "@notrelix/work-management-core";
 import { DisabledControl } from "../item-page/item-page-parts";
 import { useSettings } from "./board-settings-context";
+import { WriteError, useWriteErrorProps } from "./board-settings-write-error";
 import { fillCopy, plural } from "./board-settings-format";
 import {
   BUTTON_CLASS,
@@ -39,13 +40,14 @@ export function GroupsSection() {
   const [newName, setNewName] = useState("");
   const [renameId, setRenameId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const addFailedProps = useWriteErrorProps("group-add", "bs-group-add-error");
   const groups = settings.groups;
   const total = groups.reduce((sum, group) => sum + group.itemCount, 0);
 
   async function add() {
     const name = newName.trim();
     if (!name) return;
-    const result = await run(actions.createGroup(name));
+    const result = await run(() => actions.createGroup(name), "group-add");
     if (result.ok) {
       setAdding(false);
       setNewName("");
@@ -79,7 +81,7 @@ export function GroupsSection() {
 
         {adding ? (
           <form
-            className="mb-3 flex items-center gap-2"
+            className="mb-3 flex flex-wrap items-center gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               void add();
@@ -90,6 +92,7 @@ export function GroupsSection() {
               value={newName}
               aria-label={t.addPlaceholder}
               placeholder={t.addPlaceholder}
+              {...addFailedProps}
               onChange={(event) => setNewName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Escape") {
@@ -117,6 +120,9 @@ export function GroupsSection() {
             >
               {t.addConfirm}
             </button>
+            <div className="basis-full empty:hidden">
+              <WriteError scope="group-add" id="bs-group-add-error" />
+            </div>
           </form>
         ) : null}
 
@@ -144,7 +150,14 @@ export function GroupsSection() {
           </div>
           <SortableList
             ids={groups.map((group) => group.id)}
-            onReorder={(ids) => void run(actions.reorderGroups(ids))}
+            onReorder={(ids) => run(() => actions.reorderGroups(ids))}
+            announce={(id, position, total) =>
+              fillCopy(copy.common.moved, {
+                name: groups.find((entry) => entry.id === id)?.name ?? "",
+                position,
+                total,
+              })
+            }
           >
             {(order) =>
               order.map((id) => {
@@ -179,8 +192,68 @@ export function GroupsSection() {
           </SortableList>
         </div>
         <p className={cn(HINT_CLASS, "mt-2.5 mb-0 px-0.5")}>{t.footnote}</p>
+        {settings.archivedGroups.length > 0 ? (
+          <div className="mt-5">
+            <SectionLine
+              title={t.archivedList}
+              count={fillCopy(t.archivedSummary, {
+                count: settings.archivedGroups.length,
+              })}
+              note={t.archivedNote}
+            />
+            <div
+              role="list"
+              className="overflow-hidden rounded-[10px] border border-line bg-popover"
+            >
+              {settings.archivedGroups.map((group) => (
+                <ArchivedGroupRow key={group.id} group={group} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
+  );
+}
+
+/** An archived group: out of every view, its items inside; Unarchive brings the group and them back. */
+function ArchivedGroupRow({ group }: { group: BoardSettingsGroupDto }) {
+  const { copy, actions, run } = useSettings();
+  const t = copy.groups;
+  const errorId = useId();
+  const scope = `group:${group.id}`;
+  return (
+    <>
+      <div
+        role="listitem"
+        className="grid min-h-[47px] grid-cols-[14px_minmax(0,1fr)_92px_auto] items-center gap-2.5 border-t border-line pr-2.5 pl-3.5 text-item-ui text-meta-foreground first:border-t-0"
+      >
+        <ColorSquare color={group.color} />
+        <span className="truncate font-medium">{group.name}</span>
+        <span className="text-crumb">
+          {plural(
+            copy.common.items_one,
+            copy.common.items_other,
+            group.itemCount,
+          )}
+        </span>
+        <span className="flex justify-end">
+          <button
+            type="button"
+            aria-label={fillCopy(t.unarchiveLabel, { name: group.name })}
+            onClick={() =>
+              void run(() => actions.unarchiveGroup(group.id), scope)
+            }
+            className={BUTTON_CLASS.ghostBrand}
+          >
+            {t.unarchive}
+          </button>
+        </span>
+      </div>
+      <div role="listitem" className="empty:hidden pl-3.5">
+        <WriteError scope={scope} id={errorId} />
+      </div>
+    </>
   );
 }
 
@@ -214,15 +287,32 @@ function GroupRow({
     settings.unavailable?.nonEmptyGroupDelete === true && group.itemCount > 0;
   const [name, setName] = useState(group.name);
   const [moveTo, setMoveTo] = useState(defaultTargetId);
+  const [archiving, setArchiving] = useState(false);
   const confirmId = useId();
+  const archiveId = useId();
+  const renameScope = `group:${group.id}`;
+  const renameErrorId = `${confirmId}-rename-error`;
+  const renameFailedProps = useWriteErrorProps(renameScope, renameErrorId);
   const needsTarget = group.itemCount > 0;
 
   async function commitRename() {
     const next = name.trim();
-    if (next && next !== group.name)
-      await run(actions.updateGroup(group.id, { name: next }));
-    else setName(group.name);
+    if (next && next !== group.name) {
+      // A failed rename stays open with the typed name; the error offers Retry.
+      const result = await run(
+        () => actions.updateGroup(group.id, { name: next }),
+        renameScope,
+      );
+      if (result.ok) onRenameDone();
+      return;
+    }
+    setName(group.name);
     onRenameDone();
+  }
+
+  async function confirmArchive() {
+    const result = await run(() => actions.archiveGroup(group.id), renameScope);
+    if (result.ok) setArchiving(false);
   }
 
   async function confirmDelete() {
@@ -253,6 +343,7 @@ function GroupRow({
                 autoFocus
                 value={name}
                 aria-label={t.renameField}
+                {...renameFailedProps}
                 onChange={(event) => setName(event.target.value)}
                 onBlur={() => void commitRename()}
                 onKeyDown={(event) => {
@@ -297,6 +388,28 @@ function GroupRow({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void run(
+                        () =>
+                          actions.duplicateGroup(
+                            group.id,
+                            fillCopy(t.copyName, { name: group.name }),
+                          ),
+                        renameScope,
+                      )
+                    }
+                  >
+                    {t.duplicate}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      onDeleteDone();
+                      setArchiving(true);
+                    }}
+                  >
+                    {t.archive}
+                  </DropdownMenuItem>
                   {last || keepsItems ? (
                     <DisabledControl reason={last ? t.lastGroup : t.notEmpty}>
                       <DropdownMenuItem
@@ -307,7 +420,13 @@ function GroupRow({
                       </DropdownMenuItem>
                     </DisabledControl>
                   ) : (
-                    <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => {
+                        setArchiving(false);
+                        onDelete();
+                      }}
+                    >
                       {t.delete}
                     </DropdownMenuItem>
                   )}
@@ -317,6 +436,43 @@ function GroupRow({
           </>
         )}
       </SortableRow>
+      <div role="listitem" className="empty:hidden pl-[58px]">
+        <WriteError scope={renameScope} id={renameErrorId} />
+      </div>
+      {archiving ? (
+        <div
+          id={archiveId}
+          role="listitem"
+          aria-label={fillCopy(t.archiveQuestion, { name: group.name })}
+          className="flex flex-col gap-2.5 border-t border-line bg-background px-3.5 pt-3 pb-3.5 pl-[58px]"
+        >
+          <p className="m-0 text-item-small text-muted-foreground">
+            <b className="font-semibold text-foreground">
+              {fillCopy(t.archiveQuestion, { name: group.name })}
+            </b>{" "}
+            {group.itemCount > 0
+              ? fillCopy(t.archiveBody, { count: group.itemCount })
+              : t.archiveBodyEmpty}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex-1" />
+            <button
+              type="button"
+              onClick={() => setArchiving(false)}
+              className={BUTTON_CLASS.outline}
+            >
+              {copy.common.cancel}
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmArchive()}
+              className={BUTTON_CLASS.primary}
+            >
+              {t.archiveConfirm}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {deleting ? (
         <div
           id={confirmId}

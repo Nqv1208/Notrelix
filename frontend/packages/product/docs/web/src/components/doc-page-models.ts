@@ -227,6 +227,8 @@ export interface DocCommentView {
   readonly resolved?: boolean;
   /** The viewer wrote it (only the author is offered Delete). */
   readonly mine?: boolean;
+  /** The viewer started the thread or may edit the page: only they resolve or reopen it. */
+  readonly canResolve?: boolean;
 }
 
 export interface DocVersionView {
@@ -290,8 +292,37 @@ export interface DocTrashView {
   readonly loading: boolean;
   /** A restore or delete failed. */
   readonly failed: boolean;
+  /** It failed because the caller may not change some page under the page. */
+  readonly subtreeRefused: boolean;
   /** The page a write is running on. */
   readonly busyId: string | null;
+  /** The list itself could not be read. */
+  readonly listFailed: boolean;
+  /** More trashed pages can be read. */
+  readonly hasMore: boolean;
+  /** The next page of the list is being read. */
+  readonly loadingMore: boolean;
+}
+
+/** The "Move to" dialog: where the open page and the pages under it can go. */
+export interface DocMovePageView {
+  /** Pages the open page may be put under (not itself, its own pages or its current parent). */
+  readonly pages: readonly DocPickerPageView[];
+  /** The page is nested, so it can also go to the top of its Space. */
+  readonly canTopLevel: boolean;
+  readonly busy: boolean;
+  /** Why the last move failed. */
+  readonly failure: "conflict" | "subtree" | "rule" | "failed" | null;
+}
+
+/** The confirmation before a page with pages under it goes to the trash. */
+export interface DocTrashConfirmView {
+  /** Pages under the open page that go with it. */
+  readonly below: number;
+  readonly busy: boolean;
+  readonly failed: boolean;
+  /** It failed because the caller may not change some page under the page. */
+  readonly subtreeRefused: boolean;
 }
 
 /** A page the picker offers for a page reference. */
@@ -313,6 +344,11 @@ export interface DocConvertView {
   readonly lineText: string;
   readonly busy: boolean;
   readonly failed: boolean;
+  /**
+   * The step a failed conversion stopped at; past `item` the task exists and
+   * asking again finishes the conversion instead of making another task.
+   */
+  readonly failedStep?: "item" | "link" | "line" | null;
 }
 
 /** What the history dialogs show while a write runs or after it failed. */
@@ -349,6 +385,8 @@ export type DocOverlay =
   | { readonly kind: "fileMenu"; readonly downloadOpen?: boolean }
   | { readonly kind: "share" }
   | { readonly kind: "trash" }
+  | { readonly kind: "trashPage"; readonly below: number }
+  | { readonly kind: "movePage" }
   | { readonly kind: "saveVersion" }
   | { readonly kind: "restoreVersion" }
   | { readonly kind: "saveTemplate" }
@@ -384,8 +422,10 @@ export type DocOverlay =
 /** A member's edit a stored change replaced, kept until they use or drop it. */
 export interface DocRecoveryView {
   readonly id: string;
-  /** The text the member had in the block (empty when they removed it). */
+  /** The text the member had in the block (empty when they removed it); a table lists its cells. */
   readonly text: string;
+  /** The block is a table: one block holds every cell, so edits to different cells conflict. */
+  readonly table?: boolean;
 }
 
 export interface DocPageCallbacks {
@@ -413,9 +453,17 @@ export interface DocPageCallbacks {
     blockId: string,
     target: { readonly boardId: string; readonly groupId: string },
   ) => void;
-  /** Moves the open page to the trash. */
+  /** Moves the open page to the trash (asks first when pages sit under it). */
   readonly onTrashPage?: () => void;
+  /** The person confirmed moving the open page and the pages under it. */
+  readonly onConfirmTrashPage?: () => void;
   readonly onOpenTrash?: () => void;
+  /** Opens the "Move to" dialog for the open page. */
+  readonly onMovePage?: () => void;
+  /** Moves the open page under a page (`null` = the top of its Space). */
+  readonly onMovePageTo?: (parentId: string | null) => void;
+  readonly onLoadMoreTrash?: () => void;
+  readonly onRetryTrash?: () => void;
   readonly onRestorePage?: (pageId: string) => void;
   readonly onDeletePage?: (pageId: string) => void;
   readonly onOpenPagePicker?: (blockId: string) => void;

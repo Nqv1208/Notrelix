@@ -9,7 +9,7 @@ public record ProcessFormSubmissionCommand(
     Guid CreatedItemId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form-submission"), SubmissionId);
 }
 
@@ -31,6 +31,10 @@ public class ProcessFormSubmissionCommandHandler : IRequestHandler<ProcessFormSu
         var submission = await _context.FormSubmissions
             .FirstOrDefaultAsync(s => s.Id == request.SubmissionId, ct);
         if (submission is null) throw new NotFoundException("FormSubmission", request.SubmissionId);
+
+        // The Item is made by the ordinary create-item path first (WM-019); processing only records it, on the same Board.
+        if (!await _context.BoardItems.AsNoTracking().AnyAsync(i => i.Id == request.CreatedItemId && i.BoardId == submission.BoardId, ct))
+            throw new NotFoundException("BoardItem", request.CreatedItemId);
 
         submission.MarkProcessed(request.CreatedItemId, _dateTimeProvider.UtcNow);
 

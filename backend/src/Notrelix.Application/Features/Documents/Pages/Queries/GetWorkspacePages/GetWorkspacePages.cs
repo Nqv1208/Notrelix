@@ -39,6 +39,13 @@ public class GetWorkspacePagesQueryHandler : IRequestHandler<GetWorkspacePagesQu
             .ToListAsync(ct);
 
         var spaces = (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet();
-        return Result<List<PageDto>>.Success(pageEntities.Select(page => DocumentDtoMapper.ToPageDto(page, spaces)).ToList());
+        // The parent's title is disclosed only for a parent in this same visible list.
+        var titles = pageEntities.ToDictionary(page => page.Id, page => page.Title);
+        return Result<List<PageDto>>.Success(pageEntities
+            .Select(page => DocumentDtoMapper.ToPageDto(page, spaces) with
+            {
+                ParentTitle = page.ParentId is { } parentId && titles.TryGetValue(parentId, out var title) ? title : null
+            })
+            .ToList());
     }
 }

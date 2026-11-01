@@ -7,16 +7,32 @@ import type { ApiRequestOptions } from "@notrelix/contracts";
 import { restoreBoardCard } from "../cache/card-restore";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
+import { seenItemVersion } from "./seen-version";
+import { UnknownItemVersionError } from "./use-move-card";
 import type { CardWriteHookOptions } from "./use-update-item-status";
 
+export { seenItemVersion };
+
 interface ItemArchiver {
-  archiveCard(cardId: string, options?: ApiRequestOptions): Promise<void>;
+  archiveCard(
+    cardId: string,
+    expectedVersion: number,
+    options?: ApiRequestOptions,
+  ): Promise<{ version?: number } | void>;
+}
+
+/** What an archive names: the item and, when the dialog opened on one, the version it showed. */
+export interface ArchiveCardInput {
+  readonly cardId: string;
+  readonly expectedVersion?: number;
 }
 
 /**
  * Archives an item (`POST /board-items/{id}/archive`; the item can be
- * restored, it is not deleted). The card leaves the board at once and comes
- * back if the write fails.
+ * restored, it is not deleted) with the version the person saw: the one the
+ * archive dialog opened with, else the item's cached version. An item with no
+ * known version is refused before anything is sent. The card leaves the board
+ * at once and comes back if the write fails.
  */
 export function runArchiveCardCommand(
   queryClient: QueryClient,
@@ -25,8 +41,14 @@ export function runArchiveCardCommand(
     workspaceId,
     boardId,
     cardId,
-  }: { workspaceId: string; boardId: string; cardId: string },
-): Promise<void> {
+    expectedVersion: opened,
+  }: { workspaceId: string; boardId: string } & ArchiveCardInput,
+): Promise<{ version?: number }> {
+  const expectedVersion =
+    opened ?? seenItemVersion(queryClient, { workspaceId, boardId, cardId });
+  if (!expectedVersion || expectedVersion <= 0) {
+    return Promise.reject(new UnknownItemVersionError(cardId));
+  }
   return runCardCommand({
     queryClient,
     workspaceId,
@@ -34,24 +56,32 @@ export function runArchiveCardCommand(
     cardId,
     kind: "archive-item",
     applyBoard: (board) => restoreBoardCard(board, cardId, undefined) ?? board,
-    send: (context) => cards.archiveCard(cardId, context),
+    send: async (context) =>
+      (await cards.archiveCard(cardId, expectedVersion, context)) ?? {},
   });
 }
 
 export function useArchiveCard(
   boardId: string,
   workspaceId: string,
-  options: CardWriteHookOptions<string> = {},
+  options: CardWriteHookOptions<ArchiveCardInput> = {},
 ) {
   const queryClient = useQueryClient();
   const { cards } = useWorkManagementServices();
   return useMutation({
-    mutationFn: (cardId: string) =>
+    mutationFn: (input: ArchiveCardInput) =>
       runArchiveCardCommand(queryClient, cards, {
         workspaceId,
         boardId,
-        cardId,
+        ...input,
       }),
     onError: options.onError,
   });
+}
+
+/** Reads the version of an item as the person sees it now (see `seenItemVersion`). */
+export function useSeenItemVersion(boardId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  return (cardId: string) =>
+    seenItemVersion(queryClient, { workspaceId, boardId, cardId });
 }

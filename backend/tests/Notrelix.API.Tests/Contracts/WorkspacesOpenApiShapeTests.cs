@@ -21,7 +21,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Workspaces.GetAccountWorkspaces", "200", "WorkspaceDto[]")]
     [InlineData("Workspaces.Workspaces.ResolveSlug", "200", "WorkspaceDto")]
     [InlineData("Workspaces.Workspaces.CreateWorkspace", "201", "uuid")]
-    [InlineData("Workspaces.Members.ListMembers", "200", "WorkspaceMemberDto[]")]
+    [InlineData("Workspaces.Members.ListMembers", "200", "CursorPageOfWorkspaceMemberDto")]
     [InlineData("Workspaces.Members.GetMyMembership", "200", "WorkspaceMemberDto")]
     [InlineData("Workspaces.Settings.GetWorkspaceSecurityExt", "200", "WorkspaceSecurityExtDto")]
     [InlineData("Workspaces.Teams.GetWorkspaceTeamsExt", "200", "WorkspaceTeamsExtDto")]
@@ -34,7 +34,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Members.InviteMember", "201", "uuid")]
     [InlineData("Workspaces.Members.UpdateMyJobTitle", "200", "WorkspaceMemberProfileDto")]
     [InlineData("Workspaces.Members.UpdateMemberJobTitle", "200", "WorkspaceMemberProfileDto")]
-    [InlineData("Workspaces.Invitations.ListWorkspaceInvitations", "200", "WorkspaceInvitationDto[]")]
+    [InlineData("Workspaces.Invitations.ListWorkspaceInvitations", "200", "CursorPageOfWorkspaceInvitationDto")]
     [InlineData("Workspaces.Invitations.GetUserPendingInvitations", "200", "UserPendingInvitationDto[]")]
     [InlineData("Workspaces.Invitations.AcceptInvitation", "200", "AcceptInvitationResultDto")]
     [InlineData("Workspaces.Invitations.GetInvitationByToken", "200", "InvitationPreviewDto")]
@@ -43,10 +43,10 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Settings.GetWorkspaceSettings", "200", "WorkspaceSettingsDto")]
     [InlineData("Workspaces.Spaces.CreateSpace", "201", "uuid")]
     [InlineData("Workspaces.Spaces.GetSpace", "200", "SpaceDto")]
-    [InlineData("Workspaces.Spaces.GetWorkspaceSpaces", "200", "SpaceDto[]")]
+    [InlineData("Workspaces.Spaces.GetWorkspaceSpaces", "200", "CursorPageOfSpaceDto")]
     [InlineData("Workspaces.Teams.CreateTeam", "201", "uuid")]
     [InlineData("Workspaces.Teams.GetTeam", "200", "TeamDto")]
-    [InlineData("Workspaces.Teams.GetWorkspaceTeams", "200", "TeamDto[]")]
+    [InlineData("Workspaces.Teams.GetWorkspaceTeams", "200", "CursorPageOfTeamDto")]
     [InlineData("Workspaces.Teams.GetTeamMembers", "200", "TeamMemberDto[]")]
     public void BodyReturningOperation_DeclaresItsResponseType(string operationId, string status, string expected)
     {
@@ -173,7 +173,7 @@ public class WorkspacesOpenApiShapeTests
     private static JsonElement Load()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "contracts", "openapi", "notrelix.v1.json")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "backend.slnx")))
             dir = dir.Parent;
         dir.Should().NotBeNull("the checked-in producer contract must be found (NRX-016)");
         return JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!.FullName, "contracts", "openapi", "notrelix.v1.json"))).RootElement;

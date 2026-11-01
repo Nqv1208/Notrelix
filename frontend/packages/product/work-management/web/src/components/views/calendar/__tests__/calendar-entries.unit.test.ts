@@ -37,6 +37,13 @@ describe("buildCalendarEntries on the ERP board", () => {
     expect(undated[0]?.assigneeName).toBeNull();
   });
 
+  it("carries the priority and the open blocker count of the item", () => {
+    expect(entryOf("ERP-142")).toMatchObject({
+      priority: "urgent",
+      openBlockerCount: 0,
+    });
+  });
+
   it("puts an item on its due day in the zone of the view", () => {
     expect(entryOf("ERP-144")).toMatchObject({
       startDay: "2026-10-12",
@@ -61,14 +68,14 @@ describe("buildCalendarEntries on the ERP board", () => {
     ).toBe("2026-10-13");
   });
 
-  it("spans a long item from its start day and keeps a short one on its due day", () => {
+  it("spans an item from its start day to its due day", () => {
     expect(entryOf("ERP-142")).toMatchObject({
       startDay: "2026-10-01",
       endDay: "2026-10-10",
     });
-    // ERP-146 starts 13/10, 4 days: one chip on its due day.
+    // ERP-146 starts 13/10 and is due 16/10: one four-day bar.
     expect(entryOf("ERP-146")).toMatchObject({
-      startDay: "2026-10-16",
+      startDay: "2026-10-13",
       endDay: "2026-10-16",
     });
   });
@@ -168,15 +175,15 @@ describe("buildCalendarEntries: spans, finished items and plan items", () => {
       planItems: plan,
     }).entries.find((entry) => entry.id === erpItemId(key))!;
 
-  it("draws a bar only for a span of at least a week and a day", () => {
-    // ERP-144 is due 12/10: 8 days from 05/10 is a bar, 7 days from 06/10 a chip.
-    expect(CALENDAR_MIN_SPAN_DAYS).toBe(8);
+  it("draws a bar for any span of two days or more, a chip for one day", () => {
+    // ERP-144 is due 12/10: from 11/10 is a two-day bar, from 12/10 a chip.
+    expect(CALENDAR_MIN_SPAN_DAYS).toBe(2);
     expect(
-      entryIn(withStart("ERP-144", "2026-10-05T10:00:00.000Z"), "ERP-144")
+      entryIn(withStart("ERP-144", "2026-10-11T10:00:00.000Z"), "ERP-144")
         .startDay,
-    ).toBe("2026-10-05");
+    ).toBe("2026-10-11");
     expect(
-      entryIn(withStart("ERP-144", "2026-10-06T10:00:00.000Z"), "ERP-144")
+      entryIn(withStart("ERP-144", "2026-10-12T01:00:00.000Z"), "ERP-144")
         .startDay,
     ).toBe("2026-10-12");
   });

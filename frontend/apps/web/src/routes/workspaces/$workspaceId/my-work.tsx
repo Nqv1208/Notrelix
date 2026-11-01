@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   identityToneFor,
-  initialsFor,
   NAVIGATION_RESOURCE_KIND,
 } from "@notrelix/features-workspace/core";
 import { useAppRuntime } from "@notrelix/runtime-web";
@@ -21,7 +20,7 @@ import {
 import { useFormatters } from "@notrelix/i18n";
 import { useCurrentUser } from "@notrelix/features-auth";
 import {
-  BoardItemCreateDialog,
+  BoardCardCreate,
   BoardItemSheetHost,
 } from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
@@ -374,25 +373,12 @@ export function MyWorkPage() {
       workspaceId={workspaceId}
       boardId={openItem.boardId}
       itemId={openItem.id}
-      departmentMark={
-        openItem.department
-          ? {
-              initials: initialsFor(openItem.department.name),
-              tone: openItem.department.markTone,
-            }
-          : undefined
-      }
+      viewerUserId={user?.id ?? null}
       onClose={() => setItem(undefined, { replace: true })}
       onRestoreFocus={(itemId) =>
         document
           .querySelector<HTMLElement>(`[data-item-id="${itemId}"] a`)
           ?.focus()
-      }
-      onOpenFullPage={(itemId) =>
-        void navigate({
-          to: "/workspaces/$workspaceId/boards/$boardId/items/$itemId",
-          params: { workspaceId, boardId: openItem.boardId, itemId },
-        } as never)
       }
     />
   ) : undefined;
@@ -426,7 +412,7 @@ export function MyWorkPage() {
         sheet={sheet}
         firstDepartment={[...departments.values()][0] ?? null}
       />
-      <BoardItemCreateDialog
+      <BoardCardCreate
         open={form !== null}
         onOpenChange={(next) => {
           if (!next) setForm(null);

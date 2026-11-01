@@ -17,8 +17,10 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
     private readonly IWorkManagementDbContext _context;
     private readonly IActorLookupService _actorLookup;
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
-    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort)
+    private readonly ICurrentRequestContext _requestContext;
+    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort, ICurrentRequestContext requestContext)
     {
+        _requestContext = requestContext;
         _context = context;
         _actorLookup = actorLookup;
         _collabReadPort = collabReadPort;
@@ -37,7 +39,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .ToListAsync(ct);
 
         var memberUserIds = memberEntities.Select(m => m.UserId).Distinct().ToList();
-        var lifecycleUserIds = new[] { card.CompletedBy, card.ArchivedBy }.Where(id => id.HasValue).Select(id => id!.Value);
+        var lifecycleUserIds = new[] { card.CompletedBy, card.ArchivedBy, card.UpdatedBy }.Where(id => id.HasValue).Select(id => id!.Value);
         memberUserIds = memberUserIds.Concat(lifecycleUserIds).Distinct().ToList();
         var actors = await _actorLookup.FindManyAsync(memberUserIds, ct);
         var actorMap = actors.ToDictionary(a => a.UserId);
@@ -54,7 +56,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
         var labels = await _context.BoardItemLabels.AsNoTracking()
             .Where(cl => cl.ItemId == card.Id)
             .Join(_context.Labels.AsNoTracking(), cl => cl.LabelId, l => l.Id,
-                (cl, l) => new BoardItemLabelDto(l.Id, l.Name, l.Color.Hex))
+                (cl, l) => new BoardItemLabelDto(l.Id, l.Name, l.Color.Hex, null))
             .ToListAsync(ct);
 
         var checklists = await _context.Checklists.AsNoTracking()
@@ -65,7 +67,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
                 _context.ChecklistItems.AsNoTracking()
                     .Where(i => i.ChecklistId == c.Id)
                     .OrderBy(i => i.Position)
-                    .Select(i => new ChecklistItemDto(i.Id, i.Title, i.Status.ToString(), i.DueAt.HasValue ? i.DueAt.Value.DateTime : null, i.AssigneeUserId, i.Position.Value))
+                    .Select(i => new ChecklistItemDto(i.Id, i.Title, i.Status.ToString(), i.DueAt.HasValue ? i.DueAt.Value.UtcDateTime : null, i.AssigneeUserId, i.Position.Value))
                     .ToList()
             )).ToListAsync(ct);
 
@@ -87,13 +89,14 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .Where(field => field.BoardId == listContext.BoardId)
             .ToListAsync(ct);
         var values = (await BoardItemReadValues.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
+        var projected = (await BoardItemFieldProjection.LoadAsync(_context, fields, [card.Id], ct, _requestContext.UserId))[card.Id];
 
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
             members, labels, checklists,
             itemCounts.CommentCount, itemCounts.AttachmentCount,
             card.Position.Value,
-            card.CreatedAt.DateTime, card.UpdatedAt?.DateTime,
+            card.CreatedAt.UtcDateTime, card.UpdatedAt?.UtcDateTime,
             card.Version,
             card.ItemKey,
             card.ParentItemId,
@@ -109,7 +112,16 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.ArchivedAt,
             card.ArchivedBy,
             NameOf(card.ArchivedBy),
-            card.DescriptionMd
+            card.DescriptionMd,
+            projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+            projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
+            card.CoverColor,
+            card.CoverAttachmentId,
+            card.CoverStyle,
+            card.RepeatRule,
+            card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
+            card.UpdatedBy,
+            NameOf(card.UpdatedBy)
         ));
     }
 }

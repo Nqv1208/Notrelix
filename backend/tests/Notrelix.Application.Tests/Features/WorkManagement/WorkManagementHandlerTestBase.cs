@@ -340,6 +340,7 @@ public abstract class WorkManagementHandlerTestBase
         mock.Setup(m => m.Add(It.IsAny<T>())).Callback<T>(data.Add);
         mock.Setup(m => m.AddRange(It.IsAny<IEnumerable<T>>())).Callback<IEnumerable<T>>(items => data.AddRange(items));
         mock.Setup(m => m.Remove(It.IsAny<T>())).Callback<T>(item => data.Remove(item));
+        mock.Setup(m => m.RemoveRange(It.IsAny<IEnumerable<T>>())).Callback<IEnumerable<T>>(items => { foreach (var item in items.ToList()) data.Remove(item); });
 
         return mock.Object;
     }
@@ -381,6 +382,12 @@ internal class TestAsyncQueryProvider<T> : IAsyncQueryProvider
     public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
     {
         var resultType = typeof(TResult);
+
+        // A set-based delete cannot run over an in-memory list: it matches and removes nothing here, and
+        // its effect is proved by the integration tests against a real database.
+        // A set-based update is the same: the tracked entities the handler already changed carry the new values.
+        if (expression is MethodCallExpression { Method.Name: "ExecuteDelete" or "ExecuteUpdate" } && resultType == typeof(Task<int>))
+            return (TResult)(object)Task.FromResult(0);
 
         if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Task<>))
         {

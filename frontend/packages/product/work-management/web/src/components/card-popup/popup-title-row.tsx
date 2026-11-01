@@ -1,0 +1,110 @@
+import { useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
+import { useCardPopup, useCanEdit } from "./card-popup-context";
+import { useServerDraft } from "./use-server-draft";
+
+/** The complete circle and the inline title. */
+export function PopupTitleRow() {
+  const { card, copy, callbacks, mode, saves, track } = useCardPopup();
+  const t = copy.shell;
+  const canEdit = useCanEdit();
+  const done = Boolean(card.completedAt) || card.statusCategory === "done";
+  const { draft, setDraft, held } = useServerDraft(card.title, {
+    key: "title",
+    field: t.fieldConflict.titleField,
+    commit: () => commit(),
+  });
+  const [touched, setTouched] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  // A card opened from "Thêm chi tiết" or a blank draft puts the cursor on the name.
+  useEffect(() => {
+    if (mode === "create") ref.current?.focus();
+  }, [mode]);
+
+  const commit = () => {
+    if (held()) return;
+    const next = draft.trim();
+    if (mode === "create") {
+      callbacks.onRenameTitle(card.id, { title: next });
+      return;
+    }
+    if (next === "" || next === card.title) {
+      setDraft(card.title);
+      return;
+    }
+    // The item write answers with its promise, so a refused or stale save shows in the popup.
+    track("title", async () =>
+      (callbacks.onUpdateItem ?? callbacks.onRenameTitle)(card.id, {
+        title: next,
+      }),
+    );
+  };
+  const invalid = touched && draft.trim() === "";
+  const save = saves.title;
+
+  return (
+    <div className="box-border flex h-[60px] items-start gap-3 pt-3 pr-4 pl-4 md:h-[52px] md:pt-2.5 md:pr-6 md:pl-6">
+      {mode === "view" ? (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={done}
+          aria-label={done ? t.reopen : t.complete}
+          title={done ? t.reopen : t.complete}
+          disabled={
+            !canEdit || !(done ? callbacks.onReopen : callbacks.onComplete)
+          }
+          onClick={() =>
+            done
+              ? callbacks.onReopen?.(card.id)
+              : callbacks.onComplete?.(card.id)
+          }
+          className={cn(
+            "mt-2.5 md:mt-2 box-border grid size-6 shrink-0 place-items-center rounded-full border-2 border-line-strong bg-transparent p-0 text-primary-foreground hover:border-work-status-done focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default",
+            done && "border-work-status-done bg-work-status-done",
+          )}
+        >
+          {done ? (
+            <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
+          ) : null}
+        </button>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="mt-2.5 md:mt-2 box-border size-6 shrink-0 rounded-full border-2 border-line-strong"
+        />
+      )}
+      <input
+        ref={ref}
+        type="text"
+        value={draft}
+        readOnly={!canEdit}
+        aria-label={t.titleLabel}
+        aria-invalid={invalid || undefined}
+        placeholder={t.titlePlaceholder}
+        title={save?.status === "saving" ? t.saving : undefined}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          if (mode === "create")
+            callbacks.onRenameTitle(card.id, { title: event.target.value });
+        }}
+        onBlur={() => {
+          setTouched(true);
+          if (canEdit) commit();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+          if (event.key === "Escape" && draft !== card.title) {
+            event.stopPropagation();
+            setDraft(card.title);
+          }
+        }}
+        className={cn(
+          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-10 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none read-only:focus:bg-transparent read-only:focus:ring-0",
+          invalid && "bg-popover ring-2 ring-danger",
+        )}
+      />
+    </div>
+  );
+}

@@ -1122,6 +1122,14 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
+          "id": "board-gallery",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "board-gallery-empty",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
           "id": "submit",
           "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
         },
@@ -2128,6 +2136,26 @@
         },
         {
           "id": "resend",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "forbidden",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "offline",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "guest-own-row",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "only-you",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "job-title",
           "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
         }
       ]

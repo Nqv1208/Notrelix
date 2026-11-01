@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
 
@@ -23,7 +24,14 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         if (descriptor.Principal == ApplicationPrincipalKind.Anonymous
             || descriptor.Principal == ApplicationPrincipalKind.System)
         {
-            return AccessDecision.Allow();
+            // Public and system requests carry no permission contract (the descriptor validator and the
+            // architecture tests pin that). A request that does carry one is a misconfiguration: it must
+            // never be waved through here and skip the permission check it declares.
+            return descriptor.Access.RequiresPermission
+                ? AccessDecision.Deny(
+                    AccessDecisionKind.SecurityMisconfiguration,
+                    $"{descriptor.RequestType.Name} is {descriptor.Principal} but requires permission.")
+                : AccessDecision.Allow();
         }
 
         if (!context.UserId.HasValue || context.UserId == Guid.Empty)
@@ -52,7 +60,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             var permission = EvaluatePermission(descriptor, facts, request, context.UserId);
             if (permission.Kind != AccessDecisionKind.Allowed)
             {
-                return permission;
+                // A deleted Board is NotFound to everyone who cannot manage it (S1).
+                return facts.BoardDeleted && permission.Kind == AccessDecisionKind.Forbidden
+                    ? AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.")
+                    : permission;
             }
         }
 
@@ -93,7 +104,39 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 $"Feature '{code}' is not enabled for this account or usage limit reached.");
         }
 
-        return AccessDecision.Allow();
+        return RefuseWriteOnArchived(facts, request) ?? AccessDecision.Allow();
+    }
+
+    /// <summary>
+    /// GOV-025 step 1 / GOV-033, decided only after every other rule allowed the request, so a
+    /// caller without access still gets the identical NotFound and never learns the Board is
+    /// archived. An archived Board and its children stay readable; any write on them, and any
+    /// write on an Item inside an archived Group, is refused with a stable code. The Board
+    /// lifecycle commands (<see cref="IBoardLifecycleRequest"/>) are the way back and pass, and so
+    /// do a person's own preferences and follows (<see cref="IPersonalBoardRequest"/>), which
+    /// change nothing on the Board.
+    /// </summary>
+    private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
+    {
+        if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)
+        {
+            return null;
+        }
+
+        if (facts.BoardArchived)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This board is archived. Unarchive it to make changes.",
+                WorkManagementDenialCodes.BoardArchived);
+        }
+
+        return facts.ChildInArchivedGroup
+            ? AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This group is archived. Unarchive it to make changes.",
+                WorkManagementDenialCodes.GroupArchived)
+            : null;
     }
 
     private static AccessDecision EvaluatePermission(
@@ -116,8 +159,9 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        // Resource lifecycle comes before every authority fast-path: a
-        // missing/archived/deleted resource is NotFound even for owners.
+        // Resource lifecycle comes before every authority fast-path: a missing or
+        // deleted resource is NotFound even for owners. An archived Board is
+        // reachable; writes on it are refused after the decision (RefuseWriteOnArchived).
         if (descriptor.Scope == ApplicationScopeKind.Resource
             && !facts.ResourceExists)
         {
@@ -246,6 +290,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             }
 
             return GrantAwareAllow(request, facts, role, actorId);
+        }
+
+        // A board template is workspace-scoped creation input with no Board level of its own: managing it
+        // (publish, archive, delete) is a workspace Owner/Admin right. Owner returned above; a Member or Guest
+        // never manages it, and a template outside the workspace is NotFound (ResourceExists, checked above).
+        if (permission.Resource?.Kind.Value == "work-management.board-template")
+        {
+            return permission.Action == PermissionAction.ManageBoard
+                && string.Equals(role, "Admin", StringComparison.Ordinal)
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
         // Workspace-role baseline (GOV-013/028, M2G, M8, WG-DEBT-002): every request not decided
@@ -412,7 +467,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// reached by a Space level, an unplaced one by the Workspace default
     /// (Guests need explicit access); no source → NotFound. The resource level
     /// is the highest level among every source (<see cref="ResolveResourceLevel"/>),
-    /// a Workspace Guest is capped at Editor (GOV-030), and the action threshold
+    /// a Workspace Guest is capped at Viewer (GOV-030), and the action threshold
     /// of GOV-027 applies to that level whatever the source → Forbidden below it.
     /// The same level is the authority for ACL management and grant ceilings.
     /// </summary>
@@ -448,8 +503,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// <item>unplaced Workspace-visible resource: Editor for non-Guest members
     ///   (every Board/Page action but permission management).</item>
     /// </list>
-    /// A Workspace Guest's level is capped at Editor whatever the source
-    /// (GOV-030). No source → <see cref="EffectiveResourceAccess.None"/>.
+    /// A Workspace Guest's level is capped at Viewer whatever the source
+    /// (GOV-030): a person outside the company reads what was shared with them. No source → <see cref="EffectiveResourceAccess.None"/>.
     /// </summary>
     private static EffectiveResourceAccess ResolveResourceLevel(AccessFacts facts, string? role)
     {
@@ -487,7 +542,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             }
         }
 
-        return guest && best.Rank > EditorRank ? best with { Rank = EditorRank } : best;
+        return guest && best.Rank > ViewerRank ? best with { Rank = ViewerRank } : best;
     }
 
     /// <summary>

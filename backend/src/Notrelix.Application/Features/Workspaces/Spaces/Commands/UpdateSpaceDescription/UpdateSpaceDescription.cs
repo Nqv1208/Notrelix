@@ -6,8 +6,9 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Commands.UpdateSpaceDe
 public record UpdateSpaceDescriptionCommand(
     Guid WorkspaceId,
     Guid SpaceId,
-    string? Description
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    string? Description,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     // GOV-028: ManageSpaces on the Space itself (workspace Owner/Admin, or an
     // effective Space Admin of the Space or one of its ancestors).

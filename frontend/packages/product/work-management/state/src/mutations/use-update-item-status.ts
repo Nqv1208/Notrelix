@@ -18,6 +18,8 @@ import {
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { cardCommandId, runCardCommand } from "./card-command";
+import { requireSeenItemVersion } from "./seen-version";
+import { UnknownItemVersionError } from "./use-move-card";
 
 export interface UpdateItemStatusVariables {
   readonly workspaceId: string;
@@ -48,8 +50,9 @@ interface ItemStatusWriter {
   updateStatus(
     cardId: string,
     statusOptionId: string,
+    expectedVersion: number,
     options?: ApiRequestOptions,
-  ): Promise<void>;
+  ): Promise<{ version?: number }>;
 }
 
 interface ItemCreator extends ItemStatusWriter {
@@ -57,12 +60,15 @@ interface ItemCreator extends ItemStatusWriter {
     boardId: string,
     payload: { listId: string; title: string },
     options?: ApiRequestOptions,
-  ): Promise<string | undefined>;
-  updateFieldValue?(payload: {
-    cardId: string;
-    fieldDefinitionId: string;
-    value: unknown;
-  }): Promise<void>;
+  ): Promise<{ id: string; version: number } | undefined>;
+  updateFieldValue?(
+    payload: {
+      cardId: string;
+      fieldDefinitionId: string;
+      value: unknown;
+    },
+    options: ApiRequestOptions & { readonly expectedVersion: number },
+  ): Promise<unknown>;
 }
 
 /**
@@ -84,6 +90,13 @@ export function runItemStatusCommand(
   cards: ItemStatusWriter,
   variables: UpdateItemStatusVariables,
 ): Promise<void> {
+  // The write names the version the person saw (the cache the screen renders from).
+  let expectedVersion: number;
+  try {
+    expectedVersion = requireSeenItemVersion(queryClient, variables);
+  } catch (error) {
+    return Promise.reject(error);
+  }
   const fields =
     queryClient.getQueryData<FullBoardResponse>(
       wmQueryKeys.fullBoard(variables.workspaceId, variables.boardId),
@@ -99,8 +112,14 @@ export function runItemStatusCommand(
       board,
     applyDetail: (detail) =>
       applyItemDetailStatus(detail, fields, variables.statusOptionId) ?? detail,
-    send: (context) =>
-      cards.updateStatus(variables.cardId, variables.statusOptionId, context),
+    send: async (context) => {
+      await cards.updateStatus(
+        variables.cardId,
+        variables.statusOptionId,
+        expectedVersion,
+        context,
+      );
+    },
   });
 }
 
@@ -152,25 +171,37 @@ export function runCreateItemInLane(
       );
     },
     send: async (context) => {
-      const createdId = await cards.createCard(
+      const created = await cards.createCard(
         variables.boardId,
         { listId: variables.listId, title: variables.title },
         context,
       );
-      if (!createdId) return;
+      if (!created) return;
+      // The create answers the first version; the status write answers the one the value write names.
+      let version = created.version;
       if (variables.statusOptionId) {
-        const statusKey = cardCommandId("item-status", createdId);
-        await cards.updateStatus(createdId, variables.statusOptionId, {
-          correlationId: context.correlationId,
-          idempotencyKey: statusKey,
-        });
+        const statusKey = cardCommandId("item-status", created.id);
+        const written = await cards.updateStatus(
+          created.id,
+          variables.statusOptionId,
+          version,
+          { correlationId: context.correlationId, idempotencyKey: statusKey },
+        );
+        if (variables.fieldValue && cards.updateFieldValue) {
+          if (typeof written.version !== "number")
+            throw new UnknownItemVersionError(created.id);
+          version = written.version;
+        }
       }
       if (variables.fieldValue && cards.updateFieldValue) {
-        await cards.updateFieldValue({
-          cardId: createdId,
-          fieldDefinitionId: variables.fieldValue.fieldDefinitionId,
-          value: variables.fieldValue.value,
-        });
+        await cards.updateFieldValue(
+          {
+            cardId: created.id,
+            fieldDefinitionId: variables.fieldValue.fieldDefinitionId,
+            value: variables.fieldValue.value,
+          },
+          { expectedVersion: version },
+        );
       }
     },
   });

@@ -13,17 +13,17 @@ public class TemplateTests
     [Fact]
     public void BoardTemplate_Create_ShouldSetAudit()
     {
-        var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
+        var template = BoardTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), "Template", null, JsonValue.EmptyObject(), Now);
 
         template.CreatedAt.Should().Be(Now);
         template.Name.Should().Be("Template");
-        template.Status.Should().Be(TemplateStatus.Published);
+        template.Status.Should().Be(TemplateStatus.Draft);
     }
 
     [Fact]
     public void BoardTemplate_Restore_ShouldClearIsDeleted()
     {
-        var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
+        var template = BoardTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), "Template", null, JsonValue.EmptyObject(), Now);
         template.Delete(Actor, Now);
         template.IsDeleted.Should().BeTrue();
 
@@ -36,7 +36,7 @@ public class TemplateTests
     [Fact]
     public void BoardTemplate_Rename_ShouldThrow_WhenDeleted()
     {
-        var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
+        var template = BoardTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), "Template", null, JsonValue.EmptyObject(), Now);
         template.Delete(Actor, Now);
 
         var act = () => template.Rename("New Name", Actor, Now);
@@ -46,7 +46,7 @@ public class TemplateTests
     [Fact]
     public void BoardTemplate_Draft_ShouldThrow_WhenDeleted()
     {
-        var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
+        var template = BoardTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), "Template", null, JsonValue.EmptyObject(), Now);
         template.Delete(Actor, Now);
 
         var act = () => template.Draft(Actor, Now);
@@ -56,7 +56,7 @@ public class TemplateTests
     [Fact]
     public void BoardTemplate_Publish_ShouldThrow_WhenDeleted()
     {
-        var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
+        var template = BoardTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), "Template", null, JsonValue.EmptyObject(), Now);
         template.Delete(Actor, Now);
 
         var act = () => template.Publish(Actor, Now);
@@ -66,7 +66,7 @@ public class TemplateTests
     [Fact]
     public void BoardTemplate_Archive_ShouldThrow_WhenDeleted()
     {
-        var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
+        var template = BoardTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), "Template", null, JsonValue.EmptyObject(), Now);
         template.Delete(Actor, Now);
 
         var act = () => template.Archive(Actor, Now);

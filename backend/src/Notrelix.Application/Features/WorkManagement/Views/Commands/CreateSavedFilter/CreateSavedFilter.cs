@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.CreateSavedFilter;
 
 [IdempotencyOperation("work-management.views.create-saved-filter.v1")]
-public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null)
+public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null, string? Criteria = null, SavedFilterVisibility Visibility = SavedFilterVisibility.Private)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     // A saved filter is a view (Editor), not Board management.
@@ -17,15 +17,24 @@ public class CreateSavedFilterCommandHandler : IRequestHandler<CreateSavedFilter
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public CreateSavedFilterCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateSavedFilterCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreateSavedFilterCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateSavedFilterCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
@@ -39,7 +48,9 @@ public class CreateSavedFilterCommandHandler : IRequestHandler<CreateSavedFilter
             request.Rules ?? [],
             _requestContext.UserId,
             _dateTimeProvider.UtcNow,
-            request.ViewId);
+            request.ViewId,
+            visibility: request.Visibility,
+            criteria: request.Criteria);
 
         _context.SavedFilters.Add(filter);
         return Result<Guid>.Success(filter.Id);

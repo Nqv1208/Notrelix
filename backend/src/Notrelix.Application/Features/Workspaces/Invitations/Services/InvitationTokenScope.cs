@@ -34,17 +34,27 @@ public sealed class InvitationTokenScope
         _rls = rls;
     }
 
+    /// <summary>
+    /// Enters the database token scope of the presented digest where the host sets session context;
+    /// false when the digest opens nothing. Where there is no session context (or a system context runs)
+    /// there is no scope to enter and the answer is true: locating the invitation is then the only check.
+    /// </summary>
+    public async Task<bool> EnterAsync(ParsedOneTimeToken token, CancellationToken ct)
+    {
+        if (!_rls.IsSessionContextEnabled || _tenant.IsSystemContext)
+            return true;
+
+        var binding = await _rls.EnterTokenScopeAsync(
+            new TokenScopeRequest(TokenScopePurpose.WorkspaceInvitation, token.TokenHash, token.HashVersion, TokenReason),
+            ct);
+        return binding is not null;
+    }
+
     /// <summary>Finds the invitation whose token hash equals the presented secret; null when none does.</summary>
     public async Task<WorkspaceInvitation?> FindAsync(ParsedOneTimeToken token, bool track, CancellationToken ct)
     {
-        if (_rls.IsSessionContextEnabled && !_tenant.IsSystemContext)
-        {
-            var binding = await _rls.EnterTokenScopeAsync(
-                new TokenScopeRequest(TokenScopePurpose.WorkspaceInvitation, token.TokenHash, token.HashVersion, TokenReason),
-                ct);
-            if (binding is null)
-                return null;
-        }
+        if (!await EnterAsync(token, ct))
+            return null;
 
         var query = _context.WorkspaceInvitations.IgnoreQueryFilters();
         if (!track)
@@ -59,25 +69,26 @@ public sealed class InvitationTokenScope
     /// Makes the invitation's Account and Workspace the scope of the rest of the request.
     /// <paramref name="userId"/> is the signed-in or just-registered user, null while there is none. Under a
     /// bounded database scope the token scope stays in force and an identified person is bound as the
-    /// invitee (a person registered in this request is already bound by the registration scope).
+    /// invitee (a person registered in this request is already bound by the registration scope). False
+    /// only when the database refuses to bind that person as the invitee: nothing more may be read or written.
     /// </summary>
-    public async Task AdoptAsync(WorkspaceInvitation invitation, Guid? userId, CancellationToken ct)
+    public async Task<bool> AdoptAsync(WorkspaceInvitation invitation, Guid? userId, CancellationToken ct)
     {
         if (_tenant.IsSystemContext)
-            return;
+            return true;
 
         _tenant.SetWorkspace(invitation.AccountId, invitation.WorkspaceId, userId);
 
         if (_rls.ActiveBoundedScope is RlsBoundedScope.Token)
         {
-            if (userId is { } person)
-                await _rls.EnterInviteeScopeAsync(person, InviteeReason, ct);
-            return;
+            return userId is not { } person
+                || await _rls.EnterInviteeScopeAsync(person, InviteeReason, ct);
         }
 
         if (_rls.ActiveBoundedScope is RlsBoundedScope.Invitee or RlsBoundedScope.Registration)
-            return;
+            return true;
 
         await _rls.ApplyAsync(ct);
+        return true;
     }
 }

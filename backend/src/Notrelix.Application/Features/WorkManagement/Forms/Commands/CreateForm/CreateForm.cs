@@ -39,7 +39,13 @@ public class CreateFormCommandHandler : IRequestHandler<CreateFormCommand, Resul
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException("Board", request.BoardId);
 
-        var slug = Slug.GenerateFromName(request.Title);
+        // The slug column is unique across every tenant, so a title alone would refuse the second
+        // form of that name anywhere (and tell one tenant that another uses it): an id tail makes it unique.
+        string slugBase;
+        try { slugBase = Slug.GenerateFromName(request.Title).Value; }
+        catch (BusinessRuleException) { slugBase = "form"; }
+        if (slugBase.Length > 40) slugBase = slugBase[..40].TrimEnd('-');
+        var slug = Slug.Create($"{slugBase}-{Guid.NewGuid().ToString("N")[..8]}");
         var accountId = _requestContext.RequireAccountId();
         var now = _dateTimeProvider.UtcNow;
 

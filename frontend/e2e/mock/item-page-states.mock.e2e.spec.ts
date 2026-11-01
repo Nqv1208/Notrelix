@@ -60,8 +60,8 @@ test.describe("Item page states (owner)", () => {
     await expect(
       page.getByText("Thêm mô tả…", { exact: true }).first(),
     ).toBeVisible();
-    // Sub-items: an empty list that says so and offers a way to add one.
-    await expect(page.getByText("Chưa có việc con.")).toBeVisible();
+    // Sub-items: no empty block, one row that offers a way to add one.
+    await expect(page.getByText("Chưa có việc con.")).toHaveCount(0);
     await expect(page.getByText("vừa xong", { exact: false })).toHaveCount(0);
     const rail = page.getByRole("complementary");
     // The due and start dates are always shown, empty or not, so a new item
@@ -109,18 +109,21 @@ test.describe("Item page states (owner)", () => {
     ).toBeEnabled();
   });
 
-  test("a long item folds its description and shows its sub-item progress without a list", async ({
+  test("a long item folds its description and lists its sub-items in part", async ({
     page,
   }) => {
     await open(page, "mock-erp-item-160");
-    await expect(page.getByText("12/48", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("12/48", { exact: true })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Xem toàn bộ mô tả" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Hiện 40 việc con còn lại" }),
-    ).toHaveCount(0);
-    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page.getByRole("checkbox")).toHaveCount(8);
+    await page
+      .getByRole("button", { name: "Hiện 40 việc con còn lại" })
+      .click();
+    await expect(page.getByRole("checkbox")).toHaveCount(48);
+    await page.getByRole("button", { name: "Thu gọn việc con" }).click();
+    await expect(page.getByRole("checkbox")).toHaveCount(8);
   });
 
   test("Status: type to filter, Enter chooses, and the notice undoes it", async ({

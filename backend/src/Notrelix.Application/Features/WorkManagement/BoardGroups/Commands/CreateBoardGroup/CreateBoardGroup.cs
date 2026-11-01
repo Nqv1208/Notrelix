@@ -19,13 +19,16 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        WorkPlacementResolver placement)
+        WorkPlacementResolver placement,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -33,6 +36,13 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardGroupCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateBoardGroupCommand request, CancellationToken ct)
     {
         var board = await _context.Boards
             .FirstOrDefaultAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);

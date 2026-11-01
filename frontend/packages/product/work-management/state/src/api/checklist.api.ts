@@ -1,10 +1,11 @@
-import type { NotrelixClient } from "@notrelix/contracts";
+import type { ApiRequestOptions, NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
 import type {
   OperationRequestBody,
   OperationResponse,
 } from "@notrelix/contracts";
-import type { ChecklistDtoApi } from "@notrelix/work-management-core";
+import type { Checklist } from "@notrelix/work-management-core";
+import { mapChecklists } from "./board-api-mappers";
 
 type CreateChecklistOp = "WorkManagement.Checklists.Create";
 type CreateChecklistBody = OperationRequestBody<CreateChecklistOp>;
@@ -23,92 +24,237 @@ type CreateChecklistItemResponse = OperationResponse<
 type UpdateChecklistItemOp = "WorkManagement.Checklists.UpdateItem";
 type UpdateChecklistItemBody = OperationRequestBody<UpdateChecklistItemOp>;
 
-export interface CreateChecklistInput {
+type SetItemAssigneeBody =
+  OperationRequestBody<"WorkManagement.Checklists.SetItemAssignee">;
+type SetItemDueBody =
+  OperationRequestBody<"WorkManagement.Checklists.SetItemDue">;
+
+type MoveChecklistOp = "WorkManagement.Checklists.Move";
+type MoveChecklistBody = OperationRequestBody<MoveChecklistOp>;
+
+type MoveChecklistItemOp = "WorkManagement.Checklists.MoveItem";
+type MoveChecklistItemBody = OperationRequestBody<MoveChecklistItemOp>;
+
+/** Where a list or item lands: between two siblings (either may be absent). */
+export interface ChecklistPlacement {
+  readonly previousSiblingId?: string | null;
+  readonly nextSiblingId?: string | null;
+}
+
+export interface CreateChecklistInput extends ChecklistPlacement {
   cardId: string;
   title: string;
 }
 
 export interface UpdateChecklistInput {
   checklistId: string;
-  title?: string;
-  position?: number;
+  title: string;
+  expectedVersion: number;
 }
 
-export interface CreateChecklistItemInput {
+export interface CreateChecklistItemInput extends ChecklistPlacement {
   checklistId: string;
   title: string;
+  expectedVersion: number;
 }
 
 export interface UpdateChecklistItemInput {
   itemId: string;
-  title?: string;
-  isChecked?: boolean;
-  dueDate?: string | null;
-  assigneeId?: string | null;
+  title: string;
+  expectedVersion: number;
 }
+
+/** An item write names its checklist's version: the checklist is the consistency boundary. */
+export interface ChecklistItemRef {
+  itemId: string;
+  expectedVersion: number;
+}
+
+export interface MoveChecklistInput extends ChecklistPlacement {
+  checklistId: string;
+  expectedVersion: number;
+}
+
+export interface MoveChecklistItemInput extends ChecklistPlacement {
+  itemId: string;
+  expectedVersion: number;
+}
+
+// Inline errors with Retry replace the global toast for every checklist write.
+const quiet = (options?: ApiRequestOptions): ApiRequestOptions => ({
+  ...options,
+  skipGlobalErrorToast: true,
+});
 
 export function createChecklistApi(client: NotrelixClient) {
   const api = client.api;
   return {
-    async getChecklists(cardId: string): Promise<ChecklistDtoApi[]> {
-      return api.get<any>(endpoints.boardItems.checklists(cardId));
+    async getChecklists(cardId: string): Promise<Checklist[]> {
+      return mapChecklists(
+        await api.get<Parameters<typeof mapChecklists>[0]>(
+          endpoints.boardItems.checklists(cardId),
+        ),
+      );
     },
 
-    async createChecklist(input: CreateChecklistInput): Promise<void> {
+    async createChecklist(
+      input: CreateChecklistInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
       const body: CreateChecklistBody = {
         title: input.title,
+        previousSiblingId: input.previousSiblingId ?? null,
+        nextSiblingId: input.nextSiblingId ?? null,
       };
       await api.post<CreateChecklistResponse>(
         endpoints.boardItems.checklists(input.cardId),
         body,
-        {
-          headers: { "Idempotency-Key": crypto.randomUUID() },
-        },
+        quiet(options),
       );
     },
 
-    async updateChecklist(input: UpdateChecklistInput): Promise<void> {
-      // Placement is not part of PATCH; checklist moves use POST .../move
-      // (adopted by WM-V3-FE-001).
+    async updateChecklist(
+      input: UpdateChecklistInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
       const body: UpdateChecklistBody = {
         title: input.title,
+        expectedVersion: input.expectedVersion,
       };
       await api.patch<void>(
         endpoints.checklists.detail(input.checklistId),
         body,
+        quiet(options),
       );
     },
 
-    async deleteChecklist(checklistId: string): Promise<void> {
-      await api.delete<void>(endpoints.checklists.detail(checklistId));
+    async deleteChecklist(
+      checklistId: string,
+      expectedVersion: number,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.checklists.detail(checklistId)}?expectedVersion=${expectedVersion}`,
+        quiet(options),
+      );
     },
 
-    async createChecklistItem(input: CreateChecklistItemInput): Promise<void> {
+    async moveChecklist(
+      input: MoveChecklistInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: MoveChecklistBody = {
+        expectedVersion: input.expectedVersion,
+        previousSiblingId: input.previousSiblingId ?? null,
+        nextSiblingId: input.nextSiblingId ?? null,
+      };
+      await api.post<void>(
+        endpoints.checklists.move(input.checklistId),
+        body,
+        quiet(options),
+      );
+    },
+
+    async createChecklistItem(
+      input: CreateChecklistItemInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
       const body: CreateChecklistItemBody = {
         title: input.title,
+        expectedVersion: input.expectedVersion,
+        previousSiblingId: input.previousSiblingId ?? null,
+        nextSiblingId: input.nextSiblingId ?? null,
       };
       await api.post<CreateChecklistItemResponse>(
         endpoints.checklists.items(input.checklistId),
         body,
-        {
-          headers: { "Idempotency-Key": crypto.randomUUID() },
-        },
+        quiet(options),
       );
     },
 
-    async updateChecklistItem(input: UpdateChecklistItemInput): Promise<void> {
+    async renameChecklistItem(
+      input: UpdateChecklistItemInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
       const body: UpdateChecklistItemBody = {
         title: input.title,
-        isChecked: input.isChecked,
+        expectedVersion: input.expectedVersion,
       };
       await api.patch<void>(
         endpoints.checklistItems.detail(input.itemId),
         body,
+        quiet(options),
       );
     },
 
-    async deleteChecklistItem(itemId: string): Promise<void> {
-      await api.delete<void>(endpoints.checklistItems.detail(itemId));
+    /** Flips done / not done; the server owns the new state. */
+    async toggleChecklistItem(
+      input: ChecklistItemRef,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      await api.post<void>(
+        `${endpoints.checklistItems.toggle(input.itemId)}?expectedVersion=${input.expectedVersion}`,
+        undefined,
+        quiet(options),
+      );
+    },
+
+    /** Gives the item to a person, or to nobody (`null`). */
+    async setChecklistItemAssignee(
+      input: ChecklistItemRef & { assigneeUserId: string | null },
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: SetItemAssigneeBody = {
+        expectedVersion: input.expectedVersion,
+        assigneeUserId: input.assigneeUserId,
+      };
+      await api.put<void>(
+        endpoints.checklistItems.assignee(input.itemId),
+        body,
+        quiet(options),
+      );
+    },
+
+    /** Sets the item's own due time (an ISO instant), or clears it (`null`). */
+    async setChecklistItemDue(
+      input: ChecklistItemRef & { dueAt: string | null },
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: SetItemDueBody = {
+        expectedVersion: input.expectedVersion,
+        dueAt: input.dueAt,
+      };
+      await api.put<void>(
+        endpoints.checklistItems.due(input.itemId),
+        body,
+        quiet(options),
+      );
+    },
+
+    async deleteChecklistItem(
+      input: ChecklistItemRef,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.checklistItems.detail(input.itemId)}?expectedVersion=${input.expectedVersion}`,
+        quiet(options),
+      );
+    },
+
+    async moveChecklistItem(
+      input: MoveChecklistItemInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: MoveChecklistItemBody = {
+        expectedVersion: input.expectedVersion,
+        previousSiblingId: input.previousSiblingId ?? null,
+        nextSiblingId: input.nextSiblingId ?? null,
+      };
+      await api.post<void>(
+        endpoints.checklistItems.move(input.itemId),
+        body,
+        quiet(options),
+      );
     },
   };
 }

@@ -31,7 +31,7 @@ public sealed class GetWorkspaceMembersPhoneVisibilityTests : WorkspaceHandlerTe
 
     private async Task<List<WorkspaceMemberDto>> ListAsync() =>
         (await new GetWorkspaceMembersQueryHandler(DbContextMock.Object, _actors.Object, _phones.Object, RequestContextMock.Object)
-            .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None)).Data!;
+            .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None)).Data!.Items.ToList();
 
     [Fact]
     public async Task MemberReader_SeesTheOptedInPhonesOfNonGuestMembers()

@@ -16,7 +16,17 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_InvalidItemKeyPrefix = "WorkManagement_Board_InvalidItemKeyPrefix";
     public const string WorkManagement_Board_ItemKeyPrefixInUse = "WorkManagement_Board_ItemKeyPrefixInUse";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
+    public const string WorkManagement_Board_RestoreWindowElapsed = "WorkManagement_Board_RestoreWindowElapsed";
+    public const string WorkManagement_Board_PublicLinkNotSupported = "WorkManagement_Board_PublicLinkNotSupported";
+    public const string WorkManagement_Board_LastManager = "WorkManagement_Board_LastManager";
+    public const string WorkManagement_Board_MoveAddNotAffected = "WorkManagement_Board_MoveAddNotAffected";
+    public const string WorkManagement_Board_DuplicateTooManyItems = "WorkManagement_Board_DuplicateTooManyItems";
+    public const string WorkManagement_Board_MoveAddGuest = "WorkManagement_Board_MoveAddGuest";
+    public const string WorkManagement_Board_LastOwner = "WorkManagement_Board_LastOwner";
     public const string WorkManagement_Group_CannotDeleteLast = "WorkManagement_Group_CannotDeleteLast";
+    public const string WorkManagement_Group_CannotModifyArchived = "WorkManagement_Group_CannotModifyArchived";
+    public const string WorkManagement_Group_CannotReceiveItemsArchived = "WorkManagement_Group_CannotReceiveItemsArchived";
+    public const string WorkManagement_Group_DuplicateTooManyItems = "WorkManagement_Group_DuplicateTooManyItems";
     public const string WorkManagement_Group_ItemsNeedTargetGroup = "WorkManagement_Group_ItemsNeedTargetGroup";
     public const string WorkManagement_Group_InvalidTargetGroup = "WorkManagement_Group_InvalidTargetGroup";
 
@@ -48,6 +58,12 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FieldSettings_TextMaxLengthMustBeNumber = "WorkManagement_FieldSettings_TextMaxLengthMustBeNumber";
     public const string WorkManagement_FieldSettings_DateIncludeTimeMustBeBoolean = "WorkManagement_FieldSettings_DateIncludeTimeMustBeBoolean";
     public const string WorkManagement_FieldSettings_StatusMustIncludeTransitions = "WorkManagement_FieldSettings_StatusMustIncludeTransitions";
+    public const string WorkManagement_FieldSettings_FormulaExpressionRequired = "WorkManagement_FieldSettings_FormulaExpressionRequired";
+    public const string WorkManagement_FieldSettings_FormulaSyntaxInvalid = "WorkManagement_FieldSettings_FormulaSyntaxInvalid";
+    public const string WorkManagement_FieldSettings_FormulaTooComplex = "WorkManagement_FieldSettings_FormulaTooComplex";
+    public const string WorkManagement_FieldSettings_RollupInvalid = "WorkManagement_FieldSettings_RollupInvalid";
+    public const string WorkManagement_Field_FormulaUnknownField = "WorkManagement_Field_FormulaUnknownField";
+    public const string WorkManagement_Field_ComputedFieldCycle = "WorkManagement_Field_ComputedFieldCycle";
 
     // ── FieldValue ────────────────────────────────────────────────────────
     public const string WorkManagement_FieldValue_CannotBeNull = "WorkManagement_FieldValue_CannotBeNull";
@@ -83,6 +99,11 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Item_DescriptionTooLong = "WorkManagement_Item_DescriptionTooLong";
     public const string WorkManagement_Item_CannotModifyArchived = "WorkManagement_Item_CannotModifyArchived";
     public const string WorkManagement_Item_FieldValueMustBeNumber = "WorkManagement_Item_FieldValueMustBeNumber";
+    public const string WorkManagement_Item_InvalidCover = "WorkManagement_Item_InvalidCover";
+    public const string WorkManagement_Item_InvalidRepeat = "WorkManagement_Item_InvalidRepeat";
+    public const string WorkManagement_Item_InvalidReminder = "WorkManagement_Item_InvalidReminder";
+    public const string WorkManagement_Item_RepeatNeedsDueDate = "WorkManagement_Item_RepeatNeedsDueDate";
+    public const string WorkManagement_Field_CannotWriteVote = "WorkManagement_Field_CannotWriteVote";
 
     // ── Dependency ────────────────────────────────────────────────────────
     public const string WorkManagement_Dependency_CannotDependOnSelf = "WorkManagement_Dependency_CannotDependOnSelf";
@@ -113,6 +134,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Form_CannotSubmitToClosed = "WorkManagement_Form_CannotSubmitToClosed";
     public const string WorkManagement_Form_CannotAddQuestionToClosed = "WorkManagement_Form_CannotAddQuestionToClosed";
     public const string WorkManagement_Form_DuplicateQuestionKey = "WorkManagement_Form_DuplicateQuestionKey";
+    public const string WorkManagement_Form_QuestionTypeNotSupported = "WorkManagement_Form_QuestionTypeNotSupported";
+    public const string WorkManagement_Form_QuestionFieldMismatch = "WorkManagement_Form_QuestionFieldMismatch";
+    public const string WorkManagement_Form_QuestionFieldRemoved = "WorkManagement_Form_QuestionFieldRemoved";
 
     // ── FormQuestion ──────────────────────────────────────────────────────
     public const string WorkManagement_FormQuestion_InvalidConfigJson = "WorkManagement_FormQuestion_InvalidConfigJson";
@@ -120,6 +144,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormQuestion_MinMaxInvalidForType = "WorkManagement_FormQuestion_MinMaxInvalidForType";
     public const string WorkManagement_FormQuestion_MaxFileSizeInvalidForType = "WorkManagement_FormQuestion_MaxFileSizeInvalidForType";
     public const string WorkManagement_FormQuestion_MaxLengthMustBePositive = "WorkManagement_FormQuestion_MaxLengthMustBePositive";
+    public const string WorkManagement_FormQuestion_OptionsInvalid = "WorkManagement_FormQuestion_OptionsInvalid";
+    public const string WorkManagement_FormQuestion_OptionsInvalidForType = "WorkManagement_FormQuestion_OptionsInvalidForType";
     public const string WorkManagement_FormQuestion_MaxFileSizeMustBePositive = "WorkManagement_FormQuestion_MaxFileSizeMustBePositive";
     public const string WorkManagement_FormQuestion_MinCannotExceedMax = "WorkManagement_FormQuestion_MinCannotExceedMax";
 
@@ -127,6 +153,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormSubmission_CannotRejectUnlessAccepted = "WorkManagement_FormSubmission_CannotRejectUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted = "WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotProcessUnlessAccepted = "WorkManagement_FormSubmission_CannotProcessUnlessAccepted";
+    public const string WorkManagement_FormSubmission_AlreadyProcessed = "WorkManagement_FormSubmission_AlreadyProcessed";
     public const string WorkManagement_FormSubmission_AlreadyDeleted = "WorkManagement_FormSubmission_AlreadyDeleted";
 
     // ── Reminder ──────────────────────────────────────────────────────────
@@ -150,6 +177,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Approval_TeamDecisionNotSupported = "WorkManagement_Approval_TeamDecisionNotSupported";
 
     // ── Template ──────────────────────────────────────────────────────────
+    public const string WorkManagement_BoardTemplate_TooManyItems = "WorkManagement_BoardTemplate_TooManyItems";
     public const string WorkManagement_BoardTemplate_CannotDraftArchived = "WorkManagement_BoardTemplate_CannotDraftArchived";
     public const string WorkManagement_BoardTemplate_CannotPublishArchived = "WorkManagement_BoardTemplate_CannotPublishArchived";
     public const string WorkManagement_BoardTemplate_CanOnlyRestoreArchived = "WorkManagement_BoardTemplate_CanOnlyRestoreArchived";

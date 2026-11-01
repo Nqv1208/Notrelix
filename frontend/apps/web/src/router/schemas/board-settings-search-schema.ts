@@ -12,7 +12,16 @@ export const boardSettingsSearchSchema = z.object({
     .preprocess(
       // Access is the board's Share dialog, not a settings section: an old link opens the default one.
       (value) => (value === "access" ? "fields" : value),
-      z.enum(["general", "fields", "views", "groups", "automations"]),
+      z.enum([
+        "general",
+        "fields",
+        "views",
+        "groups",
+        "labels",
+        "forms",
+        "templates",
+        "automations",
+      ]),
     )
     .default("fields"),
   field: z.string().optional(),

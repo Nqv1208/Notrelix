@@ -193,8 +193,8 @@ const COMMON: Entry[] = [
   { name: "back", at: "#workspace-main header a[aria-label=\"Về board\"]", box: [20, 10, 32, 32], keys: "xywh", style: { r: "7px" } }, // .top > a.icon-btn@0
   { name: "crumbMark", at: "#workspace-main header nav span[aria-hidden]@0", box: [58, 17, 18, 18], keys: "ywh", style: { fs: "8px", fw: "700", r: "6px" } }, // .crumb .dm
   { name: "crumbKey", at: "#workspace-main header nav [aria-current=page]", box: [353.3, 16.6, 54.6, 18.8], keys: "yh", style: { fs: "13px", fw: "500", c: "rgb(22, 26, 33)" } }, // .crumb .mono
-  { name: "hint", at: "#workspace-main header span.mr-1", box: [691.4, 16, 187.6, 20], keys: "yh", style: { fs: "12px", c: "rgb(95, 104, 117)" } }, // .top .hint
-  { name: "kbdK", at: "#workspace-main header kbd@0", box: [836.8, 16, 18.6, 20], keys: "ywh", style: { fs: "11px", r: "4px", bg: "rgb(238, 240, 243)", c: "rgb(79, 88, 102)" } }, // .top .hint .kbd@0
+  // y and h: the 20 px line was the K chip; without it the line is the 17.4 px text.
+  { name: "hint", at: "#workspace-main header span.mr-1", box: [691.4, 17.3, 187.6, 17.4], keys: "yh", style: { fs: "12px", c: "rgb(95, 104, 117)" } }, // .top .hint
   { name: "prev", at: "#workspace-main header button[aria-label^=\"Không có việc trước\"]", box: [889, 10, 32, 32], keys: "xywh", style: { r: "7px" } }, // .top .icon-btn@1
   { name: "next", at: "#workspace-main header button[aria-label=\"Công việc sau (J)\"]", box: [927, 10, 32, 32], keys: "xywh", style: { r: "7px" } }, // .top .icon-btn@2
   { name: "sep", at: "#workspace-main header span.w-px", box: [971, 16, 1, 20], keys: "xywh", style: { bg: "rgb(225, 229, 234)" } }, // .top .vr
@@ -262,7 +262,6 @@ const OVERVIEW: Entry[] = [
   { name: "cpBox", at: "#workspace-main #item-page-activity > section div.mt-3 > div", from: "#workspace-main #item-page-activity > section div.mt-3", box: [42, 0, 666, 108], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .composer .in
   { name: "cpText", at: "#workspace-main #item-page-activity > section div.mt-3 textarea", from: "#workspace-main #item-page-activity > section div.mt-3", box: [55, 11, 640, 48], keys: "xywh", style: { fs: "14px" } }, // .composer textarea
   { name: "cpAttach", at: "#workspace-main #item-page-activity > section div.mt-3 button[aria-label=\"Đính kèm tệp vào bình luận\"]", from: "#workspace-main #item-page-activity > section div.mt-3", box: [55, 69, 28, 28], keys: "xywh", style: { r: "7px" } }, // .composer .row .icon-btn
-  { name: "cpKbd", at: "#workspace-main #item-page-activity > section div.mt-3 kbd", from: "#workspace-main #item-page-activity > section div.mt-3", box: [620.9, 73, 25.3, 20], keys: "xywh", style: { fs: "11px", c: "rgb(79, 88, 102)", bg: "rgb(238, 240, 243)", r: "4px" } }, // .composer .kbd
   { name: "cpSend", at: "#workspace-main #item-page-activity > section div.mt-3 button[class*=\"bg-primary\"]", from: "#workspace-main #item-page-activity > section div.mt-3", box: [652.1, 69, 42.9, 28], keys: "xywh", style: { fs: "12.5px", fw: "600", c: "rgb(255, 255, 255)", bg: "rgb(22, 102, 204)", r: "7px" } }, // .composer .btn
 ];
 

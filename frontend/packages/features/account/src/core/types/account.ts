@@ -21,6 +21,8 @@ export interface AccountPreferences {
   /** E.164, or `""` when none. */
   readonly phone: string;
   readonly phoneVisibleToWorkspaceMembers: boolean;
+  /** Label colours are shown with a small shape beside each (colour-blind mode). */
+  readonly colourBlindLabels: boolean;
   readonly version: number;
 }
 
@@ -95,11 +97,21 @@ export interface TwoFactorEnrollment {
   readonly otpAuthUri: string;
 }
 
+/** What turning two-factor on gave back: the codes (shown once) and how many other devices it signed out. */
+export interface TwoFactorActivation {
+  readonly recoveryCodes: readonly string[];
+  readonly otherSessionsEnded: number;
+}
+
 /** What proves the person is present before a sensitive change. */
 export type StepUpFactor = "mfa" | "password" | "oauth";
 
 export type StepUpPurpose =
-  "DisableMfa" | "RegenerateRecoveryCodes" | "ChangePassword";
+  | "DisableMfa"
+  | "RegenerateRecoveryCodes"
+  | "ChangePassword"
+  | "RevokeOtherSessions"
+  | "EnrollMfa";
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;
@@ -123,6 +135,8 @@ export interface AccountWorkspaceEntry {
   readonly isDefault: boolean;
   /** `false` for the last owner, who has to hand the ownership over first. */
   readonly canLeave: boolean;
+  /** Read-only for every member; listed only to its owners and admins, who open it from here. */
+  readonly isArchived: boolean;
 }
 
 /** Why a profile photo was not changed. */

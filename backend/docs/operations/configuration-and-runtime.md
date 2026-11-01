@@ -272,6 +272,19 @@ overridable per environment. The MFA wrong-code budget per challenge (5) is a co
 | `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
 | `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
 
+`Governance:AccessChanges:Retention` (Infrastructure, `ResourceAccessChangeRetentionOptions`, validated on
+start by `ResourceAccessChangeRetentionOptionsValidator`) configures the sweep of the Board access-change log
+(`ResourceAccessChangeRetentionService`, a hosted service). Each row carries its own `retention_until` (90 days
+after the change), so the sweep only removes rows that reads already hide. It deletes history for good, so it is
+**off** by default and no environment sets it on: it stays off until the owner sets the retention rule (owner
+decision 3, deletion and retention):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `false` | When false nothing is deleted. |
+| `Interval` | `01:00:00` (1 hour) | Time between sweeps. Range 10 seconds to 1 day. |
+| `BatchSize` | 1000 | Rows deleted per transaction. Range 1 to 10000. |
+
 `Workspaces:Onboarding:DraftSweep` (Infrastructure, `OnboardingDraftSweepOptions`, validated on start by
 `OnboardingDraftSweepOptionsValidator`) configures the sweep of expired onboarding drafts
 (`OnboardingDraftSweepService`, a hosted service; the retention itself is the Domain constant of 30 days after the last
@@ -1057,6 +1070,8 @@ FrontendSuccessUrl   where a completed OAuth sign-in lands (/auth/callback)
 FrontendFailureUrl   where a failed OAuth sign-in lands (/sign-in)
 FrontendMfaUrl       where an OAuth sign-in that needs a second factor lands (/sign-in?step=mfa)
 ```
+
+A start for an unknown, disabled or unconfigured provider redirects to `FrontendFailureUrl` with `error=identity.oauth.provider-unavailable`; the browser never lands on a JSON answer for it.
 
 The only client-influenced part is the person's return path. `returnUrl` on `GET /auth/oauth/{provider}/start`
 is validated (an internal root-relative path: one leading slash, no backslash, no control character,

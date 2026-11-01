@@ -13,6 +13,7 @@ public enum WorkOrderingScopeKind
     FieldOptions,
     ItemChecklists,
     ChecklistItems,
+    ItemLinks,
 }
 
 /// <summary>One ordering scope instance: a scope kind and its parent identity.</summary>
@@ -31,6 +32,7 @@ public readonly record struct WorkOrderingScope(WorkOrderingScopeKind Kind, Guid
         WorkOrderingScopeKind.FieldOptions => "field-options",
         WorkOrderingScopeKind.ItemChecklists => "item-checklists",
         WorkOrderingScopeKind.ChecklistItems => "checklist-items",
+        WorkOrderingScopeKind.ItemLinks => "item-links",
         _ => throw new ArgumentOutOfRangeException(nameof(Kind), Kind, "Unknown ordering scope kind."),
     };
 }

@@ -61,7 +61,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, null, null, null, BoardVisibility.PublicLink, 1);
+        var command = new UpdateBoardCommand(board.Id, null, null, null, BoardVisibility.Private, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

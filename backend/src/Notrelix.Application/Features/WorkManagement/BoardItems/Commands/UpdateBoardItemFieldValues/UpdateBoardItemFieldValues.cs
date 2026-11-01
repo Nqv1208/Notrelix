@@ -24,13 +24,16 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceLocator _resourceLocator;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
-        IResourceLocator resourceLocator)
+        IResourceLocator resourceLocator,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -38,6 +41,13 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
             // The value collection and the field options are loaded: an existing value

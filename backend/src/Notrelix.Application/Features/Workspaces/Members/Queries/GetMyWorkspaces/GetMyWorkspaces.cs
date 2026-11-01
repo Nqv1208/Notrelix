@@ -10,8 +10,10 @@ namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetMyWorkspac
 /// The Workspaces the caller takes part in, one row each with the caller's own role, the default
 /// flag and whether the caller may leave. The subject is always the principal: only the caller's own
 /// active memberships of active Workspaces are read, so another person's memberships and Workspaces
-/// the caller left, was removed from or is suspended in never appear. Counts come from the same
-/// single query (no per-row lookups); the default Workspace is the Identity-owned choice.
+/// the caller left, was removed from or is suspended in never appear. An archived Workspace stays out of
+/// the list except for its Owners and Admins, who see it flagged so they can open it and restore it.
+/// Counts come from the same single query (no per-row lookups); the default Workspace is the
+/// Identity-owned choice.
 /// </summary>
 public record GetMyWorkspacesQuery : IQuery<Result<List<AccountWorkspaceDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest;
 
@@ -47,13 +49,16 @@ public class GetMyWorkspacesQueryHandler : IRequestHandler<GetMyWorkspacesQuery,
             where member.UserId == userId
                 && member.Status == WorkspaceMemberStatus.Active
                 && workspace.DeletedAt == null
-                && workspace.Status == WorkspaceStatus.Active
+                && (workspace.Status == WorkspaceStatus.Active
+                    || (workspace.Status == WorkspaceStatus.Archived
+                        && (member.Role == WorkspaceRole.Owner || member.Role == WorkspaceRole.Admin)))
             orderby workspace.Name, workspace.Id
             select new
             {
                 workspace.Id,
                 workspace.Name,
                 workspace.Slug,
+                workspace.Status,
                 member.Role,
                 MemberCount = _context.WorkspaceMembers.IgnoreQueryFilters().Count(other =>
                     other.WorkspaceId == workspace.Id && other.Status == WorkspaceMemberStatus.Active),
@@ -77,9 +82,11 @@ public class GetMyWorkspacesQueryHandler : IRequestHandler<GetMyWorkspacesQuery,
             row.Role.ToString(),
             row.Role == WorkspaceRole.Guest ? null : row.MemberCount,
             row.Role is WorkspaceRole.Owner or WorkspaceRole.Admin ? row.DepartmentCount : null,
-            // A default the caller cannot open is not in the list, so it can never be flagged here.
-            defaultId == row.Id,
-            row.Role != WorkspaceRole.Owner || row.ActiveOwnerCount > 1)).ToList();
+            // A default the caller cannot open is not in the list, so it can never be flagged here; an
+            // archived Workspace is listed to be restored, not to open the app in.
+            row.Status == WorkspaceStatus.Active && defaultId == row.Id,
+            row.Role != WorkspaceRole.Owner || row.ActiveOwnerCount > 1,
+            row.Status == WorkspaceStatus.Archived)).ToList();
 
         return Result<List<AccountWorkspaceDto>>.Success(result);
     }

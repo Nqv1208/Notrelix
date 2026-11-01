@@ -8,6 +8,7 @@ import {
   workspaceMembersCatalog,
   workspaceSettingsCatalog,
   workspaceShellCatalog,
+  pendingInvitationsCatalog,
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
   workspaceOnboardingCatalog,
@@ -28,21 +29,29 @@ import { authCatalog } from "@notrelix/features-auth";
 import { notificationBellCatalog } from "@notrelix/features-notifications";
 import { docPageCatalog } from "@notrelix/docs-web";
 import {
+  retiredBoardsCatalog,
   boardHeaderCatalog,
-  itemCreateCatalog,
   boardSettingsCatalog,
+  boardLifecycleCatalog,
   boardShareCatalog,
   calendarCatalog,
   itemPageCatalog,
   itemSheetCatalog,
+  cardPopupCatalog,
+  itemChecklistsCatalog,
   kanbanCardCatalog,
+  cardCapabilitiesCatalog,
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
+  formsCatalog,
   mainTableCatalog,
+  savedFiltersCatalog,
   statusOptionFormCatalog,
+  viewStateCatalog,
   timelineCatalog,
 } from "@notrelix/work-management-web";
 import { routerStatesCatalog } from "../router/router-states.catalog";
+import { authGuardCatalog } from "../shell/guards/auth-guard.catalog";
 import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.catalog";
 
 /**
@@ -52,6 +61,7 @@ import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.
 export const webCatalogs: readonly MessageCatalog[] = [
   workspaceShellCatalog,
   notrelixSystemRailCatalog,
+  pendingInvitationsCatalog,
   workspaceCommandCatalog,
   workspaceHomeCatalog,
   workspaceInboxCatalog,
@@ -66,17 +76,24 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceIntegrationsCatalog,
   workspaceFeatureAvailabilityCatalog,
   kanbanCardCatalog,
+  cardCapabilitiesCatalog,
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
   statusOptionFormCatalog,
   mainTableCatalog,
+  savedFiltersCatalog,
+  formsCatalog,
+  viewStateCatalog,
   calendarCatalog,
   timelineCatalog,
   itemSheetCatalog,
+  cardPopupCatalog,
+  itemChecklistsCatalog,
   itemPageCatalog,
+  retiredBoardsCatalog,
   boardHeaderCatalog,
-  itemCreateCatalog,
   boardSettingsCatalog,
+  boardLifecycleCatalog,
   boardShareCatalog,
   notificationBellCatalog,
   authCatalog,
@@ -88,5 +105,6 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountNotificationsCatalog,
   accountWorkspacesCatalog,
   routerStatesCatalog,
+  authGuardCatalog,
   emailConfirmationCatalog,
 ];

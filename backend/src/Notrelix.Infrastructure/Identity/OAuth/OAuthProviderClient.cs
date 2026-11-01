@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Notrelix.Application.Features.Identity.OAuth;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Domain.Identity.OAuth;
@@ -12,13 +13,16 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
 {
     private readonly OAuthOptions _options;
     private readonly HttpClient _httpClient;
+    private readonly IDateTimeProvider _clock;
 
     public OAuthProviderClient(
         IOptions<OAuthOptions> options,
-        HttpClient httpClient)
+        HttpClient httpClient,
+        IDateTimeProvider clock)
     {
         _options = options.Value;
         _httpClient = httpClient;
+        _clock = clock;
     }
 
     public Task<OAuthAuthorizationUrlResult> BuildAuthorizationUrlAsync(
@@ -38,11 +42,9 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             ["state"] = request.State,
         };
 
-        if (provider == OAuthProvider.Google)
+        if (OAuthPkce.IsUsedBy(provider))
         {
             queryParams["response_type"] = "code";
-            queryParams["access_type"] = "offline";
-            queryParams["prompt"] = "consent";
 
             if (!string.IsNullOrWhiteSpace(request.Nonce))
                 queryParams["nonce"] = request.Nonce;
@@ -52,6 +54,12 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
                 queryParams["code_challenge"] = request.CodeChallenge;
                 queryParams["code_challenge_method"] = request.CodeChallengeMethod ?? "S256";
             }
+        }
+
+        if (provider == OAuthProvider.Google)
+        {
+            queryParams["access_type"] = "offline";
+            queryParams["prompt"] = "consent";
         }
 
         if (provider == OAuthProvider.GitHub)
@@ -82,7 +90,7 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             new("redirect_uri", request.RedirectUri),
         };
 
-        if (provider == OAuthProvider.Google && !string.IsNullOrWhiteSpace(request.CodeVerifier))
+        if (OAuthPkce.IsUsedBy(provider) && !string.IsNullOrWhiteSpace(request.CodeVerifier))
         {
             formFields.Add(new("code_verifier", request.CodeVerifier));
         }
@@ -104,17 +112,30 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
         var tokenJson = await tokenResponse.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct)
             ?? throw new InvalidOperationException("Token endpoint returned empty response.");
 
-        if (provider == OAuthProvider.Google)
+        // An OpenID Connect provider's ID token is checked (issuer, audience, expiry, nonce) before
+        // any claim is believed; a missing one fails the sign-in rather than falling back to less.
+        string? verifiedSubject = null;
+        if (OidcIdTokenValidator.IsOidc(provider))
         {
             var idToken = tokenJson.RootElement.TryGetProperty("id_token", out var idTokenEl)
-                ? idTokenEl.GetString()
-                : null;
+                && idTokenEl.ValueKind == JsonValueKind.String
+                    ? idTokenEl.GetString()
+                    : null;
 
-            if (!string.IsNullOrWhiteSpace(idToken))
-            {
-                return ValidateIdTokenAndBuildProfile(
-                    provider, idToken, request.Nonce);
-            }
+            if (string.IsNullOrWhiteSpace(idToken))
+                throw new OidcIdTokenException("id token missing");
+
+            using var claims = OidcIdTokenValidator.Validate(
+                idToken,
+                OidcIdTokenValidator.IssuersOf(provider, config),
+                config.ClientId,
+                request.Nonce,
+                _clock.UtcNow);
+
+            if (provider == OAuthProvider.Google)
+                return BuildProfileFromIdToken(provider, claims);
+
+            verifiedSubject = OidcIdTokenValidator.StringClaim(claims.RootElement, "sub");
         }
 
         var accessToken = tokenJson.RootElement.TryGetProperty("access_token", out var accessTokenEl)
@@ -124,52 +145,40 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
         if (!string.IsNullOrWhiteSpace(accessToken))
         {
             return await FetchUserInfoAndBuildProfile(
-                provider, config, accessToken, ct);
+                provider, config, accessToken, verifiedSubject, ct);
         }
 
         throw new InvalidOperationException("Token endpoint returned neither id_token nor access_token.");
     }
 
-    private static ExternalOAuthProfile ValidateIdTokenAndBuildProfile(
-        OAuthProvider provider,
-        string idToken,
-        string? nonce)
+    /// <summary>The profile of a token that already passed <see cref="OidcIdTokenValidator"/>.</summary>
+    private static ExternalOAuthProfile BuildProfileFromIdToken(OAuthProvider provider, JsonDocument claims)
     {
-        using var document = DecodeJwtPayload(idToken);
+        var root = claims.RootElement;
+        var subject = OidcIdTokenValidator.StringClaim(root, "sub")
+            ?? throw new OidcIdTokenException("subject missing");
 
-        var subject = document.RootElement.GetProperty("sub").GetString()
-            ?? throw new InvalidOperationException("ID token missing 'sub' claim.");
-
-        var email = document.RootElement.TryGetProperty("email", out var emailEl)
-            ? emailEl.GetString()
-            : null;
-
-        var emailVerified = document.RootElement.TryGetProperty("email_verified", out var verifiedEl)
-            ? verifiedEl.GetBoolean()
-            : false;
-
-        var name = document.RootElement.TryGetProperty("name", out var nameEl)
-            ? nameEl.GetString()
-            : null;
-
-        var picture = document.RootElement.TryGetProperty("picture", out var pictureEl)
-            ? pictureEl.GetString()
-            : null;
+        // Google sends email_verified as a boolean; some tokens carry the string "true".
+        var emailVerified = root.TryGetProperty("email_verified", out var verifiedEl)
+            && (verifiedEl.ValueKind == JsonValueKind.True
+                || (verifiedEl.ValueKind == JsonValueKind.String
+                    && string.Equals(verifiedEl.GetString(), "true", StringComparison.OrdinalIgnoreCase)));
 
         return new ExternalOAuthProfile(
             Provider: provider,
             Subject: subject,
-            Email: email,
+            Email: OidcIdTokenValidator.StringClaim(root, "email"),
             EmailVerified: emailVerified,
-            Name: name,
-            AvatarUrl: picture,
-            RawProfile: JsonValue.Create(document.RootElement.GetRawText()));
+            Name: OidcIdTokenValidator.StringClaim(root, "name"),
+            AvatarUrl: OidcIdTokenValidator.StringClaim(root, "picture"),
+            RawProfile: JsonValue.Create(root.GetRawText()));
     }
 
     private async Task<ExternalOAuthProfile> FetchUserInfoAndBuildProfile(
         OAuthProvider provider,
         OAuthProviderConfig config,
         string accessToken,
+        string? verifiedSubject,
         CancellationToken ct)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, config.UserInfoEndpoint);
@@ -197,6 +206,10 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
         if (string.IsNullOrWhiteSpace(subject))
             throw new InvalidOperationException("UserInfo response missing subject identifier.");
 
+        // The UserInfo answer must be about the person the ID token names (OIDC Core 5.3.2).
+        if (verifiedSubject is not null && !string.Equals(subject, verifiedSubject, StringComparison.Ordinal))
+            throw new OidcIdTokenException("user info subject mismatch");
+
         var email = GetStringOrNull(root, "email");
         var name = GetStringOrNull(root, "name") ?? GetStringOrNull(root, "login");
         var picture = GetStringOrNull(root, "avatar_url") ?? GetStringOrNull(root, "picture");
@@ -220,24 +233,6 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             Name: name,
             AvatarUrl: picture,
             RawProfile: JsonValue.Create(root.GetRawText()));
-    }
-
-    private static JsonDocument DecodeJwtPayload(string jwt)
-    {
-        var parts = jwt.Split('.');
-        if (parts.Length < 2)
-            throw new InvalidOperationException("Invalid JWT format.");
-
-        var payload = parts[1];
-        var padding = (4 - payload.Length % 4) % 4;
-        var padded = padding switch
-        {
-            2 => payload + "==",
-            1 => payload + "=",
-            _ => payload
-        };
-        var bytes = Convert.FromBase64String(padded);
-        return JsonDocument.Parse(bytes);
     }
 
     private static string? GetStringOrNumberAsString(JsonElement element)

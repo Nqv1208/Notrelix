@@ -9,16 +9,6 @@
         "reason": "Stateful adapter owning useFullBoard and stateful view containers; receives a pure presentation seam per FUIR-LOCK-12 (Wave 2)."
       },
       {
-        "path": "src/components/card-detail/task-detail-panel.tsx",
-        "category": "container",
-        "reason": "Container composing TaskDetailPanelSurface with card-detail state and actions."
-      },
-      {
-        "path": "src/components/item-page/item-page-container.tsx",
-        "category": "container",
-        "reason": "Container composing ItemPageSurface with the item, board and access reads, the item commands and the refused-write state."
-      },
-      {
         "path": "src/components/views/calendar/board-calendar-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning the calendar board query state, route filter and writes, composing the registered calendar surface."
@@ -49,14 +39,14 @@
         "reason": "Container composing BoardSettingsSurface with the settings, board and access reads, every settings write and the Kanban view's own settings through useBoardView."
       },
       {
-        "path": "src/components/item-create/board-item-create-dialog.tsx",
+        "path": "src/components/card-popup/create/board-card-create.tsx",
         "category": "container",
-        "reason": "Container composing ItemCreateHost with the board read (useFullBoard) for a page that shows one board."
+        "reason": "Container asking which board a card from Home or My work goes to, reading it (useFullBoard) and opening CardCreatePopup on it."
       },
       {
-        "path": "src/components/item-create/item-create-host.tsx",
+        "path": "src/components/card-popup/create/card-create-popup.tsx",
         "category": "container",
-        "reason": "Container composing ItemCreateDialog with the board facts, the create command, the follow-up field writes and the result toasts."
+        "reason": "Container composing the card popup in create mode with the draft, the one-key create command (useCreateItemWithDetails), the discard confirm and the result toasts."
       },
       {
         "path": "src/components/item-lifecycle/board-trash-host.tsx",
@@ -66,7 +56,272 @@
       {
         "path": "src/components/item-lifecycle/use-item-removal.tsx",
         "category": "container",
-        "reason": "Stateful hook owning the delete and move requests, their commands and toasts, and rendering the registered DeleteItemDialog and MoveItemDialog."
+        "reason": "Stateful hook owning the archive, delete, move, duplicate, remind, complete and unarchive requests, their commands and toasts, and rendering the registered archive, delete, move, duplicate and remind dialogs."
+      },
+      {
+        "path": "src/components/saved-filters/saved-filters-control.tsx",
+        "category": "container",
+        "reason": "Container composing SavedFiltersMenu with the saved-filter read and writes (useSavedFilters, useSavedFilterWrites) and the delete-with-undo toast; the filter bars of the table, Kanban and calendar views host it."
+      },
+      {
+        "path": "src/components/forms/forms-containers.tsx",
+        "category": "container",
+        "reason": "Containers composing the forms surfaces with the form, board, access and response reads and every form write (useBoardForms, useForm, useFormSubmissions, useFormWrites, useSubmitForm), the undo wait of a decision on a response and the shared add-item dialog for \"create item from response\"."
+      },
+      {
+        "path": "src/components/board-layout/board-connection-notice.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/board-lifecycle/board-move-impact.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/board-lifecycle/retired-boards-surface.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-add-property.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-field-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-field-extra-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-field-more-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/item-labels-popover.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-detail/update-composer.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/add-menu.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/card-cover.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/checklist-links-controls.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/colour-blind-label-mark.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/cover-picker.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/face-context.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/face-fields-button.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/face-fields-popover.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/repeat-reminder-select.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/use-capability-slots.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/capabilities/vote-viewers-chips.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/card-popup-context.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/card-popup-surface.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/chips-row.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/comments/comments-column.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/markdown.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/attach-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/checklist-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/dates-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/labels-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/people-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/pickers/picker-bits.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-header.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-quick-row.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-title-row.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/popup-ui.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/add-field-panel.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/attachments-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/checklist-item-controls.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/checklists-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/description-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/field-editors.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/fields-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/sections/links-section.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/card-popup/states/popup-states.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/checklists/item-checklists.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/comment-thread/reaction-bar.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/comment-thread/reply-box.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/item-page/item-page-mention.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/item-page/item-page-parts.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/item-page/item-pickers.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/shared/item-description-editor.tsx",
+        "category": "container",
+        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
       }
     ]
   },
@@ -108,17 +363,17 @@
           {
             "state": "Loading",
             "reason": "The shell renders whatever child view content it receives; per-view loading presentation is owned by the dedicated loading surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "The shell renders whatever child view content it receives; per-view error presentation is owned by the dedicated unavailable surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
             "reason": "The shell composes static chrome around child content and carries no data-driven values of its own.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -374,12 +629,12 @@
           {
             "state": "EdgeData",
             "reason": "The tab set is a fixed constant list of view types, not data-driven text; there are no data-shape edges to stress.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for board view tabs at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -509,7 +764,9 @@
         "src/components/views/kanban/kanban-add-lane.tsx",
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
         "src/components/views/kanban/kanban-empty-state.tsx",
-        "src/components/views/kanban/kanban-settings-panel.tsx"
+        "src/components/views/kanban/kanban-settings-panel.tsx",
+        "src/components/views/kanban/kanban-bulk-bar.tsx",
+        "src/components/views/kanban/kanban-swimlane-board.tsx"
       ],
       "stories": [
         {
@@ -770,12 +1027,12 @@
           {
             "state": "Loading",
             "reason": "Column content arrives already resolved from the board query; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Column content arrives already resolved from the board query; board-level fetch failure is owned by wm.kanban.unavailable.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -832,7 +1089,8 @@
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
       "coveredSources": [
         "src/components/views/kanban/kanban-card.copy.ts",
-        "src/components/views/kanban/kanban-card-quick-actions.tsx"
+        "src/components/views/kanban/kanban-card-quick-actions.tsx",
+        "src/components/shared/priority-glyph.tsx"
       ],
       "stories": [
         {
@@ -949,32 +1207,32 @@
           {
             "state": "Loading",
             "reason": "A card renders synchronously from resolved board data; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Empty",
             "reason": "An empty board is evidenced by wm.kanban.board Empty; a card always carries at least a title.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Board-level fetch failure is evidenced by wm.kanban.unavailable Error.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "HighDensity",
             "reason": "High-density board input is evidenced by wm.kanban.board HighDensity with the documented 8x40 cardinality.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -993,7 +1251,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-filter-menu.tsx"],
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
@@ -1052,24 +1310,122 @@
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         },
         {
-          "id": "filter",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "filter-chip",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "group-by",
-          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-        },
-        {
           "id": "read-only",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         },
         {
           "id": "no-results",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.saved-filters.menu",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/saved-filters/saved-filters-menu.tsx",
+      "coveredSources": [
+        "src/components/filters/field-ref-menu.tsx",
+        "src/components/filters/filter-builder.tsx",
+        "src/components/filters/sort-menu.tsx",
+        "src/components/filters/view-state-bar.tsx"
+      ],
+      "stories": [
+        {
+          "id": "work-management-saved-filters-menu--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-saved-filters-menu--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-saved-filters-menu--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "ReadOnly", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "save",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "save-failed",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "save-name",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "apply",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "rename",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "rename-failed",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "share",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "locale",
+          "testFile": "src/components/saved-filters/__tests__/saved-filters-menu.interaction.component.test.tsx"
         }
       ]
     },
@@ -1098,7 +1454,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1132,7 +1488,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1151,6 +1507,8 @@
         "src/components/views/table/table-bulk-bar.tsx",
         "src/components/views/table/table-cell-editors.tsx",
         "src/components/views/table/table-column-resize.tsx",
+        "src/components/views/table/table-field-cell.tsx",
+        "src/components/views/table/table-field-editors.tsx",
         "src/components/views/table/table-group-menu.tsx",
         "src/components/views/table/table-group-section.tsx",
         "src/components/views/table/table-header-row.tsx",
@@ -1330,6 +1688,104 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-table-main-table--field-columns",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-saving",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-error",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-conflict",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-table-main-table--field-columns-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
@@ -1350,7 +1806,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the main table at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1488,18 +1944,6 @@
           "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
         },
         {
-          "id": "filter",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "sort",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
-          "id": "group-by",
-          "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
-        },
-        {
           "id": "columns",
           "testFile": "src/components/views/table/__tests__/table-toolbar.interaction.component.test.tsx"
         },
@@ -1534,7 +1978,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1568,7 +2012,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1585,6 +2029,7 @@
       "coveredSources": [
         "src/components/views/calendar/calendar-agenda.tsx",
         "src/components/views/calendar/calendar-aside.tsx",
+        "src/components/views/calendar/calendar-dates-dialog.tsx",
         "src/components/views/calendar/calendar-event.tsx",
         "src/components/views/calendar/calendar-grid.tsx",
         "src/components/views/calendar/calendar-toolbar.tsx"
@@ -1671,7 +2116,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1754,6 +2199,30 @@
         {
           "id": "edge-data",
           "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "resize-cancel",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "change-dates",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated-date",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only-handles",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -1764,8 +2233,10 @@
       "pureEntry": "src/components/views/timeline/board-timeline-surface.tsx",
       "coveredSources": [
         "src/components/views/timeline/timeline-chart.tsx",
+        "src/components/views/timeline/timeline-link-dialog.tsx",
         "src/components/views/timeline/timeline-list.tsx",
-        "src/components/views/timeline/timeline-toolbar.tsx"
+        "src/components/views/timeline/timeline-toolbar.tsx",
+        "src/components/views/timeline/timeline-tray.tsx"
       ],
       "stories": [
         {
@@ -1849,7 +2320,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -1936,172 +2407,30 @@
         {
           "id": "legend",
           "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
-      "surfaceId": "wm.task-detail.panel",
-      "owner": "@notrelix/work-management-web",
-      "surfaceKind": "composition",
-      "pureEntry": "src/components/card-detail/task-detail-panel-surface.tsx",
-      "coveredSources": [
-        "src/components/card-detail/item-field-editors.tsx",
-        "src/components/card-detail/task-activity-tab.tsx",
-        "src/components/card-detail/task-detail-empty-state.tsx",
-        "src/components/card-detail/task-detail-header.tsx",
-        "src/components/card-detail/task-detail-tabs.tsx",
-        "src/components/card-detail/task-updates-tab.tsx",
-        "src/components/card-detail/update-composer.tsx",
-        "src/components/shared/item-description.tsx"
-      ],
-      "stories": [
-        {
-          "id": "work-management-task-detail-panel--default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
         },
         {
-          "id": "work-management-task-detail-panel--loading",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
+          "id": "zoom-fit",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "work-management-task-detail-panel--unavailable",
-          "state": "Unavailable",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
+          "id": "link-drag",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "work-management-task-detail-panel--edge-data",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
+          "id": "link-dialog",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "work-management-task-detail-panel--read-only",
-          "state": "ReadOnly",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Unavailable",
-          "EdgeData",
-          "ReadOnly"
-        ],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "Error",
-            "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          }
-        ]
-      },
-      "responsive": true,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "panel",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+          "id": "link-cycle",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "unavailable",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+          "id": "tray",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         },
         {
-          "id": "ready",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "close",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "edit",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "submit",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "readonly",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "focus-in",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "focus-return",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "escape",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "kj",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "head",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "edge",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "description-edit",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "labels-readonly",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "labels-start",
-          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+          "id": "link-read-only",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -2175,7 +2504,7 @@
           {
             "state": "Success",
             "reason": "The form hands the draft to its container and is closed by it; success is the new or renamed lane, evidenced by wm.kanban.board and wm.kanban.column.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
@@ -2235,333 +2564,6 @@
         {
           "id": "add-group",
           "testFile": "src/components/status-option/__tests__/status-option-form.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
-      "surfaceId": "wm.item-page.surface",
-      "owner": "@notrelix/work-management-web",
-      "surfaceKind": "composition",
-      "pureEntry": "src/components/item-page/item-page-surface.tsx",
-      "coveredSources": [
-        "src/components/item-page/item-page-activity.tsx",
-        "src/components/item-page/item-page-approval.tsx",
-        "src/components/item-page/item-page-header.tsx",
-        "src/components/item-page/item-page-mention.tsx",
-        "src/components/item-page/item-page-parts.tsx",
-        "src/components/item-page/item-page-rail.tsx",
-        "src/components/item-page/item-page-sections.tsx",
-        "src/components/item-page/item-page-states.tsx",
-        "src/components/item-page/item-page-topbar.tsx",
-        "src/components/item-page/item-pickers.tsx",
-        "src/components/shared/item-description-editor.tsx"
-      ],
-      "stories": [
-        {
-          "id": "work-management-item-page-surface--default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--history",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--comments",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--loading",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--unavailable",
-          "state": "Unavailable",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--edge-data",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--conflict",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--read-only",
-          "state": "ReadOnly",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--not-found",
-          "state": "Unavailable",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--loading-slow",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--empty",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--completed",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--archived",
-          "state": "ReadOnly",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--offline",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--long-content",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-page-surface--uploading",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Unavailable",
-          "EdgeData",
-          "ReadOnly"
-        ],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "Error",
-            "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          }
-        ]
-      },
-      "responsive": false,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "loading",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "unavailable",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "ready",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "back",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "kj",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "tabs",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "history",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "properties",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "conflict",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "readonly",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "composer",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "unavailable-controls",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "edge",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "not-found",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "loading-slow",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "lifecycle",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "offline",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "empty",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "long",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "pickers",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "assignee-picker",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "assignee-ask",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "mention",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "request-approval",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "link-picker",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "uploads",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "description-edit",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
-        },
-        {
-          "id": "description-keys",
-          "testFile": "src/components/item-page/__tests__/item-page-surface.interaction.component.test.tsx"
         }
       ]
     },
@@ -2764,6 +2766,7 @@
         "src/components/board-settings/automation-run-sheet.tsx",
         "src/components/board-settings/board-settings-automations.tsx",
         "src/components/board-settings/board-settings-context.tsx",
+        "src/components/board-settings/board-settings-computed-dialog.tsx",
         "src/components/board-settings/board-settings-field-archive.tsx",
         "src/components/board-settings/board-settings-field-delete.tsx",
         "src/components/board-settings/board-settings-field-panel.tsx",
@@ -2771,10 +2774,16 @@
         "src/components/board-settings/board-settings-fields.tsx",
         "src/components/board-settings/board-settings-general.tsx",
         "src/components/board-settings/board-settings-groups.tsx",
+        "src/components/board-settings/board-settings-labels.tsx",
         "src/components/board-settings/board-settings-parts.tsx",
         "src/components/board-settings/board-settings-sortable.tsx",
+        "src/components/board-settings/board-settings-templates.tsx",
         "src/components/board-settings/board-settings-view-panel.tsx",
-        "src/components/board-settings/board-settings-views.tsx"
+        "src/components/board-settings/board-settings-views.tsx",
+        "src/components/board-settings/board-settings-write-error.tsx",
+        "src/components/board-settings/board-settings-conflict-parts.tsx",
+        "src/components/board-settings/board-settings-conflict.tsx",
+        "src/components/board-settings/board-settings-deleted-fields.tsx"
       ],
       "stories": [
         {
@@ -3208,7 +3217,7 @@
           {
             "state": "EdgeData",
             "reason": "A rule's sentence and name wrap; the list holds the workspace's few rules and the run history is capped at 20.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
@@ -3251,149 +3260,19 @@
       ]
     },
     {
-      "surfaceId": "wm.item-create.dialog",
-      "owner": "@notrelix/work-management-web",
-      "surfaceKind": "form",
-      "pureEntry": "src/components/item-create/item-create-dialog.tsx",
-      "coveredSources": ["src/components/item-create/item-create-fields.tsx"],
-      "stories": [
-        {
-          "id": "work-management-item-create--default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-create--failed",
-          "state": "Error",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-create--pending",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "work-management-item-create--edge-data",
-          "state": "EdgeData",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": ["Default", "Error", "Loading", "EdgeData"],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "Success",
-            "reason": "The dialog hands the draft to its container, which closes it or keeps it open for the next item; success is the new item on the board, evidenced by the board surfaces.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "A member who cannot add items is never offered the dialog: the container does not open it, so there is no read-only presentation.",
-            "authority": "docs/product/work-management.md"
-          }
-        ]
-      },
-      "responsive": true,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "another",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "assign-me",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "ctrl-enter",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "date-text",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "dates",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "error",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "lane",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "pending",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "people",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "prefill",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "quick-add",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "quick-due",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "required",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        },
-        {
-          "id": "submit",
-          "testFile": "src/components/item-create/__tests__/item-create-dialog.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
       "surfaceId": "wm.item-lifecycle",
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "feedback",
       "pureEntry": "src/components/item-lifecycle/item-lifecycle-dialogs.tsx",
-      "coveredSources": ["src/components/item-lifecycle/board-trash-sheet.tsx"],
+      "coveredSources": [
+        "src/components/item-lifecycle/board-trash-sheet.tsx",
+        "src/components/item-lifecycle/archive-item-dialog.tsx",
+        "src/components/item-actions/move-board-dialog.tsx",
+        "src/components/item-actions/duplicate-item-dialog.tsx",
+        "src/components/item-actions/remind-dialog.tsx",
+        "src/components/item-actions/item-actions-menu.tsx",
+        "src/components/item-lifecycle/board-archive-host.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-item-lifecycle--delete-confirm",
@@ -3536,15 +3415,35 @@
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
-          "id": "move",
+          "id": "archive",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
-          "id": "move-filter",
+          "id": "archive-plain",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
-          "id": "move-empty",
+          "id": "archive-busy",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-error",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-conflict",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-denied",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-gone",
+          "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "archive-links-pending",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
         },
         {
@@ -3554,6 +3453,624 @@
         {
           "id": "trash-empty",
           "testFile": "src/components/item-lifecycle/__tests__/item-lifecycle-dialogs.component.test.tsx"
+        },
+        {
+          "id": "menu",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-viewer",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-states",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-vi",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-ack",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-clean",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-refused",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-dependencies",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-busy",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "move-empty",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-locked",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-long",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate-failed",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind-limit",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind-nobody",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        },
+        {
+          "id": "remind-error",
+          "testFile": "src/components/item-actions/__tests__/item-actions.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.list",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/forms/forms-list-panel.tsx",
+      "coveredSources": ["src/components/forms/forms-parts.tsx"],
+      "stories": [
+        {
+          "id": "work-management-forms-list--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-list--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Empty",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "Only a manager of the board opens board settings; a viewer gets the settings page's own no-access card and never reaches the Forms section.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "Only a manager of the board opens board settings; there is no partial view of the Forms section, a viewer gets the settings page's own no-access card.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "row-actions",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "failed",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/components/forms/__tests__/forms-list-panel.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.builder",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/components/forms/form-builder-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-forms-builder--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-builder--success",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "ReadOnly",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Success"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "rows",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "reorder",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "mapped-options",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "own-options",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "duplicate",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "publish",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "autosave",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "closed",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "preview",
+          "testFile": "src/components/forms/__tests__/form-builder-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.fill",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/components/forms/form-fill-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-forms-fill--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-fill--success",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "ReadOnly",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Success"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "validation",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "network",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "server-errors",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "closed-midway",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "a11y",
+          "testFile": "src/components/forms/__tests__/form-fill-surface.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.forms.inbox",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/forms/form-inbox-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-forms-inbox--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-forms-inbox--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "EdgeData",
+          "Loading",
+          "Error",
+          "Empty",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "The inbox is a manager's: a member without board management never opens it and gets the not-found words of the builder, so no partial view exists.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "tabs",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "detail",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "create-item",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "reject",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "spam-remove",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "history",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
         }
       ]
     }

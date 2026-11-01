@@ -8,7 +8,7 @@ public static class UpdateFormQuestionEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateFormQuestion(this IEndpointRouteBuilder group)
     {
-        group.MapResourcePatch("/{questionId:guid}", HandleAsync)
+        group.MapResourcePatch("/questions/{questionId:guid}", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.UpdateQuestion")
             .WithTags("WorkManagement.Forms")
@@ -17,17 +17,21 @@ public static class UpdateFormQuestionEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
+        Guid formId,
         Guid questionId,
         UpdateFormQuestionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateFormQuestionCommand(
+            formId,
             questionId,
             body.Label,
             body.IsRequired,
             body.ConfigJson,
-            body.Position), cancellationToken);
+            body.Position,
+            body.BoardFieldId,
+            body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

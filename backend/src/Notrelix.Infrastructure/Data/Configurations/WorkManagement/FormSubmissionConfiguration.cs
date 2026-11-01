@@ -22,6 +22,7 @@ public class FormSubmissionConfiguration : IEntityTypeConfiguration<FormSubmissi
         builder.Property(x => x.PayloadJson).HasColumnName("payload_json").IsRequired();
         builder.Property(x => x.SourceIp).HasColumnName("source_ip").HasMaxLength(45);
         builder.Property(x => x.UserAgent).HasColumnName("user_agent");
+        builder.Property(x => x.RejectionReason).HasColumnName("reason").HasMaxLength(500);
         builder.Property(x => x.Status).HasColumnName("status").IsRequired();
         builder.Property(x => x.SubmittedAt).HasColumnName("submitted_at").IsRequired();
         builder.Property(x => x.ProcessedAt).HasColumnName("processed_at");

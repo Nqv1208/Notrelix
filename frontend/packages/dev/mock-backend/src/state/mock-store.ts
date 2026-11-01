@@ -51,6 +51,7 @@ import {
 } from "./mock-board-settings";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
 import { MockDocsHistoryState } from "./mock-docs-history";
+import { MockBoardTemplateState } from "./mock-board-templates";
 import { MockWorkFeedState } from "./mock-work-feed";
 import {
   defaultStatusOptions,
@@ -96,15 +97,24 @@ import {
   ERP_DESCRIPTIONS,
 } from "./mock-erp-detail";
 import {
+  ERP_ACCEPT_COLUMN_ID,
+  ERP_CHECKLISTS,
   ERP_CUSTOM_VALUES,
+  ERP_EMPTY_FIELDS,
   ERP_ESTIMATE_COLUMN_ID,
+  ERP_READY_COLUMN_ID,
+  ERP_VOTE_COLUMN_ID,
   ERP_FILES,
   ERP_FOLLOWERS,
   ERP_EXTRA_COMMENTS,
   ERP_HISTORY,
   ERP_ITEM_CREATED,
+  ERP_DOUBLE_COLUMN_ID,
+  ERP_LINK_COLUMN_ID,
   ERP_MODULE_COLUMN_ID,
   ERP_MODULE_OPTIONS,
+  ERP_NOTE_COLUMN_ID,
+  ERP_POINTS_COLUMN_ID,
   ERP_RELATED_LINKS,
   ERP_REQUESTER_COLUMN_ID,
   ERP_REQUESTER_OPTIONS,
@@ -113,6 +123,7 @@ import {
 } from "./mock-item-detail";
 import { MockAuthDirectory } from "./mock-auth-directory";
 import { MockAccountPages } from "./mock-account-pages";
+import { MockInviteeInvitations } from "./mock-invitee-invitations";
 import { MockReports } from "./mock-reports";
 import { MockBilling } from "./mock-billing";
 import { MockIntegrations } from "./mock-integrations";
@@ -125,6 +136,10 @@ import { MockOnboarding } from "./mock-onboarding";
 import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { MockBoardSavedViews } from "./mock-board-saved-views";
+import { MockBoardSavedFilters } from "./mock-board-saved-filters";
+import { MockBoardPreferences } from "./mock-board-preferences";
+import { MockBoardForms } from "./mock-board-forms";
+import { seedErpForms } from "./mock-erp-forms";
 import { LIBRARY_DOCS, SECONDARY_BOARD_TITLES } from "./mock-docs-library";
 import {
   INVOICE_BLOCKS,
@@ -163,6 +178,8 @@ export interface MockInvitationRecord {
   createdAt: string;
   expiresAt: string;
   status: "pending" | "accepted" | "revoked";
+  /** Moves with every real change (role, resend, revoke); a role change quotes it. */
+  version: number;
 }
 
 export interface MockWorkspaceSettingsRecord {
@@ -239,6 +256,7 @@ export class MockStore {
   /** Setup drafts, getting-started lists and welcome profiles (gap `CTR-GAP-ONBOARD-FLOW`). */
   readonly onboarding = new MockOnboarding();
   readonly accountPages = new MockAccountPages();
+  readonly inviteeInvitations = new MockInviteeInvitations();
   readonly reports = new MockReports();
   readonly billing = new MockBilling();
   readonly integrations = new MockIntegrations();
@@ -326,6 +344,11 @@ export class MockStore {
   readonly sharing = new MockBoardSharing();
   /** The saved views of the boards (shared with members or private). */
   readonly savedViews = new MockBoardSavedViews(() => this);
+  /** The saved filters of the boards (personal or shared with the board). */
+  readonly savedFilters = new MockBoardSavedFilters(() => this);
+  readonly boardPreferences = new MockBoardPreferences();
+  /** The forms of the boards with their responses. */
+  readonly forms = new MockBoardForms(() => this);
   /** Seeded board audiences for the access read, keyed by board. */
   private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
@@ -348,6 +371,8 @@ export class MockStore {
   readonly spaces = new MockSpaceState();
   /** The pages' history entries and the workspace page templates. */
   readonly docsHistory = new MockDocsHistoryState(this);
+  /** The workspace's board templates (the built-in starters are fixed). */
+  readonly boardTemplates = new MockBoardTemplateState();
 
   /** The member's work feed: relationships, approvals, mentions, inbox. */
   readonly feed = new MockWorkFeedState();
@@ -740,6 +765,7 @@ export class MockStore {
 
     this.seedRoadmapStatuses();
     this.seedErpBoard(primaryWsId);
+    seedErpForms(this);
     this.seedDepartmentBoards(primaryWsId);
     this.seedInvoiceDoc(primaryWsId);
     this.feed.seed(this);
@@ -1198,6 +1224,81 @@ export class MockStore {
         }),
       ),
     });
+    this.insertColumn({
+      id: ERP_NOTE_COLUMN_ID,
+      boardId,
+      name: "Ghi chú",
+      fieldType: "long_text",
+      position: 7,
+    });
+    this.insertColumn({
+      id: ERP_LINK_COLUMN_ID,
+      boardId,
+      name: "Liên kết",
+      fieldType: "link",
+      position: 8,
+    });
+    this.insertColumn({
+      id: ERP_POINTS_COLUMN_ID,
+      boardId,
+      name: "Điểm",
+      fieldType: "number",
+      position: 9,
+    });
+    this.insertColumn({
+      id: ERP_DOUBLE_COLUMN_ID,
+      boardId,
+      name: "Điểm gấp đôi",
+      fieldType: "formula",
+      settings: JSON.stringify({ expression: "[Điểm] * 2" }),
+      position: 10,
+    });
+    this.insertColumn({
+      id: ERP_READY_COLUMN_ID,
+      boardId,
+      name: "Sẵn sàng bàn giao",
+      fieldType: "checkbox",
+      position: 11,
+    });
+    this.insertColumn({
+      id: ERP_ACCEPT_COLUMN_ID,
+      boardId,
+      name: "Ngày nghiệm thu",
+      fieldType: "date",
+      position: 12,
+    });
+    this.insertColumn({
+      id: ERP_VOTE_COLUMN_ID,
+      boardId,
+      name: "Bình chọn",
+      fieldType: "vote",
+      position: 13,
+    });
+    ERP_EMPTY_FIELDS.forEach((field, index) =>
+      this.insertColumn({
+        id: field.id,
+        boardId,
+        name: field.name,
+        fieldType: field.fieldType,
+        position: 14 + index,
+      }),
+    );
+    this.boardViewsByBoardId.set(boardId, {
+      boardId,
+      viewMode: "kanban",
+      viewConfig: JSON.stringify({
+        cardFieldIds: [
+          ERP_READY_COLUMN_ID,
+          ERP_ACCEPT_COLUMN_ID,
+          ERP_VOTE_COLUMN_ID,
+        ],
+        cardHideEmpty: [
+          ERP_READY_COLUMN_ID,
+          ERP_ACCEPT_COLUMN_ID,
+          ERP_VOTE_COLUMN_ID,
+        ],
+      }),
+    });
     this.settings.set(
       boardId,
       erpSettingsRegistry({
@@ -1411,6 +1512,16 @@ export class MockStore {
       for (const [columnId, value] of Object.entries(values))
         this.updateFieldValue(erpItemId(key), columnId, value);
     }
+    for (const list of ERP_CHECKLISTS) {
+      const cardId = erpItemId(list.itemKey);
+      if (!this.cardsById.has(cardId)) continue;
+      const checklist = this.createChecklist(cardId, list.title);
+      list.items.forEach((title, index) => {
+        const item = this.createChecklistItem(checklist.id, title);
+        if (index < list.done)
+          this.updateChecklistItem(item.id, { isChecked: true });
+      });
+    }
     for (const [key, userIds] of Object.entries(ERP_FOLLOWERS))
       this.followersByCardId.set(erpItemId(key), [...userIds]);
     for (const file of ERP_FILES) {
@@ -1433,6 +1544,9 @@ export class MockStore {
         userId: comment.userId,
         contentMd: comment.contentMd,
         createdAt: comment.createdAt,
+        ...(comment.reactions
+          ? { reactions: comment.reactions.map((r) => ({ ...r })) }
+          : {}),
       });
     }
     for (const comment of ERP_EXTRA_COMMENTS) {
@@ -1787,6 +1901,9 @@ export class MockStore {
     this.pagesById.clear();
     this.boardViewsByBoardId.clear();
     this.savedViews.clear();
+    this.savedFilters.clear();
+    this.boardPreferences.clear();
+    this.forms.clear();
     this.columnsById.clear();
     this.labelsById.clear();
     this.checklistsById.clear();
@@ -1798,6 +1915,7 @@ export class MockStore {
     this.auth.reset();
     this.onboarding.reset();
     this.accountPages.reset();
+    this.inviteeInvitations.reset();
     this.reports.reset();
     this.billing.reset();
     this.integrations.reset();
@@ -1816,6 +1934,7 @@ export class MockStore {
     this.boardAudienceByBoardId.clear();
     this.spaces.clear();
     this.docsHistory.clear();
+    this.boardTemplates.clear();
     this.feed.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
@@ -2071,6 +2190,35 @@ export class MockStore {
       joinedAt: this.clock.isoNow(),
     };
 
+    this.insertMembership(membership);
+    return { workspace, membership };
+  }
+
+  /** The current user joins a workspace they were invited to: a new workspace and a membership with the invited role. */
+  joinWorkspaceForCurrentUser(input: {
+    name: string;
+    slug: string;
+    role: MockMembershipRecord["role"];
+  }): { workspace: MockWorkspaceRecord; membership: MockMembershipRecord } {
+    const workspace: MockWorkspaceRecord = {
+      id: this.nextId("ws"),
+      name: input.name,
+      slug: input.slug,
+      plan: "free",
+      icon: "Layout",
+      isPersonal: false,
+    };
+    this.insertWorkspace(workspace);
+    const membership: MockMembershipRecord = {
+      id: this.nextId("mem"),
+      workspaceId: workspace.id,
+      userId: this.getCurrentUser().id,
+      role: input.role,
+      status: "active",
+      workload: 0,
+      color: "#1E90FF",
+      joinedAt: this.clock.isoNow(),
+    };
     this.insertMembership(membership);
     return { workspace, membership };
   }
@@ -2999,10 +3147,10 @@ export class MockStore {
     const field = this.getColumns(card.boardId).find(
       (column) => column.id === fieldDefinitionId,
     );
-    if (
-      (field?.fieldType === "user" || field?.fieldType === "person") &&
-      Array.isArray(value)
-    ) {
+    const assigneeField = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "user" || column.fieldType === "person",
+    );
+    if (field && field.id === assigneeField?.id && Array.isArray(value)) {
       this.cardsById.set(cardId, {
         ...card,
         assigneeUserIds: value.filter(
@@ -3245,6 +3393,48 @@ export class MockStore {
     return true;
   }
 
+  toggleChecklistItem(itemId: string): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    return this.updateChecklistItem(itemId, { isChecked: !item.isChecked });
+  }
+
+  /** Puts a list between two siblings of its item; the others are renumbered. */
+  moveChecklist(
+    checklistId: string,
+    previousSiblingId: string | null,
+    nextSiblingId: string | null,
+  ): boolean {
+    const chk = this.checklistsById.get(checklistId);
+    if (!chk) return false;
+    const ids = this.getCardChecklists(chk.cardId)
+      .map((entry) => entry.id)
+      .filter((id) => id !== checklistId);
+    const at = placeAmong(ids, previousSiblingId, nextSiblingId);
+    ids.splice(at, 0, checklistId);
+    ids.forEach((id, index) => {
+      const current = this.checklistsById.get(id)!;
+      this.checklistsById.set(id, { ...current, position: index + 1 });
+    });
+    return true;
+  }
+
+  /** Puts an item between two siblings of its list. */
+  moveChecklistItem(
+    itemId: string,
+    previousSiblingId: string | null,
+    nextSiblingId: string | null,
+  ): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    const set = this.checklistItemIdsByChecklistId.get(item.checklistId);
+    if (!set) return false;
+    const ids = Array.from(set).filter((id) => id !== itemId);
+    ids.splice(placeAmong(ids, previousSiblingId, nextSiblingId), 0, itemId);
+    this.checklistItemIdsByChecklistId.set(item.checklistId, new Set(ids));
+    return true;
+  }
+
   // ── Comments ──
   getCardComments(cardId: string): MockCommentRecord[] {
     const ids = this.commentIdsByCardId.get(cardId);
@@ -3259,11 +3449,21 @@ export class MockStore {
     cardId: string,
     userId: string,
     contentMd: string,
+    parentCommentId?: string,
   ): MockCommentRecord {
     const card = this.cardsById.get(cardId);
     if (!card) {
       throw new MockRelationalInvariantError(
         `Cannot create comment: Card "${cardId}" does not exist.`,
+      );
+    }
+    // Replies are one level deep: a reply to a reply joins its top-level comment.
+    const parent = parentCommentId
+      ? this.commentsById.get(parentCommentId)
+      : undefined;
+    if (parentCommentId && (!parent || parent.cardId !== cardId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot reply: Comment "${parentCommentId}" does not exist on Card "${cardId}".`,
       );
     }
     const cmt: MockCommentRecord = {
@@ -3272,6 +3472,7 @@ export class MockStore {
       userId,
       contentMd,
       createdAt: this.clock.isoNow(),
+      ...(parent ? { parentId: parent.parentId ?? parent.id } : {}),
     };
     this.insertComment(cmt);
     this.feed.noteReplyOn({ itemId: cardId });
@@ -3290,9 +3491,31 @@ export class MockStore {
     return true;
   }
 
+  /** Adds or withdraws one person's emoji on a comment; repeating either is a no-op. */
+  setCardCommentReaction(
+    cardId: string,
+    commentId: string,
+    userId: string,
+    emoji: string,
+    on: boolean,
+  ): boolean {
+    const cmt = this.commentsById.get(commentId);
+    if (!cmt || cmt.cardId !== cardId) return false;
+    const rest = (cmt.reactions ?? []).filter(
+      (r) => !(r.userId === userId && r.emoji === emoji),
+    );
+    this.commentsById.set(commentId, {
+      ...cmt,
+      reactions: on ? [...rest, { emoji, userId }] : rest,
+    });
+    return true;
+  }
+
   deleteCardComment(commentId: string): boolean {
     const cmt = this.commentsById.get(commentId);
     if (!cmt) return false;
+    for (const reply of this.getCardComments(cmt.cardId))
+      if (reply.parentId === cmt.id) this.deleteCardComment(reply.id);
     this.removeIndex(this.commentIdsByCardId, cmt.cardId, cmt.id);
     this.commentsById.delete(commentId);
     return true;
@@ -3335,9 +3558,19 @@ export class MockStore {
   updatePage(
     pageId: string,
     patch: { title?: string; icon?: string; parentId?: string },
-  ): boolean {
+    expectedVersion?: unknown,
+  ): MockVersionedWrite {
     const page = this.pagesById.get(pageId);
-    if (!page) return false;
+    if (!page) return "not-found";
+    // A rename carries the version it read (`Documents.Pages.UpdatePage`); the
+    // same title is a no-op that bumps nothing.
+    if (
+      expectedVersion !== undefined &&
+      expectedVersion !== (page.version ?? 1)
+    )
+      return "stale";
+    if (patch.title === undefined || patch.title.trim() === page.title)
+      return "ok";
     const updated: MockPageRecord = {
       ...page,
       title: patch.title ?? page.title,
@@ -3347,7 +3580,52 @@ export class MockStore {
       updatedAt: this.clock.isoNow(),
     };
     this.pagesById.set(pageId, updated);
-    return true;
+    return "ok";
+  }
+
+  /**
+   * Puts a page and its subtree under another page, or at the top of its Space
+   * (`Documents.Pages.Move`): a stale version changes nothing, the same parent is a
+   * no-op, a page cannot go under itself or its own pages, nesting stops at 10 levels,
+   * and the subtree follows the Space of the new parent.
+   */
+  movePage(
+    pageId: string,
+    parentId: string | null,
+    expectedVersion: unknown,
+  ): MockVersionedWrite | "invalid" {
+    const page = this.pagesById.get(pageId);
+    if (!page || page.trashedAt) return "not-found";
+    if (expectedVersion !== (page.version ?? 1)) return "stale";
+    if ((page.parentId ?? null) === parentId) return "ok";
+    const below = this.pagesBelow(pageId);
+    const parent = parentId ? this.pagesById.get(parentId) : undefined;
+    if (parentId && (!parent || parent.trashedAt)) return "not-found";
+    if (parentId === pageId || below.some((entry) => entry.id === parentId))
+      return "invalid";
+    const levelsAbove = (id: string | undefined): number =>
+      id ? 1 + levelsAbove(this.pagesById.get(id)?.parentId) : 0;
+    const levelsBelow = (id: string): number =>
+      1 +
+      Math.max(
+        0,
+        ...Array.from(this.pagesById.values())
+          .filter((entry) => entry.parentId === id)
+          .map((entry) => levelsBelow(entry.id)),
+      );
+    if (levelsAbove(parentId ?? undefined) + levelsBelow(pageId) > 10)
+      return "invalid";
+    const spaceId = parent ? (parent.spaceId ?? null) : (page.spaceId ?? null);
+    for (const entry of below)
+      this.pagesById.set(entry.id, { ...entry, spaceId });
+    this.pagesById.set(pageId, {
+      ...page,
+      parentId: parentId ?? undefined,
+      spaceId,
+      version: (page.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    return "ok";
   }
 
   getPageVersion(pageId: string): number {
@@ -3397,12 +3675,43 @@ export class MockStore {
     return "ok";
   }
 
+  /** Deletes a trashed page for good with the trashed pages under it. */
   deletePage(pageId: string): boolean {
     const page = this.pagesById.get(pageId);
     if (!page) return false;
-    this.removeIndex(this.pageIdsByWorkspaceId, page.workspaceId, page.id);
-    this.pagesById.delete(pageId);
+    // Only the pages that went to the trash together with it (one trash time).
+    for (const record of [page, ...this.pagesBelow(pageId)]) {
+      if (record.id !== pageId && record.trashedAt !== page.trashedAt) continue;
+      this.removeIndex(
+        this.pageIdsByWorkspaceId,
+        record.workspaceId,
+        record.id,
+      );
+      this.pagesById.delete(record.id);
+    }
     return true;
+  }
+
+  /** Every page below `pageId`, at any depth. */
+  private pagesBelow(pageId: string): MockPageRecord[] {
+    const found = new Set<string>([pageId]);
+    const below: MockPageRecord[] = [];
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const other of this.pagesById.values()) {
+        if (
+          other.parentId &&
+          found.has(other.parentId) &&
+          !found.has(other.id)
+        ) {
+          found.add(other.id);
+          below.push(other);
+          grew = true;
+        }
+      }
+    }
+    return below;
   }
 
   // ─── Query Accessors ──────────────────────────────────────────────────────
@@ -3589,6 +3898,17 @@ export class MockStore {
     return "ok";
   }
 
+  /** Whether the address is an Active, non-Guest member of the workspace (the producer's refusal to invite them). */
+  isActiveMemberEmail(workspaceId: string, email: string): boolean {
+    const clean = email.trim().toLowerCase();
+    return this.getWorkspaceMembers(workspaceId).some(
+      (member) =>
+        member.role !== "guest" &&
+        !this.suspendedMembershipIds.has(member.id) &&
+        this.usersById.get(member.userId)?.email.toLowerCase() === clean,
+    );
+  }
+
   getInvitations(workspaceId: string): MockInvitationRecord[] {
     return Array.from(this.invitationsById.values())
       .filter((invitation) => invitation.workspaceId === workspaceId)
@@ -3621,8 +3941,19 @@ export class MockStore {
       createdAt: this.clock.offsetSeconds(this.navigationTick),
       expiresAt: this.clock.offsetDays(days),
       status: "pending",
+      version: 1,
     });
     return id;
+  }
+
+  getInvitation(
+    workspaceId: string,
+    invitationId: string,
+  ): MockInvitationRecord | null {
+    const invitation = this.invitationsById.get(invitationId);
+    return invitation && invitation.workspaceId === workspaceId
+      ? invitation
+      : null;
   }
 
   /** Changes the role a waiting invitation offers; `null` when it is not found. */
@@ -3634,26 +3965,36 @@ export class MockStore {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
-    invitation.role = role;
+    if (invitation.role !== role) {
+      invitation.role = role;
+      invitation.version += 1;
+    }
     return true;
   }
 
   /**
-   * A resend re-issues the link: the invitation keeps its id and waits seven
-   * more days. Only an invitation that waits or has run out can be sent again.
+   * A resend re-issues the link: the invitation keeps its id and waits as long
+   * as a new one does (the workspace's invitation expiry setting). Only an
+   * invitation that waits or has run out can be sent again.
    */
   resendInvitation(workspaceId: string, invitationId: string): boolean | null {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return null;
     if (invitation.status !== "pending") return false;
-    invitation.expiresAt = this.clock.offsetDays(7);
+    invitation.expiresAt = this.clock.offsetDays(
+      this.getWorkspaceSettings(workspaceId).invitationExpiryDays,
+    );
+    invitation.version += 1;
     return true;
   }
 
   revokeInvitation(workspaceId: string, invitationId: string): boolean {
     const invitation = this.invitationsById.get(invitationId);
     if (!invitation || invitation.workspaceId !== workspaceId) return false;
-    if (invitation.status === "pending") invitation.status = "revoked";
+    if (invitation.status === "pending") {
+      invitation.status = "revoked";
+      invitation.version += 1;
+    }
     return true;
   }
 
@@ -3739,6 +4080,23 @@ export class MockStore {
     return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
       this.archivedWorkspaceIds.add(workspaceId);
     });
+  }
+
+  /** Brings an archived workspace back; one that is already active stays as it is (no version step). */
+  unarchiveWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    if (!this.getWorkspace(workspaceId)) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    if (!this.archivedWorkspaceIds.has(workspaceId)) return "ok";
+    this.archivedWorkspaceIds.delete(workspaceId);
+    this.workspaceVersionById.set(
+      workspaceId,
+      this.getWorkspaceVersion(workspaceId) + 1,
+    );
+    return "ok";
   }
 
   // ─── My work (WX-BE-005) ─────────────────────────────────────────────────
@@ -4111,9 +4469,37 @@ export class MockStore {
       ?.find((file) => file.id === attachmentId);
   }
 
+  /** Removes a stored file of an item; false when it was not there. */
+  removeAttachment(cardId: string, attachmentId: string): boolean {
+    const file = this.getAttachment(cardId, attachmentId);
+    if (!file) return false;
+    this.attachmentsByCardId.set(
+      cardId,
+      (this.attachmentsByCardId.get(cardId) ?? []).filter(
+        (entry) => entry.id !== attachmentId,
+      ),
+    );
+    this.recordActivity(
+      cardId,
+      this.getCurrentUser().id,
+      `xoá tệp ${file.filename}`,
+      undefined,
+      {
+        verb: "xoá tệp",
+        detail: { kind: "file", name: file.filename },
+      },
+    );
+    return true;
+  }
+
   addAttachment(
     cardId: string,
-    file: { filename: string; sizeBytes: number; contentType: string },
+    file: {
+      filename: string;
+      sizeBytes: number;
+      contentType: string;
+      url?: string;
+    },
   ): MockAttachmentRecord | undefined {
     if (!this.cardsById.has(cardId)) return undefined;
     const record: MockAttachmentRecord = {
@@ -4122,6 +4508,7 @@ export class MockStore {
       filename: file.filename,
       sizeBytes: file.sizeBytes,
       contentType: file.contentType,
+      ...(file.url ? { url: file.url } : {}),
       uploadedBy: this.getCurrentUser().id,
       createdAt: this.clock.isoNow(),
     };
@@ -4321,15 +4708,34 @@ export class MockStore {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
-  /** Moves a page to the trash (`Documents.Pages.ArchivePage`) or brings it back. */
+  /**
+   * Moves a page and the pages under it to the trash (`Documents.Pages.ArchivePage`)
+   * or brings them back (`RestorePage`); a restored page whose parent is still in
+   * the trash returns at the root of its Space.
+   */
   setPageTrashed(pageId: string, trashed: boolean): boolean {
     const page = this.pagesById.get(pageId);
     if (!page) return false;
-    this.pagesById.set(pageId, {
-      ...page,
-      trashedAt: trashed ? this.clock.isoNow() : null,
-      version: (page.version ?? 1) + 1,
-    });
+    const stamp = trashed ? this.clock.isoNow() : null;
+    for (const record of [page, ...this.pagesBelow(pageId)]) {
+      if (Boolean(record.trashedAt) === trashed) continue;
+      // A restore brings back only what went to the trash with the page.
+      if (!trashed && record.trashedAt !== page.trashedAt) continue;
+      const parent = record.parentId
+        ? this.pagesById.get(record.parentId)
+        : undefined;
+      const detach =
+        !trashed &&
+        record.id === pageId &&
+        record.parentId !== undefined &&
+        (!parent || Boolean(parent.trashedAt));
+      this.pagesById.set(record.id, {
+        ...record,
+        trashedAt: stamp,
+        ...(detach ? { parentId: undefined } : {}),
+        version: (record.version ?? 1) + 1,
+      });
+    }
     return true;
   }
 
@@ -4722,4 +5128,16 @@ export class MockStore {
       ...this.spaces.snapshot(),
     };
   }
+}
+
+/** Where an entry lands among `ids` given its neighbours (the end when neither is known). */
+function placeAmong(
+  ids: readonly string[],
+  previousSiblingId: string | null,
+  nextSiblingId: string | null,
+): number {
+  const previous = previousSiblingId ? ids.indexOf(previousSiblingId) : -1;
+  if (previous >= 0) return previous + 1;
+  const next = nextSiblingId ? ids.indexOf(nextSiblingId) : -1;
+  return next >= 0 ? next : ids.length;
 }

@@ -69,10 +69,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
 
         if (user is null)
         {
-            return Result.Failure(new ApplicationError(
-                "identity.auth.user-not-found",
-                "User not found.",
-                ApplicationErrorType.NotFound));
+            return Result.Failure(SessionErrors.SessionUserMissing);
         }
 
         // The current-password check is a password oracle for anyone holding a session:

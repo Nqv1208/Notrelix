@@ -12,11 +12,15 @@ public record AddFormQuestionCommand(
     string Label,
     bool IsRequired,
     string? ConfigJson,
-    string? Position)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string? Position,
+    Guid? BoardFieldId = null,
+    long? ExpectedVersion = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionCommand, Result>
@@ -37,9 +41,20 @@ public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionComm
 
     public async Task<Result> Handle(AddFormQuestionCommand request, CancellationToken ct)
     {
-        var form = await _context.Forms
+        var form = await _context.Forms.Include(f => f.Questions)
             .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
+
+        FormQuestionRules.EnsureSupported(request.QuestionType);
+        if (request.BoardFieldId is { } fieldId)
+        {
+            var target = await _context.BoardFields.AsNoTracking()
+                .Where(f => f.Id == fieldId && f.BoardId == form.BoardId && f.DeletedAt == null)
+                .Select(f => (FieldType?)f.Type)
+                .FirstOrDefaultAsync(ct);
+            if (target is null) throw new NotFoundException("BoardField", fieldId);
+            FormQuestionRules.EnsureFieldCompatible(request.QuestionType, target.Value);
+        }
 
         var accountId = _requestContext.RequireAccountId();
         var position = FractionalIndex.Create(request.Position ?? FractionalIndex.Initial().Value);
@@ -49,7 +64,7 @@ public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionComm
             accountId,
             form.WorkspaceId,
             form.Id,
-            null,
+            request.BoardFieldId,
             request.QuestionKey,
             request.Label,
             request.QuestionType,

@@ -42,14 +42,14 @@ public class ItemActivityContractOpenApiTests
         properties.EnumerateObject().Select(p => p.Name).Should().Contain(
             ["id", "actorId", "actorName", "action", "resourceKind", "resourceId", "createdAt", "actorAvatarUrl", "type", "kind", "change"]);
         Schemas.GetProperty(ChangeSchema).GetProperty("properties").EnumerateObject().Select(p => p.Name)
-            .Should().BeEquivalentTo(["fieldName", "from", "to", "personId", "personName", "itemKey"]);
+            .Should().BeEquivalentTo(["fieldName", "from", "to", "personId", "personName", "itemKey", "ruleName"]);
     }
 
     private static JsonElement Load([System.Runtime.CompilerServices.CallerFilePath] string sourceFile = "")
     {
         // Resolved from this source file, so the lookup does not depend on where build output goes.
         var dir = new DirectoryInfo(Path.GetDirectoryName(sourceFile)!);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "contracts", "openapi", "notrelix.v1.json")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "backend.slnx")))
             dir = dir.Parent;
         dir.Should().NotBeNull("the checked-in producer contract must be found");
         return JsonDocument.Parse(File.ReadAllText(Path.Combine(dir!.FullName, "contracts", "openapi", "notrelix.v1.json"))).RootElement.Clone();

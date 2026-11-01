@@ -4,7 +4,6 @@ import type {
   OperationRequestBody,
   OperationResponse,
 } from "@notrelix/contracts";
-import type { BoardGroup } from "@notrelix/work-management-core";
 
 type CreateListOp = "WorkManagement.BoardGroups.Create";
 type CreateListBody = OperationRequestBody<CreateListOp>;
@@ -15,9 +14,6 @@ type UpdateListBody = OperationRequestBody<UpdateListOp>;
 
 type DuplicateListOp = "WorkManagement.BoardGroups.Duplicate";
 type DuplicateListResponse = OperationResponse<DuplicateListOp, 200>;
-
-type MoveListsOp = "WorkManagement.BoardGroups.Move";
-type MoveListsBody = OperationRequestBody<MoveListsOp>;
 
 export interface CreateListInput {
   boardId: string;
@@ -68,22 +64,6 @@ export function createListApi(client: NotrelixClient) {
       await api.post<DuplicateListResponse>(
         endpoints.boardGroups.duplicate(listId),
       );
-    },
-
-    async reorderLists(
-      boardId: string,
-      lists: Pick<BoardGroup, "id" | "position">[],
-    ): Promise<void> {
-      // Transitional (WM-V3-FE-001 sends one neighbor-relative move per drag):
-      // the full-list reorder route is retired, so the desired order is applied
-      // by appending each list in turn; appending the current last list is a
-      // server-side no-op.
-      void boardId;
-      const body: MoveListsBody = {};
-      const ordered = [...lists].sort((a, b) => a.position - b.position);
-      for (const list of ordered) {
-        await api.post<void>(endpoints.boardGroups.move(list.id), body);
-      }
     },
   };
 }

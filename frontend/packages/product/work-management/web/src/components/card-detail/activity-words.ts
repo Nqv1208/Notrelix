@@ -23,14 +23,26 @@ export type ActivityEventWords = {
   readonly fieldChangedPlain: string;
   readonly assigned: string;
   readonly unassigned: string;
+  readonly labelAdded: string;
+  readonly labelRemoved: string;
+  readonly checklistAdded: string;
+  readonly checklistRenamed: string;
+  readonly checklistDeleted: string;
+  readonly checklistItemAdded: string;
+  readonly checklistItemCompleted: string;
+  readonly checklistItemReopened: string;
+  readonly checklistItemRemoved: string;
   readonly movedToGroup: string;
   readonly movedToGroupPlain: string;
   readonly movedToBoard: string;
   readonly movedToBoardPlain: string;
   readonly archived: string;
   readonly unarchived: string;
+  readonly datesChanged: string;
   readonly deleted: string;
   readonly restored: string;
+  /** Added after a line an Automation rule made. Placeholder: {{rule}}. */
+  readonly viaRule: string;
 };
 
 export const ACTIVITY_WORDS_EN: ActivityEventWords = {
@@ -48,14 +60,25 @@ export const ACTIVITY_WORDS_EN: ActivityEventWords = {
   fieldChangedPlain: "changed a field",
   assigned: "assigned {{person}}",
   unassigned: "removed {{person}} from the assignees",
+  labelAdded: "added the label {{to}}",
+  labelRemoved: "removed the label {{to}}",
+  checklistAdded: "added the checklist {{to}}",
+  checklistRenamed: "renamed a checklist to {{to}}",
+  checklistDeleted: "deleted the checklist {{to}}",
+  checklistItemAdded: "added {{to}} to the checklist {{field}}",
+  checklistItemCompleted: "completed {{to}} in the checklist {{field}}",
+  checklistItemReopened: "marked {{to}} as not done in the checklist {{field}}",
+  checklistItemRemoved: "removed {{to}} from the checklist {{field}}",
   movedToGroup: "moved this item from {{from}} to {{to}}",
   movedToGroupPlain: "moved this item to another group",
   movedToBoard: "moved this item from {{from}} to {{to}}",
   movedToBoardPlain: "moved this item to another board",
   archived: "archived this item",
   unarchived: "restored this item from the archive",
+  datesChanged: "changed the dates",
   deleted: "deleted this item",
   restored: "restored this item from deleted",
+  viaRule: "by the rule {{rule}}",
 };
 
 export const ACTIVITY_WORDS_VI: ActivityEventWords = {
@@ -66,21 +89,34 @@ export const ACTIVITY_WORDS_VI: ActivityEventWords = {
   created: "tạo việc này",
   renamed: "đổi tên việc",
   statusChanged: "đổi trạng thái từ {{from}} sang {{to}}",
-  statusSet: "đặt trạng thái thành {{to}}",
+  statusSet: "đặt trạng thái là {{to}}",
   statusChangedPlain: "đổi trạng thái",
   fieldChanged: "đổi {{field}}",
   fieldSet: "đặt {{field}}",
   fieldChangedPlain: "đổi một trường",
   assigned: "giao việc cho {{person}}",
   unassigned: "bỏ {{person}} khỏi người phụ trách",
+  labelAdded: "thêm nhãn {{to}}",
+  labelRemoved: "gỡ nhãn {{to}}",
+  checklistAdded: "thêm danh sách kiểm tra {{to}}",
+  checklistRenamed: "đổi tên một danh sách kiểm tra thành {{to}}",
+  checklistDeleted: "xóa danh sách kiểm tra {{to}}",
+  checklistItemAdded: "thêm {{to}} vào danh sách kiểm tra {{field}}",
+  checklistItemCompleted:
+    "hoàn thành {{to}} trong danh sách kiểm tra {{field}}",
+  checklistItemReopened:
+    "bỏ hoàn thành {{to}} trong danh sách kiểm tra {{field}}",
+  checklistItemRemoved: "xóa {{to}} khỏi danh sách kiểm tra {{field}}",
   movedToGroup: "chuyển việc từ {{from}} sang {{to}}",
   movedToGroupPlain: "chuyển việc sang nhóm khác",
   movedToBoard: "chuyển việc từ bảng {{from}} sang bảng {{to}}",
   movedToBoardPlain: "chuyển việc sang bảng khác",
   archived: "lưu trữ việc này",
   unarchived: "khôi phục việc này từ kho lưu trữ",
+  datesChanged: "đổi ngày của việc này",
   deleted: "xóa việc này",
   restored: "khôi phục việc này đã xóa",
+  viaRule: "bằng quy tắc {{rule}}",
 };
 
 export interface DescribedActivity {
@@ -114,8 +150,11 @@ export function describeActivityEvent(
   words: ActivityEventWords,
 ): DescribedActivity | null {
   const change = event.change ?? {};
-  const from = change.from === undefined ? undefined : readable(change.from);
-  const to = change.to === undefined ? undefined : readable(change.to);
+  // A blank side is "no value" (a first status has no "from"), never an empty word in the sentence.
+  const side = (value?: string) =>
+    value === undefined || value.trim() === "" ? undefined : readable(value);
+  const from = side(change.from);
+  const to = side(change.to);
   const person = change.personName ?? words.someone;
   const diff = (label?: string): ActivityDetail | undefined =>
     from !== undefined || to !== undefined
@@ -129,15 +168,21 @@ export function describeActivityEvent(
   const sentence = (
     template: string,
     detail?: ActivityDetail,
-  ): DescribedActivity => ({
-    verb: fill(template, {
+  ): DescribedActivity => {
+    const verb = fill(template, {
       field: change.fieldName ?? "",
       from: from ?? "",
       to: to ?? "",
       person,
-    }).trim(),
-    ...(detail ? { detail } : {}),
-  });
+    }).trim();
+    return {
+      // The history says which rule made the change, not only the person the rule acts for.
+      verb: change.ruleName
+        ? `${verb} ${fill(words.viaRule, { rule: change.ruleName })}`
+        : verb,
+      ...(detail ? { detail } : {}),
+    };
+  };
 
   switch (event.code) {
     case "work.item-created":
@@ -165,6 +210,26 @@ export function describeActivityEvent(
       return sentence(words.assigned);
     case "work.item-unassigned":
       return sentence(words.unassigned);
+    // The label's name travels as the change's `to`.
+    case "work.item-label-added":
+      return sentence(words.labelAdded);
+    case "work.item-label-removed":
+      return sentence(words.labelRemoved);
+    // A checklist's title, or a to-do's title with its checklist's name as the field, travels in the change.
+    case "work.item-checklist-added":
+      return sentence(words.checklistAdded);
+    case "work.item-checklist-renamed":
+      return sentence(words.checklistRenamed);
+    case "work.item-checklist-deleted":
+      return sentence(words.checklistDeleted);
+    case "work.item-checklist-item-added":
+      return sentence(words.checklistItemAdded);
+    case "work.item-checklist-item-completed":
+      return sentence(words.checklistItemCompleted);
+    case "work.item-checklist-item-reopened":
+      return sentence(words.checklistItemReopened);
+    case "work.item-checklist-item-removed":
+      return sentence(words.checklistItemRemoved);
     case "work.item-moved":
       return sentence(
         from !== undefined && to !== undefined
@@ -179,6 +244,8 @@ export function describeActivityEvent(
       );
     case "work.item-archived":
       return sentence(words.archived);
+    case "work.item-dates-changed":
+      return sentence(words.datesChanged, diff());
     case "work.item-unarchived":
       return sentence(words.unarchived);
     case "work.item-deleted":

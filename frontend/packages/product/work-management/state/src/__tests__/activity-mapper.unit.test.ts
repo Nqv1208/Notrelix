@@ -36,6 +36,27 @@ describe("mapActivityResponse", () => {
     });
   });
 
+  it("reads a side the API sends as null as absent", () => {
+    const [line] = mapActivityResponse(
+      response([
+        {
+          id: "a2",
+          actorId: "u1",
+          actorName: "An",
+          action: "added the label Bug",
+          resourceType: "work-management.board-item",
+          resourceId: "c1",
+          createdAt: "2026-10-28T08:30:00Z",
+          type: "work.item-label-added",
+          change: { fieldName: null, from: null, to: "Bug" },
+        },
+      ]),
+      "c1",
+    );
+
+    expect(line?.change).toEqual({ to: "Bug" });
+  });
+
   it("marks the creation line and names an unknown actor", () => {
     const [line] = mapActivityResponse(
       response([

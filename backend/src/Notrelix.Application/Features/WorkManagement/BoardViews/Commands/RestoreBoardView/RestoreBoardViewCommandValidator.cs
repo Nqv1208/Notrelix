@@ -4,6 +4,7 @@ public class RestoreBoardViewCommandValidator : AbstractValidator<RestoreBoardVi
 {
     public RestoreBoardViewCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ViewId).NotEmpty();
     }
 }

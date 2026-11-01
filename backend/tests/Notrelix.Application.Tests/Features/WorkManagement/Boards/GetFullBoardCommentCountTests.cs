@@ -22,12 +22,7 @@ public class GetFullBoardCommentCountTests : WorkManagementHandlerTestBase
     {
         _actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
-        _handler = new GetFullBoardQueryHandler(
-            DbContextMock.Object,
-            _actors.Object,
-            _collaboration.Object,
-            new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(),
-            RequestContextMock.Object);
+        _handler = new GetFullBoardQueryHandler(DbContextMock.Object, _actors.Object, new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(DbContextMock.Object, _actors.Object, _collaboration.Object, RequestContextMock.Object), new Moq.Mock<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemPageReader>().Object, new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(), RequestContextMock.Object);
     }
 
     [Fact]

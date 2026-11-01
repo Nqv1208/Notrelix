@@ -48,3 +48,10 @@ export function groupAccent(group: {
 }
 
 export const NEUTRAL_DOT_CLASS = "bg-muted-foreground";
+
+/**
+ * The buttons of a table read in pages ("Hiện thêm", "Thử lại", "Lên đầu"): 44 px tall, as the Large Board
+ * artboard draws them, on the panel tier with the strong rule.
+ */
+export const pageButtonClass =
+  "h-11 gap-1.5 rounded-[7px] border-line-strong bg-popover px-3.5 text-[13px] font-medium text-foreground dark:bg-card hover:bg-state-hover-strong";

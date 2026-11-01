@@ -15,12 +15,18 @@ import { createListApi } from "./api/list.api";
 import { createColumnApi } from "./api/field.api";
 import { createFieldOptionApi } from "./api/field-option.api";
 import { createLabelApi } from "./api/label.api";
+import { createSavedFilterApi } from "./api/saved-filter.api";
+import { createBoardPreferenceApi } from "./api/board-preference.api";
+import { createFormApi } from "./api/form.api";
+import { createTemplateApi } from "./api/template.api";
 import { createChecklistApi } from "./api/checklist.api";
 import { createCommentApi } from "./api/item-comments.api";
 import { createItemExtrasApi } from "./api/item-extras.api";
+import { createItemCapabilitiesApi } from "./api/item-capabilities.api";
 
 export interface WorkManagementServices {
   readonly boards: ReturnType<typeof createBoardApi>;
+  readonly boardPreferences: ReturnType<typeof createBoardPreferenceApi>;
   readonly access: ReturnType<typeof createBoardAccessApi>;
   readonly cards: ReturnType<typeof createCardApi>;
   readonly groups: ReturnType<typeof createGroupApi>;
@@ -28,9 +34,13 @@ export interface WorkManagementServices {
   readonly columns: ReturnType<typeof createColumnApi>;
   readonly fieldOptions: ReturnType<typeof createFieldOptionApi>;
   readonly labels: ReturnType<typeof createLabelApi>;
+  readonly savedFilters: ReturnType<typeof createSavedFilterApi>;
+  readonly forms: ReturnType<typeof createFormApi>;
+  readonly templates: ReturnType<typeof createTemplateApi>;
   readonly checklists: ReturnType<typeof createChecklistApi>;
   readonly comments: ReturnType<typeof createCommentApi>;
   readonly itemExtras: ReturnType<typeof createItemExtrasApi>;
+  readonly itemCapabilities: ReturnType<typeof createItemCapabilitiesApi>;
   readonly boardSettings: ReturnType<typeof createBoardSettingsApi>;
   readonly workspaceAutomations: ReturnType<
     typeof createWorkspaceAutomationsApi
@@ -48,6 +58,7 @@ export function createWorkManagementServices(
 ): WorkManagementServices {
   return {
     boards: createBoardApi(client),
+    boardPreferences: createBoardPreferenceApi(client),
     access: createBoardAccessApi(client),
     cards: createCardApi(client),
     groups: createGroupApi(client),
@@ -55,11 +66,15 @@ export function createWorkManagementServices(
     columns: createColumnApi(client),
     fieldOptions: createFieldOptionApi(client),
     labels: createLabelApi(client),
+    savedFilters: createSavedFilterApi(client),
+    forms: createFormApi(client),
+    templates: createTemplateApi(client),
     checklists: createChecklistApi(client),
     comments: createCommentApi(client),
     itemExtras: createItemExtrasApi(client, {
       planProduced: options.planProduced,
     }),
+    itemCapabilities: createItemCapabilitiesApi(client),
     boardSettings: createBoardSettingsApi(client),
     workspaceAutomations: createWorkspaceAutomationsApi(client),
   };

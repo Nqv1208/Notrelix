@@ -43,6 +43,9 @@ export interface CalendarEntry {
   /** The due's wall-clock minutes of the day (17:00 is 1020); `null` = no time. */
   readonly dueMinutes?: number | null;
   readonly assignee?: CalendarPerson | null;
+  readonly priority?: "urgent" | "high" | "medium" | "low" | null;
+  /** Live, not-completed items that block this one. */
+  readonly openBlockerCount?: number;
   /** Text after the title in the accessible name ("hạn 16/10"). */
   readonly note: string;
   /** Only an item with a due day moves to another day. */
@@ -328,7 +331,7 @@ export function agendaHours(): number[] {
 
 /**
  * The agenda of `day`: overdue entries first (only on today), entries that
- * span the day or have no time as all-day, the rest in the slot of their due
+ * span the day (and do not end on it) or have no time as all-day, the rest in the slot of their due
  * hour (hours outside the slots go to the first or last slot).
  */
 export function buildAgenda(
@@ -349,7 +352,7 @@ export function buildAgenda(
   for (const entry of covering) {
     if (overdueIds.has(entry.id)) continue;
     const timed =
-      entry.startDay === entry.endDay &&
+      (entry.startDay === entry.endDay || entry.endDay === day) &&
       entry.kind === "item" &&
       entry.dueMinutes != null;
     if (!timed) {

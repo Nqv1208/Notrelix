@@ -4,6 +4,7 @@ import { restoreBoardCard } from "../cache/card-restore";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
+import { requireSeenItemVersion } from "./seen-version";
 import type { CardWriteHookOptions } from "./use-update-item-status";
 import type { MoveToBoardResultDto } from "../api/item-extras.api";
 
@@ -31,8 +32,14 @@ export function useMoveItemToBoard(
   const queryClient = useQueryClient();
   const { itemExtras } = useWorkManagementServices();
   return useMutation({
-    mutationFn: (variables: MoveItemToBoardVariables) =>
-      runCardCommand({
+    mutationFn: (variables: MoveItemToBoardVariables) => {
+      // The version the person saw, taken before the card leaves the board read.
+      const expectedVersion = requireSeenItemVersion(queryClient, {
+        workspaceId,
+        boardId,
+        cardId: variables.cardId,
+      });
+      return runCardCommand({
         queryClient,
         workspaceId,
         boardId,
@@ -41,8 +48,13 @@ export function useMoveItemToBoard(
         applyBoard: (board) =>
           restoreBoardCard(board, variables.cardId, undefined) ?? board,
         send: () =>
-          itemExtras.moveToBoard(variables.cardId, variables.targetBoardId),
-      }),
+          itemExtras.moveToBoard(
+            variables.cardId,
+            variables.targetBoardId,
+            expectedVersion,
+          ),
+      });
+    },
     onSuccess: (result, variables) => options.onMoved?.(result, variables),
     onSettled: (_data, _error, { targetBoardId }) => {
       void queryClient.invalidateQueries({

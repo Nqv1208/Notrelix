@@ -165,6 +165,8 @@ A Page is a durable Workspace-scoped content resource.
 
 It may own stable ID, title, parent relation, lifecycle, visibility intent, content-tree relation, and history/version metadata.
 
+A rename carries the page's expected version: a stale version is refused and changes nothing.
+
 # 8. DCT-002 — A Page belongs to one Workspace
 
 Parenting, Blocks, queries, links, events, search, and realtime preserve the Page's Workspace scope.
@@ -189,6 +191,10 @@ restored where allowed
 ```
 
 rather than reintroducing universal `SoftDeleted`.
+
+Trashing a page trashes its whole subtree as one unit and gives every page of it the same trash time. Restoring a parent restores the pages that went to the trash with it (the same trash time); permanent delete removes those pages. A page trashed on its own earlier stays in the trash, and a restored page whose parent stays in the trash returns at the root of its Space. A child page can be restored alone only when its parent is active. Restore checks today's constraints: a Space that is archived refuses the restore.
+
+The caller must be allowed to apply the action (trash, restore or delete) to every page the cascade changes, because a child can carry narrower access than its parent. One page that is not allowed refuses the whole operation and changes nothing (`documents.page.subtree-not-permitted`); the answer is generic and gives neither titles, ids nor a count, so a page the caller cannot see is never revealed.
 
 # 11. DCT-003 — Archive and delete are different lifecycle operations
 
@@ -228,6 +234,8 @@ valid lifecycle
 authorized move
 ```
 
+Pages nest at most 10 levels; a create or move beyond it is refused. Sibling pages sort by title, case and marks ignored; there is no manual order.
+
 # 15. DCT-005 — Page hierarchy is tenant-safe and acyclic
 
 A Page cannot become its own parent, descendant of itself, or child of another Workspace's Page.
@@ -238,9 +246,11 @@ Moving a Page changes organization, not identity.
 
 Derived breadcrumb/path state reconciles after move.
 
+A page moves under another parent when the caller may update the page and create under the new parent (or in the Space, for a root page), the parent is an active page of the same workspace, the move carries the page's expected version, and ancestry facts show no cycle. The page and the pages under it follow the Space of the new parent, and when the Space changes the caller must be allowed to edit every page below. Cycle and depth checks follow the chain of parents through deleted pages too, and moves and creates under a parent are serialized per workspace, so two moves that are each valid alone cannot together form a cycle. A page cannot be moved into an archived Space. A page is never moved to another workspace; content crosses workspaces by export and import or by duplicate.
+
 # 17. Page path
 
-A path is derived from current hierarchy and names.
+A path is derived from current hierarchy and names. An ancestor the viewer may not see is shown as one unavailable crumb with no title, icon or id; a run of hidden ancestors is one crumb.
 
 It is not competing durable ownership.
 
@@ -289,7 +299,7 @@ migration/evolution
 
 # 21A. Block content schema (rich text v1)
 
-A text-like Block (paragraph, headings, lists, task line, toggle, quote, callout, code) stores its authored text as `{"v":1,"runs":[{"text","marks":[]}]}`. Marks are a closed set: `bold`, `italic`, `underline`, `strike`, `code`, `link` (`http`, `https` or `mailto` only), `color` and `highlight` (design tokens), `mention` (user id) and `pageRef` (page id). Content is normalised by the server (empty runs dropped, adjacent runs with the same marks merged, marks ordered by type, `code` excludes every mark but `link`), limited to 20 000 characters per block, and anything unknown is rejected. Every other Block type has an empty content object and keeps its meaning in typed, closed-set properties (alignment, `checked`, code `language`, callout `tone`/`icon`, toggle `collapsed`, image/file `attachmentId`, table rows of rich-text cells, board `boardId`/`viewId`, page `pageId`). A Block write names the version the editor read; a stale version is refused with the current Block so the editor can rebase, and a batch of Block writes applies completely or not at all.
+A text-like Block (paragraph, headings, lists, task line, toggle, quote, callout, code) stores its authored text as `{"v":1,"runs":[{"text","marks":[]}]}`. Marks are a closed set: `bold`, `italic`, `underline`, `strike`, `code`, `link` (`http`, `https` or `mailto` only), `color` and `highlight` (design tokens), `mention` (user id) and `pageRef` (page id). Content is normalised by the server (empty runs dropped, adjacent runs with the same marks merged, marks ordered by type, `code` excludes every mark but `link`), limited to 20 000 characters per block, and anything unknown is rejected. Every other Block type has an empty content object and keeps its meaning in typed, closed-set properties (alignment, `checked`, code `language`, callout `tone`/`icon`, toggle `collapsed`, image/file `attachmentId`, table rows of rich-text cells, board `boardId`/`viewId`, page `pageId`). A Block write names the version the editor read; a stale version is refused with the current Block so the editor can rebase, and a batch of Block writes applies completely or not at all. A Page holds at most 5 000 live Blocks; a write that would pass the limit is refused and nothing is stored.
 
 # 22. Block Content
 
@@ -312,6 +322,8 @@ Flexible serialization is allowed only behind a defined Block-Type contract.
 Parent Block must be in the same Account, Workspace, and Page.
 
 Self/descendant cycles are invalid.
+
+A Block create that repeats an id the page already holds is a retry when its type, content and properties match the stored Block (the stored Block is answered and nothing changes), and a conflict (`409`) otherwise.
 
 # 26. DCT-009 — Block-tree validation uses supplied ancestry facts
 
@@ -336,6 +348,8 @@ Ordering must preserve adjacency, prefix/boundary correctness, concurrency behav
 # 29. DCT-010 — Block ordering is server-authoritative and deterministic
 
 No floating midpoint, array-index durable identity, or client-only ordering authority.
+
+The server makes the sort key. A request names the sibling a Block goes right after (or right before, or neither for last) under a parent; a client key is accepted only next to a named sibling and only when it lies strictly between the siblings the request names, otherwise `400`. Two named siblings must be neighbours. A reorder (`POST /blocks/reorder`) names the version of each Block it moves, applies all moves or none, answers the moved Blocks with their new versions, and announces one Page save when something moved; a stale version is `412` with the current Block and a Block of another Page is `404`. Writes that create, move or delete the Blocks of one Page are serialized per Page, and two live sibling Blocks never share a sort key (a database guard judged at commit); a lost race or a pair of siblings on one key answers `409` (`documents.block.position-conflict`).
 
 # 30. Reorder no-op
 
@@ -515,6 +529,8 @@ manage template
 
 Governance evaluates authorization.
 
+Rename, move to Space and save as template require `UpdatePage`; trash and restore require `ArchivePage`; permanent delete requires `DeletePage`.
+
 # 60. DCT-019 — Documents does not authorize by visibility alone
 
 Visibility is one input, not the final policy.
@@ -605,11 +621,13 @@ Realtime/document editing must converge to revoked access and safe client state.
 
 # 77. Archived/read-only behavior
 
-Archived/deleted/inaccessible Pages do not silently accept edits.
+Archived/deleted/inaccessible Pages do not silently accept edits. Every Block write (create, edit, delete, reorder, batch) on a trashed Page is refused by the handler with `Documents_Page_CannotEditArchived`, even when the caller could still see the Page.
 
 # 78. Semantic no-op
 
 Identical title/content/properties/effective position should avoid fake mutation where possible.
+
+Creating a page, creating a page from a template and saving a page as a template require an idempotency key; a retry with the same key and request returns the same result for 24 hours.
 
 # 79. DCT-025 — No-op edit does not create false content history
 
@@ -670,6 +688,8 @@ Deleting a Block affects child Blocks, anchors, links, history, and search.
 # 92. DCT-029 — Block deletion defines child behavior
 
 Choose deterministic policy: recursive subtree delete, promote children, or reject until children handled.
+
+The policy is recursive subtree delete in every route: deleting a Block deletes the Blocks under it, in one change, whether it is deleted alone (`DELETE /pages/{pageId}/blocks/{blockId}?expectedVersion=`) or inside a batch. Both name the version the editor read; a stale version is `412` with the current Block, and a Block that is already deleted is `404`.
 
 # 93. Historical references
 

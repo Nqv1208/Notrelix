@@ -130,7 +130,7 @@ public sealed class BoardEventMapper :
             NewValue: domainEvent.NewValue.Data.Value,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.UpdatedBy,
-            CausationId: null,
+            CausationId: AutomationCausation,
             OccurredAt: domainEvent.OccurredAt
         );
     }

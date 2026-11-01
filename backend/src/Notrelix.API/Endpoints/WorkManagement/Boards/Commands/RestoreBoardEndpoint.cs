@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard;
 
@@ -17,10 +18,11 @@ public static class RestoreBoardEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
+        BoardVersionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RestoreBoardCommand(boardId), cancellationToken);
+        var result = await sender.Send(new RestoreBoardCommand(boardId, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

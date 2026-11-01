@@ -56,7 +56,7 @@ public class BoardViewVisibilityTests : WorkManagementHandlerTestBase
 
         var handler = new RenameBoardViewCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
 
-        await handler.Invoking(h => h.Handle(new RenameBoardViewCommand(theirs.Id, "Mine now"), CancellationToken.None))
+        await handler.Invoking(h => h.Handle(new RenameBoardViewCommand(theirs.Id, "Mine now", ExpectedVersion: 1), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
         theirs.Name.Should().Be("Theirs");
     }
@@ -69,7 +69,7 @@ public class BoardViewVisibilityTests : WorkManagementHandlerTestBase
         SetupBoardViews(shared);
 
         var handler = new RenameBoardViewCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
-        await handler.Handle(new RenameBoardViewCommand(shared.Id, "Renamed"), CancellationToken.None);
+        await handler.Handle(new RenameBoardViewCommand(shared.Id, "Renamed", ExpectedVersion: 1), CancellationToken.None);
 
         shared.Name.Should().Be("Renamed");
     }
@@ -81,7 +81,7 @@ public class BoardViewVisibilityTests : WorkManagementHandlerTestBase
         var mine = ViewBy(TestUserId, "Mine", BoardViewVisibility.Private, boardId);
         SetupBoardViews(mine);
 
-        var result = await Handler().Handle(new SetBoardViewVisibilityCommand(boardId, mine.Id, "board"), CancellationToken.None);
+        var result = await Handler().Handle(new SetBoardViewVisibilityCommand(boardId, mine.Id, "board", ExpectedVersion: 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         mine.Visibility.Should().Be(BoardViewVisibility.Board);
@@ -94,7 +94,7 @@ public class BoardViewVisibilityTests : WorkManagementHandlerTestBase
         var shared = ViewBy(Colleague, "Shared", BoardViewVisibility.Board, boardId);
         SetupBoardViews(shared);
 
-        var result = await Handler().Handle(new SetBoardViewVisibilityCommand(boardId, shared.Id, "Private"), CancellationToken.None);
+        var result = await Handler().Handle(new SetBoardViewVisibilityCommand(boardId, shared.Id, "Private", ExpectedVersion: 1), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         shared.Visibility.Should().Be(BoardViewVisibility.Board);
@@ -107,7 +107,7 @@ public class BoardViewVisibilityTests : WorkManagementHandlerTestBase
         var theirs = ViewBy(Colleague, "Theirs", BoardViewVisibility.Private, boardId);
         SetupBoardViews(theirs);
 
-        await Handler().Invoking(h => h.Handle(new SetBoardViewVisibilityCommand(boardId, theirs.Id, "Board"), CancellationToken.None))
+        await Handler().Invoking(h => h.Handle(new SetBoardViewVisibilityCommand(boardId, theirs.Id, "Board", ExpectedVersion: 1), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
 

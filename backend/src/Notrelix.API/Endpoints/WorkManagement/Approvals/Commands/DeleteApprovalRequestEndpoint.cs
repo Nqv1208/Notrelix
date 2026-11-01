@@ -17,11 +17,12 @@ public static class DeleteApprovalRequestEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid requestId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new DeleteApprovalRequestCommand(requestId, 0),
+            new DeleteApprovalRequestCommand(requestId, expectedVersion),
             cancellationToken);
         return result.ToNoContentResult();
     }

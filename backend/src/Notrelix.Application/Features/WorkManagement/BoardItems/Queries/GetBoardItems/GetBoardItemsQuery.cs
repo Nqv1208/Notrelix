@@ -22,7 +22,7 @@ public class GetBoardItemsQueryHandler : IRequestHandler<GetBoardItemsQuery, Lis
     {
         var boardGroupIds = await _context.BoardGroups
             .AsNoTracking()
-            .Where(g => g.BoardId == request.BoardId)
+            .Where(g => g.BoardId == request.BoardId && !g.IsArchived)
             .Select(g => g.Id)
             .ToListAsync(cancellationToken);
 

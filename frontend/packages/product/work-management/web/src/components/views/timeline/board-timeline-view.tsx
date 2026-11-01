@@ -1,31 +1,41 @@
-import { useContext, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
-  useBoardAccess,
   useBoardKanban,
   useBoardPlanItems,
+  useTimelineDependencies,
   useUpdateCard,
 } from "@notrelix/work-management-state";
-import type { Card, WorkStatusCategory } from "@notrelix/work-management-core";
-import { ItemCreateHost } from "../../item-create/item-create-host";
-import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
-import type {
-  ItemSheetGroup,
-  ItemSheetMark,
-} from "../../card-detail/task-detail-types";
-import { boardCapabilities } from "../../shared/board-capabilities";
+import {
+  serializeCompoundFilter,
+  type Card,
+  type WorkStatusCategory,
+} from "@notrelix/work-management-core";
+import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
+import type { ItemSheetGroup } from "../../card-detail/task-detail-types";
+import { useBoardCapabilities } from "../../shared/board-capabilities";
 import { HANOI_ZONES, runtimeZone, useNow } from "../../shared/board-clock";
 import { calendarParts, identityMarkClass } from "../../shared/item-display";
 import { useItemSheetActions } from "../../shared/use-item-sheet-actions";
-import { cardDue, dayOf, shiftInstant } from "../calendar/calendar-entries";
+import {
+  cardDue,
+  dayOf,
+  shiftInstant,
+  zonedInstant,
+} from "../calendar/calendar-entries";
 import { toDayKey, type DayKey } from "../calendar/calendar-model";
+import { useBoardViewState } from "../../filters/use-board-view-state";
+import { ViewStateBar } from "../../filters/view-state-bar";
+import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { emptyKanbanFilter } from "../kanban/kanban-filter";
 import { KanbanSelectedItem } from "../kanban/kanban-view";
 import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { BoardTimelineSurface } from "./board-timeline-surface";
+import type { TimelineUndated } from "./timeline-tray";
 import type {
   TimelineGroup,
+  TimelineLink,
   TimelineItem,
   TimelineScale,
   TimelineTone,
@@ -34,6 +44,7 @@ import { criticalIds, fill } from "./timeline-model";
 import { useTimelineCopy } from "./use-timeline-copy";
 
 const NEVER_OVERDUE = () => false;
+let linkToasts = 0;
 
 export interface BoardTimelineViewProps {
   boardId: string;
@@ -50,6 +61,12 @@ export interface BoardTimelineViewProps {
   ) => void;
   /** The signed-in member (from the host's session): offers "Giao cho tôi". */
   currentUserId?: string | null;
+  /** The route `filter` parameter (compound or older facet form), shared with the other views. */
+  filter?: string | undefined;
+  onFilterChange?: (
+    value: string | undefined,
+    options?: { replace?: boolean },
+  ) => void;
   /** Switches the board to the Calendar, where an item gets its first date. */
   onOpenCalendar?: () => void;
   /** The IANA time zone of the days; the runtime zone when omitted. */
@@ -91,12 +108,13 @@ export function BoardTimelineView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  filter: filterParam,
+  onFilterChange,
   onOpenCalendar,
   timeZone: timeZoneProp,
   now: nowProp,
 }: BoardTimelineViewProps) {
   const copy = useTimelineCopy();
-  const header = useContext(BoardHeaderDataContext);
   const rootRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
   const now = useNow(nowProp);
@@ -108,20 +126,42 @@ export function BoardTimelineView({
   const [anchorDay, setAnchorDay] = useState<DayKey>(today);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const filter = useMemo(() => emptyKanbanFilter(), []);
-  const kanban = useBoardKanban(boardId, workspaceId, {
-    filter,
-    isOverdue: NEVER_OVERDUE,
+  const [localFilter, setLocalFilter] = useState<string | undefined>();
+  const filterValue = onFilterChange ? filterParam : localFilter;
+  const setFilterValue = useCallback(
+    (value: string | undefined, options?: { replace?: boolean }) => {
+      if (onFilterChange) onFilterChange(value, options);
+      else setLocalFilter(value);
+    },
+    [onFilterChange],
+  );
+  const noLegacyFilter = useMemo(() => emptyKanbanFilter(), []);
+  const {
+    copy: filtersCopy,
+    view,
+    kanbanView,
+  } = useBoardViewState({
+    boardId,
+    workspaceId,
+    routeFilter: filterValue,
+    onRouteFilterChange: setFilterValue,
   });
-  const { access } = useBoardAccess(boardId, workspaceId);
-  const capabilities = boardCapabilities(access?.myLevel);
+  const kanban = useBoardKanban(boardId, workspaceId, {
+    filter: noLegacyFilter,
+    view: kanbanView,
+    isOverdue: NEVER_OVERDUE,
+    allCards: true,
+  });
+  const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
   const updateCard = useUpdateCard(boardId, workspaceId);
+  const dependencies = useTimelineDependencies(boardId, workspaceId);
   const sheet = useItemSheetActions({ boardId, workspaceId, kanban });
 
   const planQuery = useBoardPlanItems(boardId, workspaceId);
   const plan = planQuery.data;
   const { board } = kanban;
+  const filtered = view.applied.filter.conditions.length > 0;
   const { groups, undated, cardsById, links } = useMemo(() => {
     // An item with no start day is listed only when a dependency names it;
     // one with a due day alone belongs to the Calendar.
@@ -130,15 +170,19 @@ export function BoardTimelineView({
     );
     const byId = new Map<string, Card>();
     const byGroup = new Map<string, TimelineItem[]>();
-    let undatedCount = 0;
-    for (const lane of kanban.allLanes) {
+    const undatedItems: TimelineUndated[] = [];
+    for (const lane of kanban.lanes) {
       const tone = toneOf(lane.category);
       for (const card of lane.cards) {
         byId.set(card.id, card);
         const due = dayOf(cardDue(card), timeZone);
         const start = dayOf(card.startDate, timeZone);
         if (!due && !start) {
-          undatedCount += 1;
+          undatedItems.push({
+            id: card.id,
+            itemKey: card.itemKey,
+            title: card.title,
+          });
           continue;
         }
         if (!start && !linked.has(card.id)) continue;
@@ -170,7 +214,9 @@ export function BoardTimelineView({
     }
     const dayKeyOf = (item: TimelineItem) => item.startDay ?? item.dueDay ?? "";
     const markers = new Map<string, { index: number; item: TimelineItem }[]>();
-    for (const marker of plan?.items ?? []) {
+    // Phases and milestones belong to nobody: any filter hides them with the
+    // items it filters out.
+    for (const marker of filtered ? [] : (plan?.items ?? [])) {
       const list = markers.get(marker.groupId) ?? [];
       list.push({
         index: marker.index,
@@ -217,11 +263,11 @@ export function BoardTimelineView({
     }));
     return {
       groups: flagged,
-      undated: undatedCount,
+      undated: undatedItems,
       cardsById: byId,
       links: shownLinks,
     };
-  }, [kanban.allLanes, kanban.groups, timeZone, plan]);
+  }, [kanban.lanes, kanban.groups, timeZone, plan, filtered]);
 
   const handleReschedule = (
     item: TimelineItem,
@@ -230,6 +276,18 @@ export function BoardTimelineView({
     const card = cardsById.get(item.id);
     const due = card ? cardDue(card) : undefined;
     if (!card || !due || !canEdit || change.days === 0) return;
+    // A due day cannot go before the start day: the keyboard is refused here as
+    // the pointer drag is clamped in the surface.
+    if (change.mode === "resize" && card.startDate) {
+      const startDay = dayOf(card.startDate, timeZone)?.day;
+      const nextDay = dayOf(shiftInstant(due, change.days), timeZone)?.day;
+      if (startDay && nextDay && nextDay < startDay) {
+        toast.error(fill(copy.reschedule.beforeStart, { title: card.title }), {
+          id: `timeline-write-${card.id}`,
+        });
+        return;
+      }
+    }
     // A move keeps the span's length (start and due shift together); a
     // resize changes only the due day.
     updateCard.mutate(
@@ -243,9 +301,137 @@ export function BoardTimelineView({
         },
       },
       {
+        onError: (error: unknown) => {
+          const id = `timeline-write-${card.id}`;
+          if (!isStale(error)) {
+            toast.error(fill(copy.reschedule.failed, { title: card.title }), {
+              id,
+            });
+            return;
+          }
+          // The refetch brings the other person's version, which says who changed it.
+          void Promise.resolve(kanban.refetch()).then(() =>
+            toast.error(
+              fill(copy.reschedule.conflict, {
+                actor: kanban.lastEditorOf(card.id) ?? copy.reschedule.someone,
+                title: card.title,
+              }),
+              { id },
+            ),
+          );
+        },
+      },
+    );
+  };
+
+  const isStale = (error: unknown) =>
+    (error as { status?: number } | null)?.status === 412 ||
+    (error as { kind?: unknown } | null)?.kind === "conflict";
+
+  const nameOfItem = (id: string) => {
+    const card = cardsById.get(id);
+    return card?.itemKey ?? card?.title ?? id;
+  };
+  const linkNames = (link: TimelineLink) => ({
+    from: nameOfItem(link.from),
+    to: nameOfItem(link.to),
+  });
+  const isConflict = (error: unknown) =>
+    (error as { kind?: unknown; status?: number } | null)?.kind ===
+      "conflict" || (error as { status?: number } | null)?.status === 409;
+
+  /** Creates or removes a link; the success toast undoes it with the inverse request. */
+  const writeLink = (link: TimelineLink, kind: "create" | "remove") => {
+    const names = linkNames(link);
+    const text = copy.linkToast;
+    // One toast per attempt: Thử lại makes Sonner remove the toast it sits on,
+    // and a result toast reusing that id inherits the removal and never shows.
+    const toastId = `timeline-link-${link.from}-${link.to}-${++linkToasts}`;
+    const run =
+      kind === "create"
+        ? dependencies.createDependency
+        : dependencies.removeDependency;
+    const inverse =
+      kind === "create"
+        ? dependencies.removeDependency
+        : dependencies.createDependency;
+    void run(link).then(
+      () =>
+        toast.success(
+          fill(kind === "create" ? text.created : text.removed, names),
+          {
+            id: toastId,
+            duration: 8000,
+            action: {
+              label: text.undo,
+              onClick: () =>
+                void inverse(link).then(
+                  () => toast.success(text.undone),
+                  () => toast.error(text.undoFailed),
+                ),
+            },
+          },
+        ),
+      (error: unknown) =>
+        isConflict(error)
+          ? toast.error(text.conflict, {
+              id: toastId,
+              action: {
+                label: text.reload,
+                onClick: () => void planQuery.refetch(),
+              },
+            })
+          : toast.error(
+              fill(
+                kind === "create" ? text.createFailed : text.removeFailed,
+                names,
+              ),
+              {
+                id: toastId,
+                action: {
+                  label: text.retry,
+                  onClick: () => writeLink(link, kind),
+                },
+              },
+            ),
+    );
+  };
+
+  /** One day for an undated item: start and due are both that day. */
+  const handleSchedule = (id: string, day: DayKey) => {
+    const card = cardsById.get(id);
+    if (!card || !canEdit) return;
+    updateCard.mutate(
+      {
+        cardId: id,
+        patch: {
+          startDate: zonedInstant(day, 8, 0, timeZone),
+          dueDate: zonedInstant(day, 17, 0, timeZone),
+        },
+      },
+      {
+        onSuccess: () =>
+          toast.success(
+            fill(copy.tray.scheduled, {
+              key: card.itemKey ?? card.title,
+              day: `${day.slice(8)}/${day.slice(5, 7)}`,
+            }),
+            {
+              id: `timeline-write-${id}`,
+              duration: 8000,
+              action: {
+                label: copy.tray.undo,
+                onClick: () =>
+                  updateCard.mutate({
+                    cardId: id,
+                    patch: { startDate: null, dueDate: null },
+                  }),
+              },
+            },
+          ),
         onError: () =>
-          toast.error(fill(copy.reschedule.failed, { title: card.title }), {
-            id: `timeline-write-${card.id}`,
+          toast.error(fill(copy.tray.failed, { title: card.title }), {
+            id: `timeline-write-${id}`,
           }),
       },
     );
@@ -265,9 +451,6 @@ export function BoardTimelineView({
     timeZone && HANOI_ZONES.includes(timeZone)
       ? copy.zone.hanoi
       : copy.zone.local;
-  const departmentMark: ItemSheetMark | undefined = header?.space
-    ? { initials: header.space.initials, tone: header.space.markTone }
-    : undefined;
   const sheetGroups: ItemSheetGroup[] = [...kanban.groups]
     .sort((a, b) => a.position - b.position)
     .map((group) => ({ id: group.id, title: group.title }));
@@ -290,15 +473,42 @@ export function BoardTimelineView({
         zoneName={zoneName}
         groups={groups}
         links={links}
-        undatedCount={undated}
+        undatedCount={undated.length}
+        undatedItems={undated}
+        onSchedule={handleSchedule}
+        onCreateLink={(link) => writeLink(link, "create")}
+        onRemoveLink={(link) => writeLink(link, "remove")}
         onOpenUndated={onOpenCalendar}
         canEdit={canEdit}
         onOpenItem={(id) => onSelectedItemChange?.(id)}
         onReschedule={handleReschedule}
         onAddItem={() => setCreateOpen(true)}
+        viewBar={
+          <ViewStateBar
+            canSave={capabilities.canEditFields}
+            copy={filtersCopy}
+            view={view}
+            fields={kanban.filterFields}
+            memberName={kanban.memberName}
+            people={kanban.filterChoices.assignees}
+            counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
+            now={now}
+            savedFilters={(save) => (
+              <SavedFiltersControl
+                compact
+                workspaceId={workspaceId}
+                boardId={boardId}
+                filter={serializeCompoundFilter(view.applied.filter)}
+                canEdit={capabilities.canEditFields}
+                onApply={view.applyCriteria}
+                {...save}
+              />
+            )}
+          />
+        }
       />
       {board && capabilities.canCreateCard ? (
-        <ItemCreateHost
+        <CardCreatePopup
           open={createOpen}
           onOpenChange={setCreateOpen}
           workspaceId={workspaceId}
@@ -309,6 +519,7 @@ export function BoardTimelineView({
           defaultStartDay={anchorDay}
           defaultDueDay={anchorDay}
           currentUserId={currentUserId}
+          onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
       {selectedItemId && board ? (
@@ -316,7 +527,6 @@ export function BoardTimelineView({
           board={board}
           cardId={selectedItemId}
           capabilities={capabilities}
-          departmentMark={departmentMark}
           groups={sheetGroups}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}
@@ -324,7 +534,6 @@ export function BoardTimelineView({
           onMoveToGroup={sheet.onMoveToGroup}
           onUpdateFieldValue={sheet.onUpdateFieldValue}
           onDuplicate={sheet.onDuplicate}
-          onArchive={sheet.onArchive}
         />
       ) : null}
     </div>

@@ -332,6 +332,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{boardItemId}/comments/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a page of the comments of a board item
+         * @description Oldest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["Collaboration.Comments.GetBoardItemCommentsPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** React to a comment on a board item */
+        put: operations["Collaboration.Comments.AddReaction"];
+        post?: never;
+        /** Withdraw the caller's reaction to a comment on a board item */
+        delete: operations["Collaboration.Comments.RemoveReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}/comments": {
         parameters: {
             query?: never;
@@ -739,7 +777,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a block */
+        /** Delete a block and the blocks under it against the version read */
         delete: operations["Documents.Blocks.DeleteBlock"];
         options?: never;
         head?: never;
@@ -756,7 +794,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reorder blocks */
+        /** Move blocks of a page against the versions read */
         post: operations["Documents.Blocks.ReorderBlocks"];
         delete?: never;
         options?: never;
@@ -789,7 +827,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get page tree for a workspace */
+        /** Get the page tree for a workspace; a very large workspace answers one level at a time (root pages, or the children of parentId) */
         get: operations["Documents.Pages.GetPageTree"];
         put?: never;
         post?: never;
@@ -823,7 +861,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the pages in the trash of a workspace */
+        /** List the pages in the trash of a workspace, newest change first, one cursor page at a time */
         get: operations["Documents.Pages.ListTrashedPages"];
         put?: never;
         post?: never;
@@ -848,7 +886,7 @@ export interface paths {
         delete: operations["Documents.Pages.DeletePage"];
         options?: never;
         head?: never;
-        /** Update a page */
+        /** Rename a page */
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
@@ -954,6 +992,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pages/{pageId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a page and its subtree under another parent page, or make it a root page of its space */
+        post: operations["Documents.Pages.Move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/page-templates": {
         parameters: {
             query?: never;
@@ -1051,7 +1106,10 @@ export interface paths {
         /** Get permissions for a resource */
         get: operations["Governance.ResourcePermissions.Get"];
         put?: never;
-        /** Grant a permission to a resource */
+        /**
+         * Grant a permission to a resource
+         * @description Grants a level to a subject. A subject that already holds the level is a no-op; changing the level of an existing grant must name its version (ExpectedVersion), and a stale or missing version answers 412.
+         */
         post: operations["Governance.ResourcePermissions.Grant"];
         delete?: never;
         options?: never;
@@ -1103,7 +1161,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Disable a share link */
+        /**
+         * Disable a share link
+         * @description Authorized on the shared resource named by the route with the action that creating a link there needs, so a Board manager may turn off a link on their board. A link that does not belong to that resource answers NotFound; a link already off answers 204 and changes nothing.
+         */
         delete: operations["Governance.ShareLinks.Disable"];
         options?: never;
         head?: never;
@@ -1339,7 +1400,7 @@ export interface paths {
         };
         /**
          * Start OAuth login flow
-         * @description Redirects user to the OAuth provider's authorization endpoint.
+         * @description Redirects the browser to the OAuth provider's authorization endpoint. An unknown, disabled or unconfigured provider redirects to the sign-in page with error=identity.oauth.provider-unavailable instead; no redirect to a provider is made.
          */
         get: operations["Identity.Auth.OAuth.Start"];
         put?: never;
@@ -1359,7 +1420,7 @@ export interface paths {
         };
         /**
          * Complete OAuth login callback
-         * @description Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.
+         * @description Handles the OAuth provider callback, validates state, exchanges code, checks the provider ID token, and sets auth cookies. Every failure redirects to the sign-in page with one normalized error code: identity.oauth.failed, state-invalid, denied, email-unverified, email-in-use, mfa-required or provider-unavailable.
          */
         get: operations["Identity.Auth.OAuth.Callback"];
         put?: never;
@@ -1618,7 +1679,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start MFA authenticator app enrollment */
+        /**
+         * Start MFA authenticator app enrollment
+         * @description Requires a single-use step-up proof for the EnrollMfa purpose. Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409 and the proof is kept.
+         */
         post: operations["Identity.Mfa.StartEnrollment"];
         delete?: never;
         options?: never;
@@ -1635,7 +1699,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify MFA enrollment code and activate the authenticator */
+        /**
+         * Verify MFA enrollment code and activate the authenticator
+         * @description Requires a single-use step-up proof for the EnrollMfa purpose. A wrong code leaves the method pending and the proof unspent. When the factor becomes active every other session of the person ends and the answer says how many; the current session stays. The recovery codes in the answer are shown once and never readable again.
+         */
         post: operations["Identity.Mfa.VerifyEnrollment"];
         delete?: never;
         options?: never;
@@ -1650,7 +1717,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get MFA status for the authenticated user */
+        /**
+         * Get MFA status for the authenticated user
+         * @description The caller's own status only: whether a factor is on, its method and how many recovery codes are left. Never a secret or a code.
+         */
         get: operations["Identity.Mfa.Status"];
         put?: never;
         post?: never;
@@ -1671,7 +1741,7 @@ export interface paths {
         put?: never;
         /**
          * Invalidate existing recovery codes and issue a fresh batch
-         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.
+         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose. The codes in the answer are shown once and never readable again; a retry makes another batch and voids this one.
          */
         post: operations["Identity.Mfa.RegenerateRecoveryCodes"];
         delete?: never;
@@ -1691,7 +1761,7 @@ export interface paths {
         put?: never;
         /**
          * Disable MFA and revoke all active sessions
-         * @description Requires a single-use step-up proof for the DisableMfa purpose.
+         * @description Requires a single-use step-up proof for the DisableMfa purpose. Disabling an already-off factor answers 200 and changes nothing.
          */
         post: operations["Identity.Mfa.Disable"];
         delete?: never;
@@ -1726,7 +1796,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Update the current user's email address */
+        /**
+         * Update the current user's email address
+         * @description Requires a single-use step-up proof for the ChangeSecurityIdentity purpose when the address changes.
+         */
         post: operations["Identity.Profile.UpdateEmail"];
         delete?: never;
         options?: never;
@@ -1947,7 +2020,7 @@ export interface paths {
         put?: never;
         /**
          * Revoke all other sessions
-         * @description Revokes every active session of the current user except the session that issued the request.
+         * @description Revokes every active session of the current user except the session that issued the request. Requires a single-use step-up proof for the RevokeOtherSessions purpose; with no other active session nothing changes and the proof is not consumed.
          */
         post: operations["Identity.Sessions.RevokeOthers"];
         delete?: never;
@@ -2179,6 +2252,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/approvals/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a page of the approval requests of a board
+         * @description Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["WorkManagement.Approvals.ListPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approvals/{requestId}/approve": {
         parameters: {
             query?: never;
@@ -2319,6 +2412,40 @@ export interface paths {
         patch: operations["WorkManagement.BoardFields.Update"];
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/fields/{fieldId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a field deleted in the last 30 days */
+        post: operations["WorkManagement.BoardFields.Restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/fields/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the fields deleted from a board in the last 30 days */
+        get: operations["WorkManagement.BoardFields.Deleted"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/fields/{fieldId}/move": {
         parameters: {
             query?: never;
@@ -2449,7 +2576,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Duplicate a group and its items */
+        /** Duplicate a group with its active items and their sub-items */
         post: operations["WorkManagement.BoardGroups.Duplicate"];
         delete?: never;
         options?: never;
@@ -2526,6 +2653,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/items/lanes/{lane}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one page of a status lane's items under a filter and sort */
+        get: operations["WorkManagement.BoardItems.ListLane"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/items/dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the dependencies between the items of a board */
+        get: operations["WorkManagement.BoardItems.ListDependencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/items/bulk": {
         parameters: {
             query?: never;
@@ -2552,6 +2713,23 @@ export interface paths {
         };
         /** List the items deleted from a board in the last 30 days */
         get: operations["WorkManagement.BoardItems.Trash"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/items/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the archived items of a board */
+        get: operations["WorkManagement.BoardItems.Archived"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2622,7 +2800,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Duplicate a board item in its current group */
+        /**
+         * Duplicate a board item in its current group
+         * @description Optional body names the copy and chooses what it takes along (fields, checklists, sub-items, labels, assignees). Comments, history, files and links are never copied.
+         */
         post: operations["WorkManagement.BoardItems.Duplicate"];
         delete?: never;
         options?: never;
@@ -2712,8 +2893,44 @@ export interface paths {
         put?: never;
         /** Link a page to this board item */
         post: operations["WorkManagement.BoardItems.LinkPage"];
-        /** Unlink page from board item */
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/link-page/{pageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink one page from a board item */
         delete: operations["WorkManagement.BoardItems.UnlinkPage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/linked-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the Documents pages linked to a board item that the caller may open
+         * @description Pages the caller cannot see are not named; they are counted in hiddenCount.
+         */
+        get: operations["WorkManagement.BoardItems.ListLinkedPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2902,7 +3119,8 @@ export interface paths {
         put?: never;
         /** Link a board item to another item of its board */
         post: operations["WorkManagement.BoardItems.CreateLink"];
-        delete?: never;
+        /** Remove every link of a board item */
+        delete: operations["WorkManagement.BoardItems.ClearLinks"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2920,6 +3138,109 @@ export interface paths {
         post?: never;
         /** Remove a link of a board item */
         delete: operations["WorkManagement.BoardItems.DeleteLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set or remove the cover of a board item */
+        put: operations["WorkManagement.BoardItems.SetCover"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/repeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set or clear how a board item repeats */
+        put: operations["WorkManagement.BoardItems.SetRepeat"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/reminder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set how long before the due time a board item reminds */
+        put: operations["WorkManagement.BoardItems.SetReminder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/votes/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List who voted on a board item */
+        get: operations["WorkManagement.BoardItems.ListVotes"];
+        /** Cast or withdraw the caller's vote on a board item */
+        put: operations["WorkManagement.BoardItems.SetVote"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that the caller opened a board item */
+        post: operations["WorkManagement.BoardItems.RecordView"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/board-items/{itemId}/viewers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List who opened a board item and when */
+        get: operations["WorkManagement.BoardItems.ListViewers"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3038,57 +3359,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/boards/{boardId}/preferences/{viewId}/filters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update board preference filters for current user */
-        patch: operations["WorkManagement.BoardPreferences.UpdateFilters"];
-        trace?: never;
-    };
-    "/api/v1/boards/{boardId}/preferences/{viewId}/sorts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update board preference sorts for current user */
-        patch: operations["WorkManagement.BoardPreferences.UpdateSorts"];
-        trace?: never;
-    };
-    "/api/v1/boards/{boardId}/preferences/{viewId}/group": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update board preference group for current user */
-        patch: operations["WorkManagement.BoardPreferences.UpdateGroup"];
-        trace?: never;
-    };
     "/api/v1/workspaces/{workspaceId}/boards": {
         parameters: {
             query?: never;
@@ -3101,6 +3371,40 @@ export interface paths {
         put?: never;
         /** Create a new board in workspace */
         post: operations["WorkManagement.Boards.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/boards/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the archived boards of a workspace that the caller may see */
+        get: operations["WorkManagement.Boards.ListArchived"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/boards/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the boards deleted in the last 30 days that the caller can restore */
+        get: operations["WorkManagement.Boards.ListDeleted"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3173,6 +3477,77 @@ export interface paths {
         get: operations["WorkManagement.Boards.GetSharing"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/lifecycle-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count what archiving or deleting a board touches */
+        get: operations["WorkManagement.Boards.GetLifecycleImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/move-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who gains and who loses a board if it is placed in another space, and who would be left with unfinished items */
+        get: operations["WorkManagement.Boards.GetMoveImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/duplicate-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count the items a copy would carry and the assignees it would drop */
+        get: operations["WorkManagement.Boards.GetDuplicatePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a board into a new one, with its items when asked
+         * @description Copies settings, fields, groups, labels and views; root items only when includeItems is true (at most 500, otherwise refused). Members and automations are not copied. Assignees without access to the copy are dropped from the copied items. All or nothing; a retry with the same idempotency key creates one copy.
+         */
+        post: operations["WorkManagement.Boards.Duplicate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3292,6 +3667,23 @@ export interface paths {
         get: operations["WorkManagement.Boards.GetMembers"];
         put?: never;
         post: operations["WorkManagement.Boards.AddMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/members/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave a board: end your own explicit membership */
+        post: operations["WorkManagement.Boards.Leave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3504,6 +3896,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{itemId}/checklists/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a checklist that copies the items of another checklist of the board */
+        post: operations["WorkManagement.Checklists.Copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/checklists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the checklists of a board's items, to copy one */
+        get: operations["WorkManagement.Checklists.ListForBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/checklists/{checklistId}": {
         parameters: {
             query?: never;
@@ -3608,6 +4034,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/checklist-items/{itemId}/assignee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Give a checklist item to a person, or to nobody */
+        put: operations["WorkManagement.Checklists.SetItemAssignee"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/checklist-items/{itemId}/due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set or clear the due time of a checklist item */
+        put: operations["WorkManagement.Checklists.SetItemDue"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/forms": {
         parameters: {
             query?: never;
@@ -3633,8 +4093,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List submissions for a form */
-        get: operations["WorkManagement.Forms.ListSubmissions"];
+        /** Get a form with its questions */
+        get: operations["WorkManagement.Forms.Get"];
         put?: never;
         post?: never;
         /** Soft-delete a form */
@@ -3713,7 +4173,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/forms/{formId}/{questionId}": {
+    "/api/v1/forms/{formId}/questions/{questionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3723,11 +4183,50 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Remove a question from a form */
+        delete: operations["WorkManagement.Forms.RemoveQuestion"];
         options?: never;
         head?: never;
         /** Update a form question */
         patch: operations["WorkManagement.Forms.UpdateQuestion"];
+        trace?: never;
+    };
+    "/api/v1/forms/{formId}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List submissions for a form */
+        get: operations["WorkManagement.Forms.ListSubmissions"];
+        put?: never;
+        /** Submit answers to a published form as the signed-in member */
+        post: operations["WorkManagement.Forms.Submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forms/{formId}/submissions/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a page of the submissions of a form
+         * @description Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["WorkManagement.Forms.ListSubmissionsPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/form-submissions/{submissionId}/process": {
@@ -4142,6 +4641,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a CSV or XLSX file to import items from (multipart/form-data, streamed); nothing is created yet */
+        post: operations["WorkManagement.Imports.Upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a column mapping against the uploaded file: per-column checks and per-row errors */
+        post: operations["WorkManagement.Imports.Preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the import: all rows or none, created in the background; a retry queues no second run */
+        post: operations["WorkManagement.Imports.Confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress and outcome of the caller's import */
+        get: operations["WorkManagement.Imports.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/imports/{jobId}/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rows a refused import could not take, for the downloadable error report */
+        get: operations["WorkManagement.Imports.GetErrors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's exports of this board from the last 24 hours */
+        get: operations["WorkManagement.Exports.List"];
+        put?: never;
+        /** Ask for a CSV or XLSX of the current view or all items; made in the background, 24 hours to download */
+        post: operations["WorkManagement.Exports.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many items the current view and the whole board would export */
+        get: operations["WorkManagement.Exports.GetSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress of the caller's export */
+        get: operations["WorkManagement.Exports.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/boards/{boardId}/exports/{jobId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the caller's ready export (authorised on every call; gone after 24 hours) */
+        get: operations["WorkManagement.Exports.GetFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/activity": {
         parameters: {
             query?: never;
@@ -4166,7 +4819,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workspace invitations */
+        /**
+         * Get workspace invitations
+         * @description Cursor-paginated (default 50, max 200), newest invitation first. A pending invitation past its expiry is reported as Expired. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Invitations.ListWorkspaceInvitations"];
         put?: never;
         post?: never;
@@ -4234,7 +4890,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get pending invitations for the current logged-in user */
+        /**
+         * Get pending invitations for the current logged-in user
+         * @description The pending, unexpired invitations addressed to the person's own confirmed email, newest first. At most 50 are returned (the newest). A person whose email is not confirmed gets an empty list, not an error.
+         */
         get: operations["Workspaces.Invitations.GetUserPendingInvitations"];
         put?: never;
         post?: never;
@@ -4261,6 +4920,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invitations/{invitationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a pending workspace invitation from the signed-in person's own list
+         * @description Same rules as accepting by link: the invitation must be pending and addressed to the person's confirmed email, a plan seat must be free for a new membership, a suspended member stays suspended. An invitation that is unknown, not pending or addressed to another email answers NotFound.
+         */
+        post: operations["Workspaces.Invitations.AcceptInvitationById"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invitations/{invitationId}/decline": {
         parameters: {
             query?: never;
@@ -4270,7 +4949,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decline a workspace invitation */
+        /**
+         * Decline a pending workspace invitation from the signed-in person's own list
+         * @description The invitation must be pending and addressed to the person's confirmed email; an unknown id, another email, a repeat and an unconfirmed email all answer NotFound.
+         */
         post: operations["Workspaces.Invitations.DeclineInvitation"];
         delete?: never;
         options?: never;
@@ -4396,10 +5078,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workspace members */
+        /**
+         * Get workspace members
+         * @description Cursor-paginated (default 50, max 200), oldest member first. Removed members are never listed. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Members.ListMembers"];
         put?: never;
-        /** Invite a member to workspace */
+        /**
+         * Invite a member to workspace
+         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.
+         */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
         options?: never;
@@ -4545,7 +5233,7 @@ export interface paths {
         };
         /**
          * List the workspaces you belong to, with your role and the default
-         * @description Only the caller's own active memberships of active workspaces, ordered by name. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.
+         * @description Only the caller's own active memberships of active workspaces, ordered by name; an archived workspace is listed (isArchived true) only to its Owners and Admins. Member count is null for a Guest and department count is null unless the caller is an Owner or Admin. isDefault marks the workspace that opens with the app; canLeave is false only for the last active Owner.
          */
         get: operations["Workspaces.Members.ListMyWorkspaces"];
         put?: never;
@@ -4566,7 +5254,7 @@ export interface paths {
         get?: never;
         /**
          * Choose the workspace that opens with the app
-         * @description The caller must be an active member of the workspace; a workspace the caller cannot open answers 404. Choosing the current default succeeds and changes nothing.
+         * @description The caller must be an active member of the workspace; a workspace the caller cannot open answers 404, and an archived workspace is refused with 400 (a business-rule failure). Choosing the current default succeeds and changes nothing.
          */
         put: operations["Workspaces.Members.SetDefaultWorkspace"];
         post?: never;
@@ -4797,7 +5485,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all spaces in a workspace */
+        /**
+         * Get the spaces of a workspace the caller can see
+         * @description Cursor-paginated (default 50, max 200), ordered by name. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Spaces.GetWorkspaceSpaces"];
         put?: never;
         /** Create a new space in the workspace */
@@ -4815,7 +5506,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the caller's visible space org tree as a parent-linked list */
+        /**
+         * Get the caller's visible space org tree as a parent-linked list
+         * @description Cursor-paginated (default 50, max 200) in space id order; read every page and order siblings by position. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Spaces.GetSpaceTree"];
         put?: never;
         post?: never;
@@ -5046,7 +5740,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all teams in a workspace */
+        /**
+         * Get the teams of a workspace
+         * @description Cursor-paginated (default 50, max 200), ordered by name; archived teams are included. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Teams.GetWorkspaceTeams"];
         put?: never;
         /** Create a new team in the workspace */
@@ -5281,7 +5978,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update workspace name and description */
+        /**
+         * Update workspace name and description
+         * @description Owner or Admin. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. An omitted field is left alone; an empty description clears it. A value that does not change bumps no version and raises no event; a name and a description that both change advance the version once. An archived workspace refuses the edit.
+         */
         patch: operations["Workspaces.Workspaces.UpdateWorkspaceProfile"];
         trace?: never;
     };
@@ -5402,6 +6102,9 @@ export interface components {
             status?: number | null;
             detail?: string | null;
             instance?: string | null;
+            errorCode?: string | null;
+            ruleCode?: string | null;
+            traceId?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -5524,10 +6227,15 @@ export interface components {
         "Notrelix.API.Contracts.Documents.Blocks.Requests.ReorderBlockItemRequest": {
             /** Format: uuid */
             blockId?: string;
-            /** Format: double */
-            position?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             parentId?: string | null;
+            /** Format: uuid */
+            afterBlockId?: string | null;
+            /** Format: uuid */
+            beforeBlockId?: string | null;
+            position?: string | null;
         };
         "Notrelix.API.Contracts.Documents.Blocks.Requests.ReorderBlocksRequest": {
             /** Format: uuid */
@@ -5548,6 +6256,12 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
+            /** Format: uuid */
+            parentId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest": {
             /** Format: uuid */
             spaceId?: string | null;
@@ -5556,9 +6270,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Documents.Pages.Requests.UpdatePageRequest": {
             title?: string | null;
-            iconType?: string | null;
-            iconValue?: string | null;
-            coverUrl?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
             title?: string | null;
@@ -5590,6 +6303,8 @@ export interface components {
             /** Format: uuid */
             subjectId?: string;
             level?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
             /** Format: date-time */
             expiresAt?: string | null;
         };
@@ -5637,6 +6352,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CreateApprovalRequestRequest": {
             title?: string | null;
             description?: string | null;
@@ -5679,6 +6398,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest": {
             title?: string | null;
             color?: string | null;
@@ -5686,6 +6409,9 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.DuplicateBoardGroupRequest": {
+            title?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest": {
             /** Format: int64 */
@@ -5705,13 +6431,22 @@ export interface components {
             /** Format: uuid */
             labelId?: string;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.ArchiveBoardItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.AssignBoardItemMemberRequest": {
             /** Format: uuid */
             userId?: string;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.BulkUpdateBoardItemsRequest": {
             operation?: string | null;
             itemIds?: string[] | null;
+            expectedVersions?: {
+                [key: string]: number;
+            } | null;
             status?: string | null;
             /** Format: date-time */
             dueDate?: string | null;
@@ -5720,6 +6455,8 @@ export interface components {
             priority?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CompleteBoardItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: date-time */
             completedAt?: string | null;
         };
@@ -5745,6 +6482,14 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateChildItemRequest": {
             title?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest": {
+            name?: string | null;
+            includeFields?: boolean;
+            includeChecklists?: boolean;
+            includeSubItems?: boolean;
+            includeLabels?: boolean;
+            includeAssignees?: boolean;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.LinkPageToBoardItemRequest": {
             /** Format: uuid */
             pageId?: string;
@@ -5762,6 +6507,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemToBoardRequest": {
             /** Format: uuid */
             boardId?: string;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveChildItemRequest": {
             /** Format: int64 */
@@ -5771,11 +6518,35 @@ export interface components {
             /** Format: uuid */
             nextSiblingId?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemCoverRequest": {
+            color?: string | null;
+            /** Format: uuid */
+            attachmentId?: string | null;
+            style?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemDueDateRequest": {
             /** Format: date-time */
             dueDate?: string | null;
             /** Format: date-time */
             startDate?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemReminderRequest": {
+            /** Format: int32 */
+            offsetMinutes?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemRepeatRequest": {
+            rule?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemVoteRequest": {
+            voted?: boolean;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemFieldValueRequest": {
             value?: unknown;
@@ -5806,20 +6577,22 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemStatusRequest": {
             status?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.CreateOrUpdateBoardPreferenceRequest": {
-            filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
-            sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
-            group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
+            criteria?: string | null;
+            columns?: string | null;
         };
-        "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest": {
-            filters?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
+        "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.ArchiveBoardViewRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            newDefaultViewId?: string | null;
         };
-        "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceGroupRequest": {
-            group?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.GroupRule"];
-        };
-        "Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceSortsRequest": {
-            sorts?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SortRule"][] | null;
+        "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.CreateBoardViewRequest": {
             name?: string | null;
@@ -5831,6 +6604,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.RenameBoardViewRequest": {
             name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.SaveBoardViewRequest": {
             viewMode?: string | null;
@@ -5839,14 +6614,22 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.SetBoardViewVisibilityRequest": {
             visibility?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.UpdateBoardViewConfigRequest": {
             configJson?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.AddBoardMemberRequest": {
             /** Format: uuid */
             userId?: string;
             role?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.CreateBoardInWorkspaceRequest": {
             title?: string | null;
@@ -5856,6 +6639,12 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.DuplicateBoardRequest": {
+            name?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+            includeItems?: boolean;
+        };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MakeBoardPrivateRequest": {
             addUserIds?: string[] | null;
         };
@@ -5864,9 +6653,12 @@ export interface components {
             spaceId?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            addUserIds?: string[] | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardMemberRoleRequest": {
             role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardRequest": {
             /** Format: int64 */
@@ -5879,6 +6671,13 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardVisibilityRequest": {
             visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CopyChecklistRequest": {
+            /** Format: uuid */
+            sourceChecklistId?: string;
+            title?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistItemRequest": {
             title?: string | null;
@@ -5912,6 +6711,18 @@ export interface components {
             /** Format: uuid */
             nextSiblingId?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemAssigneeRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: uuid */
+            assigneeUserId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemDueRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+            /** Format: date-time */
+            dueAt?: string | null;
+        };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistItemRequest": {
             /** Format: int64 */
             expectedVersion?: number;
@@ -5927,9 +6738,13 @@ export interface components {
             questionKey?: string | null;
             questionType?: components["schemas"]["Notrelix.Domain.WorkManagement.Forms.FormQuestionType"];
             label?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
+            /** Format: uuid */
+            boardFieldId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.CreateFormRequest": {
             title?: string | null;
@@ -5939,15 +6754,29 @@ export interface components {
             /** Format: uuid */
             createdItemId?: string;
         };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest": {
+            reason?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest": {
+            answers?: {
+                [key: string]: unknown;
+            } | null;
+        };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
             title?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             description?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormQuestionRequest": {
             label?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             isRequired?: boolean;
             configJson?: string | null;
             position?: string | null;
+            /** Format: uuid */
+            boardFieldId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Labels.Requests.CreateLabelRequest": {
             color?: string | null;
@@ -5956,6 +6785,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Labels.Requests.UpdateLabelRequest": {
             name?: string | null;
             color?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Relations.Requests.CreateBoardRelationRequest": {
             targetBoardId?: string | null;
@@ -5964,6 +6795,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.SavedFilters.Requests.CreateSavedFilterRequest": {
             name?: string | null;
             rules?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.FilterRule"][] | null;
+            criteria?: string | null;
+            visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Views.SavedFilterVisibility"];
         };
         "Notrelix.API.Contracts.WorkManagement.SavedFilters.Requests.RenameSavedFilterRequest": {
             name?: string | null;
@@ -5999,6 +6832,27 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Templates.Requests.CreateBoardTemplateRequest": {
             name?: string | null;
             description?: string | null;
+            includeItems?: boolean;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ExportRequest": {
+            format?: string | null;
+            scope?: string | null;
+            filter?: string | null;
+            sort?: string | null;
+            locale?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportColumnMapRequest": {
+            /** Format: int32 */
+            column?: number;
+            target?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportFileForm": {
+            /** Format: binary */
+            file: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest": {
+            mapping?: components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportColumnMapRequest"][] | null;
+            allErrors?: boolean;
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.AcceptInvitationWithRegistrationRequest": {
             token?: string | null;
@@ -6007,6 +6861,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.ChangeInvitationRoleRequest": {
             newRole?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Invitations.Requests.InviteGuestToResourceRequest": {
             email?: string | null;
@@ -6040,6 +6896,10 @@ export interface components {
             role?: string | null;
             initialEntries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"][] | null;
         };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.MemberVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberJobTitleRequest": {
             jobTitle?: string | null;
             /** Format: int64 */
@@ -6047,6 +6907,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberRoleRequest": {
             role?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Navigation.Requests.RecordRecentResourceRequest": {
             kind?: string | null;
@@ -6090,9 +6952,13 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceTypeRequest": {
             spaceType?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceVisibilityRequest": {
             visibility?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.CreateSpaceRequest": {
             name?: string | null;
@@ -6118,9 +6984,17 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.RenameSpaceRequest": {
             name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.SpaceVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.UpdateSpaceDescriptionRequest": {
             description?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.AddTeamMemberRequest": {
             /** Format: uuid */
@@ -6228,6 +7102,12 @@ export interface components {
             password?: string | null;
             name?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
+            stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
         };
@@ -6235,6 +7115,7 @@ export interface components {
             /** Format: uuid */
             mfaMethodId?: string;
             code?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Queries.IdentifySignInRequest": {
             email?: string | null;
@@ -6247,6 +7128,7 @@ export interface components {
             theme?: string | null;
             phone?: string | null;
             phoneVisibleToWorkspaceMembers?: boolean | null;
+            colourBlindLabels?: boolean | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
@@ -6278,13 +7160,58 @@ export interface components {
             /** Format: uuid */
             workspaceId?: string;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfCommentDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfPageDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfSpaceDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfSpaceTreeNodeDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfTeamDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkspaceMemberDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -6442,6 +7369,7 @@ export interface components {
             personId?: string | null;
             personName?: string | null;
             itemKey?: string | null;
+            ruleName?: string | null;
         };
         "Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityLogDto": {
             /** Format: uuid */
@@ -6512,7 +7440,20 @@ export interface components {
             resolvedAt?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            reactions?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto"][] | null;
             anchor?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"];
+        };
+        "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto": {
+            emoji?: string | null;
+            /** Format: int32 */
+            count?: number;
+            reactedByMe?: boolean;
+            users?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionUserDto"][] | null;
+        };
+        "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionUserDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
         };
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
             /** Format: int32 */
@@ -6564,15 +7505,17 @@ export interface components {
             icon?: string | null;
             /** Format: uuid */
             spaceId?: string | null;
+            parentTitle?: string | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageBacklinksDto": {
             docs?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto"][] | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageBreadcrumbDto": {
             /** Format: uuid */
-            id?: string;
+            id?: string | null;
             title?: string | null;
             icon?: string | null;
+            unavailable?: boolean;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageDto": {
             /** Format: uuid */
@@ -6592,6 +7535,7 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            parentTitle?: string | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
             /** Format: uuid */
@@ -6635,6 +7579,7 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            parentTitle?: string | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageVersionBlockDto": {
             /** Format: uuid */
@@ -6686,6 +7631,8 @@ export interface components {
             isRevoked?: boolean;
             /** Format: date-time */
             revokedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -6751,6 +7698,13 @@ export interface components {
             provider?: string | null;
             providerLabel?: string | null;
         };
+        "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
+            /** Format: uuid */
+            mfaMethodId?: string;
+            recoveryCodes?: string[] | null;
+            /** Format: int32 */
+            otherSessionsEnded?: number;
+        };
         "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult": {
             /** Format: uuid */
             mfaMethodId?: string;
@@ -6771,6 +7725,7 @@ export interface components {
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
             email?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
             emailConfirmed?: boolean;
@@ -6788,6 +7743,7 @@ export interface components {
             version?: number;
             phone?: string | null;
             phoneVisibleToWorkspaceMembers?: boolean;
+            colourBlindLabels?: boolean;
         };
         "Notrelix.Application.Features.Identity.Profiles.DTOs.ProfileAvatarDto": {
             avatarUrl?: string | null;
@@ -6819,16 +7775,17 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
         };
-        /**
-         * Format: int32
-         * @enum {integer}
-         */
-        "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": 0 | 1 | 2;
+        /** @enum {string} */
+        "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": "MfaChallenge" | "Password" | "OAuth";
         "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult": {
             requiredFactor?: components["schemas"]["Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor"];
             challengeToken?: string | null;
             /** Format: date-time */
             expiresAt?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult": {
+            /** Format: int32 */
+            revokedCount?: number;
         };
         "Notrelix.Application.Features.Identity.Sessions.DTOs.SessionInfoDto": {
             /** Format: uuid */
@@ -6886,6 +7843,27 @@ export interface components {
         "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval.ApprovalRequestIdDto": {
             /** Format: uuid */
             id?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionResult": {
+            /** Format: uuid */
+            optionId?: string;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields.DeletedBoardFieldDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            fieldType?: string | null;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string;
+            /** Format: uuid */
+            deletedBy?: string | null;
+            deletedByName?: string | null;
+            /** Format: int32 */
+            valueCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
             /** Format: int32 */
@@ -7085,6 +8063,29 @@ export interface components {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetWorkspaceInbox.InboxEntryDto"][] | null;
             nextCursor?: string | null;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            itemKey?: string | null;
+            /** Format: uuid */
+            groupId?: string;
+            /** Format: date-time */
+            archivedAt?: string;
+            /** Format: uuid */
+            archivedBy?: string | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto": {
+            /** Format: uuid */
+            from?: string;
+            /** Format: uuid */
+            to?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyListDto": {
+            dependencies?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto"][] | null;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */
             id?: string;
@@ -7098,6 +8099,105 @@ export interface components {
             deletedBy?: string | null;
             /** Format: date-time */
             restorableUntil?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemDto": {
+            /** Format: uuid */
+            groupId?: string;
+            item?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSummaryDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemPageDto": {
+            /** Format: uuid */
+            optionId?: string | null;
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemDto"][] | null;
+            nextCursor?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            filteredCount?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard.DuplicateBoardResult": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            droppedAssignees?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardDuplicatePreview.BoardDuplicatePreviewDto": {
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            maxItems?: number;
+            overLimit?: boolean;
+            /** Format: int32 */
+            assigneeCount?: number;
+            /** Format: int32 */
+            droppedAssignees?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto": {
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            targetSpaceId?: string | null;
+            targetSpaceName?: string | null;
+            unchanged?: boolean;
+            /** Format: int32 */
+            losingCount?: number | null;
+            /** Format: int32 */
+            gainingCount?: number;
+            everyoneGains?: boolean;
+            everyoneLoses?: boolean;
+            /** Format: int32 */
+            targetPeople?: number;
+            stranded?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto"][] | null;
+            /** Format: int32 */
+            strandedCount?: number;
+            /** Format: int32 */
+            strandedItems?: number;
+            /** Format: int32 */
+            strandedOverdue?: number;
+            keptNames?: string[] | null;
+            /** Format: int32 */
+            keptCount?: number;
+            /** Format: int32 */
+            keptTeamCount?: number;
+            /** Format: int64 */
+            boardVersion?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            /** Format: int32 */
+            items?: number;
+            /** Format: int32 */
+            overdue?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            description?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            requestedByUserId?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            steps?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto"][] | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            approverUserId?: string | null;
+            /** Format: uuid */
+            approverTeamId?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            position?: number;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            note?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
             /** Format: uuid */
@@ -7176,6 +8276,8 @@ export interface components {
             color?: string | null;
             position?: string | null;
             category?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldSchemaDto": {
             /** Format: uuid */
@@ -7199,6 +8301,8 @@ export interface components {
             boardItems?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemSummaryDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: int32 */
+            itemCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardGroupSchemaDto": {
             /** Format: uuid */
@@ -7264,12 +8368,30 @@ export interface components {
             archivedBy?: string | null;
             archivedByName?: string | null;
             descriptionMd?: string | null;
+            fieldValues?: {
+                [key: string]: unknown;
+            } | null;
+            computedValues?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+            } | null;
+            coverColor?: string | null;
+            /** Format: uuid */
+            coverAttachmentId?: string | null;
+            coverStyle?: string | null;
+            repeatRule?: string | null;
+            /** Format: int32 */
+            reminderOffsetMinutes?: number;
+            /** Format: uuid */
+            updatedBy?: string | null;
+            updatedByName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */
             labelId?: string;
             name?: string | null;
             color?: string | null;
+            /** Format: int64 */
+            version?: number | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemMemberDto": {
             /** Format: uuid */
@@ -7328,6 +8450,52 @@ export interface components {
             /** Format: date-time */
             completedAt?: string | null;
             childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
+            fieldValues?: {
+                [key: string]: unknown;
+            } | null;
+            computedValues?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+            } | null;
+            /** Format: int32 */
+            openBlockerCount?: number;
+            coverColor?: string | null;
+            /** Format: uuid */
+            coverAttachmentId?: string | null;
+            coverStyle?: string | null;
+            repeatRule?: string | null;
+            /** Format: int32 */
+            reminderOffsetMinutes?: number;
+            /** Format: uuid */
+            updatedBy?: string | null;
+            updatedByName?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLaneDto": {
+            /** Format: uuid */
+            optionId?: string | null;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            filteredCount?: number;
+            nextCursor?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto": {
+            /** Format: uuid */
+            boardId?: string;
+            isArchived?: boolean;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            openItemCount?: number;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int32 */
+            groupCount?: number;
+            /** Format: int32 */
+            viewCount?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto": {
             /** Format: uuid */
@@ -7382,6 +8550,8 @@ export interface components {
             entries?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto"][] | null;
             log?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingLogEntryDto"][] | null;
             privateImpact?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto"];
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingEntryDto": {
             /** Format: uuid */
@@ -7396,6 +8566,8 @@ export interface components {
             source?: string | null;
             /** Format: uuid */
             permissionId?: string | null;
+            /** Format: int64 */
+            permissionVersion?: number | null;
             memberRole?: string | null;
             spaceRole?: string | null;
             outsideSpace?: boolean;
@@ -7457,6 +8629,31 @@ export interface components {
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemListDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ChildItemDto"][] | null;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto": {
+            state?: string | null;
+            value?: unknown;
+            errorCode?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            formId?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            createdItemId?: string | null;
+            /** Format: uuid */
+            submitterUserId?: string | null;
+            submitterEmail?: string | null;
+            status?: string | null;
+            /** Format: date-time */
+            submittedAt?: string;
+            /** Format: date-time */
+            processedAt?: string | null;
+            payloadJson?: string | null;
+            reason?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto": {
             /** Format: uuid */
             id?: string;
@@ -7474,6 +8671,180 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
             itemKeyPrefix?: string | null;
+            isArchived?: boolean;
+            /** Format: int32 */
+            filteredTotal?: number | null;
+            /** Format: int32 */
+            totalItems?: number | null;
+            lanes?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLaneDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            title?: string | null;
+            background?: string | null;
+            visibility?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+            itemKeyPrefix?: string | null;
+            /** Format: date-time */
+            retiredAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            viewId?: string | null;
+            visibility?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            criteria?: string | null;
+            isMine?: boolean;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            status?: string | null;
+            builtInKey?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ColumnCheck": {
+            /** Format: int32 */
+            column?: number;
+            target?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            count?: number;
+            examples?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ColumnMap": {
+            /** Format: int32 */
+            column?: number;
+            target?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto": {
+            /** Format: uuid */
+            id?: string;
+            status?: string | null;
+            format?: string | null;
+            scope?: string | null;
+            fileName?: string | null;
+            /** Format: int32 */
+            rowCount?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int64 */
+            size?: number | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            failureCode?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ExportSummaryDto": {
+            /** Format: int32 */
+            viewCount?: number;
+            /** Format: int32 */
+            allCount?: number;
+            hiddenFields?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportColumnDto": {
+            /** Format: int32 */
+            index?: number;
+            header?: string | null;
+            examples?: string[] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportErrorsDto": {
+            errors?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError"][] | null;
+            truncated?: boolean;
+            headers?: string[] | null;
+            fileName?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportJobDto": {
+            /** Format: uuid */
+            id?: string;
+            status?: string | null;
+            phase?: string | null;
+            /** Format: int32 */
+            total?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int32 */
+            created?: number;
+            /** Format: int32 */
+            errorCount?: number;
+            /** Format: int32 */
+            errorRows?: number;
+            firstKey?: string | null;
+            lastKey?: string | null;
+            failureCode?: string | null;
+            fileName?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            failureBy?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto": {
+            /** Format: int32 */
+            rowCount?: number;
+            missingTitle?: boolean;
+            checks?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ColumnCheck"][] | null;
+            /** Format: int32 */
+            errorCount?: number;
+            /** Format: int32 */
+            errorRows?: number;
+            errors?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError"][] | null;
+            sample?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.SampleRow"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError": {
+            /** Format: int32 */
+            row?: number;
+            column?: string | null;
+            target?: string | null;
+            value?: string | null;
+            code?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportTarget": {
+            id?: string | null;
+            name?: string | null;
+            type?: string | null;
+            required?: boolean;
+            lockedReason?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.ImportUploadDto": {
+            /** Format: uuid */
+            jobId?: string | null;
+            rejection?: string | null;
+            fileName?: string | null;
+            format?: string | null;
+            /** Format: int64 */
+            size?: number;
+            /** Format: int32 */
+            rowCount?: number;
+            /** Format: int32 */
+            columnCount?: number;
+            columns?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportColumnDto"][] | null;
+            targets?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportTarget"][] | null;
+            suggested?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ColumnMap"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Transfer.SampleRow": {
+            /** Format: int32 */
+            row?: number;
+            cells?: {
+                [key: string]: string | null;
+            } | null;
+            errorTargets?: string[] | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.AccountWorkspaceDto": {
             /** Format: uuid */
@@ -7487,6 +8858,7 @@ export interface components {
             departmentCount?: number | null;
             isDefault?: boolean;
             canLeave?: boolean;
+            isArchived?: boolean;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
             /** Format: uuid */
@@ -7526,6 +8898,8 @@ export interface components {
             resourceId?: string | null;
             resourceLevel?: string | null;
             initialEntries?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"][] | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
             kind?: string | null;
@@ -7583,7 +8957,6 @@ export interface components {
             inviterName?: string | null;
             email?: string | null;
             role?: string | null;
-            token?: string | null;
             /** Format: date-time */
             expiresAt?: string;
         };
@@ -7708,6 +9081,8 @@ export interface components {
             isArchived?: boolean;
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto": {
             subjectType?: string | null;
@@ -8667,6 +10042,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                boardItemId: string;
                 attachmentId: string;
             };
             cookie?: never;
@@ -8709,7 +10085,10 @@ export interface operations {
     "Collaboration.Comments.CreateBoardItemComment": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 boardItemId: string;
             };
@@ -8720,6 +10099,95 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Collaboration.Comments.Requests.CreateCommentRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Collaboration.Comments.GetBoardItemCommentsPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                boardItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfCommentDto"];
+                };
+            };
+        };
+    };
+    "Collaboration.Comments.AddReaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardItemId: string;
+                commentId: string;
+                emoji: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Comments.RemoveReaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardItemId: string;
+                commentId: string;
+                emoji: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -8757,7 +10225,10 @@ export interface operations {
     "Collaboration.Comments.CreatePageComment": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 pageId: string;
             };
@@ -8772,11 +10243,27 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9578,7 +11065,9 @@ export interface operations {
     };
     "Documents.Blocks.DeleteBlock": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -9594,7 +11083,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -9672,7 +11188,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -9702,7 +11245,10 @@ export interface operations {
     "Documents.Pages.CreatePage": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -9717,17 +11263,35 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Documents.Pages.GetPageTree": {
         parameters: {
-            query?: never;
+            query?: {
+                parentId?: string;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -9773,7 +11337,10 @@ export interface operations {
     };
     "Documents.Pages.ListTrashedPages": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -9788,7 +11355,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfPageDto"];
                 };
             };
         };
@@ -9999,6 +11566,32 @@ export interface operations {
             };
         };
     };
+    "Documents.Pages.Move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Documents.Templates.ListPageTemplates": {
         parameters: {
             query?: never;
@@ -10024,7 +11617,10 @@ export interface operations {
     "Documents.Templates.CreatePageTemplate": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -10039,18 +11635,37 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Documents.Templates.CreatePageFromTemplate": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
                 templateId: string;
@@ -10066,11 +11681,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -10236,6 +11867,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -10861,15 +12501,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
-                };
-            };
             /** @description Too Many Requests */
             429: {
                 headers: {
@@ -10955,6 +12586,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
         };
     };
     "Identity.Auth.ResendEmailVerification": {
@@ -11024,6 +12664,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11543,7 +13192,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -11572,8 +13225,35 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11602,7 +13282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult"];
                 };
             };
             /** @description Bad Request */
@@ -11616,6 +13296,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11654,6 +13343,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11703,8 +13401,26 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11754,6 +13470,15 @@ export interface operations {
             };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11847,6 +13572,15 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12427,17 +14161,50 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12853,6 +14620,31 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Approvals.ListPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.Approvals.Approve": {
         parameters: {
             query?: never;
@@ -12955,7 +14747,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Approvals.Requests.CancelApprovalRequestRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -12986,7 +14782,9 @@ export interface operations {
     };
     "WorkManagement.Approvals.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -13159,7 +14957,9 @@ export interface operations {
     };
     "WorkManagement.BoardFields.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -13245,6 +15045,70 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardFields.Restore": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardFields.Deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields.DeletedBoardFieldDto"][];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardFields.Move": {
         parameters: {
             query?: never;
@@ -13310,15 +15174,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionResult"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -13645,7 +15509,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.DuplicateBoardGroupRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -13731,7 +15599,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -13772,7 +15644,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -13868,6 +15744,56 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.ListLane": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                filter?: string;
+                sort?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+                lane: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardLaneItems.BoardLaneItemPageDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListDependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyListDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardItems.BulkUpdate": {
         parameters: {
             query?: never;
@@ -13935,6 +15861,30 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.Archived": {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"][];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardItems.Get": {
         parameters: {
             query?: never;
@@ -13959,7 +15909,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -14036,7 +15988,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.ArchiveBoardItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14046,7 +16002,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14067,7 +16023,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.Unarchive": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -14087,7 +16045,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14118,7 +16076,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14377,6 +16339,7 @@ export interface operations {
             };
             path: {
                 itemId: string;
+                pageId: string;
             };
             cookie?: never;
         };
@@ -14406,6 +16369,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListLinkedPages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
             };
         };
     };
@@ -14435,7 +16420,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14456,7 +16441,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.UnassignMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -14477,7 +16464,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14740,7 +16727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14761,7 +16748,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.Reopen": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -14781,7 +16770,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14871,7 +16860,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -14957,6 +16946,47 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.ClearLinks": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.BoardItems.DeleteLink": {
         parameters: {
             query?: never;
@@ -14996,6 +17026,254 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.SetCover": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemCoverRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.SetRepeat": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemRepeatRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.SetReminder": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemReminderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListVotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.SetVote": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemVoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardItems.RecordView": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ListViewers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
             };
         };
     };
@@ -15230,87 +17508,6 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.BoardPreferences.UpdateFilters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                boardId: string;
-                viewId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceFiltersRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-        };
-    };
-    "WorkManagement.BoardPreferences.UpdateSorts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                boardId: string;
-                viewId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceSortsRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-        };
-    };
-    "WorkManagement.BoardPreferences.UpdateGroup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                boardId: string;
-                viewId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardPreferences.Requests.UpdateBoardPreferenceGroupRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
-            };
-        };
-    };
     "WorkManagement.Boards.ListWorkspaceBoards": {
         parameters: {
             query?: never;
@@ -15378,6 +17575,50 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Boards.ListArchived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.ListDeleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto"][];
+                };
+            };
+        };
+    };
     "WorkManagement.Boards.Get": {
         parameters: {
             query?: never;
@@ -15402,7 +17643,9 @@ export interface operations {
     };
     "WorkManagement.Boards.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -15488,7 +17731,11 @@ export interface operations {
     };
     "WorkManagement.Boards.GetOverview": {
         parameters: {
-            query?: never;
+            query?: {
+                pageSize?: number;
+                filter?: string;
+                sort?: string;
+            };
             header?: never;
             path: {
                 boardId: string;
@@ -15552,6 +17799,121 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Boards.GetLifecycleImpact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLifecycleImpactDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetMoveImpact": {
+        parameters: {
+            query?: {
+                targetSpaceId?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveImpactDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetDuplicatePreview": {
+        parameters: {
+            query?: {
+                spaceId?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardDuplicatePreview.BoardDuplicatePreviewDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.Duplicate": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.DuplicateBoardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard.DuplicateBoardResult"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Boards.MakePrivate": {
         parameters: {
             query?: never;
@@ -15609,7 +17971,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15650,7 +18016,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15691,7 +18061,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.BoardVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15877,9 +18251,52 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.Boards.RemoveMember": {
+    "WorkManagement.Boards.Leave": {
         parameters: {
             query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Boards.RemoveMember": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -16101,7 +18518,10 @@ export interface operations {
     };
     "WorkManagement.BoardViews.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+                newDefaultViewId?: string;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -16200,7 +18620,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.ArchiveBoardViewRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16242,7 +18666,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16284,7 +18712,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16372,7 +18804,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.BoardViewVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -16514,9 +18950,78 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.Checklists.Delete": {
+    "WorkManagement.Checklists.Copy": {
         parameters: {
             query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CopyChecklistRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.ListForBoard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Checklists.Delete": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -16866,6 +19371,96 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Checklists.SetItemAssignee": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemAssigneeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.SetItemDue": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.SetChecklistItemDueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Forms.List": {
         parameters: {
             query?: never;
@@ -16933,7 +19528,7 @@ export interface operations {
             };
         };
     };
-    "WorkManagement.Forms.ListSubmissions": {
+    "WorkManagement.Forms.Get": {
         parameters: {
             query?: never;
             header?: never;
@@ -16957,7 +19552,9 @@ export interface operations {
     };
     "WorkManagement.Forms.SoftDelete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17043,7 +19640,9 @@ export interface operations {
     };
     "WorkManagement.Forms.Publish": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17084,7 +19683,9 @@ export interface operations {
     };
     "WorkManagement.Forms.Close": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17209,6 +19810,50 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Forms.RemoveQuestion": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                formId: string;
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Forms.UpdateQuestion": {
         parameters: {
             query?: never;
@@ -17217,6 +19862,7 @@ export interface operations {
                 "Idempotency-Key": string;
             };
             path: {
+                formId: string;
                 questionId: string;
             };
             cookie?: never;
@@ -17251,6 +19897,98 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.Forms.ListSubmissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Forms.Submit": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Forms.ListSubmissionsPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto"];
+                };
             };
         };
     };
@@ -17311,7 +20049,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -17491,7 +20233,9 @@ export interface operations {
     };
     "WorkManagement.Labels.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -17782,7 +20526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.SavedFilterDto"][];
                 };
             };
         };
@@ -17805,15 +20549,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -18159,15 +20903,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -18327,15 +21071,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     /** @description true when this response is a replay of a stored result */
                     "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
             /** @description Idempotency key reused with a different payload */
@@ -18371,7 +21115,306 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.Upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportFileForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportUploadDto"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.Preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.Confirm": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ImportMappingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportJobDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Imports.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportJobDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Imports.GetErrors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportErrorsDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto"][];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.Create": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Transfer.Requests.ExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Exports.GetSummary": {
+        parameters: {
+            query?: {
+                filter?: string;
+                sort?: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportSummaryDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ExportJobDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Exports.GetFile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -18403,7 +21446,10 @@ export interface operations {
     };
     "Workspaces.Invitations.ListWorkspaceInvitations": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -18418,7 +21464,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto"];
                 };
             };
         };
@@ -18528,6 +21574,28 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Identity.OneTimeTokenRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto"];
+                };
+            };
+        };
+    };
+    "Workspaces.Invitations.AcceptInvitationById": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -18799,7 +21867,10 @@ export interface operations {
     };
     "Workspaces.Members.ListMembers": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -18814,7 +21885,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkspaceMemberDto"];
                 };
             };
         };
@@ -18822,7 +21893,10 @@ export interface operations {
     "Workspaces.Members.InviteMember": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -18837,11 +21911,29 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -18895,7 +21987,9 @@ export interface operations {
     };
     "Workspaces.Members.RemoveMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19006,7 +22100,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.MemberVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -19029,7 +22127,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.MemberVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -19505,7 +22607,10 @@ export interface operations {
     };
     "Workspaces.Spaces.GetWorkspaceSpaces": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19520,7 +22625,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfSpaceDto"];
                 };
             };
         };
@@ -19528,7 +22633,10 @@ export interface operations {
     "Workspaces.Spaces.CreateSpace": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -19543,17 +22651,36 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     "Workspaces.Spaces.GetSpaceTree": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19568,7 +22695,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfSpaceTreeNodeDto"];
                 };
             };
         };
@@ -19737,7 +22864,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.SpaceVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -19760,7 +22891,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.SpaceVersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -19979,7 +23114,10 @@ export interface operations {
     };
     "Workspaces.Teams.GetWorkspaceTeams": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -19994,7 +23132,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfTeamDto"];
                 };
             };
         };
@@ -20002,7 +23140,10 @@ export interface operations {
     "Workspaces.Teams.CreateTeam": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 workspaceId: string;
             };
@@ -20017,11 +23158,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -20557,7 +23714,10 @@ export interface operations {
     "Workspaces.Workspaces.CreateWorkspace": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 accountId: string;
             };
@@ -20572,11 +23732,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

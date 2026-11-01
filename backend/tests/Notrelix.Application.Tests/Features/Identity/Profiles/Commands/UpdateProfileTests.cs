@@ -39,6 +39,6 @@ public class UpdateProfileTests : IdentityHandlerTestBase
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("User not found"));
+        result.Errors.Should().Contain(e => e.Contains("Session is invalid or expired"));
     }
 }

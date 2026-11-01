@@ -402,6 +402,7 @@ export interface ArchiveTeamDialogProps {
   readonly copy: WorkspaceTeamsCopy;
   readonly open: boolean;
   readonly teamName: string;
+  readonly workspaceName: string;
   readonly loss: ArchiveLoss | null;
   readonly pending: boolean;
   readonly onClose: () => void;
@@ -413,6 +414,7 @@ export function ArchiveTeamDialog({
   copy,
   open,
   teamName,
+  workspaceName,
   loss,
   pending,
   onClose,
@@ -431,7 +433,7 @@ export function ArchiveTeamDialog({
       >
         <div className="flex items-center gap-2.5 px-5 pt-[18px] pb-1.5">
           <DialogTitle className="m-0 text-dialog-title leading-[1.45] font-[650] text-foreground">
-            {formatCopy(a.title, { team: teamName })}
+            {formatCopy(a.title, { team: teamName, workspace: workspaceName })}
           </DialogTitle>
           <button
             type="button"

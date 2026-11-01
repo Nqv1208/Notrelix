@@ -16,3 +16,11 @@
 \i 016_policies_derived_scope.sql
 \i 017_webhook_scope.sql
 \i 018_billing_usage.sql
+\i 019_policy_helpers_migrator_only.sql
+\i 020_support_role_no_content.sql
+\i 021_billing_and_account_writes.sql
+\i 022_audit_append_only.sql
+\i 023_custom_role_assignments.sql
+\i 024_membership_end_access.sql
+\i 025_invitee_invitations.sql
+\i 026_authz_access_helpers_static.sql

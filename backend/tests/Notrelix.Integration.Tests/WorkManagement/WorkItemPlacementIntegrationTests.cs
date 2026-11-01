@@ -11,6 +11,9 @@ using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Duplicat
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnlinkPageFromBoardItem;
+using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
@@ -153,6 +156,68 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
                 .Handle(new DuplicateBoardItemCommand(first), CancellationToken.None)).Data);
 
         (await OrderInGroupAsync(_todoId)).Should().Equal(first, copy, second);
+    }
+
+    [Fact]
+    public async Task DuplicateItem_WithOptions_CopiesChecklistsSubItemsAndAssignees_AndKeepsTheSource()
+    {
+        var source = await CreateAsync("source");
+        var assignee = Guid.NewGuid();
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.Checklists.Add(Checklist.Create(_accountId, _workspaceId, source, "Kiểm tra", FractionalIndex.Create("a0"), _userId, Now));
+            seed.BoardItemMembers.Add(BoardItemMember.Create(_accountId, _workspaceId, _boardId, source, assignee, _userId, Now));
+            await seed.SaveChangesAsync();
+        }
+        await InTransactionAsync(async context =>
+        {
+            var parent = await context.BoardItems.SingleAsync(i => i.Id == source);
+            var key = (await Keys(context).AllocateAsync(context, _boardId, 1, CancellationToken.None))[0];
+            context.BoardItems.Add(BoardItem.CreateSubItem(parent, "con", FractionalIndex.Create("a0"), _userId, Now, key.Key, key.Sequence));
+            return true;
+        });
+
+        var copy = await InTransactionAsync(async context =>
+            (await new DuplicateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context), Keys(context))
+                .Handle(new DuplicateBoardItemCommand(source, "Bản sao", new DuplicateBoardItemOptions(IncludeChecklists: true, IncludeSubItems: true, IncludeAssignees: true)), CancellationToken.None)).Data);
+
+        await using var read = _db.CreateOwnerContext(SystemTenant());
+        (await read.BoardItems.AnyAsync(i => i.ParentItemId == copy && i.Name == "con")).Should().BeTrue();
+        (await read.Checklists.CountAsync(c => c.ItemId == copy)).Should().Be(1);
+        (await read.BoardItemMembers.CountAsync(m => m.ItemId == copy && m.UserId == assignee)).Should().Be(1);
+        (await read.Checklists.CountAsync(c => c.ItemId == source)).Should().Be(1);
+        (await read.BoardItems.CountAsync(i => i.ParentItemId == source)).Should().Be(1);
+        (await read.BoardItems.Select(i => i.ItemKey).Distinct().CountAsync()).Should().Be(await read.BoardItems.CountAsync());
+    }
+
+    [Fact]
+    public async Task UnlinkPage_RemovesOnlyThatPageLink_NeverItemToItemLinks()
+    {
+        var a = await CreateAsync("a");
+        var b = await CreateAsync("b");
+        var pageKind = ResourceKind.Create("documents.page");
+        var kept = Guid.NewGuid();
+        var removed = Guid.NewGuid();
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.BoardItemLinks.AddRange(
+                BoardItemLink.Create(_accountId, _workspaceId, _boardId, a, ResourceRef.Create(ResourceKind.Create("work-management.board-item"), b, _workspaceId), BoardItemLinkType.Reference, _userId, Now),
+                BoardItemLink.Create(_accountId, _workspaceId, _boardId, a, ResourceRef.Create(pageKind, kept, _workspaceId), BoardItemLinkType.Reference, _userId, Now),
+                BoardItemLink.Create(_accountId, _workspaceId, _boardId, a, ResourceRef.Create(pageKind, removed, _workspaceId), BoardItemLinkType.Reference, _userId, Now));
+            await seed.SaveChangesAsync();
+        }
+
+        await InTransactionAsync(async context =>
+        {
+            await new UnlinkPageFromBoardItemCommandHandler(context, CurrentUser())
+                .Handle(new UnlinkPageFromBoardItemCommand(a, removed), CancellationToken.None);
+            return true;
+        });
+
+        await using var read = _db.CreateOwnerContext(SystemTenant());
+        var left = await read.BoardItemLinks.Where(l => l.SourceItemId == a).ToListAsync();
+        left.Should().HaveCount(2);
+        left.Select(l => l.Target.ResourceId).Should().BeEquivalentTo([b, kept]);
     }
 
     [Fact]
@@ -319,7 +384,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
     private async Task<Guid> AddOptionAsync(Guid fieldId, string name, Guid? previous = null, Guid? next = null) =>
         await InTransactionAsync(async context =>
             (await new AddFieldOptionCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", 1, previous, next), CancellationToken.None)).Data);
+                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", 1, previous, next), CancellationToken.None)).Data!.OptionId);
 
     private Task MoveOptionAsync(Guid fieldId, Guid optionId, Guid? previous, Guid? next) =>
         InTransactionAsync(async context =>

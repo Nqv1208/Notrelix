@@ -18,10 +18,12 @@ public static class DeleteBoardViewEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
+        [FromQuery] long expectedVersion,
+        [FromQuery] Guid? newDefaultViewId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteBoardViewCommand(boardId, viewId), cancellationToken);
+        var result = await sender.Send(new DeleteBoardViewCommand(boardId, viewId, expectedVersion, newDefaultViewId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

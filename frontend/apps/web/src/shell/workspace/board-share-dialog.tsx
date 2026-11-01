@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useCurrentUser } from "@notrelix/features-auth";
 import {
@@ -28,12 +28,15 @@ import {
   type ShareLevel,
   useBoardShareCopy,
   type BoardShareView,
+  type ShareRowView,
 } from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useBoardPlacements } from "./board-placement-bridge";
 import { useBoardSharing } from "./use-board-sharing";
 import { toastFailure } from "./failure-toast";
 import { useSpaceHooks } from "./use-workspace-spaces";
+
+const LAST_MANAGER_RULE = "WorkManagement_Board_LastManager";
 
 /**
  * The Board share dialog of the board header's Share button: the Board access
@@ -256,14 +259,78 @@ export function BoardShareDialog({
       }));
   }, [members.data, sharing.data, user?.id]);
 
+  // The last Manager refused: the dialog says so at its head instead of a toast.
+  const [refused, setRefused] = useState<{
+    row: ShareRowView;
+    removal: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (!open) setRefused(null);
+  }, [open]);
+
   const write = useCallback(
-    (run: () => Promise<void>) => {
-      run().catch((error: unknown) =>
-        toastFailure(copy.footer.writeFailed, error, ""),
-      );
+    (
+      run: () => Promise<void>,
+      subject?: { row: ShareRowView; removal: boolean },
+    ) => {
+      setRefused(null);
+      run().catch((error: unknown) => {
+        if (
+          subject &&
+          (error as { ruleCode?: string } | null)?.ruleCode ===
+            LAST_MANAGER_RULE
+        ) {
+          setRefused(subject);
+          return;
+        }
+        toastFailure(copy.footer.writeFailed, error, (failure) =>
+          failure.kind === "conflict" ? copy.footer.writeConflict : "",
+        );
+      });
     },
     [copy],
   );
+
+  const notice = useMemo(() => {
+    const text = copy.lastManager;
+    if (refused) {
+      const name = refused.row.name;
+      const team = refused.row.kind === "team";
+      return {
+        kind: "refused" as const,
+        title: fillBoardShareCopy(
+          team
+            ? text.teamTitle
+            : refused.removal
+              ? text.removeTitle
+              : text.lowerTitle,
+          { name },
+        ),
+        body: fillBoardShareCopy(
+          team
+            ? text.teamBody
+            : refused.removal
+              ? text.removeBody
+              : text.lowerBody,
+          { name },
+        ),
+        addManager: true,
+      };
+    }
+    // Managing through Governance: the person is no Manager entry of the Board.
+    if (
+      view?.canManage &&
+      !view.hiddenCounts &&
+      !view.rows.some((row) => row.isYou && row.level === "manage")
+    ) {
+      return {
+        kind: "info" as const,
+        title: text.viaAdminTitle,
+        body: text.viaAdminBody,
+      };
+    }
+    return null;
+  }, [copy, refused, view]);
 
   const copyLink = useCallback(() => {
     const link = `${window.location.origin}/workspaces/${encodeURIComponent(workspaceId)}/boards/${encodeURIComponent(boardId)}`;
@@ -275,6 +342,11 @@ export function BoardShareDialog({
       );
   }, [boardId, copy, workspaceId]);
 
+  const subjectOf = (rowId: string, removal: boolean) => {
+    const row = view?.rows.find((candidate) => candidate.id === rowId);
+    return row ? { row, removal } : undefined;
+  };
+
   if (!view) return null;
   return (
     <BoardShareDialogSurface
@@ -285,6 +357,7 @@ export function BoardShareDialog({
       onCopyLink={copyLink}
       log={log}
       impact={impact}
+      notice={notice}
       candidates={view.canManage && sharing.data ? candidates : undefined}
       onInvite={
         view.canManage && sharing.data
@@ -300,12 +373,16 @@ export function BoardShareDialog({
       onChangeLevel={
         view.canManage && sharing.data
           ? (rowId: string, level: ShareLevel) =>
-              write(() => sharing.changeLevel(rowId, SHARING_LEVEL_OF[level]))
+              write(
+                () => sharing.changeLevel(rowId, SHARING_LEVEL_OF[level]),
+                subjectOf(rowId, false),
+              )
           : undefined
       }
       onRemove={
         view.canManage && sharing.data
-          ? (rowId: string) => write(() => sharing.remove(rowId))
+          ? (rowId: string) =>
+              write(() => sharing.remove(rowId), subjectOf(rowId, true))
           : undefined
       }
       onChangeGeneral={

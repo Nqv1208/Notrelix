@@ -35,7 +35,7 @@ public class NewInvitationEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ChangeInvitationRole_WithValidData_ReturnsSuccess()
     {
-        var body = new { NewRole = "Admin" };
+        var body = new { NewRole = "Admin", ExpectedVersion = 1 };
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/invitations/{InvitationId}/role", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -43,7 +43,7 @@ public class NewInvitationEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ChangeInvitationRole_WithNonexistentInvitation_ReturnsNotFound()
     {
-        var body = new { NewRole = "Admin" };
+        var body = new { NewRole = "Admin", ExpectedVersion = 1 };
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/invitations/99999999-9999-9999-9999-999999999999/role", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -53,7 +53,7 @@ public class NewInvitationEndpointTests : IClassFixture<NotrelixApiFactory>
     {
         var factory = new NotrelixApiFactory();
         using var client = factory.CreateClient();
-        var body = new { NewRole = "Admin" };
+        var body = new { NewRole = "Admin", ExpectedVersion = 1 };
         var response = await client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/invitations/{InvitationId}/role", JsonContent(body));
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

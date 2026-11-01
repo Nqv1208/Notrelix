@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 using Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
 
 namespace Notrelix.Application.Features.Collaboration.Watchers.Commands.UnfollowBoardItem;
@@ -7,7 +8,7 @@ namespace Notrelix.Application.Features.Collaboration.Watchers.Commands.Unfollow
 /// <summary>The caller stops following an Item; not following it already is the same as having stopped.</summary>
 [IdempotencyOperation("collaboration.watchers.unfollow-board-item.v1")]
 public record UnfollowBoardItemCommand(Guid BoardItemId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IPersonalBoardRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create(FollowBoardItemCommand.BoardItemKind), BoardItemId);

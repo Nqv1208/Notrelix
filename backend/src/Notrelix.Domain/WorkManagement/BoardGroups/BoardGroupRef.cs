@@ -2,6 +2,10 @@ namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
 public sealed record BoardGroupRef(Guid AccountId, Guid WorkspaceId, Guid BoardId, Guid GroupId) : IWorkspaceScoped
 {
-    public static BoardGroupRef From(BoardGroup group) =>
-        new(group.AccountId, group.WorkspaceId, group.BoardId, group.Id);
+    /// <summary>The reference an Item is placed through; an archived group cannot receive Items.</summary>
+    public static BoardGroupRef From(BoardGroup group)
+    {
+        group.EnsureCanReceiveItems();
+        return new(group.AccountId, group.WorkspaceId, group.BoardId, group.Id);
+    }
 }

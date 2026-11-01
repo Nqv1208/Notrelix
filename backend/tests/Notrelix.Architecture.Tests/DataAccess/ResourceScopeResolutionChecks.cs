@@ -51,6 +51,47 @@ public class ResourceScopeResolutionChecks : ArchitectureTestBase
         }
     }
 
+    // Not endpoint-driven: a request the pipeline scopes to a resource whose kind the locator cannot resolve
+    // is answered NotFound for everyone before its handler runs.
+    [Fact]
+    public void ResolverHandlesEveryResourceKindOfEveryResourceScopedRequest()
+    {
+        var resolverContent = File.ReadAllText(ResolverPath);
+        var missing = new SortedSet<string>(StringComparer.Ordinal);
+
+        foreach (var file in Directory.GetFiles(Path.Combine(GetApplicationPath(), "Features"), "*.cs", SearchOption.AllDirectories)
+                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                              && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")))
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IResourceScopedRequest", StringComparison.Ordinal)) continue;
+
+            foreach (System.Text.RegularExpressions.Match kind in System.Text.RegularExpressions.Regex.Matches(
+                         content, @"ResourceKind\.Create\(""([^""]+)""\)"))
+            {
+                if (!resolverContent.Contains($"\"{kind.Groups[1].Value}\" =>", StringComparison.Ordinal))
+                    missing.Add(kind.Groups[1].Value);
+            }
+        }
+
+        // Named exceptions: the kinds docs/product/governance.md lists as "Not yet wired". Wiring one means
+        // removing it here and from that doc line; a new unhandled kind is never added to this set silently.
+        var unwired = new SortedSet<string>(StringComparer.Ordinal)
+        {
+            "work-management.board-relation",
+        };
+
+        missing.Should().BeEquivalentTo(unwired,
+            "ResourceLocator.QueryAsync must have a case for every resource kind a scoped request uses, except the documented unwired kinds");
+
+        var doc = File.ReadAllText(Path.Combine(GetSrcPath(), "..", "..", "docs", "product", "governance.md"));
+        var line = doc.Split('\n').Single(l => l.StartsWith("Not yet wired", StringComparison.Ordinal));
+        line.Should().Contain("Board relations")
+            .And.NotContain("approval", "approval requests are wired into the locator")
+            .And.NotContain("Saved filters", "saved filters are wired into the locator")
+            .And.NotContain("Forms", "forms and form submissions are wired into the locator");
+    }
+
     [Fact]
     public void ResolverHandlesKnownResourceKinds()
     {

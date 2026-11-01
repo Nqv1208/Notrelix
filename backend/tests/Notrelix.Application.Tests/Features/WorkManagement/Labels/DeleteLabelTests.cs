@@ -8,7 +8,7 @@ public class DeleteLabelTests : WorkManagementHandlerTestBase
 
     public DeleteLabelTests()
     {
-        _handler = new DeleteLabelCommandHandler(DbContextMock.Object);
+        _handler = new DeleteLabelCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
     }
 
     [Fact]
@@ -19,7 +19,7 @@ public class DeleteLabelTests : WorkManagementHandlerTestBase
             "Bug", LabelColor.Create("#FF0000"), TestUserId, TestNow);
         SetupLabels(label);
 
-        var command = new DeleteLabelCommand(label.Id);
+        var command = new DeleteLabelCommand(label.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -27,9 +27,29 @@ public class DeleteLabelTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_LabelOnItems_RemovesLinksAndRaisesRemovedFactPerItem()
+    {
+        var label = Label.Create(
+            TestAccountId, TestWorkspaceId, Guid.CreateVersion7(),
+            "Bug", LabelColor.Create("#FF0000"), TestUserId, TestNow);
+        SetupLabels(label);
+        var links = new[] { Guid.CreateVersion7(), Guid.CreateVersion7() }
+            .Select(itemId => BoardItemLabel.Create(TestAccountId, TestWorkspaceId, label.BoardId, itemId, label.Id, TestUserId, TestNow))
+            .ToArray();
+        SetupBoardItemLabels(links);
+
+        var result = await _handler.Handle(new DeleteLabelCommand(label.Id, ExpectedVersion: 1), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        var facts = links.SelectMany(l => l.DomainEvents).OfType<BoardItemLabelRemovedDomainEvent>().ToList();
+        facts.Should().HaveCount(2);
+        facts.Should().OnlyContain(f => f.LabelName == "Bug" && f.RemovedBy == TestUserId);
+    }
+
+    [Fact]
     public async Task Handle_LabelNotFound_ThrowsNotFoundException()
     {
-        var command = new DeleteLabelCommand(Guid.CreateVersion7());
+        var command = new DeleteLabelCommand(Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

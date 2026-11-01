@@ -11,6 +11,7 @@ public static class CreateBoardFromTemplateEndpoint
         group.MapResourcePost("/create-board", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.Templates.CreateBoard")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json")
             .WithTags("WorkManagement.Templates")
             .WithSummary("Create a board from a template");
         return group;

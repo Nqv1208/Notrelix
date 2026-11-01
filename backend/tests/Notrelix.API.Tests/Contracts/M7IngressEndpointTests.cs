@@ -110,6 +110,7 @@ public class M7IngressEndpointTests : IClassFixture<NotrelixApiFactory>
 
         var factory = WithResourceScope();
         using var client = factory.CreateClientWithAuth();
+        client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
         var response = await client.PostAsync(
             $"/api/v1/board-items/{boardItemId}/comments",
             JsonBody(new { contentMd = content, mentionedUserIds = new[] { mentionedUser1, mentionedUser2 } }));

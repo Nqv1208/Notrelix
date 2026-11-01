@@ -2,6 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
 import type { ItemLinkDto } from "../api/item-extras.api";
 import { useWorkManagementServices } from "../services";
+import { neededVersion } from "../mutations/seen-version";
+import type {
+  ItemChildItemDto,
+  ItemLifecycleDto,
+} from "../api/item-extras.api";
 import { wmQueryKeys } from "./keys";
 
 const childKey = (workspaceId: string, itemId: string) =>
@@ -41,7 +46,18 @@ export function useItemChildItems(
   };
   const toggle = useMutation({
     mutationFn: (input: { childId: string; done: boolean }) =>
-      itemExtras.setChildDone(input.childId, input.done),
+      itemExtras.setChildDone(
+        input.childId,
+        input.done,
+        neededVersion(
+          queryClient
+            .getQueryData<readonly ItemChildItemDto[]>(
+              childKey(workspaceId, itemId),
+            )
+            ?.find((child) => child.id === input.childId)?.version,
+          input.childId,
+        ),
+      ),
     onSettled: refresh,
   });
   const add = useMutation({
@@ -90,7 +106,7 @@ export function useItemFollowing(itemId: string, workspaceId: string) {
 const approvalsKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-approvals", itemId);
 
-/** The approvals asked about the item, and the write that asks a person for one. */
+/** The approvals asked about the item, the write that asks a person for one, and the answers to it. */
 export function useItemApprovals(itemId: string, workspaceId: string) {
   const { itemExtras } = useWorkManagementServices();
   const queryClient = useQueryClient();
@@ -109,12 +125,54 @@ export function useItemApprovals(itemId: string, workspaceId: string) {
       });
     },
   });
+  const refresh = () => {
+    void queryClient.invalidateQueries({
+      queryKey: approvalsKey(workspaceId, itemId),
+    });
+    // The item's history and the feeds that list approvals waiting for a person change with it.
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.cardActivity(workspaceId, itemId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "workspace-feed"),
+    });
+  };
+  const decide = useMutation({
+    mutationFn: (input: {
+      requestId: string;
+      decision: "approve" | "reject";
+      comment: string | null;
+    }) =>
+      itemExtras.decideApproval(
+        workspaceId,
+        input.requestId,
+        input.decision,
+        input.comment,
+      ),
+    onSettled: refresh,
+  });
+  const cancel = useMutation({
+    mutationFn: (requestId: string) => {
+      const version = query.data?.find((a) => a.id === requestId)?.version;
+      if (version === undefined) {
+        return Promise.reject(new Error("The approval is no longer loaded."));
+      }
+      return itemExtras.cancelApproval(requestId, version);
+    },
+    onSettled: refresh,
+  });
   return {
     approvals: query.data,
     request: request.mutate,
     requesting: request.isPending,
+    /** The named approver approves or rejects, with an optional comment. */
+    decide: decide.mutate,
+    /** The requester withdraws a pending request. */
+    cancel: cancel.mutate,
     /** The server's refusal of the last request (a person already asked, an approver who cannot read the item). */
     error: request.error,
+    /** The server's refusal of the last decision or cancel (already decided, not allowed). */
+    answerError: decide.error ?? cancel.error,
   };
 }
 
@@ -181,6 +239,41 @@ export function useItemLinks(
   };
 }
 
+/**
+ * Timeline dependencies `from -> to` (`to` waits for `from`). Each write is a
+ * request of its own, so an undo is the inverse call, never a cache rewind;
+ * the plan is refetched after every settle and stays the single truth.
+ */
+export function useTimelineDependencies(boardId: string, workspaceId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  const refresh = () => {
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "work-management", "plan-items"),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: workspaceQueryKey(workspaceId, "work-management", "item-links"),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+    });
+  };
+  const add = useMutation({
+    mutationFn: (v: { from: string; to: string }) =>
+      itemExtras.addDependency(v.from, v.to),
+    onSettled: refresh,
+  });
+  const remove = useMutation({
+    mutationFn: (v: { from: string; to: string }) =>
+      itemExtras.removeDependency(v.from, v.to),
+    onSettled: refresh,
+  });
+  return {
+    createDependency: add.mutateAsync,
+    removeDependency: remove.mutateAsync,
+  };
+}
+
 const lifecycleKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-lifecycle", itemId);
 
@@ -218,12 +311,20 @@ export function useItemLifecycle(
       queryKey: workspaceQueryKey(workspaceId, "work-management", "cards"),
     });
   };
+  // Both writes name the version the lifecycle read showed, never a fresh one.
+  const lifecycleVersion = () =>
+    neededVersion(
+      queryClient.getQueryData<ItemLifecycleDto>(
+        lifecycleKey(workspaceId, itemId),
+      )?.version,
+      itemId,
+    );
   const restore = useMutation({
-    mutationFn: () => itemExtras.restoreItem(itemId),
+    mutationFn: () => itemExtras.restoreItem(itemId, lifecycleVersion()),
     onSettled: refresh,
   });
   const reopen = useMutation({
-    mutationFn: () => itemExtras.reopenItem(itemId),
+    mutationFn: () => itemExtras.reopenItem(itemId, lifecycleVersion()),
     onSettled: refresh,
   });
   return {

@@ -1,4 +1,5 @@
 using Notrelix.Infrastructure.BackgroundJobs;
+using Notrelix.Infrastructure.Messaging.Options;
 using Notrelix.Infrastructure.Storage;
 
 namespace Notrelix.Infrastructure;
@@ -12,6 +13,10 @@ public static class BackgroundJobsRegistration
     public static IServiceCollection AddBackgroundJobs(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<OutboxDispatchOptions>()
+            .Bind(configuration.GetSection(OutboxDispatchOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<OutboxDispatchOptions>, OutboxDispatchOptionsValidator>();
         services.AddHostedService<OutboxDispatcher>();
         services.AddHostedService<EmailDispatcher>();
 
@@ -37,6 +42,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<SecurityActivityRetentionSweeper>();
         services.AddHostedService<SecurityActivityRetentionService>();
 
+        // Governance: delete Board access-change rows past their 90-day retention (reads already hide them).
+        services.AddOptions<ResourceAccessChangeRetentionOptions>()
+            .Bind(configuration.GetSection(ResourceAccessChangeRetentionOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ResourceAccessChangeRetentionOptions>, ResourceAccessChangeRetentionOptionsValidator>();
+        services.AddScoped<ResourceAccessChangeRetentionSweeper>();
+        services.AddHostedService<ResourceAccessChangeRetentionService>();
+
         // Workspaces: delete onboarding drafts past their 30-day expiry (reads already treat them as absent).
         services.AddOptions<OnboardingDraftSweepOptions>()
             .Bind(configuration.GetSection(OnboardingDraftSweepOptions.SectionName))
@@ -52,6 +65,10 @@ public static class BackgroundJobsRegistration
         services.AddSingleton<IValidateOptions<DueDateNotificationOptions>, DueDateNotificationOptionsValidator>();
         services.AddScoped<DueDateNotificationSweeper>();
         services.AddHostedService<DueDateNotificationService>();
+
+        // Work Management: run queued board file imports and exports, and remove expired export files.
+        services.AddScoped<BoardTransferRunner>();
+        services.AddHostedService<BoardTransferService>();
 
         return services;
     }

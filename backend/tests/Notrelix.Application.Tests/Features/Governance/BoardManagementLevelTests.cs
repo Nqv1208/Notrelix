@@ -34,7 +34,7 @@ namespace Notrelix.Application.Tests.Features.Governance;
 /// deleting or restoring it, and its members — needs Manager; Editors only edit
 /// content. A Guest is capped at Editor, so a Guest never manages a Board, also
 /// on an unplaced Workspace-visible Board. Content-structure commands (groups,
-/// labels, the default view, saved filters, forms, templates, relations, approval
+/// labels, the default view, saved filters, forms, relations, approval
 /// requests) stay Editor actions by declaring the content action they perform.
 /// </summary>
 public sealed class BoardManagementLevelTests
@@ -67,6 +67,7 @@ public sealed class BoardManagementLevelTests
         { typeof(AddBoardMemberCommand), Board },
         { typeof(RemoveBoardMemberCommand), Board },
         { typeof(UpdateBoardMemberRoleCommand), Board },
+        { typeof(CreateBoardTemplateCommand), Board },
     };
 
     public static TheoryData<Type, string> ContentCommands() => new()
@@ -84,7 +85,6 @@ public sealed class BoardManagementLevelTests
         { typeof(SetDefaultViewCommand), Board },
         { typeof(CreateSavedFilterCommand), Board },
         { typeof(CreateFormCommand), Board },
-        { typeof(CreateBoardTemplateCommand), Board },
         { typeof(CreateBoardRelationCommand), Board },
         { typeof(CreateApprovalRequestCommand), Board },
     };
@@ -99,7 +99,7 @@ public sealed class BoardManagementLevelTests
         Decide(action, kind, Editor()).Should().Be(AccessDecisionKind.Forbidden, $"an Editor cannot {command.Name}");
         Decide(action, kind, UnplacedMember()).Should().Be(AccessDecisionKind.Forbidden,
             "the Workspace default of an unplaced board is Editor, not Manager");
-        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Forbidden, "a Guest is capped at Editor");
+        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Forbidden, "a Guest is capped at Viewer");
         Decide(action, kind, Manager()).Should().Be(AccessDecisionKind.Allowed);
     }
 
@@ -112,7 +112,7 @@ public sealed class BoardManagementLevelTests
         action.Should().NotBe(PermissionAction.ManageBoard, $"{command.Name} edits content");
         Decide(action, kind, Editor()).Should().Be(AccessDecisionKind.Allowed);
         Decide(action, kind, UnplacedMember()).Should().Be(AccessDecisionKind.Allowed);
-        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Allowed, "a Guest edits content up to Editor");
+        Decide(action, kind, GuestWithManagerGrant()).Should().Be(AccessDecisionKind.Forbidden, "a Guest is view-only (GOV-030)");
         Decide(action, kind, Commenter()).Should().Be(AccessDecisionKind.Forbidden);
     }
 

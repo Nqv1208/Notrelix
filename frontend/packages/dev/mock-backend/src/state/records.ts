@@ -243,6 +243,10 @@ export interface MockCommentRecord {
   updatedAt?: string;
   /** Files that came with the comment (ids of the card's attachments). */
   attachmentIds?: string[];
+  /** The top-level comment this one answers (replies are one level deep). */
+  parentId?: string;
+  /** Who chose which emoji. */
+  reactions?: { emoji: string; userId: string }[];
 }
 
 /** A file attached to an item (`GET /board-items/{id}/attachments`). */
@@ -254,6 +258,8 @@ export interface MockAttachmentRecord {
   contentType: string;
   uploadedBy: string;
   createdAt: string;
+  /** Set for a web link; a stored file has none. */
+  url?: string;
 }
 
 /** A file attached to a Documents page (`GET /pages/{id}/attachments`); the bytes are kept. */

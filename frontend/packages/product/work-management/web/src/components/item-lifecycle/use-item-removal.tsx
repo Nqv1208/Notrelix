@@ -1,12 +1,49 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
+  classifyArchiveError,
+  classifyMoveError,
+  classifyRemindError,
+  useBoardLabels,
+  useArchiveCard,
+  useSeenItemVersion,
   useBoardTrash,
+  isVersionConflict,
+  UnknownItemVersionError,
   useDeleteCard,
+  useDuplicateCard,
+  useFullBoard,
+  useItemLinks,
   useMoveItemToBoard,
+  useRefreshItem,
+  useWorkManagementServices,
   useWorkspaceBoards,
 } from "@notrelix/work-management-state";
-import { DeleteItemDialog, MoveItemDialog } from "./item-lifecycle-dialogs";
+import {
+  previewMoveToBoard,
+  type Card,
+  type FullBoardResponse,
+} from "@notrelix/work-management-core";
+import { useBoardViewerId } from "../shared/board-viewer";
+import {
+  DuplicateItemDialog,
+  type DuplicateChoices,
+} from "../item-actions/duplicate-item-dialog";
+import {
+  MoveBoardDialog,
+  type MoveDialogStatus,
+  type MovePreviewView,
+} from "../item-actions/move-board-dialog";
+import {
+  RemindDialog,
+  type RemindDialogState,
+} from "../item-actions/remind-dialog";
+import { useItemActionsCopy } from "../item-actions/use-item-actions-copy";
+import {
+  ArchiveItemDialog,
+  type ArchiveDialogStatus,
+} from "./archive-item-dialog";
+import { DeleteItemDialog } from "./item-lifecycle-dialogs";
 import { fillLifecycleCopy, pluralLifecycleCopy } from "./item-lifecycle.copy";
 import { useItemLifecycleCopy } from "./use-item-lifecycle-copy";
 
@@ -15,45 +52,148 @@ interface Pending {
   readonly title: string;
 }
 
+/** A delete waiting for its confirmation, with the item version the dialog opened on. */
+interface DeletePending extends Pending {
+  readonly version: number;
+}
+
+/** An archive waiting for its answer, with the item version the dialog opened on. */
+interface ArchivePending extends Pending {
+  readonly version?: number;
+  /** What the dialog listed when the write went out: the card has left the board read by then. */
+  readonly subItems?: number;
+}
+
+function findCard(
+  board: FullBoardResponse | undefined,
+  id: string,
+): { card: Card; groupTitle: string } | undefined {
+  for (const group of board?.groups ?? []) {
+    const card = group.cards.find((candidate) => candidate.id === id);
+    if (card) return { card, groupTitle: group.title };
+  }
+  return undefined;
+}
+
+/** The status field of a board read, with its options in order. */
+function statusOptions(
+  board:
+    { fieldDefinitions: FullBoardResponse["fieldDefinitions"] } | undefined,
+) {
+  const field = board?.fieldDefinitions.find(
+    (definition) => definition.semanticRole === "status",
+  );
+  return field?.options ?? [];
+}
+
+function hasValue(value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return false;
+  return !(Array.isArray(value) && value.length === 0);
+}
+
 /**
- * Deleting and moving one item for the surfaces that show a single item (card
- * menu, side sheet, item page). `requestDelete` and `requestMove` open the
- * confirmation and the board picker; `dialogs` is rendered once by the host.
- * Delete answers with a toast that restores it; both name what went wrong.
- * `onGone` runs once the item has left the board (the sheet or page closes).
+ * What one item's actions need beyond the menu: archive and delete, move (with the
+ * preview), duplicate (with options) and remind, each with its confirmation,
+ * toasts and failure handling. `requestX` opens the dialog; `dialogs` is
+ * rendered once by the host. `onGone` runs once the item has left the board
+ * (the sheet or page closes).
  */
 export function useItemRemoval({
   workspaceId,
   boardId,
   titleOf,
   onGone,
+  onOpenItem,
 }: {
   workspaceId: string;
   boardId: string;
   titleOf: (itemId: string) => string;
   onGone?: (itemId: string) => void;
+  /** Opens another item in the host (the item a move landed on, a copy). */
+  onOpenItem?: (itemId: string) => void;
 }): {
+  requestArchive: (itemId: string) => void;
   requestDelete: (itemId: string) => void;
   requestMove: (itemId: string) => void;
+  requestDuplicate: (itemId: string) => void;
+  requestRemind: (itemId: string) => void;
+  completeItem: (itemId: string) => void;
+  reopenItem: (itemId: string) => void;
+  unarchiveItem: (itemId: string) => void;
   dialogs: ReactNode;
 } {
   const copy = useItemLifecycleCopy();
-  const [deleting, setDeleting] = useState<Pending | null>(null);
+  const actions = useItemActionsCopy();
+  const { itemExtras } = useWorkManagementServices();
+  const viewerId = useBoardViewerId();
+  const [archiving, setArchiving] = useState<ArchivePending | null>(null);
+  const [archiveStatus, setArchiveStatus] =
+    useState<ArchiveDialogStatus>("idle");
+  const [deleting, setDeleting] = useState<DeletePending | null>(null);
   const [moving, setMoving] = useState<Pending | null>(null);
-  const deleteCard = useDeleteCard(boardId, workspaceId);
+  const [moveTarget, setMoveTarget] = useState<string | null>(null);
+  const [moveStatus, setMoveStatus] = useState<MoveDialogStatus>("idle");
+  const [duplicating, setDuplicating] = useState<Pending | null>(null);
+  const [reminding, setReminding] = useState<Pending | null>(null);
+  const [remindState, setRemindState] = useState<RemindDialogState>("confirm");
+  const [remindWhen, setRemindWhen] = useState<string | null>(null);
+  const archiveCard = useArchiveCard(boardId, workspaceId);
+  const seenVersion = useSeenItemVersion(boardId, workspaceId);
+  const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
+  // Hook-level: the card sheet closes with the optimistic removal, which would drop the callbacks of `mutate`.
+  const deleteCard = useDeleteCard(boardId, workspaceId, {
+    onSuccess: ({ cardId, title = "" }) => {
+      toast.success(fillLifecycleCopy(copy.deleted, { title }), {
+        action: {
+          label: copy.deletedUndo,
+          onClick: () =>
+            void trash.restore(cardId).then(
+              () => toast.success(fillLifecycleCopy(copy.restored, { title })),
+              () =>
+                toast.error(fillLifecycleCopy(copy.restoreFailed, { title })),
+            ),
+        },
+      });
+      onGone?.(cardId);
+    },
+    onError: (error, { title = "" }) =>
+      isVersionConflict(error)
+        ? toast.error(copy.archiveConflictTitle, {
+            description: copy.deleteConflictBody,
+          })
+        : toast.error(fillLifecycleCopy(copy.deleteFailed, { title })),
+  });
+  const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const trash = useBoardTrash(boardId, workspaceId, false);
   const boards = useWorkspaceBoards(workspaceId);
+  const source = useFullBoard(boardId, workspaceId);
+  const target = useFullBoard(moveTarget ?? undefined, workspaceId);
+  const targetLabels = useBoardLabels(
+    moveTarget ?? "",
+    workspaceId,
+    Boolean(moveTarget),
+  );
+  const sourceBoard = useMemo(
+    () => ({
+      groups: source.groups,
+      fieldDefinitions: source.fieldDefinitions,
+    }),
+    [source.groups, source.fieldDefinitions],
+  );
+
+  const refreshItem = useRefreshItem(workspaceId, boardId);
+
   const move = useMoveItemToBoard(boardId, workspaceId, {
-    onError: (_error, { cardId }) =>
-      toast.error(
-        fillLifecycleCopy(copy.moveFailed, { title: titleOf(cardId) }),
-      ),
+    onError: (error) => setMoveStatus(classifyMoveError(error)),
     onMoved: (result, { cardId, targetBoardId }) => {
-      const target = boards.data?.find((board) => board.id === targetBoardId);
+      const targetBoard = boards.data?.find(
+        (board) => board.id === targetBoardId,
+      );
+      closeMove();
       toast.success(
         fillLifecycleCopy(copy.moved, {
           title: titleOf(cardId),
-          board: target?.title ?? "",
+          board: targetBoard?.title ?? "",
           key: result.itemKey,
         }),
         {
@@ -103,29 +243,166 @@ export function useItemRemoval({
       : undefined;
   };
 
+  const closeMove = () => {
+    setMoving(null);
+    setMoveTarget(null);
+    setMoveStatus("idle");
+  };
+
+  const confirmArchive = () => {
+    if (!archiving) return;
+    const { id, title, version } = archiving;
+    setArchiving({
+      ...archiving,
+      subItems: archiveCardView?.childProgress?.total ?? 0,
+    });
+    setArchiveStatus("busy");
+    archiveCard.mutate(
+      { cardId: id, expectedVersion: version },
+      {
+        onSuccess: (archived) => {
+          setArchiving(null);
+          setArchiveStatus("idle");
+          toast.success(fillLifecycleCopy(copy.archived, { title }), {
+            action: {
+              label: copy.archivedUndo,
+              // The undo names the version the archive returned.
+              onClick: () =>
+                quick(
+                  id,
+                  () => restore(id, archived.version),
+                  actions.unarchived,
+                  actions.archiveFailed,
+                ),
+            },
+          });
+          onGone?.(id);
+        },
+        onError: (error) => {
+          const failure = classifyArchiveError(error);
+          // The card is back on the board read, which is fetched again when the
+          // write ends, so the dialog lists the live item; after a conflict a
+          // try also carries the newer version the person is told to review.
+          setArchiving((current) =>
+            current
+              ? {
+                  ...current,
+                  subItems: undefined,
+                  ...(failure === "conflict" ? { version: undefined } : {}),
+                }
+              : current,
+          );
+          setArchiveStatus(failure);
+        },
+      },
+    );
+  };
+
   const confirmDelete = () => {
     if (!deleting) return;
-    const { id, title } = deleting;
+    const { id, title, version } = deleting;
     setDeleting(null);
-    deleteCard.mutate(id, {
-      onSuccess: () => {
-        toast.success(fillLifecycleCopy(copy.deleted, { title }), {
-          action: {
-            label: copy.deletedUndo,
-            onClick: () =>
-              void trash.restore(id).then(
-                () =>
-                  toast.success(fillLifecycleCopy(copy.restored, { title })),
-                () =>
-                  toast.error(fillLifecycleCopy(copy.restoreFailed, { title })),
-              ),
-          },
-        });
-        onGone?.(id);
+    deleteCard.mutate({ cardId: id, expectedVersion: version, title });
+  };
+
+  const confirmDuplicate = (name: string, choices: DuplicateChoices) => {
+    if (!duplicating) return;
+    const { id } = duplicating;
+    duplicateCard.mutate(
+      { cardId: id, options: { name, ...choices } },
+      {
+        onSuccess: (copyId) => {
+          setDuplicating(null);
+          toast.success(
+            fillLifecycleCopy(actions.dupDone, { key: name }),
+            copyId && onOpenItem
+              ? {
+                  action: {
+                    label: actions.dupOpen,
+                    onClick: () => onOpenItem(copyId),
+                  },
+                }
+              : undefined,
+          );
+        },
       },
-      onError: () =>
-        toast.error(fillLifecycleCopy(copy.deleteFailed, { title })),
-    });
+    );
+  };
+
+  const recipientsOf = (itemId: string): string[] =>
+    (findCard(sourceBoard as FullBoardResponse, itemId)?.card.members ?? [])
+      .filter((member) => member.userId !== viewerId)
+      .map((member) => member.name);
+
+  const confirmRemind = () => {
+    if (!reminding) return;
+    const { id, title } = reminding;
+    setRemindState("busy");
+    itemExtras.remindOwners(id).then(
+      (result) => {
+        setReminding(null);
+        setRemindState("confirm");
+        const names = recipientsOf(id);
+        const when = result.nextRemindAt
+          ? new Date(result.nextRemindAt).toLocaleString()
+          : "";
+        toast.success(
+          names.length > 0
+            ? fillLifecycleCopy(actions.remindSent, {
+                who: names.join(", "),
+                when,
+              })
+            : fillLifecycleCopy(actions.remindSentCount, {
+                count: result.recipients,
+                when,
+              }),
+        );
+        refreshItem(id);
+        void title;
+      },
+      (error: unknown) => {
+        const failure = classifyRemindError(error);
+        if (failure.kind === "tooSoon") {
+          setRemindWhen(
+            failure.nextRemindAt
+              ? new Date(failure.nextRemindAt).toLocaleString()
+              : null,
+          );
+          setRemindState("tooSoon");
+        } else if (failure.kind === "nobody" && recipientsOf(id).length === 0) {
+          setRemindState("nobody");
+        } else {
+          setRemindState("error");
+        }
+      },
+    );
+  };
+
+  /** Restores an archived item with the version the person saw; none known is refused. */
+  const restore = (itemId: string, version: number | undefined) =>
+    version === undefined
+      ? Promise.reject(new UnknownItemVersionError(itemId))
+      : itemExtras.restoreItem(itemId, version);
+
+  const quick = (
+    itemId: string,
+    run: () => Promise<unknown>,
+    ok: string,
+    failed: string,
+  ) => {
+    const title = titleOf(itemId);
+    run()
+      .then(
+        () => toast.success(fillLifecycleCopy(ok, { title })),
+        () =>
+          toast.error(fillLifecycleCopy(failed, { title }), {
+            action: {
+              label: actions.retry,
+              onClick: () => quick(itemId, run, ok, failed),
+            },
+          }),
+      )
+      .finally(() => refreshItem(itemId));
   };
 
   const targets = (boards.data ?? [])
@@ -137,33 +414,250 @@ export function useItemRemoval({
     )
     .map((candidate) => ({ id: candidate.id, title: candidate.title }));
 
+  const preview: MovePreviewView | null = useMemo(() => {
+    if (!moving || !moveTarget || !target.board) return null;
+    const found = findCard(sourceBoard as FullBoardResponse, moving.id);
+    if (!found) return null;
+    const { card, groupTitle } = found;
+    const sourceStatus = statusOptions(sourceBoard).find(
+      (option) => option.id === card.statusOptionId,
+    );
+    const result = previewMoveToBoard(
+      {
+        groupTitle,
+        statusName: sourceStatus?.label ?? null,
+        fields: sourceBoard.fieldDefinitions
+          .filter(
+            (definition) =>
+              !definition.isSystemField &&
+              !definition.semanticRole &&
+              hasValue(card.fieldValues[definition.id]),
+          )
+          .map((definition) => ({
+            name: definition.name,
+            type: definition.fieldType,
+          })),
+        labelNames: card.labels.map((label) => label.name),
+        assignees: card.members.map((member) => ({
+          id: member.userId,
+          name: member.name,
+        })),
+      },
+      {
+        groupTitles: target.groups.map((group) => group.title),
+        defaultGroupTitle: null,
+        statusNames: statusOptions(target).map((option) => option.label),
+        fields: target.fieldDefinitions
+          .filter(
+            (definition) =>
+              !definition.isSystemField && !definition.semanticRole,
+          )
+          .map((definition) => ({
+            name: definition.name,
+            type: definition.fieldType,
+          })),
+        labelNames: (targetLabels.data ?? []).map((label) => label.name),
+        visibleTo:
+          target.board.visibility === "private"
+            ? new Set(target.board.members.map((member) => member.userId))
+            : null,
+      },
+    );
+    return {
+      boardTitle: target.board.title,
+      group: result.group,
+      status: result.status,
+      losses: [
+        ...result.lostFields.map((name) =>
+          fillLifecycleCopy(actions.moveLoseField, { name }),
+        ),
+        ...result.lostLabels.map((name) =>
+          fillLifecycleCopy(actions.moveLoseLabel, { name }),
+        ),
+        ...result.lostAssignees.map((name) =>
+          fillLifecycleCopy(actions.moveLoseAssignee, { name }),
+        ),
+      ],
+    };
+  }, [
+    moving,
+    moveTarget,
+    target.board,
+    target.groups,
+    target.fieldDefinitions,
+    targetLabels.data,
+    sourceBoard,
+    actions,
+  ]);
+
+  const movingKey = moving
+    ? (findCard(sourceBoard as FullBoardResponse, moving.id)?.card.itemKey ??
+      null)
+    : null;
+
+  const archiveCardView = archiving
+    ? findCard(sourceBoard as FullBoardResponse, archiving.id)?.card
+    : undefined;
+  const dependencyLinks = (archiveLinks.data ?? []).filter(
+    (link) => link.relation !== "related",
+  );
+
   return {
-    requestDelete: (itemId) =>
-      setDeleting({ id: itemId, title: titleOf(itemId) }),
-    requestMove: (itemId) => setMoving({ id: itemId, title: titleOf(itemId) }),
+    requestArchive: (itemId) => {
+      setArchiveStatus("idle");
+      setArchiving({
+        id: itemId,
+        title: titleOf(itemId),
+        version: seenVersion(itemId),
+      });
+    },
+    requestDelete: (itemId) => {
+      const version = seenVersion(itemId);
+      if (version === undefined) {
+        toast.error(
+          fillLifecycleCopy(copy.deleteFailed, { title: titleOf(itemId) }),
+        );
+        return;
+      }
+      setDeleting({ id: itemId, title: titleOf(itemId), version });
+    },
+    requestMove: (itemId) => {
+      setMoveStatus("idle");
+      setMoveTarget(null);
+      setMoving({ id: itemId, title: titleOf(itemId) });
+    },
+    requestDuplicate: (itemId) => {
+      duplicateCard.reset();
+      setDuplicating({ id: itemId, title: titleOf(itemId) });
+    },
+    requestRemind: (itemId) => {
+      setRemindState("confirm");
+      setRemindWhen(null);
+      setReminding({ id: itemId, title: titleOf(itemId) });
+    },
+    completeItem: (itemId) => {
+      // Each of the three names the version the open item showed.
+      const version = seenVersion(itemId);
+      quick(
+        itemId,
+        () =>
+          version === undefined
+            ? Promise.reject(new UnknownItemVersionError(itemId))
+            : itemExtras.completeItem(itemId, version),
+        actions.completed,
+        actions.completeFailed,
+      );
+    },
+    reopenItem: (itemId) => {
+      const version = seenVersion(itemId);
+      quick(
+        itemId,
+        () =>
+          version === undefined
+            ? Promise.reject(new UnknownItemVersionError(itemId))
+            : itemExtras.reopenItem(itemId, version),
+        actions.reopened,
+        actions.completeFailed,
+      );
+    },
+    unarchiveItem: (itemId) => {
+      const version = seenVersion(itemId);
+      quick(
+        itemId,
+        () => restore(itemId, version),
+        actions.unarchived,
+        actions.archiveFailed,
+      );
+    },
     dialogs: (
       <>
+        <ArchiveItemDialog
+          copy={copy}
+          title={archiving?.title ?? ""}
+          impact={{
+            subItems:
+              archiving?.subItems ?? archiveCardView?.childProgress?.total ?? 0,
+            dependencies: {
+              count: dependencyLinks.length,
+              keys: dependencyLinks
+                .map((link) => link.item.key)
+                .filter((key): key is string => Boolean(key)),
+            },
+            checking: archiveLinks.isLoading,
+          }}
+          status={archiveStatus}
+          open={archiving !== null}
+          onCancel={() => setArchiving(null)}
+          onConfirm={confirmArchive}
+        />
         <DeleteItemDialog
           copy={copy}
+          actions={actions}
           title={deleting?.title ?? ""}
           open={deleting !== null}
           onCancel={() => setDeleting(null)}
           onConfirm={confirmDelete}
         />
-        <MoveItemDialog
-          copy={copy}
+        <MoveBoardDialog
+          copy={actions}
           title={moving?.title ?? ""}
+          itemKey={movingKey}
           boards={targets}
           open={moving !== null}
-          onCancel={() => setMoving(null)}
+          preview={preview}
+          status={moveStatus}
+          onPick={(id) => {
+            setMoveStatus("idle");
+            setMoveTarget(id);
+          }}
+          onCancel={closeMove}
           onConfirm={(targetBoardId) => {
             if (!moving) return;
-            const { id } = moving;
-            setMoving(null);
-            move.mutate({ cardId: id, targetBoardId });
+            setMoveStatus("busy");
+            move.mutate({ cardId: moving.id, targetBoardId });
           }}
+          onUnarchive={() => {
+            if (!moving) return;
+            const { id } = moving;
+            const version = seenVersion(id);
+            closeMove();
+            quick(
+              id,
+              () => restore(id, version),
+              actions.unarchived,
+              actions.archiveFailed,
+            );
+          }}
+        />
+        <DuplicateItemDialog
+          copy={actions}
+          defaultName={`${duplicating?.title ?? ""} (${copySuffix(actions.locale)})`}
+          open={duplicating !== null}
+          busy={duplicateCard.isPending}
+          failed={duplicateCard.isError}
+          onCancel={() => setDuplicating(null)}
+          onConfirm={confirmDuplicate}
+        />
+        <RemindDialog
+          copy={actions}
+          itemKey={
+            reminding
+              ? (findCard(sourceBoard as FullBoardResponse, reminding.id)?.card
+                  .itemKey ?? null)
+              : null
+          }
+          recipients={reminding ? recipientsOf(reminding.id) : []}
+          state={remindState}
+          nextRemindAt={remindWhen}
+          open={reminding !== null}
+          onCancel={() => setReminding(null)}
+          onConfirm={confirmRemind}
         />
       </>
     ),
   };
+}
+
+function copySuffix(locale: string): string {
+  return locale === "vi" ? "bản sao" : "copy";
 }

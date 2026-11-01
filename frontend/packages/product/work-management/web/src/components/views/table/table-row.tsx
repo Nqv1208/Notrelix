@@ -1,5 +1,17 @@
-import type { CSSProperties, KeyboardEvent } from "react";
-import { ChevronRight } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
+import {
+  ChevronRight,
+  MessageCircle,
+  Paperclip,
+  SquareCheck,
+} from "lucide-react";
+import { PriorityGlyph } from "../../shared/priority-glyph";
 import {
   cn,
   ContextMenu,
@@ -24,6 +36,7 @@ import {
   PriorityEditor,
   type TableEditors,
 } from "./table-cell-editors";
+import { TableFieldCell, type TableFieldEditing } from "./table-field-cell";
 import { StatusDot, TableCheckbox } from "./table-parts";
 import { TableStatusPicker } from "./table-status-picker";
 
@@ -42,6 +55,8 @@ export interface TableRowActions {
 
 export interface TableRowProps {
   row: TableRowModel;
+  /** The row's place among every row of the table, loaded or not (a table read in pages). */
+  rowIndex?: number | undefined;
   copy: MainTableCopy;
   columns: readonly TableColumnSpec[];
   /** Accent of the row's group: the left edge takes its colour. */
@@ -56,8 +71,12 @@ export interface TableRowProps {
   canEdit: boolean;
   /** In-place editors of assignee, due date and priority; absent = read-only. */
   editors?: TableEditors;
+  /** Editing of the custom field cells; absent = they are read-only. */
+  fieldEditing?: TableFieldEditing;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
+  /** Saves a new title typed in place; absent = the title cannot be edited here. */
+  onRename?: (title: string) => void;
   /** The sub-items of this row can be shown under it; absent = the row has none. */
   expand?: { expanded: boolean; count: number; onToggle: () => void };
   /** The status list is open on this row. */
@@ -81,6 +100,8 @@ const DUE_CLASS: Readonly<Record<TableRowModel["due"]["kind"], string>> = {
 const PRIORITY_CLASS = {
   urgent: "font-semibold text-danger-text",
   high: "font-semibold text-priority-high-text",
+  medium: "font-medium text-muted-foreground",
+  low: "font-normal text-meta-foreground",
 } as const;
 
 function Cell({
@@ -118,6 +139,7 @@ function Cell({
  */
 export function TableRow({
   row,
+  rowIndex,
   copy,
   columns,
   accent,
@@ -127,7 +149,9 @@ export function TableRow({
   tabStop,
   canEdit,
   editors,
+  fieldEditing,
   actions,
+  onRename,
   expand,
   editing,
   highlightStatusId,
@@ -138,6 +162,40 @@ export function TableRow({
   onKeyDown,
 }: TableRowProps) {
   const keyLabel = row.key ?? row.title;
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const settled = useRef(false);
+  const refocus = useRef(false);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleButton = useRef<HTMLButtonElement>(null);
+  useEffect(
+    () => () => {
+      if (openTimer.current) clearTimeout(openTimer.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!renaming && refocus.current) {
+      refocus.current = false;
+      titleButton.current?.focus();
+    }
+  }, [renaming]);
+  const startRename = () => {
+    if (!onRename) return;
+    if (openTimer.current) clearTimeout(openTimer.current);
+    settled.current = false;
+    setDraft(row.title);
+    setRenaming(true);
+  };
+  // Blank or unchanged input writes nothing and the old title stays, as in the sheet.
+  const endRename = (save: boolean, restoreFocus: boolean) => {
+    if (settled.current) return;
+    settled.current = true;
+    const next = draft.trim();
+    if (save && next && next !== row.title) onRename?.(next);
+    refocus.current = restoreFocus;
+    setRenaming(false);
+  };
 
   const render = (column: TableColumnSpec) => {
     switch (column.id) {
@@ -176,15 +234,56 @@ export function TableRow({
                 />
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={onOpen}
-              title={row.title}
-              data-row-open=""
-              className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              {row.title}
-            </button>
+            {renaming ? (
+              <input
+                autoFocus
+                value={draft}
+                aria-label={fillTableCopy(copy.row.editTitle, {
+                  key: keyLabel,
+                })}
+                onChange={(event) => setDraft(event.target.value)}
+                onFocus={(event) => event.currentTarget.select()}
+                onBlur={() => endRename(true, false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    endRename(true, true);
+                  } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    endRename(false, true);
+                  }
+                }}
+                className="h-6.5 min-w-0 flex-1 rounded-[7px] border border-line-strong bg-popover px-2 text-nav font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring dark:bg-card"
+              />
+            ) : (
+              <button
+                ref={titleButton}
+                type="button"
+                // A double click renames, so an editor's single click waits
+                // out the second click before it opens the item.
+                onClick={() => {
+                  if (!onRename) return onOpen();
+                  if (openTimer.current) clearTimeout(openTimer.current);
+                  openTimer.current = setTimeout(onOpen, 220);
+                }}
+                onDoubleClick={startRename}
+                onKeyDown={(event) => {
+                  if (!onRename) return;
+                  if (event.key === "F2" || event.key === "Enter") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    startRename();
+                  }
+                }}
+                aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
+                title={row.title}
+                data-row-open=""
+                className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {row.title}
+              </button>
+            )}
           </Cell>
         );
       case "status": {
@@ -321,20 +420,18 @@ export function TableRow({
         );
       }
       case "priority": {
-        const priority =
-          row.priority === "urgent" || row.priority === "high"
-            ? row.priority
-            : null;
+        const priority = row.priority;
         const shown = (
           <span
             data-priority={priority ?? undefined}
             className={cn(
-              "text-crumb",
+              "inline-flex items-center gap-1 text-crumb",
               priority
                 ? PRIORITY_CLASS[priority]
                 : "font-normal text-meta-foreground",
             )}
           >
+            {priority ? <PriorityGlyph level={priority} /> : null}
             {priority ? copy.row.priority[priority] : copy.row.noPriority}
           </span>
         );
@@ -405,6 +502,61 @@ export function TableRow({
             ) : null}
           </Cell>
         );
+      case "checklist":
+        return (
+          <Cell key="checklist" selected={selected}>
+            {row.checklist ? (
+              <span
+                data-checklist-progress=""
+                className="inline-flex items-center gap-1 text-nav tabular-nums text-muted-foreground"
+              >
+                <SquareCheck className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">
+                  {row.checklist.done}/{row.checklist.total}
+                </span>
+                <span className="sr-only">
+                  {fillTableCopy(copy.row.checklistProgress, row.checklist)}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "comments":
+        return (
+          <Cell key="comments" selected={selected}>
+            {row.commentCount > 0 ? (
+              <span
+                data-comment-count={row.commentCount}
+                className="inline-flex items-center gap-1 text-nav tabular-nums text-muted-foreground"
+              >
+                <MessageCircle className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">{row.commentCount}</span>
+                <span className="sr-only">
+                  {fillTableCopy(copy.row.commentCount, {
+                    count: row.commentCount,
+                  })}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
+      case "files":
+        return (
+          <Cell key="files" selected={selected}>
+            {row.fileCount > 0 ? (
+              <span
+                data-file-count={row.fileCount}
+                className="inline-flex items-center gap-1 text-nav tabular-nums text-muted-foreground"
+              >
+                <Paperclip className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">{row.fileCount}</span>
+                <span className="sr-only">
+                  {fillTableCopy(copy.row.fileCount, { count: row.fileCount })}
+                </span>
+              </span>
+            ) : null}
+          </Cell>
+        );
       case "updated":
         return (
           <Cell key="updated" selected={selected}>
@@ -430,17 +582,56 @@ export function TableRow({
           </Cell>
         );
       }
+      default: {
+        const field = column.field;
+        if (!field) return null;
+        return (
+          <Cell
+            key={column.id}
+            selected={selected}
+            className="focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-ring"
+          >
+            <TableFieldCell
+              field={field}
+              cell={row.fields[field.id] ?? { value: undefined }}
+              rowKey={keyLabel}
+              copy={copy}
+              members={fieldEditing?.members ?? []}
+              editable={Boolean(canEdit && fieldEditing?.canEdit)}
+              write={fieldEditing?.writeOf(row.id, field.id)}
+              onWrite={(value, stale) =>
+                fieldEditing?.onWrite(row.id, field.id, value, stale)
+              }
+              onRetry={() => fieldEditing?.onRetry(row.id, field.id)}
+              onKeepMine={() => fieldEditing?.onKeepMine(row.id, field.id)}
+              onUseTheirs={() => fieldEditing?.onUseTheirs(row.id, field.id)}
+            />
+          </Cell>
+        );
+      }
     }
   };
 
   const rowElement = (
     <div
       role="row"
+      aria-rowindex={rowIndex}
       tabIndex={tabStop ? 0 : -1}
       aria-selected={selected}
       aria-current={active ? "true" : undefined}
       data-row-id={row.id}
-      onKeyDown={onKeyDown}
+      onKeyDown={(event) => {
+        if (
+          event.key === "F2" &&
+          event.target === event.currentTarget &&
+          onRename
+        ) {
+          event.preventDefault();
+          startRename();
+          return;
+        }
+        onKeyDown(event);
+      }}
       onClick={(event) => {
         // Controls inside the row (status pill, checkbox, the title button)
         // do their own thing; a status list in a portal also bubbles here.

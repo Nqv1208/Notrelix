@@ -22,7 +22,7 @@ public static class UpdateFormDetailsEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateFormDetailsCommand(formId, body.Title, default, "{}", "{}"), cancellationToken);
+        var result = await sender.Send(new UpdateFormDetailsCommand(formId, body.Title, null, "{}", "{}", body.ExpectedVersion, body.Description), cancellationToken);
         return result.ToNoContentResult();
     }
 }

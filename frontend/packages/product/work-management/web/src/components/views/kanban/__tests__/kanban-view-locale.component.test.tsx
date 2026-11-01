@@ -43,6 +43,35 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }));
   return {
     ...actual,
+    // The filter bar's saved filters: none, and no write is made by these tests.
+    useSavedFilters: () => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    }),
+    useSavedFilterWrites: () => ({
+      create: vi.fn(),
+      rename: vi.fn(),
+      setVisibility: vi.fn(),
+      remove: vi.fn(),
+      restore: vi.fn(),
+    }),
+    // The member's own view state: nothing saved, nothing persisted by these tests.
+    useBoardPreference: () => ({
+      criteria: undefined,
+      isLoading: false,
+      persistent: false,
+      save: vi.fn(),
+      saving: false,
+      saveFailed: false,
+      retry: vi.fn(),
+      columns: {},
+      saveColumns: vi.fn(),
+      columnsSaving: false,
+      columnsFailed: false,
+      retryColumns: vi.fn(),
+    }),
     useBoardView: () => ({
       viewConfig: actual.defaultTableViewConfig,
     }),
@@ -52,6 +81,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       statusField: undefined,
       groupByField: undefined,
       groupByFields: [],
+      filterFields: [],
+      memberName: (userId: string) => userId,
       allLanes: lanes(),
       lanes: lanes(),
       visibleCount: 1,
@@ -68,6 +99,17 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }),
     useBoardAccess: () => ({ access: null, isLoading: true, error: null }),
     useDuplicateCard: mutation,
+    useFullBoard: () => ({
+      board: undefined,
+      groups: [],
+      fieldDefinitions: [],
+      archivedGroupIds: [] as string[],
+      isLoading: false,
+      error: null,
+    }),
+    useRefreshItem: () => vi.fn(),
+    useBoardLabels: () => ({ data: [] }),
+    useWorkManagementServices: () => ({ itemExtras: {} }),
     useDeleteCard: mutation,
     useMoveItemToBoard: mutation,
     useWorkspaceBoards: () => ({ data: [] }),
@@ -79,6 +121,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useMoveFieldOption: mutation,
     useRemoveFieldOption: mutation,
     useArchiveCard: mutation,
+    useSeenItemVersion: () => () => 7,
+    useItemLinks: () => ({ data: undefined, isLoading: false }),
   };
 });
 

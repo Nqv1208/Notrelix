@@ -1,4 +1,5 @@
 using Notrelix.Application.EventMappers.WorkManagement;
+using Notrelix.Domain.WorkManagement.Checklists.Events;
 
 namespace Notrelix.Application.Tests.Events.WorkManagement;
 
@@ -105,5 +106,59 @@ public class ItemLifecycleIntegrationEventMapperTests
 
         mapped.OldValue.Should().Be("null");
         mapped.NewValue.Should().Be($"\"{option}\"");
+    }
+
+    [Fact]
+    public void LabelAddedAndRemoved_CarryNameActorEnvelopeAndSourceFact()
+    {
+        var label = Guid.CreateVersion7();
+        var mapper = new BoardItemLabelEventMapper();
+        var addedFact = new BoardItemLabelAddedDomainEvent(Account, Workspace, Item, label, "Bug", Actor, At);
+        var removedFact = new BoardItemLabelRemovedDomainEvent(Account, Workspace, Item, label, "Bug", Actor, At);
+
+        var added = mapper.Map(addedFact)!;
+        var removed = mapper.Map(removedFact)!;
+
+        added.LabelName.Should().Be("Bug");
+        added.AddedBy.Should().Be(Actor);
+        added.ActorUserId.Should().Be(Actor);
+        added.SourceEventId.Should().Be(addedFact.EventId);
+        removed.RemovedBy.Should().Be(Actor);
+        removed.LabelId.Should().Be(label);
+        foreach (var (envelopeAccount, envelopeWorkspace, item) in new[]
+                 {
+                     (added.AccountIdValue, added.WorkspaceIdValue, added.ItemId),
+                     (removed.AccountIdValue, removed.WorkspaceIdValue, removed.ItemId),
+                 })
+        {
+            envelopeAccount.Should().Be(Account);
+            envelopeWorkspace.Should().Be(Workspace);
+            item.Should().Be(Item);
+        }
+    }
+
+    [Fact]
+    public void ChecklistFacts_MapToItemScopedEvents_WithActorTenantAndTitles()
+    {
+        var list = Guid.CreateVersion7();
+        var todo = Guid.CreateVersion7();
+        var mapper = new BoardItemChecklistEventMapper();
+        var added = new ChecklistCreatedDomainEvent(Account, Workspace, Item, list, "Release", Actor, At);
+        var ticked = new ChecklistItemToggledDomainEvent(Account, Workspace, list, todo, true, Item, "Tag build", "Release", Actor, At);
+        var removed = new ChecklistItemRemovedDomainEvent(Account, Workspace, list, todo, Item, "Tag build", "Release", Actor, At);
+
+        var a = mapper.Map(added)!;
+        var t = mapper.Map(ticked)!;
+        var r = mapper.Map(removed)!;
+
+        a.AddedBy.Should().Be(Actor);
+        a.ChecklistTitle.Should().Be("Release");
+        a.SourceEventId.Should().Be(added.EventId);
+        t.IsCompleted.Should().BeTrue();
+        t.ChecklistItemTitle.Should().Be("Tag build");
+        r.RemovedBy.Should().Be(Actor);
+        foreach (var e in new[] { (a.AccountIdValue, a.WorkspaceIdValue, a.ItemId), (t.AccountIdValue, t.WorkspaceIdValue, t.ItemId), (r.AccountIdValue, r.WorkspaceIdValue, r.ItemId) })
+            e.Should().Be((Account, Workspace, Item));
+        ((IIntegrationEventMapper)mapper).Map(new ChecklistRestoredDomainEvent(Account, Workspace, list, Actor, At)).Should().BeEmpty();
     }
 }

@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSav
 public record RestoreSavedFilterCommand(Guid FilterId)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);
 }
 
@@ -16,15 +16,24 @@ public class RestoreSavedFilterCommandHandler : IRequestHandler<RestoreSavedFilt
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
-    public RestoreSavedFilterCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public RestoreSavedFilterCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(RestoreSavedFilterCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(RestoreSavedFilterCommand request, CancellationToken ct)
     {
         // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
         // drops its tenant predicate, so the resolved tenant scope is re-applied here.
@@ -33,7 +42,7 @@ public class RestoreSavedFilterCommandHandler : IRequestHandler<RestoreSavedFilt
         var filter = await _context.SavedFilters
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(f => f.Id == request.FilterId && f.AccountId == accountId && f.WorkspaceId == workspaceId, ct);
-        if (filter is null) throw new NotFoundException("SavedFilter", request.FilterId);
+        if (filter is null || !SavedFilterAccess.IsVisibleTo(filter, _requestContext.UserId)) throw new NotFoundException("SavedFilter", request.FilterId);
 
         filter.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

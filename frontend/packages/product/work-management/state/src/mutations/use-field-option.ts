@@ -12,7 +12,10 @@ import {
   type FullBoardResponse,
   type WorkStatusCategory,
 } from "@notrelix/work-management-core";
-import type { FieldOptionInput } from "../api/field-option.api";
+import type {
+  AddedFieldOption,
+  FieldOptionInput,
+} from "../api/field-option.api";
 import {
   applyAddedOption,
   applyRemovedOption,
@@ -39,7 +42,7 @@ export interface FieldOptionWriter {
       expectedVersion: number;
     },
     options?: ApiRequestOptions,
-  ): Promise<void>;
+  ): Promise<AddedFieldOption>;
   updateOption(
     input: FieldOptionInput & {
       boardId: string;
@@ -157,17 +160,19 @@ export function runAddFieldOption(
     target,
     (board) => applyAddedOption(board, target.fieldId, optimistic),
     (expectedVersion, options) =>
-      writer.addOption(
-        {
-          boardId: target.boardId,
-          fieldId: target.fieldId,
-          name: draft.name,
-          color: draft.color,
-          category: draft.category,
-          expectedVersion,
-        },
-        options,
-      ),
+      writer
+        .addOption(
+          {
+            boardId: target.boardId,
+            fieldId: target.fieldId,
+            name: draft.name,
+            color: draft.color,
+            category: draft.category,
+            expectedVersion,
+          },
+          options,
+        )
+        .then(() => undefined),
     "add-field-option",
   );
 }

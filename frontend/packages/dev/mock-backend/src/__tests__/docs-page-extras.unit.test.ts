@@ -108,6 +108,7 @@ describe("Documents page extras in the mock world (CTR-GAP-DOCS-PAGE-EXT)", () =
         updatedAt: "",
       },
       { boardId: mockIds.boards.erp, groupId: list.id },
+      "attempt-1",
     );
     expect(task.title).toBe("Đào tạo nhóm Công nợ về đối chiếu tự động");
     expect(store.getCard(task.id)?.title).toBe(task.title);

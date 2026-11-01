@@ -124,7 +124,7 @@ describe("the Assignee system field is written through the item's assignees", ()
         },
       },
     );
-    expect(setAssignees).toHaveBeenCalledWith("i-1", ["u-new"], ["u-old"]);
+    expect(setAssignees).toHaveBeenCalledWith("i-1", ["u-new"], ["u-old"], 3);
     expect(updateFieldValue).not.toHaveBeenCalled();
   });
 });

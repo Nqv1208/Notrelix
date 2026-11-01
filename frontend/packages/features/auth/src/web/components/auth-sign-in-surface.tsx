@@ -6,7 +6,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { Clock, Lock, Mail, Timer } from "lucide-react";
+import { Clock, Loader2, Lock, Mail, Timer } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
@@ -36,6 +36,17 @@ export type AuthSignInStep =
         /** A provider sign-in was stopped: the account has a second factor, so it signs in with its password. */
         | "mfa-required"
         | "provider-failed"
+        /** The provider is not available (switched off or not set up): no redirect was made. */
+        | "provider-unavailable"
+        /** The sign-in took too long or was already used. */
+        | "provider-expired"
+        /** The person stopped at the provider. */
+        | "provider-denied"
+        /** The provider's verified email belongs to an account that is not linked to it: sign in with the password. */
+        | "provider-email-in-use"
+        | "provider-email-unverified"
+        /** The session the person was using ended: this page opened by itself. */
+        | "session-ended"
         | null;
     }
   | {
@@ -70,6 +81,8 @@ export interface AuthSignInSurfaceProps {
   readonly copy: AuthCopy;
   readonly step: AuthSignInStep;
   readonly pending?: boolean;
+  /** The provider the browser is being sent to; its button says so while the page leaves. */
+  readonly redirecting?: "google" | "microsoft" | null;
   /** The email typed earlier (the email step starts with it). */
   readonly initialEmail?: string;
   readonly onContinue: (email: string) => void;
@@ -83,6 +96,17 @@ export interface AuthSignInSurfaceProps {
   readonly onToggleBackup: () => void;
   readonly onBack: () => void;
 }
+
+/** The sentence for each way a provider sign-in can end on this page. */
+const PROVIDER_ERROR_COPY = {
+  "provider-failed": "providerFailed",
+  "provider-unavailable": "providerUnavailable",
+  "provider-expired": "providerExpired",
+  "provider-denied": "providerDenied",
+  "provider-email-in-use": "providerEmailInUse",
+  "provider-email-unverified": "providerEmailUnverified",
+} as const;
+type ProviderErrorKind = keyof typeof PROVIDER_ERROR_COPY;
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
@@ -139,6 +163,7 @@ function CredentialsStep({
   copy,
   step,
   pending,
+  redirecting = null,
   initialEmail = "",
   onContinue,
   onProvider,
@@ -254,8 +279,18 @@ function CredentialsStep({
           {emailError === "mfa-required" ? (
             <FieldError>{te.mfaRequired}</FieldError>
           ) : null}
-          {emailError === "provider-failed" ? (
-            <FieldError>{te.providerFailed}</FieldError>
+          {emailError === "session-ended" ? (
+            <p
+              role="status"
+              className="m-0 text-item-small text-muted-foreground"
+            >
+              {te.sessionEnded}
+            </p>
+          ) : null}
+          {emailError && emailError in PROVIDER_ERROR_COPY ? (
+            <FieldError>
+              {te[PROVIDER_ERROR_COPY[emailError as ProviderErrorKind]]}
+            </FieldError>
           ) : null}
         </div>
 
@@ -361,21 +396,49 @@ function CredentialsStep({
               <button
                 type="button"
                 disabled={pending}
+                aria-busy={redirecting === "google" || undefined}
                 onClick={() => onProvider("google")}
                 className={BUTTON_CLASS.outline}
               >
-                <GoogleMark className="size-4.5 shrink-0" />
-                {te.google}
+                {redirecting === "google" ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="size-4.5 shrink-0 animate-spin motion-reduce:animate-none"
+                  />
+                ) : (
+                  <GoogleMark className="size-4.5 shrink-0" />
+                )}
+                {redirecting === "google"
+                  ? fillAuthCopy(te.redirecting, { provider: "Google" })
+                  : te.google}
               </button>
               <button
                 type="button"
                 disabled={pending}
+                aria-busy={redirecting === "microsoft" || undefined}
                 onClick={() => onProvider("microsoft")}
                 className={BUTTON_CLASS.outline}
               >
-                <MicrosoftMark className="size-4.5 shrink-0" />
-                {te.microsoft}
+                {redirecting === "microsoft" ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="size-4.5 shrink-0 animate-spin motion-reduce:animate-none"
+                  />
+                ) : (
+                  <MicrosoftMark className="size-4.5 shrink-0" />
+                )}
+                {redirecting === "microsoft"
+                  ? fillAuthCopy(te.redirecting, { provider: "Microsoft" })
+                  : te.microsoft}
               </button>
+              <span role="status" className="sr-only">
+                {redirecting
+                  ? fillAuthCopy(te.redirecting, {
+                      provider:
+                        redirecting === "google" ? "Google" : "Microsoft",
+                    })
+                  : null}
+              </span>
             </div>
             <p className="m-0 text-center text-item-ui text-muted-foreground">
               {te.noAccount}{" "}
@@ -523,6 +586,17 @@ function OtpStep({
   const code = step.backup ? backup.trim() : digits.join("");
   const ready = step.backup ? code.length >= 8 : code.length === 6;
   const focusBox = (index: number) => boxes.current[index]?.focus();
+  // The challenge is gone (expired, out of tries) or the account cannot sign in: no code helps.
+  const dead = step.error === "expired" || step.error === "inactive";
+  // A wrong code is not kept: the boxes start empty again for the next try.
+  const wrongCode = step.error === "wrong";
+  useEffect(() => {
+    if (wrongCode && !pending) {
+      setDigits(Array(6).fill(""));
+      setBackup("");
+      boxes.current[0]?.focus();
+    }
+  }, [wrongCode, pending]);
 
   const setFrom = (start: number, text: string) => {
     const chars = text
@@ -649,7 +723,7 @@ function OtpStep({
         {failure ? <FieldError>{failure}</FieldError> : null}
         <button
           type="submit"
-          disabled={!ready || pending}
+          disabled={!ready || pending || dead}
           className={BUTTON_CLASS.primary}
         >
           {pending ? t.verifying : t.verify}

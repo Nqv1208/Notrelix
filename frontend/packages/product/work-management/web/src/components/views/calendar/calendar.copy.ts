@@ -13,6 +13,13 @@ import {
  * complete).
  */
 export const en = {
+  priority: {
+    urgent: "Priority Urgent",
+    high: "Priority High",
+    medium: "Priority Medium",
+    low: "Priority Low",
+  },
+  blockedBy: "blocked by {{count}} items",
   today: "Today",
   todayMarker: "Today",
   previous: {
@@ -109,6 +116,48 @@ export const en = {
   reschedule: {
     failed: "Could not move {{title}}",
   },
+  handle: {
+    start: "Change the start day of {{key}}",
+    due: "Change the due day of {{key}}",
+    readOnly: "You can only view this board",
+    readOnlyNote: "Items cannot be dragged or resized to change the schedule",
+  },
+  resizeTip: {
+    start: "New start {{to}} · {{days}} days",
+    due: "New due {{to}} · {{days}} days",
+  },
+  menu: {
+    open: "Open details",
+    changeDates: "Change dates…",
+    changeDatesNote: "Set start and due with the keyboard",
+    unschedule: "Move to Unscheduled",
+    unscheduleNote: "Clears both dates",
+  },
+  dates: {
+    title: "Change dates",
+    start: "Start",
+    due: "Due",
+    cancel: "Cancel",
+    save: "Save",
+    invalid: "Due cannot be before the start day.",
+    invalidHint: "Choose a due day from {{start}} on.",
+  },
+  scheduleToast: {
+    changed: "Moved {{key}} to {{from}} – {{to}}",
+    unscheduled: "Moved {{key}} to Unscheduled",
+    scheduled: "Scheduled {{key}} on {{day}}",
+    undo: "Undo",
+    undone: "Undone",
+    undoFailed: "Could not undo",
+    failed: "Could not save the dates of {{key}}",
+    failedNote: "You are offline. The new dates stay shown so you can retry.",
+    retry: "Retry",
+    conflict: "{{key}} was just changed by someone else",
+    conflictBy: "{{actor}} changed the dates of {{key}} first",
+    conflictNote:
+      "Reload to see the latest dates, then change them again if needed.",
+    reload: "Reload",
+  },
   agenda: {
     overdue: "Overdue",
     allDay: "All day",
@@ -126,14 +175,14 @@ export const en = {
     none: "Every item has a date",
     title_one: "{{count}} item without a date",
     title_other: "{{count}} items without a date",
-    hint: "Drag it into the calendar or choose Set due.",
+    hint: "Drag it into the calendar or choose Set date.",
     hiddenByFilter_one: "This item does not match the filter, so it is hidden.",
     hiddenByFilter_other:
       "These items do not match the filter, so they are hidden.",
     unassigned: "Unassigned",
-    setDue: "Set due",
+    setDue: "Set date",
     /** `{{key}}` is the item key or its title. */
-    setDueLabel: "Set a due date for {{key}}",
+    setDueLabel: "Set a date for {{key}}",
     dragLabel: "Drag {{key}} into the calendar",
   },
   legend: {
@@ -163,6 +212,13 @@ export const en = {
 export type CalendarCopy = typeof en;
 
 export const vi: CalendarCopy = {
+  priority: {
+    urgent: "Ưu tiên Khẩn",
+    high: "Ưu tiên Cao",
+    medium: "Ưu tiên Trung bình",
+    low: "Ưu tiên Thấp",
+  },
+  blockedBy: "bị chặn bởi {{count}} việc",
   today: "Hôm nay",
   todayMarker: "Hôm nay",
   previous: {
@@ -251,6 +307,47 @@ export const vi: CalendarCopy = {
   reschedule: {
     failed: "Không đổi được hạn của {{title}}",
   },
+  handle: {
+    start: "Đổi ngày bắt đầu của {{key}}",
+    due: "Đổi hạn của {{key}}",
+    readOnly: "Bạn chỉ có quyền xem board này",
+    readOnlyNote: "Không thể kéo hay đổi kích thước để đổi lịch",
+  },
+  resizeTip: {
+    start: "Bắt đầu mới {{to}} · {{days}} ngày",
+    due: "Hạn mới {{to}} · {{days}} ngày",
+  },
+  menu: {
+    open: "Mở chi tiết",
+    changeDates: "Đổi ngày…",
+    changeDatesNote: "Đặt bắt đầu và hạn bằng bàn phím",
+    unschedule: "Chuyển về Chưa lên lịch",
+    unscheduleNote: "Xoá cả hai ngày",
+  },
+  dates: {
+    title: "Đổi ngày",
+    start: "Bắt đầu",
+    due: "Hạn",
+    cancel: "Huỷ",
+    save: "Lưu",
+    invalid: "Hạn không được trước ngày bắt đầu.",
+    invalidHint: "Chọn hạn từ {{start}} trở đi.",
+  },
+  scheduleToast: {
+    changed: "Đã dời {{key}} sang {{from}} đến {{to}}",
+    unscheduled: "Đã chuyển {{key}} về Chưa lên lịch",
+    scheduled: "Đã đặt {{key}} vào {{day}}",
+    undo: "Hoàn tác",
+    undone: "Đã hoàn tác",
+    undoFailed: "Chưa hoàn tác được",
+    failed: "Chưa lưu được ngày của {{key}}",
+    failedNote: "Mất kết nối. Ngày mới vẫn hiển thị để bạn thử lại.",
+    retry: "Thử lại",
+    conflict: "{{key}} vừa được người khác đổi ngày",
+    conflictBy: "{{actor}} vừa đổi ngày của {{key}} trước bạn",
+    conflictNote: "Tải lại để xem ngày mới nhất, rồi đổi lại nếu cần.",
+    reload: "Tải lại",
+  },
   agenda: {
     overdue: "Quá hạn",
     allDay: "Cả ngày",
@@ -268,12 +365,12 @@ export const vi: CalendarCopy = {
     none: "Mọi việc đều có ngày",
     title_one: "{{count}} việc chưa có ngày",
     title_other: "{{count}} việc chưa có ngày",
-    hint: "Kéo vào lịch hoặc bấm Đặt hạn.",
+    hint: "Kéo vào lịch hoặc bấm Đặt ngày.",
     hiddenByFilter_one: "Việc này không khớp bộ lọc nên đang ẩn.",
     hiddenByFilter_other: "Các việc này không khớp bộ lọc nên đang ẩn.",
     unassigned: "Chưa giao",
-    setDue: "Đặt hạn",
-    setDueLabel: "Đặt hạn cho {{key}}",
+    setDue: "Đặt ngày",
+    setDueLabel: "Đặt ngày cho {{key}}",
     dragLabel: "Kéo {{key}} vào lịch",
   },
   legend: {

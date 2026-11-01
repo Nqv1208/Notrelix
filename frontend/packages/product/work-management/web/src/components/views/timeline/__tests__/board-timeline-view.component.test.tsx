@@ -22,15 +22,20 @@ import {
   erpCommenterAccess,
   erpItemId,
   erpOwnerAccess,
+  itemCapabilitiesStub,
 } from "@notrelix/work-management-testing";
-import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
+import { cardPopupCatalog } from "../../../card-popup/card-popup.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
 import { BoardTimelineView } from "../board-timeline-view";
 import { timelineCatalog } from "../timeline.catalog";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 /** Monday 12/10/2026 10:40 in Hanoi. */
@@ -66,7 +71,10 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
 
 function fakeServices(
   access: BoardAccess,
-  overrides: { updateCard?: () => Promise<void> } = {},
+  overrides: {
+    updateCard?: () => Promise<void>;
+    addDependency?: () => Promise<void>;
+  } = {},
 ) {
   const board = erpBoardScenario();
   const cards = {
@@ -74,7 +82,7 @@ function fakeServices(
     getCardFiles: vi.fn(async () => []),
     getCardActivity: vi.fn(async () => []),
     updateStatus: vi.fn(async () => undefined),
-    createCard: vi.fn(async () => "item-new"),
+    createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(overrides.updateCard ?? (async () => undefined)),
@@ -82,12 +90,18 @@ function fakeServices(
     archiveCard: vi.fn(async () => undefined),
     duplicateCard: vi.fn(async () => undefined),
   };
+  const extras = {
+    addDependency: vi.fn(overrides.addDependency ?? (async () => undefined)),
+    removeDependency: vi.fn(async () => true),
+  };
   const services = {
     boards: { getFullBoard: vi.fn(async () => board) },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemCapabilities: itemCapabilitiesStub(),
     itemExtras: {
+      ...extras,
       getPlan: vi.fn(async () => ({
         items: [],
         links: [],
@@ -96,7 +110,7 @@ function fakeServices(
       })),
     },
   } as unknown as WorkManagementServices;
-  return { services, cards };
+  return { services, cards, extras };
 }
 
 function Providers({
@@ -114,7 +128,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
-          itemCreateCatalog,
+          cardPopupCatalog,
         ]}
         initialLocale="vi"
       >
@@ -218,17 +232,13 @@ describe("BoardTimelineView on the ERP board", () => {
     const { cards } = renderTimeline();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
-    const start = (await screen.findByLabelText(
-      "Ngày bắt đầu",
-    )) as HTMLInputElement;
-    expect(start.value).toBe("12/10/2026");
-    expect(
-      (screen.getByLabelText("Hạn hoàn thành") as HTMLInputElement).value,
-    ).toBe("12/10/2026");
-    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
+    // The card form opens with the shown day as its date.
+    const form = await screen.findByRole("dialog", { name: "Thẻ" });
+    expect(within(form).getByRole("button", { name: /^12\/10/ })).toBeTruthy();
+    fireEvent.change(within(form).getByRole("textbox", { name: "Tên thẻ" }), {
       target: { value: "Dựng khung kế hoạch" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
+    fireEvent.click(within(form).getByRole("button", { name: "Tạo thẻ" }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
   });
 
@@ -249,12 +259,12 @@ describe("BoardTimelineView on the ERP board", () => {
     ).toBeTruthy();
   });
 
-  it("sends the undated link to the Calendar", async () => {
-    const onOpenCalendar = vi.fn();
-    renderTimeline(erpOwnerAccess(), {}, { onOpenCalendar });
+  it("opens the Chưa lên lịch tray from the undated count", async () => {
+    renderTimeline(erpOwnerAccess());
     await ready();
     fireEvent.click(screen.getByRole("link", { name: "1 việc chưa có ngày" }));
-    expect(onOpenCalendar).toHaveBeenCalledTimes(1);
+    const tray = screen.getByRole("region", { name: "Chưa lên lịch" });
+    expect(within(tray).getByText("ERP-153")).toBeTruthy();
   });
 
   it("shifts the due day, and the start with it when moving, through the item update", async () => {
@@ -325,5 +335,104 @@ describe("BoardTimelineView on the ERP board", () => {
     expect(cards.updateCard).not.toHaveBeenCalled();
     fireEvent.click(title);
     expect(onItem).toHaveBeenCalledWith(erpItemId("ERP-146"));
+  });
+});
+
+describe("BoardTimelineView dependencies and the tray", () => {
+  const connectorOf = (container: HTMLElement, key: string) =>
+    container.querySelector<HTMLElement>(
+      `[data-tl="trow"][data-row-id="${erpItemId(key)}"] [data-tl="connector"]`,
+    )!;
+
+  /** Links ERP-142 to the other listed item through the dialog. */
+  async function linkFromDialog(container: HTMLElement) {
+    fireEvent.click(connectorOf(container, "ERP-142"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getAllByRole("option")[0]!);
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Tạo liên kết" }),
+    );
+  }
+
+  it("links through the dialog, says so with Hoàn tác, and undoes it with the inverse request", async () => {
+    const { container, extras } = renderTimeline();
+    await ready();
+    await linkFromDialog(container);
+    await waitFor(() => expect(extras.addDependency).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    const [message, options] = toast.success.mock.calls[0] as [
+      string,
+      { action: { label: string; onClick: () => void } },
+    ];
+    expect(message).toMatch(/^Đã nối: ERP-\d+ chờ ERP-\d+$/);
+    expect(options.action.label).toBe("Hoàn tác");
+    options.action.onClick();
+    await waitFor(() =>
+      expect(extras.removeDependency).toHaveBeenCalledTimes(1),
+    );
+    expect(extras.removeDependency).toHaveBeenCalledWith(
+      ...(extras.addDependency.mock.calls[0] as unknown as [string, string]),
+    );
+  });
+
+  it("keeps a failed link red with Thử lại that sends it again", async () => {
+    const { container, extras } = renderTimeline(erpOwnerAccess(), {
+      addDependency: async () => {
+        throw new Error("offline");
+      },
+    });
+    await ready();
+    await linkFromDialog(container);
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    const [message, options] = toast.error.mock.calls[0] as [
+      string,
+      { id: string; action: { label: string; onClick: () => void } },
+    ];
+    expect(message).toMatch(/^Không nối được/);
+    expect(options.action.label).toBe("Thử lại");
+    options.action.onClick();
+    await waitFor(() => expect(extras.addDependency).toHaveBeenCalledTimes(2));
+    // Sonner removes the toast Thử lại sits on; the next result needs its own id.
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    expect(toast.error.mock.calls[1]?.[1]?.id).not.toBe(options.id);
+  });
+
+  it("schedules an undated item to one day from the tray, with Hoàn tác", async () => {
+    const { cards } = renderTimeline();
+    await ready();
+    fireEvent.click(screen.getByRole("link", { name: "1 việc chưa có ngày" }));
+    const tray = screen.getByRole("region", { name: "Chưa lên lịch" });
+    fireEvent.click(
+      within(tray).getByRole("button", { name: "Đặt ngày cho ERP-153" }),
+    );
+    fireEvent.change(within(tray).getByLabelText("Đặt ngày cho ERP-153"), {
+      target: { value: "2026-10-15" },
+    });
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    expect(cards.updateCard).toHaveBeenLastCalledWith(
+      erpItemId("ERP-153"),
+      {
+        startDate: "2026-10-15T01:00:00.000Z",
+        dueDate: "2026-10-15T10:00:00.000Z",
+      },
+      expect.objectContaining({ expectedVersion: expect.any(Number) }),
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(
+      (toast.success.mock.calls[0]?.[1] as { action: { label: string } }).action
+        .label,
+    ).toBe("Hoàn tác");
+  });
+
+  it("gives a viewer no connector action and no tray scheduling", async () => {
+    const { container } = renderTimeline(erpCommenterAccess());
+    await ready();
+    expect(
+      connectorOf(container, "ERP-142").getAttribute("aria-disabled"),
+    ).toBe("true");
+    fireEvent.click(screen.getByRole("link", { name: "1 việc chưa có ngày" }));
+    expect(
+      screen.queryByRole("button", { name: "Đặt ngày cho ERP-153" }),
+    ).toBeNull();
   });
 });

@@ -44,7 +44,7 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
             null,
             workspace.Status == WorkspaceStatus.Archived,
             memberCount,
-            workspace.CreatedAt.DateTime,
+            workspace.CreatedAt.UtcDateTime,
             null,
             workspace.Version,
             workspace.Settings.Size,

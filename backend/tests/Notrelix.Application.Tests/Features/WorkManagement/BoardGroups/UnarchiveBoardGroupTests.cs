@@ -27,7 +27,7 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
         group.Archive(TestUserId, TestNow);
         SetupBoardGroups(group);
 
-        var command = new UnarchiveBoardGroupCommand(group.Id);
+        var command = new UnarchiveBoardGroupCommand(group.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -41,7 +41,7 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
         group.Delete(TestUserId, TestNow);
         SetupBoardGroups(group);
 
-        var command = new UnarchiveBoardGroupCommand(group.Id);
+        var command = new UnarchiveBoardGroupCommand(group.Id, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<DomainException>();
@@ -50,7 +50,7 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_GroupNotFound_ThrowsNotFoundException()
     {
-        var command = new UnarchiveBoardGroupCommand(Guid.CreateVersion7());
+        var command = new UnarchiveBoardGroupCommand(Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -62,7 +62,7 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
 
-        var command = new UnarchiveBoardGroupCommand(group.Id);
+        var command = new UnarchiveBoardGroupCommand(group.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

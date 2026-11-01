@@ -32,7 +32,7 @@ public sealed class ItemActivityConsumersTests
     private static readonly Guid Doing = Guid.CreateVersion7();
 
     private static ItemActivityRecorder Recorder(ApplicationDbContext db) =>
-        new(db, NullLogger<ItemActivityRecorder>.Instance);
+        new(db, NullLogger<ItemActivityRecorder>.Instance, new Moq.Mock<Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts>().Object);
 
     private static Mock<IWorkItemActivityFacts> Facts()
     {
@@ -175,6 +175,58 @@ public sealed class ItemActivityConsumersTests
         var rows = await db.WorkspaceActivityLogs.OrderBy(r => r.OccurredAt).ToListAsync();
         rows.Select(r => r.ActivityType).Should().Equal(ItemActivityTypes.Assigned, ItemActivityTypes.Unassigned);
         rows.Should().OnlyContain(r => r.ActorUserId == Actor && r.DataJson.RootElement.GetProperty("personId").GetString() == person.ToString());
+    }
+
+    [Fact]
+    public async Task LabelAddedAndRemoved_RecordRowsWithTheLabelNameAndActor()
+    {
+        await using var db = CreateDb();
+        var label = Guid.CreateVersion7();
+        var added = new BoardItemLabelAddedIntegrationEvent(
+            Guid.CreateVersion7(), AccountId, WorkspaceId, ItemId, label, "Bug", Actor, Guid.CreateVersion7(), null, null, Now);
+        var removed = new BoardItemLabelRemovedIntegrationEvent(
+            Guid.CreateVersion7(), AccountId, WorkspaceId, ItemId, label, "Bug", Actor, Guid.CreateVersion7(), null, null, Now.AddMinutes(1));
+
+        await new ItemLabelAddedActivityConsumer(Recorder(db)).Consume(Context(added));
+        await new ItemLabelAddedActivityConsumer(Recorder(db)).Consume(Context(added));
+        await new ItemLabelRemovedActivityConsumer(Recorder(db)).Consume(Context(removed));
+
+        var rows = await db.WorkspaceActivityLogs.OrderBy(r => r.OccurredAt).ToListAsync();
+        rows.Select(r => r.ActivityType).Should().Equal(ItemActivityTypes.LabelAdded, ItemActivityTypes.LabelRemoved);
+        rows.Should().OnlyContain(r => r.ActorUserId == Actor && r.DataJson.RootElement.GetProperty("to").GetString() == "Bug");
+    }
+
+    [Fact]
+    public async Task ChecklistFacts_RecordOneRowEach_WithActorAndTitles_AndARedeliveryAddsNothing()
+    {
+        await using var db = CreateDb();
+        var list = Guid.CreateVersion7();
+        Guid Id() => Guid.CreateVersion7();
+        var added = new BoardItemChecklistAddedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Release", Actor, Id(), null, null, Now);
+        var todo = new BoardItemChecklistItemAddedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Release", "Tag build", Actor, Id(), null, null, Now.AddMinutes(1));
+        var ticked = new BoardItemChecklistItemCompletionChangedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Release", "Tag build", true, Actor, Id(), null, null, Now.AddMinutes(2));
+        var unticked = new BoardItemChecklistItemCompletionChangedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Release", "Tag build", false, Actor, Id(), null, null, Now.AddMinutes(3));
+        var removed = new BoardItemChecklistItemRemovedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Release", "Tag build", Actor, Id(), null, null, Now.AddMinutes(4));
+        var renamed = new BoardItemChecklistRenamedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Ship", Actor, Id(), null, null, Now.AddMinutes(5));
+        var deleted = new BoardItemChecklistDeletedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, list, "Ship", Actor, Id(), null, null, Now.AddMinutes(6));
+
+        await new ItemChecklistAddedActivityConsumer(Recorder(db)).Consume(Context(added));
+        await new ItemChecklistAddedActivityConsumer(Recorder(db)).Consume(Context(added));
+        await new ItemChecklistItemAddedActivityConsumer(Recorder(db)).Consume(Context(todo));
+        await new ItemChecklistItemCompletedActivityConsumer(Recorder(db)).Consume(Context(ticked));
+        await new ItemChecklistItemCompletedActivityConsumer(Recorder(db)).Consume(Context(unticked));
+        await new ItemChecklistItemRemovedActivityConsumer(Recorder(db)).Consume(Context(removed));
+        await new ItemChecklistRenamedActivityConsumer(Recorder(db)).Consume(Context(renamed));
+        await new ItemChecklistDeletedActivityConsumer(Recorder(db)).Consume(Context(deleted));
+
+        var rows = await db.WorkspaceActivityLogs.OrderBy(r => r.OccurredAt).ToListAsync();
+        rows.Select(r => r.ActivityType).Should().Equal(
+            ItemActivityTypes.ChecklistAdded, ItemActivityTypes.ChecklistItemAdded, ItemActivityTypes.ChecklistItemCompleted,
+            ItemActivityTypes.ChecklistItemReopened, ItemActivityTypes.ChecklistItemRemoved, ItemActivityTypes.ChecklistRenamed,
+            ItemActivityTypes.ChecklistDeleted);
+        rows.Should().OnlyContain(r => r.ActorUserId == Actor);
+        rows[2].DataJson.RootElement.GetProperty("to").GetString().Should().Be("Tag build");
+        rows[2].DataJson.RootElement.GetProperty("fieldName").GetString().Should().Be("Release");
     }
 
     [Fact]

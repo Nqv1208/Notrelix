@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using Notrelix.API.Extensions;
+using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLogin;
 
@@ -11,10 +13,10 @@ public static class StartOAuthLoginEndpoint
         group.MapPublicGet("/oauth/{provider}/start", HandleAsync)
             .WithName("Identity.Auth.OAuth.Start")
             .Produces(StatusCodes.Status302Found)
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
+            .ProducesProblems(StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth login flow")
-            .WithDescription("Redirects user to the OAuth provider's authorization endpoint.")
+            .WithDescription("Redirects the browser to the OAuth provider's authorization endpoint. An unknown, disabled or unconfigured provider redirects to the sign-in page with error=identity.oauth.provider-unavailable instead; no redirect to a provider is made.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
 
         return group;
@@ -23,11 +25,17 @@ public static class StartOAuthLoginEndpoint
     private static async Task<IResult> HandleAsync(
         string provider,
         string? returnUrl,
-        ISender sender)
+        ISender sender,
+        IOptions<OAuthRedirectOptions> redirectOptions)
     {
-        if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider))
+        // The browser navigates here, so a refusal is the sign-in page saying so, never raw JSON.
+        var unavailable = Results.Redirect(CompleteOAuthLoginEndpoint.AppendErrorCode(
+            redirectOptions.Value.FrontendFailureUrl, StartOAuthLoginCommandHandler.ProviderUnavailableCode));
+
+        if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider)
+            || !Enum.IsDefined(oauthProvider))
         {
-            return EndpointExtensions.InvalidInput($"Invalid OAuth provider: {provider}");
+            return unavailable;
         }
 
         var command = new StartOAuthLoginCommand
@@ -40,7 +48,7 @@ public static class StartOAuthLoginEndpoint
 
         if (!result.Succeeded || result.Data is null)
         {
-            return result.ToApiResult();
+            return unavailable;
         }
 
         return Results.Redirect(result.Data.AuthorizationUrl);

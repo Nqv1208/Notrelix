@@ -79,10 +79,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var handler = new GetFullBoardQueryHandler(
-            context, new ActorLookupService(context), new EmptyCollaborationReadPort(),
-            Mock.Of<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility>(),
-            new FakeCurrentRequestContext().AsUser(Guid.NewGuid()));
+        var handler = new GetFullBoardQueryHandler(context, new ActorLookupService(context), new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(context, new ActorLookupService(context), new EmptyCollaborationReadPort(), new FakeCurrentRequestContext().AsUser(Guid.NewGuid())), new Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader(context), Mock.Of<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility>(), new FakeCurrentRequestContext().AsUser(Guid.NewGuid()));
 
         var result = await handler.Handle(new GetFullBoardQuery(board.Id), CancellationToken.None);
 
@@ -140,7 +137,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context));
+        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context), new FakeCurrentUser());
 
         var result = await handler.Handle(GetCommentsQuery.ForBoardItem(itemId), CancellationToken.None);
 

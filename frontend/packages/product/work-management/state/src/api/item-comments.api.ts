@@ -22,6 +22,24 @@ export function createCommentApi(client: NotrelixClient) {
       );
     },
 
+    /** One page of the comments, oldest first; `nextCursor` goes back as `cursor` for the next one. */
+    async getCardUpdatesPage(cardId: string, cursor?: string) {
+      const page = await api.get<{
+        items?: unknown[] | null;
+        nextCursor?: string | null;
+      }>(
+        `${endpoints.boardItems.commentsPage(cardId)}${
+          cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""
+        }`,
+      );
+      return {
+        items: (page?.items ?? []).map((comment: any) =>
+          mapCommentDtoToCardUpdate(comment, cardId),
+        ),
+        nextCursor: page?.nextCursor ?? null,
+      };
+    },
+
     async createCardUpdate(input: CreateCardUpdateInput) {
       const body: CreateCommentBody = {
         contentMd: input.body,
@@ -29,6 +47,7 @@ export function createCommentApi(client: NotrelixClient) {
         mentionedUserIds: input.mentionUserIds?.length
           ? [...input.mentionUserIds]
           : undefined,
+        parentCommentId: input.parentCommentId,
       };
       const id = await api.post<any>(
         endpoints.boardItems.comments(input.cardId),
@@ -56,6 +75,17 @@ export function createCommentApi(client: NotrelixClient) {
         contentMd: bodyText,
       };
       await api.patch<void>(`/comments/${updateId}`, body);
+    },
+
+    async setCommentReaction(
+      cardId: string,
+      commentId: string,
+      emoji: string,
+      on: boolean,
+    ): Promise<void> {
+      const path = `${endpoints.boardItems.comments(cardId)}/${commentId}/reactions/${encodeURIComponent(emoji)}`;
+      if (on) await api.put<void>(path);
+      else await api.delete<void>(path);
     },
 
     async deleteCardUpdate(updateId: string): Promise<void> {

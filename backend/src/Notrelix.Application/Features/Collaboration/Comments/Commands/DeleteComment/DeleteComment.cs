@@ -1,11 +1,13 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.Comments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 
 public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.UpdateItem;
+    // A coarse workspace-member gate: who may change the comment is decided in the handler from its target.
+    public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.comment"), CommentId);
 }
 
@@ -14,17 +16,29 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand,
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public DeleteCommentCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    private readonly ICommentTargetAccess _access;
+    private readonly IBoardRealtimeNotifier? _realtime;
+    public DeleteCommentCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICommentTargetAccess access, IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _access = access;
     }
 
     public async Task<Result> Handle(DeleteCommentCommand request, CancellationToken ct)
     {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(DeleteCommentCommand request, CancellationToken ct)
+    {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
-        if (comment is null) throw new NotFoundException(nameof(Comment), request.CommentId);
+        if (comment is null) throw CommentAccessRules.NotFound(request.CommentId);
+        await CommentAccessRules.RequireAuthorAsync(comment, _currentUser.UserId, _access, ct);
         comment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

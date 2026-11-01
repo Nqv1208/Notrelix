@@ -4394,6 +4394,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("ColourBlindLabels")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("colour_blind_labels");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -4708,9 +4714,17 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
 
+                    b.Property<string>("PreviousRefreshTokenHash")
+                        .HasColumnType("text")
+                        .HasColumnName("previous_refresh_token_hash");
+
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
+
+                    b.Property<DateTimeOffset?>("RotatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rotated_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -4747,6 +4761,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("idx_user_sessions_expires");
+
+                    b.HasIndex("PreviousRefreshTokenHash")
+                        .HasDatabaseName("idx_user_sessions_previous_refresh_token_hash");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_user_sessions_user_id");
@@ -6597,6 +6614,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
                     b.Property<string>("SourceIp")
                         .HasMaxLength(45)
                         .HasColumnType("character varying(45)")
@@ -6678,6 +6700,20 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("completed_by");
 
+                    b.Property<Guid?>("CoverAttachmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cover_attachment_id");
+
+                    b.Property<string>("CoverColor")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cover_color");
+
+                    b.Property<string>("CoverStyle")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("cover_style");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -6742,6 +6778,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("position")
                         .UseCollation("C");
+
+                    b.Property<int?>("ReminderOffsetMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("reminder_offset_minutes");
+
+                    b.Property<string>("RepeatRule")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("repeat_rule");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7005,6 +7050,93 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_board_item_values_item_field");
 
                     b.ToTable("board_item_values", "work");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemView", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTimeOffset>("LastViewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_viewed_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_board_item_views");
+
+                    b.HasIndex("ItemId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_board_item_views_item_user");
+
+                    b.ToTable("board_item_views", "work");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemVote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("FieldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("field_id");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset>("VotedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voted_at");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_board_item_votes");
+
+                    b.HasIndex("FieldId")
+                        .HasDatabaseName("idx_board_item_votes_field_id");
+
+                    b.HasIndex("ItemId", "FieldId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_board_item_votes_item_field_user");
+
+                    b.ToTable("board_item_votes", "work");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.ItemDependency", b =>
@@ -7537,6 +7669,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -7593,7 +7729,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
-                    b.Property<Guid?>("WorkspaceId")
+                    b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
 
@@ -7844,6 +7980,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("board_id");
 
+                    b.Property<string>("Columns")
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)")
+                        .HasColumnName("columns");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -7851,6 +7992,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("Criteria")
+                        .HasMaxLength(8192)
+                        .HasColumnType("character varying(8192)")
+                        .HasColumnName("criteria");
 
                     b.Property<string>("DeleteReason")
                         .HasColumnType("text")
@@ -7927,6 +8073,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("Criteria")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("criteria");
 
                     b.Property<string>("DeleteReason")
                         .HasColumnType("text")
@@ -12548,6 +12699,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasKey("UserSessionId");
 
+                            b1.HasIndex("Hash")
+                                .HasDatabaseName("idx_user_sessions_refresh_token_hash");
+
                             b1.ToTable("user_sessions", "identity");
 
                             b1.WithOwner()
@@ -12926,6 +13080,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                             b1.Property<Guid>("FormQuestionId")
                                 .HasColumnType("uuid");
 
+                            b1.Property<string>("HelpText")
+                                .HasColumnType("text");
+
+                            b1.Property<int?>("MaxFileSizeMb")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("MaxLength")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("MaxValue")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("MinValue")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("Placeholder")
+                                .HasColumnType("text");
+
+                            b1.Property<bool>("Required")
+                                .HasColumnType("boolean");
+
                             b1.HasKey("FormQuestionId");
 
                             b1.ToTable("form_questions", "work");
@@ -12935,6 +13110,36 @@ namespace Notrelix.Infrastructure.Data.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("FormQuestionId")
                                 .HasConstraintName("fk_form_questions_form_questions_id");
+
+                            b1.OwnsMany("Notrelix.Domain.WorkManagement.Forms.FormQuestionOption", "Options", b2 =>
+                                {
+                                    b2.Property<Guid>("FormQuestionConfigFormQuestionId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    b2.Property<string>("Key")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("Label")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("FormQuestionConfigFormQuestionId", "__synthesizedOrdinal");
+
+                                    b2.ToTable("form_questions", "work");
+
+                                    b2.ToJson("config");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("FormQuestionConfigFormQuestionId")
+                                        .HasConstraintName("fk_form_questions_form_questions_form_question_config_form_questio");
+                                });
+
+                            b1.Navigation("Options");
                         });
 
                     b.Navigation("Config");
@@ -13087,6 +13292,33 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Navigation("Value")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemView", b =>
+                {
+                    b.HasOne("Notrelix.Domain.WorkManagement.Items.BoardItem", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_board_item_views_board_items_item_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemVote", b =>
+                {
+                    b.HasOne("Notrelix.Domain.WorkManagement.Fields.BoardField", null)
+                        .WithMany()
+                        .HasForeignKey("FieldId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_board_item_votes_board_fields_field_id");
+
+                    b.HasOne("Notrelix.Domain.WorkManagement.Items.BoardItem", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_board_item_votes_board_items_item_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.ItemDependency", b =>

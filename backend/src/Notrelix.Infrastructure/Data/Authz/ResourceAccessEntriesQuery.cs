@@ -17,7 +17,7 @@ public static class ResourceAccessEntriesQuery
         """;
 
     private const string ActiveGrants = """
-        SELECT rp.id, rp.subject_type, rp.subject_id, rp.permission_level, rp.created_by, rp.created_at, t.name AS team_name
+        SELECT rp.id, rp.subject_type, rp.subject_id, rp.permission_level, rp.created_by, rp.created_at, rp.version, t.name AS team_name
           FROM governance.resource_permissions rp
           LEFT JOIN workspace.teams t
             ON rp.subject_type = 'Team' AND t.id = rp.subject_id
@@ -30,7 +30,7 @@ public static class ResourceAccessEntriesQuery
 
     /// <summary>
     /// Columns: subject_type, subject_id, rank, created_by (nullable), team_name (nullable), permission id,
-    /// created_at, team_people (active members of a Team subject; null for a User).
+    /// created_at, team_people (active members of a Team subject; null for a User), version of the permission row.
     /// </summary>
     public const string GrantsSql = """
         SELECT rp.subject_type, rp.subject_id,
@@ -39,10 +39,19 @@ public static class ResourceAccessEntriesQuery
                CASE WHEN rp.subject_type = 'Team' THEN
                  (SELECT count(*)::int FROM workspace.team_members tm
                    WHERE tm.workspace_id = @workspace_id AND tm.team_id = rp.subject_id AND tm.status = 'Active')
-               END AS team_people
+               END AS team_people,
+               rp.version
           FROM (
         """ + ActiveGrants + """
           ) rp
+        """;
+
+    /// <summary>Column: user_id of every active Workspace Owner and Admin.</summary>
+    public const string WorkspaceAdminsSql = """
+        SELECT wm.user_id
+          FROM workspace.workspace_members wm
+         WHERE wm.account_id = @account_id AND wm.workspace_id = @workspace_id
+           AND wm.status = 'Active' AND wm.role IN ('Owner', 'Admin')
         """;
 
     /// <summary>

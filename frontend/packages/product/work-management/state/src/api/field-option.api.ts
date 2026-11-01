@@ -4,10 +4,16 @@ import type {
   OperationRequestBody,
 } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import type { OperationResponse } from "@notrelix/contracts";
 import type { WorkStatusCategory } from "@notrelix/work-management-core";
 
 type AddFieldOptionBody =
   OperationRequestBody<"WorkManagement.BoardFields.AddFieldOption">;
+/** What an added option answers: its id and the field's new version. */
+export type AddedFieldOption = OperationResponse<
+  "WorkManagement.BoardFields.AddFieldOption",
+  201
+>;
 type UpdateFieldOptionBody =
   OperationRequestBody<"WorkManagement.BoardFields.UpdateFieldOption">;
 type MoveFieldOptionBody =
@@ -37,14 +43,14 @@ export function createFieldOptionApi(client: NotrelixClient) {
         expectedVersion: number;
       },
       options?: ApiRequestOptions,
-    ): Promise<void> {
+    ): Promise<AddedFieldOption> {
       const body: AddFieldOptionBody = {
         name: input.name,
         color: input.color,
         category: input.category ?? null,
         expectedVersion: input.expectedVersion,
       };
-      await api.post<unknown>(
+      return api.post<AddedFieldOption>(
         endpoints.boardFields.options(input.boardId, input.fieldId),
         body,
         options ?? { idempotencyKey: crypto.randomUUID() },

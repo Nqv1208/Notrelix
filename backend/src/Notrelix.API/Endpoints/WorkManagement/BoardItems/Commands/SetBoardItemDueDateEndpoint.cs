@@ -22,7 +22,7 @@ public static class SetBoardItemDueDateEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new SetBoardItemDueDateCommand(itemId, body.DueDate, body.StartDate), cancellationToken);
+        var result = await sender.Send(new SetBoardItemDueDateCommand(itemId, body.DueDate, body.StartDate, body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

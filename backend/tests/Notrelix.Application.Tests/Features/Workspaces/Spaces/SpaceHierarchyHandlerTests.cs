@@ -180,8 +180,8 @@ public class SpaceHierarchyHandlerTests : WorkspaceHandlerTestBase
 
         var result = await handler.Handle(new GetSpaceTreeQuery(TestWorkspaceId), CancellationToken.None);
 
-        result.Data!.Select(n => n.Id).Should().BeEquivalentTo([security, finance]);
-        result.Data!.Single(n => n.Id == security).ParentSpaceId.Should().BeNull("the hidden parent IT is not disclosed");
+        result.Data!.Items.Select(n => n.Id).Should().BeEquivalentTo([security, finance]);
+        result.Data!.Items.Single(n => n.Id == security).ParentSpaceId.Should().BeNull("the hidden parent IT is not disclosed");
     }
 
     [Fact]

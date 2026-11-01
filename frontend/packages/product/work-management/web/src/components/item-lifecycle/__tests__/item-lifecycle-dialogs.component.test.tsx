@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import { BoardTrashSheet } from "../board-trash-sheet";
-import { DeleteItemDialog, MoveItemDialog } from "../item-lifecycle-dialogs";
+import { ArchiveItemDialog } from "../archive-item-dialog";
+import { DeleteItemDialog } from "../item-lifecycle-dialogs";
 import { en } from "../item-lifecycle.copy";
 
 describe("DeleteItemDialog", () => {
@@ -41,67 +42,6 @@ describe("DeleteItemDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
-  });
-});
-
-describe("MoveItemDialog", () => {
-  const boards = [
-    { id: "b1", title: "Roadmap" },
-    { id: "b2", title: "Support" },
-  ];
-
-  it("FUI[wm.item-lifecycle:move] moves to the board the member picked and not before", async () => {
-    const onConfirm = vi.fn();
-    render(
-      <MoveItemDialog
-        copy={en}
-        title="Fix login"
-        boards={boards}
-        open
-        onCancel={() => undefined}
-        onConfirm={onConfirm}
-      />,
-    );
-
-    const move = screen.getByRole("button", { name: "Move item" });
-    expect((move as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole("option", { name: "Support" }));
-    fireEvent.click(move);
-    expect(onConfirm).toHaveBeenCalledWith("b2");
-  });
-
-  it("FUI[wm.item-lifecycle:move-filter] filters the boards by name", async () => {
-    render(
-      <MoveItemDialog
-        copy={en}
-        title="Fix login"
-        boards={boards}
-        open
-        onCancel={() => undefined}
-        onConfirm={() => undefined}
-      />,
-    );
-
-    fireEvent.change(screen.getByLabelText("Find a board"), {
-      target: { value: "road" },
-    });
-    expect(screen.queryByRole("option", { name: "Support" })).toBeNull();
-    expect(screen.getByRole("option", { name: "Roadmap" })).toBeTruthy();
-  });
-
-  it("FUI[wm.item-lifecycle:move-empty] says so when no other board accepts items", () => {
-    render(
-      <MoveItemDialog
-        copy={en}
-        title="Fix login"
-        boards={[]}
-        open
-        onCancel={() => undefined}
-        onConfirm={() => undefined}
-      />,
-    );
-
-    expect(screen.getByText(en.moveEmpty)).toBeTruthy();
   });
 });
 
@@ -145,5 +85,113 @@ describe("BoardTrashSheet", () => {
     );
 
     expect(screen.getByText(en.trashEmpty)).toBeTruthy();
+  });
+});
+
+describe("ArchiveItemDialog", () => {
+  const impact = {
+    subItems: 3,
+    dependencies: { count: 2, keys: ["ERP-140", "ERP-141"] },
+    checking: false,
+  };
+  const props = {
+    copy: en,
+    title: "Reconcile stock",
+    impact,
+    open: true,
+    onCancel: vi.fn(),
+    onConfirm: vi.fn(),
+  };
+
+  it("FUI[wm.item-lifecycle:archive] names the sub-items and the dependencies and counts every item it archives", () => {
+    const onConfirm = vi.fn();
+    render(
+      <ArchiveItemDialog {...props} status="idle" onConfirm={onConfirm} />,
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "Archive this item?" }),
+    ).toBeTruthy();
+    expect(screen.getByText("3 sub-items")).toBeTruthy();
+    expect(screen.getByText("2 dependency links")).toBeTruthy();
+    expect(screen.getByText(/ERP-140, ERP-141/)).toBeTruthy();
+    expect(onConfirm).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Archive 4 items" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-plain] says nothing about sub-items or links an item does not have", () => {
+    render(
+      <ArchiveItemDialog
+        {...props}
+        status="idle"
+        impact={{
+          subItems: 0,
+          dependencies: { count: 0, keys: [] },
+          checking: false,
+        }}
+      />,
+    );
+    expect(screen.queryByText(/sub-item/)).toBeNull();
+    expect(screen.queryByText(/dependency link/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Archive item" })).toBeTruthy();
+  });
+
+  it("FUI[wm.item-lifecycle:archive-busy] cannot be dismissed or repeated while the write is out", () => {
+    render(<ArchiveItemDialog {...props} status="busy" />);
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: "Cancel" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "Archiving…" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  const refusal = (
+    status: "error" | "conflict" | "denied" | "gone",
+    heading: string,
+    canRetry: boolean,
+  ) => {
+    render(<ArchiveItemDialog {...props} status={status} />);
+    expect(screen.getByRole("alert").textContent).toContain(heading);
+    expect(Boolean(screen.queryByRole("button", { name: "Try again" }))).toBe(
+      canRetry,
+    );
+  };
+
+  it("FUI[wm.item-lifecycle:archive-error] explains a network failure in place and offers Try again", () => {
+    refusal("error", "Couldn't archive", true);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-conflict] says someone changed the item and offers Try again", () => {
+    refusal("conflict", "Someone changed this item", true);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-denied] says the person may not archive and offers no retry", () => {
+    refusal("denied", "You can't archive this item", false);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-gone] says the item is gone and offers no retry", () => {
+    refusal("gone", "This item is no longer here", false);
+  });
+
+  it("FUI[wm.item-lifecycle:archive-links-pending] waits for the dependency count before it can be confirmed", () => {
+    render(
+      <ArchiveItemDialog
+        {...props}
+        status="idle"
+        impact={{ ...impact, checking: true }}
+      />,
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Checking links…",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
   });
 });

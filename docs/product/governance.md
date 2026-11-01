@@ -475,7 +475,10 @@ Account membership still never implies Workspace access, and Workspace membershi
 For a Board or Page in Workspace `W` (placed in Space `S` or unplaced), the decision is evaluated in this order; the first matching step decides:
 
 ```text
-1. resource missing / archived / deleted / other Workspace → NotFound
+1. resource missing / deleted / other Workspace          → NotFound
+   (an archived Board is not missing: steps 2–6 decide it, then it takes no write, below;
+   a deleted Board is reachable only for its restore and delete; a Page in the trash is
+   reachable only for restore and delete-for-good)
 2. Workspace Owner                                        → Allow
 3. explicit permission rules for the action (User/Team subject),
    lowest priority value first, Deny wins at equal priority → Deny / Allow
@@ -486,6 +489,13 @@ For a Board or Page in Workspace `W` (placed in Space `S` or unplaced), the deci
 6. Workspace default (resource unplaced, Workspace-visible): Members allowed,
    Guests need explicit access
 ```
+
+**An archived Board stays reachable (decided 2026-10-30).** An archived (not deleted) Board and its children are decided by steps 2–6 like an active one, so a Viewer keeps reading it, and a person who fails those steps still gets the identical NotFound, never "archived". Only after the decision is Allow does the policy refuse, with a Forbidden decision carrying the stable code `WorkManagement_Board_Archived`:
+
+- any write on a child of an archived Board;
+- any write on the archived Board itself, except the Board lifecycle commands: archive, unarchive, delete and restore.
+
+The Board lifecycle commands are the way back and pass the ordinary ManageBoard (Manager) decision; archiving an archived Board stays a no-op that changes nothing. A deleted Board is NotFound to every request except its restore (ManageBoard, inside the 30-day window) and its delete (ManageBoard; deleting a deleted Board is a no-op, and a retry under the same idempotency key replays); its children are NotFound. The archived Board list applies the same single-read decision as the active list (GOV-029).
 
 A Workspace-visible resource inherits the access of its Space and may be restricted further by making it Private and granting outsiders explicitly. A resource placed in a Space is hidden (NotFound) from a principal who has no Space access, no board membership and no explicit grant.
 
@@ -560,14 +570,18 @@ Board lists (by Workspace and by slug), Space lists/tree, Page lists/tree/search
 
 Decided 2026-10-13. Every resource that lives inside a Board — Items (and their comments, activity, attachments, links and checklists), Checklist items, Groups, Fields, Views and Labels — is authorized by evaluating the requested action against its parent Board:
 
-- the same visibility: a principal who cannot see the Board receives NotFound for any of its children (GOV-025), and a child of an archived or deleted Board, or one whose Board cannot be resolved, is NotFound;
+- the same visibility: a principal who cannot see the Board receives NotFound for any of its children (GOV-025), and a child of a deleted Board (reachable only for the Board's own restore and delete), or one whose Board cannot be resolved, is NotFound. A child of an archived Board stays reachable and read-only: any write on it is refused with `WorkManagement_Board_Archived` after the decision is Allow (GOV-025). An Item inside an archived Group, and the checklists of such an Item, are read-only the same way, refused with `WorkManagement_Group_Archived`;
 - the same order as the Board itself: explicit permission rules scoped to the Board (or to the child) apply to its children, then the level and action thresholds (GOV-027) and the Guest cap (GOV-030): reading needs Viewer, commenting on an Item needs Commenter, every other change needs Editor;
 - an explicit grant on the child itself still counts as a source of access in addition to the Board's sources;
 - a child accepts only Board-child actions (read, comment, item, field and view changes, Board management); any other action on a child is refused.
 
 Board membership roles carry a level: Owner and Admin → Manager, Member → Editor, Observer and Guest → Viewer. Managing board members (adding, removing, changing a role) is Board management and needs Manager; a Manager assigns, changes or removes roles up to their own level (the target's level is the higher of its board role and any explicit grant). Below Manager no one manages board members, a Guest never does (GOV-030). Saving the Board's shared view is an Editor change.
 
-Not yet wired (their requests are unreachable today): Saved filters, Forms and form submissions, Board relations and approval requests.
+Saved filters are Board children too (they resolve to their Board): a personal filter is its creator's alone, so another principal gets NotFound for it; a shared filter is visible to everyone who can view the Board and is changed by whoever holds the view-edit right (UpdateBoardView), while only its creator changes who sees it.
+
+Forms and form submissions are Board children too (they resolve to their Board): managing a form (questions, publish, close, delete, restore) is Board management and needs Manager; handling its submissions (list, process, reject, mark spam, delete) needs edit rights on the Board (UpdateItem, so an Editor), because a response can hold respondent data (D78.4, decided 2026-10-30); creating a form is an Editor schema change; submitting to a published form needs the right to create Items on its Board, so a principal without Board access gets NotFound. Public (anonymous) submission is not wired (owner decision pending).
+
+Not yet wired (their requests are unreachable today): Board relations.
 ---
 
 # 24. Field-level permissions
@@ -661,19 +675,20 @@ unless an explicit policy intentionally grants such capability.
 
 ---
 
-# 30.1. GOV-030 — A Guest's resource level is capped at Editor
+# 30.1. GOV-030 — A Guest's resource level is capped at Viewer
 
-Decided 2026-10-12 (UI mockup review). A Guest (Workspace role `guest`, WSP-026) can hold on a Board or Page:
+Decided 2026-10-12 (UI mockup review) with a cap of Editor; tightened 2026-10-31 (owner: security first, a person outside the company reads what was shared with them). A Guest (Workspace role `guest`, WSP-026) can hold on a Board or Page:
 
 ```text
-Viewer | Commenter | Editor   → effective
-Manager                      → never effective: the level is capped at Editor when evaluated
+Viewer                       → effective
+Commenter | Editor | Manager → never effective: the level is capped at Viewer when evaluated
 ```
 
-- the cap applies whatever the source of the level (direct entry, Team grant, board membership role, Space role): the effective level of a Guest is the lower of the computed level and Editor;
-- a Guest therefore never manages a Board (settings, visibility, moving, archiving, deleting, board members — also on an unplaced Workspace-visible Board), never holds `ManageBoardPermission` / `ManagePagePermission`, cannot change who has access, and cannot share the resource further;
-- a Manager-level entry given to a Guest is stored but has no effect beyond Editor; rejecting it when it is granted is not enforced yet;
-- resource access UIs show the Manager option disabled for a Guest with the reason, instead of hiding it.
+- the cap applies whatever the source of the level (direct entry, Team grant, board membership role, Space role): the effective level of a Guest is the lower of the computed level and Viewer;
+- a Guest therefore never edits, comments on or manages a Board or Page (settings, visibility, moving, archiving, deleting, board members — also on an unplaced Workspace-visible Board), never holds `ManageBoardPermission` / `ManagePagePermission`, cannot change who has access, and cannot share the resource further;
+- a resource invitation (WSP-026) is created at Viewer only; a higher level is rejected when the invitation is created (`Workspaces_Invitation_ResourceLevelAboveViewer`). A stored entry or an invitation that predates the cap is not rewritten: it grants Viewer when evaluated, and accepting an older invitation writes a Viewer entry;
+- comment for outside people may be enabled later through a catalog flag; until then it is not part of the guest level;
+- resource access UIs show every option above Viewer disabled for a Guest with the reason, instead of hiding it.
 
 ---
 
@@ -741,6 +756,8 @@ disabled
 ```
 
 A revoked/expired link must stop authorizing future access.
+
+Turning a link off is authorized on the shared resource, with the same action that creating a link on that resource needs (a Board manager may turn off a link on their board; a Page sharer on their page). It is not a workspace-administration act on a separate "share link" resource, and the link must belong to the resource the request names: a link of another resource answers the same NotFound as a link that does not exist (confirmed 2026-10-30).
 
 ---
 

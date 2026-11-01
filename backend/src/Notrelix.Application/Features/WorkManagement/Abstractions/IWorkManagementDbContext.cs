@@ -19,6 +19,8 @@ public interface IWorkManagementDbContext
     DbSet<BoardItemMember> BoardItemMembers { get; }
     DbSet<BoardItemLabel> BoardItemLabels { get; }
     DbSet<BoardItemLink> BoardItemLinks { get; }
+    DbSet<BoardItemVote> BoardItemVotes { get; }
+    DbSet<BoardItemView> BoardItemViews { get; }
     DbSet<Label> Labels { get; }
     DbSet<BoardMember> BoardMembers { get; }
     DbSet<BoardSubscriber> BoardSubscribers { get; }

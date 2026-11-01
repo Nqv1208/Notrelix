@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Mfa.Commands.DisableMfa;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
@@ -10,10 +11,11 @@ public static class DisableMfaEndpoint
         group.MapAuthenticatedPost("/mfa/disable", HandleAsync)
             .WithName("Identity.Mfa.Disable")
             .Produces(StatusCodes.Status200OK)
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status412PreconditionFailed, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Mfa")
             .WithSummary("Disable MFA and revoke all active sessions")
-            .WithDescription("Requires a single-use step-up proof for the DisableMfa purpose.");
+            .WithDescription("Requires a single-use step-up proof for the DisableMfa purpose. Disabling an already-off factor answers 200 and changes nothing.")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthSensitiveByUser"));
         return group;
     }
 

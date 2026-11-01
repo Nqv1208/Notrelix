@@ -27,7 +27,11 @@ public static class MapFormEndpoints
         group.MapRestoreForm();
         group.MapAddFormQuestion();
         group.MapUpdateFormQuestion();
+        group.MapRemoveFormQuestion();
+        group.MapGetForm();
         group.MapListFormSubmissions();
+        group.MapListFormSubmissionsPage();
+        group.MapSubmitForm();
 
         var submissionGroup = app
             .MapGroup("/api/v1/form-submissions/{submissionId:guid}")

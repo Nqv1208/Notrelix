@@ -17,6 +17,7 @@ public class SavedFilterConfiguration : IEntityTypeConfiguration<SavedFilter>
         builder.Property(x => x.ViewId).HasColumnName("view_id");
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Visibility).HasColumnName("visibility").IsRequired();
+        builder.Property(x => x.Criteria).HasColumnName("criteria").HasMaxLength(4000);
         builder.Property(x => x.GroupRule).HasColumnName("group_rule_id");
 
         builder.Ignore(x => x.IsDeleted);

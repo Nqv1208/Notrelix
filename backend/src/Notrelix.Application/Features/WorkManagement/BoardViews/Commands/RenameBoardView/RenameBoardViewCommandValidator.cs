@@ -4,6 +4,7 @@ public class RenameBoardViewCommandValidator : AbstractValidator<RenameBoardView
 {
     public RenameBoardViewCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ViewId).NotEmpty();
         RuleFor(x => x.Name)
             .NotEmpty()

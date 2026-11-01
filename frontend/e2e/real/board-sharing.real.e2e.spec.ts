@@ -11,7 +11,8 @@ test("a board manager adds a workspace member, changes the permission and remove
   await signIn(page, realUsers.workspaceAdmin);
   await openBoard(page, "Workspace 3", "Engineering Tasks");
 
-  await page.getByRole("button", { name: "Whole workspace" }).click();
+  // The board header opens the sharing dialog from its Share button.
+  await page.getByRole("button", { name: "Share", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
 

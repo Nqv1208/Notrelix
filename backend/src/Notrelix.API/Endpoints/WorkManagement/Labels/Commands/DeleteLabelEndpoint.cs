@@ -17,10 +17,11 @@ public static class DeleteLabelEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid labelId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteLabelCommand(labelId), cancellationToken);
+        var result = await sender.Send(new DeleteLabelCommand(labelId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

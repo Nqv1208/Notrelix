@@ -4,6 +4,7 @@ public class UnassignBoardItemMemberCommandValidator : AbstractValidator<Unassig
 {
     public UnassignBoardItemMemberCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId)
             .NotEmpty();
 

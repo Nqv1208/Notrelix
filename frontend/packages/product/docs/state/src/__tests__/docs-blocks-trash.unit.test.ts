@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { convertBlockProperties, type Block } from "@notrelix/docs-core";
 import { createBlockApi } from "../api/block.api";
 import { createPageApi } from "../api/page.api";
-import { createPageExtrasApi } from "../api/page-extras.api";
+import {
+  convertTodoFailedStep,
+  createPageExtrasApi,
+} from "../api/page-extras.api";
 import { mapBlock } from "../model/block.mapper";
 import { testEndpoints } from "./test-endpoints";
 
@@ -121,14 +124,17 @@ describe("Documents trash", () => {
   it("archives, restores, lists and deletes through the producer routes", async () => {
     const api = client();
     api.post.mockResolvedValue(undefined);
-    api.get.mockResolvedValue([
-      {
-        id: "p1",
-        workspaceId: "w",
-        title: "Old",
-        createdAt: "2026-10-01T00:00:00Z",
-      },
-    ]);
+    api.get.mockResolvedValue({
+      items: [
+        {
+          id: "p1",
+          workspaceId: "w",
+          title: "Old",
+          createdAt: "2026-10-01T00:00:00Z",
+        },
+      ],
+      nextCursor: "c2",
+    });
     const pages = createPageApi(api, testEndpoints);
     await pages.archive("p1");
     await pages.restore("p1");
@@ -140,7 +146,8 @@ describe("Documents trash", () => {
       "/pages/p1/restore",
     ]);
     expect(api.get).toHaveBeenCalledWith("/workspaces/w/pages/trash");
-    expect(trash.map((page) => page.id)).toEqual(["p1"]);
+    expect(trash.pages.map((page) => page.id)).toEqual(["p1"]);
+    expect(trash.nextCursor).toBe("c2");
     expect(api.delete).toHaveBeenCalledWith("/pages/p1");
   });
 });
@@ -184,6 +191,7 @@ describe("convert a checklist line to a task", () => {
       "pg",
       block,
       { boardId: "bd", groupId: "gr" },
+      "attempt-1",
     );
 
     expect(api.post.mock.calls[0]?.slice(0, 2)).toEqual([
@@ -193,6 +201,10 @@ describe("convert a checklist line to a task", () => {
     expect(api.post.mock.calls[1]?.slice(0, 2)).toEqual([
       "/board-items/item-1/link-page",
       { pageId: "pg" },
+    ]);
+    expect(api.post.mock.calls.map((call) => call[2]?.idempotencyKey)).toEqual([
+      "attempt-1:item",
+      "attempt-1:link",
     ]);
     expect(api.patch).toHaveBeenCalledWith("/pages/pg/blocks/b1", {
       expectedVersion: 3,
@@ -206,12 +218,11 @@ describe("convert a checklist line to a task", () => {
     api.post
       .mockResolvedValueOnce({ id: "item-1" })
       .mockRejectedValueOnce(new Error("forbidden"));
-    await expect(
-      createPageExtrasApi(api, testEndpoints).convertTodo("pg", block, {
-        boardId: "bd",
-        groupId: "gr",
-      }),
-    ).rejects.toThrow("forbidden");
+    const failure = await createPageExtrasApi(api, testEndpoints)
+      .convertTodo("pg", block, { boardId: "bd", groupId: "gr" }, "attempt-2")
+      .catch((error: unknown) => error);
+    expect(convertTodoFailedStep(failure)).toBe("link");
+    expect((failure as { cause: Error }).cause.message).toBe("forbidden");
     expect(api.patch).not.toHaveBeenCalled();
   });
 });

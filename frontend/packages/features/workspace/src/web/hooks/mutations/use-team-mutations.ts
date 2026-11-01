@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import type { SpacesApiClient } from "../../../core/api/spaces.service";
 import {
   createTeamsService,
@@ -48,10 +49,20 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
         queryKey: workspaceQueryKeys.teams(workspaceId),
       });
 
+    // One key per create the person asked for: a retry of the same input reuses it, so the producer
+    // answers with the Team the first attempt made; a changed input is a new request.
+    const attempt = useRef<{ signature: string; key: string } | null>(null);
     const create = useMutation({
-      mutationFn: (input: CreateTeamInput) =>
-        service.create(workspaceId, input),
+      mutationFn: (input: CreateTeamInput) => {
+        const signature = JSON.stringify([workspaceId, input]);
+        if (attempt.current?.signature !== signature)
+          attempt.current = { signature, key: crypto.randomUUID() };
+        return service.create(workspaceId, input, attempt.current.key);
+      },
       retry: false,
+      onSuccess: () => {
+        attempt.current = null;
+      },
       onSettled: refresh,
     });
 

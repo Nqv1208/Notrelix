@@ -28,6 +28,7 @@ export { createUseDocsSearch } from "./hooks/use-docs-search";
 export { createUseDocsFavorites } from "./hooks/use-docs-favorites";
 export { createUseCreatePage } from "./hooks/use-create-page";
 export { createUseUpdatePage } from "./hooks/use-update-page";
+export { createUseMovePage } from "./hooks/use-move-page";
 export { createUseMovePageToSpace } from "./hooks/use-move-page-to-space";
 export { createUseDeletePage } from "./hooks/use-delete-page";
 export { createUseArchivePage } from "./hooks/use-archive-page";

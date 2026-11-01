@@ -4,9 +4,7 @@
  * the Go-live milestone), plus its empty, edge and dense variants. The clock
  * is injected (12/10/2026 10:40, Hanoi); nothing here reads the system date.
  */
-import type { KanbanFilterState } from "../components/views/kanban/kanban-filter";
-import { emptyKanbanFilter } from "../components/views/kanban/kanban-filter";
-import type { KanbanToolbarFilterOptions } from "../components/views/kanban/kanban-filter-menu";
+import { erpViewBar } from "./view-state-fixtures";
 import type { BoardCalendarSurfaceProps } from "../components/views/calendar/board-calendar-surface";
 import type { CalendarDragState } from "../components/views/calendar/calendar-grid";
 import {
@@ -244,31 +242,12 @@ export const CALENDAR_UNDATED: readonly CalendarUndated[] = [
   },
 ];
 
-export const CALENDAR_FILTER_OPTIONS: KanbanToolbarFilterOptions = {
-  statuses: [
-    { id: "status-todo", name: "Cần làm" },
-    { id: "status-doing", name: "Đang làm" },
-    { id: "status-review", name: "Chờ duyệt" },
-    { id: "status-done", name: "Hoàn thành" },
-  ],
-  assignees: [
-    { id: "user-khanh-linh", name: "Đỗ Khánh Linh" },
-    { id: "user-minh-quan", name: "Trần Minh Quân" },
-  ],
-  labels: [{ id: "label-security", name: "Bảo mật" }],
-};
-
-/** The khong-ket-qua filter: "Giao cho Đỗ Khánh Linh". */
-export function calendarAssigneeFilter(): KanbanFilterState {
-  return { ...emptyKanbanFilter(), assigneeIds: ["user-khanh-linh"] };
-}
-
 export type CalendarScenario = Omit<
   BoardCalendarSurfaceProps,
   | "onRangeChange"
   | "onAnchorChange"
   | "onDateBasisChange"
-  | "onFilterChange"
+  | "onClearFilter"
   | "onOpenItem"
   | "onReschedule"
   | "onSetDue"
@@ -316,9 +295,28 @@ export function calendarScenario({
     entries: empty ? [] : calendarMockupEntries(),
     undatedTotal: CALENDAR_UNDATED.length,
     undated: empty ? [] : CALENDAR_UNDATED,
-    filter: empty ? calendarAssigneeFilter() : emptyKanbanFilter(),
+    viewBar: erpViewBar({
+      locale,
+      view: "calendar",
+      ...(empty
+        ? {
+            state: {
+              filter: {
+                join: "and" as const,
+                conditions: [
+                  {
+                    fieldId: "field-erp-owner",
+                    operator: "has_any" as const,
+                    values: ["user-khanh-linh"],
+                  },
+                ],
+              },
+            },
+            counts: { shown: 0, total: 16 },
+          }
+        : {}),
+    }),
     filterActive: empty,
-    filterOptions: CALENDAR_FILTER_OPTIONS,
     hiddenCount: empty ? 16 : 0,
     canEdit: true,
     defaultDrag: state === "keo-tha" && month ? CALENDAR_DRAG_PREVIEW : null,

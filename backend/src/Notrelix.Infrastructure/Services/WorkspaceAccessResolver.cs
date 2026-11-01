@@ -37,19 +37,22 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
         // request-scoped permission/rule evaluation remains owned by
         // AccessControlBehavior; this resolver answers only the narrower
         // "is this actor an active member of this workspace" fact.
-        var canAccess = await _context.WorkspaceMembers
+        var role = await _context.WorkspaceMembers
             .IgnoreQueryFilters()
-            .AnyAsync(m => m.AccountId == workspace.AccountId
-                           && m.WorkspaceId == workspaceId
-                           && m.UserId == actorUserId
-                           && m.Status == WorkspaceMemberStatus.Active, ct);
+            .Where(m => m.AccountId == workspace.AccountId
+                        && m.WorkspaceId == workspaceId
+                        && m.UserId == actorUserId
+                        && m.Status == WorkspaceMemberStatus.Active)
+            .Select(m => (WorkspaceRole?)m.Role)
+            .FirstOrDefaultAsync(ct);
 
         return new WorkspaceAccessSnapshot(
             workspace.AccountId,
             workspaceId,
             actorUserId,
-            CanAccess: canAccess,
-            IsWorkspaceActive: isActive);
+            CanAccess: role is not null,
+            IsWorkspaceActive: isActive,
+            IsGuest: role == WorkspaceRole.Guest);
     }
 
     public async Task<WorkspaceBySlugSnapshot?> ResolveBySlugAsync(string slug, CancellationToken ct)

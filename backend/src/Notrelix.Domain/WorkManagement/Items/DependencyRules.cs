@@ -4,12 +4,14 @@ public static class DependencyRules
 {
     /// <summary>
     /// Validates that adding a dependency from <paramref name="itemId"/> to <paramref name="targetDependencyId"/>
-    /// does not introduce a cyclic dependency. Uses pre-loaded snapshot data.
+    /// does not introduce a cyclic dependency. Uses pre-loaded snapshot data. The rejection names the closing path
+    /// as ordered item ids (with the title when <paramref name="titles"/> has one).
     /// </summary>
     public static void EnsureNoCycle(
         Guid itemId,
         Guid targetDependencyId,
-        IReadOnlyDictionary<Guid, ItemDependencySnapshot> dependencyGraph)
+        IReadOnlyDictionary<Guid, ItemDependencySnapshot> dependencyGraph,
+        IReadOnlyDictionary<Guid, string>? titles = null)
     {
         Guard.NotEmpty(itemId);
         Guard.NotEmpty(targetDependencyId);
@@ -17,30 +19,35 @@ public static class DependencyRules
         if (itemId == targetDependencyId)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Dependency_CannotDependOnSelf, "An item cannot depend on itself.");
 
-        var visited = new HashSet<Guid>();
-        var stack = new HashSet<Guid> { itemId };
+        // Breadth-first from the target along existing "waits on" edges; reaching the item closes the loop.
+        var cameFrom = new Dictionary<Guid, Guid>();
+        var queue = new Queue<Guid>();
+        queue.Enqueue(targetDependencyId);
+        cameFrom[targetDependencyId] = itemId;
 
-        bool HasCycle(Guid current)
+        while (queue.Count > 0)
         {
-            if (stack.Contains(current)) return true;
-            if (visited.Contains(current)) return false;
+            var current = queue.Dequeue();
+            if (!dependencyGraph.TryGetValue(current, out var snapshot)) continue;
 
-            visited.Add(current);
-            stack.Add(current);
-
-            if (dependencyGraph.TryGetValue(current, out var snapshot))
+            foreach (var next in snapshot.DependencyIds)
             {
-                foreach (var child in snapshot.DependencyIds)
+                if (next == itemId)
                 {
-                    if (HasCycle(child)) return true;
+                    var path = new List<Guid> { itemId };
+                    for (var node = current; node != itemId; node = cameFrom[node])
+                        path.Insert(1, node);
+                    path.Add(itemId);
+
+                    string Name(Guid id) => titles is not null && titles.TryGetValue(id, out var title) ? $"{title} ({id})" : id.ToString();
+                    throw new BusinessRuleException(
+                        WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle,
+                        $"Adding this dependency would create a cycle: {string.Join(" -> ", path.Select(Name))}.");
                 }
+
+                if (cameFrom.TryAdd(next, current))
+                    queue.Enqueue(next);
             }
-
-            stack.Remove(current);
-            return false;
         }
-
-        if (HasCycle(targetDependencyId))
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle, "Adding this dependency would create a cycle.");
     }
 }

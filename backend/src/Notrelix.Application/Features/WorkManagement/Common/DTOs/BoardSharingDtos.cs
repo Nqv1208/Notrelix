@@ -10,6 +10,7 @@ namespace Notrelix.Application.Features.WorkManagement.Common.DTOs;
 /// <param name="SpaceName">Present only when the caller can see the Space.</param>
 /// <param name="SpacePeople">People the Space's entries reach (Guests excluded); present only when the caller can see the Space.</param>
 /// <param name="PrivateImpact">Null unless the caller manages the Board.</param>
+/// <param name="Version">The Board version of this read: a member role change or removal sends it back, and a stale one changes nothing.</param>
 public record BoardSharingDto(
     Guid BoardId,
     bool CanManage,
@@ -23,7 +24,8 @@ public record BoardSharingDto(
     bool PeopleCountComplete,
     IReadOnlyList<BoardSharingEntryDto> Entries,
     IReadOnlyList<BoardSharingLogEntryDto> Log,
-    BoardPrivateImpactDto? PrivateImpact);
+    BoardPrivateImpactDto? PrivateImpact,
+    long Version = 0);
 
 /// <param name="Id">The person's user id or the Team's id: the key of the existing writes.</param>
 /// <param name="Kind"><c>person</c>, <c>team</c> or <c>guest</c> (Workspace role Guest; a membership fact, never an email domain).</param>
@@ -32,6 +34,7 @@ public record BoardSharingDto(
 /// <param name="LevelCapped">The stored level is above <paramref name="Level"/> because the person is a Guest.</param>
 /// <param name="Source"><c>grant</c>, <c>member</c> or <c>both</c>.</param>
 /// <param name="PermissionId">The explicit grant to revoke, when there is one.</param>
+/// <param name="PermissionVersion">The version of that grant, which a change of its level must name.</param>
 /// <param name="MemberRole">The Board role, when the person is a Board member.</param>
 /// <param name="ExpiresAt">Always null: access given on a Board has no end date.</param>
 public record BoardSharingEntryDto(
@@ -45,6 +48,7 @@ public record BoardSharingEntryDto(
     bool LevelCapped,
     string Source,
     Guid? PermissionId,
+    long? PermissionVersion,
     string? MemberRole,
     string? SpaceRole,
     bool OutsideSpace,

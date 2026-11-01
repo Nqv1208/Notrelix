@@ -5,6 +5,8 @@ import { AccountScopeProvider } from "@notrelix/query";
 import { endpoints } from "@notrelix/contracts";
 import { AppRuntimeProvider } from "@notrelix/runtime-web";
 import { WorkManagementServicesProvider } from "@notrelix/work-management-state";
+import { ColourBlindLabelsProvider } from "@notrelix/work-management-web";
+import { createUsePreferences } from "@notrelix/features-account";
 import { I18nProvider } from "@notrelix/i18n";
 import { ThemeProvider, Toaster, useTheme } from "@notrelix/ui-web";
 import type { WebApplicationServices } from "../composition/application-services";
@@ -48,6 +50,40 @@ function AccountScopeBridge({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Gives the labels the person's colour-blind preference (an account preference) and a way to change it.
+ * Only a signed-in person has one: without a session the labels keep their plain look.
+ */
+function ColourBlindBridge({ children }: { children: ReactNode }) {
+  const { runtime } = useApplicationServices();
+  const usePreferences = useMemo(
+    () =>
+      createUsePreferences({
+        api: runtime.api.api,
+        endpoints: runtime.api.endpoints,
+      }),
+    [runtime.api],
+  );
+  const { preferences, save } = usePreferences();
+  return (
+    <ColourBlindLabelsProvider
+      enabled={preferences?.colourBlindLabels ?? false}
+      setEnabled={(next) => void save({ colourBlindLabels: next })}
+    >
+      {children}
+    </ColourBlindLabelsProvider>
+  );
+}
+
+function SignedInColourBlind({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  return user ? (
+    <ColourBlindBridge>{children}</ColourBlindBridge>
+  ) : (
+    <>{children}</>
+  );
+}
+
 export function AppProviders({
   services,
   children,
@@ -80,7 +116,7 @@ export function AppProviders({
                 >
                   <ThemeProvider storage={runtime.storage}>
                     <WorkManagementServicesProvider services={workManagement}>
-                      {children}
+                      <SignedInColourBlind>{children}</SignedInColourBlind>
                       <Toaster />
                       <EmailConfirmationToastBridge />
                     </WorkManagementServicesProvider>

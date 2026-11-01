@@ -30,19 +30,62 @@ vi.mock("../shell/workspace/board-share-dialog", () => ({
   BoardShareDialog: () => null,
 }));
 
+vi.mock("../shell/workspace/use-workspace-viewer", () => ({
+  useWorkspaceViewer: () => ({ role: "member" }),
+}));
+
+vi.mock("../shell/workspace/board-duplicate-dialog", () => ({
+  BoardDuplicateDialog: () => null,
+}));
+
+vi.mock("../shell/workspace/board-export-dialog", () => ({
+  BoardExportDialog: () => null,
+}));
+
+vi.mock("../shell/workspace/board-import-dialog", () => ({
+  BoardImportDialog: () => null,
+}));
+
+vi.mock("../shell/workspace/board-leave-dialog", () => ({
+  BoardLeaveDialog: () => null,
+}));
+
 vi.mock("../shell/workspace/use-board-header-data", () => ({
   useBoardHeaderData: () => ({}),
 }));
 
+vi.mock("../realtime/use-realtime-connection", () => ({
+  useRealtimeConnection: () => ({
+    state: "connected",
+    lostAt: null,
+    reconnect: () => undefined,
+  }),
+}));
+
+vi.mock("@notrelix/i18n", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@notrelix/i18n")>()),
+  useLocale: () => ({ locale: "vi" }),
+}));
+
 vi.mock("@notrelix/work-management-web", () => ({
+  BoardConnectionNotice: () => null,
   BoardHeaderCopyContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
   BoardHeaderDataContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
-  useBoardHeaderCopy: () => ({ untitledBoard: "Bảng chưa tải" }),
+  useBoardHeaderCopy: () => ({
+    untitledBoard: "Bảng chưa tải",
+    views: {
+      table: "Bảng",
+      kanban: "Kanban",
+      calendar: "Lịch",
+      timeline: "Dòng thời gian",
+    },
+  }),
   BoardTrashHost: () => null,
+  BoardArchiveHost: () => null,
   BoardLayoutShell: ({
     boardTitle,
     onViewChange,

@@ -673,6 +673,37 @@ describe("MainTableSurface", () => {
     expect(headers).toContain("Người phụ trách");
   });
 
+  it("offers Checklist, Bình luận and Tệp columns once they are shown", () => {
+    renderTable(erpTableProps({ hiddenColumnIds: [] }));
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent);
+    expect(headers).toEqual(
+      expect.arrayContaining(["Checklist", "Bình luận", "Tệp"]),
+    );
+    // ERP-142 has 4 comments; the counter keeps an accessible name.
+    expect(within(row("ERP-142")).getByText("4 bình luận")).toBeTruthy();
+  });
+
+  it("keeps the three counter columns hidden by default", () => {
+    renderTable(erpTableProps());
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent);
+    expect(headers).not.toContain("Checklist");
+    expect(headers).not.toContain("Tệp");
+  });
+
+  it("shows every priority level with its own glyph and word", () => {
+    renderTable(erpTableProps());
+    const levels = new Set<string>();
+    for (const marker of document.querySelectorAll("[data-priority]")) {
+      levels.add(marker.getAttribute("data-priority")!);
+      expect(marker.querySelector("svg")).not.toBeNull();
+    }
+    expect(levels.has("medium")).toBe(true);
+  });
+
   it("marks the sorted column and the open item", () => {
     renderTable(erpTableProps({ openItemId: ERP_TABLE_ITEM("ERP-142") }));
     expect(
@@ -897,5 +928,90 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
         "Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.",
       ),
     ).toBeTruthy();
+  });
+});
+
+describe("MainTableSurface title edit in place", () => {
+  const titleOf = (key: string) =>
+    within(row(key)).getByRole("button", { name: /Chuyển dữ liệu/ });
+  const render = () => {
+    const onRename = vi.fn();
+    const view = renderTable({ ...erpTableProps(), onRename });
+    return { onRename, ...view };
+  };
+
+  it("a single click still opens the item", async () => {
+    const { props } = render();
+    fireEvent.click(titleOf("ERP-142"));
+    await waitFor(() =>
+      expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-142")),
+    );
+  });
+
+  it("a double click edits instead, and Enter saves the trimmed title", () => {
+    const { onRename, props } = render();
+    fireEvent.click(titleOf("ERP-142"));
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    const input = screen.getByRole("textbox", { name: "Sửa tên ERP-142" });
+    fireEvent.change(input, { target: { value: "  Tên mới  " } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onRename).toHaveBeenCalledExactlyOnceWith(
+      ERP_TABLE_ITEM("ERP-142"),
+      "Tên mới",
+    );
+    expect(
+      screen.queryByRole("textbox", { name: "Sửa tên ERP-142" }),
+    ).toBeNull();
+    expect(props.onOpenItem).not.toHaveBeenCalled();
+  });
+
+  it("F2 and Enter on the focused title start the edit; Escape cancels", () => {
+    const { onRename } = render();
+    fireEvent.keyDown(titleOf("ERP-142"), { key: "F2" });
+    let input = screen.getByRole("textbox", { name: "Sửa tên ERP-142" });
+    fireEvent.change(input, { target: { value: "Bỏ" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(onRename).not.toHaveBeenCalled();
+    expect(titleOf("ERP-142").textContent).toMatch(/Chuyển dữ liệu/);
+    fireEvent.keyDown(titleOf("ERP-142"), { key: "Enter" });
+    input = screen.getByRole("textbox", { name: "Sửa tên ERP-142" });
+    expect((input as HTMLInputElement).value).toMatch(/Chuyển dữ liệu/);
+  });
+
+  it("F2 on the row itself edits its title", () => {
+    render();
+    fireEvent.keyDown(row("ERP-142"), { key: "F2" });
+    expect(
+      screen.getByRole("textbox", { name: "Sửa tên ERP-142" }),
+    ).toBeTruthy();
+  });
+
+  it("blur saves, and blank or unchanged input writes nothing", () => {
+    const { onRename } = render();
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    let input = screen.getByRole("textbox", { name: "Sửa tên ERP-142" });
+    fireEvent.change(input, { target: { value: "Qua blur" } });
+    fireEvent.blur(input);
+    expect(onRename).toHaveBeenCalledExactlyOnceWith(
+      ERP_TABLE_ITEM("ERP-142"),
+      "Qua blur",
+    );
+    onRename.mockClear();
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    input = screen.getByRole("textbox", { name: "Sửa tên ERP-142" });
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onRename).not.toHaveBeenCalled();
+    expect(titleOf("ERP-142").textContent).toMatch(/Chuyển dữ liệu/);
+  });
+
+  it("offers no edit without the right to rename", () => {
+    renderTable(erpTableReadOnlyProps());
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    fireEvent.keyDown(titleOf("ERP-142"), { key: "F2" });
+    expect(
+      screen.queryByRole("textbox", { name: "Sửa tên ERP-142" }),
+    ).toBeNull();
+    expect(titleOf("ERP-142").getAttribute("aria-keyshortcuts")).toBeNull();
   });
 });

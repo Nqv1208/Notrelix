@@ -4,5 +4,6 @@ public record BoardTemplateDto(
     Guid Id,
     string Name,
     string? Description,
-    string Status
+    string Status,
+    string? BuiltInKey = null
 );

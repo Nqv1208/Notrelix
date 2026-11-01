@@ -33,6 +33,8 @@
  *   checklistItems.create   — POST /checklists/:id/items (returns string itemId)
  *   checklistItems.update   — PATCH /checklist-items/:id
  *   checklistItems.delete   — DELETE /checklist-items/:id
+ *   checklistItems.toggle   — POST /checklist-items/:id/toggle
+ *   checklists.move / checklistItems.move — POST .../move (neighbour ids)
  *   comments.list           — GET /board-items/:cardId/comments
  *   comments.create         — POST /board-items/:cardId/comments (returns string commentId)
  *   comments.update         — PATCH /comments/:id
@@ -41,6 +43,7 @@
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
 
+import { projectComputedValues } from "../../state/mock-computed-values";
 import type {
   CardDtoApi,
   ChecklistDtoApi,
@@ -55,8 +58,18 @@ import {
   ok,
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
+import {
+  projectCardSettings,
+  projectVoteValues,
+} from "./item-capabilities.handlers";
 import { isoOfMs } from "../../state/clock";
 import type { MockStore } from "../../state/mock-store";
+import { rollRepeatOnCompletion } from "./item-capabilities.handlers";
+
+/** What a versioned item write answers: the item's version after it. */
+const versionOf = (store: MockStore, itemId: string) => ({
+  version: store.getCard(itemId)?.version ?? 1,
+});
 import type { MockAttachmentRecord, MockCardRecord } from "../../state/records";
 import {
   assignMember,
@@ -65,11 +78,51 @@ import {
 } from "../../state/mock-work-feed";
 import type { ChildItemDto } from "../../state/mock-work-feed";
 import {
+  canCommentOnBoard,
   canReadBoard,
   canWriteBoardItems,
   projectItemMembers,
   projectItemReadValues,
 } from "./boards.handlers";
+
+const REACTION_PALETTE: readonly string[] = [
+  "👍",
+  "❤️",
+  "😄",
+  "🎉",
+  "👀",
+  "🚀",
+];
+
+/** One summary per emoji in first-chosen order: count, whether `me` chose it, and who. */
+function summariseReactions(
+  reactions: readonly { emoji: string; userId: string }[],
+  me: string,
+  store: MockStore,
+) {
+  const byEmoji = new Map<string, string[]>();
+  for (const r of reactions)
+    byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.userId]);
+  return [...byEmoji].map(([emoji, userIds]) => ({
+    emoji,
+    count: userIds.length,
+    reactedByMe: userIds.includes(me),
+    users: userIds.map((userId) => ({
+      userId,
+      name: store.getUser(userId)?.name ?? "User",
+    })),
+  }));
+}
+
+/** The pages linked to each item, per store. */
+const pageLinks = new WeakMap<MockStore, Map<string, Set<string>>>();
+function linksOf(store: MockStore, itemId: string): Set<string> {
+  const all = pageLinks.get(store) ?? new Map<string, Set<string>>();
+  pageLinks.set(store, all);
+  const links = all.get(itemId) ?? new Set<string>();
+  all.set(itemId, links);
+  return links;
+}
 
 /** 400 with field errors, as the real API answers a validation failure. */
 function badRequest(errors: Record<string, string[]>) {
@@ -78,6 +131,9 @@ function badRequest(errors: Record<string, string[]>) {
     body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
   };
 }
+
+const MOCK_IMAGE_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice"><rect width="320" height="120" fill="#DCE9FA"/><g fill="#8DBBF3"><rect x="40" y="50" width="34" height="70"/><rect x="92" y="34" width="34" height="86"/><rect x="144" y="62" width="34" height="58"/><rect x="196" y="22" width="34" height="98"/><rect x="248" y="46" width="34" height="74"/></g><path d="M20 44 L110 28 L160 56 L212 14 L300 34" fill="none" stroke="#1E5FB5" stroke-width="3"/></svg>';
 
 /** The limits and blocked types of `POST .../attachments/files`. */
 export const MOCK_MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -135,11 +191,11 @@ function attachmentDto(file: MockAttachmentRecord, store: MockStore) {
     id: file.id,
     resourceId: file.cardId,
     filename: file.filename,
-    url: "",
-    kind: "File",
+    url: file.url ?? "",
+    kind: file.url ? "Link" : "File",
     sizeBytes: file.sizeBytes,
     contentType: file.contentType,
-    source: "upload",
+    source: file.url ? "link" : "upload",
     uploadedBy: file.uploadedBy,
     uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
     createdAt: file.createdAt,
@@ -175,6 +231,8 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
       isChecked: item.isChecked,
       dueDate: item.dueDate ?? null,
       assigneeId: item.assigneeId ?? null,
+      dueAt: item.dueDate ?? null,
+      assigneeUserId: item.assigneeId ?? null,
       position: item.position ?? idx + 1,
     })),
   }));
@@ -198,16 +256,27 @@ function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
     startDate: c.startedAt ?? null,
     completedAt,
     cover: null,
+    ...projectCardSettings(store, c.id),
     position: c.position,
     members: projectItemMembers(c, store),
     labels,
     checklists,
     commentCount: comments.length,
     attachmentCount: 0,
-    fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
+    fieldValues: (() => {
+      const merged = {
+        ...fieldValues,
+        ...projectVoteValues(store, c.id, c.boardId),
+      };
+      return Object.keys(merged).length > 0 ? merged : null;
+    })(),
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
     ...{
+      computedValues: projectComputedValues(
+        store.getColumns(c.boardId),
+        fieldValues,
+      ),
       name: c.title,
       groupId: c.listId,
       isArchived: c.isArchived === true,
@@ -334,6 +403,52 @@ export const cardsOperations = [
       if (!store.getCard(params.itemId)) return notFound("Item not found");
       const page = body?.pageId ? store.getPage(body.pageId) : undefined;
       if (!page || page.trashedAt) return notFound("Page not found");
+      linksOf(store, params.itemId).add(page.id);
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /board-items/:itemId/linked-pages ────────────────────────────────
+
+  defineMockOperation<{ itemId: string }>({
+    id: "wm.boardItems.linkedPages",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.ListLinkedPages",
+    },
+    method: "GET",
+    route: "/board-items/:itemId/linked-pages",
+    async handle({ params, store }) {
+      if (!store.getCard(params.itemId)) return notFound("Item not found");
+      const pages = [...linksOf(store, params.itemId)].flatMap((pageId) => {
+        const page = store.getPage(pageId);
+        return page && !page.trashedAt
+          ? [
+              {
+                pageId,
+                title: page.title ?? "",
+                linkedAt: store.getClock().isoNow(),
+              },
+            ]
+          : [];
+      });
+      return ok({ pages, hiddenCount: 0 });
+    },
+  }),
+
+  // ─── DELETE /board-items/:itemId/link-page/:pageId ────────────────────────
+
+  defineMockOperation<{ itemId: string; pageId: string }>({
+    id: "wm.boardItems.unlinkPage",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UnlinkPage",
+    },
+    method: "DELETE",
+    route: "/board-items/:itemId/link-page/:pageId",
+    async handle({ params, store }) {
+      if (!store.getCard(params.itemId)) return notFound("Item not found");
+      linksOf(store, params.itemId).delete(params.pageId);
       return ok<void>(undefined);
     },
   }),
@@ -410,7 +525,7 @@ export const cardsOperations = [
 
   // ─── POST /board-items/:id/archive ──────────────────────────────────────────────
 
-  defineMockOperation<{ id: string }, never, void>({
+  defineMockOperation<{ id: string }, { expectedVersion?: number }, void>({
     id: "wm.boardItems.archive",
     contract: {
       kind: "openapi",
@@ -418,20 +533,29 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/archive",
-    async handle({ params, store, request }) {
+    async handle({ params, body, store, request }) {
       const missingKey = missingIdempotencyKey(request);
       if (missingKey) return missingKey;
+      const expectedVersion = body?.expectedVersion;
+      if (!expectedVersion || expectedVersion <= 0) {
+        return badRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
+      }
       const item = store.getCard(params.id);
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      // An already archived item is a no-op whatever the version.
+      if (!item.isArchived && (item.version ?? 1) !== expectedVersion)
+        return preconditionFailed();
       store.archiveCard(params.id);
-      return ok<void>(undefined);
+      return ok(versionOf(store, params.id));
     },
   }),
 
   // ─── POST /board-items/:id/duplicate ────────────────────────────────────────────
 
-  defineMockOperation<{ id: string }, never, void>({
+  defineMockOperation<{ id: string }, { name?: string } | undefined, void>({
     id: "wm.boardItems.duplicate",
     contract: {
       kind: "openapi",
@@ -439,9 +563,10 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/duplicate",
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       const duplicated = store.duplicateCard(params.id);
       if (!duplicated) return notFound("Card not found");
+      if (body?.name) store.updateCard(duplicated.id, { title: body.name });
       return ok<void>(undefined);
     },
   }),
@@ -632,13 +757,21 @@ export const cardsOperations = [
     route: "/board-items/:id/values/:fieldId",
     async handle({ params, body, store }) {
       const data = body as { value: unknown };
+      const target = store.getCard(params.id)?.boardId
+        ? store
+            .getColumns(store.getCard(params.id)!.boardId)
+            .find((column) => column.id === (params as any).fieldId)
+        : undefined;
+      // A Formula is evaluated by the backend and never written.
+      if (target?.fieldType === "formula")
+        return badRequest({ value: ["Cannot write a computed field."] });
       const updated = store.updateFieldValue(
         params.id,
         (params as any).fieldId,
         data.value,
       );
       if (!updated) return notFound("Card not found");
-      return ok<void>(undefined);
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -661,6 +794,9 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const status = (body as { status?: string | null } | undefined)?.status;
       if (!status) return badRequest({ status: ["The status is required."] });
+      // A repeating item moved to a done status rolls to its next occurrence and keeps its status.
+      if (rollRepeatOnCompletion(store, params.id, status))
+        return ok(versionOf(store, params.id));
       const result = store.updateItemStatus(params.id, status);
       if (result === "not-found") return notFound("Card not found");
       if (result === "invalid") {
@@ -668,8 +804,8 @@ export const cardsOperations = [
           status: ["Not an option of the board's Status field."],
         });
       }
-      // The real endpoint answers 204 No Content.
-      return noContent();
+      // The real endpoint answers the item's new version.
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -694,7 +830,7 @@ export const cardsOperations = [
       if (result === "invalid") {
         return badRequest({ userId: ["That person is not a member."] });
       }
-      return noContent();
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -715,7 +851,7 @@ export const cardsOperations = [
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       unassignMember(store, params.id, params.userId);
-      return noContent();
+      return ok(versionOf(store, params.id));
     },
   }),
 
@@ -873,16 +1009,69 @@ export const cardsOperations = [
           filename: file.filename,
           // A stored file has no public address: it downloads through the
           // content route (`GET .../attachments/:attachmentId/content`).
-          url: "",
-          kind: "File",
+          url: file.url ?? "",
+          kind: file.url ? "Link" : "File",
           sizeBytes: file.sizeBytes,
           contentType: file.contentType,
-          source: "upload",
+          source: file.url ? "link" : "upload",
           uploadedBy: file.uploadedBy,
           uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
           createdAt: file.createdAt,
         })),
       );
+    },
+  }),
+
+  // ─── POST /board-items/:id/attachments ──────────────────────────────────────────
+  // Collaboration.Attachments.Create: attaches a web link (name and http(s) address).
+
+  defineMockOperation<
+    { id: string },
+    { filename?: string | null; url?: string | null },
+    void
+  >({
+    id: "cards.attachments.createLink",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.Create",
+    },
+    method: "POST",
+    route: "/board-items/:id/attachments",
+    async handle({ params, body, store, request }) {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "Idempotency-Key is required.",
+        );
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (store.getUploadByKey(params.id, key)) return noContent();
+      const name = body?.filename?.trim();
+      const url = body?.url?.trim();
+      if (!name || !url || !/^https?:\/\/\S+$/i.test(url))
+        return attachmentProblem(
+          400,
+          "validation.failed",
+          "A name and an http or https address are required.",
+        );
+      if (store.getAttachments(params.id).length >= MOCK_MAX_ATTACHMENTS)
+        return attachmentProblem(
+          409,
+          "attachment.limit_exceeded",
+          "The item has the most attachments it can hold.",
+        );
+      const record = store.addAttachment(params.id, {
+        filename: name,
+        sizeBytes: 0,
+        contentType: "text/uri-list",
+        url,
+      });
+      if (!record) return notFound("Card not found");
+      store.rememberUpload(params.id, key, record);
+      return noContent();
     },
   }),
 
@@ -964,6 +1153,28 @@ export const cardsOperations = [
     },
   }),
 
+  // ─── DELETE /board-items/:id/attachments/:attachmentId ──────────────────────────
+  // Collaboration.Attachments.Delete: the item's editors remove a stored file.
+
+  defineMockOperation<{ id: string; attachmentId: string }, never, unknown>({
+    id: "cards.attachments.delete",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Attachments.Delete",
+    },
+    method: "DELETE",
+    route: "/board-items/:id/attachments/:attachmentId",
+    async handle({ params, store }) {
+      const item = store.getCard(params.id);
+      if (!item || !canReadBoard(item.boardId, store))
+        return notFound("Attachment not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      if (!store.removeAttachment(params.id, params.attachmentId))
+        return notFound("Attachment not found");
+      return noContent();
+    },
+  }),
+
   // ─── GET /board-items/:id/attachments/:attachmentId/content ─────────────────────
   // Collaboration.Attachments.GetContent: a small stub body (no stored bytes).
 
@@ -981,15 +1192,21 @@ export const cardsOperations = [
         return notFound("Attachment not found");
       const file = store.getAttachment(params.id, params.attachmentId);
       if (!file) return notFound("Attachment not found");
+      // An image stub is a small drawing, so a cover made from it has something to show.
+      const isImage = file.contentType.startsWith("image/");
       return {
         status: 200,
         headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Content-Disposition": "attachment",
+          "Content-Type": isImage
+            ? "image/svg+xml"
+            : "text/plain; charset=utf-8",
+          "Content-Disposition": isImage ? "inline" : "attachment",
           "X-Content-Type-Options": "nosniff",
           "Cache-Control": "private, no-store",
         },
-        rawBody: `Tệp mẫu của mock: ${file.filename}`,
+        rawBody: isImage
+          ? MOCK_IMAGE_SVG
+          : `Tệp mẫu của mock: ${file.filename}`,
       };
     },
   }),
@@ -1215,6 +1432,8 @@ export const cardsOperations = [
             isChecked: item.isChecked,
             dueDate: item.dueDate ?? null,
             assigneeId: item.assigneeId ?? null,
+            dueAt: item.dueDate ?? null,
+            assigneeUserId: item.assigneeId ?? null,
             position: item.position ?? idx + 1,
           })),
         })),
@@ -1341,6 +1560,129 @@ export const cardsOperations = [
     },
   }),
 
+  // ─── POST /checklist-items/:id/toggle ─────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "checklistItems.toggle",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.ToggleItem",
+    } as any,
+    method: "POST",
+    route: "/checklist-items/:id/toggle",
+    async handle({ params, store }) {
+      if (!store.toggleChecklistItem(params.id))
+        return notFound("ChecklistItem not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── PUT /checklist-items/:id/assignee ────────────────────────────────────
+  // WorkManagement.Checklists.SetItemAssignee: a person of the workspace, or nobody.
+
+  defineMockOperation<
+    { id: string },
+    { assigneeUserId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "checklistItems.setAssignee",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.SetItemAssignee",
+    } as any,
+    method: "PUT",
+    route: "/checklist-items/:id/assignee",
+    async handle({ params, body, store, request }) {
+      const missing = missingIdempotencyKey(request);
+      if (missing) return missing;
+      const assignee = body?.assigneeUserId ?? null;
+      if (assignee !== null && !store.getUser(assignee))
+        return badRequest({ assigneeUserId: ["Unknown person."] });
+      if (!store.updateChecklistItem(params.id, { assigneeId: assignee }))
+        return notFound("ChecklistItem not found");
+      return noContent();
+    },
+  }),
+
+  // ─── PUT /checklist-items/:id/due ─────────────────────────────────────────
+  // WorkManagement.Checklists.SetItemDue: the item's own due time, or none.
+
+  defineMockOperation<
+    { id: string },
+    { dueAt?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "checklistItems.setDue",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.SetItemDue",
+    } as any,
+    method: "PUT",
+    route: "/checklist-items/:id/due",
+    async handle({ params, body, store, request }) {
+      const missing = missingIdempotencyKey(request);
+      if (missing) return missing;
+      const due = body?.dueAt ?? null;
+      if (due !== null && Number.isNaN(Date.parse(due)))
+        return badRequest({ dueAt: ["Not a date and time."] });
+      if (!store.updateChecklistItem(params.id, { dueDate: due }))
+        return notFound("ChecklistItem not found");
+      return noContent();
+    },
+  }),
+
+  // ─── POST /checklists/:id/move ────────────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { previousSiblingId?: string | null; nextSiblingId?: string | null },
+    void
+  >({
+    id: "checklists.move",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.Move",
+    } as any,
+    method: "POST",
+    route: "/checklists/:id/move",
+    async handle({ params, body, store }) {
+      const placement = body ?? {};
+      const moved = store.moveChecklist(
+        params.id,
+        placement.previousSiblingId ?? null,
+        placement.nextSiblingId ?? null,
+      );
+      if (!moved) return notFound("Checklist not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /checklist-items/:id/move ───────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { previousSiblingId?: string | null; nextSiblingId?: string | null },
+    void
+  >({
+    id: "checklistItems.move",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.MoveItem",
+    } as any,
+    method: "POST",
+    route: "/checklist-items/:id/move",
+    async handle({ params, body, store }) {
+      const placement = body ?? {};
+      const moved = store.moveChecklistItem(
+        params.id,
+        placement.previousSiblingId ?? null,
+        placement.nextSiblingId ?? null,
+      );
+      if (!moved) return notFound("ChecklistItem not found");
+      return ok<void>(undefined);
+    },
+  }),
+
   // ─── GET /board-items/:cardId/comments ──────────────────────────────────────────
 
   defineMockOperation<{ cardId: string }, never, CommentDtoApi[]>({
@@ -1355,6 +1697,7 @@ export const cardsOperations = [
       const c = store.getCard(params.cardId);
       if (!c) return notFound("Card not found");
       const comments = store.getCardComments(params.cardId);
+      const me = store.getCurrentUser().id;
       return ok<CommentDtoApi[]>(
         comments.map((cmt) => {
           const user = store.getUser(cmt.userId);
@@ -1369,6 +1712,8 @@ export const cardsOperations = [
             updatedAt: cmt.updatedAt ?? null,
             isEdited: Boolean(cmt.updatedAt),
             attachmentIds: cmt.attachmentIds ?? [],
+            parentCommentId: cmt.parentId ?? null,
+            reactions: summariseReactions(cmt.reactions ?? [], me, store),
           };
         }),
       );
@@ -1377,7 +1722,11 @@ export const cardsOperations = [
 
   // ─── POST /board-items/:cardId/comments ─────────────────────────────────────────
 
-  defineMockOperation<{ cardId: string }, { contentMd: string }, void>({
+  defineMockOperation<
+    { cardId: string },
+    { contentMd: string; parentCommentId?: string | null },
+    void
+  >({
     id: "comments.create",
     contract: {
       kind: "openapi",
@@ -1386,7 +1735,7 @@ export const cardsOperations = [
     method: "POST",
     route: "/board-items/:cardId/comments",
     async handle({ params, body, store }) {
-      const data = body as { contentMd: string };
+      const data = body as { contentMd: string; parentCommentId?: string };
       const card = store.getCard(params.cardId);
       if (!card) return notFound("Card not found");
       const user = store.getCurrentUser();
@@ -1394,6 +1743,7 @@ export const cardsOperations = [
         params.cardId,
         user.id,
         data.contentMd,
+        data.parentCommentId ?? undefined,
       );
       return ok<void>(undefined);
     },
@@ -1436,4 +1786,45 @@ export const cardsOperations = [
       return ok<void>(undefined);
     },
   }),
+
+  // ─── PUT / DELETE /board-items/:cardId/comments/:commentId/reactions/:emoji ───
+
+  ...(["PUT", "DELETE"] as const).map((method) =>
+    defineMockOperation<
+      { cardId: string; commentId: string; emoji: string },
+      never,
+      void
+    >({
+      id:
+        method === "PUT" ? "comments.reaction.add" : "comments.reaction.remove",
+      contract: {
+        kind: "openapi",
+        operationId:
+          method === "PUT"
+            ? "Collaboration.Comments.AddReaction"
+            : "Collaboration.Comments.RemoveReaction",
+      } as any,
+      method,
+      route: "/board-items/:cardId/comments/:commentId/reactions/:emoji",
+      async handle({ params, store }) {
+        const card = store.getCard(params.cardId);
+        if (!card) return notFound("Card not found");
+        // Reacting needs what commenting needs: a Commenter or more on the board.
+        if (!canCommentOnBoard(card.boardId, store)) return forbidden();
+        const emoji = decodeURIComponent(params.emoji);
+        if (!REACTION_PALETTE.includes(emoji))
+          return badRequest({ emoji: ["Emoji is not in the palette."] });
+        const user = store.getCurrentUser();
+        const done = store.setCardCommentReaction(
+          params.cardId,
+          params.commentId,
+          user.id,
+          emoji,
+          method === "PUT",
+        );
+        if (!done) return notFound("Comment not found");
+        return ok<void>(undefined);
+      },
+    }),
+  ),
 ];

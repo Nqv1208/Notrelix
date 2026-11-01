@@ -23,6 +23,11 @@ public sealed class FakeResourceVisibility : IResourceVisibility
     public Task<IReadOnlyList<Guid>> VisibleBoardIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Guid>>(Boards.ToArray());
 
+    public List<Guid> ArchivedBoards { get; } = [];
+
+    public Task<IReadOnlyList<Guid>> VisibleArchivedBoardIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Guid>>(ArchivedBoards.ToArray());
+
     public Task<IReadOnlyList<Guid>> VisiblePageIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Guid>>(Pages.ToArray());
 

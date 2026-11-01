@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Reactions;
 
 namespace Notrelix.Application.Tests.Features.Collaboration;
 
@@ -16,10 +17,13 @@ public class GetCommentsResolvedTests
     private readonly List<Comment> _rows = [];
     private readonly Mock<ICollaborationDbContext> _context = new();
     private readonly Mock<IActorLookupService> _actors = new();
+    private readonly Mock<ICurrentUser> _user = new();
 
     public GetCommentsResolvedTests()
     {
         _context.Setup(c => c.Comments).Returns(TestDbSet.Create(_rows).Object);
+        _context.Setup(c => c.Reactions).Returns(TestDbSet.Create<Reaction>().Object);
+        _user.Setup(u => u.UserId).Returns(_me);
         _actors
             .Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ActorSnapshot(_me, "Me", null)]);
@@ -40,7 +44,7 @@ public class GetCommentsResolvedTests
         var resolved = OnPage("settled");
         resolved.Resolve(_me, Now.AddHours(2));
 
-        var result = await new GetCommentsQueryHandler(_context.Object, _actors.Object)
+        var result = await new GetCommentsQueryHandler(_context.Object, _actors.Object, _user.Object)
             .Handle(GetCommentsQuery.ForPage(_page), CancellationToken.None);
 
         var byText = result.Data!.ToDictionary(c => c.ContentMd);
@@ -56,7 +60,7 @@ public class GetCommentsResolvedTests
         comment.Resolve(_me, Now.AddHours(1));
         comment.Reopen(_me, Now.AddHours(2));
 
-        var result = await new GetCommentsQueryHandler(_context.Object, _actors.Object)
+        var result = await new GetCommentsQueryHandler(_context.Object, _actors.Object, _user.Object)
             .Handle(GetCommentsQuery.ForPage(_page), CancellationToken.None);
 
         result.Data!.Single().ResolvedAt.Should().BeNull();

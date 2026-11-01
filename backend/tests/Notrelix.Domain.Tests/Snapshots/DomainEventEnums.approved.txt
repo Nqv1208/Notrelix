@@ -115,6 +115,7 @@ Notrelix.Domain.WorkManagement.Fields.FieldType|System.Int32|Checkbox|8
 Notrelix.Domain.WorkManagement.Fields.FieldType|System.Int32|Link|9
 Notrelix.Domain.WorkManagement.Fields.FieldType|System.Int32|Formula|10
 Notrelix.Domain.WorkManagement.Fields.FieldType|System.Int32|Rollup|11
+Notrelix.Domain.WorkManagement.Fields.FieldType|System.Int32|Vote|12
 Notrelix.Domain.WorkManagement.Items.BoardItemLinkType|System.Int32|Dependency|0
 Notrelix.Domain.WorkManagement.Items.BoardItemLinkType|System.Int32|Reference|1
 Notrelix.Domain.WorkManagement.Items.BoardItemLinkType|System.Int32|Subtask|2

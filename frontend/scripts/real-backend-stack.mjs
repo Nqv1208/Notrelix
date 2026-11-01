@@ -13,12 +13,16 @@ const composeFiles = [
   path.join(frontendDir, "e2e/real/docker-compose.real-e2e.override.yml"),
 ];
 
+// The web port is 5173 unless REAL_E2E_WEB_PORT says otherwise (5173 is often a dev server).
+const webPort = process.env.REAL_E2E_WEB_PORT ?? "5173";
+
 export const realBackend = {
   project: "notrelix-fe-real-e2e",
   apiUrl: "http://127.0.0.1:58000/api/v1",
   healthUrl: "http://127.0.0.1:58000/health/live",
-  appUrl: "http://127.0.0.1:5173",
-  ports: [55432, 56379, 55672, 58000, 5173],
+  webPort,
+  appUrl: `http://127.0.0.1:${webPort}`,
+  ports: [55432, 56379, 55672, 58000, Number(webPort)],
 };
 
 const composeEnv = {
@@ -34,7 +38,9 @@ const composeEnv = {
   POSTGRES_PORT: "55432",
   REDIS_PORT: "56379",
   BACKEND_PORT: "58000",
-  FRONTEND_PORT: "5173",
+  FRONTEND_PORT: webPort,
+  REAL_E2E_WEB_PORT: webPort,
+  FRONTEND_WEB_PORT: webPort,
 };
 
 function run(command, args, options = {}) {

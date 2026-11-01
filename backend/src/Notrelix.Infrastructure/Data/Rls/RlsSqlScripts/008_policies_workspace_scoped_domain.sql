@@ -7,6 +7,8 @@ SELECT ops.apply_scoped_business_policies('work', 'board_fields', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_items', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_item_members', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_item_reminders', true);
+SELECT ops.apply_scoped_business_policies('work', 'board_item_votes', true);
+SELECT ops.apply_scoped_business_policies('work', 'board_item_views', true);
 SELECT ops.apply_scoped_business_policies('work', 'labels', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_item_labels', true);
 SELECT ops.apply_scoped_business_policies('work', 'board_views', true);

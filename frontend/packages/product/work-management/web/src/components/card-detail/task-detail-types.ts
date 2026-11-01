@@ -1,4 +1,9 @@
 import type { ItemPageCopy } from "../item-page/item-page.copy";
+import type { ItemChecklistsModel } from "../checklists/item-checklists";
+import type {
+  ItemPagePeople,
+  ItemPageUpload,
+} from "../item-page/item-page-types";
 import type {
   CardActivity,
   CardLabel,
@@ -22,6 +27,28 @@ export interface TaskDetailCapabilities {
    * follows `canEditFields`.
    */
   readonly canComment?: boolean;
+  /**
+   * The board, or the item's group, is archived: the server refuses every write
+   * on it except a person's own preference and follow, so remind is off while a
+   * plain viewer, who cannot remind either, keeps follow.
+   */
+  readonly frozen?: boolean;
+}
+
+/**
+ * Edit and delete on a comment belong to its author alone (the server answers
+ * 403 to anyone else); a viewer who cannot comment has neither.
+ */
+export function canChangeOwnComment(
+  capabilities: TaskDetailCapabilities,
+  authorUserId: string,
+  viewerUserId?: string | null,
+): boolean {
+  return (
+    canWriteComment(capabilities) &&
+    Boolean(viewerUserId) &&
+    authorUserId === viewerUserId
+  );
 }
 
 /** Whether the composer is available for these capabilities. */
@@ -67,6 +94,8 @@ export interface ItemSheetLinkCandidate {
   readonly key: string | null;
   readonly title: string;
   readonly statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
+  /** The column the card sits in (its status on a status-grouped board). */
+  readonly statusName?: string | null;
 }
 
 /** A person who follows the item. */
@@ -82,6 +111,8 @@ export interface ItemSheetApproval {
   readonly status: "pending" | "approved" | "rejected" | "cancelled";
   readonly approverUserId: string | null;
   readonly approverName: string | null;
+  /** Who asked: only they may cancel a pending request. */
+  readonly requestedByUserId?: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote?: string | null;
 }
@@ -104,6 +135,11 @@ export interface ItemSheetMark {
 export interface TaskDetailData {
   readonly updates: readonly CardUpdate[];
   readonly updatesLoading: boolean;
+  /** More comments wait on the server: "Show more" reads the next page. */
+  readonly updatesMore?: {
+    readonly loading: boolean;
+    readonly onMore: () => void;
+  };
   readonly files: readonly CardFile[];
   readonly filesLoading: boolean;
   readonly activity: readonly CardActivity[];
@@ -121,6 +157,10 @@ export interface TaskDetailData {
   readonly approvals?: readonly ItemSheetApproval[];
   /** Why the last approval request was refused, when it was. */
   readonly approvalError?: "alreadyAsked" | "failed" | null;
+  /** Why the last approve, reject or cancel was refused, when it was. */
+  readonly approvalAnswerError?: boolean;
+  /** The signed-in member: the named approver decides, the requester cancels. */
+  readonly viewerUserId?: string | null;
   /** Links to other items; absent: the page says links are not available. */
   readonly links?: readonly ItemSheetLink[];
   /** Items a new link can point at. */
@@ -129,6 +169,35 @@ export interface TaskDetailData {
   readonly linksCopy?: ItemPageCopy;
   /** The labels the board offers; absent: labels cannot be edited here. */
   readonly boardLabels?: readonly CardLabel[];
+  /** Files on their way to the item (progress, failures); absent: none. */
+  readonly uploads?: readonly ItemPageUpload[];
+  /** Why the last download did not go through, when it did not. */
+  readonly fileNotice?: string | null;
+  /** Who a comment can mention (people who can view the board); absent: the item's own people. */
+  readonly people?: ItemPagePeople;
+  /** The item's checklists with their writes; absent: the section is not shown. */
+  readonly checklists?: ItemChecklistsModel;
+}
+
+/** A custom property the sheet asks the board to create. */
+export interface ItemSheetNewField {
+  readonly name: string;
+  readonly fieldType:
+    | "text"
+    | "long_text"
+    | "number"
+    | "checkbox"
+    | "select"
+    | "multi_select"
+    | "date"
+    | "person"
+    | "link"
+    | "vote";
+  /** Select and MultiSelect only: the first choices, each with its colour. */
+  readonly options: readonly {
+    readonly name: string;
+    readonly color: string;
+  }[];
 }
 
 export interface TaskDetailCallbacks {
@@ -138,10 +207,21 @@ export interface TaskDetailCallbacks {
    * Patches the item itself (title, start and due date). The item page's
    * "Ngày bắt đầu" uses it; the control stays disabled without it.
    */
-  readonly onUpdateItem?: (cardId: string, patch: UpdateCardInput) => void;
+  readonly onUpdateItem?: (
+    cardId: string,
+    patch: UpdateCardInput,
+  ) => void | Promise<unknown>;
   readonly onToggleWatch: (watched: boolean) => void;
   /** Asks a board member to approve the item; "Request approval" is absent without it. */
   readonly onRequestApproval?: (approverUserId: string) => void;
+  /** The named approver approves or rejects a pending request; the buttons are absent without it. */
+  readonly onDecideApproval?: (
+    requestId: string,
+    decision: "approve" | "reject",
+    comment: string | null,
+  ) => void;
+  /** The requester cancels a pending request; the button is absent without it. */
+  readonly onCancelApproval?: (requestId: string) => void;
   /** Ticks or unticks a child item; the checkboxes stay inert without it. */
   readonly onToggleChildItem?: (childId: string, done: boolean) => void;
   /** Adds a child item with this title; the input stays inert without it. */
@@ -158,13 +238,38 @@ export interface TaskDetailCallbacks {
   readonly onDownloadFile?: (file: CardFile) => void;
   readonly onDuplicate: (cardId: string) => void;
   readonly onArchive: (cardId: string) => void;
+  /** Marks the item complete; absent: no menu entry. */
+  readonly onComplete?: (cardId: string) => void;
+  /** Reopens a completed item; absent: no menu entry. */
+  readonly onReopen?: (cardId: string) => void;
+  /** Opens the reminder confirmation; absent: no menu entry. */
+  readonly onRemind?: (cardId: string) => void;
+  /** Brings an archived item back; absent: no menu entry. */
+  readonly onUnarchive?: (cardId: string) => void;
   /** Asks before deleting the item (it stays restorable for 30 days); absent: no menu entry. */
   readonly onDelete?: (cardId: string) => void;
   /** Opens the board picker for moving the item to another board; absent: no menu entry. */
   readonly onMoveToBoard?: (cardId: string) => void;
-  readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  readonly onUpdateFieldValue: (
+    payload: UpdateFieldValueInput,
+  ) => void | Promise<unknown>;
   /** Puts a board label on the item or takes it off; labels stay read-only without it. */
   readonly onToggleLabel?: (labelId: string, on: boolean) => void;
+  /**
+   * Creates a label of the board and puts it on the item; resolves false when
+   * it did not go through. Without a colour the next palette tone is used.
+   */
+  readonly onCreateLabel?: (name: string, color?: string) => Promise<boolean>;
+  /**
+   * Creates a custom property of the board; resolves with its id, or null when
+   * it did not go through. Absent: the sheet offers no "Thêm thuộc tính".
+   */
+  readonly onCreateField?: (input: ItemSheetNewField) => Promise<string | null>;
+  /** Retries or drops a file row of `uploads`. */
+  readonly onRetryUpload?: (uploadId: string) => void;
+  readonly onDismissUpload?: (uploadId: string) => void;
+  /** Deletes a stored file; resolves false when it did not go through. */
+  readonly onDeleteFile?: (file: CardFile) => Promise<boolean>;
   readonly onRefreshActivity: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after
@@ -178,17 +283,17 @@ export interface TaskDetailCallbacks {
       readonly onSettled?: () => void;
     },
   ) => void;
+  /** Adds (`on`) or withdraws the viewer's emoji on a comment; absent: reactions are read-only. */
+  readonly onToggleReaction?: (
+    updateId: string,
+    emoji: string,
+    on: boolean,
+  ) => void;
   readonly onUpdateUpdate: (updateId: string, body: string) => void;
   readonly onDeleteUpdate: (updateId: string) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
-  /** Previous item in lane order ("K"); omitted at the first item. */
-  readonly onPrevious?: () => void;
-  /** Next item in lane order ("J"); omitted at the last item. */
-  readonly onNext?: () => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;
-  /** Opens the item's own page ("Mở toàn trang"); the button is disabled without it. */
-  readonly onOpenFullPage?: (cardId: string) => void;
   /** Moves the item to another board group ("Chuyển nhóm"). */
   readonly onMoveToGroup?: (cardId: string, groupId: string) => void;
 }

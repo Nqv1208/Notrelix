@@ -1,3 +1,9 @@
+using Notrelix.Application.EventMappers.WorkManagement;
+using Notrelix.Application.Features.Collaboration.Activity;
+using Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
+using Microsoft.Extensions.Logging.Abstractions;
+using MassTransit;
+using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklist;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
@@ -126,7 +132,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         await InTransactionAsync(context => new DeleteChecklistItemCommandHandler(context, CurrentUser(), Clock())
             .Handle(new DeleteChecklistItemCommand(item, 1), CancellationToken.None));
         await InTransactionAsync(context => new DeleteChecklistCommandHandler(context, CurrentUser(), Clock())
-            .Handle(new DeleteChecklistCommand(drop), CancellationToken.None));
+            .Handle(new DeleteChecklistCommand(drop, ExpectedVersion: 1), CancellationToken.None));
 
         var dtos = await GetChecklistsAsync();
         dtos.Should().ContainSingle().Which.Id.Should().Be(keep);
@@ -134,6 +140,69 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Checklists.IgnoreQueryFilters().SingleAsync(c => c.Id == drop)).DeletedAt.Should().NotBeNull(
             "deleting a checklist is the aggregate's soft delete, not a row removal");
+    }
+
+    [Fact]
+    public async Task ChecklistMutations_BecomeItemHistoryLines_AndARedeliveryAddsNothing()
+    {
+        // The facts the real handlers and aggregate raise, taken before the unit of work clears them.
+        var facts = new List<Notrelix.Domain.Common.IDomainEvent>();
+        async Task<T> Capture<T>(Func<ApplicationDbContext, Task<T>> work) =>
+            await InTransactionAsync(async context =>
+            {
+                var result = await work(context);
+                facts.AddRange(context.ChangeTracker.Entries<Checklist>().SelectMany(e => e.Entity.DomainEvents));
+                return result;
+            });
+
+        var checklist = (await Capture(context => new CreateChecklistCommandHandler(context, Request(), Clock(), Resolver(context))
+            .Handle(new CreateChecklistCommand(_boardItemId, "Release", null, null), CancellationToken.None))).Data;
+        var todo = (await Capture(context => new CreateChecklistItemCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
+            .Handle(new CreateChecklistItemCommand(checklist, "Tag build", 1, null, null), CancellationToken.None))).Data;
+        await Capture(context => new UpdateChecklistItemCommandHandler(context, CurrentUser(), Clock())
+            .Handle(new UpdateChecklistItemCommand(todo, 1, null, true), CancellationToken.None));
+        await Capture(context => new DeleteChecklistItemCommandHandler(context, CurrentUser(), Clock())
+            .Handle(new DeleteChecklistItemCommand(todo, 1), CancellationToken.None));
+        await Capture(context => new DeleteChecklistCommandHandler(context, CurrentUser(), Clock())
+            .Handle(new DeleteChecklistCommand(checklist, ExpectedVersion: 1), CancellationToken.None));
+
+        var mapper = (IIntegrationEventMapper)new BoardItemChecklistEventMapper();
+        var messages = facts.SelectMany(f => mapper.Map(f)).Select(m => m.IntegrationEvent).ToList();
+        await using var db = _db.CreateOwnerContext(SystemTenant());
+        var recorder = new ItemActivityRecorder(db, NullLogger<ItemActivityRecorder>.Instance, new Moq.Mock<Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts>().Object);
+        foreach (var message in messages.Concat(messages))
+            await Deliver(recorder, message);
+
+        var types = await db.WorkspaceActivityLogs.Where(r => r.SubjectId == _boardItemId).OrderBy(r => r.OccurredAt).Select(r => r.ActivityType).ToListAsync();
+        types.Should().BeEquivalentTo(new[]
+        {
+            ItemActivityTypes.ChecklistAdded, ItemActivityTypes.ChecklistItemAdded, ItemActivityTypes.ChecklistItemCompleted,
+            ItemActivityTypes.ChecklistItemRemoved, ItemActivityTypes.ChecklistDeleted,
+        }, "each fact is one line, and delivering everything twice adds nothing");
+        (await db.WorkspaceActivityLogs.Where(r => r.SubjectId == _boardItemId).Select(r => r.ActorUserId).Distinct().ToListAsync())
+            .Should().Equal(_userId);
+    }
+
+    private static Task Deliver(ItemActivityRecorder recorder, IIntegrationEvent message)
+    {
+        static ConsumeContext<T> Ctx<T>(T m) where T : class
+        {
+            var c = new Mock<ConsumeContext<T>>();
+            c.SetupGet(x => x.Message).Returns(m);
+            c.SetupGet(x => x.CancellationToken).Returns(CancellationToken.None);
+            return c.Object;
+        }
+
+        return message switch
+        {
+            BoardItemChecklistAddedIntegrationEvent m => new ItemChecklistAddedActivityConsumer(recorder).Consume(Ctx(m)),
+            BoardItemChecklistItemAddedIntegrationEvent m => new ItemChecklistItemAddedActivityConsumer(recorder).Consume(Ctx(m)),
+            BoardItemChecklistItemCompletionChangedIntegrationEvent m => new ItemChecklistItemCompletedActivityConsumer(recorder).Consume(Ctx(m)),
+            BoardItemChecklistItemRemovedIntegrationEvent m => new ItemChecklistItemRemovedActivityConsumer(recorder).Consume(Ctx(m)),
+            BoardItemChecklistRenamedIntegrationEvent m => new ItemChecklistRenamedActivityConsumer(recorder).Consume(Ctx(m)),
+            BoardItemChecklistDeletedIntegrationEvent m => new ItemChecklistDeletedActivityConsumer(recorder).Consume(Ctx(m)),
+            _ => throw new InvalidOperationException(message.GetType().Name),
+        };
     }
 
     private async Task<Guid> CreateChecklistAsync(string title, Guid? previous = null, Guid? next = null) =>

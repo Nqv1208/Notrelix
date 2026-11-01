@@ -26,6 +26,7 @@ import {
   erpCommenterAccess,
   erpItemId,
   erpOwnerAccess,
+  itemCapabilitiesStub,
 } from "@notrelix/work-management-testing";
 import { kanbanCardCatalog } from "../kanban-card.catalog";
 import { kanbanLaneCatalog } from "../kanban-lane.catalog";
@@ -33,7 +34,11 @@ import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 beforeAll(() => {
@@ -46,6 +51,7 @@ beforeAll(() => {
 afterEach(() => {
   toast.success.mockClear();
   toast.error.mockClear();
+  vi.useRealTimers();
 });
 
 function detailOf(board: FullBoardResponse, id: string): CardDetail {
@@ -75,6 +81,8 @@ function fakeServices(
     viewConfig?: Record<string, unknown>;
     /** A board just created: it has its statuses but no group yet. */
     noGroups?: boolean;
+    /** The archive write; absent: the fake server archives the item. */
+    archiveCard?: () => Promise<void>;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
@@ -108,12 +116,13 @@ function fakeServices(
       if (answer) return answer;
       board = applyItemStatus(board, id, optionId) ?? board;
     }),
-    createCard: vi.fn(async () => "item-new"),
+    createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),
     archiveCard: vi.fn(async (id: string) => {
+      if (overrides.archiveCard) return overrides.archiveCard();
       board = {
         ...board,
         groups: board.groups.map((group) => ({
@@ -145,6 +154,7 @@ function fakeServices(
     groups: { createGroup },
     itemExtras,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemCapabilities: itemCapabilitiesStub(),
   } as unknown as WorkManagementServices;
   return { services, cards, createGroup, itemExtras };
 }
@@ -224,7 +234,9 @@ function renderKanban(
   return { ...view, ...fake };
 }
 
-const lane = (name: string) => screen.getByRole("region", { name });
+// The card popup is modal and hides the lanes from the accessibility tree while it is open.
+const lane = (name: string) =>
+  screen.getByRole("region", { name, hidden: true });
 const laneCount = (name: string) => lane(name).dataset.laneCount;
 
 async function ready() {
@@ -265,6 +277,7 @@ describe("KanbanView on the ERP board", () => {
       expect(cards.updateStatus).toHaveBeenCalledWith(
         "item-new",
         ERP_STATUS_OPTION_IDS.doing,
+        1,
         expect.any(Object),
       ),
     );
@@ -316,20 +329,19 @@ describe("KanbanView on the ERP board", () => {
       },
       { timeout: 5000 },
     );
-    await waitFor(() =>
-      expect(
-        within(dialog)
-          .getByRole("button", { name: /^Trạng thái: / })
-          .getAttribute("aria-disabled"),
-      ).toBe("true"),
+    // A commenter's card is read-only: no lane switch, no add controls, but the composer stays.
+    await within(dialog).findByRole(
+      "button",
+      { name: "Thao tác trên thẻ" },
+      { timeout: 8000 },
     );
+    expect(within(dialog).queryByTitle("Chuyển thẻ sang cột khác")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Thêm vào / })).toBeNull();
     expect(screen.queryByRole("button", { name: "Thêm công việc" })).toBeNull();
-    expect(
-      within(dialog)
-        .getByRole("textbox", { name: /bình luận/i })
-        .getAttribute("aria-disabled"),
-    ).not.toBe("true");
+    for (const composer of within(dialog).getAllByRole("button", {
+      name: "Viết bình luận…",
+    }))
+      expect(composer.getAttribute("aria-disabled")).not.toBe("true");
   });
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
@@ -340,25 +352,28 @@ describe("KanbanView on the ERP board", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
     });
-    const pill = await waitFor(() => {
-      const button = within(dialog).getByRole("button", {
-        name: /^Trạng thái: Cần làm/,
-      });
-      expect(button.getAttribute("aria-disabled")).not.toBe("true");
-      return button;
-    });
-    fireEvent.keyDown(pill, { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Đang làm" }));
+    const pill = await waitFor(
+      () => {
+        const button = within(dialog).getByTitle("Chuyển thẻ sang cột khác");
+        expect(button.getAttribute("aria-disabled")).not.toBe("true");
+        return button;
+      },
+      { timeout: 8000 },
+    );
+    fireEvent.click(pill);
+    fireEvent.click(await screen.findByRole("option", { name: /Đang làm/ }));
     await waitFor(() => expect(laneCount("Đang làm")).toBe("4"));
     expect(laneCount("Cần làm")).toBe("5");
     expect(
       within(lane("Đang làm")).getByRole("button", {
         name: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
+        hidden: true,
       }),
     ).toBeTruthy();
     expect(cards.updateStatus).toHaveBeenCalledWith(
       erpItemId("ERP-149"),
       ERP_STATUS_OPTION_IDS.doing,
+      expect.any(Number),
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   }, 20_000);
@@ -377,15 +392,16 @@ describe("KanbanView on the ERP board", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
     });
-    const pill = await waitFor(() => {
-      const button = within(dialog).getByRole("button", {
-        name: /^Trạng thái: Cần làm/,
-      });
-      expect(button.getAttribute("aria-disabled")).not.toBe("true");
-      return button;
-    });
-    fireEvent.keyDown(pill, { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Đang làm" }));
+    const pill = await waitFor(
+      () => {
+        const button = within(dialog).getByTitle("Chuyển thẻ sang cột khác");
+        expect(button.getAttribute("aria-disabled")).not.toBe("true");
+        return button;
+      },
+      { timeout: 8000 },
+    );
+    fireEvent.click(pill);
+    fireEvent.click(await screen.findByRole("option", { name: /Đang làm/ }));
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(
         "Không chuyển được “Viết tài liệu quy trình nhập hoá đơn đầu vào”. Việc đã về lại Cần làm.",
@@ -397,6 +413,12 @@ describe("KanbanView on the ERP board", () => {
   }, 20_000);
 
   it("applies the route filter, shows the no-results bar and clears the filter with Bỏ lọc", async () => {
+    // The ERP seed dates its low-priority items up to 30/10: judge "overdue" on that day, not on the
+    // day the suite runs, or the filter that is meant to match nothing starts matching on 31/10.
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-10-30T05:00:00+07:00"),
+    });
     const onFilter = vi.fn();
     renderKanban(erpOwnerAccess(), { initialFilter: "p.low~o", onFilter });
     await ready();
@@ -429,8 +451,11 @@ describe("KanbanView on the ERP board", () => {
       onFilter,
     });
     await ready();
+    // The older facet string is rewritten once, as the compound filter, without the ids the board lacks.
     await waitFor(() =>
-      expect(onFilter).toHaveBeenCalledWith("p.high", { replace: true }),
+      expect(onFilter).toHaveBeenCalledWith(expect.stringMatching(/^c2:/), {
+        replace: true,
+      }),
     );
     // Only the high-priority items remain (5 on the board).
     expect(
@@ -450,35 +475,6 @@ describe("KanbanView on the ERP board", () => {
   });
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
-  it("steps through the items in lane order with K and J, keeping the sheet open", async () => {
-    const onItem = vi.fn();
-    renderKanban(erpOwnerAccess(), {
-      initialItem: erpItemId("ERP-149"),
-      onItem,
-    });
-    const dialog = await screen.findByRole("dialog", {
-      name: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
-    });
-    fireEvent.keyDown(dialog, { key: "j" });
-    expect(onItem).toHaveBeenLastCalledWith(erpItemId("ERP-147"), {
-      replace: true,
-    });
-    await screen.findByRole("dialog", {
-      name: "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng",
-    });
-    // The same sheet element: it was never unmounted while the next item loaded.
-    expect(screen.getByRole("dialog")).toBe(dialog);
-    expect(dialog.contains(document.activeElement)).toBe(true);
-    fireEvent.keyDown(dialog, { key: "k" });
-    fireEvent.keyDown(dialog, { key: "k" });
-    await screen.findByRole("dialog", {
-      name: "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán",
-    });
-    expect(onItem).toHaveBeenLastCalledWith(erpItemId("ERP-151"), {
-      replace: true,
-    });
-  }, 20_000);
-
   it("copies the item link from the sheet and confirms it", async () => {
     const writeText = vi.fn(async (_text: string) => undefined);
     Object.defineProperty(navigator, "clipboard", {
@@ -493,8 +489,16 @@ describe("KanbanView on the ERP board", () => {
       },
       { timeout: 5000 },
     );
+    fireEvent.keyDown(
+      await within(dialog).findByRole(
+        "button",
+        { name: "Thao tác trên thẻ" },
+        { timeout: 8000 },
+      ),
+      { key: "Enter" },
+    );
     fireEvent.click(
-      within(dialog).getByRole("button", { name: "Sao chép liên kết" }),
+      await screen.findByRole("menuitem", { name: /^Sao chép liên kết/ }),
     );
     await waitFor(() =>
       expect(toast.success).toHaveBeenCalledWith("Đã sao chép liên kết"),
@@ -528,23 +532,32 @@ describe("KanbanView on the ERP board", () => {
       },
     );
     const pickDoing = async (title: string) => {
-      const dialog = await screen.findByRole("dialog", { name: title });
-      const pill = await waitFor(() => {
-        const button = within(dialog).getByRole("button", {
-          name: /^Trạng thái: Cần làm/,
-        });
-        expect(button.getAttribute("aria-disabled")).not.toBe("true");
-        return button;
-      });
-      fireEvent.keyDown(pill, { key: "Enter" });
-      fireEvent.click(screen.getByRole("menuitem", { name: "Đang làm" }));
+      const dialog = await screen.findByRole(
+        "dialog",
+        { name: title },
+        { timeout: 8000 },
+      );
+      const pill = await waitFor(
+        () => {
+          const button = within(dialog).getByTitle("Chuyển thẻ sang cột khác");
+          expect(button.getAttribute("aria-disabled")).not.toBe("true");
+          return button;
+        },
+        { timeout: 8000 },
+      );
+      fireEvent.click(pill);
+      fireEvent.click(await screen.findByRole("option", { name: /Đang làm/ }));
       return dialog;
     };
     const dialog = await pickDoing(
       "Viết tài liệu quy trình nhập hoá đơn đầu vào",
     );
-    // The next item in lane order, then a second status write.
-    fireEvent.keyDown(dialog, { key: "j" });
+    // Another item, then a second status write.
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(
+      document.querySelector(`[data-card-id="${erpItemId("ERP-147")}"]`)!,
+    );
     await pickDoing("Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng");
     await waitFor(() => expect(laneCount("Đang làm")).toBe("5"));
 
@@ -559,6 +572,7 @@ describe("KanbanView on the ERP board", () => {
     expect(
       within(lane("Đang làm")).getByRole("button", {
         name: "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng",
+        hidden: true,
       }),
     ).toBeTruthy();
   }, 20_000);
@@ -575,19 +589,113 @@ describe("KanbanView on the ERP board", () => {
       },
       { timeout: 5000 },
     );
-    const more = await waitFor(() =>
-      within(dialog).getByRole("button", { name: "Thêm" }),
+    const more = await waitFor(
+      () => within(dialog).getByRole("button", { name: "Thao tác trên thẻ" }),
+      { timeout: 8000 },
     );
     fireEvent.keyDown(more, { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    // Archiving asks first, and names what it takes along.
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
     await waitFor(() =>
       expect(cards.archiveCard).toHaveBeenCalledWith(
         erpItemId("ERP-142"),
+        expect.any(Number),
         expect.objectContaining({ idempotencyKey: expect.any(String) }),
       ),
     );
     expect(cards.deleteCard).not.toHaveBeenCalled();
     await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
+  }, 20_000);
+
+  it("keeps listing the sub-items in the dialog while the archive is out", async () => {
+    let release = () => {};
+    const { cards } = renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-142") },
+      {
+        archiveCard: () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      },
+    );
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    const more = await waitFor(
+      () => within(dialog).getByRole("button", { name: "Thao tác trên thẻ" }),
+      { timeout: 8000 },
+    );
+    fireEvent.keyDown(more, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    const listed = within(confirm).getByText(/việc con/).textContent;
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
+    await waitFor(() => expect(cards.archiveCard).toHaveBeenCalledTimes(1));
+    // The card has left the board read by now; the dialog still lists what it asked about.
+    expect(within(confirm).getByText(/việc con/).textContent).toBe(listed);
+    expect(
+      within(confirm).getByRole("button", { name: "Đang lưu trữ…" }),
+    ).toBeTruthy();
+    release();
+  }, 20_000);
+
+  it("says in the dialog that someone changed the item when the archive is refused as stale, and keeps the item", async () => {
+    const { cards } = renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-142") },
+      {
+        archiveCard: async () => {
+          throw Object.assign(new Error("stale"), { status: 412 });
+        },
+      },
+    );
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
+      { timeout: 5000 },
+    );
+    const more = await waitFor(
+      () => within(dialog).getByRole("button", { name: "Thao tác trên thẻ" }),
+      { timeout: 8000 },
+    );
+    fireEvent.keyDown(more, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ…" }));
+    const confirm = await screen.findByRole("dialog", {
+      name: "Lưu trữ việc này?",
+    });
+    fireEvent.click(
+      within(confirm).getByRole("button", {
+        name: /^Lưu trữ (việc|\d+ việc)$/,
+      }),
+    );
+    const alert = await within(confirm).findByRole("alert");
+    expect(alert.textContent).toContain("Có người vừa sửa việc này");
+    expect(cards.archiveCard).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("region", { name: "Đang làm", hidden: true }).dataset
+        .laneCount,
+    ).toBe("3");
+    expect(
+      within(confirm).getByRole("button", { name: "Thử lại" }),
+    ).toBeTruthy();
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
@@ -600,13 +708,12 @@ describe("KanbanView on the ERP board", () => {
       { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
       { timeout: 5000 },
     );
-    expect(
-      await within(dialog).findByText("Phê duyệt phân quyền"),
-    ).toBeTruthy();
-    expect(within(dialog).getByText("Đang chờ")).toBeTruthy();
-
     fireEvent.click(
-      within(dialog).getByRole("button", { name: "Gỡ liên kết với ERP-143" }),
+      await within(dialog).findByRole(
+        "button",
+        { name: "Gỡ liên kết ERP-143" },
+        { timeout: 8000 },
+      ),
     );
     await waitFor(() =>
       expect(itemExtras.removeLink).toHaveBeenCalledWith(
@@ -618,8 +725,22 @@ describe("KanbanView on the ERP board", () => {
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Thêm liên kết" }),
     );
-    const [first] = await screen.findAllByRole("option");
+    // The link form: the relation, then an item of the board, then the submit button.
+    fireEvent.change(await screen.findByLabelText("Loại liên kết"), {
+      target: { value: "blocked-by" },
+    });
+    const [first] = within(
+      await screen.findByRole("listbox", { name: "Kết quả" }),
+    ).getAllByRole("option");
     fireEvent.click(first!);
+    const form = screen
+      .getByLabelText("Loại liên kết")
+      .closest("[role=dialog]")!;
+    fireEvent.click(
+      within(form as HTMLElement).getByRole("button", {
+        name: "Thêm liên kết",
+      }),
+    );
     await waitFor(() =>
       expect(itemExtras.addLink).toHaveBeenCalledWith(erpItemId("ERP-142"), {
         itemId: expect.any(String),

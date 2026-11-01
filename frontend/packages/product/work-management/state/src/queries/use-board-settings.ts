@@ -29,6 +29,24 @@ function errorKind(error: unknown): string | null {
 }
 
 /** The first field a validation error names. */
+function ruleCodeOf(error: unknown): { code?: string } {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "string" && code !== "" ? { code } : {};
+}
+
+/** Who saved first, from a 412 the server answered with the last writer. */
+export function conflictOf(error: unknown): {
+  byName: string | null;
+  at: string | null;
+} {
+  const body = (error as { details?: unknown } | null)?.details as
+    Record<string, unknown> | null | undefined;
+  return {
+    byName: typeof body?.changedByName === "string" ? body.changedByName : null,
+    at: typeof body?.changedAt === "string" ? body.changedAt : null,
+  };
+}
+
 function invalidField(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
   const errors = (error as { validationErrors?: Record<string, string[]> })
@@ -98,10 +116,19 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
         return { ok: true };
       } catch (caught) {
         if (errorKind(caught) === "conflict") {
-          return { ok: false, reason: "conflict" };
+          return {
+            ok: false,
+            reason: "conflict",
+            conflict: conflictOf(caught),
+          };
         }
         if (errorKind(caught) === "validation") {
-          return { ok: false, reason: "invalid", field: invalidField(caught) };
+          return {
+            ok: false,
+            reason: "invalid",
+            field: invalidField(caught),
+            ...ruleCodeOf(caught),
+          };
         }
         return { ok: false, reason: "failed" };
       }
@@ -109,7 +136,14 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
     [boardId, boardSettings, queryClient, refresh, workspaceId],
   );
 
+  /** The settings as saved now, read without replacing the ones the page shows. */
+  const readLatest = useCallback(
+    () => boardSettings.get(boardId).catch(() => null),
+    [boardId, boardSettings],
+  );
+
   return {
+    readLatest,
     settings: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError && !forbidden && !notFound,

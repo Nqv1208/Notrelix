@@ -14,7 +14,6 @@ export * from "./use-kanban-columns";
 export * from "../mutations/use-create-kanban-column";
 export * from "../mutations/use-update-kanban-column";
 export * from "../mutations/use-delete-kanban-column";
-export * from "../mutations/use-reorder-kanban-columns";
 
 export * from "../queries/use-card";
 export * from "../queries/use-card-detail";
@@ -27,6 +26,7 @@ export * from "../mutations/use-update-card";
 export * from "../mutations/use-update-card-update";
 export * from "../mutations/use-delete-card";
 export * from "../mutations/use-delete-card-update";
+export * from "../mutations/use-toggle-comment-reaction";
 export * from "../mutations/use-move-card";
 export * from "../mutations/use-duplicate-card";
 export * from "../mutations/use-update-field-value";
@@ -41,5 +41,3 @@ export * from "../mutations/use-update-group";
 export * from "../mutations/use-delete-group";
 export * from "../mutations/use-duplicate-group";
 export * from "../mutations/use-move-row";
-
-export * from "../queries/use-card-checklists";

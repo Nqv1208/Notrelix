@@ -27,4 +27,8 @@ export interface KanbanStatusLane {
   readonly color: string | null;
   readonly cards: Card[];
   readonly total: number;
+  /** A paged read: items of the lane that pass the server filter (loaded or not). Absent: `cards.length`. */
+  readonly filteredTotal?: number;
+  /** A paged read: the lane has items beyond the loaded cards that pass the filter. */
+  readonly hasMore?: boolean;
 }

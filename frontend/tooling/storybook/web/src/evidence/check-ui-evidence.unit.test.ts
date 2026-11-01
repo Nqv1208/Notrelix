@@ -109,6 +109,30 @@ function v2Manifest(overrides: {
 }
 
 describe("checkUiEvidence", () => {
+  it("reports a schema-invalid manifest as a manifest-path diagnostic without needing a Storybook index", () => {
+    const root = mkdtempSync(join(tmpdir(), "notrelix-ui-evidence-"));
+    const ownerRoot = createOwner(root, "packages/features/wm", {
+      "src/kanban-board.tsx": "export const KanbanBoard = () => null;\n",
+    });
+    const manifest = v2Manifest({
+      owner: "@notrelix/wm",
+      surfaceId: "wm.board",
+      sourceName: "kanban-board",
+    });
+    writeJson(join(ownerRoot, "verification/ui-evidence.manifest.json"), {
+      ...manifest,
+      surfaces: [{ ...manifest.surfaces[0], surfaceKind: "workflow" }],
+    });
+
+    const result = checkUiEvidence(root, "/dev/null/no-index");
+
+    expect(result.ok).toBe(false);
+    // scripts/pre-push.sh greps for this shape to block the push.
+    expect(result.diagnostics.join("\n")).toMatch(
+      /packages\/features\/wm\/verification\/ui-evidence\.manifest\.json: .*surfaceKind/,
+    );
+  });
+
   it("passes when a single manifest classifies its governed source once and the Storybook index binds its story", () => {
     const root = mkdtempSync(join(tmpdir(), "notrelix-ui-evidence-"));
     const ownerRoot = createOwner(root, "packages/features/wm", {

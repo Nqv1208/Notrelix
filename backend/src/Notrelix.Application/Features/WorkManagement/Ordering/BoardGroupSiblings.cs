@@ -4,7 +4,7 @@ namespace Notrelix.Application.Features.WorkManagement.Ordering;
 
 /// <summary>
 /// The BoardGroups ordering scope: the active (not soft-deleted) groups of one
-/// board. Passed to <see cref="WorkPlacementResolver"/> so it runs under the lock.
+/// board; an archived group is hidden but keeps its key. Passed to <see cref="WorkPlacementResolver"/> so it runs under the lock.
 /// </summary>
 internal static class BoardGroupSiblings
 {
@@ -13,6 +13,6 @@ internal static class BoardGroupSiblings
         await context.BoardGroups
             .AsNoTracking()
             .Where(group => group.BoardId == boardId)
-            .Select(group => new OrderedSibling(group.Id, group.Position))
+            .Select(group => new OrderedSibling(group.Id, group.Position, group.IsArchived))
             .ToListAsync(cancellationToken);
 }

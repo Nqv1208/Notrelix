@@ -21,7 +21,7 @@ public static class ChangeInvitationRoleEndpoint
         ChangeInvitationRoleRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new ChangeInvitationRoleCommand(workspaceId, invitationId, request.NewRole));
+        var result = await sender.Send(new ChangeInvitationRoleCommand(workspaceId, invitationId, request.NewRole, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

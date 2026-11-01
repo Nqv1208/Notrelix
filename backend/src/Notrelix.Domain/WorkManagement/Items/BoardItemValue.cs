@@ -19,13 +19,14 @@ public class BoardItemValue : Entity
         {
             ItemId = itemId,
             FieldId = fieldId,
-            Value = value
+            // Owned by this row: a value read from another item must not be shared with it.
+            Value = FieldValue.Create(value.Data)
         };
     }
 
     public void UpdateValue(FieldValue value)
     {
         Guard.NotNull(value);
-        Value = value;
+        Value = FieldValue.Create(value.Data);
     }
 }

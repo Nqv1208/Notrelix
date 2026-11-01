@@ -5,10 +5,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectForm
 
 [IdempotencyOperation("work-management.forms.reject-form-submission.v1")]
 public record RejectFormSubmissionCommand(
-    Guid SubmissionId)
+    Guid SubmissionId,
+    string? Reason = null)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form-submission"), SubmissionId);
 }
 
@@ -31,7 +32,7 @@ public class RejectFormSubmissionCommandHandler : IRequestHandler<RejectFormSubm
             .FirstOrDefaultAsync(s => s.Id == request.SubmissionId, ct);
         if (submission is null) throw new NotFoundException("FormSubmission", request.SubmissionId);
 
-        submission.Reject(_dateTimeProvider.UtcNow);
+        submission.Reject(_dateTimeProvider.UtcNow, request.Reason);
 
         return Result.Success();
     }

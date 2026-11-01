@@ -1,4 +1,5 @@
 import { useFullBoard } from "@notrelix/work-management-state";
+import { BoardViewerContext } from "./shared/board-viewer";
 import { MainTableView } from "./views/table/main-table-view";
 import { BoardCalendarView } from "./views/calendar/board-calendar-view";
 import { KanbanView } from "./views/kanban/kanban-view";
@@ -29,8 +30,6 @@ export interface BoardScreenProps {
   /** The route `groupBy` parameter: a field id (Kanban). */
   groupBy?: string;
   onGroupByChange?: (fieldId: string) => void;
-  /** Opens an item's own page from the Kanban sheet. */
-  onOpenItemPage?: (itemId: string) => void;
   /** Switches the board to another view by type (the Timeline's undated link). */
   onViewChange?: (view: string) => void;
   /**
@@ -54,11 +53,18 @@ export function BoardScreen(props: BoardScreenProps) {
   return <BoardWorkspaceViewContent {...props} />;
 }
 
-export function BoardWorkspaceViewContent({
+export function BoardWorkspaceViewContent(props: BoardScreenProps) {
+  return (
+    <BoardViewerContext.Provider value={props.currentUserId ?? null}>
+      <BoardViewSwitch {...props} />
+    </BoardViewerContext.Provider>
+  );
+}
+
+function BoardViewSwitch({
   workspaceId,
   boardId,
   view,
-  onOpenItemPage,
   onViewChange,
   currentUserId,
   ...kanbanParams
@@ -80,7 +86,6 @@ export function BoardWorkspaceViewContent({
         mode="kanban"
         kanbanParams={kanbanParams}
         currentUserId={currentUserId}
-        onOpenItemPage={onOpenItemPage}
       />
     );
   if (view.type === "calendar")
@@ -120,7 +125,6 @@ function BoardFullDataView({
   mode,
   kanbanParams,
   currentUserId,
-  onOpenItemPage,
   onOpenCalendar,
 }: {
   workspaceId: string;
@@ -128,7 +132,6 @@ function BoardFullDataView({
   mode: "kanban" | "calendar" | "timeline";
   kanbanParams?: KanbanParams;
   currentUserId?: string | null;
-  onOpenItemPage?: (itemId: string) => void;
   onOpenCalendar?: () => void;
 }) {
   const { board, isLoading, error } = useFullBoard(boardId, workspaceId);
@@ -154,7 +157,6 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             {...kanbanParams}
             currentUserId={currentUserId}
-            onOpenItemPage={onOpenItemPage}
           />
         ) : mode === "calendar" ? (
           <BoardCalendarView
@@ -172,6 +174,8 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             selectedItemId={kanbanParams?.selectedItemId}
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            filter={kanbanParams?.filter}
+            onFilterChange={kanbanParams?.onFilterChange}
             currentUserId={currentUserId}
             onOpenCalendar={onOpenCalendar}
           />

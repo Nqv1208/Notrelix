@@ -4,8 +4,11 @@ import { useLocation } from "@tanstack/react-router";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useAuth } from "@notrelix/features-auth";
 import { workspaceRealtimeAdapter } from "@notrelix/features-workspace";
+import { workManagementRealtimeAdapter } from "@notrelix/work-management-state";
 import { ModuleAdapterRegistry } from "../realtime/module-adapter-registry";
 import { getActiveWorkspaceIdFromPathname } from "../realtime/active-workspace";
+import { getActiveBoardIdFromPathname } from "../realtime/active-board";
+import { createDragGate } from "../realtime/drag-gate";
 import { handleWorkspaceRecovery } from "../realtime/workspace-recovery-policy";
 
 export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
@@ -16,10 +19,12 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
   // Account = the signed-in principal (same source as the AccountScopeBridge).
   const accountId = user?.id ?? null;
   const workspaceId = getActiveWorkspaceIdFromPathname(location.pathname);
+  const boardId = getActiveBoardIdFromPathname(location.pathname);
 
   const registry = useMemo(() => {
     const next = new ModuleAdapterRegistry();
     next.register(workspaceRealtimeAdapter);
+    next.register(workManagementRealtimeAdapter);
     return next;
   }, []);
 
@@ -104,6 +109,59 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
     };
   }, [
     accountId,
+    isAuthenticated,
+    queryClient,
+    registry,
+    runtime.realtime,
+    runtime.telemetry,
+    sessionGeneration,
+    workspaceId,
+  ]);
+
+  // The open board streams its own changes (authorized per board by the
+  // gateway). Gap, reset and permission loss of this stream arrive on the
+  // recovery listener above, which revalidates the whole Workspace scope.
+  useEffect(() => {
+    if (!isAuthenticated || !sessionGeneration || !workspaceId || !boardId)
+      return;
+
+    let active = true;
+
+    // A refetch waits for a drag in flight: no card reorders under the pointer.
+    const gate = createDragGate(document, async (keys) => {
+      if (!active) return;
+      await Promise.all(
+        keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    });
+
+    const unsubscribe = runtime.realtime.subscribe(
+      { workspaceId, boardId },
+      (envelope) => {
+        if (!active) return;
+        void registry
+          .dispatch(envelope, {
+            workspaceId,
+            boardId,
+            invalidateQueries: gate.invalidate,
+          })
+          .catch((error) => {
+            runtime.telemetry.reportError(error, {
+              context: "realtime.board_dispatch",
+              eventType: envelope.eventType,
+              eventId: envelope.eventId,
+            });
+          });
+      },
+    );
+
+    return () => {
+      active = false;
+      gate.dispose();
+      unsubscribe();
+    };
+  }, [
+    boardId,
     isAuthenticated,
     queryClient,
     registry,

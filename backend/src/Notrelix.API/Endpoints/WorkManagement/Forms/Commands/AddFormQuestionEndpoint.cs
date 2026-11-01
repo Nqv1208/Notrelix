@@ -29,7 +29,9 @@ public static class AddFormQuestionEndpoint
             body.Label,
             body.IsRequired,
             body.ConfigJson,
-            body.Position), cancellationToken);
+            body.Position,
+            body.BoardFieldId,
+            body.ExpectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

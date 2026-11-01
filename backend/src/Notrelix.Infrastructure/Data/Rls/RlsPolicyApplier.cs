@@ -25,6 +25,14 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.016_policies_derived_scope.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.017_webhook_scope.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.018_billing_usage.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.019_policy_helpers_migrator_only.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.020_support_role_no_content.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.021_billing_and_account_writes.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.022_audit_append_only.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.023_custom_role_assignments.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.024_membership_end_access.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.025_invitee_invitations.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.026_authz_access_helpers_static.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

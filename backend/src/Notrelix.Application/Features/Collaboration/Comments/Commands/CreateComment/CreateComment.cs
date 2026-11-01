@@ -8,7 +8,8 @@ using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
-public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("collaboration.comments.create-comment.v1")]
+public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null, CommentAnchorInput? Anchor = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public static CreateCommentCommand ForBoardItem(Guid boardItemId, string contentMd, Guid? parentCommentId, IReadOnlyList<Guid>? mentionedUserIds = null, CommentAnchorInput? anchor = null)
         => new(ResourceKind.Create(BoardItemKind), boardItemId, contentMd, parentCommentId, mentionedUserIds, anchor);
@@ -33,6 +34,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     private readonly IPageBlockFacts _pageBlocks;
     private readonly IWorkItemNotificationFacts _itemFacts;
     private readonly IResourceVisibility _visibility;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public CreateCommentCommandHandler(
         ICollaborationDbContext context,
@@ -40,8 +42,10 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         IDateTimeProvider dateTimeProvider,
         IPageBlockFacts pageBlocks,
         IWorkItemNotificationFacts itemFacts,
-        IResourceVisibility visibility)
+        IResourceVisibility visibility,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _itemFacts = itemFacts;
         _visibility = visibility;
         _context = context;
@@ -51,6 +55,13 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     }
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
+    {
+        var response = await HandleCore(request, ct);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateCommentCommand request, CancellationToken ct)
     {
         var workspaceId = _requestContext.RequireWorkspaceId();
 
@@ -68,12 +79,13 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         }
         else
         {
-            var parentComment = await _context.Comments
-                .AsNoTracking()
-                // DeletedAt is the mapped soft-delete column on Comment
-                // (IsDeleted is a Domain-only flag ignored in EF mapping).
-                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && c.DeletedAt == null, ct)
-                ?? throw new NotFoundException(nameof(Comment), request.ParentCommentId.Value);
+            var parentComment = await FindLiveCommentAsync(request.ParentCommentId.Value, ct);
+
+            // Replies are one level deep: replying to a reply joins the thread of its top-level comment.
+            if (parentComment.ParentId is { } topLevelId)
+            {
+                parentComment = await FindLiveCommentAsync(topLevelId, ct);
+            }
 
             var parentContext = ParentCommentContext.Create(parentComment.AccountId, parentComment.WorkspaceId, parentComment.Id, parentComment.Target, parentComment.IsDeleted);
             comment = Comment.CreateReply(accountId, workspaceId, target, request.ContentMd, userId, now, parentContext);
@@ -106,6 +118,11 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
         return Result<Guid>.Success(comment.Id);
     }
+
+    // DeletedAt is the mapped soft-delete column on Comment (IsDeleted is a Domain-only flag ignored in EF mapping).
+    private async Task<Comment> FindLiveCommentAsync(Guid id, CancellationToken ct) =>
+        await _context.Comments.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null, ct)
+        ?? throw new NotFoundException(nameof(Comment), id);
 
     /// <summary>
     /// For an Item comment, the Board that decides who may be notified (Work Management fact). An Item that no

@@ -13,5 +13,6 @@ public enum FieldType
     Checkbox,
     Link,
     Formula,
-    Rollup
+    Rollup,
+    Vote
 }

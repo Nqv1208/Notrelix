@@ -38,7 +38,7 @@ public sealed class WorkP3ManifestArchitectureTests
     /// <summary>Modules outside P3 (Views/Forms/Approvals and other P4 surfaces).</summary>
     private static readonly HashSet<string> OutOfScopeModules = new(StringComparer.Ordinal)
     {
-        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Relations", "Templates", "Views",
+        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Relations", "Templates", "Transfer", "Views",
     };
 
     /// <summary>
@@ -47,6 +47,7 @@ public sealed class WorkP3ManifestArchitectureTests
     private static readonly HashSet<string> OutOfScopeRequests = new(StringComparer.Ordinal)
     {
         "BoardItems.ListBoardItemLinksQuery",
+        "BoardItems.ListBoardItemPageLinksQuery",
         "BoardItems.LinkPageToBoardItemCommand",
         "BoardItems.UnlinkPageFromBoardItemCommand",
         // Platform realtime gateway (PF-09): authorizes a Board stream subscription with the
@@ -73,14 +74,14 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.CreateBoardInWorkspaceCommand"] = new(Disposition.Harden, "APP-BOARD-001 (default-schema ordering writer)"),
         ["Boards.UpdateBoardCommand"] = new(Disposition.Harden, "APP-BOARD-001, CONC-001", VersionedTarget: true),
         ["Boards.MoveBoardToSpaceCommand"] = new(Disposition.Keep, "ADR-009 Space placement (OT-4), CONC-001", VersionedTarget: true),
-        ["Boards.UpdateBoardVisibilityCommand"] = new(Disposition.Keep, "-"),
-        ["Boards.ArchiveBoardCommand"] = new(Disposition.Keep, "-"),
-        ["Boards.UnarchiveBoardCommand"] = new(Disposition.Keep, "-"),
-        ["Boards.DeleteBoardCommand"] = new(Disposition.Keep, "-"),
-        ["Boards.RestoreBoardCommand"] = new(Disposition.Keep, "LIFE-001 (done)"),
+        ["Boards.UpdateBoardVisibilityCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["Boards.ArchiveBoardCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["Boards.UnarchiveBoardCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["Boards.DeleteBoardCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["Boards.RestoreBoardCommand"] = new(Disposition.Keep, "LIFE-001 (done)", VersionedTarget: true),
         ["Boards.AddBoardMemberCommand"] = new(Disposition.Keep, "GATE-002 (ManageBoard review)"),
-        ["Boards.RemoveBoardMemberCommand"] = new(Disposition.Keep, "GATE-002 (ManageBoard review)"),
-        ["Boards.UpdateBoardMemberRoleCommand"] = new(Disposition.Keep, "GATE-002 (ManageBoard review)"),
+        ["Boards.RemoveBoardMemberCommand"] = new(Disposition.Keep, "GATE-002 (ManageBoard review)", VersionedTarget: true),
+        ["Boards.UpdateBoardMemberRoleCommand"] = new(Disposition.Keep, "GATE-002 (ManageBoard review)", VersionedTarget: true),
 
         // BoardItem / FieldValue
         ["BoardItems.GetBoardItemQuery"] = new(Disposition.Harden, "CONC-002"),
@@ -96,29 +97,29 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.UpdateBoardItemFieldValueCommand"] = new(Disposition.Harden, "APP-ITEM-002, CONC-001", VersionedTarget: true),
         ["BoardItems.UpdateBoardItemFieldValuesCommand"] = new(Disposition.Harden, "APP-ITEM-002, CONC-001", VersionedTarget: true),
         ["BoardItems.ClearFieldValueCommand"] = new(Disposition.Harden, "APP-ITEM-002, CONC-001", VersionedTarget: true),
-        ["BoardItems.UpdateBoardItemStatusCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.SetBoardItemDueDateCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.CompleteBoardItemCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.ReopenBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.UpdateBoardItemStatusCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.SetBoardItemDueDateCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.CompleteBoardItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.ReopenBoardItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardItems.CreateChildItemCommand"] = new(Disposition.Keep, "-"),
         ["BoardItems.MoveChildItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardItems.ListChildItemsQuery"] = new(Disposition.Keep, "-"),
-        ["BoardItems.AssignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.UnassignBoardItemMemberCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.ArchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.AssignBoardItemMemberCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.UnassignBoardItemMemberCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.ArchiveBoardItemCommand"] = new(Disposition.Harden, "CONC-001", VersionedTarget: true),
         ["BoardItems.BulkUpdateBoardItemsCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.MoveBoardItemToBoardCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.MoveBoardItemToBoardCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardItems.ListBoardItemTrashQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.RemindBoardItemOwnersCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.UnarchiveBoardItemCommand"] = new(Disposition.Keep, "-"),
-        ["BoardItems.DeleteBoardItemCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.UnarchiveBoardItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.DeleteBoardItemCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardItems.RestoreBoardItemCommand"] = new(Disposition.Keep, "LIFE-001 (done)"),
 
         // BoardField / FieldOption (BoardField-owned family is canonical, SPEC WM-V3-DEC-009)
         ["BoardFields.CreateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001 (done)"),
         ["BoardFields.UpdateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001, CONC-001", VersionedTarget: true),
         ["BoardFields.MoveBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001 (done), CONC-001", VersionedTarget: true),
-        ["BoardFields.DeleteBoardFieldCommand"] = new(Disposition.Keep, "-"),
+        ["BoardFields.DeleteBoardFieldCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardFields.AddFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
         ["BoardFields.MoveFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
         ["BoardFields.UpdateFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
@@ -129,21 +130,45 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardGroups.UpdateBoardGroupCommand"] = new(Disposition.Harden, "CONC-001", VersionedTarget: true),
         ["BoardGroups.MoveBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001 (done), CONC-001", VersionedTarget: true),
         ["BoardGroups.DuplicateBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001"),
-        ["BoardGroups.ArchiveBoardGroupCommand"] = new(Disposition.Keep, "-"),
-        ["BoardGroups.UnarchiveBoardGroupCommand"] = new(Disposition.Keep, "-"),
+        ["BoardGroups.ArchiveBoardGroupCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardGroups.UnarchiveBoardGroupCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardGroups.DeleteBoardGroupCommand"] = new(Disposition.Keep, "FIX-001 (done)", VersionedTarget: true),
 
         // Checklist (Checklist Version protects ChecklistItem mutation, SPEC WM-V3-DEC-007)
+        ["Checklists.ListBoardChecklistsQuery"] = new(Disposition.Keep, "-"),
         ["Checklists.GetChecklistsQuery"] = new(Disposition.Harden, "APP-CHK-001 (Version, done), CONC-002"),
         ["Checklists.CreateChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (done)"),
         ["Checklists.UpdateChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
         ["Checklists.MoveChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
-        ["Checklists.DeleteChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (aggregate soft delete, done)"),
+        ["Checklists.DeleteChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (aggregate soft delete, done), CONC-001", VersionedTarget: true),
+        ["Checklists.CopyChecklistCommand"] = new(Disposition.Keep, "-"),
         ["Checklists.CreateChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
         ["Checklists.MoveChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
         ["Checklists.UpdateChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
         ["Checklists.ToggleChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.SetChecklistItemDueCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.SetChecklistItemAssigneeCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
         ["Checklists.DeleteChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+
+        ["BoardFields.ListDeletedBoardFieldsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardFields.RestoreBoardFieldCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ListBoardItemVotesQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ListBoardItemViewersQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ListBoardDependenciesQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ListArchivedBoardItemsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ListBoardLaneItemsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.SetBoardItemCoverCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.SetBoardItemVoteCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.SetBoardItemRepeatCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["BoardItems.RecordBoardItemViewCommand"] = new(Disposition.Keep, "-"),
+        ["BoardItems.SetBoardItemReminderCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["Boards.ListDeletedBoardsQuery"] = new(Disposition.Keep, "-"),
+        ["Boards.ListArchivedBoardsQuery"] = new(Disposition.Keep, "-"),
+        ["Boards.GetBoardDuplicatePreviewQuery"] = new(Disposition.Keep, "-"),
+        ["Boards.GetBoardMoveImpactQuery"] = new(Disposition.Keep, "-"),
+        ["Boards.GetBoardLifecycleImpactQuery"] = new(Disposition.Keep, "-"),
+        ["Boards.LeaveBoardCommand"] = new(Disposition.Keep, "-"),
+        ["Boards.DuplicateBoardCommand"] = new(Disposition.Keep, "-"),
 
         // Schema read boundary
         ["BoardSchema.GetBoardSchemaQuery"] = new(Disposition.Harden, "APP-BOUNDARY-002, CONC-002"),
@@ -151,8 +176,8 @@ public sealed class WorkP3ManifestArchitectureTests
         // Labels (Work-owned item metadata, WMREQ023)
         ["Labels.GetLabelsQuery"] = new(Disposition.Keep, "-"),
         ["Labels.CreateLabelCommand"] = new(Disposition.Keep, "-"),
-        ["Labels.UpdateLabelCommand"] = new(Disposition.Keep, "-"),
-        ["Labels.DeleteLabelCommand"] = new(Disposition.Keep, "-"),
+        ["Labels.UpdateLabelCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
+        ["Labels.DeleteLabelCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["Labels.AddLabelToBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["Labels.RemoveLabelFromBoardItemCommand"] = new(Disposition.Keep, "-"),
     };
@@ -171,8 +196,11 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Services/MoveBoardItemUseCase.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs",
+            "Notrelix.Infrastructure/BackgroundJobs/BoardTransferWorker.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["ChildItems (board_items: parent_item_id, sub-items)"] =
@@ -186,18 +214,24 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["BoardFields (board_fields: board_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/CreateBoardField/CreateBoardField.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveBoardField/MoveBoardField.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["FieldOptions (field_options: field_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/AddFieldOption/AddFieldOption.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveFieldOption/MoveFieldOption.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
         ],
         ["ItemChecklists (checklists: item_id)"] =
         [
@@ -338,8 +372,8 @@ public sealed class WorkP3ManifestArchitectureTests
             .Where(v => v.Validated is not null)
             .ToLookup(v => v.Validated!, v => v.Validator);
 
-        // 22 from SPEC WM-V3-DEC-007 + MoveBoardToSpaceCommand (ADR-009 Space placement) + MoveChildItemCommand.
-        targets.Should().HaveCount(24, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
+        // 22 from SPEC WM-V3-DEC-007, then every later P3 request that declares IExpectedVersionRequest (a write names the version it read).
+        targets.Should().HaveCount(52, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
         var violations = new List<string>();
         foreach (var key in targets)
         {
@@ -381,7 +415,7 @@ public sealed class WorkP3ManifestArchitectureTests
     private static readonly string[] WorkDbSetBaseline =
     [
         "Boards", "BoardGroups", "BoardFields", "FieldOptions", "BoardViews", "BoardViewPins", "BoardViewUserPreferences",
-        "SavedFilters", "BoardItems", "BoardItemValues", "BoardItemMembers", "BoardItemLabels", "BoardItemLinks", "Labels",
+        "SavedFilters", "BoardItems", "BoardItemValues", "BoardItemMembers", "BoardItemLabels", "BoardItemLinks", "BoardItemVotes", "BoardItemViews", "Labels",
         "BoardMembers", "BoardSubscribers", "BoardRelations", "BoardItemConnections", "MirrorValueSnapshots", "ItemDependencies",
         "TimeTrackingEntries", "RelationFieldConfigs", "Checklists", "ChecklistItems", "Forms", "FormQuestions",
         "FormSubmissions", "ApprovalRequests", "ApprovalSteps", "WorkloadAllocations", "BoardTemplates", "ItemTemplates",

@@ -7,7 +7,9 @@ import {
   itemLifecycleCopyFixture,
 } from "../../verification/item-lifecycle-fixtures";
 import { BoardTrashSheet } from "./board-trash-sheet";
-import { DeleteItemDialog, MoveItemDialog } from "./item-lifecycle-dialogs";
+import { MoveBoardDialog } from "../item-actions/move-board-dialog";
+import { en as actionsCopy } from "../item-actions/item-actions.copy";
+import { DeleteItemDialog } from "./item-lifecycle-dialogs";
 
 const noop = () => undefined;
 const copy = itemLifecycleCopyFixture();
@@ -44,11 +46,15 @@ export const DeleteConfirm: Story = {
 /** Picks the board the item moves to. */
 export const MoveBoard: Story = {
   render: () => (
-    <MoveItemDialog
-      copy={copy}
+    <MoveBoardDialog
+      copy={actionsCopy}
       title={ITEM_LIFECYCLE_ITEM_TITLE}
+      itemKey="ERP-142"
       boards={ITEM_LIFECYCLE_BOARDS}
       open
+      preview={null}
+      status="idle"
+      onPick={noop}
       onCancel={noop}
       onConfirm={noop}
     />
@@ -59,11 +65,15 @@ export const MoveBoard: Story = {
 /** No other board accepts items: the dialog says so. */
 export const MoveNoBoards: Story = {
   render: () => (
-    <MoveItemDialog
-      copy={copy}
+    <MoveBoardDialog
+      copy={actionsCopy}
       title={ITEM_LIFECYCLE_ITEM_TITLE}
+      itemKey="ERP-142"
       boards={[]}
       open
+      preview={null}
+      status="idle"
+      onPick={noop}
       onCancel={noop}
       onConfirm={noop}
     />

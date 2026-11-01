@@ -10,7 +10,7 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
             .NotEmpty();
 
         RuleFor(x => x.Title)
-            .MaximumLength(255)
+            .MaximumLength(Board.MaxTitleLength)
             .When(x => x.Title is not null);
 
         RuleFor(x => x.Description)

@@ -6,5 +6,7 @@ public class CancelApprovalRequestCommandValidator : AbstractValidator<CancelApp
     {
         RuleFor(x => x.RequestId)
             .NotEmpty();
+        RuleFor(x => x.ExpectedVersion)
+            .GreaterThan(0);
     }
 }

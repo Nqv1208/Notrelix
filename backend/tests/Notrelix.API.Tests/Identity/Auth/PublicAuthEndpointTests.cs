@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Notrelix.API.Tests.Contracts;
 
 namespace Notrelix.API.Tests.Identity.Auth;
@@ -7,10 +8,12 @@ namespace Notrelix.API.Tests.Identity.Auth;
 public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
 {
     private readonly HttpClient _client;
+    private readonly HttpClient _noRedirectClient;
 
     public PublicAuthEndpointTests(NotrelixApiFactory factory)
     {
         _client = factory.CreateClient();
+        _noRedirectClient = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
     }
 
     // ── Register ─────────────────────────────────────────────
@@ -186,12 +189,13 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task OAuthStart_WithInvalidProvider_ReturnsBadRequest()
+    public async Task OAuthStart_WithInvalidProvider_RedirectsToSignInWithTheUnavailableCode()
     {
-        var response = await _client.GetAsync("/api/v1/auth/oauth/invalid/start");
+        var response = await _noRedirectClient.GetAsync("/api/v1/auth/oauth/invalid/start");
 
-        // Route resolved — handler returns 400 for unknown providers.
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // The browser navigates here, so a refusal is the sign-in page saying so, never raw JSON.
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.ToString().Should().Contain("identity.oauth.provider-unavailable");
     }
 
     // ── OAuth Callback ───────────────────────────────────────

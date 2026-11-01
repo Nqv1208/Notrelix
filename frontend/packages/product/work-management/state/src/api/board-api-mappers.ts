@@ -1,5 +1,8 @@
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
+  ComputedValue,
+  ActivityChange,
+  ActivityChangeApi,
   ActivityLogResponseApi,
   AttachmentDtoApi,
   Board,
@@ -11,15 +14,19 @@ import type {
   BoardDtoApi,
   BoardGroup,
   BoardMember,
+  BoardPaging,
   Card,
   CardActivity,
   CardDetail,
   CardDtoApi,
   CardFile,
+  CardCover,
+  CardCoverColor,
   CardLabelDtoApi,
   CardMember,
   CardMemberDtoApi,
   CardSummaryDtoApi,
+  CardRepeatRule,
   CardUpdate,
   Checklist,
   CommentDtoApi,
@@ -28,14 +35,24 @@ import type {
   FieldSemanticRole,
   FullBoardDtoApi,
   FullBoardResponse,
+  KanbanStatusLane,
+  LanePaging,
   ListDtoApi,
   WorkStatusCategory,
 } from "@notrelix/work-management-core";
-import { personInitials } from "@notrelix/work-management-core";
+import {
+  CARD_COVER_COLORS,
+  CARD_REMINDER_DEFAULT,
+  CARD_REPEAT_RULES,
+  checklistProgressOf,
+  personInitials,
+} from "@notrelix/work-management-core";
 import {
   findPriorityField,
   findStatusField,
+  groupCardsByStatus,
   inferStatusCategory,
+  NO_STATUS_LANE,
   isPriorityFieldName,
   normalizeName,
   orderByKey,
@@ -138,7 +155,11 @@ export function mapBoardDto(dto: BoardDtoApi): Board {
 
 export function mapFullBoardDto(
   dto: BoardReadDto,
-  context: { workspaceId: string },
+  context: {
+    workspaceId: string;
+    /** The filter and sort a paged read was made under. */
+    criteria?: { filter: string; sort: string };
+  },
 ): FullBoardResponse {
   const boardId = dto.id ?? "";
   const columns: AnyField[] = (dto.columns ?? []).filter(
@@ -159,22 +180,142 @@ export function mapFullBoardDto(
     description: dto.description ?? undefined,
     background: { type: "color", value: dto.background || "var(--background)" },
     visibility: normalizeVisibility(dto.visibility),
-    isArchived: false,
+    isArchived: dto.isArchived === true,
     linkedPageId: undefined,
     fieldDefinitions,
     members,
     createdAt: EPOCH_ISO,
+    ...(typeof dto.version === "number" ? { version: dto.version } : {}),
   };
 
   const lists: AnyGroup[] = (dto.lists ?? []).filter(
     (list) => list.isArchived !== true,
   );
+  const archivedGroupIds = (dto.lists ?? [])
+    .filter((list) => list.isArchived === true)
+    .map((list) => list.id ?? "");
+  const mappedGroups = orderByKey(lists, (list) => list.position).map(
+    (list, index) => mapListDto(list, index, board, fieldDefinitions),
+  );
+  const lanes = (dto as GeneratedFullBoardDto).lanes;
   return {
     board,
     fieldDefinitions,
-    groups: orderByKey(lists, (list) => list.position).map((list, index) =>
-      mapListDto(list, index, board, fieldDefinitions),
+    groups: mappedGroups,
+    ...(archivedGroupIds.length > 0 ? { archivedGroupIds } : {}),
+    ...(lanes
+      ? {
+          paging: mapBoardPaging(
+            dto as GeneratedFullBoardDto,
+            lanes,
+            groupCardsByStatus({ fieldDefinitions, groups: mappedGroups }),
+            context.criteria ?? { filter: "", sort: "" },
+          ),
+        }
+      : {}),
+  };
+}
+
+/** The sizes of a paged read, each lane's loaded cards counted as the lanes will group them. */
+function mapBoardPaging(
+  dto: GeneratedFullBoardDto,
+  lanes: NonNullable<GeneratedFullBoardDto["lanes"]>,
+  grouped: readonly KanbanStatusLane[],
+  criteria: { filter: string; sort: string },
+): BoardPaging {
+  const loadedBy = new Map(
+    grouped.map((lane) => [lane.optionId ?? NO_STATUS_LANE, lane.cards.length]),
+  );
+  const byLane: Record<string, LanePaging> = {};
+  for (const lane of lanes) {
+    const key = lane.optionId ?? NO_STATUS_LANE;
+    byLane[key] = {
+      total: lane.itemCount ?? 0,
+      filteredTotal: lane.filteredCount ?? 0,
+      nextCursor: lane.nextCursor ?? null,
+      baseLoaded: loadedBy.get(key) ?? 0,
+    };
+  }
+  return {
+    lanes: byLane,
+    totalItems: dto.totalItems ?? 0,
+    filteredTotal: dto.filteredTotal ?? 0,
+    criteria,
+  };
+}
+
+/** One page of a lane, its cards each with the group they sit in, and the lane's new sizes. */
+export interface LanePage {
+  readonly cards: readonly { readonly groupId: string; readonly card: Card }[];
+  readonly total: number;
+  readonly filteredTotal: number;
+  readonly nextCursor: string | null;
+}
+
+export function mapLanePageDto(
+  dto: OperationResponse<"WorkManagement.BoardItems.ListLane">,
+  context: { board: Board; fieldDefinitions: FieldDefinition[] },
+): LanePage {
+  return {
+    cards: (dto.items ?? []).flatMap((entry, index) =>
+      entry.item && entry.groupId
+        ? [
+            {
+              groupId: entry.groupId,
+              card: mapCardSummaryDto(
+                entry.item as AnyItemSummary,
+                index,
+                entry.groupId,
+                context.board,
+                context.fieldDefinitions,
+              ),
+            },
+          ]
+        : [],
     ),
+    total: dto.itemCount ?? 0,
+    filteredTotal: dto.filteredCount ?? 0,
+    nextCursor: dto.nextCursor ?? null,
+  };
+}
+
+/** The cover, repeat rule and reminder of an item, as the item reads carry them (all optional). */
+function readCardSettings(
+  dto: unknown,
+): Pick<Card, "cover" | "repeatRule" | "reminderOffsetMinutes"> {
+  const raw = dto as {
+    coverColor?: string | null;
+    coverAttachmentId?: string | null;
+    coverStyle?: string | null;
+    repeatRule?: string | null;
+    reminderOffsetMinutes?: number | null;
+  };
+  const color = (CARD_COVER_COLORS as readonly string[]).includes(
+    raw.coverColor ?? "",
+  )
+    ? (raw.coverColor as CardCoverColor)
+    : null;
+  const attachmentId = raw.coverAttachmentId ?? null;
+  const cover: CardCover | null =
+    color || attachmentId
+      ? {
+          color,
+          attachmentId: color ? null : attachmentId,
+          style: raw.coverStyle === "full" ? "full" : "strip",
+        }
+      : null;
+  const repeatRule = (CARD_REPEAT_RULES as readonly string[]).includes(
+    raw.repeatRule ?? "",
+  )
+    ? (raw.repeatRule as CardRepeatRule)
+    : null;
+  return {
+    cover,
+    repeatRule,
+    reminderOffsetMinutes:
+      typeof raw.reminderOffsetMinutes === "number"
+        ? raw.reminderOffsetMinutes
+        : CARD_REMINDER_DEFAULT,
   };
 }
 
@@ -217,7 +358,11 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     members,
     labels: (dto.labels ?? []).map(mapLabel),
     checklists,
-    fieldValues: legacy ? parseFieldValues(legacy.fieldValues) : {},
+    checklistProgress: checklistProgressOf(checklists),
+    fieldValues: legacy
+      ? parseFieldValues(legacy.fieldValues)
+      : generatedFieldValues(dto),
+    computedValues: generatedComputedValues(dto),
     _count: {
       comments: dto.commentCount ?? 0,
       attachments: dto.attachmentCount ?? 0,
@@ -234,6 +379,10 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     statusOptionId: status || null,
     dueAt: dueDate ?? null,
     childProgress: values.childProgress,
+    ...readCardSettings(dto),
+    updatedBy: (dto as { updatedBy?: string | null }).updatedBy ?? null,
+    updatedByName:
+      (dto as { updatedByName?: string | null }).updatedByName ?? null,
     boardTitle: "",
     watchers: members,
     isWatched: false,
@@ -323,6 +472,8 @@ export function mapCommentDtoToCardUpdate(
     attachmentIds: dto.attachmentIds ?? [],
     createdAt: dto.createdAt,
     updatedAt: dto.isEdited ? dto.createdAt : undefined,
+    parentId: dto.parentCommentId ?? undefined,
+    reactions: dto.reactions ?? [],
   };
 }
 
@@ -379,8 +530,15 @@ export function mapActivityResponse(
     ...(item.detail ? { detail: item.detail } : {}),
     ...(item.compact ? { compact: item.compact } : {}),
     ...(item.type ? { code: item.type } : {}),
-    ...(item.change ? { change: item.change } : {}),
+    ...(item.change ? { change: presentChange(item.change) } : {}),
   }));
+}
+
+/** Drops the sides the API sends as null, so the client reads them as absent. */
+function presentChange(change: ActivityChangeApi): ActivityChange {
+  return Object.fromEntries(
+    Object.entries(change).filter(([, value]) => value != null),
+  ) as ActivityChange;
 }
 
 // ─── Element mappers ─────────────────────────────────────────────────────────
@@ -419,7 +577,9 @@ function mapCardSummaryDto(
   const values = readItemValues(dto);
   const statusField = findStatusField(fields);
   const priorityField = findPriorityField(fields);
-  const customValues = legacy ? parseFieldValues(legacy.fieldValues) : {};
+  const customValues = legacy
+    ? parseFieldValues(legacy.fieldValues)
+    : generatedFieldValues(dto);
   const title = itemTitle(dto);
 
   // Legacy reads carry a status/priority word; generated reads carry option ids.
@@ -502,7 +662,9 @@ function mapCardSummaryDto(
         return [field.id, priorityOptionId ?? undefined];
       const semantic = getSemanticField(field);
       if (semantic === "title") return [field.id, title];
-      if (semantic === "person") return [field.id, personUserIds];
+      // Only the item's own Assignee field mirrors its members; a custom Person field holds its own value.
+      if (semantic === "person" && field.id === personField?.id)
+        return [field.id, personUserIds];
       if (semantic === "due_date") return [field.id, dueDate ?? undefined];
       if (semantic === "linked_page") return [field.id, undefined];
       if (semantic === "progress") return [field.id, progress];
@@ -530,11 +692,19 @@ function mapCardSummaryDto(
     labels: (dto.labels ?? []).map(mapLabel),
     checklists: [],
     fieldValues: { ...customValues, ...semanticValues },
+    computedValues: generatedComputedValues(dto),
     _count: {
       comments: dto.commentCount ?? 0,
       attachments: dto.attachmentCount ?? 0,
       checklistItems: checklistTotal,
     },
+    checklistProgress:
+      checklistTotal > 0
+        ? {
+            done: Math.min(checklistProgress, checklistTotal),
+            total: checklistTotal,
+          }
+        : null,
     createdAt:
       (legacy ? undefined : (dto as GeneratedItemSummary).createdAt) ??
       EPOCH_ISO,
@@ -548,6 +718,16 @@ function mapCardSummaryDto(
     statusCategory,
     dueAt: dueDate,
     childProgress: values.childProgress,
+    openBlockerCount: legacy
+      ? 0
+      : ((dto as GeneratedItemSummary).openBlockerCount ?? 0),
+    ...readCardSettings(dto),
+    updatedBy: legacy
+      ? null
+      : ((dto as GeneratedItemSummary).updatedBy ?? null),
+    updatedByName: legacy
+      ? null
+      : ((dto as GeneratedItemSummary).updatedByName ?? null),
   };
 }
 
@@ -620,6 +800,13 @@ function assignSemanticRoles(fields: FieldDefinition[]): FieldDefinition[] {
   });
 }
 
+/** The checklists of one item as the list endpoint or the item read carries them. */
+export function mapChecklists(
+  dtos: readonly (CardDtoApi["checklists"][number] | GeneratedChecklist)[],
+): Checklist[] {
+  return dtos.map(mapChecklist);
+}
+
 function mapChecklist(
   checklist: CardDtoApi["checklists"][number] | GeneratedChecklist,
   index: number,
@@ -629,6 +816,10 @@ function mapChecklist(
     title: checklist.title ?? "",
     position:
       typeof checklist.position === "number" ? checklist.position : index + 1,
+    // The checklist is the consistency boundary: every write names its version.
+    ...("version" in checklist && typeof checklist.version === "number"
+      ? { version: checklist.version }
+      : {}),
     items: (checklist.items ?? []).map((item, itemIndex) => ({
       id: item.id ?? "",
       title: item.title ?? "",
@@ -640,6 +831,10 @@ function mapChecklist(
             ),
       position:
         typeof item.position === "number" ? item.position : itemIndex + 1,
+      ...("assigneeUserId" in item && item.assigneeUserId
+        ? { assigneeId: item.assigneeUserId }
+        : {}),
+      ...("dueAt" in item && item.dueAt ? { dueAt: item.dueAt } : {}),
     })),
   };
 }
@@ -707,6 +902,42 @@ function normalizeCategory(value: string): WorkStatusCategory | null {
     return normalized;
   return null;
 }
+/** The stored custom values the board and item reads carry, by field id. */
+export function generatedFieldValues(dto: unknown): Record<string, unknown> {
+  const value = (dto as { fieldValues?: unknown }).fieldValues;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
+/**
+ * The Formula and Rollup results of a read, by field id. A result of an
+ * unknown shape is dropped (the cell then shows nothing), never guessed.
+ */
+export function generatedComputedValues(
+  dto: unknown,
+): Record<string, ComputedValue> {
+  const raw = (dto as { computedValues?: unknown }).computedValues;
+  const result: Record<string, ComputedValue> = {};
+  if (!raw || typeof raw !== "object") return result;
+  for (const [fieldId, entry] of Object.entries(raw)) {
+    const item = entry as {
+      state?: string;
+      value?: unknown;
+      errorCode?: string | null;
+    } | null;
+    if (item?.state === "ok")
+      result[fieldId] = { state: "ok", value: item.value };
+    else if (item?.state === "empty") result[fieldId] = { state: "empty" };
+    else if (item?.state === "error")
+      result[fieldId] = {
+        state: "error",
+        errorCode: item.errorCode ?? "unknown",
+      };
+  }
+  return result;
+}
+
 function parseFieldValues(
   value: CardSummaryDtoApi["fieldValues"] | CardDtoApi["fieldValues"],
 ): Record<string, unknown> {
@@ -843,7 +1074,9 @@ function normalizeFieldType(value: string): FieldDefinition["fieldType"] {
   // Backend field types: a Status field is option-backed like a Select.
   if (normalized === "status") return "select";
   if (normalized === "multiselect") return "multi_select";
-  if (normalized === "longtext") return "text";
+  if (normalized === "longtext") return "long_text";
+  if (normalized === "link" || normalized === "rollup" || normalized === "vote")
+    return normalized;
   if (
     normalized === "text" ||
     normalized === "number" ||

@@ -35,7 +35,7 @@ internal static class BoardListProjection
             .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
 
         var groupCounts = await context.BoardGroups.AsNoTracking()
-            .Where(l => boardIds.Contains(l.BoardId) && l.DeletedAt == null)
+            .Where(l => boardIds.Contains(l.BoardId) && l.DeletedAt == null && !l.IsArchived)
             .GroupBy(l => l.BoardId)
             .Select(g => new { BoardId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
@@ -45,7 +45,7 @@ internal static class BoardListProjection
             b.Background, b.Visibility.ToString(), b.IsArchived,
             memberCounts.GetValueOrDefault(b.Id),
             groupCounts.GetValueOrDefault(b.Id),
-            b.CreatedAt.DateTime,
+            b.CreatedAt.UtcDateTime,
             b.Version,
             b.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
         )).ToList();

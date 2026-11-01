@@ -12,6 +12,8 @@ export * from "./types/field-types";
 export * from "./types/group-types";
 export * from "./types/item-types";
 export * from "./types/label-types";
+export * from "./types/saved-filter-types";
+export * from "./types/form-types";
 export * from "./types/shared-types";
 export * from "./types/board-access-types";
 export * from "./types/board-settings-types";
@@ -23,11 +25,18 @@ export * from "./schemas";
 
 // Utils
 export * from "./utils/status-lanes";
+export * from "./utils/bulk";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
 export * from "./utils/table-projection";
+export * from "./utils/table-fields";
+export * from "./utils/table-column-preference";
 export * from "./utils/person-initials";
 export * from "./utils/item-file-rules";
+export * from "./utils/move-preview";
+export * from "./utils/checklist-ops";
+export * from "./field-types";
 
 // Kanban types
 export * from "./types/kanban-types";
+export * from "./filters";

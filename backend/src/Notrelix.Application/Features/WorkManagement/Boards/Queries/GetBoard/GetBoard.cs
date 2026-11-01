@@ -32,7 +32,7 @@ public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardD
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
         var memberCount = await _context.BoardMembers.CountAsync(m => m.BoardId == board.Id, ct);
-        var listCount = await _context.BoardGroups.CountAsync(l => l.BoardId == board.Id && l.DeletedAt == null, ct);
+        var listCount = await _context.BoardGroups.CountAsync(l => l.BoardId == board.Id && l.DeletedAt == null && !l.IsArchived, ct);
 
         // A board reachable through an explicit grant may sit in a Space the
         // caller cannot see; that Space's id is not disclosed (GOV-029).
@@ -46,7 +46,7 @@ public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardD
         return Result<BoardDto>.Success(new BoardDto(
             board.Id, board.WorkspaceId, board.Title, board.Description,
             board.Background, board.Visibility.ToString(), board.IsArchived,
-            memberCount, listCount, board.CreatedAt.DateTime,
+            memberCount, listCount, board.CreatedAt.UtcDateTime,
             board.Version,
             spaceId
         ));

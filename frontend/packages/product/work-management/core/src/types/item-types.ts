@@ -1,4 +1,5 @@
 import type { Checklist, ChecklistDtoApi } from "./checklist-types";
+import type { ComputedValue } from "./field-types";
 import type { CardLabel } from "./label-types";
 
 export interface CardMember {
@@ -8,6 +9,50 @@ export interface CardMember {
   initials: string;
   avatarUrl?: string;
   color: string;
+}
+
+/** The ten cover colours (design tokens `--cover-<id>`). */
+export const CARD_COVER_COLORS = [
+  "blue",
+  "teal",
+  "violet",
+  "amber",
+  "rose",
+  "gray",
+  "orange",
+  "green",
+  "indigo",
+  "red",
+] as const;
+export type CardCoverColor = (typeof CARD_COVER_COLORS)[number];
+export type CardCoverStyle = "strip" | "full";
+
+/** An item cover: a colour or an image attachment of the item, as a top strip or over the whole card. */
+export interface CardCover {
+  color: CardCoverColor | null;
+  attachmentId: string | null;
+  style: CardCoverStyle;
+}
+
+export const CARD_REPEAT_RULES = [
+  "daily",
+  "weekdays",
+  "weekly",
+  "biweekly",
+  "monthly",
+] as const;
+export type CardRepeatRule = (typeof CARD_REPEAT_RULES)[number];
+
+/** Minutes before the due time: -1 off, 0 at the due time, 1440 the default. */
+export const CARD_REMINDER_OFFSETS = [
+  -1, 0, 15, 60, 1440, 2880, 10080,
+] as const;
+export const CARD_REMINDER_DEFAULT = 1440;
+
+/** The value of a Vote field on an item: how many voted and whether the viewer did. */
+export interface CardVoteValue {
+  count: number;
+  voted: boolean;
 }
 
 export interface Card {
@@ -30,6 +75,8 @@ export interface Card {
   labels: CardLabel[];
   checklists: Checklist[];
   fieldValues: Record<string, unknown>;
+  /** Formula and Rollup results by field id; never written back. */
+  computedValues?: Record<string, ComputedValue>;
   _count: { comments: number; attachments: number; checklistItems: number };
   createdAt: string;
   updatedAt?: string;
@@ -38,6 +85,10 @@ export interface Card {
    * `expectedVersion`. Absent on reads that do not carry it.
    */
   version?: number | null;
+  /** The user who last changed the item; names who a refused competing write lost to. Absent on reads that do not carry it. */
+  updatedBy?: string | null;
+  /** The display name of `updatedBy`, resolved by the server (the user may not be a member of the board). */
+  updatedByName?: string | null;
   /** Board item key such as "ERP-142", or a plain number on a board without a prefix. */
   itemKey?: string | null;
   /** Parent item id when this item is a child item; child items are not top-level cards. */
@@ -50,8 +101,18 @@ export interface Card {
   statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
   /** Due date and time as an ISO 8601 string. */
   dueAt?: string | null;
+  /** Checklist items done over all items; null when the item has no checklist item. */
+  checklistProgress?: { done: number; total: number } | null;
+  /** Live, not-completed items that block this one; the card shows "Bị chặn" when above 0. */
+  openBlockerCount?: number;
   /** Child item progress; a card shows it only when `total > 0`. */
   childProgress?: { done: number; total: number } | null;
+  /** The item cover; null or absent when it has none. */
+  cover?: CardCover | null;
+  /** How the item repeats; null or absent when it does not. */
+  repeatRule?: CardRepeatRule | null;
+  /** Minutes before the due time for the reminder (default 1440, -1 off). */
+  reminderOffsetMinutes?: number;
 }
 
 export type CardDetailTab =
@@ -74,6 +135,20 @@ export interface CardUpdate {
   attachmentIds: string[];
   createdAt: string;
   updatedAt?: string;
+  /** The top-level comment this one answers; replies are one level deep. */
+  parentId?: string;
+  /** One entry per emoji anyone chose, with who and whether the viewer did. */
+  reactions?: CardReaction[];
+}
+
+/** The fixed palette a person may react with. */
+export const REACTION_PALETTE = ["👍", "❤️", "😄", "🎉", "👀", "🚀"] as const;
+
+export interface CardReaction {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
+  users: { userId: string; name: string }[];
 }
 
 /**
@@ -121,7 +196,14 @@ export interface ActivityChange {
   readonly personId?: string;
   readonly personName?: string;
   readonly itemKey?: string;
+  /** The Automation rule that made the change; absent for a person's own change. */
+  readonly ruleName?: string;
 }
+
+/** The API's change: a side with no value (a first status, a label's "from") arrives as null. */
+export type ActivityChangeApi = {
+  readonly [K in keyof ActivityChange]?: string | null;
+};
 
 export interface CardActivity {
   id: string;
@@ -241,6 +323,12 @@ export interface CommentDtoApi {
   createdAt: string;
   /** Files that came with the comment (gap `CTR-GAP-WM-ITEM-DETAIL`). */
   attachmentIds?: string[];
+  reactions?: {
+    emoji: string;
+    count: number;
+    reactedByMe: boolean;
+    users: { userId: string; name: string }[];
+  }[];
 }
 
 export interface ActivityLogDtoApi {
@@ -262,7 +350,7 @@ export interface ActivityLogDtoApi {
   compact?: ActivityCompact | null;
   /** The stable type of the fact and its language-neutral detail (`GET /board-items/{id}/activity`). */
   type?: string | null;
-  change?: ActivityChange | null;
+  change?: ActivityChangeApi | null;
   actorAvatarUrl?: string | null;
 }
 

@@ -27,6 +27,7 @@
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
 
+import { projectComputedValues } from "../../state/mock-computed-values";
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
   BoardDtoApi,
@@ -42,6 +43,10 @@ import {
   validationError,
 } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
+import {
+  projectCardSettings,
+  projectVoteValues,
+} from "./item-capabilities.handlers";
 import { savedViewTypeName } from "../../state/mock-board-saved-views";
 import type { MockBoardRecord, MockCardRecord } from "../../state/records";
 import {
@@ -117,11 +122,15 @@ const FIELD_TYPE_NAMES: Record<string, string> = {
   status: "Status",
   select: "Select",
   multi_select: "MultiSelect",
+  long_text: "LongText",
+  link: "Link",
+  formula: "Formula",
   user: "Person",
   person: "Person",
   date: "Date",
   number: "Number",
   checkbox: "Checkbox",
+  vote: "Vote",
   text: "Text",
 };
 
@@ -238,13 +247,33 @@ function projectItemSummary(
     updatedAt: card.updatedAt,
     version: card.version ?? 1,
     ...projectItemReadValues(card, store),
+    // The stored custom values and the Formula results, evaluated on each read.
+    ...projectCardSettings(store, card.id),
+    fieldValues: {
+      ...store.getFieldValues(card.id),
+      ...projectVoteValues(store, card.id, card.boardId),
+    },
+    computedValues: projectComputedValues(
+      store.getColumns(card.boardId),
+      store.getFieldValues(card.id),
+    ),
   };
 }
 
 function projectField(
   column: ReturnType<MockStore["getColumns"]>[number],
   index: number,
+  itemIds: readonly string[],
+  store: MockStore,
 ): FullBoardField {
+  // Live Items holding each option, as the backend counts them.
+  const holders = (optionId: string) =>
+    itemIds.filter((id) => {
+      const value = store.getFieldValues(id)[column.id];
+      return Array.isArray(value)
+        ? value.includes(optionId)
+        : value === optionId;
+    }).length;
   const fieldType =
     FIELD_TYPE_NAMES[column.fieldType.trim().toLowerCase()] ?? "Text";
   return {
@@ -258,7 +287,9 @@ function projectField(
     isSystem: fieldType === "Status",
     isDeleted: false,
     version: column.version ?? 1,
-    ...(fieldType === "Status" || fieldType === "Select"
+    ...(fieldType === "Status" ||
+    fieldType === "Select" ||
+    fieldType === "MultiSelect"
       ? {
           options: (column.options ?? []).map((option) => ({
             id: option.id,
@@ -266,6 +297,7 @@ function projectField(
             color: option.color,
             position: option.position,
             category: option.category ?? null,
+            itemCount: holders(option.id),
           })),
         }
       : {}),
@@ -277,6 +309,11 @@ function projectFullBoard(
   board: MockBoardRecord,
   store: MockStore,
 ): GeneratedFullBoardDto {
+  const itemIds = store
+    .getLists(board.id)
+    .flatMap((list) => store.getCards(list.id))
+    .filter((card) => !card.isArchived)
+    .map((card) => card.id);
   const titleField: FullBoardField = {
     // Like the backend: a synthetic, read-only title column with the Board id.
     id: board.id,
@@ -297,7 +334,12 @@ function projectFullBoard(
     description: board.description ?? null,
     background: JSON.stringify(board.background),
     visibility: board.visibility === "private" ? "Private" : "Workspace",
-    columns: [titleField, ...store.getColumns(board.id).map(projectField)],
+    columns: [
+      titleField,
+      ...store
+        .getColumns(board.id)
+        .map((column, index) => projectField(column, index, itemIds, store)),
+    ],
     lists: store.getLists(board.id).map((list, index) => ({
       id: list.id,
       title: list.title,
@@ -395,6 +437,15 @@ export function canEditBoard(boardId: string, store: MockStore): boolean {
   const level = projectBoardAccess(board, store)?.myLevel as
     AccessLevel | undefined;
   return level !== undefined && LEVEL_RANK[level] >= LEVEL_RANK.editor;
+}
+
+/** Whether the caller may comment and react on a board's items (a Commenter or more). */
+export function canCommentOnBoard(boardId: string, store: MockStore): boolean {
+  const board = store.getBoard(boardId);
+  if (!board) return false;
+  const level = projectBoardAccess(board, store)?.myLevel as
+    AccessLevel | undefined;
+  return level !== undefined && LEVEL_RANK[level] >= LEVEL_RANK.commenter;
 }
 
 /** Whether the caller manages a board: only a manager opens its settings. */
@@ -585,7 +636,83 @@ export const boardsOperations = [
         memberCount: 1,
         listCount: store.getLists(b.id).length,
         createdAt: b.createdAt,
+        version: b.version ?? 1,
+        itemKeyPrefix: b.itemKeyPrefix ?? null,
+      } as BoardDtoApi);
+    },
+  }),
+
+  // ─── PATCH /boards/:id (board settings: name, description, colour, key) ───
+
+  defineMockOperation<
+    { id: string },
+    {
+      expectedVersion?: number;
+      title?: string | null;
+      description?: string | null;
+      background?: string | null;
+      itemKeyPrefix?: string | null;
+    },
+    void
+  >({
+    id: "boards.rename",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Rename" },
+    method: "PATCH",
+    route: "/boards/:id",
+    async handle({ params, body, store }) {
+      const board = store.getBoard(params.id);
+      if (!board) return notFound("Board not found");
+      if (!canManageBoard(board.id, store)) return forbidden();
+      if (
+        body?.expectedVersion !== undefined &&
+        body.expectedVersion !== (board.version ?? 1)
+      )
+        return preconditionFailed();
+      const title = body?.title?.trim();
+      if (title === "") return validationError({ title: ["Required."] });
+      store.patchBoard(board.id, {
+        ...(title ? { title } : {}),
+        ...(body?.description != null ? { description: body.description } : {}),
+        ...(body?.background
+          ? { background: { type: "color" as const, value: body.background } }
+          : {}),
+        ...(body?.itemKeyPrefix
+          ? { itemKeyPrefix: body.itemKeyPrefix.toUpperCase() }
+          : {}),
       });
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /boards/:id/archive ─────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "boards.archive",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Archive" },
+    method: "POST",
+    route: "/boards/:id/archive",
+    async handle({ params, store }) {
+      const board = store.getBoard(params.id);
+      if (!board) return notFound("Board not found");
+      if (!canManageBoard(board.id, store)) return forbidden();
+      store.patchBoard(board.id, { isArchived: true });
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── DELETE /boards/:id ───────────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, void>({
+    id: "boards.delete",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Delete" },
+    method: "DELETE",
+    route: "/boards/:id",
+    async handle({ params, store }) {
+      const board = store.getBoard(params.id);
+      if (!board) return notFound("Board not found");
+      if (!canManageBoard(board.id, store)) return forbidden();
+      store.deleteBoard(board.id);
+      return ok<void>(undefined);
     },
   }),
 
@@ -813,16 +940,19 @@ export const boardsOperations = [
     method: "POST",
     route: "/boards/:boardId/fields",
     async handle({ params, body, store }) {
+      // The producer's request names the type `type`, with `settingsJson`.
       const data = body as {
         name: string;
-        fieldType: string;
+        fieldType?: string;
+        type?: string;
         settings?: string;
+        settingsJson?: string;
         position?: number;
       };
       const col = store.createColumn(params.boardId, {
         name: data.name,
-        fieldType: data.fieldType,
-        settings: data.settings,
+        fieldType: data.type ?? data.fieldType ?? "text",
+        settings: data.settingsJson ?? data.settings,
         position: data.position,
       });
       return created<string>(col.id);

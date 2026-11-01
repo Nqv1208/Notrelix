@@ -34,7 +34,8 @@ public sealed class PostgresResourceAccessEntriesReader : IResourceAccessEntries
             reader.IsDBNull(4) ? null : reader.GetString(4),
             reader.GetGuid(5),
             reader.GetFieldValue<DateTimeOffset>(6),
-            reader.IsDBNull(7) ? null : reader.GetInt32(7))), cancellationToken);
+            reader.IsDBNull(7) ? null : reader.GetInt32(7),
+            reader.GetInt64(8))), cancellationToken);
 
         var reach = new List<AccessReachEntry>();
         await ReadAsync(ResourceAccessEntriesQuery.ReachSql, request, reader => reach.Add(new AccessReachEntry(
@@ -61,6 +62,13 @@ public sealed class PostgresResourceAccessEntriesReader : IResourceAccessEntries
         await ReadAsync(ResourceAccessEntriesQuery.HasReadRulesSql, request, reader => hasReadRules = reader.GetBoolean(0), cancellationToken);
 
         return new ResourceAccessEntries(grants, reach, spaceName, hasReadRules, spaceRoles);
+    }
+
+    public async Task<IReadOnlyList<Guid>> ReadWorkspaceAdminsAsync(ResourceAccessEntriesRequest request, CancellationToken cancellationToken)
+    {
+        var admins = new List<Guid>();
+        await ReadAsync(ResourceAccessEntriesQuery.WorkspaceAdminsSql, request, reader => admins.Add(reader.GetGuid(0)), cancellationToken);
+        return admins;
     }
 
     private async Task ReadAsync(

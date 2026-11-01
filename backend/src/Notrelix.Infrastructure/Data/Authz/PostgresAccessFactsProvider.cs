@@ -107,6 +107,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
             Add(command, "board_id", boardId, NpgsqlDbType.Uuid);
             Add(command, "board_child", boardChild.IsBoardChild, NpgsqlDbType.Boolean);
+            Add(command, "board_deleted_ok", resource?.Kind.Value == BoardKind && request is IBoardReachesDeletedRequest, NpgsqlDbType.Boolean);
             Add(command, "page_space_id",
                 page is not null && page.WorkspaceId == context.WorkspaceId ? page.SpaceId : null,
                 NpgsqlDbType.Uuid);
@@ -142,6 +143,9 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 ParentBoardId = boardChild.IsBoardChild ? boardChild.BoardId : null,
                 IsBoardChild = boardChild.IsBoardChild,
                 TargetBoardMemberRole = NullableString(reader, 18),
+                BoardArchived = reader.GetBoolean(19),
+                BoardDeleted = reader.GetBoolean(20),
+                ChildInArchivedGroup = boardChild.InArchivedGroup,
             };
         }
 

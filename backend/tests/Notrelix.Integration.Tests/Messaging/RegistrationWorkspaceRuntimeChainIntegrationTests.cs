@@ -637,6 +637,21 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
             CancellationToken ct) =>
             Throw(accountId, workspaceId, userId, ct);
 
+        public Task RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            Guid accountId,
+            Guid workspaceId,
+            Guid userId,
+            DateTimeOffset now,
+            CancellationToken ct) =>
+            Throw(accountId, workspaceId, userId, ct);
+
+        public Task ClearCustomRoleAssignmentsAsync(
+            Guid accountId,
+            Guid workspaceId,
+            Guid userId,
+            CancellationToken ct) =>
+            Throw(accountId, workspaceId, userId, ct);
+
         private Task Throw(
             Guid accountId,
             Guid workspaceId,

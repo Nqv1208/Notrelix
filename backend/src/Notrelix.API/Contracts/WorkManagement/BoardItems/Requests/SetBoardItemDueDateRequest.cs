@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 
-public record SetBoardItemDueDateRequest(DateTime? DueDate, DateTime? StartDate);
+public record SetBoardItemDueDateRequest(DateTime? DueDate, DateTime? StartDate, long ExpectedVersion);

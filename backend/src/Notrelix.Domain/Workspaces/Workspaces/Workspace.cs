@@ -72,6 +72,54 @@ public sealed class Workspace :
         RaiseDomainEvent(new WorkspaceRenamedDomainEvent(AccountId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// One profile edit: the name and the description the caller sent (null means unchanged). Both are
+    /// validated before either is applied, the version advances once, and a value that does not change
+    /// changes nothing, so an edit that changes nothing bumps no version and raises no event.
+    /// </summary>
+    public void UpdateProfile(string? newName, string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (Status == WorkspaceStatus.Archived)
+        {
+            if (newName is not null)
+                throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotRenameArchived, "Cannot rename an archived workspace.");
+            if (newDescription is not null)
+                throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateDescriptionArchived, "Cannot update description of an archived workspace.");
+        }
+
+        string? name = null;
+        if (newName is not null)
+        {
+            Guard.NotNullOrWhiteSpace(newName);
+            Guard.MaxLength(newName, 160);
+            name = newName.Trim();
+        }
+
+        var describes = newDescription is not null;
+        var description = string.IsNullOrWhiteSpace(newDescription) ? null : newDescription.Trim();
+        if (description is not null)
+            Guard.MaxLength(description, 1024);
+
+        var renamed = name is not null && name != Name;
+        var described = describes && description != Description;
+        if (!renamed && !described) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldName = Name;
+        var oldDescription = Description;
+        if (renamed) Name = name!;
+        if (described) Description = description;
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        if (renamed)
+            RaiseDomainEvent(new WorkspaceRenamedDomainEvent(AccountId, Id, oldName, Name, updatedBy, updatedAt));
+        if (described)
+            RaiseDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(AccountId, Id, oldDescription, Description, updatedBy, updatedAt));
+    }
+
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();

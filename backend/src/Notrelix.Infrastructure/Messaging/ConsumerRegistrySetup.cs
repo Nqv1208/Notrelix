@@ -226,6 +226,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ItemDatesChangedActivityConsumer",
+                EventName = "work-management.board-item-dates-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-dates-changed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item's dates changing",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ItemMovedToBoardActivityConsumer",
                 EventName = "work-management.board-item-moved-to-board",
                 EventVersion = 1,
@@ -251,7 +261,87 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-activity-item-unassigned-v1",
                 BoundedContext = "Collaboration",
-                Description = "Records the history row for a person being removed from an Item",
+                Description = "Records the history row for a person being taken off an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemLabelAddedActivityConsumer",
+                EventName = "work-management.board-item-label-added",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-label-added-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a label being put on an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemLabelRemovedActivityConsumer",
+                EventName = "work-management.board-item-label-removed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-label-removed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a label being taken off an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemChecklistAddedActivityConsumer",
+                EventName = "work-management.board-item-checklist-added",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-checklist-added-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a checklist being added to an Item",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemChecklistRenamedActivityConsumer",
+                EventName = "work-management.board-item-checklist-renamed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-checklist-renamed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a checklist being renamed",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemChecklistDeletedActivityConsumer",
+                EventName = "work-management.board-item-checklist-deleted",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-checklist-deleted-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a checklist being deleted",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemChecklistItemAddedActivityConsumer",
+                EventName = "work-management.board-item-checklist-item-added",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-checklist-item-added-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a to-do being added to a checklist",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemChecklistItemCompletedActivityConsumer",
+                EventName = "work-management.board-item-checklist-item-completion-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-checklist-item-completion-changed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a to-do being ticked or unticked",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ItemChecklistItemRemovedActivityConsumer",
+                EventName = "work-management.board-item-checklist-item-removed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-checklist-item-removed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for a to-do being removed from a checklist",
                 Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition

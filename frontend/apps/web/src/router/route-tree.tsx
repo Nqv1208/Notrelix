@@ -24,12 +24,16 @@ import {
   inboxRoute,
   reportsRoute,
   libraryRoute,
+  archivedBoardsRoute,
   spaceRoute,
 } from "./routes/workspace.routes";
 import {
   boardRoute,
   boardItemRoute,
   boardSettingsRoute,
+  boardFormRoute,
+  boardFormBuilderRoute,
+  boardFormInboxRoute,
 } from "./routes/work-management.routes";
 import { docRoute, docsIndexRoute } from "./routes/documents.routes";
 import { billingRoute } from "./routes/billing.routes";
@@ -61,6 +65,9 @@ export const routeTree = rootRoute.addChildren([
     boardRoute,
     boardItemRoute,
     boardSettingsRoute,
+    boardFormRoute,
+    boardFormBuilderRoute,
+    boardFormInboxRoute,
     docRoute,
     docsIndexRoute,
     dashboardRoute,
@@ -73,6 +80,7 @@ export const routeTree = rootRoute.addChildren([
     inboxRoute,
     reportsRoute,
     libraryRoute,
+    archivedBoardsRoute,
     spaceRoute,
     billingRoute,
     integrationsRoute,

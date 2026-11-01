@@ -1,5 +1,6 @@
 import type {
   BoardGroup,
+  BoardPaging,
   Card,
   FieldDefinition,
   FieldOption,
@@ -64,6 +65,39 @@ export function findPriorityField(
 }
 
 /**
+ * The item read keeps Status, Priority and the name in their own columns, not in `fieldValues`; this
+ * puts them back under the board's fields so an editor or a chip reads one place.
+ */
+export function withReservedFieldValues<T extends Card>(
+  card: T,
+  fields: readonly FieldDefinition[],
+): T {
+  const statusField = findStatusField(fields);
+  const priorityField = findPriorityField(fields);
+  const titleField = fields.find(
+    (field) =>
+      field.fieldType === "text" &&
+      ["title", "name", "task"].includes(field.name.trim().toLowerCase()),
+  );
+  const fieldValues = { ...card.fieldValues };
+  // The item's name is the Title value: a rename leaves the stored field value behind.
+  if (titleField) fieldValues[titleField.id] = card.title;
+  if (
+    statusField &&
+    card.statusOptionId &&
+    fieldValues[statusField.id] === undefined
+  )
+    fieldValues[statusField.id] = card.statusOptionId;
+  if (
+    priorityField &&
+    card.priorityOptionId &&
+    fieldValues[priorityField.id] === undefined
+  )
+    fieldValues[priorityField.id] = card.priorityOptionId;
+  return { ...card, fieldValues };
+}
+
+/**
  * Maps a priority option's name to the card's priority. Vietnamese and English
  * names, case- and diacritics-insensitive; anything else has no priority.
  */
@@ -82,6 +116,8 @@ export function priorityFromOptionName(
 export function groupCardsByStatus(board: {
   readonly fieldDefinitions: readonly FieldDefinition[];
   readonly groups: readonly BoardGroup[];
+  /** A paged read: lane sizes come from the server, moved by what the cache gained or lost since. */
+  readonly paging?: BoardPaging | undefined;
 }): KanbanStatusLane[] {
   const statusField = findStatusField(board.fieldDefinitions);
   const options = statusField ? orderOptions(statusField.options) : [];
@@ -109,20 +145,45 @@ export function groupCardsByStatus(board: {
       category: option.category ?? inferStatusCategory(option.label, index),
       color: option.color || null,
       cards,
-      total: cards.length,
+      ...laneSizes(board.paging, option.id, cards.length),
     };
   });
-  if (withoutStatus.length > 0) {
+  if (
+    withoutStatus.length > 0 ||
+    (board.paging?.lanes[NO_STATUS_LANE]?.total ?? 0) > 0
+  ) {
     lanes.push({
       optionId: null,
       name: "",
       category: null,
       color: null,
       cards: withoutStatus,
-      total: withoutStatus.length,
+      ...laneSizes(board.paging, NO_STATUS_LANE, withoutStatus.length),
     });
   }
   return lanes;
+}
+
+/** The key of the lane of items without a status in a paged read. */
+export const NO_STATUS_LANE = "none";
+
+/**
+ * The sizes of a lane. A whole read counts the cards; a paged read takes the server's counts and moves them by
+ * how far the loaded cards have moved since (a drop into or out of the lane, a create, an archive).
+ */
+function laneSizes(
+  paging: BoardPaging | undefined,
+  key: string,
+  loaded: number,
+): Pick<KanbanStatusLane, "total" | "filteredTotal" | "hasMore"> {
+  const lane = paging?.lanes[key];
+  if (!lane) return { total: loaded };
+  const moved = loaded - lane.baseLoaded;
+  return {
+    total: Math.max(loaded, lane.total + moved),
+    filteredTotal: Math.max(loaded, lane.filteredTotal + moved),
+    hasMore: lane.nextCursor !== null,
+  };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

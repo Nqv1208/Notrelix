@@ -148,7 +148,7 @@ public class SecurityAuditMiddlewareTests
     private static string ContractPath()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "contracts", "openapi", "notrelix.v1.json")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "backend.slnx")))
             dir = dir.Parent;
         return Path.Combine(dir!.FullName, "contracts", "openapi", "notrelix.v1.json");
     }

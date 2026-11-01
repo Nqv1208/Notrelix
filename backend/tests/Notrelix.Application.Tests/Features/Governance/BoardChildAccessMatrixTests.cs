@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Tests.Features.Governance;
@@ -35,6 +36,9 @@ public sealed class BoardChildAccessMatrixTests
         // (ManageBoard on a Board is Manager-only Board management).
         ("work-management.board-group", PermissionAction.UpdateItem, false),
         ("work-management.board-view", PermissionAction.UpdateBoardView, false),
+        ("work-management.saved-filter", PermissionAction.UpdateBoardView, false),
+        ("work-management.form", PermissionAction.CreateItem, false),
+        ("work-management.form-submission", PermissionAction.CreateItem, false),
         ("work-management.label", PermissionAction.UpdateField, false),
         ("work-management.checklist", PermissionAction.UpdateItem, false),
         ("work-management.checklist-item", PermissionAction.UpdateItem, false),
@@ -52,7 +56,7 @@ public sealed class BoardChildAccessMatrixTests
         { "board Member", "Member", 3 },
         { "Space Member", "Member", 3 },
         { "workspace default, unplaced", "Member", 3 },
-        { "guest with explicit Manager", "Guest", 3 },
+        { "guest with explicit Manager", "Guest", 1 },
         { "workspace Owner", "Owner", 5 },
     };
 
@@ -81,12 +85,70 @@ public sealed class BoardChildAccessMatrixTests
     }
 
     [Fact]
-    public void ChildOfAMissingOrArchivedBoard_IsNotFound_EvenForTheOwner()
+    public void ChildOfAMissingBoard_IsNotFound_EvenForTheOwner()
     {
         var facts = Facts("Owner", exists: false);
 
         Engine.Evaluate(Descriptor, Context, facts, new Probe(PermissionAction.ViewBoard, "work-management.board-item")).Kind
             .Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    [Theory]
+    [InlineData("Owner", "Private")]
+    [InlineData("Member", "Workspace")]
+    public void ChildOfAnArchivedBoard_StaysReadable_AndRefusesEveryWrite_OnceTheNormalDecisionAllows(string role, string audience)
+    {
+        var facts = Facts(role, audience: audience, archived: true);
+
+        Engine.Evaluate(Descriptor, Context, facts, new Probe(PermissionAction.ViewBoard, "work-management.board-item")).Kind
+            .Should().Be(AccessDecisionKind.Allowed, "an archived Board is read like any other (GOV-025 step 1)");
+
+        foreach (var kind in Kinds.Select(k => k.Kind).Distinct())
+        {
+            var refused = Engine.Evaluate(Descriptor, Context, facts, new WriteProbe(PermissionAction.UpdateItem, kind));
+            refused.Kind.Should().Be(AccessDecisionKind.Forbidden, $"a write on {kind} of an archived Board");
+            refused.Code.Should().Be(WorkManagementDenialCodes.BoardArchived);
+        }
+    }
+
+    [Fact]
+    public void ArchivedBoard_IsNeverNamedToAPersonWhoseNormalDecisionIsNotAllow()
+    {
+        var noAccess = Facts("Member", audience: "Private", archived: true);
+        var viewer = Facts("Member", audience: "Private", explicitRank: 1, archived: true);
+
+        Engine.Evaluate(Descriptor, Context, noAccess, new WriteProbe(PermissionAction.UpdateItem, "work-management.board-item")).Kind
+            .Should().Be(AccessDecisionKind.NotFound, "a caller without access gets the identical NotFound, never \"archived\"");
+
+        var viewerWrite = Engine.Evaluate(Descriptor, Context, viewer, new WriteProbe(PermissionAction.UpdateItem, "work-management.board-item"));
+        viewerWrite.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        viewerWrite.Code.Should().BeNull("the level refusal comes first, so it carries no archived code");
+    }
+
+    [Fact]
+    public void BoardLifecycleCommands_PassOnAnArchivedBoard_AndEveryOtherBoardWriteIsRefused()
+    {
+        var facts = Facts("Owner", archived: true) with { ParentBoardId = null, IsBoardChild = false };
+
+        Engine.Evaluate(Descriptor, Context, facts, new LifecycleProbe(PermissionAction.ManageBoard)).Kind
+            .Should().Be(AccessDecisionKind.Allowed, "unarchive, delete and restore are the way back");
+
+        var rename = Engine.Evaluate(Descriptor, Context, facts, new WriteProbe(PermissionAction.ManageBoard, "work-management.board"));
+        rename.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        rename.Code.Should().Be(WorkManagementDenialCodes.BoardArchived);
+    }
+
+    [Fact]
+    public void ItemInAnArchivedGroup_StaysReadable_AndRefusesWrites_WithTheGroupCode()
+    {
+        var facts = Facts("Member") with { ChildInArchivedGroup = true };
+
+        Engine.Evaluate(Descriptor, Context, facts, new Probe(PermissionAction.ViewBoard, "work-management.board-item")).Kind
+            .Should().Be(AccessDecisionKind.Allowed);
+
+        var refused = Engine.Evaluate(Descriptor, Context, facts, new WriteProbe(PermissionAction.UpdateItem, "work-management.board-item"));
+        refused.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        refused.Code.Should().Be(WorkManagementDenialCodes.GroupArchived);
     }
 
     [Fact]
@@ -131,7 +193,8 @@ public sealed class BoardChildAccessMatrixTests
         string? spaceRole = null,
         string? boardRole = null,
         int? explicitRank = null,
-        bool exists = true) => new(
+        bool exists = true,
+        bool archived = false) => new(
         UserExists: true,
         EmailVerified: true,
         AccountExists: true,
@@ -152,10 +215,21 @@ public sealed class BoardChildAccessMatrixTests
             ResourceSpaceId = spaceId,
             SpaceExists = spaceId is not null,
             SpaceRole = spaceRole,
+            BoardArchived = archived,
         };
 
     private sealed record Probe(PermissionAction Action, string Kind) : IRequirePermission
     {
         public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create(Kind), Guid.Parse("00000000-0000-0000-0000-0000000000c1"));
+    }
+
+    private sealed record WriteProbe(PermissionAction Action, string Kind) : IRequirePermission, IWriteRequest
+    {
+        public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create(Kind), Guid.Parse("00000000-0000-0000-0000-0000000000c1"));
+    }
+
+    private sealed record LifecycleProbe(PermissionAction Action) : IRequirePermission, IWriteRequest, IBoardLifecycleRequest
+    {
+        public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
     }
 }

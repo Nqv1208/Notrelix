@@ -164,7 +164,7 @@ function RuleCard({
             checked={rule.enabled}
             disabled={blocked && !rule.enabled}
             onChange={(next) =>
-              void run(actions.setAutomationEnabled(rule.id, next))
+              void run(() => actions.setAutomationEnabled(rule.id, next))
             }
             label={fillCopy(t.toggle, { name: rule.name })}
           />

@@ -1,7 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
-import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import type {
   BoardAccess,
   CardDetail,
@@ -16,15 +22,20 @@ import {
   erpCommenterAccess,
   erpItemId,
   erpOwnerAccess,
+  itemCapabilitiesStub,
 } from "@notrelix/work-management-testing";
-import { itemCreateCatalog } from "../../../item-create/item-create.catalog";
+import { cardPopupCatalog } from "../../../card-popup/card-popup.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
 import { BoardCalendarView } from "../board-calendar-view";
 import { calendarCatalog } from "../calendar.catalog";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 /** Monday 12/10/2026 10:40 in Hanoi. */
@@ -61,7 +72,11 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
 
 function fakeServices(
   access: BoardAccess,
-  overrides: { updateCard?: () => Promise<void> } = {},
+  overrides: {
+    updateCard?: () => Promise<void>;
+    /** Reads answer a copy and a write needs the current item version, as a server does. */
+    versioned?: boolean;
+  } = {},
 ) {
   const board = erpBoardScenario();
   const cards = {
@@ -70,21 +85,46 @@ function fakeServices(
     getCardActivity: vi.fn(async () => []),
     updateStatus: vi.fn(async () => undefined),
     createCard: vi.fn(
-      async (_boardId: string, _payload: { listId: string; title: string }) =>
-        "item-new",
+      async (
+        _boardId: string,
+        _payload: { listId: string; title: string },
+      ) => ({
+        id: "item-new",
+        version: 1,
+      }),
     ),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
-    updateCard: vi.fn(overrides.updateCard ?? (async () => undefined)),
+    updateCard: vi.fn(
+      overrides.versioned
+        ? async (
+            id: string,
+            _patch: unknown,
+            options?: { expectedVersion?: number },
+          ) => {
+            const stored = board.groups
+              .flatMap((group) => group.cards)
+              .find((card) => card.id === id)!;
+            if (options?.expectedVersion !== stored.version)
+              throw { kind: "conflict" };
+            stored.version = (stored.version ?? 0) + 1;
+          }
+        : (overrides.updateCard ?? (async () => undefined)),
+    ),
     deleteCard: vi.fn(async () => undefined),
     archiveCard: vi.fn(async () => undefined),
     duplicateCard: vi.fn(async () => undefined),
   };
   const services = {
-    boards: { getFullBoard: vi.fn(async () => board) },
+    boards: {
+      getFullBoard: vi.fn(async () =>
+        overrides.versioned ? structuredClone(board) : board,
+      ),
+    },
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemCapabilities: itemCapabilitiesStub(),
   } as unknown as WorkManagementServices;
   return { services, cards };
 }
@@ -104,7 +144,7 @@ function Providers({
           kanbanLaneCatalog,
           kanbanToolbarCatalog,
           itemSheetCatalog,
-          itemCreateCatalog,
+          cardPopupCatalog,
         ]}
         initialLocale="vi"
       >
@@ -220,7 +260,28 @@ describe("BoardCalendarView on the ERP board", () => {
     );
   });
 
-  it("puts the item back and says so when the write fails", async () => {
+  it("undoes a quick move with the version the move itself produced", async () => {
+    const { container } = renderCalendar(erpOwnerAccess(), { versioned: true });
+    await ready();
+    fireEvent.dragStart(eventOf(container, "ERP-146"), {
+      dataTransfer: dataTransfer(),
+    });
+    const day = dayCell(container, "2026-10-20");
+    fireEvent.dragOver(day, { dataTransfer: dataTransfer() });
+    fireEvent.drop(day, { dataTransfer: dataTransfer() });
+    await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1));
+    toast.success.mock.calls[0]?.[1]?.action.onClick();
+    await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(2));
+    expect(toast.success.mock.calls[1]?.[0]).toBe("Đã hoàn tác");
+    expect(toast.error).not.toHaveBeenCalled();
+    // Sonner removes the toast Hoàn tác sits on; a result toast with the same
+    // id would be removed with it and never show.
+    expect(toast.success.mock.calls[1]?.[1]?.id).not.toBe(
+      toast.success.mock.calls[0]?.[1]?.id,
+    );
+  });
+
+  it("keeps the new position and offers Thử lại when the write fails", async () => {
     const { container } = renderCalendar(erpOwnerAccess(), {
       updateCard: async () => {
         throw new Error("rejected");
@@ -233,14 +294,19 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
     fireEvent.drop(target, { dataTransfer: dataTransfer() });
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls[0]?.[0]).toContain("Không đổi được hạn");
-    // The card is on its own day again.
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Chưa lưu được ngày của ERP-151",
+    );
+    expect(toast.error.mock.calls[0]?.[1]).toMatchObject({
+      action: { label: "Thử lại" },
+    });
+    // The item stays where it was dropped, never silently reverted.
     await waitFor(() =>
       expect(
         eventOf(container, "ERP-151")
           .closest("[data-calendar-week]")
           ?.getAttribute("data-calendar-week"),
-      ).toBe("2026-10-12"),
+      ).toBe("2026-10-19"),
     );
   });
 
@@ -257,7 +323,10 @@ describe("BoardCalendarView on the ERP board", () => {
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
     expect(cards.updateCard).toHaveBeenLastCalledWith(
       erpItemId("ERP-153"),
-      { dueDate: "2026-10-22T10:00:00.000Z" },
+      {
+        startDate: "2026-10-22T01:00:00.000Z",
+        dueDate: "2026-10-22T10:00:00.000Z",
+      },
       expect.objectContaining({ expectedVersion: expect.any(Number) }),
     );
   });
@@ -276,9 +345,11 @@ describe("BoardCalendarView on the ERP board", () => {
       title: "Họp chốt phạm vi",
     });
     await waitFor(() =>
-      expect(cards.updateCard).toHaveBeenCalledWith("item-new", {
-        dueDate: "2026-10-23T10:00:00.000Z",
-      }),
+      expect(cards.updateCard).toHaveBeenCalledWith(
+        "item-new",
+        { dueDate: "2026-10-23T10:00:00.000Z" },
+        { expectedVersion: 1 },
+      ),
     );
   });
 
@@ -286,14 +357,13 @@ describe("BoardCalendarView on the ERP board", () => {
     const { cards } = renderCalendar();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
-    const due = (await screen.findByLabelText(
-      "Hạn hoàn thành",
-    )) as HTMLInputElement;
-    expect(due.value).toBe("12/10/2026");
-    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
+    // The card form opens with the shown day as its date.
+    const form = await screen.findByRole("dialog", { name: "Thẻ" });
+    expect(within(form).getByRole("button", { name: /^12\/10/ })).toBeTruthy();
+    fireEvent.change(within(form).getByRole("textbox", { name: "Tên thẻ" }), {
       target: { value: "Chốt lịch tuần" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
+    fireEvent.click(within(form).getByRole("button", { name: "Tạo thẻ" }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
     expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
       title: "Chốt lịch tuần",
@@ -314,26 +384,29 @@ describe("BoardCalendarView on the ERP board", () => {
     ).toBeTruthy();
   });
 
-  it("filters by the route filter and shows it as the filter pill", async () => {
+  it("filters by the overdue condition and shows it as a filter chip", async () => {
     const { container } = renderCalendar();
     await ready();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Lọc" }), {
-      key: "Enter",
-    });
+    // The filter builder: add a condition and pick the fixed overdue one.
+    fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
+    const builder = await screen.findByRole("dialog", { name: "Lọc việc" });
     fireEvent.click(
-      await screen.findByRole("menuitemcheckbox", { name: "Quá hạn" }),
+      within(builder).getByRole("button", { name: "Thêm điều kiện" }),
     );
+    fireEvent.change(within(builder).getAllByRole("combobox")[0]!, {
+      target: { value: "$overdue" },
+    });
     // Only the overdue items stay: ERP-142 (10/10) and the done ones are not overdue.
     await waitFor(() =>
       expect(container.querySelectorAll("[data-calendar-event]").length).toBe(
         2,
       ),
     );
-    fireEvent.keyDown(document.activeElement ?? document.body, {
-      key: "Escape",
-    });
+    fireEvent.click(within(builder).getByRole("button", { name: "Xong" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Lọc:/ })).toBeTruthy(),
+      expect(
+        screen.getByRole("button", { name: "Xoá bộ lọc Quá hạn" }),
+      ).toBeTruthy(),
     );
   });
 

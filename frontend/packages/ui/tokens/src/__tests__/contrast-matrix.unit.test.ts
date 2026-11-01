@@ -345,7 +345,8 @@ describe("palette identity", () => {
     // the logo hue, a little deeper and 2–5° toward violet.
     expect(light.solid.l).toBeCloseTo(0.525, 3);
     expect(light.ink.l).toBeCloseTo(0.466, 3);
-    expect(accents.blue.tones.dark.ink.l).toBeCloseTo(0.72, 2);
+    // The dark tones are pinned to the popup artboard's Đêm (`--accent-text` #7DBBFF).
+    expect(accents.blue.tones.dark.ink.l).toBeCloseTo(0.777, 2);
     expect(Math.abs(light.solid.h - seed.h)).toBeLessThan(5);
   });
 

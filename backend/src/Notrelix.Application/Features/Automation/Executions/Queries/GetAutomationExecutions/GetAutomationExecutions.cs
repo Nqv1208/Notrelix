@@ -73,7 +73,7 @@ public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomation
                 item.AttemptCount,
                 item.Payload,
                 item.Error,
-                item.CreatedAt.DateTime,
+                item.CreatedAt.UtcDateTime,
                 item.RuleVersion,
                 AutomationExecutionProgress.Read(item.LastResponse)))
             .ToList();

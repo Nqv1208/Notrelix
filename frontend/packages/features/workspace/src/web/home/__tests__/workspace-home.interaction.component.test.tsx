@@ -330,6 +330,74 @@ describe("CreateResourceDialog", () => {
     expect(screen.queryByText(copy.create.templateLabel)).toBeNull();
   });
 
+  it("FUI[workspace.create-resource:board-gallery] offers the starters and workspace templates for a Board, starts on the first starter and submits the chosen one", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <CreateResourceDialog
+        copy={copy}
+        kind="board"
+        pending={false}
+        error={null}
+        boardTemplates={[
+          { id: "b-blank", name: "Blank", description: "Plain", builtIn: true },
+          { id: "b-plan", name: "Plan", description: null, builtIn: true },
+          { id: "w-erp", name: "ERP", description: "Rollout", builtIn: false },
+        ]}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    const starters = screen.getByRole("radiogroup", {
+      name: copy.create.startersLabel,
+    });
+    expect(
+      within(starters)
+        .getByRole("radio", { name: /Blank/ })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(screen.queryByText(copy.create.templateCopies)).toBeNull();
+
+    // Naming the board is enough: the first starter is used.
+    fireEvent.change(screen.getByLabelText(copy.create.boardLabel), {
+      target: { value: "Roadmap" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.create.submitBoard }),
+    );
+    expect(onSubmit).toHaveBeenLastCalledWith("board", "Roadmap", "b-blank");
+
+    // A workspace template explains what it copies and is what gets submitted.
+    fireEvent.click(
+      within(
+        screen.getByRole("radiogroup", {
+          name: copy.create.workspaceTemplatesLabel,
+        }),
+      ).getByRole("radio", { name: /ERP/ }),
+    );
+    expect(screen.getByText(copy.create.templateCopies)).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.create.submitBoard }),
+    );
+    expect(onSubmit).toHaveBeenLastCalledWith("board", "Roadmap", "w-erp");
+  });
+
+  it("FUI[workspace.create-resource:board-gallery-empty] says the workspace has no template yet", () => {
+    renderPureUi(
+      <CreateResourceDialog
+        copy={copy}
+        kind="board"
+        pending={false}
+        error={null}
+        boardTemplates={[
+          { id: "b-blank", name: "Blank", description: null, builtIn: true },
+        ]}
+        onOpenChange={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(copy.create.noWorkspaceTemplates)).toBeTruthy();
+  });
+
   it("FUI[workspace.create-resource:submit] submits the trimmed name for the requested kind", () => {
     const onSubmit = vi.fn();
     renderPureUi(

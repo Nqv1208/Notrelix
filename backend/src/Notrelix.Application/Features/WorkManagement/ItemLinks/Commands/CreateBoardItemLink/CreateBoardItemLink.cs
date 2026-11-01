@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 
@@ -20,9 +21,18 @@ public record CreateBoardItemLinkCommand(
 public class CreateBoardItemLinkCommandHandler(
     IWorkManagementDbContext context,
     ICurrentRequestContext requestContext,
-    IDateTimeProvider timeProvider) : IRequestHandler<CreateBoardItemLinkCommand, Result<Guid>>
+    IDateTimeProvider timeProvider,
+    IWorkOrderingScopeLock scopeLock,
+    IBoardRealtimeNotifier? realtime = null) : IRequestHandler<CreateBoardItemLinkCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(CreateBoardItemLinkCommand request, CancellationToken cancellationToken)
+    {
+        var response = await HandleCore(request, cancellationToken);
+        if (realtime is not null) await realtime.NotifyAsync(request, response, cancellationToken);
+        return response;
+    }
+
+    private async Task<Result<Guid>> HandleCore(CreateBoardItemLinkCommand request, CancellationToken cancellationToken)
     {
         if (request.BoardItemId == request.OtherBoardItemId)
             throw new BusinessRuleException("An item cannot be linked to itself.");
@@ -55,6 +65,26 @@ public class CreateBoardItemLinkCommandHandler(
             .FirstOrDefault(l => l.LinkType == linkType);
         if (existing is not null)
             return Result<Guid>.Success(existing.Id);
+
+        if (linkType == BoardItemLinkType.Dependency)
+        {
+            // Serialize waits-on writes per board so two opposite links cannot both pass the check.
+            await scopeLock.AcquireAsync(new WorkOrderingScope(WorkOrderingScopeKind.ItemLinks, sourceItem.BoardId), cancellationToken);
+
+            var edges = (await context.BoardItemLinks
+                .Where(l => l.BoardId == sourceItem.BoardId)
+                .ToListAsync(cancellationToken))
+                .Where(l => l.LinkType == BoardItemLinkType.Dependency)
+                .GroupBy(l => l.SourceItemId)
+                .ToDictionary(g => g.Key, g => new ItemDependencySnapshot(g.Key, g.Select(l => l.Target.ResourceId).ToList()));
+
+            var itemIds = edges.Keys.Concat(edges.Values.SelectMany(e => e.DependencyIds)).Append(sourceId).Append(targetId).Distinct().ToList();
+            var titles = await context.BoardItems
+                .Where(i => itemIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id, i => i.Name, cancellationToken);
+
+            DependencyRules.EnsureNoCycle(sourceId, targetId, edges, titles);
+        }
 
         var now = timeProvider.UtcNow;
         var accountId = requestContext.RequireAccountId();

@@ -16,11 +16,11 @@
   "dependencies": {
     "@notrelix/ui-tokens": "workspace:*",
     "react": "catalog:",
-    "react-native": "latest"
+    "react-native": "0.88.1"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^19.0.0",
+    "@types/react": "~19.3.0",
     "@types/react-native": "^0.73.0",
     "@notrelix/eslint-config": "workspace:*"
   }

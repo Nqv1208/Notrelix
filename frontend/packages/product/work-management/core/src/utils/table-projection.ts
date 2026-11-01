@@ -1,3 +1,8 @@
+import {
+  cellValueOf,
+  compareFieldValues,
+  type FieldContext,
+} from "../field-types/field-type-registry";
 import type { Card } from "../types";
 import type { KanbanStatusLane } from "../types/kanban-types";
 
@@ -14,6 +19,9 @@ export const TABLE_SORT_KEYS = [
   "priority",
   "label",
   "progress",
+  "checklist",
+  "comments",
+  "files",
   "updated",
   "start",
   "created",
@@ -23,7 +31,8 @@ export const TABLE_SORT_KEYS = [
 export type TableSortKey = (typeof TABLE_SORT_KEYS)[number];
 
 export interface TableSort {
-  readonly key: TableSortKey;
+  /** A built-in column, or the id of a custom field the table shows as a column. */
+  readonly key: TableSortKey | (string & {});
   readonly direction: "asc" | "desc";
 }
 
@@ -32,16 +41,18 @@ export const DEFAULT_TABLE_SORT: TableSort = { key: "due", direction: "asc" };
 
 /**
  * The table sort of a saved view. The first entry that names a table column
- * wins; anything else (a field id of an older table, a hand-edited config)
- * is ignored, and a view without a usable entry sorts by due date.
+ * (a built-in one, or a custom field in `customFieldIds`) wins; anything else
+ * (a field id of an older table, a hand-edited config) is ignored, and a view
+ * without a usable entry sorts by due date.
  */
 export function tableSortFromConfig(
   sortBy: readonly { fieldId: string; direction: "asc" | "desc" }[],
+  customFieldIds: ReadonlySet<string> = new Set(),
 ): TableSort {
   for (const entry of sortBy) {
-    const key = TABLE_SORT_KEYS.find(
-      (candidate) => candidate === entry.fieldId,
-    );
+    const key =
+      TABLE_SORT_KEYS.find((candidate) => candidate === entry.fieldId) ??
+      (customFieldIds.has(entry.fieldId) ? entry.fieldId : undefined);
     if (key) return { key, direction: entry.direction };
   }
   return DEFAULT_TABLE_SORT;
@@ -71,7 +82,7 @@ function timeOf(value: string | null | undefined): number | null {
  */
 function sortValue(
   card: Card,
-  key: TableSortKey,
+  key: TableSortKey | (string & {}),
   statusRank: (card: Card) => number,
 ): number | string | null {
   switch (key) {
@@ -99,6 +110,16 @@ function sortValue(
         ? progress.done / progress.total
         : null;
     }
+    case "checklist": {
+      const checklist = card.checklistProgress;
+      return checklist && checklist.total > 0
+        ? checklist.done / checklist.total
+        : null;
+    }
+    case "comments":
+      return card._count?.comments ? card._count.comments : null;
+    case "files":
+      return card._count?.attachments ? card._count.attachments : null;
     case "updated":
       return timeOf(card.updatedAt);
     case "start":
@@ -107,6 +128,8 @@ function sortValue(
       return timeOf(card.createdAt);
     case "completed":
       return timeOf(card.completedAt);
+    default:
+      return null;
   }
 }
 
@@ -121,13 +144,31 @@ function compareValues(left: number | string, right: number | string): number {
 
 /**
  * Sorts cards by one column. Cards without a value come last in both
- * directions; equal cards keep their board order (stable).
+ * directions; equal cards keep their board order (stable). A custom field
+ * (`customFields` by field id) sorts with its type's comparator and the
+ * registry's null rule: empty values last ascending, first descending.
  */
 export function sortTableCards(
   cards: readonly Card[],
   sort: TableSort,
   statusRank: (card: Card) => number,
+  customFields?: ReadonlyMap<string, FieldContext>,
 ): Card[] {
+  const custom = customFields?.get(sort.key);
+  if (custom) {
+    return cards
+      .map((card, index) => ({ card, index }))
+      .sort(
+        (a, b) =>
+          compareFieldValues(
+            custom,
+            cellValueOf(custom.field, a.card).value,
+            cellValueOf(custom.field, b.card).value,
+            sort.direction,
+          ) || a.index - b.index,
+      )
+      .map((entry) => entry.card);
+  }
   const sign = sort.direction === "desc" ? -1 : 1;
   return cards
     .map((card, index) => ({
@@ -156,6 +197,10 @@ export interface TableLane {
   readonly total: number;
   /** Visible cards that are overdue (the group header says so). */
   readonly overdueCount: number;
+  /** A board read in pages: items of the lane that pass the filter, loaded or not. Absent: the lane holds them all. */
+  readonly filteredTotal?: number;
+  /** The server holds more items of the lane that pass the filter than are loaded. */
+  readonly hasMore: boolean;
 }
 
 export interface TableProjectionInput {
@@ -169,6 +214,10 @@ export interface TableProjectionInput {
   readonly isOverdue: (card: Card) => boolean;
   /** Search or a route filter narrows the board. */
   readonly narrowed: boolean;
+  /** The member's own multi-level sort; when given it replaces `sort` for the order inside a group. */
+  readonly orderCards?: (cards: Card[]) => Card[];
+  /** Custom field columns that can be sorted, by field id. */
+  readonly customFields?: ReadonlyMap<string, FieldContext>;
 }
 
 export interface TableProjection {
@@ -196,6 +245,8 @@ export function projectTableLanes({
   statusRank,
   isOverdue,
   narrowed,
+  orderCards,
+  customFields,
 }: TableProjectionInput): TableProjection {
   let visibleCount = 0;
   let totalCount = 0;
@@ -208,9 +259,19 @@ export function projectTableLanes({
       ? lane.cards.filter((card) => !isTableCardDone(card))
       : lane.cards;
     doneHiddenCount += lane.cards.length - kept.length;
-    visibleCount += kept.length;
+    // A paged lane shows how many items pass the filter, not how many are loaded so far.
+    const laneShown =
+      lane.filteredTotal === undefined
+        ? kept.length
+        : Math.max(
+            kept.length,
+            lane.filteredTotal - (lane.cards.length - kept.length),
+          );
+    visibleCount += laneShown;
     if (kept.length === 0 && (lane.total > 0 || narrowed)) continue;
-    const cards = sortTableCards(kept, sort, statusRank);
+    const cards = orderCards
+      ? orderCards([...kept])
+      : sortTableCards(kept, sort, statusRank, customFields);
     groups.push({
       optionId: lane.optionId,
       name: lane.name,
@@ -219,6 +280,8 @@ export function projectTableLanes({
       cards,
       total: lane.total,
       overdueCount: cards.filter(isOverdue).length,
+      ...(lane.filteredTotal === undefined ? {} : { filteredTotal: laneShown }),
+      hasMore: lane.hasMore === true,
     });
   }
 

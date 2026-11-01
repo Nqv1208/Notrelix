@@ -12,9 +12,10 @@ public sealed class UpdateAccountPreferencesCommandValidator : AbstractValidator
 
         RuleFor(x => x)
             .Must(x => x.Locale is not null || x.Timezone is not null || x.Theme is not null
-                || x.Phone is not null || x.PhoneVisibleToWorkspaceMembers is not null)
+                || x.Phone is not null || x.PhoneVisibleToWorkspaceMembers is not null
+                || x.ColourBlindLabels is not null)
             .WithName("Preferences")
-            .WithMessage("Provide at least one of locale, timezone, theme, phone or phoneVisibleToWorkspaceMembers.");
+            .WithMessage("Provide at least one of locale, timezone, theme, phone, phoneVisibleToWorkspaceMembers or colourBlindLabels.");
 
         RuleFor(x => x.Locale!)
             .NotEmpty().MaximumLength(UserProfile.MaxLocaleLength)

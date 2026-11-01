@@ -25,7 +25,7 @@ public class UnarchiveBoardTests : WorkManagementHandlerTestBase
         board.Archive(TestUserId, TestNow);
         SetupBoards(board);
 
-        var command = new UnarchiveBoardCommand(board.Id);
+        var command = new UnarchiveBoardCommand(board.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -35,7 +35,7 @@ public class UnarchiveBoardTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new UnarchiveBoardCommand(Guid.CreateVersion7());
+        var command = new UnarchiveBoardCommand(Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -47,7 +47,7 @@ public class UnarchiveBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UnarchiveBoardCommand(board.Id);
+        var command = new UnarchiveBoardCommand(board.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

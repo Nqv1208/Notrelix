@@ -20,6 +20,95 @@ describe("describeActivityEvent", () => {
     });
   });
 
+  it("words a first status without an empty 'from', in both languages", () => {
+    const event = {
+      code: "work.item-status-changed",
+      change: { fieldName: "Status", from: "", to: "Cần làm" },
+    };
+
+    expect(describeActivityEvent(event, ACTIVITY_WORDS_EN)?.verb).toBe(
+      "set the status to Cần làm",
+    );
+    expect(describeActivityEvent(event, ACTIVITY_WORDS_VI)?.verb).toBe(
+      "đặt trạng thái là Cần làm",
+    );
+  });
+
+  it("words label additions and removals from the label name", () => {
+    const added = { code: "work.item-label-added", change: { to: "Bug" } };
+    const removed = { code: "work.item-label-removed", change: { to: "Bug" } };
+
+    expect(describeActivityEvent(added, ACTIVITY_WORDS_EN)?.verb).toBe(
+      "added the label Bug",
+    );
+    expect(describeActivityEvent(removed, ACTIVITY_WORDS_EN)?.verb).toBe(
+      "removed the label Bug",
+    );
+    expect(describeActivityEvent(added, ACTIVITY_WORDS_VI)?.verb).toBe(
+      "thêm nhãn Bug",
+    );
+    expect(describeActivityEvent(removed, ACTIVITY_WORDS_VI)?.verb).toBe(
+      "gỡ nhãn Bug",
+    );
+  });
+
+  it("words checklist history from the checklist and to-do titles, in both languages", () => {
+    const list = { to: "Release" };
+    const todo = { fieldName: "Release", to: "Tag build" };
+    const cases: ReadonlyArray<[string, object, string, string]> = [
+      [
+        "work.item-checklist-added",
+        list,
+        "added the checklist Release",
+        "thêm danh sách kiểm tra Release",
+      ],
+      [
+        "work.item-checklist-renamed",
+        list,
+        "renamed a checklist to Release",
+        "đổi tên một danh sách kiểm tra thành Release",
+      ],
+      [
+        "work.item-checklist-deleted",
+        list,
+        "deleted the checklist Release",
+        "xóa danh sách kiểm tra Release",
+      ],
+      [
+        "work.item-checklist-item-added",
+        todo,
+        "added Tag build to the checklist Release",
+        "thêm Tag build vào danh sách kiểm tra Release",
+      ],
+      [
+        "work.item-checklist-item-completed",
+        todo,
+        "completed Tag build in the checklist Release",
+        "hoàn thành Tag build trong danh sách kiểm tra Release",
+      ],
+      [
+        "work.item-checklist-item-reopened",
+        todo,
+        "marked Tag build as not done in the checklist Release",
+        "bỏ hoàn thành Tag build trong danh sách kiểm tra Release",
+      ],
+      [
+        "work.item-checklist-item-removed",
+        todo,
+        "removed Tag build from the checklist Release",
+        "xóa Tag build khỏi danh sách kiểm tra Release",
+      ],
+    ];
+    for (const [code, change, en, vi] of cases) {
+      expect(
+        describeActivityEvent({ code, change }, ACTIVITY_WORDS_EN)?.verb,
+      ).toBe(en);
+      expect(
+        describeActivityEvent({ code, change }, ACTIVITY_WORDS_VI)?.verb,
+      ).toBe(vi);
+    }
+  });
+
   it("falls back to shorter words when a status name is unknown", () => {
     expect(
       describeActivityEvent(

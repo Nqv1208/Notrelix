@@ -31,7 +31,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         SetupBoardFields(statusField);
 
-        var command = new UpdateBoardItemStatusCommand(item.Id, statusField.Options.First().Id.ToString());
+        var command = new UpdateBoardItemStatusCommand(item.Id, statusField.Options.First().Id.ToString(), ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -41,7 +41,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ItemNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardItemStatusCommand(Guid.CreateVersion7(), "Done");
+        var command = new UpdateBoardItemStatusCommand(Guid.CreateVersion7(), "Done", ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -60,7 +60,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         SetupBoardFields(textField);
 
-        var command = new UpdateBoardItemStatusCommand(item.Id, "Done");
+        var command = new UpdateBoardItemStatusCommand(item.Id, "Done", ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -81,7 +81,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         SetupBoardFields(statusField);
 
-        var command = new UpdateBoardItemStatusCommand(item.Id, "Done");
+        var command = new UpdateBoardItemStatusCommand(item.Id, "Done", ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -99,7 +99,8 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
                 DbContextMock.Object,
                 Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(),
                 RequestContextMock.Object,
-                DateTimeProviderMock.Object)
+                DateTimeProviderMock.Object,
+                Mock.Of<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts>())
             .Handle(new Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommand(TestWorkspaceId, "App board", null, null, null), CancellationToken.None)).Data;
         var status = created.Single(f => f.Type == FieldType.Status);
         status.IsSystem.Should().BeTrue("the app creates the Status field as a system field");
@@ -108,7 +109,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
         SetupBoardFields(created.ToArray());
         var done = status.Options.Single(o => o.Category == WorkStatusCategory.Done).Id;
 
-        var result = await _handler.Handle(new UpdateBoardItemStatusCommand(item.Id, done.ToString()), CancellationToken.None);
+        var result = await _handler.Handle(new UpdateBoardItemStatusCommand(item.Id, done.ToString(), ExpectedVersion: 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         item.FieldValues.Should().ContainSingle(v => v.FieldId == status.Id).Which.Value.Data.Value.Should().Be($"\"{done}\"");

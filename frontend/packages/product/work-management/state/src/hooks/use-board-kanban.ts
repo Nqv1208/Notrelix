@@ -1,13 +1,28 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
+  buildFilterFields,
+  filterLanesByCompound,
   findStatusField,
+  groupableFields,
+  groupCardsByField,
   groupCardsByStatus,
+  serializeCompoundFilter,
   type BoardGroup,
   type Card,
+  type DateBucket,
   type FieldDefinition,
+  type FilterFieldInput,
   type KanbanStatusLane,
+  type ViewState,
 } from "@notrelix/work-management-core";
+import { findBoardCard } from "../cache/card-restore";
+import { wmQueryKeys } from "../queries/keys";
+import { isVersionConflict } from "../queries/use-item-conflict";
 import { useFullBoard } from "../queries/use-full-board";
+import { useBoardReadNeed, useLanePager } from "../queries/board-read";
+import { useBoardLabels } from "../queries/use-board-labels";
+import { laneKeyOf } from "../cache/lane-pages";
 import { useDebounce } from "./use-debounce";
 import {
   dropUnknownFilterIds,
@@ -30,10 +45,28 @@ export interface KanbanGroupByField {
   readonly kind: "status" | "select";
 }
 
+/** The member's own view state and what the hook needs to name things (copy stays with the view). */
+export interface UseBoardKanbanView {
+  readonly state: ViewState;
+  readonly names: FilterFieldInput["names"];
+  /** The label of a date bucket key ("Tuần 12/10 – 18/10/2026"). */
+  readonly bucketLabel: (key: string, bucket: DateBucket) => string;
+  readonly timeZone?: string;
+  /** False for the Kanban: its lanes are columns of a Status or Select field, never a person or date split. */
+  readonly flatGroups?: boolean;
+}
+
 export interface UseBoardKanbanOptions {
+  /** The compound filter, grouping by person or date and the sort levels; absent: only the legacy `filter`. */
+  readonly view?: UseBoardKanbanView;
   /** Field id from the route `groupBy` parameter; unknown ids fall back to Status. */
   readonly groupBy?: string;
   readonly filter: KanbanLaneFilter;
+  /**
+   * The view lays cards out by something the server's Status lanes cannot serve (a calendar, a timeline): the
+   * board is read whole, not in pages.
+   */
+  readonly allCards?: boolean;
   /** Whether a card is overdue (same calendar rule as the card's due wording). */
   readonly isOverdue: (card: Card) => boolean;
   /**
@@ -51,6 +84,12 @@ export interface KanbanWriteFailure {
   /** The title of the item being created. */
   readonly title?: string;
   readonly error: unknown;
+  /**
+   * Set when the write lost to someone else's change (a stale version): the
+   * card as the board read now holds it, so the view can say who moved it and
+   * where it is.
+   */
+  readonly conflict?: { readonly card: Card } | undefined;
 }
 
 function optionValue(value: unknown): string | null {
@@ -136,9 +175,16 @@ export function kanbanGroupByFields(
 export function useBoardKanban(
   boardId: string,
   workspaceId: string,
-  { groupBy, filter, isOverdue, onWriteError }: UseBoardKanbanOptions,
+  {
+    groupBy,
+    filter,
+    isOverdue,
+    onWriteError,
+    view,
+    allCards = false,
+  }: UseBoardKanbanOptions,
 ) {
-  const { board, groups, isLoading, error } = useFullBoard(
+  const { board, groups, paging, isLoading, error, refetch } = useFullBoard(
     boardId,
     workspaceId,
   );
@@ -154,6 +200,53 @@ export function useBoardKanban(
     () => (fields ? kanbanGroupByFields(fields) : []),
     [fields],
   );
+  // The cards of a paged read hold only some of the board's labels: the filter offers the board's own list.
+  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(paging));
+  const pagedLabels = useMemo(
+    () =>
+      paging && boardLabels.data
+        ? boardLabels.data.map((label) => ({ id: label.id, name: label.name }))
+        : undefined,
+    [paging, boardLabels.data],
+  );
+  const labelChoices = useMemo(
+    () =>
+      pagedLabels ?? (board ? kanbanFilterChoices(board, groups).labels : []),
+    [board, groups, pagedLabels],
+  );
+  const filterFields = useMemo(
+    () =>
+      board && view
+        ? buildFilterFields({
+            fieldDefinitions: board.fieldDefinitions,
+            members: board.members,
+            labels: labelChoices,
+            names: view.names,
+            isOverdue,
+          })
+        : [],
+    [board, view, labelChoices, isOverdue],
+  );
+  const memberName = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const member of board?.members ?? [])
+      names.set(member.userId, member.name);
+    for (const group of groups)
+      for (const card of group.cards)
+        for (const member of card.members)
+          if (!names.has(member.userId)) names.set(member.userId, member.name);
+    return (userId: string) => names.get(userId) ?? userId;
+  }, [board, groups]);
+  /** The field a view can group by besides the Status and Select fields: a person or a date field. */
+  const flatGroupField = useMemo(
+    () =>
+      groupBy &&
+      view?.flatGroups !== false &&
+      !groupByFields.some((field) => field.id === groupBy)
+        ? groupableFields(filterFields).find((field) => field.id === groupBy)
+        : undefined,
+    [filterFields, groupBy, groupByFields, view?.flatGroups],
+  );
   const groupByField = useMemo(() => {
     const named = groupBy
       ? groupByFields.find((field) => field.id === groupBy)
@@ -165,48 +258,154 @@ export function useBoardKanban(
   const allLanes = useMemo(() => {
     if (!board) return [];
     const sortedGroups = [...groups].sort((a, b) => a.position - b.position);
+    if (flatGroupField && view) {
+      const topLevel = sortedGroups.flatMap((group) =>
+        group.cards.filter(
+          (card) => !card.parentItemId && !card.isArchived && !card.isDeleted,
+        ),
+      );
+      return groupCardsByField(
+        topLevel,
+        flatGroupField,
+        view.state.group?.fieldId === flatGroupField.id
+          ? view.state.group.bucket
+          : undefined,
+        {
+          person: memberName,
+          bucket: view.bucketLabel,
+          ...(view.timeZone ? { timeZone: view.timeZone } : {}),
+        },
+      );
+    }
     if (!groupByField || groupByField.id === statusField?.id) {
       return groupCardsByStatus({
         fieldDefinitions: board.fieldDefinitions,
         groups: sortedGroups,
+        paging,
       });
     }
     return groupCardsBySelectField(groupByField, sortedGroups);
-  }, [board, groups, groupByField, statusField]);
+  }, [
+    board,
+    groups,
+    groupByField,
+    statusField,
+    flatGroupField,
+    view,
+    memberName,
+    paging,
+  ]);
 
-  const filterChoices = useMemo(
-    () =>
-      board
-        ? kanbanFilterChoices(board, groups)
-        : { statuses: [], assignees: [], labels: [] },
-    [board, groups],
-  );
+  const filterChoices = useMemo(() => {
+    if (!board) return { statuses: [], assignees: [], labels: [] };
+    const choices = kanbanFilterChoices(board, groups);
+    return pagedLabels ? { ...choices, labels: pagedLabels } : choices;
+  }, [board, groups, pagedLabels]);
   // Ids the board no longer has never narrow the board (a stale URL).
   const appliedFilter = useMemo(
     () => (board ? dropUnknownFilterIds(filter, filterChoices) : filter),
     [board, filter, filterChoices],
   );
 
-  const filtered = useKanbanFilters(allLanes, appliedFilter, {
+  // Pages of Status lanes serve a view that lays the board out by Status and filters by what the server can
+  // evaluate; anything else (another grouping, a swimlane, a search, a facet filter) reads the whole board.
+  const compoundFilter = view?.state.filter;
+  const needsWholeBoard =
+    allCards ||
+    Boolean(flatGroupField) ||
+    (groupByField !== undefined && groupByField.id !== statusField?.id) ||
+    Boolean(view?.state.lane) ||
+    debouncedQuery.trim() !== "" ||
+    filter.statusOptionIds.length > 0 ||
+    filter.priorities.length > 0 ||
+    filter.assigneeIds.length > 0 ||
+    filter.labelIds.length > 0 ||
+    filter.overdue;
+  useBoardReadNeed(boardId, workspaceId, {
+    full: needsWholeBoard,
+    filter:
+      !needsWholeBoard && compoundFilter
+        ? serializeCompoundFilter(compoundFilter)
+        : "",
+    sort: "",
+  });
+  const lanePager = useLanePager(boardId, workspaceId);
+
+  const legacyFiltered = useKanbanFilters(allLanes, appliedFilter, {
     query: debouncedQuery,
     isOverdue,
   });
+  const compound = view?.state.filter;
+  const filtered = useMemo(() => {
+    if (!compound || compound.conditions.length === 0) return legacyFiltered;
+    const lanes = filterLanesByCompound(
+      legacyFiltered.lanes,
+      compound,
+      filterFields,
+      memberName,
+    );
+    return {
+      ...legacyFiltered,
+      lanes,
+      visibleCount: lanes.reduce((sum, lane) => sum + lane.cards.length, 0),
+      active: true,
+    };
+  }, [compound, filterFields, legacyFiltered, memberName]);
 
+  const queryClient = useQueryClient();
+  // A refused stale write has already refetched the board (the write's own
+  // cleanup), so the card read from the cache is the other person's version.
+  const conflictOf = (error: unknown, cardId: string) => {
+    if (!isVersionConflict(error) || !workspaceId) return undefined;
+    const card = findBoardCard(
+      queryClient.getQueryData(wmQueryKeys.fullBoard(workspaceId, boardId)),
+      cardId,
+    );
+    return card ? { card } : undefined;
+  };
+  // Who last changed a card, read from the cache after a refetch (the other person once a write lost).
+  const lastEditorOf = (cardId: string) =>
+    workspaceId
+      ? (findBoardCard(
+          queryClient.getQueryData(wmQueryKeys.fullBoard(workspaceId, boardId)),
+          cardId,
+        )?.updatedByName ?? undefined)
+      : undefined;
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "status", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "status",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const updateFieldValue = useUpdateFieldValue(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "field", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "field",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const moveCard = useMoveCard(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "move", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "move",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const dropItemInLane = useDropItemInLane(boardId, workspaceId, {
     onError: (error, input) =>
-      onWriteError?.({ kind: "place", cardId: input.cardId, error }),
+      onWriteError?.({
+        kind: "place",
+        cardId: input.cardId,
+        error,
+        conflict: conflictOf(error, input.cardId),
+      }),
   });
   const createItemInLane = useCreateItemInLane(boardId, workspaceId, {
     onError: (error, input) =>
@@ -221,9 +420,17 @@ export function useBoardKanban(
   return {
     board,
     groups,
+    /** Reads the board again (the "Tải lại" of a conflict). */
+    refetch,
+    lastEditorOf,
     statusField,
     groupByField,
+    /** The person or date field the view is grouped by, when it is one (lanes are then built from card values). */
+    flatGroupField,
     groupByFields,
+    /** The fields a filter, sort, group or swimlane can name (empty without `view`). */
+    filterFields,
+    memberName,
     /** Lanes before the filter (lane totals, K/J order without a filter). */
     allLanes,
     /** Lanes with the filter and search applied; `total` is the lane total. */
@@ -233,6 +440,21 @@ export function useBoardKanban(
     filterActive: filtered.active,
     /** The status options, people and labels the filter menu offers. */
     filterChoices,
+    /** A paged read: the sizes of the board and of each lane; absent when every item is loaded. */
+    paging,
+    /** Items of the board, and those that pass the server filter (what lanes hold plus what they could still load). */
+    boardTotals: {
+      total: allLanes.reduce((sum, lane) => sum + lane.total, 0),
+      filtered: allLanes.reduce(
+        (sum, lane) => sum + (lane.filteredTotal ?? lane.cards.length),
+        0,
+      ),
+    },
+    /** Reads the next page of a Status lane (`optionId` null: the lane without a status). */
+    loadMoreLane: (optionId: string | null) =>
+      lanePager.loadMore(laneKeyOf({ optionId })),
+    /** Lanes (by option id, `none` for no status) whose next page is being read, or failed to read. */
+    lanePages: { loading: lanePager.loading, failed: lanePager.failed },
     isLoading,
     error,
     search: { query, setQuery, debouncedQuery },

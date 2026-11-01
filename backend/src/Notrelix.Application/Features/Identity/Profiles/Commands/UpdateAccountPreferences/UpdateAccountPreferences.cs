@@ -27,6 +27,9 @@ public sealed record UpdateAccountPreferencesCommand
     public string? Phone { get; init; }
 
     public bool? PhoneVisibleToWorkspaceMembers { get; init; }
+
+    /// <summary>Show a small shape beside each label colour (colour-blind mode); omitted keeps it.</summary>
+    public bool? ColourBlindLabels { get; init; }
 }
 
 public sealed class UpdateAccountPreferencesCommandHandler
@@ -66,8 +69,7 @@ public sealed class UpdateAccountPreferencesCommandHandler
                 .AnyAsync(u => u.Id == userId, cancellationToken);
             if (!userExists)
             {
-                return Result<AccountPreferencesDto>.Failure(new ApplicationError(
-                    "identity.auth.user-not-found", "User not found.", ApplicationErrorType.NotFound));
+                return Result<AccountPreferencesDto>.Failure(SessionErrors.SessionUserMissing);
             }
 
             profile = UserProfile.Create(userId, now);
@@ -79,10 +81,10 @@ public sealed class UpdateAccountPreferencesCommandHandler
         }
 
         profile.ApplyAccountPreferences(
-            request.Locale, request.Timezone, request.Theme, now, request.Phone, request.PhoneVisibleToWorkspaceMembers);
+            request.Locale, request.Timezone, request.Theme, now, request.Phone, request.PhoneVisibleToWorkspaceMembers, request.ColourBlindLabels);
 
         return Result<AccountPreferencesDto>.Success(
-            new AccountPreferencesDto(profile.Locale, profile.Timezone, profile.Theme, profile.Version, profile.Phone, profile.PhoneVisibleToWorkspaceMembers));
+            new AccountPreferencesDto(profile.Locale, profile.Timezone, profile.Theme, profile.Version, profile.Phone, profile.PhoneVisibleToWorkspaceMembers, profile.ColourBlindLabels));
     }
 
     private static PreconditionFailedException StaleVersion(long expected, long current) => new(

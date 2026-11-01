@@ -62,6 +62,21 @@ public sealed class ItemUnassignedActivityConsumerDefinition : ItemActivityConsu
     public ItemUnassignedActivityConsumerDefinition() : base("notrelix-activity-item-unassigned-v1") { }
 }
 
+public sealed class ItemLabelAddedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemLabelAddedActivityConsumer>
+{
+    public ItemLabelAddedActivityConsumerDefinition() : base("notrelix-activity-item-label-added-v1") { }
+}
+
+public sealed class ItemLabelRemovedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemLabelRemovedActivityConsumer>
+{
+    public ItemLabelRemovedActivityConsumerDefinition() : base("notrelix-activity-item-label-removed-v1") { }
+}
+
+public sealed class ItemDatesChangedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemDatesChangedActivityConsumer>
+{
+    public ItemDatesChangedActivityConsumerDefinition() : base("notrelix-activity-item-dates-changed-v1") { }
+}
+
 public sealed class ItemArchivedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemArchivedActivityConsumer>
 {
     public ItemArchivedActivityConsumerDefinition() : base("notrelix-activity-item-archived-v1") { }
@@ -80,4 +95,34 @@ public sealed class ItemDeletedActivityConsumerDefinition : ItemActivityConsumer
 public sealed class ItemRestoredActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemRestoredActivityConsumer>
 {
     public ItemRestoredActivityConsumerDefinition() : base("notrelix-activity-item-restored-v1") { }
+}
+
+public sealed class ItemChecklistAddedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemChecklistAddedActivityConsumer>
+{
+    public ItemChecklistAddedActivityConsumerDefinition() : base("notrelix-activity-item-checklist-added-v1") { }
+}
+
+public sealed class ItemChecklistRenamedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemChecklistRenamedActivityConsumer>
+{
+    public ItemChecklistRenamedActivityConsumerDefinition() : base("notrelix-activity-item-checklist-renamed-v1") { }
+}
+
+public sealed class ItemChecklistDeletedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemChecklistDeletedActivityConsumer>
+{
+    public ItemChecklistDeletedActivityConsumerDefinition() : base("notrelix-activity-item-checklist-deleted-v1") { }
+}
+
+public sealed class ItemChecklistItemAddedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemChecklistItemAddedActivityConsumer>
+{
+    public ItemChecklistItemAddedActivityConsumerDefinition() : base("notrelix-activity-item-checklist-item-added-v1") { }
+}
+
+public sealed class ItemChecklistItemCompletedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemChecklistItemCompletedActivityConsumer>
+{
+    public ItemChecklistItemCompletedActivityConsumerDefinition() : base("notrelix-activity-item-checklist-item-completion-changed-v1") { }
+}
+
+public sealed class ItemChecklistItemRemovedActivityConsumerDefinition : ItemActivityConsumerDefinition<ItemChecklistItemRemovedActivityConsumer>
+{
+    public ItemChecklistItemRemovedActivityConsumerDefinition() : base("notrelix-activity-item-checklist-item-removed-v1") { }
 }

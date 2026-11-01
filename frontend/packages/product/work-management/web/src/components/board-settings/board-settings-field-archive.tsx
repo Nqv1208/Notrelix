@@ -52,7 +52,7 @@ export function FieldArchiveDialog({
 
   async function confirm() {
     setWorking(true);
-    const result = await run(actions.archiveField(field.id));
+    const result = await run(() => actions.archiveField(field.id));
     setWorking(false);
     if (result.ok) onArchived();
   }

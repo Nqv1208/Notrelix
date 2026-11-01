@@ -4,6 +4,7 @@ public class SetBoardItemDueDateCommandValidator : AbstractValidator<SetBoardIte
 {
     public SetBoardItemDueDateCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId)
             .NotEmpty();
     }

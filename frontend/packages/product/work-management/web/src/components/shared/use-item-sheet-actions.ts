@@ -1,6 +1,5 @@
 import { toast } from "sonner";
 import {
-  useArchiveCard,
   useBoardKanban,
   useDuplicateCard,
 } from "@notrelix/work-management-state";
@@ -31,20 +30,19 @@ export function useItemSheetActions({
 }) {
   const laneCopy = useKanbanLaneCopy();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
-  const archiveCard = useArchiveCard(boardId, workspaceId);
 
   const onUpdateFieldValue = (payload: UpdateFieldValueInput) => {
+    // The promise lets the popup show this field's save and its retry.
     if (
       payload.fieldDefinitionId === kanban.statusField?.id &&
       typeof payload.value === "string"
     ) {
-      kanban.updateStatus.mutate({
+      return kanban.updateStatus.mutateAsync({
         cardId: payload.cardId,
         statusOptionId: payload.value,
       });
-      return;
     }
-    kanban.updateFieldValue.mutate(payload);
+    return kanban.updateFieldValue.mutateAsync(payload);
   };
 
   const onMoveToGroup = (cardId: string, groupId: string) => {
@@ -78,6 +76,5 @@ export function useItemSheetActions({
     onMoveToGroup,
     onCopyLink,
     onDuplicate: (cardId: string) => duplicateCard.mutate(cardId),
-    onArchive: (cardId: string) => archiveCard.mutate(cardId),
   };
 }

@@ -80,7 +80,7 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
 
         using var provider = CreateProvider(stack, observer);
 
-        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, observer, BoardRole.Member)))
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, observer, BoardRole.Member, ExpectedVersion: 1)))
             .Should().ThrowAsync<AppForbidden>();
     }
 
@@ -102,22 +102,22 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
 
         using (var provider = CreateProvider(stack, editor))
         {
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>("a board Owner holds Manager, above the caller's Editor level");
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, granted)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, granted, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>("the target's explicit Manager grant is above the caller's level");
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, boardOwner, BoardRole.Observer)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, boardOwner, BoardRole.Observer, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>();
 
             // Removing members is Board management (Manager): previously an Editor
             // could remove a member at or below Editor; now it is refused too.
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, plain)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, plain, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>();
         }
 
         using (var provider = CreateProvider(stack, manager))
         {
-            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner));
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner, ExpectedVersion: 1));
         }
 
         var remaining = await _host.ReadAsync(c => c.BoardMembers.Where(m => m.BoardId == board).Select(m => m.UserId).ToListAsync());
@@ -125,7 +125,7 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task OnlyAManagerManagesTheBoard_EditorsAndGuestsEditContentOnly()
+    public async Task OnlyAManagerManagesTheBoard_EditorsEditContentOnly_AndGuestsOnlyRead()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
@@ -141,16 +141,24 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
         {
             using var provider = CreateProvider(stack, editor);
 
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>("archiving the Board is a Manager action");
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new DeleteBoardCommand(board)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new DeleteBoardCommand(board, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>();
-            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardVisibilityCommand(board, BoardVisibility.Private)))
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardVisibilityCommand(board, BoardVisibility.Private, ExpectedVersion: 1)))
                 .Should().ThrowAsync<AppForbidden>();
             await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Observer)))
                 .Should().ThrowAsync<AppForbidden>("managing members is a Manager action");
 
-            await UpdateItemAsync(provider, item, $"Edited by {editor}");
+            if (editor == guest)
+            {
+                await FluentActions.Awaiting(() => UpdateItemAsync(provider, item, "Edited by the guest"))
+                    .Should().ThrowAsync<AppForbidden>("a guest is view-only (GOV-030)");
+            }
+            else
+            {
+                await UpdateItemAsync(provider, item, $"Edited by {editor}");
+            }
         }
 
         var unchanged = await _host.ReadAsync(async c =>
@@ -164,7 +172,9 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
         using (var provider = CreateProvider(stack, manager))
         {
             await OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Observer));
-            await OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board));
+            // Adding a member changed the Board, so the archive names the version it now has.
+            var current = await _host.ReadAsync(c => c.Boards.Where(x => x.Id == board).Select(x => x.Version).SingleAsync());
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board, ExpectedVersion: current));
         }
     }
 

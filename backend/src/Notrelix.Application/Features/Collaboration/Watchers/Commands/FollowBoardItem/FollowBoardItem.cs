@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 using Notrelix.Domain.Collaboration.Watchers;
 
 namespace Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
@@ -10,7 +11,7 @@ namespace Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBo
 /// </summary>
 [IdempotencyOperation("collaboration.watchers.follow-board-item.v1")]
 public record FollowBoardItemCommand(Guid BoardItemId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IPersonalBoardRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public const string BoardItemKind = "work-management.board-item";
 

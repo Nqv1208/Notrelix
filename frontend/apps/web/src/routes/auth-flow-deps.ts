@@ -46,7 +46,13 @@ export function useAuthFlowDeps() {
                 replace: true,
               });
             })
-            .catch(() => go({ to: "/sign-in", replace: true }));
+            .catch(() =>
+              go({
+                to: "/sign-in",
+                search: { error: "identity.oauth.provider-unavailable" },
+                replace: true,
+              }),
+            );
           return;
         }
         window.location.assign(`${env.apiUrl}${path}`);

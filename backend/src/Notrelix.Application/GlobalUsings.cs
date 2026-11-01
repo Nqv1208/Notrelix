@@ -82,3 +82,4 @@ global using Notrelix.Domain.Workspaces.Workspaces.Events;
 global using Notrelix.Domain.Workspaces.Members.Events;
 global using Notrelix.Domain.Workspaces.Spaces.Events;
 global using Notrelix.Domain.Workspaces.Teams.Events;
+global using Notrelix.Application.Features.WorkManagement.Public.BoardRealtime;

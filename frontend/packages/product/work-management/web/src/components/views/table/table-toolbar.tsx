@@ -1,38 +1,49 @@
-import { ArrowUpDown, Columns3, Plus, Search, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { Columns3, Plus, Search, X } from "lucide-react";
 import {
   Button,
-  cn,
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notrelix/ui-web";
-import {
-  TABLE_SORT_KEYS,
-  type TableDensity,
-  type TableSort,
+import type {
+  FieldDefinition,
+  TableDensity,
+  TableSort,
 } from "@notrelix/work-management-core";
-import {
-  emptyKanbanFilter,
-  KANBAN_FILTER_PRIORITIES,
-  type KanbanFilterState,
-} from "../kanban/kanban-filter";
 import {
   kanbanPillClass,
   kanbanPrimaryButtonClass,
 } from "../kanban/kanban-chrome";
-import {
-  KanbanFilterMenu,
-  type KanbanFilterOption,
-  type KanbanToolbarFilterOptions,
-} from "../kanban/kanban-filter-menu";
-import type { KanbanGroupByField } from "../kanban/kanban-toolbar";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
-import { TABLE_COLUMNS, visibleTableColumns } from "./table-columns";
+import {
+  allTableColumns,
+  moveColumnId,
+  visibleTableColumns,
+} from "./table-columns";
+
+/** The member's own columns and what they can do with them. */
+export interface TableColumnState {
+  /** The member has hidden, ordered or resized columns of their own. */
+  personal: boolean;
+  /** An editor may make them the shared view's; a viewer sees why not. */
+  canSaveToView: boolean;
+  savingToView: boolean;
+  onSaveToView: () => void;
+  /** Drops the member's columns: the shared view's show again. */
+  onReset: () => void;
+  /** The last save of the member's columns failed; the screen keeps them. */
+  saveFailed: boolean;
+  onRetrySave: () => void;
+  /** The shared view refused the member's columns. */
+  saveToViewFailed: boolean;
+}
 
 export interface MainTableToolbarProps {
   copy: MainTableCopy;
@@ -41,16 +52,17 @@ export interface MainTableToolbarProps {
   /** "Trạng thái: chưa xong" is on: finished items are left out. */
   hideDone: boolean;
   onShowDone: () => void;
-  filter: KanbanFilterState;
-  filterOptions: KanbanToolbarFilterOptions;
-  /** Emits the whole next filter (serialise it with `serializeKanbanFilter`). */
-  onFilterChange: (filter: KanbanFilterState) => void;
-  groupByFields: readonly KanbanGroupByField[];
-  /** The grouping field; null means the view default (the Status field). */
-  groupByFieldId: string | null;
-  onGroupByChange: (fieldId: string) => void;
-  sort: TableSort;
-  onSortChange: (sort: TableSort) => void;
+  /** The member's filter, sort, group and saved-filter controls (`ViewStateBar`), after the search. */
+  viewBar: ReactNode;
+  /** The effective sort the table header marks: the member's first level, else the shared view's. */
+  sort: TableSort | null;
+  /** Custom fields shown as columns (hide, order and width apply to them like the built-in ones). */
+  customFields?: readonly FieldDefinition[];
+  /** The column order in effect (personal, else the shared view's); empty = the default order. */
+  columnOrder?: readonly string[];
+  onColumnOrderChange?: (order: string[]) => void;
+  /** The member's own columns; absent = the toolbar offers no personal state. */
+  columnState?: TableColumnState;
   hiddenColumnIds: readonly string[];
   onColumnVisibleChange: (columnId: string, visible: boolean) => void;
   density: TableDensity;
@@ -58,64 +70,6 @@ export interface MainTableToolbarProps {
   /** False for a viewer who cannot add items: the add button is not shown. */
   canAdd: boolean;
   onAddItem: () => void;
-}
-
-type Facet = keyof KanbanFilterState;
-
-interface FilterChip {
-  facet: Facet;
-  text: string;
-}
-
-function namesOf(
-  options: readonly KanbanFilterOption[],
-  ids: readonly string[],
-): string[] {
-  return ids.flatMap((id) => {
-    const option = options.find((candidate) => candidate.id === id);
-    return option ? [option.name] : [];
-  });
-}
-
-/** One chip per facet that has a value; ids the board no longer has are left out. */
-function filterChips(
-  copy: MainTableCopy["toolbar"],
-  filter: KanbanFilterState,
-  options: KanbanToolbarFilterOptions,
-): FilterChip[] {
-  const chips: FilterChip[] = [];
-  const list = (facet: Facet, template: string, names: string[]) => {
-    if (names.length > 0)
-      chips.push({
-        facet,
-        text: fillTableCopy(template, { names: names.join(", ") }),
-      });
-  };
-  list(
-    "statusOptionIds",
-    copy.chip.status,
-    namesOf(options.statuses, filter.statusOptionIds),
-  );
-  list(
-    "priorities",
-    copy.chip.priority,
-    KANBAN_FILTER_PRIORITIES.filter((p) => filter.priorities.includes(p)).map(
-      (p) => copy.filter.priorities[p],
-    ),
-  );
-  list(
-    "assigneeIds",
-    copy.chip.assignee,
-    namesOf(options.assignees, filter.assigneeIds),
-  );
-  list("labelIds", copy.chip.label, namesOf(options.labels, filter.labelIds));
-  if (filter.overdue) chips.push({ facet: "overdue", text: copy.chip.overdue });
-  return chips;
-}
-
-function clearedFacet(filter: KanbanFilterState, facet: Facet) {
-  const next = emptyKanbanFilter();
-  return { ...filter, [facet]: next[facet] };
 }
 
 const CHIP_CLASS =
@@ -157,14 +111,11 @@ export function MainTableToolbar({
   onSearchChange,
   hideDone,
   onShowDone,
-  filter,
-  filterOptions,
-  onFilterChange,
-  groupByFields,
-  groupByFieldId,
-  onGroupByChange,
-  sort,
-  onSortChange,
+  viewBar,
+  customFields = [],
+  columnOrder = [],
+  onColumnOrderChange,
+  columnState,
   hiddenColumnIds,
   onColumnVisibleChange,
   density,
@@ -173,13 +124,15 @@ export function MainTableToolbar({
   onAddItem,
 }: MainTableToolbarProps) {
   const t = copy.toolbar;
-  const chips = filterChips(t, filter, filterOptions);
-  const groupBy =
-    groupByFields.find((field) => field.id === groupByFieldId) ??
-    groupByFields.find((field) => field.kind === "status") ??
-    groupByFields[0];
-  const shownColumns = visibleTableColumns(hiddenColumnIds).length;
-  const arrow = sort.direction === "asc" ? "↑" : "↓";
+  const columnName = (column: ReturnType<typeof allTableColumns>[number]) =>
+    column.field?.name ?? copy.columns[column.id as keyof typeof copy.columns];
+  const shownColumns = visibleTableColumns(
+    hiddenColumnIds,
+    customFields,
+    columnOrder,
+  ).length;
+  // The menu lists the columns in their display order.
+  const orderedColumns = visibleTableColumns([], customFields, columnOrder);
 
   return (
     <div
@@ -206,106 +159,7 @@ export function MainTableToolbar({
           data-chip="done"
         />
       ) : null}
-      {chips.map((chip) => (
-        <RemovableChip
-          key={chip.facet}
-          text={chip.text}
-          clearLabel={fillTableCopy(t.chipClear, { filter: chip.text })}
-          onClear={() => onFilterChange(clearedFacet(filter, chip.facet))}
-          data-chip={chip.facet}
-        />
-      ))}
-
-      <KanbanFilterMenu
-        copy={t.filter}
-        filter={filter}
-        options={filterOptions}
-        onFilterChange={onFilterChange}
-      />
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className={kanbanPillClass}>
-            <ArrowUpDown className="size-4" aria-hidden="true" />
-            {t.sort.label}{" "}
-            <b className="font-semibold leading-[1.45] text-foreground">
-              {copy.columns[sort.key]} {arrow}
-            </b>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-            {t.sort.byColumn}
-          </DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sort.key}
-            onValueChange={(key) => {
-              const next = TABLE_SORT_KEYS.find(
-                (candidate) => candidate === key,
-              );
-              if (next && next !== sort.key)
-                onSortChange({ key: next, direction: sort.direction });
-            }}
-          >
-            {TABLE_COLUMNS.map((column) => (
-              <DropdownMenuRadioItem key={column.id} value={column.id}>
-                {copy.columns[column.id]}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuRadioGroup
-            value={sort.direction}
-            onValueChange={(direction) => {
-              if (direction === "asc" || direction === "desc")
-                if (direction !== sort.direction)
-                  onSortChange({ key: sort.key, direction });
-            }}
-          >
-            <DropdownMenuRadioItem value="asc">
-              {t.sort.ascendingLabel} ↑
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="desc">
-              {t.sort.descendingLabel} ↓
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("min-w-0", kanbanPillClass)}
-            disabled={!groupBy}
-          >
-            {t.groupBy.label}
-            {groupBy ? (
-              <>
-                {" "}
-                <b className="max-w-48 truncate font-semibold leading-[1.45] text-foreground">
-                  {groupBy.name}
-                </b>
-              </>
-            ) : null}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuRadioGroup
-            value={groupBy?.id ?? ""}
-            onValueChange={(fieldId) => {
-              if (fieldId !== groupBy?.id) onGroupByChange(fieldId);
-            }}
-          >
-            {groupByFields.map((field) => (
-              <DropdownMenuRadioItem key={field.id} value={field.id}>
-                <span className="min-w-0 truncate">{field.name}</span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {viewBar}
 
       <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
 
@@ -315,7 +169,7 @@ export function MainTableToolbar({
             <Columns3 className="size-4" aria-hidden="true" />
             {t.columns.label}{" "}
             <b className="font-semibold leading-[1.45] text-foreground">
-              {shownColumns}/{TABLE_COLUMNS.length}
+              {shownColumns}/{orderedColumns.length}
             </b>
           </Button>
         </DropdownMenuTrigger>
@@ -323,19 +177,108 @@ export function MainTableToolbar({
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t.columns.heading}
           </DropdownMenuLabel>
-          {TABLE_COLUMNS.map((column) => (
+          {orderedColumns.map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
               checked={column.locked || !hiddenColumnIds.includes(column.id)}
               disabled={column.locked}
+              aria-keyshortcuts={
+                column.locked ? undefined : "Alt+ArrowUp Alt+ArrowDown"
+              }
               onCheckedChange={(checked) =>
                 onColumnVisibleChange(column.id, Boolean(checked))
               }
               onSelect={(event) => event.preventDefault()}
+              onKeyDown={(event) => {
+                // Alt+Up / Alt+Down move the column; the order is saved in the view.
+                if (
+                  !event.altKey ||
+                  (event.key !== "ArrowUp" && event.key !== "ArrowDown")
+                )
+                  return;
+                event.preventDefault();
+                const ids = orderedColumns
+                  .filter((entry) => entry.id !== "key" && entry.id !== "title")
+                  .map((entry) => entry.id);
+                const next = moveColumnId(
+                  ids,
+                  column.id,
+                  event.key === "ArrowUp" ? -1 : 1,
+                );
+                if (next) onColumnOrderChange?.(next);
+              }}
             >
-              {copy.columns[column.id]}
+              {columnName(column)}
             </DropdownMenuCheckboxItem>
           ))}
+          <p className="m-0 px-2 pt-1.5 pb-1 text-crumb text-meta-foreground">
+            {t.columns.reorderHint}
+          </p>
+          {columnState ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                {t.columns.personal}
+              </DropdownMenuLabel>
+              {columnState.saveFailed ? (
+                <p
+                  role="alert"
+                  className="m-0 flex items-center gap-1.5 px-2 pb-1 text-crumb text-destructive"
+                >
+                  <span className="min-w-0 flex-1">{t.columns.saveFailed}</span>
+                  <button
+                    type="button"
+                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-state-selected-foreground underline focus-visible:outline-2 focus-visible:outline-ring"
+                    onClick={columnState.onRetrySave}
+                  >
+                    {t.columns.retry}
+                  </button>
+                </p>
+              ) : null}
+              <DropdownMenuItem
+                disabled={
+                  !columnState.canSaveToView ||
+                  !columnState.personal ||
+                  columnState.savingToView
+                }
+                onSelect={(event) => {
+                  event.preventDefault();
+                  columnState.onSaveToView();
+                }}
+              >
+                {columnState.savingToView
+                  ? t.columns.saving
+                  : t.columns.saveToView}
+              </DropdownMenuItem>
+              {!columnState.canSaveToView ? (
+                <p className="m-0 px-2 pb-1 text-crumb text-meta-foreground">
+                  {t.columns.saveToViewViewer}
+                </p>
+              ) : !columnState.personal ? (
+                <p className="m-0 px-2 pb-1 text-crumb text-meta-foreground">
+                  {t.columns.saveToViewIdle}
+                </p>
+              ) : null}
+              {columnState.saveToViewFailed ? (
+                <p
+                  role="alert"
+                  className="m-0 px-2 pb-1 text-crumb text-destructive"
+                >
+                  {t.columns.saveToViewFailed}
+                </p>
+              ) : null}
+              {columnState.personal ? (
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    columnState.onReset();
+                  }}
+                >
+                  {t.columns.reset}
+                </DropdownMenuItem>
+              ) : null}
+            </>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t.columns.density}

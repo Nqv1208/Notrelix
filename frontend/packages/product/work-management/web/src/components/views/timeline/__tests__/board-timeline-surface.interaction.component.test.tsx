@@ -12,6 +12,7 @@ import {
 import type { DayKey } from "../../calendar/calendar-model";
 import {
   BoardTimelineSurface,
+  type BoardTimelineSurfaceProps,
   type TimelineReschedule,
 } from "../board-timeline-surface";
 import type { TimelineItem, TimelineScale } from "../timeline-model";
@@ -48,9 +49,11 @@ interface Spies {
 function Host({
   scenario,
   spies,
+  extra,
 }: {
   scenario: TimelineScenario;
   spies: Spies;
+  extra?: Partial<BoardTimelineSurfaceProps>;
 }) {
   const [scale, setScale] = useState<TimelineScale>(scenario.scale);
   const [anchorDay, setAnchorDay] = useState<DayKey>(scenario.anchorDay);
@@ -68,6 +71,7 @@ function Host({
         }
         onOpenUndated={spies.onOpenUndated}
         onAddItem={spies.onAddItem}
+        {...extra}
       />
     </div>
   );
@@ -76,8 +80,9 @@ function Host({
 function renderTimeline(
   scenario: TimelineScenario = timelineScenario(),
   spies: Spies = {},
+  extra?: Partial<BoardTimelineSurfaceProps>,
 ) {
-  return renderPureUi(<Host scenario={scenario} spies={spies} />);
+  return renderPureUi(<Host scenario={scenario} spies={spies} extra={extra} />);
 }
 
 const track = (container: HTMLElement, id: string) => {
@@ -584,5 +589,227 @@ describe("BoardTimelineSurface", () => {
       );
       unmount();
     }
+  });
+});
+
+describe("BoardTimelineSurface interactions (W5)", () => {
+  const connectorOf = (container: HTMLElement, id: string) => {
+    const element = track(container, id).querySelector<HTMLElement>(
+      '[data-tl="connector"]',
+    );
+    if (!element) throw new Error(`no connector ${id}`);
+    return element;
+  };
+  /** The row under the pointer: JSDOM has no layout, so the test names it. */
+  const pointerOver = (container: HTMLElement, id: string | null) => {
+    document.elementFromPoint = () => (id ? track(container, id) : null);
+  };
+
+  it("FUI[wm.timeline.board:zoom-fit] fits the dated items and dims Hôm nay at today", () => {
+    for (const locale of LOCALES) {
+      const copy = timelineCopy(locale);
+      const { unmount } = renderTimeline(timelineScenario({ locale }));
+      const today = screen.getByRole("button", { name: copy.todayLabel });
+      expect(today.getAttribute("aria-current")).toBe("date");
+      fireEvent.click(screen.getByRole("button", { name: copy.next }));
+      expect(today.getAttribute("aria-current")).toBeNull();
+      fireEvent.click(today);
+      expect(today.getAttribute("aria-current")).toBe("date");
+      const fit = screen.getByRole("button", { name: copy.fit.label });
+      expect(fit.getAttribute("title")).toContain(copy.fit.tip);
+      // Without width the whole range only fits the month scale.
+      fireEvent.click(fit);
+      expect(
+        screen
+          .getByRole("radio", { name: copy.scale.month })
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+      unmount();
+    }
+  });
+
+  it("FUI[wm.timeline.board:link-drag] drags a connector onto a bar and refuses a loop before the drop", () => {
+    for (const locale of LOCALES) {
+      const created: Array<{ from: string; to: string }> = [];
+      const { container, unmount } = renderTimeline(
+        timelineScenario({ locale }),
+        {},
+        { onCreateLink: (link) => created.push(link) },
+      );
+      const connector = connectorOf(container, "erp-150");
+      fireEvent.pointerDown(connector, { clientX: 10, clientY: 10, button: 0 });
+      pointerOver(container, "erp-147");
+      fireEvent.pointerMove(connector, { clientX: 60, clientY: 40 });
+      const target = container.querySelector('[data-tl="linktarget"]');
+      expect(target?.getAttribute("data-state")).toBe("ok");
+      expect(
+        within(track(container, "erp-147")).getByRole("status").textContent,
+      ).toContain(
+        timelineCopy(locale)
+          .link.dropTarget.replace("{{to}}", "ERP-147")
+          .replace("{{from}}", "ERP-150"),
+      );
+      fireEvent.pointerUp(connector, { clientX: 60, clientY: 40 });
+      expect(created).toEqual([{ from: "erp-150", to: "erp-147" }]);
+
+      // ERP-150 already waits (through ERP-146) for ERP-142: 150 -> 142 is a loop.
+      fireEvent.pointerDown(connector, { clientX: 10, clientY: 10, button: 0 });
+      pointerOver(container, "erp-142");
+      fireEvent.pointerMove(connector, { clientX: 60, clientY: 40 });
+      expect(
+        container
+          .querySelector('[data-tl="linktarget"]')
+          ?.getAttribute("data-state"),
+      ).toBe("cycle");
+      fireEvent.pointerUp(connector, { clientX: 60, clientY: 40 });
+      expect(created).toHaveLength(1);
+      unmount();
+    }
+  });
+
+  it("FUI[wm.timeline.board:link-dialog] links from the keyboard and unlinks in the dialog", () => {
+    const created: Array<{ from: string; to: string }> = [];
+    const removed: Array<{ from: string; to: string }> = [];
+    const { container } = renderTimeline(
+      timelineScenario(),
+      {},
+      {
+        onCreateLink: (link) => created.push(link),
+        onRemoveLink: (link) => removed.push(link),
+      },
+    );
+    fireEvent.click(connectorOf(container, "erp-146"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Liên kết với…")).toBeTruthy();
+    // "chờ…" (default): ERP-146 waits for the chosen item.
+    fireEvent.change(within(dialog).getByRole("combobox"), {
+      target: { value: "ERP-151" },
+    });
+    fireEvent.click(within(dialog).getByRole("option", { name: /ERP-151/ }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Tạo liên kết" }),
+    );
+    expect(created).toEqual([{ from: "erp-151", to: "erp-146" }]);
+
+    fireEvent.click(connectorOf(container, "erp-146"));
+    const again = screen.getByRole("dialog");
+    fireEvent.click(
+      within(again).getByRole("button", {
+        name: /Gỡ liên kết ERP-146 chờ ERP-142/,
+      }),
+    );
+    expect(removed).toEqual([{ from: "erp-142", to: "erp-146" }]);
+  });
+
+  it("FUI[wm.timeline.board:link-cycle] disables a row that would close a loop and announces the chain", () => {
+    for (const locale of LOCALES) {
+      const created: unknown[] = [];
+      const { container, unmount } = renderTimeline(
+        timelineScenario({ locale }),
+        {},
+        { onCreateLink: (link) => created.push(link) },
+      );
+      // ERP-142 waits for ERP-150 would loop: 142 -> 146 -> 150 -> 142.
+      fireEvent.click(connectorOf(container, "erp-142"));
+      const dialog = screen.getByRole("dialog");
+      const row = within(dialog).getByRole("option", { name: /ERP-150/ });
+      expect(row.getAttribute("aria-disabled")).toBe("true");
+      fireEvent.click(row);
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        "ERP-150 → ERP-142 → ERP-146 → ERP-150",
+      );
+      const create = within(dialog)
+        .getAllByRole("button")
+        .find(
+          (button) => button.textContent === timelineCopy(locale).link.create,
+        );
+      expect((create as HTMLButtonElement).disabled).toBe(true);
+      expect(created).toHaveLength(0);
+      unmount();
+    }
+  });
+
+  /** JSDOM has no DragEvent: the event gets its x by hand. */
+  const dragAt = (
+    element: HTMLElement,
+    type: "dragOver" | "drop",
+    clientX: number,
+    dataTransfer: object,
+  ) => {
+    const event = new Event(type.toLowerCase(), {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.assign(event, { clientX, dataTransfer });
+    fireEvent(element, event);
+  };
+
+  it("FUI[wm.timeline.board:tray] opens over the chart, schedules by date and by drop", () => {
+    const scheduled: Array<[string, string]> = [];
+    const undatedItems = [
+      { id: "erp-153", itemKey: "ERP-153", title: "Lập kế hoạch cắt chuyển" },
+    ];
+    const { container } = renderTimeline(
+      timelineScenario(),
+      {},
+      { undatedItems, onSchedule: (id, day) => scheduled.push([id, day]) },
+    );
+    expect(container.querySelector('[data-tl="tray-panel"]')).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Mở khay Chưa lên lịch" }),
+    );
+    const tray = screen.getByRole("region", { name: "Chưa lên lịch" });
+    fireEvent.click(
+      within(tray).getByRole("button", { name: "Đặt ngày cho ERP-153" }),
+    );
+    fireEvent.change(within(tray).getByLabelText("Đặt ngày cho ERP-153"), {
+      target: { value: "2026-10-15" },
+    });
+    expect(scheduled).toEqual([["erp-153", "2026-10-15"]]);
+
+    // A drop on the chart: the window starts 5/10 and a day is 26px wide.
+    const chip = container.querySelector<HTMLElement>(
+      '[data-tl-undated="erp-153"]',
+    )!;
+    const transfer = { setData: () => undefined, effectAllowed: "" };
+    fireEvent.dragStart(chip, { dataTransfer: transfer });
+    const body = container.querySelector<HTMLElement>('[data-tl="body"]')!;
+    dragAt(body, "dragOver", 26 * 10 + 5, transfer);
+    expect(container.querySelector('[data-tl="trayghost"]')).not.toBeNull();
+    expect(container.querySelector('[data-tl="tip"]')?.textContent).toContain(
+      "ERP-153 vào 15/10",
+    );
+    dragAt(body, "drop", 26 * 10 + 5, transfer);
+    expect(scheduled.at(-1)).toEqual(["erp-153", "2026-10-15"]);
+  });
+
+  it("FUI[wm.timeline.board:link-read-only] shows the connectors disabled with the reason and no tray drag", () => {
+    const { container } = renderTimeline(
+      timelineReadOnlyScenario(),
+      {},
+      {
+        onCreateLink: () => undefined,
+        undatedItems: [
+          { id: "erp-153", itemKey: "ERP-153", title: "Lập kế hoạch" },
+        ],
+        onSchedule: () => undefined,
+      },
+    );
+    const connector = connectorOf(container, "erp-146");
+    expect(connector.getAttribute("aria-disabled")).toBe("true");
+    expect(connector.getAttribute("title")).toBe(
+      "Bạn chỉ có quyền xem board này",
+    );
+    fireEvent.click(connector);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Mở khay Chưa lên lịch" }),
+    );
+    expect(
+      container
+        .querySelector('[data-tl-undated="erp-153"]')
+        ?.getAttribute("draggable"),
+    ).toBe("false");
+    expect(screen.getByText(/không thể đặt lịch/)).toBeTruthy();
   });
 });

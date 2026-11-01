@@ -7,7 +7,9 @@ namespace Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
 /// Work Management-owned implementation of the Board-child relation consumed
 /// by the Governance access facts (GOV-033). One indexed lookup per request
 /// through the Work port, on the request's data session; soft-deleted children
-/// resolve too (the resource locator also bypasses filters).
+/// resolve too (the resource locator also bypasses filters). An Item, and a
+/// checklist or checklist item of one, joins its Group to report whether the
+/// Group is archived.
 /// </summary>
 public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizationFacts
 {
@@ -21,11 +23,17 @@ public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizati
     public async Task<BoardChildScope> ResolveAsync(string resourceKind, Guid resourceId, CancellationToken cancellationToken)
     {
         Guid? boardId;
+        var inArchivedGroup = false;
         switch (resourceKind)
         {
             case "work-management.board-item":
-                boardId = await _context.BoardItems.IgnoreQueryFilters().AsNoTracking()
-                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                var item = await (
+                    from i in _context.BoardItems.IgnoreQueryFilters().AsNoTracking()
+                    join g in _context.BoardGroups.IgnoreQueryFilters().AsNoTracking() on i.GroupId equals g.Id
+                    where i.Id == resourceId
+                    select new { i.BoardId, g.IsArchived }).FirstOrDefaultAsync(cancellationToken);
+                boardId = item?.BoardId;
+                inArchivedGroup = item?.IsArchived ?? false;
                 break;
             case "work-management.board-group":
                 boardId = await _context.BoardGroups.IgnoreQueryFilters().AsNoTracking()
@@ -39,29 +47,47 @@ public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizati
                 boardId = await _context.BoardViews.IgnoreQueryFilters().AsNoTracking()
                     .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
                 break;
+            case "work-management.saved-filter":
+                boardId = await _context.SavedFilters.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.form":
+                boardId = await _context.Forms.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.form-submission":
+                boardId = await _context.FormSubmissions.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
             case "work-management.label":
                 boardId = await _context.Labels.IgnoreQueryFilters().AsNoTracking()
                     .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
                 break;
             case "work-management.checklist":
-                boardId = await (
+                var checklistScope = await (
                     from checklist in _context.Checklists.IgnoreQueryFilters().AsNoTracking()
-                    join item in _context.BoardItems.IgnoreQueryFilters().AsNoTracking() on checklist.ItemId equals item.Id
+                    join parent in _context.BoardItems.IgnoreQueryFilters().AsNoTracking() on checklist.ItemId equals parent.Id
+                    join g in _context.BoardGroups.IgnoreQueryFilters().AsNoTracking() on parent.GroupId equals g.Id
                     where checklist.Id == resourceId
-                    select (Guid?)item.BoardId).FirstOrDefaultAsync(cancellationToken);
+                    select new { parent.BoardId, g.IsArchived }).FirstOrDefaultAsync(cancellationToken);
+                boardId = checklistScope?.BoardId;
+                inArchivedGroup = checklistScope?.IsArchived ?? false;
                 break;
             case "work-management.checklist-item":
-                boardId = await (
+                var checklistItemScope = await (
                     from checklistItem in _context.ChecklistItems.IgnoreQueryFilters().AsNoTracking()
                     join checklist in _context.Checklists.IgnoreQueryFilters().AsNoTracking() on checklistItem.ChecklistId equals checklist.Id
-                    join item in _context.BoardItems.IgnoreQueryFilters().AsNoTracking() on checklist.ItemId equals item.Id
+                    join parent in _context.BoardItems.IgnoreQueryFilters().AsNoTracking() on checklist.ItemId equals parent.Id
+                    join g in _context.BoardGroups.IgnoreQueryFilters().AsNoTracking() on parent.GroupId equals g.Id
                     where checklistItem.Id == resourceId
-                    select (Guid?)item.BoardId).FirstOrDefaultAsync(cancellationToken);
+                    select new { parent.BoardId, g.IsArchived }).FirstOrDefaultAsync(cancellationToken);
+                boardId = checklistItemScope?.BoardId;
+                inArchivedGroup = checklistItemScope?.IsArchived ?? false;
                 break;
             default:
                 return BoardChildScope.NotBoardChild;
         }
 
-        return new BoardChildScope(true, boardId);
+        return new BoardChildScope(true, boardId, inArchivedGroup);
     }
 }

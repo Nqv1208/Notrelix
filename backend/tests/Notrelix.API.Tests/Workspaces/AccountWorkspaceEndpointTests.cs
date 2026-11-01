@@ -51,7 +51,7 @@ public sealed class AccountWorkspaceEndpointTests : IClassFixture<NotrelixApiFac
         rows.GetArrayLength().Should().Be(2);
         var owner = rows[0];
         owner.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo(
-            ["id", "name", "slug", "role", "memberCount", "departmentCount", "isDefault", "canLeave"]);
+            ["id", "name", "slug", "role", "memberCount", "departmentCount", "isDefault", "canLeave", "isArchived"]);
         owner.GetProperty("role").GetString().Should().Be("Owner");
         owner.GetProperty("memberCount").GetInt32().Should().Be(3);
         owner.GetProperty("canLeave").GetBoolean().Should().BeFalse();

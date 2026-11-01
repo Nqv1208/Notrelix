@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 import {
   CALENDAR_UNDATED,
-  calendarAssigneeFilter,
   calendarDenseScenario,
   calendarEmptyScenario,
   calendarMockupEntries,
@@ -11,8 +10,10 @@ import {
   calendarScenario,
   type CalendarScenario,
 } from "../../../../verification/calendar-fixtures";
-import { emptyKanbanFilter } from "../../kanban/kanban-filter";
-import { BoardCalendarSurface } from "../board-calendar-surface";
+import {
+  BoardCalendarSurface,
+  type BoardCalendarSurfaceProps,
+} from "../board-calendar-surface";
 import { calendarCopy } from "../calendar.copy";
 import type {
   CalendarDateBasis,
@@ -21,6 +22,24 @@ import type {
 } from "../calendar-model";
 
 const LOCALES = ["vi", "en"] as const;
+
+beforeAll(() => {
+  // JSDOM has no PointerEvent: without one the pointer events lose their
+  // coordinates and button.
+  if (typeof window.PointerEvent === "undefined") {
+    class TestPointerEvent extends MouseEvent {
+      readonly pointerId: number;
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 1;
+      }
+    }
+    Object.defineProperty(window, "PointerEvent", {
+      configurable: true,
+      value: TestPointerEvent,
+    });
+  }
+});
 
 /** The range heading of the bar (the aside has headings of its own). */
 const heading = () => screen.getAllByRole("heading", { level: 2 })[0]!;
@@ -35,14 +54,16 @@ const dataTransfer = () => ({
 function Host({
   scenario,
   spies,
+  extra,
 }: {
+  extra?: Partial<BoardCalendarSurfaceProps>;
   scenario: CalendarScenario;
   spies: {
     onOpenItem?: (id: string) => void;
     onReschedule?: (id: string, toDay: DayKey) => void;
     onSetDue?: (id: string, day: DayKey) => void;
     onCreateItem?: (title: string, day: DayKey) => void;
-    onFilterChange?: (filter: unknown) => void;
+    onClearFilter?: () => void;
   };
 }) {
   const [range, setRange] = useState<CalendarRange>(scenario.range);
@@ -50,7 +71,6 @@ function Host({
   const [dateBasis, setDateBasis] = useState<CalendarDateBasis>(
     scenario.dateBasis,
   );
-  const [filter, setFilter] = useState(scenario.filter);
   return (
     <div style={{ height: 800 }}>
       <BoardCalendarSurface
@@ -61,15 +81,12 @@ function Host({
         onAnchorChange={setAnchorDay}
         dateBasis={dateBasis}
         onDateBasisChange={setDateBasis}
-        filter={filter}
-        onFilterChange={(next) => {
-          spies.onFilterChange?.(next);
-          setFilter(next);
-        }}
+        onClearFilter={() => spies.onClearFilter?.()}
         onOpenItem={(id) => spies.onOpenItem?.(id)}
         onReschedule={(entry, toDay) => spies.onReschedule?.(entry.id, toDay)}
         onSetDue={(id, day) => spies.onSetDue?.(id, day)}
         onCreateItem={(title, day) => spies.onCreateItem?.(title, day)}
+        {...extra}
       />
     </div>
   );
@@ -78,8 +95,9 @@ function Host({
 function renderCalendar(
   scenario: CalendarScenario = calendarScenario(),
   spies: Parameters<typeof Host>[0]["spies"] = {},
+  extra?: Partial<BoardCalendarSurfaceProps>,
 ) {
-  return renderPureUi(<Host scenario={scenario} spies={spies} />);
+  return renderPureUi(<Host scenario={scenario} spies={spies} extra={extra} />);
 }
 
 /** The week row that starts on `monday`. */
@@ -381,12 +399,12 @@ describe("BoardCalendarSurface", () => {
 
     // The button gives the anchor day (today until the view is moved).
     fireEvent.click(
-      screen.getByRole("button", { name: "Đặt hạn cho ERP-153" }),
+      screen.getByRole("button", { name: "Đặt ngày cho ERP-153" }),
     );
     expect(onSetDue).toHaveBeenLastCalledWith("erp-153", "2026-10-12");
     fireEvent.click(screen.getByRole("button", { name: "Tháng sau" }));
     fireEvent.click(
-      screen.getByRole("button", { name: "Đặt hạn cho ERP-153" }),
+      screen.getByRole("button", { name: "Đặt ngày cho ERP-153" }),
     );
     expect(onSetDue).toHaveBeenLastCalledWith("erp-153", "2026-11-12");
   });
@@ -496,23 +514,14 @@ describe("BoardCalendarSurface", () => {
     ).toBeNull();
   });
 
-  it("FUI[wm.calendar.board:filter] shows the filter as a pill and clears it from the no-results card", () => {
+  it("FUI[wm.calendar.board:filter] shows no item when the filter hides them all and clears the filter from the no-results card", () => {
     for (const locale of LOCALES) {
       const copy = calendarCopy(locale);
-      const onFilterChange = vi.fn();
+      const onClearFilter = vi.fn();
       const scenario = calendarScenario({ state: "khong-ket-qua", locale });
       const { container, unmount } = renderCalendar(scenario, {
-        onFilterChange,
+        onClearFilter,
       });
-      const summary = copy.filter.chip.assignee.replace(
-        "{{name}}",
-        "Đỗ Khánh Linh",
-      );
-      expect(
-        screen.getByRole("button", {
-          name: `${copy.filter.activePrefix} ${summary}`,
-        }),
-      ).toBeTruthy();
       // No item is shown; the card explains and clears the filter.
       expect(container.querySelector("[data-calendar-event]")).toBeNull();
       const status = screen.getByRole("status");
@@ -520,10 +529,9 @@ describe("BoardCalendarSurface", () => {
       fireEvent.click(
         within(status).getByRole("button", { name: copy.noResults.clear }),
       );
-      expect(onFilterChange).toHaveBeenCalledWith(emptyKanbanFilter());
+      expect(onClearFilter).toHaveBeenCalledOnce();
       unmount();
     }
-    expect(calendarAssigneeFilter().assigneeIds).toEqual(["user-khanh-linh"]);
   });
 
   it("FUI[wm.calendar.board:no-results] says the hidden undated item is hidden by the filter", () => {
@@ -547,7 +555,7 @@ describe("BoardCalendarSurface", () => {
       ),
     ).toBe("false");
     expect(
-      screen.queryByRole("button", { name: "Đặt hạn cho ERP-153" }),
+      screen.queryByRole("button", { name: "Đặt ngày cho ERP-153" }),
     ).toBeNull();
     expect(
       container
@@ -599,5 +607,211 @@ describe("BoardCalendarSurface", () => {
     expect(bare.querySelector(".truncate")).toBeTruthy();
     // The mark is optional: only the dot is left.
     expect(bare.querySelectorAll("span[aria-hidden]").length).toBe(1);
+  });
+});
+
+describe("BoardCalendarSurface interactions (W5)", () => {
+  /** A three-day item (14/10 to 16/10) beside the mockup's entries. */
+  const span = {
+    id: "erp-145",
+    kind: "item" as const,
+    itemKey: "ERP-145",
+    title: "Đào tạo kế toán",
+    tone: "todo" as const,
+    startDay: "2026-10-14" as DayKey,
+    endDay: "2026-10-16" as DayKey,
+    note: "",
+    movable: true,
+  };
+  const withSpan = (base = calendarScenario()): CalendarScenario => ({
+    ...base,
+    entries: [...calendarMockupEntries(), span],
+  });
+  const handle = (container: HTMLElement, edge: "start" | "due") => {
+    const element = container.querySelector<HTMLElement>(
+      `[data-calendar-handle="${edge}"][data-entry="erp-145"]`,
+    );
+    if (!element) throw new Error(`no ${edge} handle`);
+    return element;
+  };
+  /** JSDOM has no layout: week rows are 700px wide and 100px tall, one under the other. */
+  const layoutWeeks = (container: HTMLElement) => {
+    const rows = [
+      ...container.querySelectorAll<HTMLElement>("[data-calendar-week]"),
+    ];
+    rows.forEach((row, index) => {
+      row.getBoundingClientRect = () =>
+        ({
+          left: 0,
+          right: 700,
+          top: index * 100,
+          bottom: index * 100 + 100,
+          width: 700,
+          height: 100,
+        }) as DOMRect;
+    });
+    return (monday: DayKey) =>
+      rows.findIndex((row) => row.dataset.calendarWeek === monday) * 100 + 50;
+  };
+
+  it("FUI[wm.calendar.board:resize] drags the due handle across weeks, tips the new span and saves on release", () => {
+    for (const locale of LOCALES) {
+      const copy = calendarCopy(locale);
+      const changed: unknown[] = [];
+      const { container, unmount } = renderCalendar(
+        withSpan(calendarScenario({ locale })),
+        {},
+        { onChangeDates: (entry, days) => changed.push([entry.id, days]) },
+      );
+      const y = layoutWeeks(container);
+      const due = handle(container, "due");
+      fireEvent.pointerDown(due, {
+        clientX: 400,
+        clientY: y("2026-10-12"),
+        button: 0,
+        pointerId: 1,
+      });
+      // The next Monday's column 0 is 19/10: the due day crosses the week break.
+      fireEvent.pointerMove(document, {
+        clientX: 20,
+        clientY: y("2026-10-19"),
+        pointerId: 1,
+      });
+      expect(container.querySelector("[data-calendar-tip]")?.textContent).toBe(
+        copy.resizeTip.due.replace("{{to}}", "19/10").replace("{{days}}", "6"),
+      );
+      fireEvent.pointerUp(document, {
+        clientX: 20,
+        clientY: y("2026-10-19"),
+        pointerId: 1,
+      });
+      expect(changed).toEqual([
+        ["erp-145", { startDay: "2026-10-14", dueDay: "2026-10-19" }],
+      ]);
+      unmount();
+    }
+  });
+
+  it("FUI[wm.calendar.board:resize-cancel] keeps the due on the start day and puts the bar back on Escape", () => {
+    const changed: unknown[] = [];
+    const { container } = renderCalendar(
+      withSpan(),
+      {},
+      {
+        onChangeDates: (entry, days) => changed.push([entry.id, days]),
+      },
+    );
+    const y = layoutWeeks(container);
+    const due = handle(container, "due");
+    fireEvent.pointerDown(due, {
+      clientX: 400,
+      clientY: y("2026-10-12"),
+      button: 0,
+      pointerId: 1,
+    });
+    // 12/10 is before the 14/10 start: the due stops at the start day.
+    fireEvent.pointerMove(document, {
+      clientX: 20,
+      clientY: y("2026-10-12"),
+      pointerId: 1,
+    });
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.pointerUp(document, {
+      clientX: 20,
+      clientY: y("2026-10-12"),
+      pointerId: 1,
+    });
+    expect(changed).toEqual([]);
+    expect(container.querySelector("[data-calendar-tip]")).toBeNull();
+  });
+
+  it("FUI[wm.calendar.board:change-dates] changes the dates from the context menu and refuses a due before the start", () => {
+    for (const locale of LOCALES) {
+      const copy = calendarCopy(locale);
+      const changed: unknown[] = [];
+      const { container, unmount } = renderCalendar(
+        withSpan(calendarScenario({ locale })),
+        {},
+        { onChangeDates: (entry, days) => changed.push([entry.id, days]) },
+      );
+      fireEvent.contextMenu(eventOf(container, "erp-145"));
+      fireEvent.click(
+        screen.getByRole("menuitem", {
+          name: new RegExp(copy.menu.changeDates),
+        }),
+      );
+      const dialog = screen.getByRole("dialog");
+      const [start, due] = within(dialog).getAllByDisplayValue(
+        /2026-10-1[46]/,
+      ) as HTMLInputElement[];
+      fireEvent.change(due!, { target: { value: "2026-10-12" } });
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        copy.dates.invalid,
+      );
+      expect(due!.getAttribute("aria-invalid")).toBe("true");
+      const save = within(dialog).getByRole("button", {
+        name: copy.dates.save,
+      }) as HTMLButtonElement;
+      expect(save.disabled).toBe(true);
+      fireEvent.change(due!, { target: { value: "2026-10-18" } });
+      expect(start!.value).toBe("2026-10-14");
+      expect(save.disabled).toBe(false);
+      fireEvent.click(save);
+      expect(changed).toEqual([
+        ["erp-145", { startDay: "2026-10-14", dueDay: "2026-10-18" }],
+      ]);
+      unmount();
+    }
+  });
+
+  it("FUI[wm.calendar.board:menu] moves an item back to Chưa lên lịch from the menu", () => {
+    const unscheduled: string[] = [];
+    const { container } = renderCalendar(
+      withSpan(),
+      {},
+      {
+        onChangeDates: () => undefined,
+        onUnschedule: (entry) => unscheduled.push(entry.id),
+      },
+    );
+    fireEvent.contextMenu(eventOf(container, "erp-145"));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /Chuyển về Chưa lên lịch/ }),
+    );
+    expect(unscheduled).toEqual(["erp-145"]);
+  });
+
+  it("FUI[wm.calendar.board:undated-date] sets one day for an undated item by button (Đặt ngày)", () => {
+    const set: Array<[string, string]> = [];
+    renderCalendar(calendarScenario(), {
+      onSetDue: (id, day) => set.push([id, day]),
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Đặt ngày cho ERP-153" }),
+    );
+    expect(set).toEqual([["erp-153", "2026-10-12"]]);
+  });
+
+  it("FUI[wm.calendar.board:read-only-handles] keeps the handles disabled with the reason for a viewer", () => {
+    const { container } = renderCalendar(
+      { ...withSpan(calendarReadOnlyScenario()) },
+      {},
+      { onChangeDates: () => undefined },
+    );
+    const due = handle(container, "due");
+    expect(due.getAttribute("aria-disabled")).toBe("true");
+    expect(due.getAttribute("title")).toContain(
+      "Bạn chỉ có quyền xem board này",
+    );
+    fireEvent.pointerDown(due, {
+      clientX: 400,
+      clientY: 50,
+      button: 0,
+      pointerId: 1,
+    });
+    expect(container.querySelector("[data-calendar-tip]")).toBeNull();
+    // No menu for a viewer: the context menu has nothing to offer.
+    fireEvent.contextMenu(eventOf(container, "erp-145"));
+    expect(screen.queryByRole("menuitem")).toBeNull();
   });
 });

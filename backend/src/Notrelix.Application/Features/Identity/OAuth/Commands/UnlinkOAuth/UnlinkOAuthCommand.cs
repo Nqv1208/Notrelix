@@ -58,10 +58,7 @@ public sealed class UnlinkOAuthCommandHandler
 
         if (user is null)
         {
-            return Result.Failure(new ApplicationError(
-                "identity.auth.user-not-found",
-                "User not found.",
-                ApplicationErrorType.NotFound));
+            return Result.Failure(SessionErrors.SessionUserMissing);
         }
 
         if (user.Status != UserStatus.Active)

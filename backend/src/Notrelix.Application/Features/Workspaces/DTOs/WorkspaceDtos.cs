@@ -46,7 +46,8 @@ public record WorkspaceMemberProfileDto(Guid UserId, string? JobTitle, long Vers
 /// <param name="ResourceId">The one resource a resource invitation shares.</param>
 /// <param name="ResourceLevel">The explicit entry level created on acceptance: <c>Viewer</c>, <c>Commenter</c> or <c>Editor</c> (capped, GOV-030).</param>
 /// <param name="InitialEntries">The Team/Space entries applied atomically on acceptance (Workspace invitation only).</param>
-/// <param name="Status">The invitation status enum name (<c>Pending</c>, <c>Accepted</c>, <c>Revoked</c>, <c>Expired</c> or <c>Declined</c>), as stored. A <c>Pending</c> invitation whose <c>ExpiresAt</c> has passed can no longer be accepted.</param>
+/// <param name="Status">The invitation status enum name (<c>Pending</c>, <c>Accepted</c>, <c>Revoked</c>, <c>Expired</c> or <c>Declined</c>). A stored <c>Pending</c> invitation whose <c>ExpiresAt</c> has passed is reported as <c>Expired</c>.</param>
+/// <param name="Version">The invitation aggregate version, sent back as <c>expectedVersion</c> when its role is changed.</param>
 public record WorkspaceInvitationDto(
     Guid Id,
     string Email,
@@ -58,7 +59,8 @@ public record WorkspaceInvitationDto(
     string? ResourceKind = null,
     Guid? ResourceId = null,
     string? ResourceLevel = null,
-    IReadOnlyList<WorkspaceInvitationEntryDto>? InitialEntries = null
+    IReadOnlyList<WorkspaceInvitationEntryDto>? InitialEntries = null,
+    long Version = 0
 );
 
 /// <param name="Kind"><c>Team</c> or <c>Space</c>.</param>
@@ -71,6 +73,8 @@ public record WorkspaceInvitationEntryDto(string Kind, Guid TargetId, string Rol
 /// <see cref="DepartmentCount"/> is the number of active department Spaces and is null unless the
 /// caller is an Owner or Admin. <see cref="IsDefault"/> marks the Workspace that opens with the app.
 /// <see cref="CanLeave"/> is false only when the caller is the last active Owner.
+/// <see cref="IsArchived"/> marks an archived Workspace, which is listed only to its Owners and Admins; it is
+/// read-only for every member and is never the default.
 /// </summary>
 public record AccountWorkspaceDto(
     Guid Id,
@@ -80,5 +84,6 @@ public record AccountWorkspaceDto(
     int? MemberCount,
     int? DepartmentCount,
     bool IsDefault,
-    bool CanLeave
+    bool CanLeave,
+    bool IsArchived = false
 );

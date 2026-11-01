@@ -60,11 +60,10 @@ function toneOf(
 }
 
 /**
- * An item is drawn as a bar over its start-to-due span only when the span is
- * longer than a week; a shorter one sits on its due day as a chip, as
- * Final-Calendar draws (only the long data migration is a bar).
+ * An item with a start and a due on different days is drawn as one bar over
+ * its span, cut square at a week break; an item on a single day is a chip.
  */
-export const CALENDAR_MIN_SPAN_DAYS = 8;
+export const CALENDAR_MIN_SPAN_DAYS = 2;
 
 /** 17:00, the time of a due that has a day only. */
 const DEFAULT_DUE_MINUTES = 17 * 60;
@@ -147,6 +146,8 @@ export function buildCalendarEntries({
             ? DEFAULT_DUE_MINUTES
             : due.minutes
           : null,
+        priority: card.priority ?? null,
+        openBlockerCount: card.openBlockerCount ?? 0,
         assignee: person
           ? {
               initials: person.initials,

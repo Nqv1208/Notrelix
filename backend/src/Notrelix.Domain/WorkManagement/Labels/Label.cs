@@ -13,8 +13,8 @@ public sealed class LabelColor : ValueObject
 
     public static LabelColor Create(string hex)
     {
-        Guard.NotNullOrWhiteSpace(hex);
-        return new LabelColor(hex.Trim());
+        // A label colour is stored as a hex code, the same rule a field option's colour follows.
+        return new LabelColor(Color.Create(hex).Value);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

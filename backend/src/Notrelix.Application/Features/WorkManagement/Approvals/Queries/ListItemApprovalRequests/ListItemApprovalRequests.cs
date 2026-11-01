@@ -36,7 +36,8 @@ public class ListItemApprovalRequestsQueryHandler(IWorkManagementDbContext conte
             a.RequestedByUserId,
             a.CreatedAt,
             a.Steps.OrderBy(s => s.Position).Select(s => new ApprovalStepDto(
-                s.Id, s.ApproverUserId, s.ApproverTeamId, s.Status.ToString(), s.Position, s.DecidedAt, s.Note)).ToList())).ToList();
+                s.Id, s.ApproverUserId, s.ApproverTeamId, s.Status.ToString(), s.Position, s.DecidedAt, s.Note)).ToList(),
+            a.Version)).ToList();
         return Result<List<ApprovalRequestDto>>.Success(result);
     }
 }

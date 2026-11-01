@@ -454,6 +454,12 @@ describe("AccountProfilePage profile photo", () => {
     await mount(<AccountProfilePage />, "en");
     await until(() => expect(text()).toContain("Remove photo"));
     await clickButton("Remove photo");
+    // It asks first; keeping the photo changes nothing.
+    await until(() => expect(text()).toContain("Remove your photo?"));
+    await clickButton("Keep it");
+    expect(del).not.toHaveBeenCalled();
+    await clickButton("Remove photo");
+    await clickButton("Remove");
     await until(() => expect(del).toHaveBeenCalledWith("/profile/avatar"));
     await until(() => expect(text()).not.toContain("Remove photo"));
   });
@@ -596,7 +602,7 @@ describe("AccountSecurityPage container", () => {
   it("asks for a proof before creating new backup codes and shows them once", async () => {
     const post = vi.fn((url: string) =>
       url === "/auth/security/step-up/requirement"
-        ? { requiredFactor: 0, challengeToken: "challenge-1" }
+        ? { requiredFactor: "MfaChallenge", challengeToken: "challenge-1" }
         : url === "/auth/security/step-up/complete-mfa"
           ? { proofToken: "proof-1" }
           : { recoveryCodes: ["AAAA-1111", "BBBB-2222"] },
@@ -620,19 +626,25 @@ describe("AccountSecurityPage container", () => {
     });
   });
 
-  it("turns two-factor on with a QR code of the producer's address, then shows the recovery codes once", async () => {
+  it("turns two-factor on after a password proof, with a QR code of the producer's address, then shows the recovery codes once", async () => {
+    let proofs = 0;
     const post = vi.fn((url: string) =>
-      url === "/auth/mfa/enrollment/start"
-        ? {
-            mfaMethodId: "method-1",
-            secret: "JBSWY3DPEHPK3PXP",
-            otpAuthUri:
-              "otpauth://totp/Notrelix:ada%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Notrelix",
-          }
-        : {
-            mfaMethodId: "method-1",
-            recoveryCodes: ["AAAA-1111", "BBBB-2222"],
-          },
+      url === "/auth/security/step-up/requirement"
+        ? { requiredFactor: "Password", challengeToken: null }
+        : url === "/auth/security/step-up/complete-password"
+          ? { proofToken: `proof-${++proofs}` }
+          : url === "/auth/mfa/enrollment/start"
+            ? {
+                mfaMethodId: "method-1",
+                secret: "JBSWY3DPEHPK3PXP",
+                otpAuthUri:
+                  "otpauth://totp/Notrelix:ada%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Notrelix",
+              }
+            : {
+                mfaMethodId: "method-1",
+                recoveryCodes: ["AAAA-1111", "BBBB-2222"],
+                otherSessionsEnded: 2,
+              },
     );
     runtime.get = reads({
       ...table,
@@ -647,7 +659,16 @@ describe("AccountSecurityPage container", () => {
       expect(text()).toContain("Turn on two-factor authentication"),
     );
     await clickButton("Turn on two-factor authentication");
+    // A session alone cannot enrol a factor: the password comes first.
+    await until(() =>
+      expect(text()).toContain("Confirm to turn on two-factor authentication"),
+    );
+    await typeInFirstField("old-password-1");
+    await clickButton("Confirm");
     await until(() => expect(text()).toContain("JBSWY3DPEHPK3PXP"));
+    expect(post).toHaveBeenCalledWith("/auth/mfa/enrollment/start", {
+      stepUpToken: "proof-1",
+    });
     expect(
       host?.querySelector(
         'svg[aria-label="QR code for your authenticator app"]',
@@ -657,16 +678,19 @@ describe("AccountSecurityPage container", () => {
     await typeInFirstField("482931");
     await clickButton("Confirm");
     await until(() => expect(text()).toContain("AAAA-1111"));
+    // Activating spends its own proof and says how many other devices it signed out.
     expect(post).toHaveBeenCalledWith("/auth/mfa/enrollment/verify", {
       mfaMethodId: "method-1",
       code: "482931",
+      stepUpToken: "proof-2",
     });
+    expect(text()).toContain("2 other devices were signed out.");
   });
 
   it("changes the password with a second-factor proof, then tells the person every session ended", async () => {
     const post = vi.fn((url: string) =>
       url === "/auth/security/step-up/requirement"
-        ? { requiredFactor: 0, challengeToken: "challenge-1" }
+        ? { requiredFactor: "MfaChallenge", challengeToken: "challenge-1" }
         : url === "/auth/security/step-up/complete-mfa"
           ? { proofToken: "proof-1" }
           : undefined,
@@ -721,7 +745,10 @@ describe("AccountSecurityPage container", () => {
   it("says the current password is wrong when the producer refuses it", async () => {
     const post = vi.fn((url: string) => {
       if (url === "/auth/security/step-up/requirement")
-        return { requiredFactor: 0, challengeToken: "challenge-1" };
+        return {
+          requiredFactor: "MfaChallenge",
+          challengeToken: "challenge-1",
+        };
       if (url === "/auth/security/step-up/complete-mfa")
         return { proofToken: "proof-1" };
       throw Object.assign(new Error("refused"), {

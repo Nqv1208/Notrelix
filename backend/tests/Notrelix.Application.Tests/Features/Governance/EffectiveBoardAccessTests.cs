@@ -114,23 +114,25 @@ public sealed class EffectiveBoardAccessTests
     }
 
     [Fact]
-    public void Guest_WithAnExplicitGrant_HasTheGrantLevel()
+    public void Guest_WithAViewerGrant_HasTheGrantLevel()
     {
-        var access = AccessPolicyEngine.EvaluateEffectiveBoardAccess(Facts("Guest", explicitRank: 3));
+        var access = AccessPolicyEngine.EvaluateEffectiveBoardAccess(Facts("Guest", explicitRank: 1));
 
         access.Basis.Should().Be(EffectiveAccessBasis.ResourcePermission);
-        access.Level.Should().Be("Editor");
+        access.Level.Should().Be("Viewer");
     }
 
     [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
     [InlineData(4)]
     [InlineData(5)]
-    public void Guest_IsCappedAtEditor_WhateverTheGrant(int explicitRank)
+    public void Guest_IsViewOnly_WhateverTheGrant(int explicitRank)
     {
         var access = AccessPolicyEngine.EvaluateEffectiveBoardAccess(Facts("Guest", explicitRank: explicitRank));
 
         access.Basis.Should().Be(EffectiveAccessBasis.ResourcePermission);
-        access.Level.Should().Be("Editor", "a Workspace Guest never holds Manager (GOV-030)");
+        access.Level.Should().Be("Viewer", "a person outside the workspace reads what was shared with them (GOV-030)");
     }
 
     [Fact]

@@ -1,4 +1,9 @@
-import type { Run } from "@notrelix/docs-core";
+import {
+  plainTextOf,
+  plainTextOfRuns,
+  type BlockDraft,
+  type Run,
+} from "@notrelix/docs-core";
 import type { DocSegment, DocTaskResolution } from "./doc-page-models";
 
 /**
@@ -266,4 +271,17 @@ export function runsToSegments(
     push(text.slice(cursor));
   }
   return segments;
+}
+
+/**
+ * The text a member's unsaved block holds, to keep, copy or re-apply after a
+ * stored change replaced it: a table lists its cells row by row (tab-separated),
+ * since its text lives in the cells and not in the block's own runs.
+ */
+export function draftRecoveryText(draft: BlockDraft): string {
+  const table = draft.type === "table" ? draft.properties.table : undefined;
+  if (!table) return plainTextOf(draft.content);
+  return table.rows
+    .map((row) => row.map((cell) => plainTextOfRuns(cell.runs)).join("\t"))
+    .join("\n");
 }

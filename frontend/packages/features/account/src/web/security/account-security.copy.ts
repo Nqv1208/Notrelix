@@ -42,7 +42,6 @@ export const en = {
     backupRenew: "Create new codes",
     renewed: "New backup codes created.",
     turnedOn: "Two-factor authentication is on.",
-    turnedOff: "Two-factor authentication is off.",
   },
   flow: {
     enrollTitle: "Set up the authenticator app",
@@ -52,6 +51,16 @@ export const en = {
     secretLabel: "Can't scan it? Enter this key in the app instead:",
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
+    othersTitle: "Confirm to sign out of all other devices",
+    enrollProofTitle: "Confirm to turn on two-factor authentication",
+    enrollProofText:
+      "Once it is on, you are signed out of every other device. This one stays signed in.",
+    disableText:
+      "Turning it off voids your backup codes and signs you out of every device, this one included.",
+    signOutThisTitle: "Sign out of this device?",
+    signOutThisText:
+      "You will have to sign in again on this device to use Notrelix.",
+    signOutThisConfirm: "Sign out",
     codeText:
       "Enter a 6-digit code from your authenticator app or a backup code.",
     passwordText: "Enter your current password.",
@@ -59,13 +68,22 @@ export const en = {
     passwordLabel: "Current password",
     confirm: "Confirm",
     cancel: "Cancel",
-    wrongCode: "That code is not right. Check the app and try again.",
+    wrongCode:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
     wrongPassword: "That password is not right.",
     wait: "Too many tries. Try again in {{seconds}} seconds.",
+    expired:
+      "That verification expired, so we started a new one. Enter a fresh code.",
     codesTitle: "Save your backup codes",
     codesText:
       "Each code works once when you don't have your phone. They are shown only now.",
+    codesOthers_one: "{{count}} other device was signed out.",
+    codesOthers_other: "{{count}} other devices were signed out.",
     done: "I saved them",
+    disabledTitle: "Two-factor authentication is off",
+    disabledText:
+      "Your backup codes no longer work. You were signed out of every device, including this one. Sign in again.",
+    signInAgain: "Sign in",
   },
   passwordFlow: {
     title: "Change your password",
@@ -78,7 +96,8 @@ export const en = {
     codeLabel: "Code",
     codeRequired:
       "Enter the code from your authenticator app or a backup code.",
-    wrongCode: "That code is not right. Check the app and try again.",
+    wrongCode:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
     newLabel: "New password",
     newHint:
       "At least {{count}} characters, different from your current password.",
@@ -123,6 +142,7 @@ export const en = {
     signOutLabel: "Sign out {{device}}",
     signOutThisLabel: "Sign out {{device}} (this device)",
     signedOut: "Signed out.",
+    gone: "That device was already signed out.",
   },
   others: {
     title: "Sign out of all other devices",
@@ -131,6 +151,8 @@ export const en = {
     action: "Sign out of all other devices",
     nobody: "No other device is signed in.",
     done: "Signed out of the other devices.",
+    doneCount_one: "Signed out of {{count}} other device.",
+    doneCount_other: "Signed out of {{count}} other devices.",
   },
   time: {
     now: "just now",
@@ -183,7 +205,6 @@ export const vi: AccountSecurityCopy = {
     backupRenew: "Tạo mã mới",
     renewed: "Đã tạo mã dự phòng mới.",
     turnedOn: "Đã bật xác thực hai yếu tố.",
-    turnedOff: "Đã tắt xác thực hai yếu tố.",
   },
   flow: {
     enrollTitle: "Thiết lập ứng dụng xác thực",
@@ -193,19 +214,38 @@ export const vi: AccountSecurityCopy = {
     secretLabel: "Không quét được? Hãy nhập khóa này vào ứng dụng:",
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
+    othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
+    enrollProofTitle: "Xác nhận để bật xác thực hai yếu tố",
+    enrollProofText:
+      "Khi bật xong, bạn sẽ bị đăng xuất khỏi mọi thiết bị khác. Thiết bị này vẫn giữ đăng nhập.",
+    disableText:
+      "Tắt xác thực hai lớp sẽ vô hiệu các mã dự phòng và đăng xuất bạn khỏi mọi thiết bị, kể cả thiết bị này.",
+    signOutThisTitle: "Đăng xuất khỏi thiết bị này?",
+    signOutThisText:
+      "Bạn sẽ phải đăng nhập lại trên thiết bị này để dùng Notrelix.",
+    signOutThisConfirm: "Đăng xuất",
     codeText: "Nhập mã 6 số từ ứng dụng xác thực hoặc một mã dự phòng.",
     passwordText: "Nhập mật khẩu hiện tại của bạn.",
     codeLabel: "Mã",
     passwordLabel: "Mật khẩu hiện tại",
     confirm: "Xác nhận",
     cancel: "Hủy",
-    wrongCode: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    wrongCode:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     wrongPassword: "Mật khẩu chưa đúng.",
     wait: "Thử quá nhiều lần. Thử lại sau {{seconds}} giây.",
+    expired: "Lần xác minh đó đã hết hạn nên đã mở lần mới. Hãy nhập mã mới.",
     codesTitle: "Lưu mã dự phòng của bạn",
     codesText:
       "Mỗi mã dùng được một lần khi bạn không có điện thoại. Mã chỉ hiện lúc này.",
+    // Vietnamese has no singular/plural distinction; both forms stay complete.
+    codesOthers_one: "Đã đăng xuất {{count}} thiết bị khác.",
+    codesOthers_other: "Đã đăng xuất {{count}} thiết bị khác.",
     done: "Tôi đã lưu",
+    disabledTitle: "Đã tắt xác thực hai lớp",
+    disabledText:
+      "Các mã dự phòng không còn dùng được. Bạn đã bị đăng xuất khỏi mọi thiết bị, kể cả thiết bị này. Hãy đăng nhập lại.",
+    signInAgain: "Đăng nhập",
   },
   passwordFlow: {
     title: "Đổi mật khẩu",
@@ -217,7 +257,8 @@ export const vi: AccountSecurityCopy = {
     wrongCurrent: "Mật khẩu chưa đúng.",
     codeLabel: "Mã",
     codeRequired: "Hãy nhập mã từ ứng dụng xác thực hoặc một mã dự phòng.",
-    wrongCode: "Mã chưa đúng. Kiểm tra ứng dụng rồi thử lại.",
+    wrongCode:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
     newLabel: "Mật khẩu mới",
     newHint: "Ít nhất {{count}} ký tự, khác mật khẩu hiện tại.",
     tooShort: "Hãy dùng ít nhất {{count}} ký tự.",
@@ -261,6 +302,7 @@ export const vi: AccountSecurityCopy = {
     signOutLabel: "Đăng xuất {{device}}",
     signOutThisLabel: "Đăng xuất {{device}} (thiết bị này)",
     signedOut: "Đã đăng xuất.",
+    gone: "Thiết bị đó đã được đăng xuất từ trước.",
   },
   others: {
     title: "Đăng xuất mọi thiết bị khác",
@@ -269,6 +311,9 @@ export const vi: AccountSecurityCopy = {
     action: "Đăng xuất mọi thiết bị khác",
     nobody: "Không còn thiết bị nào khác đang đăng nhập.",
     done: "Đã đăng xuất các thiết bị khác.",
+    // Vietnamese has no singular/plural distinction; both forms stay complete.
+    doneCount_one: "Đã đăng xuất {{count}} thiết bị khác.",
+    doneCount_other: "Đã đăng xuất {{count}} thiết bị khác.",
   },
   time: {
     now: "vừa xong",

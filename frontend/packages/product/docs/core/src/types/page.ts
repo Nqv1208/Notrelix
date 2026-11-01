@@ -66,10 +66,20 @@ export interface MovePageToSpacePayload {
   expectedVersion: number;
 }
 
+/** `Documents.Pages.Move`: a page moves with its subtree under another page, or to the top of its Space. */
+export interface MovePagePayload {
+  pageId: ID;
+  /** `null` makes the page a root page of its Space. */
+  parentId: ID | null;
+  expectedVersion: number;
+}
+
 export interface BreadcrumbItem {
   id: ID;
   title: string;
   icon: string | null;
+  /** The viewer may not see this ancestor: no id, title or icon; a run of them is one crumb. */
+  unavailable?: boolean;
 }
 
 export interface PageDetail extends Page {
@@ -99,10 +109,14 @@ export interface CreatePagePayload {
   templateId?: ID;
   /** Create a root page in this Space (a nested page follows its parent). */
   spaceId?: ID | null;
+  /** One per user action; the same key only to retry that action (the producer replays it for a day). */
+  idempotencyKey?: string;
 }
 
 export interface UpdatePagePayload {
   title?: string;
+  /** The page `version` the editor read; a rename sends it and a stale one answers 412. */
+  expectedVersion?: number | null;
   icon?: string | null;
   coverUrl?: string | null;
   coverColor?: string;

@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Workspaces.Spaces.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
 
@@ -17,9 +18,10 @@ public static class ArchiveSpaceEndpoint
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         Guid spaceId,
+        SpaceVersionRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new ArchiveSpaceCommand(workspaceId, spaceId));
+        var result = await sender.Send(new ArchiveSpaceCommand(workspaceId, spaceId, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

@@ -215,4 +215,6 @@ export interface ItemPageSurfaceProps {
   readonly onOpenSearch?: () => void;
   /** "Về trang chủ" of the not-found view. */
   readonly onGoHome?: () => void;
+  /** The linked docs section, supplied by the container (it reads and writes the links). */
+  readonly linkedDocs?: import("react").ReactNode;
 }

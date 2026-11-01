@@ -6,6 +6,7 @@ public class UpdateBoardMemberRoleCommandValidator : AbstractValidator<UpdateBoa
     {
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.Role).IsInEnum();
     }
 }

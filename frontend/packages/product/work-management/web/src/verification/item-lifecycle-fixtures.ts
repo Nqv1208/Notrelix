@@ -4,7 +4,7 @@
  * locales.
  */
 import type { BoardTrashRow } from "../components/item-lifecycle/board-trash-sheet";
-import type { MoveTargetBoard } from "../components/item-lifecycle/item-lifecycle-dialogs";
+import type { MoveTargetBoard } from "../components/item-actions/move-board-dialog";
 import {
   itemLifecycleCopy,
   type ItemLifecycleCopy,

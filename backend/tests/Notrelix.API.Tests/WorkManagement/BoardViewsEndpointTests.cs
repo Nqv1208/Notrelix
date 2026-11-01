@@ -42,8 +42,8 @@ public class BoardViewsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateViewConfig_WithValidData_ReturnsOk()
     {
-        var body = new { ConfigJson = "{}" };
-        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/views/{ViewId}")
+        var body = new { ConfigJson = "{}", ExpectedVersion = 1 };
+        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/views/{ViewId}?expectedVersion=1")
         {
             Content = JsonContent(body)
         });
@@ -53,7 +53,7 @@ public class BoardViewsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteView_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/views/{ViewId}");
+        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/views/{ViewId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

@@ -141,42 +141,12 @@
   },
   {
     "kind": "realtime-request",
-    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember.AssignBoardItemMemberCommand",
-    "handlerTypes": [
-      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember.AssignBoardItemMemberCommandHandler"
-    ],
-    "sourceFile": "Features/WorkManagement/BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs",
-    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022BoardItem\u0022, BoardItemId);",
-    "migrationStatus": "legacy"
-  },
-  {
-    "kind": "realtime-request",
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem.CreateBoardItemCommand",
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem.CreateBoardItemCommandHandler"
     ],
     "sourceFile": "Features/WorkManagement/BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs",
     "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, BoardId);",
-    "migrationStatus": "legacy"
-  },
-  {
-    "kind": "realtime-request",
-    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem.MoveBoardItemCommand",
-    "handlerTypes": [
-      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem.MoveBoardItemCommandHandler"
-    ],
-    "sourceFile": "Features/WorkManagement/BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs",
-    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, ItemId);",
-    "migrationStatus": "legacy"
-  },
-  {
-    "kind": "realtime-request",
-    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue.UpdateBoardItemFieldValueCommand",
-    "handlerTypes": [
-      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue.UpdateBoardItemFieldValueCommandHandler"
-    ],
-    "sourceFile": "Features/WorkManagement/BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs",
-    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022BoardItem\u0022, ItemId);",
     "migrationStatus": "legacy"
   },
   {

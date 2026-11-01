@@ -76,7 +76,7 @@ public static class SecurityStepUpEndpoints
         GetStepUpRequirementRequest request,
         ISender sender)
     {
-        if (!Enum.TryParse<StepUpPurpose>(request.Purpose, ignoreCase: true, out var purpose))
+        if (!StepUpPurposeInput.TryParse(request.Purpose, out var purpose))
         {
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
@@ -89,7 +89,7 @@ public static class SecurityStepUpEndpoints
         CompleteStepUpMfaRequest request,
         ISender sender)
     {
-        if (!Enum.TryParse<StepUpPurpose>(request.Purpose, ignoreCase: true, out var purpose))
+        if (!StepUpPurposeInput.TryParse(request.Purpose, out var purpose))
         {
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
@@ -108,7 +108,7 @@ public static class SecurityStepUpEndpoints
         CompleteStepUpPasswordRequest request,
         ISender sender)
     {
-        if (!Enum.TryParse<StepUpPurpose>(request.Purpose, ignoreCase: true, out var purpose))
+        if (!StepUpPurposeInput.TryParse(request.Purpose, out var purpose))
         {
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }

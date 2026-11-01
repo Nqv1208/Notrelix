@@ -39,6 +39,10 @@ public class ChecklistItem : Entity
 
     internal void Rename(string title) => Title = title;
 
+    internal void Assign(Guid? assigneeUserId) => AssigneeUserId = assigneeUserId;
+
+    internal void SetDue(DateTimeOffset? dueAt) => DueAt = dueAt;
+
     internal void UpdatePosition(FractionalIndex position) => Position = position;
 }
 
@@ -88,7 +92,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         checklist.SetAuditOnCreate(createdBy, createdAt);
-        checklist.RaiseDomainEvent(new ChecklistCreatedDomainEvent(accountId, workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
+        checklist.RaiseDomainEvent(new ChecklistCreatedDomainEvent(accountId, workspaceId, itemId, checklist.Id, checklist.Title, createdBy, createdAt));
 
         return checklist;
     }
@@ -104,7 +108,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         _items.Add(item);
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, normalizedTitle, addedAt));
+        RaiseDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, normalizedTitle, ItemId, Title, addedBy, addedAt));
         return item;
     }
 
@@ -136,7 +140,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         item.SetCompletion(done, updatedAt);
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.IsDone, updatedAt));
+        RaiseDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.IsDone, ItemId, item.Title, Title, updatedBy, updatedAt));
     }
 
     public void RenameItem(Guid itemId, string title, Guid updatedBy, DateTimeOffset updatedAt)
@@ -152,6 +156,38 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ChecklistItemRenamedDomainEvent(AccountId, WorkspaceId, Id, item.Id, normalizedTitle, updatedBy, updatedAt));
+    }
+
+    /// <summary>Assigns the item to a person, or to nobody (null); the person already assigned is a no-op.</summary>
+    public void SetItemAssignee(Guid itemId, Guid? assigneeUserId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (assigneeUserId == Guid.Empty)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Checklist_ItemNotFound, "Assignee must be a person or nobody.");
+        var item = FindItem(itemId);
+        if (item.AssigneeUserId == assigneeUserId) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        item.Assign(assigneeUserId);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChecklistItemAssigneeChangedDomainEvent(AccountId, WorkspaceId, Id, item.Id, assigneeUserId, updatedBy, updatedAt));
+    }
+
+    /// <summary>Sets the item's own due time, or clears it (null); the current value is a no-op.</summary>
+    public void SetItemDue(Guid itemId, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        var item = FindItem(itemId);
+        if (item.DueAt == dueAt) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        item.SetDue(dueAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChecklistItemDueChangedDomainEvent(AccountId, WorkspaceId, Id, item.Id, dueAt, updatedBy, updatedAt));
     }
 
     /// <summary>
@@ -184,7 +220,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         _items.Remove(item);
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, updatedAt));
+        RaiseDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, ItemId, item.Title, Title, updatedBy, updatedAt));
     }
 
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
@@ -220,7 +256,7 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new ChecklistDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ChecklistDeletedDomainEvent(AccountId, WorkspaceId, ItemId, Id, Title, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)

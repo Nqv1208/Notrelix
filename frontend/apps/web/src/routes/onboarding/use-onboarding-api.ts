@@ -3,7 +3,7 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   createOnboardingApi,
   type OnboardingApiClient,
-} from "./onboarding-api";
+} from "@notrelix/features-workspace/web";
 
 /** The onboarding calls on the app's runtime client. */
 export function useOnboardingApi() {

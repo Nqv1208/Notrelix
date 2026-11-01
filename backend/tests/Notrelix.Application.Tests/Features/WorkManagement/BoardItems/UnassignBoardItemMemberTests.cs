@@ -8,18 +8,21 @@ public class UnassignBoardItemMemberTests : WorkManagementHandlerTestBase
 
     public UnassignBoardItemMemberTests()
     {
-        _handler = new UnassignBoardItemMemberCommandHandler(DbContextMock.Object);
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.SetupGet(u => u.UserId).Returns(TestUserId);
+        _handler = new UnassignBoardItemMemberCommandHandler(DbContextMock.Object, currentUser.Object, DateTimeProviderMock.Object);
     }
 
     [Fact]
     public async Task Handle_MemberExists_RemovesMember()
     {
         var item = CreateBoardItem();
+        SetupBoardItems(item);
         var targetUserId = Guid.CreateVersion7();
         var member = CreateBoardItemMember(itemId: item.Id, userId: targetUserId);
         SetupBoardItemMembers(member);
 
-        var command = new UnassignBoardItemMemberCommand(item.Id, targetUserId);
+        var command = new UnassignBoardItemMemberCommand(item.Id, targetUserId, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -29,7 +32,9 @@ public class UnassignBoardItemMemberTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_MemberNotFound_ReturnsSuccess()
     {
-        var command = new UnassignBoardItemMemberCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var item = CreateBoardItem();
+        SetupBoardItems(item);
+        var command = new UnassignBoardItemMemberCommand(item.Id, Guid.CreateVersion7(), ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

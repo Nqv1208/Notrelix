@@ -100,6 +100,7 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
             (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
 
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddSingleton<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics>();
@@ -142,6 +143,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationInitialEntries>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationAcceptanceService>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.InviteeInvitations>();
         services.AddScoped<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions,
             Notrelix.Application.Features.Identity.Registration.Services.InvitedUserRegistrationActions>();
 
@@ -150,6 +152,8 @@ public static class DependencyInjection
         services.AddScoped<IWorkItemActions, WorkItemActions>();
         services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
         services.AddScoped<IBoardItemTargetAuthorizer, BoardItemTargetAuthorizer>();
+        services.AddScoped<IBoardItemSummaryBuilder, BoardItemSummaryBuilder>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.BoardExportBuilder>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
@@ -161,6 +165,10 @@ public static class DependencyInjection
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
+            Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
             Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,

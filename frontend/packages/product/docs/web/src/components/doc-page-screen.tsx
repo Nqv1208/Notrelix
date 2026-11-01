@@ -24,6 +24,8 @@ import {
   createUsePage,
   createUsePageBlocks,
   createUseArchivePage,
+  createUseMovePage,
+  convertTodoFailedStep,
   createUseConvertTodo,
   createUseDeletePage,
   createUsePageBacklinks,
@@ -94,7 +96,7 @@ import {
   useShowCommentAnchors,
 } from "../editor/use-comment-anchors";
 import { useDocRichEditor } from "../editor/use-doc-rich-editor";
-import { taskToken } from "./doc-page-text";
+import { draftRecoveryText, taskToken } from "./doc-page-text";
 
 interface CreateDocPageScreenDeps {
   api: DocsApiClient & DocsFileClient;
@@ -105,12 +107,58 @@ interface CreateDocPageScreenDeps {
 
 const NONE: DocOverlay = { kind: "none" };
 
+/** Blocks that point at a page's own attachments: a copy leaves them behind (this client has no video block yet). */
+const ATTACHMENT_BLOCKS: ReadonlySet<BlockType> = new Set(["image", "file"]);
+
 /** Types whose Enter makes another block of the same kind. */
 const REPEATING: ReadonlySet<BlockType> = new Set([
   "numbered_list",
   "bulleted_list",
   "todo",
 ]);
+
+/** Why a move was refused, as the dialog words it. */
+function moveFailure(
+  error: unknown,
+): "conflict" | "subtree" | "rule" | "failed" {
+  const { status, code } = (error ?? {}) as {
+    status?: unknown;
+    code?: unknown;
+  };
+  if (status === 412) return "conflict";
+  if (code === "documents.page.subtree-not-permitted") return "subtree";
+  return status === 400 ? "rule" : "failed";
+}
+
+/** The producer refused a trash, restore or delete because some page under the page is not the caller's to change. */
+function isSubtreeRefusal(error: unknown): boolean {
+  return (
+    (error as { code?: unknown } | null)?.code ===
+    "documents.page.subtree-not-permitted"
+  );
+}
+
+/** The ids of the pages the list holds below `rootId`, at any depth. */
+function pageIdsBelow(
+  pages: readonly { id: string; parentId: string | null }[],
+  rootId: string,
+): ReadonlySet<string> {
+  const below = new Set<string>();
+  let frontier = [rootId];
+  while (frontier.length > 0) {
+    const parents = new Set(frontier);
+    frontier = pages
+      .filter(
+        (entry) =>
+          entry.parentId !== null &&
+          parents.has(entry.parentId) &&
+          !below.has(entry.id),
+      )
+      .map((entry) => entry.id);
+    for (const id of frontier) below.add(id);
+  }
+  return below;
+}
 
 function saveBlob(name: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
@@ -178,6 +226,7 @@ export function createDocPageScreen({
   const useImportPage = createUseImportPage(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
+  const useMovePage = createUseMovePage(api, endpoints);
   const useRestorePage = createUseRestorePage(api, endpoints);
   const useDeletePage = createUseDeletePage(api, endpoints);
   const useTrashedPages = createUseTrashedPages(api, endpoints);
@@ -208,6 +257,7 @@ export function createDocPageScreen({
     const convertTodo = useConvertTodo(workspaceId, pageId);
     const pageListQuery = usePageList(workspaceId);
     const archivePage = useArchivePage(workspaceId);
+    const movePageMutation = useMovePage(workspaceId);
     const restorePage = useRestorePage(workspaceId);
     const deletePage = useDeletePage(workspaceId);
     const createVersion = useCreateVersion(workspaceId, pageId);
@@ -227,6 +277,10 @@ export function createDocPageScreen({
       namedOnly: boolean;
     } | null>(null);
     const [activeTocId, setActiveTocId] = useState<string | null>(null);
+    // A heading picked in the contents stays the current one while the page
+    // scrolls to it (the scroll passes other headings, and can be cut short by
+    // a layout shift); the viewer's own wheel, touch, key or click releases it.
+    const tocPinned = useRef(false);
     // The selection a comment is being written on, and the thread being looked at.
     const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(
       null,
@@ -308,8 +362,16 @@ export function createDocPageScreen({
           now,
           host.personFor,
           host.viewerId,
+          host.canEdit,
         ),
-      [commentsQuery.data, copy, host.personFor, host.viewerId, now],
+      [
+        commentsQuery.data,
+        copy,
+        host.personFor,
+        host.viewerId,
+        host.canEdit,
+        now,
+      ],
     );
 
     const versionsQuery = usePageVersions(
@@ -482,6 +544,13 @@ export function createDocPageScreen({
     const rememberAttachment = useRememberPageAttachment(workspaceId, pageId);
     const mediaRef = useRef({ copy, notify: host.notify });
     mediaRef.current = { copy, notify: host.notify };
+    // Another editor renamed the page first: the stored title is back; say so once.
+    const { titleConflict, clearTitleConflict } = editor;
+    useEffect(() => {
+      if (!titleConflict) return;
+      mediaRef.current.notify?.(mediaRef.current.copy.header.titleConflict);
+      clearTitleConflict();
+    }, [titleConflict, clearTitleConflict]);
     const uploads = useMemo(
       () =>
         new AttachmentUploads({
@@ -646,7 +715,9 @@ export function createDocPageScreen({
         scroller = scroller.parentElement;
       }
       const target: HTMLElement | Window = scroller ?? window;
+      tocPinned.current = false;
       const update = () => {
+        if (tocPinned.current) return;
         const box = scroller?.getBoundingClientRect();
         const top = box?.top ?? 0;
         const middle = top + (box?.height ?? window.innerHeight) / 2;
@@ -663,9 +734,20 @@ export function createDocPageScreen({
         }
         if (best) setActiveTocId(best.id);
       };
+      const release = () => {
+        tocPinned.current = false;
+      };
+      const viewerInput = ["wheel", "touchstart", "keydown", "pointerdown"];
       update();
       target.addEventListener("scroll", update, { passive: true });
-      return () => target.removeEventListener("scroll", update);
+      for (const type of viewerInput) {
+        target.addEventListener(type, release, { passive: true });
+      }
+      return () => {
+        target.removeEventListener("scroll", update);
+        for (const type of viewerInput)
+          target.removeEventListener(type, release);
+      };
     }, [outlineIds, panelTab]);
 
     // Spell check follows the viewer's choice (Tools menu).
@@ -720,7 +802,8 @@ export function createDocPageScreen({
 
     const recoveryViews = recoveries.map((entry) => ({
       id: entry.id,
-      text: entry.draft ? plainTextOf(entry.draft.content) : "",
+      text: entry.draft ? draftRecoveryText(entry.draft) : "",
+      table: entry.draft?.type === "table",
     }));
     const dropRecovery = (id: string) =>
       setRecoveries((current) => current.filter((entry) => entry.id !== id));
@@ -735,7 +818,9 @@ export function createDocPageScreen({
     const title = page.title;
     const crumbs = [
       ...(host.space ? [host.space.name] : []),
-      ...(breadcrumbQuery.data?.map((item) => item.title) ?? [title]),
+      ...(breadcrumbQuery.data?.map((item) =>
+        item.unavailable ? copy.crumbUnavailable : item.title,
+      ) ?? [title]),
     ];
     const latest = versionList[0];
     const latestActivity = (historyQuery.data ?? [])
@@ -828,6 +913,42 @@ export function createDocPageScreen({
       });
     const blockById = (id: string) => blocks.find((block) => block.id === id);
 
+    // Where the page may go: not into the pages under it, and not where it already is.
+    const pagesUnder = pageIdsBelow(pageListQuery.data ?? [], pageId);
+    const movePageDestinations = (pickerPages ?? []).filter(
+      (entry) => !pagesUnder.has(entry.id) && entry.id !== page.parentId,
+    );
+    // The page and the pages under it go to the trash together; the toast offers the way back.
+    const trashOpenPage = (below: number) =>
+      archivePage.mutate(pageId, {
+        // The confirmation shows its own failure; with nothing to confirm the toast does.
+        onError: (error) => {
+          if (below === 0)
+            host.notify?.(
+              isSubtreeRefusal(error)
+                ? copy.trash.subtreeRefused
+                : copy.trash.failed,
+            );
+        },
+        onSuccess: () => {
+          setOverlay(NONE);
+          host.leaveDoc?.();
+          host.notify?.(
+            fillDocCopy(
+              below > 0 ? copy.trash.movedWithPages : copy.trash.moved,
+              { title: title || copy.trash.untitled, count: below },
+            ),
+            {
+              label: copy.trash.undo,
+              run: () =>
+                void restorePage
+                  .mutateAsync(pageId)
+                  .then(() => host.openPage?.(pageId))
+                  .catch(() => host.notify?.(copy.trash.failed)),
+            },
+          );
+        },
+      });
     const callbacks: DocPageCallbacks = {
       onTitleCommit: host.canEdit ? editor.updateTitle : undefined,
       onBlockCommit: host.canEdit
@@ -871,10 +992,40 @@ export function createDocPageScreen({
       onTrashPage: host.canEdit
         ? () => {
             setOverlay(NONE);
-            archivePage.mutate(pageId, { onSuccess: () => host.leaveDoc?.() });
+            const below = pageIdsBelow(pageListQuery.data ?? [], pageId).size;
+            if (below > 0) setOverlay({ kind: "trashPage", below });
+            else trashOpenPage(0);
           }
         : undefined,
+      onConfirmTrashPage: host.canEdit
+        ? () => trashOpenPage(overlay.kind === "trashPage" ? overlay.below : 0)
+        : undefined,
       onOpenTrash: () => setOverlay({ kind: "trash" }),
+      onMovePage: host.canEdit
+        ? () => {
+            movePageMutation.reset();
+            setOverlay({ kind: "movePage" });
+          }
+        : undefined,
+      onMovePageTo: host.canEdit
+        ? (parentId) =>
+            movePageMutation.mutate(
+              {
+                pageId,
+                parentId,
+                // The producer rejects 0 (no version read) instead of guessing.
+                expectedVersion: page.version ?? 0,
+              },
+              {
+                onSuccess: () => {
+                  setOverlay(NONE);
+                  host.notify?.(fillDocCopy(copy.movePage.moved, { title }));
+                },
+              },
+            )
+        : undefined,
+      onLoadMoreTrash: () => void trashQuery.fetchNextPage(),
+      onRetryTrash: () => void trashQuery.refetch(),
       onRestorePage: (id) => restorePage.mutate(id),
       onDeletePage: (id) => deletePage.mutate(id),
       onOpenPagePicker: host.canEdit
@@ -1149,6 +1300,7 @@ export function createDocPageScreen({
       onPanelTab: setPanelTab,
       onPanelOpenChange: setPanelOpen,
       onTocSelect: (id) => {
+        tocPinned.current = true;
         setActiveTocId(id);
         if (
           id !== "title" &&
@@ -1215,7 +1367,7 @@ export function createDocPageScreen({
         const text = recoveries.find((entry) => entry.id === id)?.draft;
         if (!text) return;
         void navigator.clipboard
-          ?.writeText(plainTextOf(text.content))
+          ?.writeText(draftRecoveryText(text))
           .then(() => setCopiedRecoveryId(id))
           .catch(() => undefined);
       },
@@ -1299,15 +1451,15 @@ export function createDocPageScreen({
         ? () => {
             setOverlay(NONE);
             // Images and files belong to this page's attachments: they stay behind.
-            const copied = (richEditor.currentDrafts() ?? [])
-              .filter(
-                (draft) => draft.type !== "image" && draft.type !== "file",
-              )
+            const drafts = richEditor.currentDrafts() ?? [];
+            const copied = drafts
+              .filter((draft) => !ATTACHMENT_BLOCKS.has(draft.type))
               .map((draft) => ({
                 type: draft.type,
                 content: draft.content,
                 properties: draft.properties,
               }));
+            const dropped = drafts.length - copied.length;
             importPage.mutate(
               {
                 title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
@@ -1317,7 +1469,13 @@ export function createDocPageScreen({
               },
               {
                 onSuccess: (createdId) => {
-                  host.notify?.(copy.fileMenu.makeCopyDone);
+                  host.notify?.(
+                    dropped > 0
+                      ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
+                          count: dropped,
+                        })
+                      : copy.fileMenu.makeCopyDone,
+                  );
                   host.openPage?.(createdId);
                 },
                 onError: () => host.notify?.(copy.fileMenu.makeCopyFailed),
@@ -1471,14 +1629,44 @@ export function createDocPageScreen({
               }
             : undefined
         }
+        movePage={
+          overlay.kind === "movePage"
+            ? {
+                pages: movePageDestinations,
+                canTopLevel: page.parentId !== null,
+                busy: movePageMutation.isPending,
+                failure: movePageMutation.isError
+                  ? moveFailure(movePageMutation.error)
+                  : null,
+              }
+            : undefined
+        }
+        trashConfirm={
+          overlay.kind === "trashPage"
+            ? {
+                below: overlay.below,
+                busy: archivePage.isPending,
+                failed: archivePage.isError,
+                subtreeRefused: isSubtreeRefusal(archivePage.error),
+              }
+            : undefined
+        }
         trash={{
-          pages: (trashQuery.data ?? []).map((entry) => ({
-            id: entry.id,
-            title: entry.title,
-            icon: entry.icon,
-          })),
+          pages: (trashQuery.data?.pages ?? [])
+            .flatMap((chunk) => chunk.pages)
+            .map((entry) => ({
+              id: entry.id,
+              title: entry.title,
+              icon: entry.icon,
+            })),
+          listFailed: trashQuery.isError,
+          hasMore: trashQuery.hasNextPage,
+          loadingMore: trashQuery.isFetchingNextPage,
           loading: trashQuery.isLoading,
           failed: restorePage.isError || deletePage.isError,
+          subtreeRefused:
+            isSubtreeRefusal(restorePage.error) ||
+            isSubtreeRefusal(deletePage.error),
           busyId:
             (restorePage.isPending ? restorePage.variables : null) ??
             (deletePage.isPending ? deletePage.variables : null) ??
@@ -1496,6 +1684,9 @@ export function createDocPageScreen({
               : "",
           busy: convertTodo.isPending,
           failed: convertTodo.isError,
+          failedStep: convertTodo.isError
+            ? convertTodoFailedStep(convertTodo.error)
+            : null,
         }}
         readOnly={!host.canEdit}
         canComment

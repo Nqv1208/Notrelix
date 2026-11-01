@@ -1,7 +1,6 @@
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthStepUp;
-using Notrelix.Application.Features.Identity.Security.DTOs;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
 
@@ -32,7 +31,7 @@ public static class StartOAuthStepUpEndpoint
             return EndpointExtensions.InvalidInput($"Invalid OAuth provider: {provider}");
         }
 
-        if (!Enum.TryParse<StepUpPurpose>(purpose, ignoreCase: true, out var stepUpPurpose))
+        if (!StepUpPurposeInput.TryParse(purpose, out var stepUpPurpose))
         {
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {purpose}");
         }

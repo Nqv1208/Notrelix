@@ -16,13 +16,16 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceLocator _resourceLocator;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public LinkPageToBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
-        IResourceLocator resourceLocator)
+        IResourceLocator resourceLocator,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -30,6 +33,13 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
     }
 
     public async Task<Result> Handle(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
+    {
+        var response = await HandleCore(request, cancellationToken);
+        if (_realtime is not null) await _realtime.NotifyAsync(request, response, cancellationToken);
+        return response;
+    }
+
+    private async Task<Result> HandleCore(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
     {
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(x => x.Id == request.BoardItemId, cancellationToken);
@@ -46,6 +56,15 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
 
         if (card.WorkspaceId != page.WorkspaceId)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
+
+        // Linking a page twice is a no-op, so the list shows it once.
+        var pageKind = ResourceKind.Create("documents.page");
+        var alreadyLinked = (await _context.BoardItemLinks
+                .Where(l => l.SourceItemId == card.Id)
+                .ToListAsync(cancellationToken))
+            .Any(l => l.Target.Kind == pageKind && l.Target.ResourceId == request.PageId);
+        if (alreadyLinked)
+            return Result.Success();
 
         var now = _timeProvider.UtcNow;
 

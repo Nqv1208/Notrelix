@@ -1,4 +1,8 @@
 import {
+  fillLifecycleCopy,
+  type ItemLifecycleCopy,
+} from "./item-lifecycle.copy";
+import {
   Button,
   Sheet,
   SheetContent,
@@ -6,22 +10,40 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@notrelix/ui-web";
-import {
-  fillLifecycleCopy,
-  type ItemLifecycleCopy,
-} from "./item-lifecycle.copy";
 
 export interface BoardTrashRow {
   readonly id: string;
   readonly name: string;
   readonly itemKey: string | null;
   /** `YYYY-MM-DD` of the last day the item can be restored. */
-  readonly restorableUntilDay: string;
+  readonly restorableUntilDay?: string;
+  /** The line under the name when it is not the restore day (the archive list). */
+  readonly note?: string;
 }
+
+/** The words of one list: the same sheet shows the deleted items and the archived ones. */
+export interface BoardTrashLabels {
+  readonly title: string;
+  readonly body: string;
+  readonly empty: string;
+  readonly loading: string;
+  readonly error: string;
+  readonly action: string;
+}
+
+const trashLabels = (copy: ItemLifecycleCopy): BoardTrashLabels => ({
+  title: copy.trashTitle,
+  body: copy.trashBody,
+  empty: copy.trashEmpty,
+  loading: copy.trashLoading,
+  error: copy.trashError,
+  action: copy.trashRestore,
+});
 
 /** The board's deleted items with the way back; shown from the board menu. */
 export function BoardTrashSheet({
   copy,
+  labels = trashLabels(copy),
   open,
   rows,
   loading,
@@ -31,6 +53,8 @@ export function BoardTrashSheet({
   onClose,
 }: {
   copy: ItemLifecycleCopy;
+  /** The words of the list; the deleted items' when absent. */
+  labels?: BoardTrashLabels;
   open: boolean;
   rows: readonly BoardTrashRow[];
   loading: boolean;
@@ -43,22 +67,20 @@ export function BoardTrashSheet({
     <Sheet open={open} onOpenChange={(next) => (next ? null : onClose())}>
       <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{copy.trashTitle}</SheetTitle>
-          <SheetDescription>{copy.trashBody}</SheetDescription>
+          <SheetTitle>{labels.title}</SheetTitle>
+          <SheetDescription>{labels.body}</SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           {loading ? (
             <p role="status" className="text-compact text-muted-foreground">
-              {copy.trashLoading}
+              {labels.loading}
             </p>
           ) : failed ? (
             <p role="alert" className="text-compact text-destructive">
-              {copy.trashError}
+              {labels.error}
             </p>
           ) : rows.length === 0 ? (
-            <p className="text-compact text-muted-foreground">
-              {copy.trashEmpty}
-            </p>
+            <p className="text-compact text-muted-foreground">{labels.empty}</p>
           ) : (
             <ul className="flex flex-col gap-1">
               {rows.map((row) => (
@@ -76,9 +98,10 @@ export function BoardTrashSheet({
                       {row.name}
                     </p>
                     <p className="text-metadata text-muted-foreground">
-                      {fillLifecycleCopy(copy.trashUntil, {
-                        day: row.restorableUntilDay,
-                      })}
+                      {row.note ??
+                        fillLifecycleCopy(copy.trashUntil, {
+                          day: row.restorableUntilDay ?? "",
+                        })}
                     </p>
                   </div>
                   <Button
@@ -88,7 +111,7 @@ export function BoardTrashSheet({
                     disabled={restoringId === row.id}
                     onClick={() => onRestore(row)}
                   >
-                    {copy.trashRestore}
+                    {labels.action}
                   </Button>
                 </li>
               ))}

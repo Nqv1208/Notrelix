@@ -181,6 +181,8 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             {
                 scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
                     .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+                scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Idempotency.IIdempotencyExecutionContextWriter>()
+                    .Set($"chain-{Guid.NewGuid():N}", Notrelix.Application.Common.Idempotency.IdempotencyExecutionSource.Internal);
                 var root = await scope.ServiceProvider.GetRequiredService<ISender>()
                     .Send(CreateCommentCommand.ForBoardItem(graph.ItemId, graph.Content, null), CancellationToken.None);
                 ((Result<Guid>)root).Succeeded.Should().BeTrue();
@@ -192,6 +194,8 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             {
                 scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
                     .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+                scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Idempotency.IIdempotencyExecutionContextWriter>()
+                    .Set($"chain-{Guid.NewGuid():N}", Notrelix.Application.Common.Idempotency.IdempotencyExecutionSource.Internal);
                 var reply = await scope.ServiceProvider.GetRequiredService<ISender>()
                     .Send(CreateCommentCommand.ForBoardItem(graph.ItemId, replyContent, rootCommentId), CancellationToken.None);
                 ((Result<Guid>)reply).Succeeded.Should().BeTrue();
@@ -331,6 +335,8 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         // the MediatR pipeline resolves it.
         scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
             .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+        scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Idempotency.IIdempotencyExecutionContextWriter>()
+            .Set($"chain-{Guid.NewGuid():N}", Notrelix.Application.Common.Idempotency.IdempotencyExecutionSource.Internal);
 
         var result = await scope.ServiceProvider.GetRequiredService<ISender>()
             .Send(CreateCommentCommand.ForBoardItem(graph.ItemId, graph.Content, null), CancellationToken.None);

@@ -10,6 +10,7 @@ public static class CreateCommentEndpoint
     public static IEndpointRouteBuilder MapCreateBoardItemComment(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", CreateBoardItemCommentAsync)
+            .WithIdempotencyKey()
             .WithName("Collaboration.Comments.CreateBoardItemComment")
             .WithTags("Collaboration.Comments")
             .WithSummary("Create a comment on a board item");
@@ -19,6 +20,7 @@ public static class CreateCommentEndpoint
     public static IEndpointRouteBuilder MapCreatePageComment(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", CreatePageCommentAsync)
+            .WithIdempotencyKey()
             .WithName("Collaboration.Comments.CreatePageComment")
             .WithTags("Collaboration.Comments")
             .WithSummary("Create a comment on a page");
