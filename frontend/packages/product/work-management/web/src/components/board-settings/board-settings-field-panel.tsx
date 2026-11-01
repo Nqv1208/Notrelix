@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Columns3,
   Info,
@@ -581,17 +581,24 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
   const errorId = optionsErrorId(field.id);
   const failedProps = useWriteErrorProps(scope, errorId);
 
+  // A second Enter while the add is out would send it again with the version it just outdated, and
+  // the server would refuse the copy as someone else's change.
+  const addingNow = useRef(false);
   async function add() {
     const name = newName.trim();
     if (!name) {
       setAdding(false);
       return;
     }
+    if (addingNow.current) return;
+    addingNow.current = true;
     const color = OPTION_COLORS[field.options.length % OPTION_COLORS.length]!;
     const result = await run(
       () => actions.addOption(field.id, { name, color }),
       scope,
-    );
+    ).finally(() => {
+      addingNow.current = false;
+    });
     if (result.ok) {
       setAdding(false);
       setNewName("");
