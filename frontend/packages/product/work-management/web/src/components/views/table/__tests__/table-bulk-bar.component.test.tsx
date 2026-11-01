@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { renderPureUi, screen } from "@notrelix/testing";
+import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 import { mainTableCopy } from "../main-table.copy";
 import { TableBulkBar, type TableBulkBarProps } from "../table-bulk-bar";
 
@@ -52,5 +52,24 @@ describe("TableBulkBar selection limit", () => {
 
     expect(screen.getByText("5 selected")).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+describe("TableBulkBar without edit rights", () => {
+  it("Status and Due date stay reachable, are not operable and say why", () => {
+    const props = bar({ canEdit: false });
+    const reason = copy.bulk.readOnly;
+
+    for (const name of [copy.bulk.status, copy.bulk.due]) {
+      const control = button(`${name}: ${reason}`);
+      expect(control.getAttribute("aria-disabled")).toBe("true");
+      expect(control.title).toBe(reason);
+      fireEvent.click(control);
+    }
+    // Neither opens a menu or a popover, and nothing is written.
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.queryByLabelText(copy.bulk.dueLabel)).toBeNull();
+    expect(props.onStatus).not.toHaveBeenCalled();
+    expect(props.onDue).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowRight, Calendar, Flag, Trash2, User, X } from "lucide-react";
 import {
   AlertDialog,
@@ -75,6 +75,29 @@ export interface TableBulkBarProps {
   };
 }
 
+/** A bar action the person may not use: it stays reachable by keyboard and says why, instead of going silent. */
+function ReadOnlyButton({
+  label,
+  reason,
+  children,
+}: {
+  label: string;
+  reason: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-disabled="true"
+      title={reason}
+      aria-label={`${label}: ${reason}`}
+      className={cn(BAR_BUTTON_CLASS, "opacity-50")}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
  * The bar over the bottom edge of the table while rows are selected: the
  * count, then Trạng thái, Giao cho, Đặt hạn, Chuyển board, Lưu trữ and close.
@@ -130,29 +153,32 @@ export function TableBulkBar({
         </span>
       ) : null}
       <fieldset disabled={over} className="m-0 contents border-0 p-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              disabled={!canEdit}
-              className={BAR_BUTTON_CLASS}
-            >
-              <StatusDot category="in_progress" />
-              {b.status}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top" className="w-48">
-            {statusOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.id}
-                onSelect={() => onStatus(option.id)}
-              >
-                <StatusDot category={option.category} />
-                {option.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canEdit ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className={BAR_BUTTON_CLASS}>
+                <StatusDot category="in_progress" />
+                {b.status}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-48">
+              {statusOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.id}
+                  onSelect={() => onStatus(option.id)}
+                >
+                  <StatusDot category={option.category} />
+                  {option.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <ReadOnlyButton label={b.status} reason={b.readOnly}>
+            <StatusDot category="in_progress" />
+            {b.status}
+          </ReadOnlyButton>
+        )}
 
         {priority && canEdit ? (
           <DropdownMenu>
@@ -235,59 +261,62 @@ export function TableBulkBar({
           </button>
         )}
 
-        <Popover open={dueOpen} onOpenChange={setDueOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              disabled={!canEdit}
-              className={BAR_BUTTON_CLASS}
+        {canEdit ? (
+          <Popover open={dueOpen} onOpenChange={setDueOpen}>
+            <PopoverTrigger asChild>
+              <button type="button" className={BAR_BUTTON_CLASS}>
+                <Calendar className="size-4" aria-hidden="true" />
+                {b.due}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              side="top"
+              aria-label={b.due}
+              className="w-60 gap-2 rounded-[10px] border border-line-strong bg-popover p-3 shadow-pop ring-0 dark:bg-card"
             >
-              <Calendar className="size-4" aria-hidden="true" />
-              {b.due}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            side="top"
-            aria-label={b.due}
-            className="w-60 gap-2 rounded-[10px] border border-line-strong bg-popover p-3 shadow-pop ring-0 dark:bg-card"
-          >
-            <label className="flex flex-col gap-1 text-compact text-foreground">
-              {b.dueLabel}
-              <input
-                type="date"
-                value={day}
-                onChange={(event) => setDay(event.target.value)}
-                className="h-8 rounded-[7px] border border-line-strong bg-background px-2 max-md:h-11 text-compact text-foreground"
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="h-8 cursor-pointer rounded-[7px] max-md:h-11 border border-line-strong bg-popover px-3 text-compact font-medium text-foreground hover:bg-state-hover-strong dark:bg-card"
-                onClick={() => {
-                  setDueOpen(false);
-                  setDay("");
-                  onDue(null);
-                }}
-              >
-                {b.dueClear}
-              </button>
-              <button
-                type="button"
-                disabled={day === ""}
-                className="h-8 cursor-pointer rounded-[7px] max-md:h-11 bg-primary px-3 text-compact font-semibold text-primary-foreground disabled:cursor-default disabled:opacity-50"
-                onClick={() => {
-                  setDueOpen(false);
-                  onDue(day);
-                  setDay("");
-                }}
-              >
-                {b.dueApply}
-              </button>
-            </div>
-          </PopoverContent>
-        </Popover>
+              <label className="flex flex-col gap-1 text-compact text-foreground">
+                {b.dueLabel}
+                <input
+                  type="date"
+                  value={day}
+                  onChange={(event) => setDay(event.target.value)}
+                  className="h-8 rounded-[7px] border border-line-strong bg-background px-2 max-md:h-11 text-compact text-foreground"
+                />
+              </label>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="h-8 cursor-pointer rounded-[7px] max-md:h-11 border border-line-strong bg-popover px-3 text-compact font-medium text-foreground hover:bg-state-hover-strong dark:bg-card"
+                  onClick={() => {
+                    setDueOpen(false);
+                    setDay("");
+                    onDue(null);
+                  }}
+                >
+                  {b.dueClear}
+                </button>
+                <button
+                  type="button"
+                  disabled={day === ""}
+                  className="h-8 cursor-pointer rounded-[7px] max-md:h-11 bg-primary px-3 text-compact font-semibold text-primary-foreground disabled:cursor-default disabled:opacity-50"
+                  onClick={() => {
+                    setDueOpen(false);
+                    onDue(day);
+                    setDay("");
+                  }}
+                >
+                  {b.dueApply}
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <ReadOnlyButton label={b.due} reason={b.readOnly}>
+            <Calendar className="size-4" aria-hidden="true" />
+            {b.due}
+          </ReadOnlyButton>
+        )}
 
         {move && canEdit ? (
           <Popover open={moveOpen} onOpenChange={setMoveOpen}>
