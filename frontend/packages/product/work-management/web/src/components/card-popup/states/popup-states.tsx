@@ -266,6 +266,13 @@ export function PopupBanners({
           body={t.readOnlyPermissionBody}
         />
       ) : null}
+      {readOnly === "item-archived" ? (
+        <Banner
+          tone="info"
+          title={t.readOnlyItemArchivedTitle}
+          body={t.readOnlyItemArchivedBody}
+        />
+      ) : null}
       {readOnly === "archived" ? (
         <Banner
           tone="info"

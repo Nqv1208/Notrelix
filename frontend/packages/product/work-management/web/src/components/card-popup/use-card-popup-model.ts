@@ -123,9 +123,11 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     input.readOnly ??
     (input.capabilities.frozen
       ? "archived"
-      : input.capabilities.canEditFields
-        ? null
-        : "permission");
+      : input.mode === "view" && input.card.isArchived
+        ? "item-archived"
+        : input.capabilities.canEditFields
+          ? null
+          : "permission");
   const fields = useMemo(() => findItemFields(input.board), [input.board]);
   const capabilitySlots = useCapabilitySlots({
     card: input.card,
