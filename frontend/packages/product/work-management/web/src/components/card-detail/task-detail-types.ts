@@ -113,6 +113,12 @@ export interface ItemSheetApproval {
   readonly approverName: string | null;
   /** Who asked: only they may cancel a pending request. */
   readonly requestedByUserId?: string | null;
+  readonly requestedByName?: string | null;
+  /** The requester's note and when the request was sent. */
+  readonly note?: string | null;
+  readonly requestedAt?: string | null;
+  /** When the approver answered. */
+  readonly decidedAt?: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote?: string | null;
 }
@@ -157,8 +163,17 @@ export interface TaskDetailData {
   readonly approvals?: readonly ItemSheetApproval[];
   /** Why the last approval request was refused, when it was. */
   readonly approvalError?: "alreadyAsked" | "failed" | null;
-  /** Why the last approve, reject or cancel was refused, when it was. */
-  readonly approvalAnswerError?: boolean;
+  /** The approvals are being read for the first time. */
+  readonly approvalsLoading?: boolean;
+  /** A decision or a cancel is on its way: its buttons wait. */
+  readonly approvalAnswering?: boolean;
+  /** The approvals could not be read and there is nothing to show instead. */
+  readonly approvalsFailed?: boolean;
+  /**
+   * Why the last approve, reject or cancel was refused: someone decided first (`conflict`), the viewer is
+   * not the person asked (`forbidden`), or anything else.
+   */
+  readonly approvalAnswerError?: "conflict" | "forbidden" | "failed" | null;
   /** The signed-in member: the named approver decides, the requester cancels. */
   readonly viewerUserId?: string | null;
   /** Links to other items; absent: the page says links are not available. */
@@ -212,6 +227,8 @@ export interface TaskDetailCallbacks {
     patch: UpdateCardInput,
   ) => void | Promise<unknown>;
   readonly onToggleWatch: (watched: boolean) => void;
+  /** Reads the approvals again after a failed read. */
+  readonly onReloadApprovals?: () => void;
   /** Asks a board member to approve the item; "Request approval" is absent without it. */
   readonly onRequestApproval?: (approverUserId: string) => void;
   /** The named approver approves or rejects a pending request; the buttons are absent without it. */

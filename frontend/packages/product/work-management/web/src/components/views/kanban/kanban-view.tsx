@@ -66,6 +66,7 @@ import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
+import { approvalFailure } from "../../card-popup/approval/approval-model";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneDrop } from "./kanban-dnd";
@@ -1440,14 +1441,36 @@ function KanbanSelectedItemReady({
               null,
             decisionNote: approval.decisionNote,
             requestedByUserId: approval.requestedByUserId,
+            requestedByName:
+              directory?.people.find(
+                (person) => person.userId === approval.requestedByUserId,
+              )?.name ??
+              board.members.find(
+                (member) => member.userId === approval.requestedByUserId,
+              )?.name ??
+              null,
+            note: approval.note,
+            requestedAt: approval.requestedAt,
+            decidedAt: approval.decidedAt,
           })),
-          approvalAnswerError: approvals.answerError !== null,
+          approvalAnswering: approvals.answering,
+          approvalsLoading: approvals.loading,
+          approvalsFailed: approvals.loadFailed,
+          approvalAnswerError: approvalFailure(approvals.answerError),
+          approvalError: approvals.error
+            ? approvalFailure(approvals.error) === "conflict"
+              ? "alreadyAsked"
+              : "failed"
+            : null,
         }}
         callbacks={{
           onClose,
           onAddLink: (itemId, relation) =>
             itemLinks.addLink({ itemId, relation }),
           onRemoveLink: (linkId) => itemLinks.removeLink(linkId),
+          onReloadApprovals: approvals.reload,
+          onRequestApproval: (approverUserId) =>
+            approvals.request({ approverUserId, note: null }),
           onDecideApproval: (requestId, decision, comment) =>
             approvals.decide({ requestId, decision, comment }),
           onCancelApproval: (requestId) => approvals.cancel(requestId),

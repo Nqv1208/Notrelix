@@ -3,6 +3,11 @@ import { Check, ChevronDown, MoreHorizontal, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   PopoverTrigger,
   cn,
@@ -13,6 +18,7 @@ import {
   STATUS_DOT_CLASS,
   describeItemStatus,
 } from "../card-detail/item-field-editors";
+import { approvalCandidates } from "./approval/approval-model";
 import { useCardPopup } from "./card-popup-context";
 import { IconBtn, PanelPopover } from "./popup-ui";
 
@@ -155,11 +161,26 @@ function GroupPicker() {
 
 /** The header bar: column picker, key, the cover slot, "⋯" and close. */
 export function PopupHeader({ onClose }: { onClose: () => void }) {
-  const { card, board, mode, copy, capabilities, callbacks, slots, readOnly } =
-    useCardPopup();
+  const {
+    card,
+    board,
+    mode,
+    copy,
+    capabilities,
+    callbacks,
+    slots,
+    readOnly,
+    data,
+  } = useCardPopup();
   const actionsCopy = useItemActionsCopy();
   const t = copy.shell;
   const frozen = readOnly !== null;
+  const approvers = approvalCandidates(board, data.people, data.viewerUserId);
+  const canAsk =
+    !frozen &&
+    capabilities.canEditFields &&
+    callbacks.onRequestApproval !== undefined &&
+    approvers.length > 0;
   return (
     <div className="relative z-[6] flex h-14 flex-none items-center gap-1.5 border-b border-line bg-popover pr-1 pl-3 md:pr-3 md:pl-4">
       {mode === "create" ? (
@@ -209,6 +230,31 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
                 remove: callbacks.onDelete,
               }}
             />
+            {canAsk ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    {copy.approval.request}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent
+                    aria-label={copy.approval.searchLabel}
+                    className="max-h-72 overflow-y-auto"
+                  >
+                    {approvers.map((person) => (
+                      <DropdownMenuItem
+                        key={person.id}
+                        onSelect={() =>
+                          callbacks.onRequestApproval?.(person.id)
+                        }
+                      >
+                        {person.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
