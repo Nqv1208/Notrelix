@@ -38,6 +38,7 @@ public sealed class MoveBoardItemToBoardCommandValidator : AbstractValidator<Mov
 {
     public MoveBoardItemToBoardCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ItemId).NotEmpty();
         RuleFor(x => x.TargetBoardId).NotEmpty();
     }

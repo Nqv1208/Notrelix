@@ -56,7 +56,7 @@ public sealed class BoardChildAccessMatrixTests
         { "board Member", "Member", 3 },
         { "Space Member", "Member", 3 },
         { "workspace default, unplaced", "Member", 3 },
-        { "guest with explicit Manager", "Guest", 3 },
+        { "guest with explicit Manager", "Guest", 1 },
         { "workspace Owner", "Owner", 5 },
     };
 

@@ -32,12 +32,15 @@ public sealed class MfaTotpService : IMfaTotpService
         return $"otpauth://totp/{label}?secret={base32Secret}&issuer={Uri.EscapeDataString(issuer)}&algorithm=SHA1&digits=6&period={MfaPolicy.TotpTimeStepSeconds}";
     }
 
-    public bool VerifyCode(string base32Secret, string code, DateTimeOffset now)
+    public bool VerifyCode(string base32Secret, string code, DateTimeOffset now) =>
+        FindMatchingTimeStep(base32Secret, code, now) is not null;
+
+    public long? FindMatchingTimeStep(string base32Secret, string code, DateTimeOffset now)
     {
         var normalized = NormalizeCode(code);
         if (normalized.Length != 6)
         {
-            return false;
+            return null;
         }
 
         byte[] secret;
@@ -47,27 +50,30 @@ public sealed class MfaTotpService : IMfaTotpService
         }
         catch (FormatException)
         {
-            return false;
+            return null;
         }
 
         var counter = now.ToUnixTimeSeconds() / MfaPolicy.TotpTimeStepSeconds;
 
-        var expected = GenerateCode(secret, counter);
-        if (FixedTimeEquals(expected, normalized))
+        if (FixedTimeEquals(GenerateCode(secret, counter), normalized))
         {
-            return true;
+            return counter;
         }
 
         for (var offset = 1; offset <= MfaPolicy.TotpAllowedDriftSteps; offset++)
         {
-            if (FixedTimeEquals(GenerateCode(secret, counter - offset), normalized) ||
-                FixedTimeEquals(GenerateCode(secret, counter + offset), normalized))
+            if (FixedTimeEquals(GenerateCode(secret, counter - offset), normalized))
             {
-                return true;
+                return counter - offset;
+            }
+
+            if (FixedTimeEquals(GenerateCode(secret, counter + offset), normalized))
+            {
+                return counter + offset;
             }
         }
 
-        return false;
+        return null;
     }
 
     public string ProtectSecret(string base32Secret) => _protector.Protect(base32Secret);

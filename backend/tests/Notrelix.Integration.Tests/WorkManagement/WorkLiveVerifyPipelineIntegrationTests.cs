@@ -102,7 +102,7 @@ public sealed class WorkLiveVerifyPipelineIntegrationTests : IAsyncLifetime
         using var scope = provider.CreateScope();
         BindIdempotencyKey(scope);
 
-        var result = await Send<Result>(scope, new DeleteLabelCommand(_labelId));
+        var result = await Send<Result>(scope, new DeleteLabelCommand(_labelId, ExpectedVersion: 1));
 
         result.Succeeded.Should().BeTrue();
         await using var verify = _db.CreateOwnerContext(SystemTenant());

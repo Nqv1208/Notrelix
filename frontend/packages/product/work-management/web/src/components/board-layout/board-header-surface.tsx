@@ -121,6 +121,14 @@ export interface BoardHeaderData {
   readonly onOpenTrash?: () => void;
   /** Opens the board's archived items; absent: no entry in the menu. */
   readonly onOpenArchive?: () => void;
+  /** Opens the Leave board dialog; absent: no entry in the menu. */
+  readonly onLeave?: () => void;
+  /** Opens the Duplicate board dialog (a Manager); absent: no entry in the menu. */
+  readonly onDuplicate?: () => void;
+  /** Opens the Import items dialog (someone who may create items); absent: no entry in the menu. */
+  readonly onImport?: () => void;
+  /** Opens the Export dialog (anyone who sees the board, not a guest); absent: no entry in the menu. */
+  readonly onExport?: () => void;
   /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
   readonly archived?: BoardHeaderArchived;
 }
@@ -371,6 +379,10 @@ export function BoardHeaderSurface({
   onOpenSettings,
   onOpenShare,
   onCopyLink,
+  onLeave,
+  onDuplicate,
+  onImport,
+  onExport,
   onOpenTrash,
   onOpenArchive,
   archived,
@@ -497,7 +509,13 @@ export function BoardHeaderSurface({
           </>
         ) : null}
 
-        {onCopyLink || canManage || ((onOpenTrash || onOpenArchive) && canEditItems) ? (
+        {onCopyLink ||
+        onLeave ||
+        (onDuplicate && canManage) ||
+        (onImport && canEditItems) ||
+        onExport ||
+        canManage ||
+        ((onOpenTrash || onOpenArchive) && canEditItems) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -553,6 +571,29 @@ export function BoardHeaderSurface({
                     onSelect={onOpenSettings}
                   >
                     {h.deleteBoard}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+              {onDuplicate && canManage ? (
+                <DropdownMenuItem onSelect={onDuplicate}>
+                  {h.duplicateBoard}
+                </DropdownMenuItem>
+              ) : null}
+              {onImport && canEditItems ? (
+                <DropdownMenuItem onSelect={onImport}>
+                  {h.importItems}
+                </DropdownMenuItem>
+              ) : null}
+              {onExport ? (
+                <DropdownMenuItem onSelect={onExport}>
+                  {h.exportItems}
+                </DropdownMenuItem>
+              ) : null}
+              {onLeave ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onLeave}>
+                    {h.leaveBoard}
                   </DropdownMenuItem>
                 </>
               ) : null}

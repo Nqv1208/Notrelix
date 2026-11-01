@@ -61,6 +61,16 @@ export interface MoveToSpaceDialogProps {
   readonly onSubmit: (targetSpaceId: string | null) => void;
   /** Picker rows above this count are windowed (stories and tests lower it). */
   readonly windowThreshold?: number;
+  /** Tells the host which destination is picked (`undefined` while none is), so it can read what the move changes. */
+  readonly onChoose?: (targetSpaceId: string | null | undefined) => void;
+  /** What the picked destination changes, shown under the list (a Board's access impact). */
+  readonly impact?: React.ReactNode;
+  /** Actions before the submit button (a second way to move). */
+  readonly footerExtra?: React.ReactNode;
+  /** Replaces the submit label. */
+  readonly submitLabel?: string;
+  /** Holds the submit button while the host is still reading the impact. */
+  readonly submitBlocked?: boolean;
 }
 
 const ROOT_VALUE = "__root__";
@@ -90,6 +100,11 @@ export function MoveToSpaceDialog({
   onOpenChange,
   onSubmit,
   windowThreshold = PICKER_WINDOW_THRESHOLD,
+  onChoose,
+  impact,
+  footerExtra,
+  submitLabel,
+  submitBlocked = false,
 }: MoveToSpaceDialogProps) {
   const [text, setText] = React.useState("");
   const [choice, setChoice] = React.useState<string | null>(null);
@@ -103,6 +118,13 @@ export function MoveToSpaceDialog({
       setChoice(null);
     }
   }, [subject]);
+
+  React.useEffect(() => {
+    if (!onChoose) return;
+    onChoose(
+      choice === null ? undefined : choice === ROOT_VALUE ? null : choice,
+    );
+  }, [choice, onChoose]);
 
   const active = React.useMemo(
     () => nodes.filter((node) => !node.isArchived),
@@ -133,7 +155,8 @@ export function MoveToSpaceDialog({
       : new Set<string>();
   const currentValue = currentParent ?? ROOT_VALUE;
   const selected = choice ?? currentValue;
-  const canSubmit = !pending && choice !== null && choice !== currentValue;
+  const canSubmit =
+    !pending && !submitBlocked && choice !== null && choice !== currentValue;
   const name = subject.kind === "space" ? subject.space.name : subject.name;
 
   const reasonFor = (spaceId: string): string | null => {
@@ -221,6 +244,7 @@ export function MoveToSpaceDialog({
             labelId={labelId}
             describedBy={error ? errorId : undefined}
           />
+          {impact}
           {error ? <FieldError id={errorId}>{error}</FieldError> : null}
           <DialogFooter>
             <Button
@@ -230,9 +254,16 @@ export function MoveToSpaceDialog({
             >
               {copy.move.cancel}
             </Button>
-            <Button type="submit" disabled={!canSubmit}>
-              {pending ? copy.move.submitting : copy.move.submit}
+            <Button
+              type="submit"
+              variant={footerExtra ? "outline" : "default"}
+              disabled={!canSubmit}
+            >
+              {pending
+                ? copy.move.submitting
+                : (submitLabel ?? copy.move.submit)}
             </Button>
+            {footerExtra}
           </DialogFooter>
         </form>
       </DialogContent>

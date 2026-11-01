@@ -10,7 +10,7 @@
  *   resources.permissions.revoke— DELETE /resources/:resourceType/:resourceId/permissions/:permissionId
  *
  * The rules mirror the producer: entries are disclosed to a Board manager or
- * member; a Guest is capped at Editor and shown as capped, never refused;
+ * member; a Guest is capped at Viewer and shown as capped, never refused;
  * nothing expires; the log records added, changed, removed, private and
  * visibility changes; the owner and the caller keep their own access.
  */
@@ -248,7 +248,12 @@ export const boardSharingOperations = [
 
   defineMockOperation<
     { resourceType: string; resourceId: string },
-    { subjectType?: string; subjectId?: string; level?: string },
+    {
+      subjectType?: string;
+      subjectId?: string;
+      level?: string;
+      expectedVersion?: number | null;
+    },
     void
   >({
     id: "resources.permissions.grant",
@@ -276,8 +281,25 @@ export const boardSharingOperations = [
         return validationError({
           level: ["The owner's and your own permission cannot be changed."],
         });
+      if (existing && existing.grantLevel === level) return noContent();
+      if (existing && existing.grantLevel !== null) {
+        // Changing a grant's level names the version read with it.
+        if (body?.expectedVersion !== (existing.version ?? 1))
+          return {
+            status: 412,
+            body: {
+              type: "https://notrelix.dev/problems/common.precondition-failed",
+              title: "Precondition failed",
+              status: 412,
+              detail:
+                "The access entry changed since it was read. Reload and try again.",
+              errorCode: "governance.permission.version-conflict",
+            },
+          };
+      }
       if (existing) {
         const from = existing.level;
+        existing.version = (existing.version ?? 1) + 1;
         existing.grantLevel = level;
         existing.level = effectiveLevel(existing);
         syncAccess(store, board.id, existing);

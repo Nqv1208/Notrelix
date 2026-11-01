@@ -31,6 +31,16 @@ interface WorkspaceMember {
   readonly status?: string | null;
 }
 
+/** One page of `Workspaces.Members.ListMembers`. */
+interface WorkspaceMembersPage {
+  readonly items?: readonly WorkspaceMember[] | null;
+  readonly nextCursor?: string | null;
+}
+
+/** The most the producer returns per page, and a guard against a cursor that never ends (20,000 people). */
+const MEMBERS_PAGE_SIZE = 200;
+const MAX_MEMBER_PAGES = 100;
+
 /** A member of the board (`WorkManagement.Boards.GetOverview`). */
 interface BoardMember {
   readonly userId?: string;
@@ -314,7 +324,8 @@ export function createItemExtrasApi(
             dependencies?: readonly { from: string; to: string }[];
           } | null>(`/boards/${boardId}/items/dependencies`, quiet)
           .catch((error: unknown) => {
-            if ((error as { status?: number } | null)?.status === 404) return null;
+            if ((error as { status?: number } | null)?.status === 404)
+              return null;
             throw error;
           });
         dto = { links: read?.dependencies ?? [] };
@@ -458,11 +469,13 @@ export function createItemExtrasApi(
       itemId: string,
       expectedVersion: number,
     ): Promise<ItemVersionDto> {
-      return versionOf(await api.post<VersionBody>(
-        `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
-        {},
-        { idempotencyKey: key(), ...quiet },
-      ));
+      return versionOf(
+        await api.post<VersionBody>(
+          `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
+          {},
+          { idempotencyKey: key(), ...quiet },
+        ),
+      );
     },
     /** An archived item comes back with `WorkManagement.BoardItems.Unarchive`. */
     async restoreItem(
@@ -487,8 +500,26 @@ export function createItemExtrasApi(
       boardId: string,
       workspaceId: string,
     ): Promise<PeopleDirectoryDto> {
+      const readMembers = async (): Promise<WorkspaceMember[]> => {
+        const rows: WorkspaceMember[] = [];
+        let cursor: string | null = null;
+        for (let pages = 0; pages < MAX_MEMBER_PAGES; pages += 1) {
+          const query = new URLSearchParams({
+            limit: String(MEMBERS_PAGE_SIZE),
+          });
+          if (cursor) query.set("cursor", cursor);
+          const page: WorkspaceMembersPage | null =
+            await api.get<WorkspaceMembersPage | null>(
+              `${endpoints.workspaces.members(workspaceId)}?${query}`,
+            );
+          rows.push(...(page?.items ?? []));
+          cursor = page?.nextCursor ?? null;
+          if (!cursor) break;
+        }
+        return rows;
+      };
       const [members, board] = await Promise.all([
-        api.get<WorkspaceMember[]>(endpoints.workspaces.members(workspaceId)),
+        readMembers(),
         api.get<{ members?: BoardMember[] | null }>(
           endpoints.boards.full(boardId),
         ),
@@ -500,7 +531,7 @@ export function createItemExtrasApi(
         ]),
       );
       return {
-        people: (members ?? [])
+        people: members
           .filter((member) => member.status?.toLowerCase() !== "suspended")
           .map((member) => ({
             userId: member.userId ?? "",

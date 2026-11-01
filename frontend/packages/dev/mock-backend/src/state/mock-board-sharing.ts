@@ -5,7 +5,7 @@
  * membership, or both); the history of the changes; and who loses access when
  * the Board goes Private. Entries are disclosed only to a Board manager or a
  * Board member; any other reader gets the counts. Nothing on a Board expires,
- * and a Guest is capped at Editor.
+ * and a Guest is capped at Viewer.
  */
 import type { OperationResponse } from "@notrelix/contracts";
 import type { MockStore } from "./mock-store";
@@ -37,6 +37,8 @@ const LEVEL_RANK: Record<ShareLevel, number> = {
 export interface MockShareEntry {
   /** The grant id (`permissionId`) of an entry held by grant. */
   id: string;
+  /** The grant's version; a change of its level bumps it. */
+  version?: number;
   kind: "person" | "team";
   userId: string | null;
   teamId: string | null;
@@ -176,7 +178,7 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
       entry("share-dt", {
         kind: "person",
         userId: ERP_PEOPLE.DT.id,
-        level: "editor",
+        level: "viewer",
         guest: true,
       }),
       entry("share-ha", {
@@ -193,7 +195,7 @@ export function seedErpSharing(sharing: MockBoardSharing): void {
         actorId: mockIds.users.owner,
         target: ERP_PEOPLE.DT.name,
         from: null,
-        to: "editor",
+        to: "viewer",
         guest: true,
         at: "2026-10-08T07:12:00.000Z",
       },
@@ -274,6 +276,7 @@ export function boardSharing(
       level: item.level,
       addedAt: item.addedAt,
       permissionId: item.grantLevel === null ? null : item.id,
+      permissionVersion: item.grantLevel === null ? null : (item.version ?? 1),
       memberRole: item.memberRole,
       source:
         item.grantLevel !== null && item.memberRole !== null
@@ -299,7 +302,8 @@ export function boardSharing(
     }
     const user = store.getUser(item.userId ?? "");
     const spaceRole = spaceRoles.get(item.userId ?? "") ?? null;
-    const capped = item.guest && item.level === "manager";
+    // The producer caps a Guest at Viewer whatever the stored level (outside people are view-only).
+    const capped = item.guest && item.level !== "viewer";
     return {
       ...base,
       id: item.userId ?? item.id,
@@ -307,7 +311,7 @@ export function boardSharing(
       name: user?.name ?? "",
       email: seesEmail && !item.guest ? (user?.email ?? null) : null,
       you: item.userId === me,
-      level: capped ? "editor" : item.level,
+      level: capped ? "viewer" : item.level,
       levelCapped: capped,
       spaceRole,
       outsideSpace: spaceRole === null,
@@ -344,6 +348,8 @@ export function boardSharing(
     peopleCount: (spacePeople ?? 0) + list.length - guests,
     guestCount: guests,
     peopleCountComplete: true,
+    // The version the member writes name (adding or removing a member, changing a role).
+    version: board.version ?? 1,
     entries: disclosed ? entries : [],
     log: canManage
       ? store.sharing.logOf(boardId).map((item) => ({

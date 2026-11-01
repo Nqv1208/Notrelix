@@ -102,6 +102,8 @@ public sealed class ItemFollowerNotificationRuntimeChainIntegrationTests : IAsyn
             {
                 scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
                     .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+                scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Idempotency.IIdempotencyExecutionContextWriter>()
+                    .Set($"chain-{Guid.NewGuid():N}", Notrelix.Application.Common.Idempotency.IdempotencyExecutionSource.Internal);
                 var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(
                     CreateCommentCommand.ForBoardItem(graph.ItemId, "  <b>Looks</b>   good\nto me  ", null), CancellationToken.None);
                 ((Result<Guid>)result).Succeeded.Should().BeTrue();

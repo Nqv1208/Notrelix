@@ -10,6 +10,6 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
             .NotEmpty()
             .MinimumLength(PasswordPolicy.MinimumLength)
                 .WithMessage($"Password must be at least {PasswordPolicy.MinimumLength} characters");
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(User.MaxNameLength);
     }
 }

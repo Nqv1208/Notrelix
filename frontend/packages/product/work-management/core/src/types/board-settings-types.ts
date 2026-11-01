@@ -250,11 +250,21 @@ export interface BoardSettingsViewPatch {
 /** Why a write did not go through, as the page tells it. */
 export type BoardSettingsWriteFailure = "conflict" | "invalid" | "failed";
 
+/** Who saved first when a write was refused as stale, as the server names them. */
+export interface WriteConflict {
+  /** Null when the person may not see the name: the page says "someone else". */
+  readonly byName: string | null;
+  /** ISO instant of that save. */
+  readonly at: string | null;
+}
+
 export type BoardSettingsWriteResult =
   | { ok: true }
   | {
       ok: false;
       reason: BoardSettingsWriteFailure;
+      /** Present on a conflict, when the server named who saved first. */
+      conflict?: WriteConflict;
       /** The request field a refused value belongs to ("name"). */
       field?: string;
       /** The server's rule or error code, when it sent one. */

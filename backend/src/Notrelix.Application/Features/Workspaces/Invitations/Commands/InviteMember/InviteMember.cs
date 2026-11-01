@@ -3,6 +3,8 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
+using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 
@@ -14,14 +16,17 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 /// ManageTeams for Team entries, ManageSpaces for Space entries, and both when the
 /// invitation names both kinds (<see cref="IRequireAdditionalPermission"/>), because
 /// Team composition and Space members are managed by Workspace Owner/Admin
-/// (GOV-028); there is no handler role check.
+/// (GOV-028); there is no handler role check. A person who is already an Active
+/// member of the Workspace is refused with a coded conflict (409) and nothing is created or sent;
+/// someone who was removed or suspended may be invited again.
 /// </summary>
+[IdempotencyOperation("workspaces.invitation.invite-member.v1")]
 public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role,
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest
 {
     private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
         InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;
@@ -43,6 +48,9 @@ public record InviteMemberCommand(
 
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
 {
+    /// <summary>The stable public code of the refusal when a pending invitation already exists for the address.</summary>
+    public const string PendingInvitationExistsErrorCode = "workspaces.invitation.pending-exists";
+
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IActorLookupService _actorLookup;
     private readonly ICurrentRequestContext _requestContext;
@@ -51,6 +59,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     private readonly ISecretEncryptor _secretEncryptor;
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly InvitationInitialEntries _initialEntries;
+    private readonly IMemberEmailDisclosure _memberEmails;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -60,8 +69,10 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         IOneTimeTokenService oneTimeTokenService,
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
-        InvitationInitialEntries initialEntries)
+        InvitationInitialEntries initialEntries,
+        IMemberEmailDisclosure memberEmails)
     {
+        _memberEmails = memberEmails;
         _initialEntries = initialEntries;
         _workspaceContext = workspaceContext;
         _actorLookup = actorLookup;
@@ -91,6 +102,9 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
                 return Result<Guid>.Failure("Every initial team or space must be an active team or space of this workspace.");
         }
 
+        if (await IsActiveMemberAsync(request.WorkspaceId, cleanEmail, ct))
+            throw new ConflictException("This person is already a member of this workspace.", AlreadyMemberCode);
+
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
                            && i.Email == cleanEmail
@@ -99,7 +113,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
                            && i.ExpiresAt > now, ct);
 
         if (hasActiveInvitation)
-            return Result<Guid>.Failure("A pending invitation already exists for this email address.");
+            throw new ConflictException(
+                "A pending invitation already exists for this email address.", PendingInvitationExistsErrorCode);
 
         var issuedToken = _oneTimeTokenService.Generate(TokenPurpose.WorkspaceInvitation);
         var invitationTokenHash = InvitationTokenHash.Create(issuedToken.TokenHash);
@@ -113,6 +128,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             issuedToken.HashVersion,
             _requestContext.UserId,
             now,
+            // The workspace setting decides how long an invitation waits.
+            expiry: TimeSpan.FromDays(workspace.Settings.InvitationExpiryDays),
             initialEntries: entries);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);
@@ -139,6 +156,25 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
         return Result<Guid>.Success(invitation.Id);
     }
+
+    // shortcut: reads every active colleague's address through the disclosure rule (the inviter is an
+    // Owner or Admin, who may see them), so the cost grows with the workspace; upgrade to a lookup by
+    // address when workspaces reach tens of thousands of members. An Active Guest is not disclosed and
+    // so is not refused here.
+    private async Task<bool> IsActiveMemberAsync(Guid workspaceId, string email, CancellationToken ct)
+    {
+        var activeIds = await _workspaceContext.WorkspaceMembers
+            .AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId)
+            .Where(WorkspaceMemberRules.ActiveColleague)
+            .Select(m => m.UserId)
+            .ToListAsync(ct);
+
+        var emails = await _memberEmails.ResolveAsync(workspaceId, activeIds, ct);
+        return emails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private const string AlreadyMemberCode = "workspaces.invitation.already-member";
 
     private static IReadOnlyList<WorkspaceInvitationInitialEntry> ToDomainEntries(
         IReadOnlyList<InvitationInitialEntryInput>? inputs)

@@ -92,6 +92,12 @@ export const en = {
     body: "We refreshed the fields with their version. Your change was not saved.",
     reload: "Reload the card",
   },
+  staleSchema: {
+    deleted: "{{who}} just deleted the field {{field}}",
+    someone: "Someone else",
+    body: "The value you chose was not saved and nothing changed. Reload the fields to see the latest board.",
+    reload: "Reload the fields",
+  },
   fieldConflict: {
     title: "Someone else just changed {{field}} to {{value}}",
     body: "Your value is {{mine}}. Nothing has been overwritten.",
@@ -193,6 +199,12 @@ export const vi: ShellCopy = {
     title: "Người khác vừa sửa thẻ này",
     body: "Các ô đã cập nhật theo bản mới. Thay đổi của bạn chưa được lưu.",
     reload: "Tải lại thẻ",
+  },
+  staleSchema: {
+    deleted: "{{who}} vừa xoá trường {{field}}",
+    someone: "Một người khác",
+    body: "Giá trị bạn chọn chưa được lưu, không có gì thay đổi. Tải lại trường để thấy bảng mới nhất.",
+    reload: "Tải lại trường",
   },
   fieldConflict: {
     title: "Một người khác vừa đổi {{field}} thành {{value}}",

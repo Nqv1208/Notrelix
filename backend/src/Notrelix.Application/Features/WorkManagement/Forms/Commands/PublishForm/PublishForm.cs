@@ -37,6 +37,19 @@ public class PublishFormCommandHandler : IRequestHandler<PublishFormCommand, Res
             .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
 
+        // A question whose field was deleted after it was mapped blocks the publish.
+        var mapped = form.Questions.Where(q => q.BoardFieldId != null).Select(q => q.BoardFieldId!.Value).Distinct().ToList();
+        if (form.Status != FormStatus.Published && mapped.Count > 0)
+        {
+            var live = await _context.BoardFields.AsNoTracking()
+                .Where(f => mapped.Contains(f.Id) && f.BoardId == form.BoardId && f.DeletedAt == null)
+                .CountAsync(ct);
+            if (live != mapped.Count)
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    WorkManagementRuleCodes.WorkManagement_Form_QuestionFieldRemoved,
+                    "A question fills a field that was deleted. Map it to another field or remove it before publishing.");
+        }
+
         form.Publish(_requestContext.UserId, _dateTimeProvider.UtcNow);
 
         return Result.Success();

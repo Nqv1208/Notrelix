@@ -453,7 +453,8 @@ export function AddMenu() {
   const back = () => openPicker("add");
   // A panel the menu swaps in has no open event of its own, so its field takes the cursor here.
   useEffect(() => {
-    if (picker !== "attach" && picker !== "link" && picker !== "subitem") return;
+    if (picker !== "attach" && picker !== "link" && picker !== "subitem")
+      return;
     const id = window.setTimeout(() => {
       const fields = document.querySelectorAll<HTMLElement>(
         "[data-slot=popover-content] [data-picker-search], [data-slot=popover-content] [data-autofocus]",

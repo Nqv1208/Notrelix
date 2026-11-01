@@ -114,16 +114,16 @@ public sealed class ResourceAccessSummaryServiceTests
     [Fact]
     public async Task GuestCaller_HasTheGuestSource_AndIsCountedAsAGuest()
     {
-        _facts.Facts = Facts("Guest", explicitRank: 2);
+        _facts.Facts = Facts("Guest", explicitRank: 1);
         _entries.Entries = new ResourceAccessEntries(
-            [new ResourceGrantEntry("User", Caller, 2, Grantor, null)],
+            [new ResourceGrantEntry("User", Caller, 1, Grantor, null)],
             [Reach(AccessReachSources.User, Caller, isGuest: true), Reach(AccessReachSources.Member, Linh)],
             null);
         _boards.Members.Add(Linh);
 
         var summary = await SummarizeAsync();
 
-        summary!.MyLevel.Should().Be(AccessLevels.Commenter);
+        summary!.MyLevel.Should().Be(AccessLevels.Viewer);
         summary.MySource.Should().Be(new AccessSource(AccessSourceKinds.Guest, new AccessGrantor(Grantor, "Hà Anh")));
         summary.PeopleCount.Should().Be(2);
         summary.GuestCount.Should().Be(1);
@@ -270,7 +270,7 @@ public sealed class ResourceAccessSummaryServiceTests
     }
 
     [Fact]
-    public async Task GuestWithAManagerGrant_IsReportedAsEditor_AndSeesNoGrantNames()
+    public async Task GuestWithAManagerGrant_IsReportedAsViewer_AndSeesNoGrantNames()
     {
         _facts.Facts = Facts("Guest", audience: "Private", explicitRank: 4);
         _entries.Entries = new ResourceAccessEntries(
@@ -280,7 +280,7 @@ public sealed class ResourceAccessSummaryServiceTests
 
         var summary = await SummarizeAsync();
 
-        summary!.MyLevel.Should().Be(AccessLevels.Editor, "the reported level is the enforced level: a Guest is capped at Editor");
+        summary!.MyLevel.Should().Be(AccessLevels.Viewer, "the reported level is the enforced level: a Guest is capped at Viewer");
         summary.Sources.Should().NotContain(s => s.Name != null);
     }
 

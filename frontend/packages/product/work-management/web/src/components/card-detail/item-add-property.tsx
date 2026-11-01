@@ -101,7 +101,8 @@ export function AddPropertyPopover({
       taken =
         typeof error === "object" &&
         error !== null &&
-        (error as { code?: unknown }).code === "work-management.field.name-taken";
+        (error as { code?: unknown }).code ===
+          "work-management.field.name-taken";
       return null;
     });
     setBusy(false);

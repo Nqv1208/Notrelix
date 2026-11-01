@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 
@@ -11,23 +12,33 @@ public record UserPendingInvitationDto(
     string InviterName,
     string Email,
     string Role,
-    string Token,
     DateTime ExpiresAt
 );
 
+/// <summary>
+/// The pending, unexpired invitations addressed to the signed-in person's own address, read through the
+/// invitee policy of the database (RLS 025). An address that is not confirmed is not refused: it gets an empty
+/// list (the handler and the policy both read nothing for it), so the rail never shows an error for it. The
+/// address comes from the stored user, never from the token claim. At most
+/// <see cref="InviteeInvitations.MaxPending"/> invitations come back, the newest first.
+/// </summary>
 public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest;
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {
-    private readonly IWorkspaceDbContext _context;
-    private readonly IActorLookupService _actorLookup;
+    private readonly InviteeInvitations _invitees;
+    private readonly IIdentityUserFacts _identityUserFacts;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetUserPendingInvitationsQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public GetUserPendingInvitationsQueryHandler(
+        InviteeInvitations invitees,
+        IIdentityUserFacts identityUserFacts,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider)
     {
-        _context = context;
-        _actorLookup = actorLookup;
+        _invitees = invitees;
+        _identityUserFacts = identityUserFacts;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -39,37 +50,30 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
             return Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>());
         }
 
-        var userEmail = _requestContext.Email.Trim().ToLowerInvariant();
-        var now = _dateTimeProvider.UtcNow;
+        // The stored address, and only while it is confirmed: a claim in the token proves neither.
+        var user = await _identityUserFacts.FindByIdAsync(_requestContext.UserId, ct);
+        if (user is null || !user.CanParticipate || !user.EmailConfirmed)
+        {
+            return Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>());
+        }
 
-        var invitations = await _context.WorkspaceInvitations
-            .AsNoTracking()
-            .Where(i => i.Email == userEmail && i.Status == WorkspaceInvitationStatus.Pending && i.ExpiresAt > now)
-            .OrderByDescending(i => i.CreatedAt)
-            .ToListAsync(ct);
+        var pending = await _invitees.ListPendingAsync(user.Email.Trim().ToLowerInvariant(), _dateTimeProvider.UtcNow, ct);
 
         var result = new List<UserPendingInvitationDto>();
 
-        foreach (var i in invitations)
+        foreach (var p in pending)
         {
-            var workspace = await _context.Workspaces.AsNoTracking()
-                .FirstOrDefaultAsync(w => w.Id == i.WorkspaceId, ct);
-
-            var inviter = await _actorLookup.FindAsync(i.InvitedBy, ct);
-            var inviterName = inviter?.Name ?? "Ai đó";
-            if (string.IsNullOrWhiteSpace(inviterName))
-            {
-                inviterName = "Người dùng Workspace";
-            }
+            var i = p.Invitation;
+            // No name to show is an empty string: the client words that case in the reader's language.
+            var inviterName = p.InviterName?.Trim() ?? "";
 
             result.Add(new UserPendingInvitationDto(
                 i.Id,
-                workspace?.Name ?? "Unknown",
-                workspace?.Slug ?? "",
+                p.WorkspaceName,
+                p.WorkspaceSlug,
                 inviterName,
                 i.Email,
                 i.Role.ToString(),
-                i.Token.Value,
                 i.ExpiresAt.UtcDateTime
             ));
         }

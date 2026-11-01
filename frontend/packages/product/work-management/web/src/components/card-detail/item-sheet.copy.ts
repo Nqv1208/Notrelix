@@ -104,7 +104,8 @@ export const en = {
     addOption: "Add a choice",
     createProperty: "Create property",
     createPropertyFailed: "The property could not be created. Try again.",
-    createPropertyNameTaken: "A property with this name already exists on the board. Choose another name.",
+    createPropertyNameTaken:
+      "A property with this name already exists on the board. Choose another name.",
     setValueFor: "Set a value",
     editText: "Edit {{name}}",
     editLongText: "Edit {{name}}",
@@ -295,7 +296,8 @@ export const vi: ItemSheetCopy = {
     addOption: "Thêm lựa chọn",
     createProperty: "Tạo thuộc tính",
     createPropertyFailed: "Chưa tạo được thuộc tính. Hãy thử lại.",
-    createPropertyNameTaken: "Board đã có thuộc tính tên này. Hãy chọn tên khác.",
+    createPropertyNameTaken:
+      "Board đã có thuộc tính tên này. Hãy chọn tên khác.",
     setValueFor: "Đặt giá trị",
     editText: "Sửa {{name}}",
     editLongText: "Sửa {{name}}",

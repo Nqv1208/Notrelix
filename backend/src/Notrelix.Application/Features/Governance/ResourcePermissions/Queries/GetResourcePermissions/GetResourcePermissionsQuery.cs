@@ -27,6 +27,8 @@ public record GetResourcePermissionsQuery(
 
 public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePermissionsQuery, Result<List<ResourcePermissionDto>>>
 {
+    private const int MaxEntries = 500;
+
     private readonly IGovernanceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
 
@@ -42,11 +44,16 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
     {
         var workspaceId = _requestContext.RequireWorkspaceId();
         var kind = request.Kind;
+        // Revoked rows are not entries; a resource's explicit entries are people and Teams, so a cap is a guard, not a page.
         var rows = await _context.ResourcePermissions
             .AsNoTracking()
             .Where(p => p.WorkspaceId == workspaceId &&
                         p.ResourceKind == kind &&
-                        p.ResourceId == request.ResourceId)
+                        p.ResourceId == request.ResourceId &&
+                        p.DeletedAt == null)
+            .OrderBy(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(MaxEntries)
             .Select(p => new
             {
                 p.Id,
@@ -57,7 +64,8 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
                 p.SubjectId,
                 p.Level,
                 p.CreatedBy,
-                p.DeletedAt
+                p.DeletedAt,
+                p.Version
             })
             .ToListAsync(cancellationToken);
 
@@ -72,7 +80,8 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
                 p.Level.ToString(),
                 p.CreatedBy,
                 p.DeletedAt != null,
-                p.DeletedAt))
+                p.DeletedAt,
+                p.Version))
             .ToList();
 
         return Result<List<ResourcePermissionDto>>.Success(permissions);

@@ -649,11 +649,13 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (StartedAt == startedAt && DueAt == dueAt) return;
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var previousStart = StartedAt;
+        var previousDue = DueAt;
         StartedAt = startedAt;
         DueAt = dueAt;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt, previousStart, previousDue));
     }
 
     public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt, Guid? statusBeforeCompletionOptionId = null)
@@ -730,7 +732,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         ArchivedWithParent = false;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt, Version));
+        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt, Version));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)

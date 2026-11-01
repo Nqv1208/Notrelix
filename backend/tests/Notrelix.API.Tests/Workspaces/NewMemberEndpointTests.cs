@@ -35,21 +35,21 @@ public class NewMemberEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task SuspendMember_WithExistingMember_ReturnsSuccess()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/suspend", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/suspend", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task SuspendMember_WithNonexistentMember_ReturnsNotFound()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999/suspend", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999/suspend", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task ActivateMember_WithExistingMember_ReturnsSuccess()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/activate", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/activate", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -68,7 +68,7 @@ public class NewMemberEndpointTests : IClassFixture<NotrelixApiFactory>
     {
         var factory = new NotrelixApiFactory();
         using var client = factory.CreateClient();
-        var response = await client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/suspend", null);
+        var response = await client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/suspend", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 

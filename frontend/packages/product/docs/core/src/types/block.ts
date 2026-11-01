@@ -179,7 +179,22 @@ export function convertBlockProperties(
   return converted;
 }
 
+/**
+ * One block moved by `Documents.Blocks.ReorderBlocks`: the version the caller
+ * read, the parent (the page root when absent) and the sibling it goes next
+ * to (`afterBlockId`, or `beforeBlockId` to go first); neither puts it last.
+ * The server makes the sort key.
+ */
+export interface ReorderBlockMove {
+  blockId: ID;
+  expectedVersion: number;
+  parentId?: ID | null;
+  afterBlockId?: ID | null;
+  beforeBlockId?: ID | null;
+}
+
 export interface ReorderBlocksInput {
   pageId: ID;
-  orderedBlockIds: ID[];
+  /** Applied in order, all or none. */
+  moves: ReorderBlockMove[];
 }

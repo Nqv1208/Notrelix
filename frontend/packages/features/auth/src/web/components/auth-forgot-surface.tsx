@@ -20,13 +20,15 @@ import { formatCountdown } from "./auth-sign-in-surface";
 export type AuthForgotStep =
   | {
       readonly kind: "ask";
-      readonly error?: "invalid" | "unreachable" | null;
+      readonly error?: "invalid" | "unreachable" | "limited" | null;
     }
   | {
       readonly kind: "sent";
       readonly email: string;
       /** Seconds before "Gửi lại" works; 0 = it works now. */
       readonly resendSeconds: number;
+      /** A send again that was refused; the person stays on this step. */
+      readonly error?: "limited" | "unreachable" | null;
     };
 
 export interface AuthForgotSurfaceProps {
@@ -100,6 +102,9 @@ function AskStep({
           {step.error === "unreachable" ? (
             <FieldError>{t.unreachable}</FieldError>
           ) : null}
+          {step.error === "limited" ? (
+            <FieldError>{t.limited}</FieldError>
+          ) : null}
         </div>
         <button
           type="submit"
@@ -170,6 +175,7 @@ function SentStep({
           t.resend
         )}
       </button>
+      {step.error ? <FieldError>{t[step.error]}</FieldError> : null}
       <div className="flex items-center justify-between gap-3">
         <button type="button" onClick={onBack} className={LINK_BUTTON_CLASS}>
           {t.back}

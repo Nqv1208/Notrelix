@@ -1,11 +1,14 @@
 import {
+  useEffect,
   useRef,
   Fragment,
   useState,
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
+import { ArrowUp } from "lucide-react";
 import { BULK_ITEM_LIMIT } from "@notrelix/work-management-core";
+import { Button } from "@notrelix/ui-web";
 import { fillTableCopy } from "./main-table.copy";
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
@@ -20,10 +23,20 @@ import {
   visibleTableColumns,
   type TableColumnWidths,
 } from "./table-columns";
-import { TableAddRow, TableGroupHeader } from "./table-group-section";
+import {
+  TABLE_GROUP_WINDOW,
+  TableAddRow,
+  TableGroupHeader,
+  TableLoadMoreError,
+  TableShowMoreRow,
+} from "./table-group-section";
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { TableHeaderRow } from "./table-header-row";
-import type { TableGroupModel, TableStatusOption } from "./table-model";
+import {
+  formatTableCount,
+  type TableGroupModel,
+  type TableStatusOption,
+} from "./table-model";
 import type { TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import { TableRow } from "./table-row";
@@ -76,6 +89,18 @@ export interface MainTableSurfaceProps {
   onColumnWidthChange?: (columnId: string, width: number) => void;
   /** Back to the design width of a column. */
   onColumnWidthReset?: (columnId: string) => void;
+  /**
+   * A board read in pages: what the first group says of the whole board, and the next page of a group (the
+   * group's id is its lane). Absent: every row is loaded.
+   */
+  paging?: {
+    readonly boardTotal: number;
+    /** Items that pass the filter; null when none is applied. */
+    readonly boardFiltered: number | null;
+    readonly loadMore: (groupId: string) => void;
+    readonly loading: ReadonlySet<string>;
+    readonly failed: ReadonlySet<string>;
+  };
   /** Cards shown and hidden by search, filter and "hide finished". */
   shown: number;
   hidden: number;
@@ -159,6 +184,7 @@ export function MainTableSurface({
   columnWidths,
   onColumnWidthChange,
   onColumnWidthReset,
+  paging,
   shown,
   hidden,
   canShowDone,
@@ -215,8 +241,68 @@ export function MainTableSurface({
     ? { ...columnWidths, [preview.id]: clampColumnWidth(preview.width) }
     : (columnWidths ?? {});
 
+  // A group draws its first rows and a "Show more" row; the row that is open, being edited or holding the
+  // keyboard stays drawn wherever it sits.
+  const [shownByGroup, setShownByGroup] = useState<Record<string, number>>({});
+  const focusAfterReveal = useRef<string | null>(null);
+  const shownRows = (group: TableGroupModel) => {
+    const pinned = [openItemId, editingId, tabStopId].reduce(
+      (last, id) =>
+        id
+          ? Math.max(
+              last,
+              group.rows.findIndex((row) => row.id === id),
+            )
+          : last,
+      -1,
+    );
+    return Math.min(
+      group.rows.length,
+      Math.max(shownByGroup[group.id] ?? TABLE_GROUP_WINDOW, pinned + 1),
+    );
+  };
+  // After a page of the group is read from the server, the focus goes to the first row it brought.
+  const focusAfterLoad = useRef<{ groupId: string; index: number } | null>(
+    null,
+  );
+  const showMore = (group: TableGroupModel) => {
+    const shown = shownRows(group);
+    focusAfterReveal.current = group.rows[shown]?.id ?? null;
+    // Rows read from the server beyond the loaded ones fall inside the window once they arrive.
+    if (shown >= group.rows.length && group.hasMore && paging) {
+      focusAfterLoad.current = { groupId: group.id, index: group.rows.length };
+      paging.loadMore(group.id);
+    }
+    setShownByGroup((current) => ({
+      ...current,
+      [group.id]: shown + TABLE_GROUP_WINDOW,
+    }));
+  };
+  useEffect(() => {
+    const pending = focusAfterLoad.current;
+    if (!pending) return;
+    const id = groups.find((group) => group.id === pending.groupId)?.rows[
+      pending.index
+    ]?.id;
+    if (!id) return;
+    focusAfterLoad.current = null;
+    gridRef.current
+      ?.querySelector<HTMLElement>(`[data-row-id="${CSS.escape(id)}"]`)
+      ?.focus();
+  }, [groups]);
+  useEffect(() => {
+    const id = focusAfterReveal.current;
+    if (!id) return;
+    focusAfterReveal.current = null;
+    gridRef.current
+      ?.querySelector<HTMLElement>(`[data-row-id="${CSS.escape(id)}"]`)
+      ?.focus();
+  }, [shownByGroup]);
+
   const visibleRowIds = groups.flatMap((group) =>
-    collapsedGroupIds.has(group.id) ? [] : group.rows.map((row) => row.id),
+    collapsedGroupIds.has(group.id)
+      ? []
+      : group.rows.slice(0, shownRows(group)).map((row) => row.id),
   );
   const allRowIds = groups.flatMap((group) => group.rows.map((row) => row.id));
   const selectedCount = allRowIds.filter((id) => selectedIds.has(id)).length;
@@ -248,10 +334,23 @@ export function MainTableSurface({
     if (event.target !== event.currentTarget) return;
     const index = visibleRowIds.indexOf(rowId);
     switch (event.key) {
-      case "ArrowDown":
+      case "ArrowDown": {
         event.preventDefault();
+        // On the last drawn row of a group with more rows, the arrow draws the next page and moves into it.
+        const group = groups.find(
+          (candidate) => candidate.rows[shownRows(candidate) - 1]?.id === rowId,
+        );
+        if (
+          group &&
+          (shownRows(group) < group.rows.length ||
+            (group.hasMore && paging && !paging.loading.has(group.id)))
+        ) {
+          showMore(group);
+          break;
+        }
         focusRow(visibleRowIds[Math.min(index + 1, visibleRowIds.length - 1)]);
         break;
+      }
       case "ArrowUp":
         event.preventDefault();
         focusRow(visibleRowIds[Math.max(index - 1, 0)]);
@@ -283,6 +382,22 @@ export function MainTableSurface({
   const gridStyle = {
     "--table-grid": tableGridTemplate(columns, widths),
   } as CSSProperties;
+  // Every row of every group, loaded or not, is counted: a screen reader says "row 51 of 400" at the edge of
+  // the window, not "row 1 of 50".
+  const rowsOf = (group: TableGroupModel) =>
+    group.filteredTotal ?? group.rows.length;
+  const rowOffsets = new Map<string, number>();
+  let rowCount = 0;
+  for (const group of groups) {
+    rowOffsets.set(group.id, rowCount);
+    rowCount += Math.max(rowsOf(group), group.rows.length);
+  }
+  // Deep in the table the way back to the top is one control away.
+  const [deep, setDeep] = useState(false);
+  const jumpToTop = () => {
+    gridRef.current?.scrollTo({ top: 0 });
+    focusRow(tabStop ?? undefined);
+  };
 
   return (
     <section
@@ -328,11 +443,16 @@ export function MainTableSurface({
       <div
         ref={gridRef}
         data-table-scroll=""
+        onScroll={(event) => {
+          const el = event.currentTarget;
+          setDeep(el.scrollTop > el.clientHeight * 2);
+        }}
         className="mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card"
       >
         <div
           role="table"
           aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
+          aria-rowcount={paging ? rowCount : undefined}
           style={gridStyle}
           className="w-max min-w-full text-nav font-normal text-foreground"
         >
@@ -351,7 +471,7 @@ export function MainTableSurface({
             onWidthCommit={(id, width) => onColumnWidthChange?.(id, width)}
             onWidthReset={(id) => onColumnWidthReset?.(id)}
           />
-          {groups.map((group) => {
+          {groups.map((group, groupIndex) => {
             const collapsed = collapsedGroupIds.has(group.id);
             return (
               <div role="rowgroup" aria-label={group.name} key={group.id}>
@@ -361,96 +481,136 @@ export function MainTableSurface({
                   collapsed={collapsed}
                   onToggle={() => onGroupToggle(group.id)}
                   menu={groupMenu?.(group)}
+                  boardNote={
+                    paging && groupIndex === 0
+                      ? paging.boardFiltered === null
+                        ? fillTableCopy(copy.group.boardTotal, {
+                            total: formatTableCount(paging.boardTotal),
+                          })
+                        : fillTableCopy(copy.group.boardFiltered, {
+                            shown: formatTableCount(paging.boardFiltered),
+                            total: formatTableCount(paging.boardTotal),
+                          })
+                      : undefined
+                  }
                 />
                 {collapsed
                   ? null
-                  : group.rows.map((row) => (
-                      <Fragment key={row.id}>
-                        <TableRow
-                          row={row}
-                          expand={
-                            renderSubItems && row.progress
-                              ? {
-                                  expanded: expandedIds.has(row.id),
-                                  count: row.progress.total,
-                                  onToggle: () => toggleExpanded(row.id),
-                                }
-                              : undefined
-                          }
-                          copy={copy}
-                          columns={columns}
-                          accent={groupAccent(group)}
-                          statusOptions={statusOptions}
-                          selected={selectedIds.has(row.id)}
-                          active={openItemId === row.id}
-                          tabStop={tabStop === row.id}
-                          canEdit={canEdit}
-                          editors={editors}
-                          fieldEditing={fieldEditing}
-                          onRename={
-                            onRename
-                              ? (title) => onRename(row.id, title)
-                              : undefined
-                          }
-                          actions={
-                            rowActions
-                              ? {
-                                  onDuplicate: rowActions.onDuplicate
-                                    ? () => rowActions.onDuplicate?.(row.id)
-                                    : undefined,
-                                  onCopyLink: () =>
-                                    rowActions.onCopyLink(row.id),
-                                  onArchive: rowActions.onArchive
-                                    ? () => rowActions.onArchive?.(row.id)
-                                    : undefined,
-                                  onDelete: rowActions.onDelete
-                                    ? () => rowActions.onDelete?.(row.id)
-                                    : undefined,
-                                  onMoveToBoard: rowActions.onMoveToBoard
-                                    ? () => rowActions.onMoveToBoard?.(row.id)
-                                    : undefined,
-                                }
-                              : undefined
-                          }
-                          editing={editingId === row.id}
-                          highlightStatusId={
-                            initialEditing?.rowId === row.id
-                              ? initialEditing.highlightStatusId
-                              : undefined
-                          }
-                          onSelectedChange={(selected) =>
-                            onRowSelectedChange(row.id, selected)
-                          }
-                          onOpen={() => onOpenItem(row.id)}
-                          onEditingChange={(editing) =>
-                            setEditingId(editing ? row.id : null)
-                          }
-                          onStatusChange={(optionId) =>
-                            onStatusChange(row.id, optionId)
-                          }
-                          onKeyDown={(event) => {
-                            setTabStopId(row.id);
-                            onRowKeyDown(event, row.id);
-                          }}
-                        />
-                        {renderSubItems && expandedIds.has(row.id) ? (
-                          <div
-                            role="row"
-                            data-sub-items-of={row.id}
-                            className="grid min-w-full"
-                            style={{ gridTemplateColumns: "var(--table-grid)" }}
-                          >
+                  : group.rows
+                      .slice(0, shownRows(group))
+                      .map((row, rowIndex) => (
+                        <Fragment key={row.id}>
+                          <TableRow
+                            row={row}
+                            rowIndex={
+                              paging
+                                ? (rowOffsets.get(group.id) ?? 0) + rowIndex + 1
+                                : undefined
+                            }
+                            expand={
+                              renderSubItems && row.progress
+                                ? {
+                                    expanded: expandedIds.has(row.id),
+                                    count: row.progress.total,
+                                    onToggle: () => toggleExpanded(row.id),
+                                  }
+                                : undefined
+                            }
+                            copy={copy}
+                            columns={columns}
+                            accent={groupAccent(group)}
+                            statusOptions={statusOptions}
+                            selected={selectedIds.has(row.id)}
+                            active={openItemId === row.id}
+                            tabStop={tabStop === row.id}
+                            canEdit={canEdit}
+                            editors={editors}
+                            fieldEditing={fieldEditing}
+                            onRename={
+                              onRename
+                                ? (title) => onRename(row.id, title)
+                                : undefined
+                            }
+                            actions={
+                              rowActions
+                                ? {
+                                    onDuplicate: rowActions.onDuplicate
+                                      ? () => rowActions.onDuplicate?.(row.id)
+                                      : undefined,
+                                    onCopyLink: () =>
+                                      rowActions.onCopyLink(row.id),
+                                    onArchive: rowActions.onArchive
+                                      ? () => rowActions.onArchive?.(row.id)
+                                      : undefined,
+                                    onDelete: rowActions.onDelete
+                                      ? () => rowActions.onDelete?.(row.id)
+                                      : undefined,
+                                    onMoveToBoard: rowActions.onMoveToBoard
+                                      ? () => rowActions.onMoveToBoard?.(row.id)
+                                      : undefined,
+                                  }
+                                : undefined
+                            }
+                            editing={editingId === row.id}
+                            highlightStatusId={
+                              initialEditing?.rowId === row.id
+                                ? initialEditing.highlightStatusId
+                                : undefined
+                            }
+                            onSelectedChange={(selected) =>
+                              onRowSelectedChange(row.id, selected)
+                            }
+                            onOpen={() => onOpenItem(row.id)}
+                            onEditingChange={(editing) =>
+                              setEditingId(editing ? row.id : null)
+                            }
+                            onStatusChange={(optionId) =>
+                              onStatusChange(row.id, optionId)
+                            }
+                            onKeyDown={(event) => {
+                              setTabStopId(row.id);
+                              onRowKeyDown(event, row.id);
+                            }}
+                          />
+                          {renderSubItems && expandedIds.has(row.id) ? (
                             <div
-                              role="cell"
-                              className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
-                              style={{ gridColumn: "1 / -1" }}
+                              role="row"
+                              data-sub-items-of={row.id}
+                              className="grid min-w-full"
+                              style={{
+                                gridTemplateColumns: "var(--table-grid)",
+                              }}
                             >
-                              {renderSubItems(row.id)}
+                              <div
+                                role="cell"
+                                className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
+                                style={{ gridColumn: "1 / -1" }}
+                              >
+                                {renderSubItems(row.id)}
+                              </div>
                             </div>
-                          </div>
-                        ) : null}
-                      </Fragment>
-                    ))}
+                          ) : null}
+                        </Fragment>
+                      ))}
+                {!collapsed && paging?.failed.has(group.id) && group.hasMore ? (
+                  <TableLoadMoreError
+                    copy={copy}
+                    next={Math.min(
+                      TABLE_GROUP_WINDOW,
+                      rowsOf(group) - group.rows.length,
+                    )}
+                    onRetry={() => paging.loadMore(group.id)}
+                  />
+                ) : !collapsed &&
+                  (shownRows(group) < group.rows.length || group.hasMore) ? (
+                  <TableShowMoreRow
+                    copy={copy}
+                    shown={shownRows(group)}
+                    total={Math.max(rowsOf(group), group.rows.length)}
+                    loading={paging?.loading.has(group.id) ?? false}
+                    onShowMore={() => showMore(group)}
+                  />
+                ) : null}
                 {collapsed || !canCreate ? null : (
                   <TableAddRow
                     copy={copy}
@@ -490,6 +650,19 @@ export function MainTableSurface({
           onShowDone={onShowDone}
         />
       </div>
+
+      {deep ? (
+        <div className="absolute right-6 bottom-5 z-10">
+          <Button
+            type="button"
+            className="h-11 gap-1.5 rounded-[7px] px-3.5 text-[13px] font-semibold shadow-popover"
+            onClick={jumpToTop}
+          >
+            <ArrowUp aria-hidden="true" className="size-4" />
+            {copy.group.jumpTop}
+          </Button>
+        </div>
+      ) : null}
 
       {selectedCount > 0 ? (
         <TableBulkBar

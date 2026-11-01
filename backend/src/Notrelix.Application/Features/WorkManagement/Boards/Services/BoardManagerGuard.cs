@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.Governance.Public.Access;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Services;
 

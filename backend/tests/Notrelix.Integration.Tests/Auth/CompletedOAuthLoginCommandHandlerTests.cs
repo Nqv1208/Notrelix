@@ -3,6 +3,7 @@ using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.OAuth;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
@@ -95,18 +96,22 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             mocks.SessionIssuer, mocks.PasswordHasher, mocks.DateTimeProvider, mocks.EventCollector, context);
 
         mocks.DateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        // The state is used up first, whatever the provider answered; the provider's error comes after.
+        mocks.StateStore.Setup(x => x.ConsumeAsync("test-state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ValidState);
 
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
             Code = string.Empty,
-            State = string.Empty,
+            State = "test-state",
             Error = "access_denied",
             ErrorDescription = "User denied access"
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("error"));
+        result.TypedErrors.Should().Contain(e => e.Code == OAuthLoginErrorCodes.Denied);
     }
 
     [Fact]

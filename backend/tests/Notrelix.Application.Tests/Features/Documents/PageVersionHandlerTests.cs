@@ -169,7 +169,7 @@ public sealed class PageVersionHandlerTests
         removedLater.Delete(UserId, T0.AddMinutes(2));
         var added = NewBlock(f.Page, "a2", "added later");
         f.Blocks.Add(added);
-        var sut = new RestorePageVersionCommandHandler(f.Context, f.Recorder, f.Request(), f.Clock);
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
 
         var result = await sut.Handle(new RestorePageVersionCommand(f.Page.Id, f.Versions[0].Id,
             [new SeenBlockVersion(kept.Id, kept.Version), new SeenBlockVersion(added.Id, added.Version)]), CancellationToken.None);
@@ -198,7 +198,7 @@ public sealed class PageVersionHandlerTests
         var block = NewBlock(f.Page, "a0", "same");
         f.Blocks.Add(block);
         f.Versions.Add(Entry(f, 1, DocumentVersionKind.Named, "Now", [block]));
-        var sut = new RestorePageVersionCommandHandler(f.Context, f.Recorder, f.Request(), f.Clock);
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
 
         await sut.Handle(new RestorePageVersionCommand(f.Page.Id, f.Versions[0].Id, [new SeenBlockVersion(block.Id, block.Version)]), CancellationToken.None);
 
@@ -212,7 +212,7 @@ public sealed class PageVersionHandlerTests
         var block = NewBlock(f.Page, "a0", "one");
         f.Blocks.Add(block);
         f.Versions.Add(Entry(f, 1, DocumentVersionKind.Named, "Start", [block]));
-        var sut = new RestorePageVersionCommandHandler(f.Context, f.Recorder, f.Request(), f.Clock);
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
         var seen = block.Version;
         block.Edit(null, BlockContent.Create(JsonValue.Create(Text("someone else"))), null, UserId, T0.AddMinutes(3));
 
@@ -233,7 +233,7 @@ public sealed class PageVersionHandlerTests
         var unseen = NewBlock(f.Page, "a1", "two");
         f.Blocks.AddRange([seen, unseen]);
         f.Versions.Add(Entry(f, 1, DocumentVersionKind.Named, "Start", [seen]));
-        var sut = new RestorePageVersionCommandHandler(f.Context, f.Recorder, f.Request(), f.Clock);
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
 
         var act = () => sut.Handle(new RestorePageVersionCommand(f.Page.Id, f.Versions[0].Id, [new SeenBlockVersion(seen.Id, seen.Version)]), CancellationToken.None);
 
@@ -251,7 +251,7 @@ public sealed class PageVersionHandlerTests
         f.Blocks.AddRange([parent, child]);
         f.Versions.Add(Entry(f, 1, DocumentVersionKind.Named, "Tree", [parent, child]));
         child.MoveToRoot(FractionalIndex.Create("a5"), UserId, T0.AddMinutes(1));
-        var sut = new RestorePageVersionCommandHandler(f.Context, f.Recorder, f.Request(), f.Clock);
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
 
         await sut.Handle(new RestorePageVersionCommand(f.Page.Id, f.Versions[0].Id,
             [new SeenBlockVersion(parent.Id, parent.Version), new SeenBlockVersion(child.Id, child.Version)]), CancellationToken.None);

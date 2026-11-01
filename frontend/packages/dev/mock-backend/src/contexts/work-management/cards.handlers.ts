@@ -1204,7 +1204,9 @@ export const cardsOperations = [
           "X-Content-Type-Options": "nosniff",
           "Cache-Control": "private, no-store",
         },
-        rawBody: isImage ? MOCK_IMAGE_SVG : `Tệp mẫu của mock: ${file.filename}`,
+        rawBody: isImage
+          ? MOCK_IMAGE_SVG
+          : `Tệp mẫu của mock: ${file.filename}`,
       };
     },
   }),

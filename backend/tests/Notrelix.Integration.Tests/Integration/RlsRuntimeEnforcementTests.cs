@@ -562,7 +562,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var workspaceId = created.Data;
 
         var addHandler = new AddMemberCommandHandler(
-            context, requestContext.Object, clock.Object, projection);
+            context, requestContext.Object, clock.Object, projection, Mock.Of<Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate>(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)), Mock.Of<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts>(f => f.IsActiveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(true)));
         var added = await addHandler.Handle(new AddMemberCommand(workspaceId, memberId, WorkspaceRole.Member), default);
         added.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
@@ -614,7 +614,11 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
             new WorkspaceOwnerUpdateLocker(context));
 
-        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId), default);
+        var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
+            .Select(m => m.Version)
+            .SingleAsync();
+        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId, memberVersion), default);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
 
@@ -657,7 +661,11 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
             new WorkspaceOwnerUpdateLocker(context));
 
-        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId), default);
+        var memberVersion = await context.WorkspaceMembers.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.UserId == memberId)
+            .Select(m => m.Version)
+            .SingleAsync();
+        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId, memberVersion), default);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
 
@@ -829,7 +837,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SupportReadonlyRole_SelectsAllRows_ButCannotMutate()
+    public async Task SupportReadonlyRole_ReadsNoTenantContent_AndCannotMutate()
     {
         await SeedBoardsAsync();
 
@@ -845,16 +853,10 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         await using (var select = connection.CreateCommand())
         {
             select.CommandText = "SELECT title FROM work.boards ORDER BY title;";
-            var titles = new List<string>();
-            await using (var reader = await select.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    titles.Add(reader.GetString(0));
-                }
-            }
-
-            titles.Should().HaveCount(3, "the support role reads everything through p_support_select");
+            var selectAct = async () => await select.ExecuteReaderAsync();
+            var selectException = await selectAct.Should().ThrowAsync<PostgresException>();
+            selectException.Which.SqlState.Should().Be("42501",
+                "support holds no tenant content until each case type is designed");
         }
 
         await using (var update = connection.CreateCommand())
@@ -863,7 +865,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             var updateAct = async () => await update.ExecuteNonQueryAsync();
             var updateException = await updateAct.Should().ThrowAsync<PostgresException>();
             updateException.Which.SqlState.Should().Be("42501",
-                "the support role has SELECT-only grants; UPDATE must be denied at the privilege level");
+                "the support role has no write grant; UPDATE must be denied at the privilege level");
         }
 
         await using var insert = connection.CreateCommand();
@@ -873,7 +875,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             """;
         var act = async () => await insert.ExecuteNonQueryAsync();
         var exception = await act.Should().ThrowAsync<PostgresException>();
-        exception.Which.SqlState.Should().Be("42501", "INSERT without an INSERT policy must be denied, not silently dropped");
+        exception.Which.SqlState.Should().Be("42501", "the support role cannot insert");
     }
 
     [Fact]

@@ -22,9 +22,13 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IActorLookupService? _actors;
+    private readonly ICurrentRequestContext? _requestContext;
 
-    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null)
+    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null)
     {
+        _actors = actors;
+        _requestContext = requestContext;
         _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
@@ -55,7 +59,9 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, cancellationToken);
 
         if (field == null)
-            throw new NotFoundException("BoardField", request.FieldId);
+            throw _requestContext is null
+                ? new NotFoundException("BoardField", request.FieldId)
+                : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
 
         // A person field names who the work is for: a board Viewer is not offered there.
         if (field.Type == FieldType.Person && request.Value is not null

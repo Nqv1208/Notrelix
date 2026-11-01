@@ -31,6 +31,7 @@ export function workspaceFixture(
     departmentCount: 5,
     isDefault: true,
     canLeave: true,
+    isArchived: false,
     open: { href: "/workspaces/workspace-primary", onNavigate: noop },
     ...overrides,
   };
@@ -66,7 +67,7 @@ export function workspaceListFixture(): AccountWorkspaceView[] {
 
 export type WorkspacesScenario = Omit<
   AccountWorkspacesSurfaceProps,
-  "onSetDefault" | "onLeave" | "onRetry"
+  "onSetDefault" | "onUnarchive" | "onLeave" | "onRetry"
 >;
 
 export function workspacesDefaultScenario(

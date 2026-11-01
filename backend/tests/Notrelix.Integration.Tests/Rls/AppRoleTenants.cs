@@ -104,11 +104,11 @@ internal static class AppRoleMembers
 internal static class AppRoleUsers
 {
     /// <summary>A confirmed user with no membership anywhere, seeded as the owner.</summary>
-    public static async Task<User> AddAsync(AppRoleTestContainer fixture, string email, string name, string passwordHash)
+    public static async Task<User> AddAsync(AppRoleTestContainer fixture, string email, string name, string passwordHash, bool confirmEmail = true)
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create(email, name, passwordHash, now, hasPasswordCredential: true);
-        user.ConfirmEmail(user.Id, now);
+        if (confirmEmail) user.ConfirmEmail(user.Id, now);
         var system = new FakeCurrentTenantContext();
         system.SetSystem();
         await using var ctx = fixture.CreateOwnerContext(system);

@@ -290,9 +290,7 @@ export function EmptySection({
       </span>
       <span className="flex-1" />
       {children ? (
-        <div className="flex items-center max-md:min-h-11">
-          {children}
-        </div>
+        <div className="flex items-center max-md:min-h-11">{children}</div>
       ) : null}
     </section>
   );

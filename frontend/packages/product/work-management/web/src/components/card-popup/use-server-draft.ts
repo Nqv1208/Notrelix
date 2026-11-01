@@ -67,7 +67,10 @@ export function useServerDraft(server: string, options: ServerDraftOptions) {
     else raise();
   }, [draft]);
 
-  useEffect(() => () => clearFieldConflict(latest.current.options.key), [clearFieldConflict]);
+  useEffect(
+    () => () => clearFieldConflict(latest.current.options.key),
+    [clearFieldConflict],
+  );
 
   return { draft, setDraft, held: () => clash.current } as const;
 }

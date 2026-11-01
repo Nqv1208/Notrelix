@@ -7,6 +7,7 @@ import {
   groupableFields,
   groupCardsByField,
   groupCardsByStatus,
+  serializeCompoundFilter,
   type BoardGroup,
   type Card,
   type DateBucket,
@@ -19,6 +20,9 @@ import { findBoardCard } from "../cache/card-restore";
 import { wmQueryKeys } from "../queries/keys";
 import { isVersionConflict } from "../queries/use-item-conflict";
 import { useFullBoard } from "../queries/use-full-board";
+import { useBoardReadNeed, useLanePager } from "../queries/board-read";
+import { useBoardLabels } from "../queries/use-board-labels";
+import { laneKeyOf } from "../cache/lane-pages";
 import { useDebounce } from "./use-debounce";
 import {
   dropUnknownFilterIds,
@@ -58,6 +62,11 @@ export interface UseBoardKanbanOptions {
   /** Field id from the route `groupBy` parameter; unknown ids fall back to Status. */
   readonly groupBy?: string;
   readonly filter: KanbanLaneFilter;
+  /**
+   * The view lays cards out by something the server's Status lanes cannot serve (a calendar, a timeline): the
+   * board is read whole, not in pages.
+   */
+  readonly allCards?: boolean;
   /** Whether a card is overdue (same calendar rule as the card's due wording). */
   readonly isOverdue: (card: Card) => boolean;
   /**
@@ -166,9 +175,16 @@ export function kanbanGroupByFields(
 export function useBoardKanban(
   boardId: string,
   workspaceId: string,
-  { groupBy, filter, isOverdue, onWriteError, view }: UseBoardKanbanOptions,
+  {
+    groupBy,
+    filter,
+    isOverdue,
+    onWriteError,
+    view,
+    allCards = false,
+  }: UseBoardKanbanOptions,
 ) {
-  const { board, groups, isLoading, error, refetch } = useFullBoard(
+  const { board, groups, paging, isLoading, error, refetch } = useFullBoard(
     boardId,
     workspaceId,
   );
@@ -184,9 +200,19 @@ export function useBoardKanban(
     () => (fields ? kanbanGroupByFields(fields) : []),
     [fields],
   );
+  // The cards of a paged read hold only some of the board's labels: the filter offers the board's own list.
+  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(paging));
+  const pagedLabels = useMemo(
+    () =>
+      paging && boardLabels.data
+        ? boardLabels.data.map((label) => ({ id: label.id, name: label.name }))
+        : undefined,
+    [paging, boardLabels.data],
+  );
   const labelChoices = useMemo(
-    () => (board ? kanbanFilterChoices(board, groups).labels : []),
-    [board, groups],
+    () =>
+      pagedLabels ?? (board ? kanbanFilterChoices(board, groups).labels : []),
+    [board, groups, pagedLabels],
   );
   const filterFields = useMemo(
     () =>
@@ -255,6 +281,7 @@ export function useBoardKanban(
       return groupCardsByStatus({
         fieldDefinitions: board.fieldDefinitions,
         groups: sortedGroups,
+        paging,
       });
     }
     return groupCardsBySelectField(groupByField, sortedGroups);
@@ -266,20 +293,43 @@ export function useBoardKanban(
     flatGroupField,
     view,
     memberName,
+    paging,
   ]);
 
-  const filterChoices = useMemo(
-    () =>
-      board
-        ? kanbanFilterChoices(board, groups)
-        : { statuses: [], assignees: [], labels: [] },
-    [board, groups],
-  );
+  const filterChoices = useMemo(() => {
+    if (!board) return { statuses: [], assignees: [], labels: [] };
+    const choices = kanbanFilterChoices(board, groups);
+    return pagedLabels ? { ...choices, labels: pagedLabels } : choices;
+  }, [board, groups, pagedLabels]);
   // Ids the board no longer has never narrow the board (a stale URL).
   const appliedFilter = useMemo(
     () => (board ? dropUnknownFilterIds(filter, filterChoices) : filter),
     [board, filter, filterChoices],
   );
+
+  // Pages of Status lanes serve a view that lays the board out by Status and filters by what the server can
+  // evaluate; anything else (another grouping, a swimlane, a search, a facet filter) reads the whole board.
+  const compoundFilter = view?.state.filter;
+  const needsWholeBoard =
+    allCards ||
+    Boolean(flatGroupField) ||
+    (groupByField !== undefined && groupByField.id !== statusField?.id) ||
+    Boolean(view?.state.lane) ||
+    debouncedQuery.trim() !== "" ||
+    filter.statusOptionIds.length > 0 ||
+    filter.priorities.length > 0 ||
+    filter.assigneeIds.length > 0 ||
+    filter.labelIds.length > 0 ||
+    filter.overdue;
+  useBoardReadNeed(boardId, workspaceId, {
+    full: needsWholeBoard,
+    filter:
+      !needsWholeBoard && compoundFilter
+        ? serializeCompoundFilter(compoundFilter)
+        : "",
+    sort: "",
+  });
+  const lanePager = useLanePager(boardId, workspaceId);
 
   const legacyFiltered = useKanbanFilters(allLanes, appliedFilter, {
     query: debouncedQuery,
@@ -316,10 +366,10 @@ export function useBoardKanban(
   // Who last changed a card, read from the cache after a refetch (the other person once a write lost).
   const lastEditorOf = (cardId: string) =>
     workspaceId
-      ? findBoardCard(
+      ? (findBoardCard(
           queryClient.getQueryData(wmQueryKeys.fullBoard(workspaceId, boardId)),
           cardId,
-        )?.updatedByName ?? undefined
+        )?.updatedByName ?? undefined)
       : undefined;
   const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
     onError: (error, input) =>
@@ -390,6 +440,21 @@ export function useBoardKanban(
     filterActive: filtered.active,
     /** The status options, people and labels the filter menu offers. */
     filterChoices,
+    /** A paged read: the sizes of the board and of each lane; absent when every item is loaded. */
+    paging,
+    /** Items of the board, and those that pass the server filter (what lanes hold plus what they could still load). */
+    boardTotals: {
+      total: allLanes.reduce((sum, lane) => sum + lane.total, 0),
+      filtered: allLanes.reduce(
+        (sum, lane) => sum + (lane.filteredTotal ?? lane.cards.length),
+        0,
+      ),
+    },
+    /** Reads the next page of a Status lane (`optionId` null: the lane without a status). */
+    loadMoreLane: (optionId: string | null) =>
+      lanePager.loadMore(laneKeyOf({ optionId })),
+    /** Lanes (by option id, `none` for no status) whose next page is being read, or failed to read. */
+    lanePages: { loading: lanePager.loading, failed: lanePager.failed },
     isLoading,
     error,
     search: { query, setQuery, debouncedQuery },

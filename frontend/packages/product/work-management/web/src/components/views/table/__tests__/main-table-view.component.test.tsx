@@ -28,6 +28,7 @@ import {
   erpCommenterAccess,
   erpItemId,
   erpOwnerAccess,
+  itemCapabilitiesStub,
 } from "@notrelix/work-management-testing";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
@@ -35,7 +36,11 @@ import { statusOptionFormCatalog } from "../../../status-option/status-option-fo
 import { mainTableCatalog } from "../main-table.catalog";
 import { ARCHIVE_UNDO_MS, MainTableView } from "../main-table-view";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 beforeAll(() => {
@@ -94,7 +99,7 @@ function fakeServices(access: BoardAccess) {
     updateStatus: vi.fn(async (id: string, optionId: string) => {
       board = applyItemStatus(board, id, optionId) ?? board;
     }),
-    createCard: vi.fn(async () => "item-new"),
+    createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
@@ -175,6 +180,7 @@ function fakeServices(access: BoardAccess) {
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemCapabilities: itemCapabilitiesStub(),
   } as unknown as WorkManagementServices;
   return { services, cards, boards, fieldOptions };
 }
@@ -295,6 +301,7 @@ describe("MainTableView on the ERP board", () => {
     expect(cards.updateStatus).toHaveBeenCalledWith(
       erpItemId("ERP-149"),
       ERP_STATUS_OPTION_IDS.doing,
+      expect.any(Number),
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
@@ -342,6 +349,11 @@ describe("MainTableView on the ERP board", () => {
       expect.any(String),
       [erpItemId("ERP-142"), erpItemId("ERP-146")],
       { type: "archive" },
+      // Each item names the version the person saw.
+      {
+        [erpItemId("ERP-142")]: expect.any(Number),
+        [erpItemId("ERP-146")]: expect.any(Number),
+      },
     );
     expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull();
   }, 20_000);
@@ -430,6 +442,12 @@ describe("MainTableView on the ERP board", () => {
   });
 
   it("applies the route filter and says when nothing matches", async () => {
+    // The ERP seed dates its low-priority items up to 30/10: judge "overdue" on that day, not on the
+    // day the suite runs, or the filter that is meant to match nothing starts matching on 31/10.
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-10-30T05:00:00+07:00"),
+    });
     renderTable(erpOwnerAccess(), { initialFilter: "p.low~o" });
     await screen.findByText("Không có việc khớp bộ lọc");
     expect(
@@ -440,61 +458,48 @@ describe("MainTableView on the ERP board", () => {
     expect(rowsOf("Cần làm")).toBe(6);
   });
 
-  it("saves the sort and the hidden columns with the view", async () => {
+  it("sorts by the member's own choice and leaves the shared view untouched", async () => {
     const { boards } = renderTable(erpOwnerAccess());
     await ready();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Sắp xếp Hạn ↑" }), {
-      key: "Enter",
-    });
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /^Ưu tiên/ }));
-    await waitFor(() =>
-      expect(boards.updateSavedViewConfig).toHaveBeenCalledWith(
-        expect.any(String),
-        "view-1",
-        expect.objectContaining({
-          sortBy: [{ fieldId: "priority", direction: "asc" }],
-        }),
-      ),
+    // The sort is the member's own view state (a shared view keeps its saved order).
+    fireEvent.click(screen.getByRole("button", { name: /^Sắp xếp/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Sắp xếp" });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Thêm cách sắp xếp" }),
     );
-    expect(
-      screen
-        .getByRole("columnheader", { name: /^Ưu tiên/ })
-        .getAttribute("aria-sort"),
-    ).toBe("ascending");
-  });
-
-  it("saves a resized column with the view and drops it again on reset", async () => {
-    const { boards } = renderTable(erpOwnerAccess());
-    await ready();
-    const handle = screen.getByRole("separator", {
-      name: "Đổi độ rộng cột Tên công việc",
-    });
-    fireEvent.keyDown(handle, { key: "ArrowRight", shiftKey: true });
-    await waitFor(() =>
-      expect(boards.updateSavedViewConfig).toHaveBeenLastCalledWith(
-        expect.any(String),
-        "view-1",
-        expect.objectContaining({ columnWidths: { title: 372 } }),
-      ),
-    );
+    const field = within(dialog).getByLabelText(
+      "Trường sắp xếp 1",
+    ) as HTMLSelectElement;
+    const priority = within(field).getByRole("option", {
+      name: "Ưu tiên",
+    }) as HTMLOptionElement;
+    fireEvent.change(field, { target: { value: priority.value } });
     await waitFor(() =>
       expect(
         screen
-          .getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" })
-          .getAttribute("aria-valuenow"),
-      ).toBe("372"),
+          .getByRole("columnheader", { name: /^Ưu tiên/ })
+          .getAttribute("aria-sort"),
+      ).toBe("ascending"),
     );
-    fireEvent.keyDown(
-      screen.getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" }),
-      { key: "Home" },
-    );
+    expect(boards.updateSavedViewConfig).not.toHaveBeenCalled();
+  });
+
+  it("resizes a column as the member's own state and drops it again on reset", async () => {
+    const { boards } = renderTable(erpOwnerAccess());
+    await ready();
+    const handle = () =>
+      screen.getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" });
+    const initial = handle().getAttribute("aria-valuenow");
+    fireEvent.keyDown(handle(), { key: "ArrowRight", shiftKey: true });
     await waitFor(() =>
-      expect(boards.updateSavedViewConfig).toHaveBeenLastCalledWith(
-        expect.any(String),
-        "view-1",
-        expect.objectContaining({ columnWidths: {} }),
-      ),
+      expect(handle().getAttribute("aria-valuenow")).toBe("372"),
     );
+    fireEvent.keyDown(handle(), { key: "Home" });
+    await waitFor(() =>
+      expect(handle().getAttribute("aria-valuenow")).toBe(initial),
+    );
+    // Widths belong to the member's own view state; the shared view is never written by a resize.
+    expect(boards.updateSavedViewConfig).not.toHaveBeenCalled();
   });
 
   it("adds a status as a new group at the end of the table", async () => {
@@ -650,6 +655,7 @@ describe("MainTableView on the ERP board", () => {
       expect(cards.updateStatus).toHaveBeenCalledWith(
         "item-new",
         ERP_STATUS_OPTION_IDS.doing,
+        1,
         expect.any(Object),
       ),
     );

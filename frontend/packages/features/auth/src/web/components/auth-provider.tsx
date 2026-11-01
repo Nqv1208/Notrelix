@@ -9,6 +9,10 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isReady: boolean;
+  /** The session could not be read (network or server failure); it is not known to be over. */
+  isUnavailable: boolean;
+  /** Reads the session again after `isUnavailable`. */
+  retry: () => void;
   sessionGeneration: string | null;
 }
 
@@ -39,13 +43,16 @@ export function createAuthProvider({ api, endpoints }: CreateAuthProviderDeps) {
   const useAuthUser = createUseAuthUser({ api, endpoints });
 
   return function AuthProvider({ children }: AuthProviderProps) {
-    const { user, isAuthenticated, isLoading, isReady } = useAuthUser();
+    const { user, isAuthenticated, isLoading, isReady, isUnavailable, retry } =
+      useAuthUser();
 
     const contextValue: AuthContextType = {
       user: user || null,
       isAuthenticated,
       isLoading,
       isReady,
+      isUnavailable,
+      retry,
       sessionGeneration: user?.id ? `user:${user.id}` : null,
     };
 

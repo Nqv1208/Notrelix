@@ -54,7 +54,8 @@ internal sealed class ResultJsonConverterFactory : JsonConverterFactory
     private sealed record ResultPayload(
         bool Succeeded,
         string[] Errors,
-        ApplicationError[] TypedErrors);
+        ApplicationError[] TypedErrors,
+        long? Version = null);
 
     private sealed record ResultPayload<T>(
         bool Succeeded,
@@ -70,6 +71,10 @@ internal sealed class ResultJsonConverterFactory : JsonConverterFactory
             var payload = document.RootElement.Deserialize<ResultPayload>(options)
                 ?? throw new JsonException("Invalid idempotency replay payload for Result.");
 
+            // A write that told the caller its new version answers the same on a replay.
+            if (payload is { Succeeded: true, Version: { } version })
+                return VersionedResult.Success(version);
+
             var typedErrors = payload.TypedErrors ?? [];
             return typedErrors.Length > 0
                 ? new Result(payload.Succeeded, typedErrors)
@@ -81,7 +86,8 @@ internal sealed class ResultJsonConverterFactory : JsonConverterFactory
             var payload = new ResultPayload(
                 value.Succeeded,
                 value.Errors,
-                value.TypedErrors.ToArray());
+                value.TypedErrors.ToArray(),
+                (value as VersionedResult)?.Version);
             JsonSerializer.Serialize(writer, payload, options);
         }
     }

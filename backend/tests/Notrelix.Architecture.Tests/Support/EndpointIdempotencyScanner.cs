@@ -133,6 +133,16 @@ internal static class EndpointIdempotencyScanner
             }
         }
 
+        // A static factory on the command type (`CreateCommentCommand.ForPage(...)`) builds the command too.
+        foreach (var invocation in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (invocation.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax owner }
+                && idempotentTypeNames.Contains(owner.Identifier.ValueText))
+            {
+                sink.Add(owner.Identifier.ValueText);
+            }
+        }
+
         // `record with { ... }` reuses the incoming command parameter instead of
         // an object creation — resolve the parameter's declared type.
         foreach (var withExpression in scope.DescendantNodes().OfType<WithExpressionSyntax>())

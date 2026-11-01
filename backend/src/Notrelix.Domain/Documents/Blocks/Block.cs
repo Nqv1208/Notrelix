@@ -102,6 +102,20 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         return block;
     }
 
+    /// <summary>
+    /// Whether a create with this id, type, content and properties repeats the one that made this block: the
+    /// same inputs, normalised the way a create stores them, so a retry is recognised and a different request
+    /// that reuses the id is not.
+    /// </summary>
+    public bool IsRetryOfCreate(BlockType type, BlockContent content, BlockProperties? properties)
+    {
+        if (IsDeleted || type != Type) return false;
+        var normalisedContent = Rules.BlockContentValidator.Normalize(type, content);
+        var normalisedProperties = Rules.BlockPropertiesValidator.Normalize(type, properties ?? BlockProperties.Empty());
+        return Rules.BlockContentValidator.AreSame(type, Content, normalisedContent)
+            && Rules.BlockPropertiesValidator.AreSame(type, Properties, normalisedProperties);
+    }
+
     public void UpdateContent(BlockContent newContent, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

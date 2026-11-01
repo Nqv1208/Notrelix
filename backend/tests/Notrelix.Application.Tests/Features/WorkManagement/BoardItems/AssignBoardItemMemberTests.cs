@@ -35,7 +35,7 @@ public class AssignBoardItemMemberTests : WorkManagementHandlerTestBase
             .ReturnsAsync(new WorkspaceAccessSnapshot(TestAccountId, TestWorkspaceId, targetUserId, true, true));
 
         AssigneeSees(item, targetUserId, true);
-        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId);
+        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -45,7 +45,7 @@ public class AssignBoardItemMemberTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ItemNotFound_ThrowsNotFoundException()
     {
-        var command = new AssignBoardItemMemberCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var command = new AssignBoardItemMemberCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -61,7 +61,7 @@ public class AssignBoardItemMemberTests : WorkManagementHandlerTestBase
             .Setup(w => w.ResolveAsync(TestWorkspaceId, targetUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new WorkspaceAccessSnapshot(TestAccountId, TestWorkspaceId, targetUserId, false, true));
 
-        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId);
+        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<ForbiddenException>();
@@ -80,7 +80,7 @@ public class AssignBoardItemMemberTests : WorkManagementHandlerTestBase
             .ReturnsAsync(new WorkspaceAccessSnapshot(TestAccountId, TestWorkspaceId, targetUserId, true, true));
 
         AssigneeSees(item, targetUserId, true);
-        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId);
+        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -98,7 +98,7 @@ public class AssignBoardItemMemberTests : WorkManagementHandlerTestBase
             .ReturnsAsync(new WorkspaceAccessSnapshot(TestAccountId, TestWorkspaceId, targetUserId, true, true));
         AssigneeSees(item, targetUserId, false);
 
-        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId);
+        var command = new AssignBoardItemMemberCommand(item.Id, targetUserId, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<ForbiddenException>();

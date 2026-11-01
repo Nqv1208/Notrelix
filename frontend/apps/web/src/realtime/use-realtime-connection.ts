@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useAuth } from "@notrelix/features-auth";
 import type { BoardConnectionState } from "@notrelix/work-management-web";
@@ -20,7 +26,11 @@ export function useRealtimeConnection(): {
   );
   const lostAt = useRef<Date | null>(null);
   if (state === "connected") lostAt.current = null;
-  else if (lostAt.current === null && state !== "idle" && state !== "connecting")
+  else if (
+    lostAt.current === null &&
+    state !== "idle" &&
+    state !== "connecting"
+  )
     lostAt.current = new Date();
   // The state flips between reconnecting and connecting on every attempt, so the time since the loss decides.
   const [lost, setLost] = useState(false);
@@ -31,7 +41,10 @@ export function useRealtimeConnection(): {
       return;
     }
     const timer = window.setInterval(() => {
-      if (lostAt.current && Date.now() - lostAt.current.getTime() >= LOST_AFTER_MS)
+      if (
+        lostAt.current &&
+        Date.now() - lostAt.current.getTime() >= LOST_AFTER_MS
+      )
         setLost(true);
     }, 1000);
     return () => window.clearInterval(timer);

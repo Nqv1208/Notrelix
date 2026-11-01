@@ -109,7 +109,7 @@ public sealed class BoardRoleAssignmentCeilingTests
 
     private static AccessDecisionKind Change(AccessFacts facts, Guid userId, BoardRole role)
     {
-        var request = new UpdateBoardMemberRoleCommand(BoardId, userId, role);
+        var request = new UpdateBoardMemberRoleCommand(BoardId, userId, role, ExpectedVersion: 1);
         return Engine.Evaluate(RequestDescriptorValidator.Create(typeof(UpdateBoardMemberRoleCommand)), Context, facts, request).Kind;
     }
 

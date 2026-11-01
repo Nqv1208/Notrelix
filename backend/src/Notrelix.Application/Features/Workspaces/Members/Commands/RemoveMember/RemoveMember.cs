@@ -6,13 +6,21 @@ using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 
+/// <summary>
+/// Removes one member. Guarded by the target member's expected version, so a decision made on a stale view of the
+/// member (already changed by someone else) is refused instead of overwriting that change.
+/// </summary>
 public record RemoveMemberCommand(
     Guid WorkspaceId,
-    Guid UserId
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    Guid UserId,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.RemoveMember;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
+    // The concurrency authority is the target WorkspaceMember; authorization stays on the Workspace.
+    ResourceRef IExpectedVersionRequest.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace-member"), UserId, WorkspaceId);
 }
 
 public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, Result>
@@ -69,6 +77,12 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
             request.UserId,
             _dateTimeProvider.UtcNow,
             ct);
+
+        // Derived access ends with the membership, in the same transaction.
+        await _grantProjection.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            workspace.AccountId, workspace.Id, request.UserId, _dateTimeProvider.UtcNow, ct);
+        await _grantProjection.ClearCustomRoleAssignmentsAsync(
+            workspace.AccountId, workspace.Id, request.UserId, ct);
 
         _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();

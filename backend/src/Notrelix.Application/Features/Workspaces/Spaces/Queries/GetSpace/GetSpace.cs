@@ -11,7 +11,8 @@ public record SpaceDto(
     string Visibility,
     string SpaceType,
     bool IsArchived,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    long Version = 0
 );
 
 public record GetSpaceQuery(
@@ -58,6 +59,7 @@ public class GetSpaceQueryHandler : IRequestHandler<GetSpaceQuery, Result<SpaceD
             space.Visibility.ToString(),
             space.SpaceType.ToString(),
             space.Status == SpaceStatus.Archived,
-            space.CreatedAt.UtcDateTime));
+            space.CreatedAt.UtcDateTime,
+            space.Version));
     }
 }

@@ -61,7 +61,7 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
 
         await OrgTreeTestHost.SendAsync(asOwner, new UpdateMemberJobTitleCommand(stack.WorkspaceId, member, "Design lead", afterAdmin.Version));
 
-        var row = (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Single(m => m.UserId == member);
+        var row = ((await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Items).Single(m => m.UserId == member);
         row.JobTitle.Should().Be("Design lead");
         row.Version.Should().Be((await PersistedAsync(stack.WorkspaceId, member)).Version, "the list reports the version the next write must carry");
     }
@@ -188,7 +188,7 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
         await readIntoA.Should().ThrowAsync<Exception>("the member list of workspace A is not readable from workspace B");
 
         (await PersistedAsync(a.WorkspaceId, memberOfA)).Should().Be(titled);
-        var bList = await OrgTreeTestHost.QueryAsync(asOwnerB, new GetWorkspaceMembersQuery(b.WorkspaceId));
+        var bList = (await OrgTreeTestHost.QueryAsync(asOwnerB, new GetWorkspaceMembersQuery(b.WorkspaceId))).Items;
         bList.Should().NotContain(m => m.UserId == memberOfA);
         bList.Should().OnlyContain(m => m.JobTitle == null, "a title set in A is not part of B");
     }
@@ -206,7 +206,7 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
         await SeedProfileAsync(keeper, "+84907654321", visible: false);
         using var asReader = _host.CreateProvider(stack.AccountId, reader);
 
-        var list = await OrgTreeTestHost.QueryAsync(asReader, new GetWorkspaceMembersQuery(stack.WorkspaceId));
+        var list = (await OrgTreeTestHost.QueryAsync(asReader, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Items;
 
         list.Single(m => m.UserId == sharer).Phone.Should().Be(Phone);
         list.Single(m => m.UserId == keeper).Phone.Should().BeNull("the default is self-only");
@@ -233,7 +233,7 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
         var ownRow = await OrgTreeTestHost.QueryAsync(asGuestSharer, new GetMyWorkspaceMembershipQuery(stack.WorkspaceId));
         ownRow.UserId.Should().Be(guestSharer);
         ownRow.Phone.Should().BeNull("a guest's phone is not shared, not even back to them through the workspace read");
-        var seenByOwner = await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceMembersQuery(stack.WorkspaceId));
+        var seenByOwner = (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceMembersQuery(stack.WorkspaceId))).Items;
 
         seenByOwner.Single(m => m.UserId == sharer).Phone.Should().Be(Phone);
         seenByOwner.Single(m => m.UserId == guestSharer).Phone.Should().BeNull("a guest's phone is not shared with the workspace");
@@ -252,7 +252,7 @@ public sealed class MemberProfileIntegrationTests : IAsyncLifetime
         var byOutsider = () => OrgTreeTestHost.SendAsync(asOutsider, new GetWorkspaceMembersQuery(a.Stack.WorkspaceId));
         await byOutsider.Should().ThrowAsync<Exception>("a person who is not a member of the workspace cannot list it, so no phone is returned");
 
-        var ownList = await OrgTreeTestHost.QueryAsync(asOwnerB, new GetWorkspaceMembersQuery(a.Other.WorkspaceId));
+        var ownList = (await OrgTreeTestHost.QueryAsync(asOwnerB, new GetWorkspaceMembersQuery(a.Other.WorkspaceId))).Items;
         ownList.Should().NotContain(m => m.UserId == a.Sharer);
         ownList.Should().OnlyContain(m => m.Phone == null);
     }

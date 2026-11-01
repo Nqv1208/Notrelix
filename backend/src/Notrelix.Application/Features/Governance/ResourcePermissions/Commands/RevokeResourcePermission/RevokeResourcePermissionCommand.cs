@@ -40,6 +40,7 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
     private readonly IResourceAccessChangeRecorder _changes;
+    private readonly IBoardSharingSummary _sharing;
     private readonly IAccessChangeSignal _access;
 
     public RevokeResourcePermissionCommandHandler(
@@ -48,8 +49,10 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService,
         IResourceAccessChangeRecorder changes,
+        IBoardSharingSummary sharing,
         IAccessChangeSignal access)
     {
+        _sharing = sharing;
         _access = access;
         _changes = changes;
         _context = context;
@@ -73,10 +76,30 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
 
         if (permission == null)
         {
+            // Revoked already (a retry, or two managers removing the same entry): nothing left to do.
+            // An id that never belonged to this resource in this workspace is still NotFound.
+            var alreadyRevoked = await _context.ResourcePermissions
+                .IgnoreQueryFilters()
+                .AnyAsync(p => p.Id == request.PermissionId &&
+                               p.WorkspaceId == workspaceId &&
+                               p.ResourceKind == kind &&
+                               p.ResourceId == request.ResourceId &&
+                               p.DeletedAt != null, cancellationToken);
+            if (alreadyRevoked)
+            {
+                return Result.Success();
+            }
+
             throw new NotFoundException(nameof(ResourcePermission), request.PermissionId);
         }
 
         var actorId = _requestContext.UserId;
+
+        if (kind.Value == "work-management.board")
+        {
+            await BoardManagerFloor.EnsureAnotherManagerAsync(
+                _sharing, request.ResourceId, permission.SubjectType, permission.SubjectId, cancellationToken);
+        }
 
         permission.Revoke(actorId, _dateTimeProvider.UtcNow);
 
@@ -99,7 +122,12 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             ResourceRef.Create(kind, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken,
+            change: new AuditChange(
+                permission.SubjectType.ToString(),
+                permission.SubjectId,
+                new { level = AccessLevels.OfRank((int)permission.Level) },
+                null));
 
         return Result.Success();
     }

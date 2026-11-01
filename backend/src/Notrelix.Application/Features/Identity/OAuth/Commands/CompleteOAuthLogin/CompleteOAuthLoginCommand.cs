@@ -82,31 +82,36 @@ public sealed class CompleteOAuthLoginCommandHandler
         CompleteOAuthLoginCommand request,
         CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(request.Error))
-        {
-            _logger.LogInformation("OAuth callback error: {Error} ({ErrorDescription})",
-                request.Error, request.ErrorDescription);
-            return Result<AuthResult>.Failure("OAuth provider returned an error.");
-        }
-
+        // The state is used up first, whatever the provider answered: a state works once.
         var storedState = await _stateStore.ConsumeAsync(request.State, cancellationToken);
         if (storedState is null)
         {
-            _logger.LogWarning("OAuth callback with invalid or expired state: {State}", request.State);
-            return Result<AuthResult>.Failure("Invalid or expired OAuth state.");
+            _logger.LogWarning("OAuth callback with invalid or expired state");
+            return Fail(OAuthLoginErrorCodes.StateInvalid, "Invalid or expired OAuth state.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Error))
+        {
+            _logger.LogInformation("OAuth callback error: {Error} ({ErrorDescription})",
+                OAuthCallbackLog.Sanitize(request.Error), OAuthCallbackLog.Sanitize(request.ErrorDescription));
+            return Fail(
+                string.Equals(request.Error, "access_denied", StringComparison.Ordinal)
+                    ? OAuthLoginErrorCodes.Denied
+                    : OAuthLoginErrorCodes.Failed,
+                "OAuth provider returned an error.");
         }
 
         if (storedState.Flow != OAuthFlowKind.Login)
         {
             _logger.LogWarning("OAuth state bound to {Flow} flow cannot complete a login", storedState.Flow);
-            return Result<AuthResult>.Failure("OAuth state is not bound to a login flow.");
+            return Fail(OAuthLoginErrorCodes.StateInvalid, "OAuth state is not bound to a login flow.");
         }
 
         if (storedState.Provider != request.Provider)
         {
             _logger.LogWarning("OAuth provider mismatch: stored={Stored}, request={Request}",
                 storedState.Provider, request.Provider);
-            return Result<AuthResult>.Failure("OAuth provider mismatch.");
+            return Fail(OAuthLoginErrorCodes.Failed, "OAuth provider mismatch.");
         }
 
         var redirectUri = _optionsProvider.GetRedirectUri(request.Provider);
@@ -122,7 +127,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "OAuth code redemption failed for provider {Provider}", request.Provider);
-            return Result<AuthResult>.Failure("Failed to authenticate with OAuth provider.");
+            return Fail(OAuthLoginErrorCodes.Failed, "Failed to authenticate with OAuth provider.");
         }
 
         var now = _dateTimeProvider.UtcNow;
@@ -144,8 +149,8 @@ public sealed class CompleteOAuthLoginCommandHandler
         if (!profile.EmailVerified || string.IsNullOrWhiteSpace(profile.Email))
         {
             _logger.LogInformation("OAuth email not verified for subject {Subject}", profile.Subject);
-            return Result<AuthResult>.Failure(
-                "Cannot create account: email not verified by provider.");
+            return Fail(
+                OAuthLoginErrorCodes.EmailUnverified, "Cannot create account: email not verified by provider.");
         }
 
         var normalizedEmail = profile.Email.Trim().ToLowerInvariant();
@@ -160,7 +165,8 @@ public sealed class CompleteOAuthLoginCommandHandler
             _logger.LogWarning(
                 "OAuth login blocked: subject {Subject} unlinked but its email already belongs to an account",
                 profile.Subject);
-            return Result<AuthResult>.Failure(
+            return Fail(
+                OAuthLoginErrorCodes.EmailInUse,
                 "An account with this email already exists. Sign in with your existing method, or link this provider from your signed-in account.");
         }
 
@@ -176,13 +182,13 @@ public sealed class CompleteOAuthLoginCommandHandler
         if (user is null)
         {
             _logger.LogError("OAuth account {UserId} has no matching user", userId);
-            return Result<AuthResult>.Failure("User account not found.");
+            return Fail(OAuthLoginErrorCodes.Failed, "User account not found.");
         }
 
         if (user.Status != UserStatus.Active)
         {
             _logger.LogWarning("OAuth login blocked: user {UserId} is {Status}", user.Id, user.Status);
-            return Result<AuthResult>.Failure("Account is not active.");
+            return Fail(OAuthLoginErrorCodes.Failed, "Account is not active.");
         }
 
         var mfaEnabled = await _identityContext.UserMfaMethods
@@ -256,6 +262,9 @@ public sealed class CompleteOAuthLoginCommandHandler
         _logger.LogInformation("New user {UserId} created via OAuth ({Provider})", user.Id, profile.Provider);
         return Result<AuthResult>.Success(authResult);
     }
+
+    private static Result<AuthResult> Fail(string code, string message) =>
+        Result<AuthResult>.Failure(new ApplicationError(code, message, ApplicationErrorType.Authentication));
 
     private static string ChooseDisplayName(ExternalOAuthProfile profile)
     {

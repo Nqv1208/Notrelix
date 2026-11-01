@@ -1,9 +1,6 @@
 import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-  CardCover,
-  CardRepeatRule,
-} from "@notrelix/work-management-core";
+import type { CardCover, CardRepeatRule } from "@notrelix/work-management-core";
 import { workspaceQueryKey } from "@notrelix/query";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
@@ -71,7 +68,11 @@ export function useVoteWrites(scope: ItemScope, fieldId: string) {
       itemCapabilities.setVote(scope.itemId, fieldId, voted),
     onSettled: () => {
       void queryClient.invalidateQueries({
-        queryKey: wmQueryKeys.itemVotes(scope.workspaceId, scope.itemId, fieldId),
+        queryKey: wmQueryKeys.itemVotes(
+          scope.workspaceId,
+          scope.itemId,
+          fieldId,
+        ),
       });
       refresh();
     },

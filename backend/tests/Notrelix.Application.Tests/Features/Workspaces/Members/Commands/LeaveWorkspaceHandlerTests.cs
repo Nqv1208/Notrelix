@@ -43,6 +43,10 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
         GrantProjectionMock.Verify(g => g.RevokeLeavingMemberGrantAsync(
             TestAccountId, TestWorkspaceId, TestUserId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
         _defaults.Verify(d => d.ClearIfAsync(TestUserId, TestWorkspaceId, It.IsAny<CancellationToken>()), Times.Once);
+        GrantProjectionMock.Verify(g => g.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            TestAccountId, TestWorkspaceId, TestUserId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
+        GrantProjectionMock.Verify(g => g.ClearCustomRoleAssignmentsAsync(
+            TestAccountId, TestWorkspaceId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -71,6 +75,8 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
         GrantProjectionMock.Verify(g => g.RevokeLeavingMemberGrantAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
         _defaults.Verify(d => d.ClearIfAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        GrantProjectionMock.Verify(g => g.RevokeAccountGrantWhenLastWorkspaceLeftAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

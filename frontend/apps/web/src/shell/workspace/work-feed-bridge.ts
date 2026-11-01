@@ -33,10 +33,7 @@ import {
 import type { OperationResponse } from "@notrelix/contracts";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { priorityFromOptionName } from "@notrelix/work-management-core";
-import {
-  seenItemVersion,
-  wmQueryKeys,
-} from "@notrelix/work-management-state";
+import { seenItemVersion, wmQueryKeys } from "@notrelix/work-management-state";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { myWorkQueryKey } from "./work-management-bridge";
 import {

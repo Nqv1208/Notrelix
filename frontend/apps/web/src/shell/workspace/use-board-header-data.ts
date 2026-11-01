@@ -44,6 +44,14 @@ export function useBoardHeaderData(
   board: Board | undefined,
   /** Opens the Share dialog; absent: Share stays disabled with the reason. */
   onOpenShare?: () => void,
+  /** Opens the Leave board dialog; absent: no entry in the menu. */
+  onLeave?: () => void,
+  /** Opens the Duplicate board dialog; absent: no entry in the menu. */
+  onDuplicate?: () => void,
+  /** Opens the Import items dialog; absent: no entry in the menu. */
+  onImport?: () => void,
+  /** Opens the Export dialog; absent: no entry in the menu. */
+  onExport?: () => void,
 ): BoardHeaderData {
   const navigate = useNavigate();
   const laneCopy = useKanbanLaneCopy();
@@ -109,6 +117,10 @@ export function useBoardHeaderData(
         initials: member.initials || initialsFor(member.name),
       })),
       onOpenShare,
+      onLeave,
+      onDuplicate,
+      onImport,
+      onExport,
       // A Manager unarchives with the version the open board showed; a stale one changes nothing.
       archived: board?.isArchived
         ? {

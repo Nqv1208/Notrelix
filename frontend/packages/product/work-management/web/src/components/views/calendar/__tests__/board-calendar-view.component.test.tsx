@@ -1,7 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
-import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import type {
   BoardAccess,
   CardDetail,
@@ -16,6 +22,7 @@ import {
   erpCommenterAccess,
   erpItemId,
   erpOwnerAccess,
+  itemCapabilitiesStub,
 } from "@notrelix/work-management-testing";
 import { cardPopupCatalog } from "../../../card-popup/card-popup.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
@@ -24,7 +31,11 @@ import { kanbanToolbarCatalog } from "../../kanban/kanban-toolbar.catalog";
 import { BoardCalendarView } from "../board-calendar-view";
 import { calendarCatalog } from "../calendar.catalog";
 
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast }));
 
 /** Monday 12/10/2026 10:40 in Hanoi. */
@@ -74,8 +85,13 @@ function fakeServices(
     getCardActivity: vi.fn(async () => []),
     updateStatus: vi.fn(async () => undefined),
     createCard: vi.fn(
-      async (_boardId: string, _payload: { listId: string; title: string }) =>
-        "item-new",
+      async (
+        _boardId: string,
+        _payload: { listId: string; title: string },
+      ) => ({
+        id: "item-new",
+        version: 1,
+      }),
     ),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
@@ -108,6 +124,7 @@ function fakeServices(
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
+    itemCapabilities: itemCapabilitiesStub(),
   } as unknown as WorkManagementServices;
   return { services, cards };
 }
@@ -328,9 +345,11 @@ describe("BoardCalendarView on the ERP board", () => {
       title: "Họp chốt phạm vi",
     });
     await waitFor(() =>
-      expect(cards.updateCard).toHaveBeenCalledWith("item-new", {
-        dueDate: "2026-10-23T10:00:00.000Z",
-      }),
+      expect(cards.updateCard).toHaveBeenCalledWith(
+        "item-new",
+        { dueDate: "2026-10-23T10:00:00.000Z" },
+        { expectedVersion: 1 },
+      ),
     );
   });
 
@@ -338,14 +357,13 @@ describe("BoardCalendarView on the ERP board", () => {
     const { cards } = renderCalendar();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
-    const due = (await screen.findByLabelText(
-      "Hạn hoàn thành",
-    )) as HTMLInputElement;
-    expect(due.value).toBe("12/10/2026");
-    fireEvent.change(screen.getByRole("textbox", { name: /^Tên công việc/ }), {
+    // The card form opens with the shown day as its date.
+    const form = await screen.findByRole("dialog", { name: "Thẻ" });
+    expect(within(form).getByRole("button", { name: /^12\/10/ })).toBeTruthy();
+    fireEvent.change(within(form).getByRole("textbox", { name: "Tên thẻ" }), {
       target: { value: "Chốt lịch tuần" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Tạo công việc/ }));
+    fireEvent.click(within(form).getByRole("button", { name: "Tạo thẻ" }));
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
     expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
       title: "Chốt lịch tuần",
@@ -366,26 +384,29 @@ describe("BoardCalendarView on the ERP board", () => {
     ).toBeTruthy();
   });
 
-  it("filters by the route filter and shows it as the filter pill", async () => {
+  it("filters by the overdue condition and shows it as a filter chip", async () => {
     const { container } = renderCalendar();
     await ready();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Lọc" }), {
-      key: "Enter",
-    });
+    // The filter builder: add a condition and pick the fixed overdue one.
+    fireEvent.click(screen.getByRole("button", { name: "Lọc" }));
+    const builder = await screen.findByRole("dialog", { name: "Lọc việc" });
     fireEvent.click(
-      await screen.findByRole("menuitemcheckbox", { name: "Quá hạn" }),
+      within(builder).getByRole("button", { name: "Thêm điều kiện" }),
     );
+    fireEvent.change(within(builder).getAllByRole("combobox")[0]!, {
+      target: { value: "$overdue" },
+    });
     // Only the overdue items stay: ERP-142 (10/10) and the done ones are not overdue.
     await waitFor(() =>
       expect(container.querySelectorAll("[data-calendar-event]").length).toBe(
         2,
       ),
     );
-    fireEvent.keyDown(document.activeElement ?? document.body, {
-      key: "Escape",
-    });
+    fireEvent.click(within(builder).getByRole("button", { name: "Xong" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Lọc:/ })).toBeTruthy(),
+      expect(
+        screen.getByRole("button", { name: "Xoá bộ lọc Quá hạn" }),
+      ).toBeTruthy(),
     );
   });
 

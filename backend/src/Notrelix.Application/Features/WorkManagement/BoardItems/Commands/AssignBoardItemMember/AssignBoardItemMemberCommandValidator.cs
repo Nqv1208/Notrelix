@@ -4,6 +4,7 @@ public class AssignBoardItemMemberCommandValidator : AbstractValidator<AssignBoa
 {
     public AssignBoardItemMemberCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
         RuleFor(x => x.UserId).NotEmpty();
     }

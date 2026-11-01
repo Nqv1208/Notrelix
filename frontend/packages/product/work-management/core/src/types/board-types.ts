@@ -75,8 +75,40 @@ export interface SortConfig {
   direction: "asc" | "desc";
 }
 
+/** Where one Status lane stands in a paged board read. */
+export interface LanePaging {
+  /** Live items of the lane before any filter, as the server counted them. */
+  readonly total: number;
+  /** Items of the lane that pass the server filter. */
+  readonly filteredTotal: number;
+  /** Cursor of the lane's next page; null when every item that passes is loaded. */
+  readonly nextCursor: string | null;
+  /**
+   * Items of the lane the cache held when the server counted. The lane's size follows a later write
+   * (a drop, a create, an archive) by how far the loaded count has moved from this.
+   */
+  readonly baseLoaded: number;
+}
+
+/**
+ * A board read in pages by Status lane: the groups carry only the first pages of each lane. Absent on a read
+ * of the whole board.
+ */
+export interface BoardPaging {
+  /** By Status option id; the lane of items without a status is `none`. */
+  readonly lanes: Readonly<Record<string, LanePaging>>;
+  /** Live root items of the board before the filter. */
+  readonly totalItems: number;
+  /** Items of the board that pass the server filter. */
+  readonly filteredTotal: number;
+  /** The filter and sort the pages were read under; later pages are read under the same. */
+  readonly criteria: { readonly filter: string; readonly sort: string };
+}
+
 export interface FullBoardResponse {
   board: Board;
+  /** Present when the groups hold only the first pages of each lane. */
+  paging?: BoardPaging;
   groups: BoardGroup[];
   fieldDefinitions: FieldDefinition[];
   /**

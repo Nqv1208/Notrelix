@@ -10,10 +10,13 @@ public static class InviteMemberEndpoint
     public static IEndpointRouteBuilder MapInviteMember(this IEndpointRouteBuilder group)
     {
         group.MapWorkspacePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("Workspaces.Members.InviteMember")
             .WithTags("Workspaces.Members")
             .WithSummary("Invite a member to workspace")
-            .Produces<Guid>(StatusCodes.Status201Created, "application/json");
+            .WithDescription("Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.")
+            .Produces<Guid>(StatusCodes.Status201Created, "application/json")
+            .ProducesProblems(StatusCodes.Status409Conflict);
         return group;
     }
 

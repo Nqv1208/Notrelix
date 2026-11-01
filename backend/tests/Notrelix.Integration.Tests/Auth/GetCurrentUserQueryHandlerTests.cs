@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Integration.Tests.Containers;
@@ -35,7 +36,8 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new GetCurrentUserQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain("User not found");
+        result.TypedErrors.Should().ContainSingle(e =>
+            e.Code == "identity.auth.session-invalid" && e.Type == ApplicationErrorType.Authentication);
     }
 
     [Fact]

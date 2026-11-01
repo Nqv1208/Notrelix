@@ -157,7 +157,8 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.GuestResourceAccessActionsAdapter(context),
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
-                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
+            SeatGates.AlwaysAdmit);
 
         return (context, handler);
     }

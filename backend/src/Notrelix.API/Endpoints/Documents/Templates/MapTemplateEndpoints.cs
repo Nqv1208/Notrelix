@@ -22,11 +22,13 @@ public static class MapTemplateEndpoints
             .Produces<List<PageTemplateDto>>(StatusCodes.Status200OK, "application/json");
 
         group.MapWorkspacePost("/", CreateAsync)
+            .WithIdempotencyKey()
             .WithName("Documents.Templates.CreatePageTemplate")
             .WithSummary("Save a page as a workspace template")
             .Produces<PageTemplateDto>(StatusCodes.Status201Created, "application/json");
 
         group.MapWorkspacePost("/{templateId:guid}/pages", CreatePageAsync)
+            .WithIdempotencyKey()
             .WithName("Documents.Templates.CreatePageFromTemplate")
             .WithSummary("Create a page from a template")
             .Produces<PageFromTemplateDto>(StatusCodes.Status201Created, "application/json");

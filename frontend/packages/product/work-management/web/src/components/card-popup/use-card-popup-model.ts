@@ -61,7 +61,9 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
   const [openFieldId, setOpenFieldId] = useState<string | null>(null);
   const [newFieldName, setNewFieldName] = useState<string | null>(null);
   const addField = useCallback((fieldId: string) => {
-    setAddedFieldIds((ids) => (ids.includes(fieldId) ? ids : [...ids, fieldId]));
+    setAddedFieldIds((ids) =>
+      ids.includes(fieldId) ? ids : [...ids, fieldId],
+    );
     setOpenFieldId(fieldId);
   }, []);
   const clearOpenField = useCallback(() => setOpenFieldId(null), []);
@@ -74,11 +76,14 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
   );
   const [saves, setSaves] = useState<Record<string, FieldSave | undefined>>({});
   const [conflict, setConflict] = useState(false);
-  const [fieldConflicts, setFieldConflicts] = useState<readonly FieldConflict[]>(
-    [],
-  );
+  const [fieldConflicts, setFieldConflicts] = useState<
+    readonly FieldConflict[]
+  >([]);
   const raiseFieldConflict = useCallback((next: FieldConflict) => {
-    setFieldConflicts((all) => [...all.filter((c) => c.key !== next.key), next]);
+    setFieldConflicts((all) => [
+      ...all.filter((c) => c.key !== next.key),
+      next,
+    ]);
   }, []);
   const clearFieldConflict = useCallback((key: string) => {
     setFieldConflicts((all) => all.filter((c) => c.key !== key));

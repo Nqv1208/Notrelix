@@ -151,6 +151,7 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IResourceVisibility>(sp =>
             new PostgresResourceVisibility(sp.GetRequiredService<ApplicationDbContext>(), sp.GetRequiredService<TimeProvider>()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
+        services.AddSingleton(new Mock<IClientMetadata>().Object);
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceCreatorGrant,
             Notrelix.Infrastructure.Data.Authz.ResourceCreatorGrantAdapter>();
 
@@ -169,8 +170,14 @@ internal sealed class OrgTreeTestHost
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,
+            Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
+            Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
 
         services.AddScoped<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts, Notrelix.Application.Features.Identity.Users.Services.IdentityUserFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Domains.IAccountDomainFacts, Notrelix.Application.Features.Accounts.Members.AccountDomainFactsProvider>();
@@ -212,6 +219,9 @@ internal sealed class OrgTreeTestHost
     public static async Task<object?> SendAsync(ServiceProvider provider, object request)
     {
         using var scope = provider.CreateScope();
+        // Idempotent requests (creates) need the key a transport would bind; others ignore it.
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set($"org-tree-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
         var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
         if (result is Result plain)
             plain.Succeeded.Should().BeTrue(string.Join("; ", plain.Errors));
@@ -249,11 +259,26 @@ internal sealed class OrgTreeTestHost
         await context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Moves an invitation's send time back an hour: the clock of these hosts is fixed, so an invitation sent
+    /// "now" would still be inside the one-minute wait before it can be sent again.
+    /// </summary>
+    public Task AgeInvitationAsync(Guid invitationId) =>
+        WithSystemContextAsync(c => c.WorkspaceInvitations.IgnoreQueryFilters()
+            .Where(i => i.Id == invitationId)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(i => i.CreatedAt, i => i.CreatedAt.AddHours(-1))
+                .SetProperty(i => i.UpdatedAt, i => i.UpdatedAt == null ? null : i.UpdatedAt.Value.AddHours(-1))));
+
     public async Task<T> ReadAsync<T>(Func<ApplicationDbContext, Task<T>> read)
     {
         await using var context = _db.CreateOwnerContext(SystemTenant());
         return await read(context);
     }
+
+    /// <summary>The Space's current version: what an editor read before it writes.</summary>
+    public Task<long> SpaceVersionAsync(Guid spaceId) =>
+        ReadAsync(c => c.Spaces.IgnoreQueryFilters().Where(s => s.Id == spaceId).Select(s => s.Version).SingleAsync());
 
     public async Task<OrgStack> SeedWorkspaceAsync()
     {
@@ -311,11 +336,17 @@ internal sealed class OrgTreeTestHost
         Guid? spaceId = null,
         Action<Board>? transition = null)
     {
-        var board = Board.Create(stack.AccountId, stack.WorkspaceId, stack.OwnerId, title, null, BaseTime, visibility, spaceId: spaceId);
+        // A board can no longer be created as a public link; a row stored before that rule is seeded by writing
+        // the stored value, so the reads are still proved against it.
+        var storedPublicLink = visibility == BoardVisibility.PublicLink;
+        var board = Board.Create(stack.AccountId, stack.WorkspaceId, stack.OwnerId, title, null, BaseTime,
+            storedPublicLink ? BoardVisibility.Workspace : visibility, spaceId: spaceId);
         transition?.Invoke(board);
         await WithSystemContextAsync(seed =>
         {
             seed.Boards.Add(board);
+            if (storedPublicLink)
+                seed.Entry(board).Property(nameof(Board.Visibility)).CurrentValue = BoardVisibility.PublicLink;
             return Task.CompletedTask;
         });
         return board.Id;

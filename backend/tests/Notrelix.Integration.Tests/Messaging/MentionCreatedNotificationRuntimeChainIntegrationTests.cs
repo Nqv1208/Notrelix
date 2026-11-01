@@ -114,6 +114,8 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
 
         scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
             .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+        scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Idempotency.IIdempotencyExecutionContextWriter>()
+            .Set($"chain-{Guid.NewGuid():N}", Notrelix.Application.Common.Idempotency.IdempotencyExecutionSource.Internal);
 
         var result = await scope.ServiceProvider.GetRequiredService<ISender>()
             .Send(

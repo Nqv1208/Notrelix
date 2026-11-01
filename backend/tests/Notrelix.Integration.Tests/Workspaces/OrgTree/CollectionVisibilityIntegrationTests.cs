@@ -126,7 +126,9 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
         await _host.SeedRuleAsync(stack, PermissionSubjectType.User, denied, PermissionAction.ViewBoard, PermissionEffect.Deny, "work-management.board", open);
         await _host.SeedRuleAsync(stack, PermissionSubjectType.User, denied, PermissionAction.ViewBoard, PermissionEffect.Allow, "work-management.board", secret);
 
-        var boards = new[] { open, secret, shared, publicLink, archived };
+        // An archived Board stays readable by the people with access (the archived list serves it), so the board
+        // list leaves it out for everyone; parity is held over the Boards the list can carry.
+        var boards = new[] { open, secret, shared, publicLink };
         var expected = new Dictionary<Guid, Guid[]>
         {
             [stack.OwnerId] = [open, secret, shared, publicLink],
@@ -151,6 +153,7 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
 
             listed.Should().BeEquivalentTo(single, $"list membership equals the single-read decision for principal {principal}");
             listed.Should().BeEquivalentTo(visible, $"principal {principal} sees exactly the expected boards");
+            listed.Should().NotContain(archived, "the board list never carries an archived Board");
         }
     }
 
@@ -248,7 +251,7 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
         {
             using var provider = _host.CreateProvider(stack.AccountId, principal);
             var listed = await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceSpacesQuery(stack.WorkspaceId));
-            listed.Select(s => s.Id).Should().BeEquivalentTo(visible, $"principal {principal} lists only visible Spaces");
+            listed.Items.Select(s => s.Id).Should().BeEquivalentTo(visible, $"principal {principal} lists only visible Spaces");
 
             var single = new List<Guid>();
             foreach (var spaceId in new[] { open, department })

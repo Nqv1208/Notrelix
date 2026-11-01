@@ -9,7 +9,7 @@ public sealed partial class ResourceAccessSummaryService
 
     /// <summary>
     /// Composes the sharing view (see <see cref="IBoardSharingSummary"/>). One entry per person: the higher
-    /// of the explicit grant and the board-member level, a Guest capped at Editor (GOV-030); one entry per
+    /// of the explicit grant and the board-member level, a Guest capped at Viewer (GOV-030); one entry per
     /// granted Team. The entry id is the person's user id or the Team's id.
     /// </summary>
     public async Task<BoardSharing?> GetBoardSharingAsync(Guid boardId, CancellationToken cancellationToken)
@@ -84,6 +84,7 @@ public sealed partial class ResourceAccessSummaryService
                     capped,
                     source,
                     canManage ? grant?.PermissionId : null,
+                    canManage ? grant?.PermissionVersion : null,
                     member?.Role,
                     string.Equals(member?.Role, "Owner", StringComparison.Ordinal),
                     personId == userId,
@@ -105,6 +106,7 @@ public sealed partial class ResourceAccessSummaryService
                     false,
                     BoardSharingEntrySources.Grant,
                     canManage ? grant.PermissionId : null,
+                    canManage ? grant.PermissionVersion : null,
                     null,
                     false,
                     false,
@@ -164,8 +166,8 @@ public sealed partial class ResourceAccessSummaryService
             losing);
     }
 
-    /// <summary>A Workspace Guest is capped at Editor (GOV-030): Editor is rank 3.</summary>
-    private const int GuestRankCap = 3;
+    /// <summary>A Workspace Guest is capped at Viewer (GOV-030): Viewer is rank 1.</summary>
+    private const int GuestRankCap = 1;
 
     private static string SpaceRoleName(int rank) => rank switch
     {

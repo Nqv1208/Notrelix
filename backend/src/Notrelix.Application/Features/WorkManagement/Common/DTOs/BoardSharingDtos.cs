@@ -36,6 +36,7 @@ public record BoardSharingDto(
 /// <param name="LevelCapped">The stored level is above <paramref name="Level"/> because the person is a Guest.</param>
 /// <param name="Source"><c>grant</c>, <c>member</c> or <c>both</c>.</param>
 /// <param name="PermissionId">The explicit grant to revoke, when there is one.</param>
+/// <param name="PermissionVersion">The version of that grant, which a change of its level must name.</param>
 /// <param name="MemberRole">The Board role, when the person is a Board member.</param>
 /// <param name="ExpiresAt">Always null: access given on a Board has no end date.</param>
 public record BoardSharingEntryDto(
@@ -49,6 +50,7 @@ public record BoardSharingEntryDto(
     bool LevelCapped,
     string Source,
     Guid? PermissionId,
+    long? PermissionVersion,
     string? MemberRole,
     string? SpaceRole,
     bool OutsideSpace,

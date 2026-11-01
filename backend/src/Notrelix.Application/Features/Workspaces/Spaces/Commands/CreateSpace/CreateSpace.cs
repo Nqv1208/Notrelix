@@ -10,8 +10,10 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
 /// for a root Space (GOV-028). Visibility defaults to Private for a Department
 /// Space and to Workspace (open to the parent's audience) otherwise (WSP-023).
 /// Placement is neighbor-relative among the parent's children; both neighbors
-/// absent appends.
+/// absent appends. A retry under the same Idempotency-Key returns the Space the
+/// first attempt created; a different body under that key is refused.
 /// </summary>
+[IdempotencyOperation("workspaces.space.create-space.v1")]
 public record CreateSpaceCommand(
     Guid WorkspaceId,
     string Name,
@@ -21,7 +23,7 @@ public record CreateSpaceCommand(
     Guid? ParentSpaceId = null,
     Guid? PreviousSiblingId = null,
     Guid? NextSiblingId = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageSpaces;
 

@@ -49,6 +49,8 @@ export interface AccountWorkspaceView {
   readonly departmentCount: number | null;
   readonly isDefault: boolean;
   readonly canLeave: boolean;
+  /** Archived: read-only, listed in its own group, only opened from here. */
+  readonly isArchived: boolean;
   readonly open: { readonly href: string; readonly onNavigate: () => void };
 }
 
@@ -63,6 +65,8 @@ export interface AccountWorkspacesSurfaceProps {
   readonly notice: string | null;
   readonly create: { readonly href: string; readonly onNavigate: () => void };
   readonly onSetDefault: (workspaceId: string) => void;
+  /** Brings an archived workspace back (offered to its owners and admins). */
+  readonly onUnarchive: (workspaceId: string) => void;
   readonly onLeave: (workspaceId: string) => void;
   readonly onRetry: () => void;
 }
@@ -105,7 +109,7 @@ function metaOf(copy: AccountWorkspacesCopy, view: AccountWorkspaceView) {
 }
 
 function noteOf(copy: AccountWorkspacesCopy, view: AccountWorkspaceView) {
-  if (!view.canLeave)
+  if (!view.canLeave && !view.isArchived)
     return {
       kind: "info" as const,
       text: fillCopy(copy.noteSoleOwner, { workspace: view.name }),
@@ -118,12 +122,14 @@ function Card({
   view,
   busy,
   onSetDefault,
+  onUnarchive,
   onAskLeave,
 }: {
   copy: AccountWorkspacesCopy;
   view: AccountWorkspaceView;
   busy: boolean;
   onSetDefault: (id: string) => void;
+  onUnarchive: (id: string) => void;
   onAskLeave: (view: AccountWorkspaceView) => void;
 }) {
   const titleId = React.useId();
@@ -136,6 +142,7 @@ function Card({
       className={cn(
         "flex flex-col gap-2.5 rounded-[12px] border bg-popover px-4 py-3.5 dark:bg-card",
         view.isDefault ? "border-line-strong" : "border-line",
+        view.isArchived && "opacity-80",
       )}
     >
       <div className="flex items-center gap-3.5 max-md:flex-wrap">
@@ -164,13 +171,14 @@ function Card({
                 {copy.defaultTag}
               </Tag>
             ) : null}
+            {view.isArchived ? <Tag>{copy.archivedTag}</Tag> : null}
           </h3>
           <span className="mt-0.5 block text-crumb leading-[1.45] text-meta-foreground">
             {metaOf(copy, view)}
           </span>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2.5">
-          {view.isDefault ? null : (
+          {view.isDefault || view.isArchived ? null : (
             <button
               type="button"
               disabled={busy}
@@ -181,28 +189,42 @@ function Card({
               {copy.makeDefault}
             </button>
           )}
-          <a
-            href={view.open.href}
-            aria-label={fillCopy(copy.openLabel, { name: view.name })}
-            onClick={(event) => {
-              if (!isPlainClick(event)) return;
-              event.preventDefault();
-              view.open.onNavigate();
-            }}
-            className={cn(BTN_SM, FOCUS)}
-          >
-            {copy.open}
-          </a>
-          <button
-            type="button"
-            disabled={busy || !view.canLeave}
-            aria-label={fillCopy(copy.leaveLabel, { name: view.name })}
-            aria-describedby={note ? noteId : undefined}
-            onClick={() => onAskLeave(view)}
-            className={cn(LINK_BUTTON_DANGER, FOCUS)}
-          >
-            {copy.leave}
-          </button>
+          {view.isArchived ? (
+            <button
+              type="button"
+              disabled={busy}
+              aria-label={fillCopy(copy.unarchiveLabel, { name: view.name })}
+              onClick={() => onUnarchive(view.id)}
+              className={cn(BTN_SM, FOCUS)}
+            >
+              {copy.unarchive}
+            </button>
+          ) : (
+            <a
+              href={view.open.href}
+              aria-label={fillCopy(copy.openLabel, { name: view.name })}
+              onClick={(event) => {
+                if (!isPlainClick(event)) return;
+                event.preventDefault();
+                view.open.onNavigate();
+              }}
+              className={cn(BTN_SM, FOCUS)}
+            >
+              {copy.open}
+            </a>
+          )}
+          {view.isArchived ? null : (
+            <button
+              type="button"
+              disabled={busy || !view.canLeave}
+              aria-label={fillCopy(copy.leaveLabel, { name: view.name })}
+              aria-describedby={note ? noteId : undefined}
+              onClick={() => onAskLeave(view)}
+              className={cn(LINK_BUTTON_DANGER, FOCUS)}
+            >
+              {copy.leave}
+            </button>
+          )}
         </div>
       </div>
       {note ? <Note id={noteId}>{note.text}</Note> : null}
@@ -223,10 +245,12 @@ export function AccountWorkspacesSurface({
   notice,
   create,
   onSetDefault,
+  onUnarchive,
   onLeave,
   onRetry,
 }: AccountWorkspacesSurfaceProps) {
   const titleId = React.useId();
+  const archivedTitleId = React.useId();
   const [leaving, setLeaving] = React.useState<AccountWorkspaceView | null>(
     null,
   );
@@ -268,16 +292,48 @@ export function AccountWorkspacesSurface({
           onRetry={onRetry}
         />
       ) : (
-        workspaces.data.map((view) => (
-          <Card
-            key={view.id}
-            copy={copy}
-            view={view}
-            busy={busy}
-            onSetDefault={onSetDefault}
-            onAskLeave={setLeaving}
-          />
-        ))
+        <>
+          {workspaces.data
+            .filter((view) => !view.isArchived)
+            .map((view) => (
+              <Card
+                key={view.id}
+                copy={copy}
+                view={view}
+                busy={busy}
+                onSetDefault={onSetDefault}
+                onUnarchive={onUnarchive}
+                onAskLeave={setLeaving}
+              />
+            ))}
+          {workspaces.data.some((view) => view.isArchived) ? (
+            <section
+              aria-labelledby={archivedTitleId}
+              className="mt-2 flex flex-col gap-3"
+            >
+              <h2
+                id={archivedTitleId}
+                className="m-0 text-item-heading leading-[1.45] font-[650] text-foreground"
+              >
+                {copy.archivedTitle}
+              </h2>
+              <Note>{copy.archivedNote}</Note>
+              {workspaces.data
+                .filter((view) => view.isArchived)
+                .map((view) => (
+                  <Card
+                    key={view.id}
+                    copy={copy}
+                    view={view}
+                    busy={busy}
+                    onSetDefault={onSetDefault}
+                    onUnarchive={onUnarchive}
+                    onAskLeave={setLeaving}
+                  />
+                ))}
+            </section>
+          ) : null}
+        </>
       )}
       {actionError ? (
         <p role="alert" className="m-0 text-crumb text-danger-text">

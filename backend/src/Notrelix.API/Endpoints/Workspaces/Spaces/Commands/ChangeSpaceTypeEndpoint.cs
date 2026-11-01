@@ -21,7 +21,7 @@ public static class ChangeSpaceTypeEndpoint
         ChangeSpaceTypeRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new ChangeSpaceTypeCommand(workspaceId, spaceId, request.SpaceType));
+        var result = await sender.Send(new ChangeSpaceTypeCommand(workspaceId, spaceId, request.SpaceType, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

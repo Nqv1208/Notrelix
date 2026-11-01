@@ -73,7 +73,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 3. **Competing writes without an expected version.** Member role, suspend, activate and remove; invitation role, resend and revoke; Space rename, description, type, visibility, archive, delete and restore; Team restore. Two admins can silently overwrite each other (NRX-011).
 4. **No retry safety on creation.** `CreateWorkspace` and `InviteMember` are not idempotent requests; a double submit creates `acme` and `acme-3f9a1c`, or a second invitation attempt fails with unstable text.
 5. **Unbounded reads.** Members, invitations, Spaces, Space tree, Teams and Team members have no paging or cap, and are read in full by the shell.
-6. **Entitlement and account checks are missing or fail open.** `AddMember` checks neither Account membership nor a seat; the seat gate on acceptance is an optional dependency (`IBillingSeatGate? = null`); creation has no plan limit (WSP-004, WSP-011).
+6. **Entitlement and account checks are missing or fail open.** `AddMember` now requires an active Account membership (`Workspaces_Member_NotInAccount`) and a seat (`Workspaces_Member_SeatUnavailable`) (fixed for direct add); the seat gate on acceptance is an optional dependency (`IBillingSeatGate? = null`); creation has no plan limit (WSP-004, WSP-011). Gap: seat checks on direct add and on acceptance do not serialize admissions, so two concurrent admissions can exceed the seat limit by one; a separate use case.
 7. **Invitations are readable by Guests.** Fixed: `GetWorkspaceInvitations` needs `ViewMembers`, so a Guest gets 403 (section 82). Members still see invited emails; the list stays unbounded.
 8. **Account-wide policy sits in workspace settings.** `EnforceMfa` is stored and returned but enforced nowhere (WSP-012). J04 is BLOCKED.
 9. **Offboarding is incomplete.** Removing or leaving does not clean Space and Team entries (F09); SCIM provisioning has no principal (F10 BLOCKED); Account suspension has no effect on workspaces (D06 BLOCKED).
@@ -89,7 +89,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 | Missing expected version (invitations) | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Commands/{ChangeInvitationRole,ResendInvitation,CancelInvitation}/` |
 | Missing expected version (Spaces) | `backend/src/Notrelix.Application/Features/Workspaces/Spaces/Commands/{RenameSpace,UpdateSpaceDescription,ChangeSpaceType,ChangeSpaceVisibility,ArchiveSpace,UnarchiveSpace,DeleteSpace,RestoreSpace}/` |
 | Missing expected version (Team restore) | `backend/src/Notrelix.Application/Features/Workspaces/Teams/Commands/RestoreTeam/` |
-| `AddMember` accepts any user id, no Account-membership or seat check, and has no frontend caller | `backend/src/Notrelix.Application/Features/Workspaces/Members/Commands/AddMember/AddMember.cs` |
+| `AddMember` accepted any user id (fixed: Account-membership and seat checks), and has no frontend caller | `backend/src/Notrelix.Application/Features/Workspaces/Members/Commands/AddMember/AddMember.cs` |
 | Seat gate is optional and fails open | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Services/InvitationAcceptanceService.cs`, `.../Commands/AcceptInvitation/AcceptInvitation.cs` |
 | Invitation list readable by Guests (fixed: `ViewMembers`) | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Queries/GetWorkspaceInvitations/GetWorkspaceInvitations.cs` |
 | Unbounded reads | `Members/Queries/GetWorkspaceMembers`, `Invitations/Queries/GetWorkspaceInvitations`, `Spaces/Queries/GetWorkspaceSpaces`, `Spaces/Queries/GetSpaceTree`, `Teams/Queries/GetWorkspaceTeams` (all under `backend/src/Notrelix.Application/Features/Workspaces/`) |
@@ -101,6 +101,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 | Duplicate list endpoints (`GET /api/v1/workspaces`, `GET /api/v1/account/workspaces`, `GET /api/v1/accounts/{accountId}/workspaces`) | `backend/src/Notrelix.API/Endpoints/Workspaces/Workspaces/Queries/`, `.../Members/Queries/ListMyWorkspacesEndpoint.cs` |
 | Archive copy contradicts the product (members keep read access) | `frontend/packages/features/workspace/src/web/settings/workspace-settings.copy.ts` |
 | Workspaces onboarding logic lives in the web app, not the feature package | `frontend/apps/web/src/routes/onboarding/onboarding-api.ts` |
+| A non-member of an existing workspace gets 403 "Access to workspace denied" while a missing workspace gets 404, so every workspace-scoped route tells the two apart (README section 7 asks for the identical NotFound). One change in the gate decides it for every context; many integration tests across contexts assert Forbidden | `backend/src/Notrelix.Application/Common/Behaviors/ExecutionContextBehavior.cs`, `backend/src/Notrelix.Infrastructure/Services/TenantBootstrapStore.cs` |
 
 Operations with no frontend caller (by `enabled-consumer-surface.ts` and a search of the web app and feature packages): `UnarchiveWorkspace`, `DeleteWorkspace`, `RestoreWorkspace`, `TransferOwnership`, `ListUserWorkspaces`, `ResolveSlug`, `GetAccountWorkspaces`, `AddMember`, `UpdateMemberJobTitle`, `DeclineInvitation`, `InviteGuestToResource`, `ResendResourceInvitation`, `RevokeResourceInvitation`, `GetSpace`, `DeleteSpace`, `RestoreSpace`, `DeleteTeam`, `RestoreTeam`, `GetWorkspaceDashboard` (no route), `AuthorizeWorkspaceRealtimeSubscription` (server only).
 
@@ -134,15 +135,15 @@ Products compared and what was taken:
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-WSP-A01 | Create a workspace in an Account | A | Account member with `CreateWorkspace` | yes | yes | Final-Onboarding | none | INTEGRATING | Real e2e journey; retry safety (A04); plan limit (A03); design diff; owner check. |
-| UC-WSP-A02 | Provision the personal workspace at registration | A | System | yes | n/a | none | none | INTEGRATING | No real e2e that registers and reaches the workspace; partial-failure proof (WGREQ158). |
+| UC-WSP-A01 | Create a workspace in an Account | A | Account member with `CreateWorkspace` | yes | yes | Final-Onboarding | none | INTEGRATING | Tests and owner check; plan limit (A03). |
+| UC-WSP-A02 | Provision the personal workspace at registration | A | System | yes | n/a | none | none | INTEGRATING | Tests and owner check: real e2e that registers and reaches the workspace; partial-failure proof (WGREQ158). |
 | UC-WSP-A03 | Stop creation at the plan limit (enterprise baseline) | A | Account member with `CreateWorkspace` | no | no | Final-Billing | none | DEFINED | Billing workspace-count entitlement; gate call; error contract; screen state. |
-| UC-WSP-A04 | Make workspace creation retry-safe | A | Account member with `CreateWorkspace` | partial | partial | none | none | DEFINED | Marker on the command, client key, test of the duplicate. |
+| UC-WSP-A04 | Make workspace creation retry-safe | A | Account member with `CreateWorkspace` | yes | yes | none | none | INTEGRATING | Tests and owner check. |
 | UC-WSP-B01 | Read one workspace | B | Any active member, Guest included | yes | yes | BC-Shell-1440 | none | INTEGRATING | Cross-tenant negative test at HTTP level for read; real e2e. |
 | UC-WSP-B02 | Open a workspace by its address | B | Anyone | yes | no | none | none | IMPLEMENTING | No frontend caller; rate-limit and enumeration test; vanity URL route. |
 | UC-WSP-B03 | List the workspaces of an Account | B | Account member with `ViewWorkspace` on the Account scope | yes | no | none | none | IMPLEMENTING | No caller; overlaps with I02 and B04; membership-filter proof. |
 | UC-WSP-B04 | List every workspace I belong to (user scope) | B | Any signed-in user | yes | no | none | none | IMPLEMENTING | Duplicate of I02 with fewer fields; decide to keep one (Part 4 LD-06). |
-| UC-WSP-C01 | Edit workspace name and description | C | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Real e2e; conflict UI state proof; design diff. |
+| UC-WSP-C01 | Edit workspace name and description | C | Owner, Admin | yes | yes | none for workspace settings (`Final-Settings` is the Board settings page) | none | HARDENING | Tests and owner check; real e2e; an approved workspace-settings artboard. |
 | UC-WSP-C02 | Change the workspace address (enterprise baseline) | C | Owner, Admin | no | no | none | none | DEFINED | Command, endpoint, event, settings field. |
 | UC-WSP-D01 | Archive a workspace | D | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | UI copy says every member loses access, the product says read-only (fix copy); participant contexts only have stub consumers (`WorkspacesStubConsumers`); real e2e. |
 | UC-WSP-D02 | Unarchive a workspace | D | Owner, Admin | yes | no | none | none | IMPLEMENTING | Frontend entry for an archived workspace (it vanishes from lists); banner; copy. |
@@ -150,39 +151,39 @@ Products compared and what was taken:
 | UC-WSP-D04 | Restore a deleted workspace | D | Owner | yes | no | none | none | BLOCKED | Same decision as D03; a reachable entry point. |
 | UC-WSP-D05 | Transfer workspace ownership | D | Current Owner | yes | no | none | none | IMPLEMENTING | Screen (members page or settings); artboard; step-up for the Owner. |
 | UC-WSP-D06 | React to Account suspension or closure | D | System | no | no | Final-States | none | BLOCKED | Decision with Accounts: effect of Suspended and Closed on workspace access. |
-| UC-WSP-E01 | List workspace members | E | Owner, Admin, Member | yes | yes | Final-Members, Final-M-Members | none | INTEGRATING | Pagination; real e2e; design diff at 3 widths and both themes. |
-| UC-WSP-E02 | Read my own membership | E | Any active member, Guest included | yes | yes | none | guest-permission.real.e2e.spec.ts (indirect) | INTEGRATING | Direct real assertion; design not needed. |
-| UC-WSP-F01 | Add an existing user as a member directly | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | Account-membership and seat checks; caller or removal of the endpoint; tests. |
-| UC-WSP-F02 | Change a member's workspace role | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Expected version on the command (IExpectedVersionRequest); real e2e. |
-| UC-WSP-F03 | Suspend a member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Expected version; real e2e; mock e2e covers role and removal only. |
-| UC-WSP-F04 | Activate a suspended member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Seat check; expected version; real e2e. |
-| UC-WSP-F05 | Remove a member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Entries cleanup (F09); expected version; real e2e. |
-| UC-WSP-F06 | Leave a workspace | F | Any active member, Guest included | yes | yes | Final-Account | none | INTEGRATING | Real e2e; transfer-first hint; Space/Team cleanup (F09). |
-| UC-WSP-F07 | Set my own job title | F | Any active member | yes | partial | none | none | INTEGRATING | No screen artboard; real e2e. |
+| UC-WSP-E01 | List workspace members | E | Owner, Admin, Member | yes | yes | none for the roster (`Final-Members`, `Final-M-Members` are the department Members tab) | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; an approved roster artboard and its diff at 3 widths and both themes; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
+| UC-WSP-E02 | Read my own membership | E | Any active member, Guest included | yes | yes | none | workspace-members.real.e2e.spec.ts | HARDENING | Owner check; identical NotFound for a non-member (pipeline-wide, see Part 1.3). |
+| UC-WSP-F01 | Add an existing user as a member directly | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | Kept for admin use; no screen. Account-membership and seat checks are merged; tests. |
+| UC-WSP-F02 | Change a member's workspace role | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, stale 412, no-op; real e2e. |
+| UC-WSP-F03 | Suspend a member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, stale 412, no-op; real e2e. |
+| UC-WSP-F04 | Activate a suspended member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: seat refusal, expected version, no-op; real e2e. |
+| UC-WSP-F05 | Remove a member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, no-op; real e2e. Entries cleanup is F09 (DEFINED, not built). |
+| UC-WSP-F06 | Leave a workspace | F | Any active member, Guest included | yes | yes | Final-Account | none | INTEGRATING | Tests and owner check: real e2e. A sole owner has no screen to hand ownership over (D05, IMPLEMENTING); Space and Team cleanup is F09 (DEFINED, not built). |
+| UC-WSP-F07 | Set my own job title | F | Any active member | yes | partial | none | none | INTEGRATING | Tests and owner check: real e2e; no screen artboard. Nothing found to build. |
 | UC-WSP-F08 | Set another member's job title | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | No frontend caller; artboard. |
 | UC-WSP-F09 | Clean a person's Space and Team entries when they leave (enterprise baseline) | F | System | no | no | none | none | DEFINED | Transaction step, event, 'needs a lead' state. |
 | UC-WSP-F10 | Provision members from an identity directory (SCIM) | F | System principal of Accounts | no | no | none | none | BLOCKED | Decision: system principal for provisioning and its permission. |
-| UC-WSP-G01 | Invite a person to the workspace by email | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Stable duplicate code; idempotency key; real e2e with a mail sink; design diff. |
+| UC-WSP-G01 | Invite a person to the workspace by email | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: duplicate 409, retry under one key, real e2e with a mail sink; design diff. |
 | UC-WSP-G02 | Invite with initial Team and Space entries | G | Owner, Admin | yes | no | Final-Members | none | IMPLEMENTING | No frontend field for entries. |
-| UC-WSP-G03 | List workspace invitations | G | Owner, Admin, Member | yes | yes | Final-Members | none | INTEGRATING | Permission fixed (`ViewMembers`). Pagination; real e2e; Member email visibility. |
-| UC-WSP-G04 | Change a pending invitation's role | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Expected version; real e2e. |
-| UC-WSP-G05 | Resend an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Cool-down; real e2e. |
-| UC-WSP-G06 | Revoke an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Real e2e. |
+| UC-WSP-G03 | List workspace invitations | G | Owner, Admin, Member | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: paging, expired read, real e2e. Owner question: may Members see invited emails. |
+| UC-WSP-G04 | Change a pending invitation's role | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: expected version, stale 412, real e2e. |
+| UC-WSP-G05 | Resend an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: cool-down, real e2e. |
+| UC-WSP-G06 | Revoke an invitation | G | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Tests and owner check: real e2e. Nothing found to build. |
 | UC-WSP-G07 | Invite a guest to one Board or Page | G | Holder of `ManageBoardPermission` or `ManagePagePermission` on the resource | yes | no | Final-Share, Final-M-Share | none | IMPLEMENTING | Email invitation in the Share dialog (owner decision); real e2e; `AllowGuestInvites` proof. |
 | UC-WSP-G08 | Resend or revoke a resource invitation | G | The issuer with the permission on that resource | yes | no | Final-Share | none | IMPLEMENTING | No frontend caller. |
 | UC-WSP-G09 | Invite many people at once (enterprise baseline) | G | Owner, Admin | no | partial | Final-Onboarding | none | DEFINED | Batch contract; result UI. |
-| UC-WSP-H01 | Preview an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding, Final-Auth | none | INTEGRATING | Real e2e; enumeration and rate-limit proof. |
-| UC-WSP-H02 | Accept an invitation while signed in | H | The invited person | yes | yes | Final-Onboarding | none | INTEGRATING | Fail-closed seat gate; real e2e. |
-| UC-WSP-H03 | Accept an invitation and register in one step | H | A new person holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Real e2e; state the Account membership of the new user (WSP-004). |
-| UC-WSP-H04 | Decline an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Real e2e. |
-| UC-WSP-H05 | Decline an invitation I see in my account | H | The invited person, signed in | yes | no | none | none | IMPLEMENTING | Frontend action. |
-| UC-WSP-H06 | See my pending invitations | H | Any signed-in person | yes | yes | Final-Account | none | INTEGRATING | Real e2e; accept action from the menu. |
-| UC-WSP-I01 | Switch the active workspace | I | Any member of both workspaces | n/a | yes | BC-Shell-1440, BC-Shell-1280-768, BC-Shell-320 | workspace-isolation.real.e2e.spec.ts | HARDENING | Out-of-order response test; realtime dispose proof; design diff at 3 widths and both themes; owner check. |
-| UC-WSP-I02 | List the workspaces I belong to | I | Any signed-in person | yes | yes | BC-Shell-1440, Final-Account | none | INTEGRATING | Direct real assertion; archived group (LD-02). |
-| UC-WSP-I03 | Choose my default workspace | I | Any active member | yes | yes | Final-Account | none | INTEGRATING | Real e2e; sign-in open check. |
-| UC-WSP-I04 | Authorize a realtime subscription to a workspace | I | System | yes | yes | none | none | INTEGRATING | Test that a removed member's open subscription ends. |
+| UC-WSP-H01 | Preview an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding, Final-Auth | none | INTEGRATING | Tests and owner check: real e2e; enumeration proof (the preview, decline and register-with-token routes carry the credential rate limit). Nothing found to build. |
+| UC-WSP-H02 | Accept an invitation while signed in | H | The invited person | yes | yes | Final-Onboarding | workspace-invitations-answer.real.e2e.spec.ts | INTEGRATING | Tests and owner check: seat refused, Removed member returns, Suspended stays suspended, real e2e. |
+| UC-WSP-H03 | Accept an invitation and register in one step | H | A new person holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Tests and owner check: real e2e. Nothing found to build. |
+| UC-WSP-H04 | Decline an invitation from its link | H | Anyone holding the token | yes | yes | Final-Onboarding | none | INTEGRATING | Tests and owner check: real e2e. Nothing found to build. |
+| UC-WSP-H05 | Decline an invitation I see in my account | H | The invited person, signed in | yes | yes | none | workspace-invitations-answer.real.e2e.spec.ts | INTEGRATING | Tests and owner check (RLS policy, handler checks, flyout); no artboard. |
+| UC-WSP-H06 | See my pending invitations | H | Any signed-in person | yes | yes | none | workspace-invitations-answer.real.e2e.spec.ts | INTEGRATING | Tests and owner check (RLS policy, accept by id, flyout in the rail); no artboard for the flyout. |
+| UC-WSP-I01 | Switch the active workspace | I | Any member of both workspaces | n/a | yes | BC-Shell-1440, BC-Shell-1280-768, BC-Shell-320 | workspace-isolation.real.e2e.spec.ts | HARDENING | Tests and owner check: out-of-order response test; realtime dispose proof; design diff at 3 widths and both themes. |
+| UC-WSP-I02 | List the workspaces I belong to | I | Any signed-in person | yes | yes | BC-Shell-1440, Final-Account | none | INTEGRATING | Tests and owner check: direct real assertion; the Archived group has no artboard and no way to open an archived workspace yet (banner is I05/D02). |
+| UC-WSP-I03 | Choose my default workspace | I | Any active member | yes | yes | Final-Account | none | INTEGRATING | Tests and owner check: real e2e; sign-in open check. |
+| UC-WSP-I04 | Authorize a realtime subscription to a workspace | I | System | yes | yes | none | none | INTEGRATING | Tests and owner check: test that a removed member's open subscription ends (the gateway re-authorizes every 60 seconds). |
 | UC-WSP-I05 | See why a workspace is unavailable | I | Any signed-in person | partial | partial | Final-States | none | IMPLEMENTING | Archived banner with action; plan-limited state; real e2e. |
-| UC-WSP-I06 | Always see which workspace I am in | I | Any member | n/a | yes | BC-Shell-1440, BC-Shell-320 | none | INTEGRATING | Dialog audit; real e2e. |
+| UC-WSP-I06 | Always see which workspace I am in | I | Any member | n/a | yes | BC-Shell-1440, BC-Shell-320 | none | INTEGRATING | Tests and owner check: real e2e; Space delete confirm and the two unused Team confirm texts still do not name the workspace. |
 | UC-WSP-J01 | Read workspace settings | J | Any active member | yes | yes | Final-Settings | none | INTEGRATING | Real e2e; design diff. |
 | UC-WSP-J02 | Change workspace settings | J | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Real e2e; design diff; audit of the change (Governance). |
 | UC-WSP-J03 | Read sharing and security extras | J | Owner, Admin, Member | yes | yes | Final-Settings, Final-Teams | none | INTEGRATING | Real e2e. |
@@ -239,12 +240,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name` (required), `description`, `isPersonal`, optional `slug`, `size`, `language`. Slug rule: 3-63 chars, lowercase letters, digits, single hyphens, not reserved.
 - Output: One Workspace (Active, version 1), one Owner membership, the Owner's access grant, `WorkspaceCreated` through the outbox. No Board, Page or Space is created.
 - Main flow: 1. Client sends `POST /api/v1/accounts/{accountId}/workspaces`. 2. The pipeline checks `CreateWorkspace` and the verified email. 3. A chosen slug is validated; no slug derives one from the name (random suffix on collision). 4. The Domain factory creates Workspace and Owner. 5. The grant projection is synced in the same transaction.
-- No-op / rejection / concurrency / retry: A chosen slug that breaks the rule is rejected with its rule code; one taken in the Account is 409 `workspaces.workspace.slug-taken`; neither is changed silently. No expected version (creation). A retry creates a second Workspace today (see A04). Plan limit is not checked (see A03).
+- No-op / rejection / concurrency / retry: A chosen slug that breaks the rule is rejected with its rule code; one taken in the Account is 409 `workspaces.workspace.slug-taken`; neither is changed silently. No expected version (creation). A retry under the same `Idempotency-Key` returns the first Workspace (A04). Plan limit is not checked (see A03).
 - UI states: Form: loading, validation error (address, name), conflict (address taken, next free address offered), permission denied, pending, success; offline blocks submit.
 - Rules: [workspaces](../../product/workspaces.md) sections 8, 9, 48.4; WSP-003, WSP-004; WGREQ001 to WGREQ004, WGREQ007; WX-DEC-002.
 - Acceptance: Given a verified Account member, When they create a workspace named `Acme`, Then the workspace exists, they are its Owner and `acme` is its address. Given address `admin`, Then 400 with `Workspaces_Workspace_SlugReserved` and nothing is stored. Given an address held in the Account, Then 409 `workspaces.workspace.slug-taken`.
-- Evidence: BE `POST /api/v1/accounts/{accountId}/workspaces`, `CreateWorkspaceCommandHandler`, `WorkspaceFactory.CreateWithOwner` · FE `create-workspace-dialog.tsx`, onboarding step 'workspace', `workspace.service.ts` · Design `Final-Onboarding`, `BC-Shell-1440` (rail Add) · Tests `CreateWorkspaceCommandHandlerTests`, `WorkspaceCreationPipelineAuthorizationTests`, `WorkspaceCreatedOutboxEvidenceTests`, `WorkspaceSlugAndProfileTests`, `CreateWorkspaceEndpointTests` · Real e2e none
-- State: INTEGRATING — Real e2e journey; retry safety (A04); plan limit (A03); design diff; owner check.
+- Evidence: BE `POST /api/v1/accounts/{accountId}/workspaces`, `CreateWorkspaceCommandHandler`, `WorkspaceFactory.CreateWithOwner` · FE `create-workspace-dialog.tsx`, onboarding step 'workspace', `workspace.service.ts` · Design `Final-Onboarding`, `BC-Shell-1440` (rail Add) · Built (no tests written or run yet): the create is idempotent and the validator matches the domain limits (name 160, description 1024); the dialog sends no client-derived slug (the server derives a free address), keeps one key per request and says why a create was refused (offline, no permission, email not confirmed, name too long); onboarding keeps its key while the same request is retried; the mock backend derives the address and replays by key · Tests existing, to be re-run and extended with an `Idempotency-Key`: `CreateWorkspaceCommandHandlerTests`, `WorkspaceCreationPipelineAuthorizationTests`, `WorkspaceCreatedOutboxEvidenceTests`, `WorkspaceSlugAndProfileTests`, `CreateWorkspaceEndpointTests`, `WorkspaceAuthTests`, `WorkspaceLifecycleTests`, `RlsRuntimeEnforcementTests`, `PipelineTelemetryIntegrationTests` · Real e2e none
+- State: INTEGRATING — Tests and owner check (success, rejection, duplicate under one key, validation limits, real e2e); plan limit (A03).
 
 ### UC-WSP-A02 Provision the personal workspace at registration
 - Capability: A Workspace create
@@ -258,7 +259,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 8, 74; WGREQ008, WGREQ009, WGREQ158; NRX-009, NRX-010.
 - Acceptance: Given a registration fact, When it is delivered twice, Then exactly one personal workspace exists. Given the consumer fails, Then the fact is retried and the registration itself is not rolled back.
 - Evidence: BE `ProvisionPersonalWorkspaceCommand`, `WorkspaceProvisioningConsumer` · FE none · Design none · Tests `WorkspaceProvisioningConsumerTests`, `RegistrationWorkspaceRuntimeChainIntegrationTests` · Real e2e none
-- State: INTEGRATING — No real e2e that registers and reaches the workspace; partial-failure proof (WGREQ158).
+- State: INTEGRATING — Tests and owner check: real e2e that registers and reaches the workspace; partial-failure proof (WGREQ158). Nothing to build in this unit.
 
 ### UC-WSP-A03 Stop creation at the plan limit (enterprise baseline)
 - Capability: A Workspace create
@@ -272,7 +273,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 31, 70, WSP-011; billing is the entitlement owner (see [billing](billing.md)).
 - Acceptance: Given an Account at its limit, When a member creates a workspace, Then the answer names the limit and nothing is stored. Given Billing is down, Then creation fails with 503.
 - Evidence: BE none (`CreateWorkspaceCommandHandler` has no Billing gate; only `InvitationAcceptanceService` uses `IBillingSeatGate`) · FE none · Design `Final-Billing` (limits) · Tests none · Real e2e none
-- State: DEFINED — Billing workspace-count entitlement; gate call; error contract; screen state.
+- State: DEFINED — Billing workspace-count entitlement; gate call; error contract; screen state. Owner decision needed on the entitlement; not built in this unit.
 
 ### UC-WSP-A04 Make workspace creation retry-safe
 - Capability: A Workspace create
@@ -281,12 +282,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: Same as A01 plus `Idempotency-Key`.
 - Output: The same key returns the first result (same workspace id) and creates nothing more.
 - Main flow: 1. Client generates one key per user submit. 2. The create command is an idempotent request. 3. A repeat with the same key and same body returns the stored result. 4. The same key with a different body is rejected.
-- No-op / rejection / concurrency / retry: A double click or a network retry must not create `acme` and `acme-3f9a1c`. Different body under one key: 422.
+- No-op / rejection / concurrency / retry: A double click or a network retry must not create `acme` and `acme-3f9a1c`. Different body under one key: refused (the pipeline answers 409 `IdempotencyPayloadMismatch`, not 422).
 - UI states: Pending state disables the submit button; a retried request shows the original result.
 - Rules: [workspaces](../../product/workspaces.md) section 73, WSP-019; WGREQ009; NRX-010.
 - Acceptance: Given two identical create calls with one key, Then one workspace exists and both calls return its id.
-- Evidence: BE `CreateWorkspaceCommand` does not implement `IIdempotentRequest` (compare `RecordRecentResourceCommand`) · FE `use-create-workspace.ts` sends no key · Design none · Tests none · Real e2e none
-- State: DEFINED — Marker on the command, client key, test of the duplicate.
+- Evidence: BE `CreateWorkspaceCommand` is an `IIdempotentRequest` (`workspaces.workspace.create-workspace.v1`), the endpoint requires the key (`.WithIdempotencyKey()`), the partition is the Account · FE `use-create-workspace.ts` holds one key per input and reuses it on retry; `onboarding-api.ts` does the same · Design none · Tests none written yet · Real e2e none
+- State: INTEGRATING — Tests and owner check (the duplicate test, mismatch refusal).
 
 ## B. Workspace read / resolve
 
@@ -352,15 +353,15 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Capability: C Workspace update
 - Actors and permission: Owner, Admin (`ManageWorkspace`)
 - Preconditions: Workspace Active and not deleted; caller holds the current version.
-- Input: `name` (trimmed, non-empty, length cap), `description`, `expectedVersion`.
-- Output: Updated profile, version +1, `WorkspaceRenamed` when the name changed. An unchanged value changes nothing.
+- Input: `name` (trimmed, non-empty, at most 160 characters; omitted leaves it alone), `description` (at most 1,024; empty clears it; omitted leaves it alone), `expectedVersion`.
+- Output: Updated profile, version +1 (once, even when name and description both change), `WorkspaceRenamed` when the name changed, `WorkspaceDescriptionUpdated` when the description changed. An unchanged value changes nothing.
 - Main flow: 1. `PATCH /api/v1/workspaces/{id}/profile` with the version. 2. Pipeline checks the version. 3. Domain renames or updates the description. 4. Outbox emits the fact.
-- No-op / rejection / concurrency / retry: Same value: no-op, no version bump, no event. Stale version: 409 with the current version. Archived workspace: rejected `Workspaces_Workspace_CannotRenameArchived`. Retry with the same body after success is a no-op.
+- No-op / rejection / concurrency / retry: Same value: no-op, no version bump, no event. Stale version: 412 `common.precondition-failed` and nothing changes; the web client reads 412 as a conflict and offers Reload. Archived workspace: rejected `Workspaces_Workspace_CannotRenameArchived` or `..._CannotUpdateDescriptionArchived`. Both values are checked before either is applied. A retry after success carries the old version, is refused with 412 and changes nothing.
 - UI states: Form: pristine/dirty, validation error, pending, conflict (reload), permission denied (read-only fields), success toast.
 - Rules: [workspaces](../../product/workspaces.md) section 3; WGREQ007; WX-SET-001; NRX-011.
 - Acceptance: Given version 4, When Admin renames, Then version is 5 and the new name shows. Given the same name, Then version stays 4. Given a stale version, Then 409 and no change.
-- Evidence: BE `PATCH /api/v1/workspaces/{id}/profile`, `UpdateWorkspaceProfileCommandHandler` · FE settings route `settings.tsx`, `use-workspace-settings-mutations.ts` · Design `Final-Settings` · Tests `WorkspaceSlugAndProfileTests`, `WorkspaceVersionTests`, `WorkspaceMutationTests`, `workspace-pages.mock.e2e.spec.ts` (WX-SET-001) · Real e2e none
-- State: INTEGRATING — Real e2e; conflict UI state proof; design diff.
+- Evidence: BE `PATCH /api/v1/workspaces/{id}/profile`, `UpdateWorkspaceProfileCommandHandler`, `Workspace.UpdateProfile`, `UpdateWorkspaceProfileCommandValidator` (name 160) · FE settings route `settings.tsx`, `workspace-settings-surface.tsx` (`ProfileForm`: pristine and dirty, validation, saving, saved, conflict with Reload, read-only for people who cannot manage, inline refusal and offline text), `use-workspace-settings-mutations.ts` · Design none for workspace settings; `Final-Settings` is the Board settings page · Tests `WorkspaceSlugAndProfileTests`, `WorkspaceVersionTests`, `WorkspaceMutationTests`, `WorkspaceAdministrationReadIntegrationTests` (stale version), `workspace-pages.mock.e2e.spec.ts` (WX-SET-001); none yet for `UpdateProfile` (one version step) · Real e2e none
+- State: HARDENING — Tests (the single version step, the 160 cap) and owner check; real e2e; an approved workspace-settings artboard (none exists).
 
 ### UC-WSP-C02 Change the workspace address (enterprise baseline)
 - Capability: C Workspace update
@@ -469,14 +470,14 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Actors and permission: Owner, Admin, Member (`ViewMembers`); Guest refused
 - Preconditions: Active membership, not Guest.
 - Input: `workspaceId`; paging (LD-06).
-- Output: Rows: user id, name, role, status, job title, joined time, version. Email only for Owner/Admin and only for active non-Guest members; Guest addresses never.
-- Main flow: 1. `GET /api/v1/workspaces/{id}/members`. 2. Pipeline checks `ViewMembers`. 3. Handler maps rows and applies the email-disclosure rule.
-- No-op / rejection / concurrency / retry: Guest: 403 (GOV-009). Non-member: NotFound. Reads are unbounded today; a workspace with thousands of members returns all of them.
-- UI states: Loading, empty (only me), success with search and filter, permission denied, error.
+- Output: A cursor page (`items`, `nextCursor`) of rows: user id, name, role, status, job title, joined time, version, and the phone when the person opted in and the reader is an active non-guest member (D15). The list carries no email; email is on the Team, Space and security reads (section 48.2).
+- Main flow: 1. `GET /api/v1/workspaces/{id}/members?limit&cursor`. 2. Pipeline checks `ViewMembers`. 3. Handler pages oldest member first (user id on ties), maps rows and applies the phone rule. 4. The web client reads the pages it needs and joins them, because the shell, the Board share dialog and the Space and Team pages resolve names from the whole roster.
+- No-op / rejection / concurrency / retry: Guest: 403 (GOV-009). Suspended or removed: 403. Non-member of an existing workspace: 403 today, while a missing workspace is 404 (pipeline gate `ExecutionContextBehavior`, every workspace-scoped route; see Part 1.3). `limit` outside 1 to 200 or a cursor the list did not issue: 400. Read-only: no version, no no-op, no retry key.
+- UI states: Loading, empty (only me), success with name search, no match, permission denied (a guest reads only their own row and is told why; a refused read says so without a retry), offline, error with retry.
 - Rules: [workspaces](../../product/workspaces.md) sections 11, 48.2, 82; WSP-005; WGREQ012, WGREQ013; WX-MEM-001.
-- Acceptance: Given an Admin, When they list, Then emails of active non-Guest members show. Given a Member, Then emails are null. Given a Guest, Then 403.
-- Evidence: BE `GET /api/v1/workspaces/{id}/members`, `GetWorkspaceMembersQueryHandler`, `IMemberEmailDisclosure` · FE `workspace-members-surface.tsx`, `use-workspace-members.ts` · Design `Final-Members`, `Final-M-Members` · Tests `MemberEmailVisibilityIntegrationTests`, `MemberDisclosureTests`, `MemberEndpointTests`, `workspace-pages.mock.e2e.spec.ts`, `design-fidelity-members.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Pagination; real e2e; design diff at 3 widths and both themes. real-stack check 2026-10-31: a person who is not an active member (never joined, suspended, removed) now gets the same 404 as a made-up workspace id on every workspace-scoped route, from the one workspace gate in ExecutionContextBehavior; bodies byte-identical except echoed ids on members, members/me, members/me/access, roles, api-tokens, boards, pages, spaces and the custom-role PUT and DELETE; a member who lacks the action keeps 403; invitation accept by token and account routes unchanged, commit 9ca19ef3a
+- Acceptance: Given 60 members, When any member lists, Then the first page holds 50 and `nextCursor` leads to the other 10, each person once. Given people who joined at the same instant, When walked one at a time, Then none repeats or is skipped. Given a removed member, Then they are never listed. Given a Member and an opted-in colleague, Then the phone shows; given a Guest, Then 403.
+- Evidence: BE `GET /api/v1/workspaces/{id}/members`, `GetWorkspaceMembersQueryHandler`, `GetWorkspaceMembersQueryValidator` · FE `workspace-members-surface.tsx`, `members.service.ts` (`getList` joins the pages), `use-workspace-members.ts`, `section-state.ts` · Design none for the workspace roster; `Final-Members` and `Final-M-Members` are the department Members tab (`design-fidelity-members.mock.e2e.spec.ts` measures that tab) · Tests `GetWorkspaceMembersPagingTests` (15), `GetWorkspaceMembersPhoneVisibilityTests`, `WorkspaceAdministrationReadIntegrationTests` (10), `MemberProfileIntegrationTests`, `WorkspaceRoleBaselineIntegrationTests`, `MemberEndpointTests`, `WorkspacesOpenApiShapeTests`, `workspace-pages-model.unit.test.ts`, `guest-members-read.unit.test.ts`, `section-state.unit.test.ts`, `workspace-members.interaction.component.test.tsx` (21), `workspace-pages.mock.e2e.spec.ts` · Real e2e `workspace-members.real.e2e.spec.ts`
+- State: HARDENING — Owner check. Open: an approved roster artboard (none exists) and its diff; identical NotFound for a non-member (pipeline-wide); the shell still reads every page of the roster to resolve names.
 
 ### UC-WSP-E02 Read my own membership
 - Capability: E Membership read
@@ -485,12 +486,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`.
 - Output: My role, status, job title, version.
 - Main flow: 1. `GET /api/v1/workspaces/{id}/members/me`. 2. Handler returns the caller's row.
-- No-op / rejection / concurrency / retry: A caller without access gets the same NotFound as for a missing id. Used by the shell to hide actions the person cannot do; the server still enforces them.
+- No-op / rejection / concurrency / retry: A non-member of an existing workspace gets 403 today and a missing workspace 404 (pipeline gate, see Part 1.3); a suspended or removed member gets 403. Read-only: no version, no no-op, no retry key. Used by the shell to hide actions the person cannot do; the server still enforces them.
 - UI states: Loading, success, not found.
 - Rules: [workspaces](../../product/workspaces.md) sections 11, 15; WSP-007; WGREQ082.
 - Acceptance: Given a Guest, When they read their membership, Then role is Guest.
-- Evidence: BE `GET /api/v1/workspaces/{id}/members/me`, `GetMyWorkspaceMembershipQueryHandler` · FE `members.service.ts` (`parseMyMembership`), `use-workspace-viewer.ts` · Design none · Tests `MemberEndpointTests` · Real e2e `guest-permission.real.e2e.spec.ts` (signs in as a Guest; does not assert this call)
-- State: INTEGRATING — Direct real assertion; design not needed.
+- Evidence: BE `GET /api/v1/workspaces/{id}/members/me`, `GetMyWorkspaceMembershipQueryHandler` · FE `members.service.ts` (`parseMyMembership`), `use-workspace-viewer.ts` · Design none · Tests `WorkspaceAdministrationReadIntegrationTests` (own row and version, another workspace and a suspended member refused), `WorkspaceRoleBaselineIntegrationTests` (guest reads only their own row, outsider refused), `MemberProfileIntegrationTests` (a guest's own row carries no phone) · Real e2e `workspace-members.real.e2e.spec.ts` (an Owner and a Guest each read `members/me`)
+- State: HARDENING — Owner check. Open: identical NotFound for a non-member (pipeline-wide).
 
 ## F. Membership add / remove / change
 
@@ -505,8 +506,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Add dialog with picker, validation error, pending, conflict, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 10, 22.1, WSP-004, WSP-026, WSP-011; WGREQ016.
 - Acceptance: Given an Admin, When they add a user as member, Then the user is active. Given the user is in another Account, Then it is refused and nothing changes. Given an Admin adds an Admin, Then rejected.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members/add`, `AddMemberCommandHandler` · FE none (UI uses invitations and Space/Team pickers) · Design none · Tests `NewMemberEndpointTests`, `WorkspaceRoleBaselineIntegrationTests`, `WorkspaceMemberRulesTests` · Real e2e none
-- State: IMPLEMENTING — Account-membership and seat checks; caller or removal of the endpoint; tests.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members/add`, `AddMemberCommandHandler`, now requiring an active Account membership (`Workspaces_Member_NotInAccount`) and a Billing seat (`Workspaces_Member_SeatUnavailable`) through the merged branch `fix/add-member-account-and-seat` · FE none (UI uses invitations and Space/Team pickers) · Design none · Tests `NewMemberEndpointTests`, `WorkspaceRoleBaselineIntegrationTests`, `WorkspaceMemberRulesTests`, plus the tests that branch added · Real e2e none
+- State: IMPLEMENTING — The defect is closed. Lead decision: kept for admin use; no screen (no UI is built for it). Tests: refused outside the Account, refused with no seat, success, and a Removed member rejoins (before, the add of a Removed member threw because the Domain forbids activating a removed row; it now uses `Rejoin`). Two concurrent admissions can still exceed the seat limit by one (admissions do not serialize; separate use case).
 
 ### UC-WSP-F02 Change a member's workspace role
 - Capability: F Membership add / remove / change
@@ -515,12 +516,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`, `role`.
 - Output: New role, grants synced, `WorkspaceMemberRoleChanged`. The last Owner cannot be demoted.
 - Main flow: 1. `PATCH /api/v1/workspaces/{id}/members/{userId}`. 2. Workspace row lock. 3. Rules: actor cap, last-owner guard. 4. Grant sync.
-- No-op / rejection / concurrency / retry: Same role: no-op. Last owner: `Workspaces_Member_CannotActOnLastOwner`. No expected version (member version exists but is not required): two admins can overwrite each other (defect). Demote/remove race resolved by the lock.
+- No-op / rejection / concurrency / retry: Same role: no-op. Last owner: `Workspaces_Member_CannotActOnLastOwner`. Expected version required (LD-07): the body carries the member's `version`, a version that moved answers 412 `common.precondition-failed` and changes nothing; the same role is a no-op with no version step. Demote/remove race resolved by the lock.
 - UI states: Role menu, confirmation for demotion, pending, conflict, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 15, 17, 18; WSP-007, WSP-008, WSP-019; WGREQ019, WGREQ020, WGREQ144, WGREQ145; WX-MEM-001.
 - Acceptance: Given two Owners, When one is demoted, Then it succeeds. Given one Owner, Then it fails and nothing changes. Given a stale version, Then 409.
-- Evidence: BE `PATCH /api/v1/workspaces/{id}/members/{userId}`, `UpdateMemberRoleCommandHandler` · FE `members.service.ts`, `use-member-mutations.ts`, Members surface · Design `Final-Members` · Tests `WorkspaceMemberRulesTests`, `WorkspaceMembershipConcurrencyEvidenceTests`, `WorkspaceMemberVersionTests`, `workspace-pages.mock.e2e.spec.ts` (WX-MEM-001) · Real e2e none
-- State: INTEGRATING — Expected version on the command (IExpectedVersionRequest); real e2e.
+- Evidence: BE `PATCH /api/v1/workspaces/{id}/members/{userId}`, `UpdateMemberRoleCommand` is now an `IExpectedVersionRequest` mapped to the WorkspaceMember in `ExpectedVersionTargetMap`; the request body has `expectedVersion` · FE `members.service.ts` reads each member's `version` and sends it (a member with no known version is never written), `use-member-mutations.ts` (optimistic role, rolled back on failure), Members surface asks before a lowered role (Admin to Member, anything to Guest), conflict toast already existed; mock backend checks and moves the version · Design `Final-Members` (department Members tab; no roster artboard) · Tests `WorkspaceMemberRulesTests`, `WorkspaceMembershipConcurrencyEvidenceTests`, `WorkspaceMemberVersionTests`, `workspace-pages.mock.e2e.spec.ts` (WX-MEM-001); existing tests that build the command without a version need updating, see the test list under F05 · Real e2e none
+- State: INTEGRATING — Tests and owner check: stale version 412 with no change, same-role no-op, last-owner guard, real e2e.
 
 ### UC-WSP-F03 Suspend a member
 - Capability: F Membership add / remove / change
@@ -529,12 +530,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`.
 - Output: Status Suspended; the grant is revoked; history and work stay; person cannot enter.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/members/{userId}/suspend`. 2. Lock and rules. 3. Domain suspends. 4. Grant removed.
-- No-op / rejection / concurrency / retry: Already suspended: no-op. Last owner: rejected. No expected version (defect). A suspended member's session loses access at the next request.
+- No-op / rejection / concurrency / retry: Already suspended: no-op. Last owner: rejected. Expected version required (LD-07): body `expectedVersion`, stale answers 412 and changes nothing; a suspended member is a no-op with no version step. A suspended member's session loses access at the next request.
 - UI states: Row action, confirmation naming consequences, pending, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 13, 21; WGREQ015, WGREQ021.
 - Acceptance: Given an active member, When suspended, Then reads of the workspace give NotFound. Given the last owner, Then rejected.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/suspend`, `SuspendMemberCommandHandler` · FE `members.service.ts`, Members surface · Design `Final-Members` · Tests `WorkspaceMemberTests`, `WorkspaceMembershipOutboxEvidenceTests` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e; mock e2e covers role and removal only.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/suspend`, `SuspendMemberCommand` is an `IExpectedVersionRequest` (new `MemberVersionRequest` body) · FE `members.service.ts` and the Members surface send the member version; mock backend checks it · Design `Final-Members` · Tests `WorkspaceMemberTests`, `WorkspaceMembershipOutboxEvidenceTests` · Real e2e none
+- State: INTEGRATING — Tests and owner check: stale 412, no-op, last owner, real e2e; the mock e2e covered role and removal only.
 
 ### UC-WSP-F04 Activate a suspended member
 - Capability: F Membership add / remove / change
@@ -543,26 +544,26 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`.
 - Output: Status Active; grant restored.
 - Main flow: 1. `POST .../members/{userId}/activate`. 2. Domain activates. 3. Grant synced.
-- No-op / rejection / concurrency / retry: Already active: no-op. Removed member: rejected (re-add instead). Seat limit not checked (LD-08).
+- No-op / rejection / concurrency / retry: Already active: no-op, no version step, no seat check. Removed member: rejected (re-add instead). A suspended member takes a seat again: Billing is asked first and no free seat is refused with `Workspaces_Member_SeatUnavailable` (LD-08). Expected version required (LD-07): stale answers 412.
 - UI states: Row action, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) sections 13, 21; WGREQ021.
 - Acceptance: Given a Suspended member, When activated, Then they read the workspace again.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/activate`, `ActivateMemberCommandHandler` · FE `members.service.ts` · Design `Final-Members` · Tests `WorkspaceMemberTests` · Real e2e none
-- State: INTEGRATING — Seat check; expected version; real e2e.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/activate`, `ActivateMemberCommandHandler` now takes `IBillingSeatGate` and the command is an `IExpectedVersionRequest` · FE `members.service.ts`, the Members surface (the seat refusal shows the producer's rule message in the toast) · Design `Final-Members` · Tests `WorkspaceMemberTests`; handler tests that construct it need the seat gate · Real e2e none
+- State: INTEGRATING — Tests and owner check: seat refused, seat free, active member no-op, stale 412, real e2e. No upgrade path is offered on a seat refusal (the invite flow has one).
 
 ### UC-WSP-F05 Remove a member
 - Capability: F Membership add / remove / change
 - Actors and permission: Owner, Admin (`RemoveMember`); Admin only on member and guest targets
 - Preconditions: Target is a member; not the last owner.
 - Input: `userId`.
-- Output: Status Removed; grant revoked; default workspace cleared if it pointed here; assignments and history stay.
+- Output: Status Removed; grant revoked; assignments and history stay. A default workspace of the removed person is not cleared (only leaving clears it); readers treat a default the person cannot open as absent, and Identity is not written for another person.
 - Main flow: 1. `DELETE /api/v1/workspaces/{id}/members/{userId}`. 2. Lock, rules. 3. Domain removes. 4. Grant revoked.
-- No-op / rejection / concurrency / retry: Already removed: no-op. Last owner: rejected. Removal does not clean Space and Team entries (F09).
+- No-op / rejection / concurrency / retry: Already removed: no-op. Last owner: rejected. Expected version required (LD-07): query `expectedVersion`, stale answers 412. Removal does not clean Space and Team entries (F09).
 - UI states: Confirmation dialog, pending, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 17, 20, 67; WGREQ017, WGREQ023; WX-MEM-001.
 - Acceptance: Given a member with assigned items, When removed, Then the items keep their assignee id and the member reads nothing.
-- Evidence: BE `DELETE /api/v1/workspaces/{id}/members/{userId}`, `RemoveMemberCommandHandler` · FE `use-member-mutations.ts`, Members surface · Design `Final-Members` · Tests `WorkspaceMemberSelfRemovalTests`, `WorkspaceMembershipConcurrencyEvidenceTests`, `workspace-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Entries cleanup (F09); expected version; real e2e.
+- Evidence: BE `DELETE /api/v1/workspaces/{id}/members/{userId}?expectedVersion=`, `RemoveMemberCommand` is an `IExpectedVersionRequest` · FE `use-member-mutations.ts`, Members surface · Design `Final-Members` · Tests `WorkspaceMemberSelfRemovalTests`, `WorkspaceMembershipConcurrencyEvidenceTests`, `workspace-pages.mock.e2e.spec.ts`. Existing tests that build the four member commands without a version and must be updated: `MemberActorTargetGuardHandlerTests` (7), `SuspendMemberCommandHandlerTests` (3), `RlsRuntimeEnforcementTests` (2), `WorkspaceMembershipConcurrencyEvidenceTests` (3), `WorkspaceRoleBaselineIntegrationTests` (11), and any activate handler test (new constructor argument) · Real e2e none
+- State: INTEGRATING — Tests and owner check: stale 412, no-op, last owner, real e2e. Entries cleanup is F09 (DEFINED, not built).
 
 ### UC-WSP-F06 Leave a workspace
 - Capability: F Membership add / remove / change
@@ -571,12 +572,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId` (path); no user input.
 - Output: Membership ends like a removal; the grant is revoked in the same transaction; a default workspace pointing here is cleared.
 - Main flow: 1. `DELETE /api/v1/account/workspaces/{workspaceId}`. 2. Handler resolves the caller. 3. Last-owner guard. 4. Remove and clear default.
-- No-op / rejection / concurrency / retry: Last Owner: 409 `workspaces.member.last-owner-cannot-leave`. Already left: NotFound. A retry after success is NotFound (not idempotent); the client treats it as done.
+- No-op / rejection / concurrency / retry: Last Owner: 409 `workspaces.member.last-owner-cannot-leave`. Already left: NotFound. A retry after success is NotFound (not idempotent); the account service now treats that 404 as done and the list is read again.
 - UI states: Account page: confirmation, sole-owner disabled with reason (`canLeave`), pending, success.
 - Rules: [workspaces](../../product/workspaces.md) section 19, 19.1; WGREQ018.
 - Acceptance: Given two Owners, When one leaves, Then success. Given one Owner, Then 409 and no change.
-- Evidence: BE `DELETE /api/v1/account/workspaces/{workspaceId}`, `LeaveWorkspaceCommandHandler` · FE account `workspaces.tsx` · Design `Final-Account` · Tests `WorkspaceMemberSelfRemovalTests`, `AccountWorkspaceEndpointTests`, `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; transfer-first hint; Space/Team cleanup (F09).
+- Evidence: BE `DELETE /api/v1/account/workspaces/{workspaceId}`, `LeaveWorkspaceCommandHandler` · FE account `workspaces.tsx` (the sole-owner note and the disabled button already name what to do first), `account.service.ts` (404 counts as done) · Design `Final-Account` · Tests `WorkspaceMemberSelfRemovalTests`, `AccountWorkspaceEndpointTests`, `account-pages.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING — Tests and owner check: real e2e, retry-after-success. The sole-owner note says to hand ownership over but no screen does it (D05, IMPLEMENTING, outside this order); Space and Team cleanup is F09 (DEFINED, not built).
 
 ### UC-WSP-F07 Set my own job title
 - Capability: F Membership add / remove / change
@@ -590,7 +591,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 11 (D15, 2026-10-23).
 - Acceptance: Given title `Lead`, When saved again, Then version is unchanged.
 - Evidence: BE `PUT /api/v1/workspaces/{id}/members/me/job-title`, `UpdateMyJobTitleCommandHandler` · FE consumer row `Workspaces.Members.UpdateMyJobTitle` (enabled surface) · Design none · Tests `MemberProfileIntegrationTests`, `WorkspaceMemberJobTitleTests`, `CoMemberProfileTests` · Real e2e none
-- State: INTEGRATING — No screen artboard; real e2e.
+- State: INTEGRATING — Tests and owner check: real e2e; no screen artboard. Nothing found to build (the version is already required).
 
 ### UC-WSP-F08 Set another member's job title
 - Capability: F Membership add / remove / change
@@ -643,12 +644,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `email`, `role` (member or guest; never admin), optional entries (G02).
 - Output: A Pending invitation (expiry from settings, default 7 days), only a token hash stored, and an email sent through the outbox.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/members`. 2. Role and actor rules. 3. Domain creates the invitation with a hashed token. 4. Outbox sends the email with the raw token once.
-- No-op / rejection / concurrency / retry: Admin role: `Workspaces_Invitation_CannotInviteAsAdmin`. A pending invitation for the same email is refused with a plain text failure, not a stable code (LD-04). Existing member: refused. The raw token is never stored or logged. No Billing seat check at invite time (checked at accept).
+- No-op / rejection / concurrency / retry: Admin role: `Workspaces_Invitation_CannotInviteAsAdmin`. A pending invitation for the same email answers 409 with the stable code `workspaces.invitation.pending-exists` (LD-04). A retry under the same `Idempotency-Key` returns the first invitation and sends no second email (LD-01). The raw token is never stored or logged. An invitation to the address of someone who already belongs is not refused at creation (acceptance handles an existing member); the product docs do not say it must be. No Billing seat check at invite time (checked at accept).
 - UI states: Invite dialog (emails, role), validation error, conflict, pending, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 22.1 (WSP-026), 23, 25, 26; WSP-006; WGREQ024 to WGREQ028, WGREQ033; WX-MEM-001.
 - Acceptance: Given an Admin, When they invite `a@x.com` as member, Then one Pending invitation exists and one email is queued. Given role admin, Then 400 with the rule code. Given a pending one for the same email, Then no second row.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members`, `InviteMemberCommandHandler` · FE `invitations.service.ts`, `use-create-invitation.ts`, Members surface, `seat-invite.tsx` · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `WorkspaceInvitationRulesTests`, `InvitationEndpointTests`, `NewInvitationEndpointTests`, `WorkspaceInvitationSecretTelemetryTests`, `SendInvitationEmailConsumerTests`, `workspace-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Stable duplicate code; idempotency key; real e2e with a mail sink; design diff.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members`, `InviteMemberCommandHandler`, now an `IIdempotentRequest` (`workspaces.invitation.invite-member.v1`, key required on the endpoint) and a `ConflictException` with the stable duplicate code · FE `invitations.service.ts`, `use-create-invitation.ts` (one key per address and role, reused on retry, cleared on success), Members surface (a duplicate raised by someone else shows the same message as the check before sending), `seat-invite.tsx`; mock backend keys and refuses the same way · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `WorkspaceInvitationRulesTests`, `InvitationEndpointTests`, `NewInvitationEndpointTests`, `WorkspaceInvitationSecretTelemetryTests`, `SendInvitationEmailConsumerTests`, `workspace-pages.mock.e2e.spec.ts`; existing tests that send the invite without a key, or assert the old plain duplicate text, need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: duplicate 409 code, a retry under one key sends one email, real e2e with a mail sink; design diff.
 
 ### UC-WSP-G02 Invite with initial Team and Space entries
 - Capability: G Invitation create
@@ -671,12 +672,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`.
 - Output: Rows: email, role, status (Pending, Accepted, Revoked, Expired, Declined), issuer, expiry, version. No token.
 - Main flow: 1. `GET /api/v1/workspaces/{id}/invitations`. 2. Handler lists.
-- No-op / rejection / concurrency / retry: Guest: 403 (`ViewMembers`, fixed; section 82 calls invitations sensitive). A Member still sees invited emails, because the member list's email masking is a handler role check the architecture tests forbid; hiding them needs a pipeline-level rule. The read is unbounded.
+- No-op / rejection / concurrency / retry: Guest: 403 (`ViewMembers`, fixed; section 82 calls invitations sensitive). A Member still sees invited emails, because the member list's email masking is a handler role check the architecture tests forbid; hiding them needs a pipeline-level rule. The read is a cursor page (LD-06): default 50, at most 200, newest first; `limit` outside 1 to 200 or a cursor the list did not issue answers 400. A Pending invitation past its expiry is reported as Expired (LD-04); the sweep that writes the status is not built.
 - UI states: Loading, empty, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 25, 82; WGREQ025, WGREQ032.
 - Acceptance: Given a Guest, When they list invitations, Then 403. Given an Admin, Then rows without tokens.
-- Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (Guest 403, Admin and Member list) · FE gated by `enabled: admin` in `members.tsx` · Real e2e none
-- State: INTEGRATING — Permission fixed. Pagination; real e2e; decide whether Members see invited emails.
+- Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (Guest 403, Admin and Member list) · FE gated by `enabled: admin` in `members.tsx` · Built: `GetWorkspaceInvitationsQuery(Cursor, Limit)` returns a `CursorPage`, rows carry `version`, expired read; `invitations.service.ts` joins the pages; mock backend pages the same way. Existing tests that read the list as an array (`WorkspaceAdministrationReadHandlerTests`, `WorkspaceAdministrationReadIntegrationTests`, `WorkspaceRoleBaselineIntegrationTests`) need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: paging, expired read, real e2e. Owner question, not changed: may Members see invited emails (they can through the API today). The issuer is not in the row yet.
 
 ### UC-WSP-G04 Change a pending invitation's role
 - Capability: G Invitation create
@@ -685,12 +686,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `invitationId`, `newRole` (member or guest).
 - Output: New role stored.
 - Main flow: 1. `PATCH /api/v1/workspaces/{id}/invitations/{invitationId}/role`. 2. Domain changes the role.
-- No-op / rejection / concurrency / retry: Admin or raise to admin: `Workspaces_Invitation_CannotInviteAsAdmin` (an old Admin invitation may be lowered, never kept or raised). Not pending: refused. No expected version: an accept can race the change.
+- No-op / rejection / concurrency / retry: Admin or raise to admin: `Workspaces_Invitation_CannotInviteAsAdmin` (an old Admin invitation may be lowered, never kept or raised). Not pending: refused. Expected version required (LD-07): the body carries the invitation's `version`, and a version that moved (resent, changed, answered) answers 412 and changes nothing.
 - UI states: Role menu in the pending row, conflict, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 22.1; WGREQ027, WGREQ031.
 - Acceptance: Given a Pending admin invitation, When changed to member, Then it shows member.
-- Evidence: BE `PATCH .../invitations/{invitationId}/role`, `ChangeInvitationRoleCommandHandler` · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationRulesTests` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- Evidence: BE `PATCH .../invitations/{invitationId}/role`, `ChangeInvitationRoleCommand` is an `IExpectedVersionRequest` mapped to `WorkspaceInvitation` in `ExpectedVersionTargetMap` · FE `invitations.service.ts` and the Members surface send the version (an invitation with no known version is never written); mock backend checks it · Design `Final-Members` · Tests `WorkspaceInvitationRulesTests`; tests that build the command without a version need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: stale 412, same-role no-op, real e2e.
 
 ### UC-WSP-G05 Resend an invitation
 - Capability: G Invitation create
@@ -699,12 +700,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `invitationId`.
 - Output: A new token and expiry; the old link stops working; one email.
 - Main flow: 1. `POST .../invitations/{invitationId}/resend`. 2. Domain replaces the token. 3. Outbox sends.
-- No-op / rejection / concurrency / retry: Accepted, Revoked, Declined: `Workspaces_Invitation_CannotResendNonPendingExpired`. Each rapid repeat replaces the token again (add a cool-down, LD-04).
+- No-op / rejection / concurrency / retry: Accepted, Revoked, Declined: `Workspaces_Invitation_CannotResendNonPendingExpired`. A resend is held for a minute after the invitation was last sent (`Workspaces_Invitation_ResendTooSoon`, LD-04), so rapid repeats no longer replace the token and send an email each time. The last send is read from the invitation's last change, so a role change also holds a resend for a minute.
 - UI states: Row action, toast, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 25, 26; WGREQ028, WGREQ030.
 - Acceptance: Given a Pending invitation, When resent, Then the old token fails and the new one works.
-- Evidence: BE `POST .../invitations/{invitationId}/resend`, `ResendInvitationCommandHandler` · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `InvitationTokenFlowHttpTests` · Real e2e none
-- State: INTEGRATING — Cool-down; real e2e.
+- Evidence: BE `POST .../invitations/{invitationId}/resend`, `ResendInvitationCommandHandler`, `WorkspaceInvitation.Resend` with `ResendCooldown`; the refusal shows as the producer's rule message in the Members toast · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationTests`, `InvitationTokenFlowHttpTests`; tests that resend right after creating now meet the cool-down and need a later time; the rule-code snapshot has the new code · Real e2e none
+- State: INTEGRATING — Tests and owner check: cool-down refused then allowed, real e2e. A resend still uses a fixed 7-day expiry, not the workspace setting (a J question).
 
 ### UC-WSP-G06 Revoke an invitation
 - Capability: G Invitation create
@@ -718,7 +719,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 66; WSP-006, WSP-019; WGREQ029, WGREQ031, WGREQ146.
 - Acceptance: Given a Pending invitation, When revoked, Then accepting its token gives the generic invalid answer.
 - Evidence: BE `DELETE .../invitations/{invitationId}`, `CancelInvitationCommandHandler` · FE `invitations.service.ts` · Design `Final-Members` · Tests `WorkspaceInvitationConcurrencyEvidenceTests`, `AcceptInvitationTransactionEvidenceTests` · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check: real e2e. Nothing found to build.
 
 ### UC-WSP-G07 Invite a guest to one Board or Page
 - Capability: G Invitation create
@@ -785,12 +786,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `token`.
 - Output: Active membership (or reused), entries and resource grant applied in one transaction; invitation Accepted; `WorkspaceMemberAdded`.
 - Main flow: 1. `POST /api/v1/invitations/accept`. 2. Email and status checks. 3. Billing seat gate. 4. One transaction applies everything.
-- No-op / rejection / concurrency / retry: Different email: refused. A repeat creates no second membership (WSP-009). Revoked meanwhile: one winner. Removed or suspended member with entries: cannot accept. The seat gate is optional in code (`IBillingSeatGate? = null`), so an unregistered gate admits (LD-08).
+- No-op / rejection / concurrency / retry: Different email: refused. A repeat creates no second membership (WSP-009). Revoked meanwhile: one winner. Removed or suspended member with entries: cannot accept. The seat gate is a required dependency (LD-08): a new membership asks Billing first and a refusal fails the acceptance with the plan-limit message; an acceptance that cannot ask Billing does not admit. An existing membership reuses its row: a Removed member who accepts a plain invitation (no entries, no resource entry) returns through `WorkspaceMember.Rejoin` with the invited role, after the same seat check as direct add, refused with `Workspaces_Member_SeatUnavailable` when no seat is free; a Suspended member is refused with "Your membership in this workspace is not active" and stays suspended (an invitation never overrides an admin's suspension); one with entries or a resource entry is refused if Removed or Suspended (lead decision, product doc section 22.1).
 - UI states: Join page: pending, success (go to the workspace), error states.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 24, 75; WSP-006, WSP-009, WSP-019; WGREQ030, WGREQ031, WGREQ146; NRX-010.
 - Acceptance: Given the right person, When they accept twice, Then one membership exists. Given another email, Then refused and no change.
-- Evidence: BE `POST /api/v1/invitations/accept`, `AcceptInvitationCommandHandler`, `InvitationAcceptanceService` · FE `auth-flow.service.ts` (auth feature), `onboarding-join-surface.tsx` · Design `Final-Onboarding` · Tests `AcceptInvitationTransactionEvidenceTests`, `WorkspaceInvitationConcurrencyEvidenceTests`, `WorkspaceCredentialAndInvitationEscalationTests`, `InvitationTokenFlowHttpTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Fail-closed seat gate; real e2e.
+- Evidence: BE `POST /api/v1/invitations/accept`, `AcceptInvitationCommandHandler`, `InvitationAcceptanceService` (now requires `IBillingSeatGate`; tests that build either without a gate need the argument) · FE `auth-flow.service.ts` (auth feature), `onboarding-join-surface.tsx` · Design `Final-Onboarding` · Tests `AcceptInvitationTransactionEvidenceTests`, `WorkspaceInvitationConcurrencyEvidenceTests`, `WorkspaceCredentialAndInvitationEscalationTests`, `InvitationTokenFlowHttpTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING — Tests and owner check: seat refused with the plan-limit message, seat free, repeat accept, another email refused, real e2e. Also: Removed member returns with the invited role and a seat; Suspended refused and unchanged; the new rule code `Workspaces_Member_CannotRejoinNonRemoved` is in the snapshot.
 
 ### UC-WSP-H03 Accept an invitation and register in one step
 - Capability: H Invitation accept / reject / revoke
@@ -804,7 +805,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 75; see [identity](identity.md); WGREQ033.
 - Acceptance: Given a valid token and a strong password, Then user and membership exist and the person is signed in.
 - Evidence: BE `POST /api/v1/invitations/accept-with-registration`, `AcceptInvitationWithRegistrationCommandHandler` · FE `auth-flow.service.ts`, join surface · Design `Final-Onboarding` · Tests `InvitationTokenFlowHttpTests`, `WorkspaceCredentialAndInvitationEscalationTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; state the Account membership of the new user (WSP-004).
+- State: INTEGRATING — Tests and owner check: real e2e. The new user becomes an Account member of the workspace's Account when the invitation is accepted (`EnsureAccountMembershipAsync` in `InvitationAcceptanceService`); that is how people outside the Account join, and direct add (F01) is for people already in it.
 
 ### UC-WSP-H04 Decline an invitation from its link
 - Capability: H Invitation accept / reject / revoke
@@ -826,13 +827,13 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Preconditions: A Pending invitation for my confirmed email.
 - Input: `invitationId`.
 - Output: Invitation Declined.
-- Main flow: 1. `POST /api/v1/invitations/{invitationId}/decline`. 2. Handler checks the email. 3. Domain declines.
-- No-op / rejection / concurrency / retry: An invitation for another email: NotFound.
-- UI states: Menu action, pending.
+- Main flow: 1. `POST /api/v1/invitations/{invitationId}/decline`. 2. The handler reads the invitation through the invitee policy (pending, addressed to the confirmed email), checks the email again, then declines inside the invitation token scope. 3. Domain declines.
+- No-op / rejection / concurrency / retry: An invitation for another email, an unconfirmed email, an unknown id and a repeat: the same NotFound. An invitation that ran out meanwhile: "This invitation has expired."
+- UI states: Decline in the invitations flyout (the buttons of the invitation being answered wait), gone invitation (the list is read again and says so), error.
 - Rules: [workspaces](../../product/workspaces.md) section 14.
 - Acceptance: Given my invitation, When I decline, Then it leaves my list.
-- Evidence: BE `POST /api/v1/invitations/{invitationId}/decline`, `DeclineInvitationCommandHandler` · FE none · Design none · Tests `NewInvitationEndpointTests` · Real e2e none
-- State: IMPLEMENTING — Frontend action.
+- Evidence: BE `POST /api/v1/invitations/{invitationId}/decline`, `DeclineInvitationCommandHandler`, `Invitations/Services/InviteeInvitations.cs`; RLS `Infrastructure/Data/Rls/RlsSqlScripts/025_invitee_invitations.sql` · FE `packages/features/workspace/src/web/components/pending-invitations-menu.tsx`, `workspace-pending-invitations-surface.tsx`, `hooks/mutations/use-decline-invitation.ts`, mounted in the system rail by `apps/web/src/shell/workspace/workspace-shell.tsx`; mock `packages/dev/mock-backend/src/contexts/workspace/workspace.handlers.ts` · Design none (no artboard draws the invitee flyout: it reuses the rail entry and the account popover tokens) · Tests `NewInvitationEndpointTests` (needs the new email and NotFound cases) · Real e2e none
+- State: INTEGRATING — Built (2026-10-30 decision): the email-keyed read is one RLS policy (invitation row only, user scope, confirmed email); the handler reads through it, checks the email, and answers inside the token and invitee scopes the link flow already uses. Missing: tests and owner check (Application and API tests; an RLS test with two people and two tenants; real e2e), 1 px diff (no artboard).
 
 ### UC-WSP-H06 See my pending invitations
 - Capability: H Invitation accept / reject / revoke
@@ -840,13 +841,14 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Preconditions: Confirmed email.
 - Input: none.
 - Output: Pending, unexpired invitations addressed to my email: workspace, role, expiry.
-- Main flow: 1. `GET /api/v1/invitations/pending`. 2. Handler filters by my email, status and expiry.
-- No-op / rejection / concurrency / retry: Only my own email; an unconfirmed email gets none.
-- UI states: Menu with count, empty, loading.
+- Main flow: 1. `GET /api/v1/invitations/pending`. 2. The handler reads the pending, unexpired invitations addressed to my email through the invitee policy; for each, the workspace name and the inviter's display name are read inside that invitation's token scope. Invitations to an archived or deleted workspace are left out.
+- No-op / rejection / concurrency / retry: Only my own email; an unconfirmed email gets none (the policy requires a confirmed address).
+- UI states: The "Invites" entry of the system rail with a count badge, opening a flyout: loading, empty, error with retry, the list (Accept and Decline per invitation), a refusal told above the list.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 75.
 - Acceptance: Given two pending invitations, Then two rows.
-- Evidence: BE `GET /api/v1/invitations/pending`, `GetUserPendingInvitationsQueryHandler` · FE `pending-invitations-menu.tsx`, `use-pending-invitations.ts` · Design `Final-Account` · Tests `InvitationEndpointTests` · Real e2e none
-- State: INTEGRATING — Real e2e; accept action from the menu.
+- Evidence: BE `GET /api/v1/invitations/pending`, `GetUserPendingInvitationsQueryHandler`, `Invitations/Services/InviteeInvitations.cs`; RLS `Infrastructure/Data/Rls/RlsSqlScripts/025_invitee_invitations.sql` · FE `pending-invitations-menu.tsx`, `workspace-pending-invitations-surface.tsx`, `pending-invitations.copy.ts` (vi, en), `use-pending-invitations.ts`, rail slot in `shell/notrelix-system-rail-surface.tsx` · Design none for the flyout (the rail entry follows Final-Space) · Tests `InvitationEndpointTests`, `workspace-ui-surfaces.interaction.component.test.tsx` (the surface changed) · Real e2e none
+- State: INTEGRATING — Built (2026-10-30 decision): the read policy, the two handlers reading through it, accept by id (`POST /api/v1/invitations/{invitationId}/accept`, `AcceptInvitationByIdCommandHandler`: same email, seat, Suspended and Removed rules, through the shared `InvitationAcceptanceService`), the flyout in the system rail with vi and en copy and every state, the contract and the client. Accepting leads to the workspace and the rail list is read again. Missing: tests and owner check, 1 px diff (no artboard for the flyout). Rollout: `--rls-apply` first (additive), then the API, then the web app; no schema migration. Earlier text of this entry, kept for the decision it answers:
+- Earlier state: BLOCKED — Owner decision on the RLS and tenant model for an invitee-side read (items 1 and 3 below); nothing built beyond removing the token hash (2). (1) The pending list and decline-by-id (H05) are global requests that read workspace-scoped invitations without lifting the tenant filter, so in the real stack they likely return nothing or NotFound; this needs a real-stack check and, if confirmed, a read keyed to the caller's confirmed email, which may also need a database policy (schema change). (2) `UserPendingInvitationDto.Token` returned the stored token hash, which is credential material and could not be used to accept; it is removed (lead decision, contract regenerated). Accepting from the list needs an accept-by-id command with the same email and seat checks; it waits for item 1. (3) `PendingInvitationsMenu` is exported but mounted nowhere in the web app, is English-only and has no artboard-matched design. Decision needed from the lead on the invitee-side flow before building.
 
 ## I. Workspace selection / switch integration
 
@@ -862,7 +864,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 50 to 53, 69; WSP-015, WSP-016; WX-SHELL-001; NRX-014.
 - Acceptance: Given a Board open in W2, When the user switches to W3, Then the URL is W3's and no W2 Board shows.
 - Evidence: BE none (server checks each call) · FE `workspace-scope-boundary.tsx`, `workspace-scope.ts`, system rail, `realtime-adapter.ts` · Design `BC-Shell-1440`, `BC-Shell-1280-768`, `BC-Shell-320` · Tests `workspace-shell.mock.e2e.spec.ts`, `design-fidelity-shell.mock.e2e.spec.ts` · Real e2e `workspace-isolation.real.e2e.spec.ts`
-- State: HARDENING — Out-of-order response test; realtime dispose proof; design diff at 3 widths and both themes; owner check.
+- State: HARDENING — Tests and owner check: out-of-order response test; realtime dispose proof; design diff at 3 widths and both themes. Nothing found to build: the workspace realtime adapter already drops an event whose workspace is not the open one, and query keys carry the workspace id.
 
 ### UC-WSP-I02 List the workspaces I belong to
 - Capability: I Workspace selection / switch integration
@@ -875,8 +877,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Loading, empty, success.
 - Rules: [workspaces](../../product/workspaces.md) section 19.1; WSP-010.
 - Acceptance: Given a person who left W1, When they list, Then W1 is absent.
-- Evidence: BE `GET /api/v1/account/workspaces`, `GetMyWorkspacesQueryHandler` · FE rail, account `workspaces.tsx`, `use-workspace-list.ts` · Design `BC-Shell-1440`, `Final-Account` · Tests `AccountWorkspaceEndpointTests`, `AccountWorkspacesHttpFlowTests`, `AccountWorkspacesAndAvatarRlsIntegrationTests`, `account-pages.mock.e2e.spec.ts` · Real e2e none (the isolation spec reads the list indirectly)
-- State: INTEGRATING — Direct real assertion; archived group (LD-02).
+- Evidence: BE `GET /api/v1/account/workspaces`, `GetMyWorkspacesQueryHandler` (now also returns an archived workspace, flagged `isArchived`, to its Owners and Admins only, never as default) · FE rail, account `workspaces.tsx` with an "Archived workspaces" group whose rows show an Unarchive action (GET workspace for its version, then `POST /workspaces/{id}/archive/unarchive`), `use-workspace-list.ts` · Design `BC-Shell-1440`, `Final-Account` (no artboard for the group; built by eye) · Tests `AccountWorkspaceEndpointTests`, `AccountWorkspacesHttpFlowTests`, `AccountWorkspacesAndAvatarRlsIntegrationTests`, `account-pages.mock.e2e.spec.ts`, to be extended: archived shown to Owner and Admin only, hidden from Member and Guest, never default; the existing `toWorkspaceEntry` and copy-catalog key tests need the new fields · Real e2e none (the isolation spec reads the list indirectly)
+- State: INTEGRATING — Tests and owner check: direct real assertion; the group needs an owner look (no artboard). An archived workspace still cannot be opened (the shell treats an unlisted workspace as no access; the read-only banner is I05/D02), so the group offers Unarchive only.
 
 ### UC-WSP-I03 Choose my default workspace
 - Capability: I Workspace selection / switch integration
@@ -889,8 +891,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Account page choice, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) section 19.1.
 - Acceptance: Given membership in W2, When I set it, Then the next sign-in opens W2.
-- Evidence: BE `PUT /api/v1/account/default-workspace`, `SetDefaultWorkspaceCommandHandler` · FE account `workspaces.tsx` · Design `Final-Account` · Tests `UserProfileDefaultWorkspaceTests`, `AccountWorkspaceEndpointTests`, `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; sign-in open check.
+- Evidence: BE `PUT /api/v1/account/default-workspace`, `SetDefaultWorkspaceCommandHandler` · FE account `workspaces.tsx`; `/home` (`home.tsx`) now opens the default workspace, read from the account list, and falls back to the first by name when none is chosen, the choice is archived or not listed, or the read fails (before, it always opened the first by name, so the choice had no effect) · Design `Final-Account` · Tests `UserProfileDefaultWorkspaceTests`, `AccountWorkspaceEndpointTests`, `account-pages.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING — Tests and owner check: real e2e (set W2, open `/home`, land in W2); the command now refuses an archived workspace (business-rule failure; product doc 19.1 updated), so an archived default chosen earlier still reads as absent and home falls back to the first workspace. Tests to add: the refusal and that the stored default is unchanged.
 
 ### UC-WSP-I04 Authorize a realtime subscription to a workspace
 - Capability: I Workspace selection / switch integration
@@ -903,8 +905,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: None; the reconnecting state belongs to the shell.
 - Rules: [workspaces](../../product/workspaces.md) sections 55, 56; WSP-016; NRX-014.
 - Acceptance: Given a non-member, When they subscribe, Then refused.
-- Evidence: BE `AuthorizeWorkspaceRealtimeSubscriptionQueryHandler` · FE `realtime-adapter.ts` · Design none · Tests `WorkspaceScopedArchitectureTests` · Real e2e none
-- State: INTEGRATING — Test that a removed member's open subscription ends.
+- Evidence: BE `AuthorizeWorkspaceRealtimeSubscriptionQueryHandler`; the gateway (`RealtimeConnection.ReauthorizeAsync`) re-runs it for every open subscription every 60 seconds and revokes a denied one · FE `realtime-adapter.ts` · Design none · Tests `WorkspaceScopedArchitectureTests` · Real e2e none
+- State: INTEGRATING — Tests and owner check: test that a removed member's open subscription ends at the next check. Nothing found to build.
 
 ### UC-WSP-I05 See why a workspace is unavailable
 - Capability: I Workspace selection / switch integration
@@ -931,8 +933,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Switcher, dialog titles.
 - Rules: [workspaces](../../product/workspaces.md) section 84.
 - Acceptance: Given a destructive dialog, Then it names the workspace.
-- Evidence: BE none · FE `workspace-sidebar-surface.tsx`, `workspace-topbar-surface.tsx` · Design `BC-Shell-1440`, `BC-Shell-320` · Tests `design-fidelity-shell.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Dialog audit; real e2e.
+- Evidence: BE none · FE `workspace-sidebar-surface.tsx` (skeleton with a status label while loading), `workspace-topbar-surface.tsx`; dialog audit done: member remove and suspend, workspace archive and leave already named the workspace; invitation revoke, Space archive and Team archive now do (copy en and vi) · Design `BC-Shell-1440`, `BC-Shell-320` · Tests `design-fidelity-shell.mock.e2e.spec.ts`; existing tests that assert the old revoke, Space archive and Team archive texts need updating · Real e2e none
+- State: INTEGRATING — Tests and owner check: real e2e. Still not naming the workspace: the Space delete confirm (inline type-to-confirm, delete not available yet) and the `confirmRemove` and `confirmArchive` Team texts, which no screen renders.
 
 ## J. Workspace settings
 
@@ -948,7 +950,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 48.2, 48.4; WGREQ010.
 - Acceptance: Given a member, Then the values return with the version.
 - Evidence: BE `GET /api/v1/workspaces/{id}/settings`, `GetWorkspaceSettingsQueryHandler` · FE `workspace.service.ts`, `use-workspace-settings.ts` · Design `Final-Settings` · Tests `WorkspaceSettingsEndpointTests`, `WorkspaceSettingsTests` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff.
+- State: INTEGRATING — Tests and owner check: real e2e; design diff (no artboard for the settings form was found; built by eye).
 
 ### UC-WSP-J02 Change workspace settings
 - Capability: J Workspace settings
@@ -962,7 +964,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 40, 48.4; WSP-012; WGREQ010; WX-SET-001.
 - Acceptance: Given version 5, When an Admin saves, Then version is 6 and a second save carries 6.
 - Evidence: BE `PUT /api/v1/workspaces/{id}/settings`, `UpdateWorkspaceSettingsCommandHandler` · FE `use-workspace-settings-mutations.ts`, settings surface · Design `Final-Settings` · Tests `UpdateWorkspaceSettingsCommandHandlerTests`, `WorkspaceSettingsEndpointTests`, `workspace-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff; audit of the change (Governance).
+- State: INTEGRATING — Tests and owner check. Built: the invitation expiry setting is applied when inviting and when resending (it was stored but ignored, a fixed seven days), and a change that takes effect is audited (warning when it opens public sharing or drops the MFA requirement). Tests to update: `UpdateWorkspaceSettingsCommandHandlerTests` (new `IAuditService` argument), invitation expiry tests. Real e2e; design diff.
 
 ### UC-WSP-J03 Read sharing and security extras
 - Capability: J Workspace settings
@@ -976,7 +978,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 48.2; GOV-031, GOV-032; see [governance](governance.md).
 - Acceptance: Given links turned off on a date, Then that date returns.
 - Evidence: BE `GET /api/v1/workspaces/{id}/security-ext`, `GetWorkspaceSecurityExtQueryHandler` · FE `use-teams-ext.ts`, security route · Design `Final-Settings`, `Final-Teams` · Tests `WorkspaceSecurityExtIntegrationTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check: real e2e.
 
 ### UC-WSP-J04 Keep Account-wide policy out of workspace settings
 - Capability: J Workspace settings
@@ -1001,12 +1003,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name`, `description`, `type` (Folder, Portfolio, Department, ProjectArea), `visibility`, `parentId`, neighbour for position.
 - Output: A Space with a fractional position key; the creator is its first Space Admin; Department defaults to Private, other types to Workspace.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/spaces`. 2. Application supplies ancestry and sibling names. 3. Domain validates and creates. 4. Closure index updated. 5. Creator entry added.
-- No-op / rejection / concurrency / retry: Sibling name clash (case-insensitive): refused. Parent archived, deleted or in another workspace: refused before mutation. A stale neighbour intent is refused, not guessed. No idempotency key.
+- No-op / rejection / concurrency / retry: Sibling name clash (case-insensitive): refused. Parent archived, deleted or in another workspace: refused before mutation. A stale neighbour intent is refused, not guessed. A retry under the same Idempotency-Key returns the Space the first attempt made; a different body under that key is refused.
 - UI states: Loading, success, validation error, permission denied, conflict, pending, offline, destructive confirmation.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 43.1, 44, 68; WSP-013, WSP-021, WSP-024; WGREQ038, WGREQ040, WGREQ041; WX-SPACE-001.
 - Acceptance: Given an Admin, When they create `IT` as a Department, Then it is Private and the Admin is its Space Admin. Given a sibling `it`, Then refused.
 - Evidence: BE `POST /api/v1/workspaces/{id}/spaces`, `CreateSpaceCommandHandler` · FE `create-space-dialog.tsx`, `use-create-space.tsx`, `spaces.service.ts` · Design `Final-Space`, `Final-M-Space` · Tests `SpaceTests`, `SpaceHierarchyTests`, `CreateSpaceCommandHandlerTests`, `SpaceHierarchyIntegrationTests`, `SpaceEndpointTests`, `workspace-spaces.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff; idempotency.
+- State: INTEGRATING — Tests and owner check. Built: the create takes an Idempotency-Key (the endpoint and the dialog hook keep one key per input), the mock replays by key. Tests to update: `CreateSpaceCommandHandlerTests`, `SpaceHierarchyHandlerTests` (command shape unchanged), endpoint test for the key. Real e2e; design diff.
 
 ### UC-WSP-K02 Read the Space tree and list Spaces
 - Capability: K Spaces (added by this catalog)
@@ -1015,26 +1017,26 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`.
 - Output: The org tree (ordered siblings) and the flat list of visible Spaces.
 - Main flow: 1. `GET .../spaces/tree` and `GET .../spaces`. 2. Governance visibility filters the ids. 3. Handler returns nodes.
-- No-op / rejection / concurrency / retry: A Private Space the caller cannot reach is absent, never counted (GOV-029). Both reads are unbounded.
+- No-op / rejection / concurrency / retry: A Private Space the caller cannot reach is absent, never counted (GOV-029). Both reads are cursor pages (LD-06): 50 a page by default, at most 200; the tree pages in Space id order and the client reads every page and orders siblings by position; the list is ordered by name.
 - UI states: Loading, empty (first steps), success, error.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 43, 44.1; WSP-021, WSP-023; WX-SPACE-002.
 - Acceptance: Given a Private Space and a Member outside it, Then the tree omits it.
 - Evidence: BE `GET .../spaces/tree`, `GET .../spaces`, `GetSpaceTreeQueryHandler`, `GetWorkspaceSpacesQueryHandler` · FE `space-tree-nav.tsx`, `use-spaces.ts`, `use-space-tree-expansion.ts` · Design `Final-Space`, `BC-Shell-1440` · Tests `SpaceAccessMatrixIntegrationTests`, `CollectionVisibilityIntegrationTests`, `SpaceHierarchyHandlerTests` · Real e2e none
-- State: INTEGRATING — Size bound (LD-06); real e2e; windowing for large trees.
+- State: INTEGRATING — Tests and owner check. Built: cursor pages on the tree and the list, the client (Space service, onboarding join read) walks every page, the mock pages the tree. Not built: windowing (virtualising) of a very large tree in the nav. Tests to update: `SpaceHierarchyHandlerTests`, `SpaceAccessMatrixIntegrationTests` (tree and list now return a page), OpenAPI shape tests. Real e2e.
 
 ### UC-WSP-K03 Read one Space
 - Capability: K Spaces (added by this catalog)
 - Actors and permission: Any member who can see the Space (`ViewWorkspace` plus visibility)
 - Preconditions: The Space is visible to the caller.
 - Input: `spaceId`.
-- Output: Name, description, type, visibility, status, parent, my effective role, version.
+- Output: Name, description, type, visibility, status, parent, version (my effective role is on the tree node).
 - Main flow: 1. `GET .../spaces/{spaceId}`. 2. Visibility check. 3. Return.
 - No-op / rejection / concurrency / retry: A caller without access gets the same NotFound as for a missing id.
 - UI states: Loading, success, not found.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 44.1; WSP-023; GOV-025.
 - Acceptance: Given a Private Space and an outsider, Then 404 identical to a missing id.
 - Evidence: BE `GET .../spaces/{spaceId}`, `GetSpaceQueryHandler` · FE `spaces.service.ts` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `SpaceEndpointTests` · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check. Built: the read returns the version (the client re-reads it between the writes of one save). Real e2e.
 
 ### UC-WSP-K04 Rename a Space or edit its description
 - Capability: K Spaces (added by this catalog)
@@ -1043,12 +1045,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name` or `description`.
 - Output: Updated Space, version +1.
 - Main flow: 1. `PUT .../spaces/{spaceId}` (rename) or `PUT .../spaces/{spaceId}/description`. 2. Domain checks sibling uniqueness.
-- No-op / rejection / concurrency / retry: Same value: no-op. Clash: refused. Neither command carries an expected version, so the last writer wins (defect, LD-07).
+- No-op / rejection / concurrency / retry: Same value: no-op. Clash: refused. Both carry an expected version; a stale one is 412 and nothing changes.
 - UI states: Inline edit, validation, pending, conflict.
 - Rules: [workspaces](../../product/workspaces.md) section 43.1; WGREQ038, WGREQ039; WX-SPACE-003.
 - Acceptance: Given a rename to a taken sibling name, Then refused.
 - Evidence: BE `PUT .../spaces/{spaceId}`, `PUT .../spaces/{spaceId}/description`, `RenameSpaceCommandHandler`, `UpdateSpaceDescriptionCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests`, `SpaceVersionTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on rename and description (body), mapped in the expected-version target map; the Space page sends the node version and, when one save changes several fields, re-reads the version between the writes. Tests to update: rename and description handler and integration tests (command shape), `SpaceVersionTests`. Real e2e.
 
 ### UC-WSP-K05 Change a Space's type
 - Capability: K Spaces (added by this catalog)
@@ -1057,12 +1059,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `spaceType`.
 - Output: New type; visibility is not changed by it.
 - Main flow: 1. `PUT .../spaces/{spaceId}/type`. 2. Domain sets the type.
-- No-op / rejection / concurrency / retry: Same type: no-op. No expected version (LD-07).
+- No-op / rejection / concurrency / retry: Same type: no-op. Carries an expected version; a stale one is 412.
 - UI states: Select, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 44.1.
 - Acceptance: Given a Folder, When set to Department, Then the type changes and visibility stays.
 - Evidence: BE `PUT .../spaces/{spaceId}/type`, `ChangeSpaceTypeCommandHandler` · FE `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on the type write (same path as K04). Not built: a control to change the type (the settings panel shows the type but offers no control; no artboard shows one). Real e2e.
 
 ### UC-WSP-K06 Change a Space's visibility
 - Capability: K Spaces (added by this catalog)
@@ -1071,12 +1073,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `visibility` (Private or Workspace).
 - Output: New visibility; inheritance of Member and Viewer roles to descendants changes accordingly; access narrowing warns about assignees (Work Management).
 - Main flow: 1. `PUT .../spaces/{spaceId}/visibility`. 2. Domain sets it. 3. Governance reads the new value.
-- No-op / rejection / concurrency / retry: Same value: no-op. No expected version (LD-07). Making a Space Private may remove access from people who hold Boards in it.
+- No-op / rejection / concurrency / retry: Same value: no-op. Carries an expected version; a stale one is 412. Making a Space Private may remove access from people who hold Boards in it.
 - UI states: Choice with consequence text, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) sections 44.1; WSP-023; GOV-025.
 - Acceptance: Given a Workspace Space, When set Private, Then a non-member loses it from the tree.
 - Evidence: BE `PUT .../spaces/{spaceId}/visibility`, `ChangeSpaceVisibilityCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on the visibility write (same path as K04). Real e2e.
 
 ### UC-WSP-K07 Move or reorder a Space
 - Capability: K Spaces (added by this catalog)
@@ -1090,7 +1092,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 43.1; WSP-021; WGREQ038; WX-SPACE-004.
 - Acceptance: Given A with child B, When A moves under B, Then refused and nothing changes.
 - Evidence: BE `POST .../spaces/{spaceId}/move`, `MoveSpaceCommandHandler` · FE `move-to-space-dialog.tsx` (Boards and Docs), Space settings · Design `Final-Space` · Tests `SpaceHierarchyTests`, `SpaceHierarchyIntegrationTests` · Real e2e none
-- State: INTEGRATING — Frontend tree drag; real e2e.
+- State: INTEGRATING — Tests and owner check. The Move picker in Space settings already sends the version. Not built: dragging in the tree (no artboard shows it; the picker is the keyboard path). Real e2e.
 
 ### UC-WSP-K08 Archive or unarchive a Space
 - Capability: K Spaces (added by this catalog)
@@ -1099,12 +1101,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `spaceId`.
 - Output: Status Archived or Active.
 - Main flow: 1. `POST .../spaces/{spaceId}/archive` or `.../unarchive`. 2. Application supplies child and resource facts. 3. Domain checks.
-- No-op / rejection / concurrency / retry: Archive with active content: refused with the reason (no cascade, WSP-022). Already in that state: no-op. No expected version (LD-07).
+- No-op / rejection / concurrency / retry: Archive with active content: refused with the reason (no cascade, WSP-022). Already in that state: no-op. Both carry an expected version in the body; a stale one is 412.
 - UI states: Confirmation, blocked state with reason, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 43.2; WSP-022; WGREQ039.
 - Acceptance: Given a Space with one Board, When archived, Then refused naming the Board.
 - Evidence: BE `POST .../archive`, `POST .../unarchive`, `ArchiveSpaceCommandHandler`, `UnarchiveSpaceCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `ArchiveSpaceCommandHandlerTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Expected version; real e2e.
+- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on archive and unarchive (new body), sent by the Space page. Tests to update: `ArchiveSpaceCommandHandlerTests` and the integration tests that archive a Space (command shape). Real e2e.
 
 ### UC-WSP-K09 Delete or restore a Space
 - Capability: K Spaces (added by this catalog)
@@ -1132,7 +1134,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 44.2, 44.3, 48.2; WSP-024, WSP-026.
 - Acceptance: Given a Team entry, Then its active members show once at the highest role.
 - Evidence: BE `GET .../members`, `GET .../members-extra`, `GetSpaceMembersQueryHandler`, `GetSpaceMembersExtraQueryHandler` · FE `space-members-view.tsx`, `use-space-members-extra.ts` · Design `Final-Space`, `Final-M-Space` · Tests `SpaceMembersExtraIntegrationTests`, `space-members.mock.e2e.spec.ts`, `design-fidelity-members.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Pagination for large Teams; real e2e; design diff.
+- State: INTEGRATING — Tests and owner check. Not built: paging of the members-extra read. The tab filters and counts people client-side over the whole set, so paging it needs a server-side filter and search contract: owner call. Real e2e; design diff.
 
 ### UC-WSP-K11 Add a person or Team to a Space
 - Capability: K Spaces (added by this catalog)
@@ -1213,12 +1215,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name`, `description`.
 - Output: A Team (Active) inside the workspace.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/teams`. 2. Domain creates.
-- No-op / rejection / concurrency / retry: Duplicate name rule is not stated in the product (see Part 5). No idempotency key.
+- No-op / rejection / concurrency / retry: Duplicate name rule is not stated in the product (see Part 5; owner decision, not changed). A retry under the same Idempotency-Key returns the Team the first attempt made; a different body under that key is refused.
 - UI states: Loading, success, validation error, permission denied, conflict, pending, offline, destructive confirmation.
 - Rules: [workspaces](../../product/workspaces.md) sections 45, 78; WSP-014, WSP-025; WGREQ034; WX-TEAM-001.
 - Acceptance: Given an Admin, When they create `Design`, Then the Team exists with no members.
 - Evidence: BE `POST /api/v1/workspaces/{id}/teams`, `CreateTeamCommandHandler` · FE `create-team-dialog.tsx`, `use-team-mutations.ts` · Design `Final-Teams` · Tests `TeamTests`, `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Name rule; real e2e; design diff.
+- State: INTEGRATING — Tests and owner check. Built: the create takes an Idempotency-Key (endpoint, dialog hook keeps one key per input, mock replays by key). Open owner decision: whether Team names are unique in a workspace. Tests to update: `TeamEndpointTests` (key). Real e2e; design diff.
 
 ### UC-WSP-L02 List and read Teams
 - Capability: L Teams (added by this catalog)
@@ -1227,12 +1229,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `workspaceId`, optional `teamId`.
 - Output: Team rows and one Team with its status and version.
 - Main flow: 1. `GET .../teams`. 2. `GET .../teams/{teamId}`.
-- No-op / rejection / concurrency / retry: Unbounded list. Other workspace's Team: NotFound.
+- No-op / rejection / concurrency / retry: The list is a cursor page (LD-06): ordered by name, id on ties, 50 a page by default, at most 200; archived Teams are included. Other workspace's Team: NotFound.
 - UI states: Loading, empty, success, search.
 - Rules: [workspaces](../../product/workspaces.md) sections 45, 46; WGREQ034.
 - Acceptance: Given four Teams, Then four rows.
 - Evidence: BE `GET .../teams`, `GET .../teams/{teamId}`, `GetWorkspaceTeamsQueryHandler`, `GetTeamQueryHandler` · FE `workspace-teams-surface.tsx`, `use-teams.ts` · Design `Final-Teams` · Tests `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Pagination (LD-06); real e2e.
+- State: INTEGRATING — Tests and owner check. Built: cursor page on the list (shared name cursor with the Space list), the Team service reads every page, the mock pages. Tests to update: `TeamEndpointTests`, `TeamAdministrationReadIntegrationTests` (the list now returns a page), OpenAPI shape tests. Real e2e.
 
 ### UC-WSP-L03 List Team members
 - Capability: L Teams (added by this catalog)
@@ -1360,7 +1362,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 48.4; NRX-003.
 - Acceptance: Given a draft saved yesterday, Then a read returns it. Given 31 days later, Then absent.
 - Evidence: BE `GET`, `PUT`, `DELETE /api/v1/workspaces/onboarding-draft`, `SaveOnboardingDraftCommandHandler`, `GetOnboardingDraftQueryHandler`, `ClearOnboardingDraftCommandHandler` · FE `onboarding-api.ts`, `onboarding-page.tsx` · Design `Final-Onboarding` · Tests `OnboardingDraftTests`, `OnboardingIntegrationTests`, `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; the onboarding API sits in the web app route folder, not the feature package (move it).
+- State: INTEGRATING — Tests and owner check. Built: the onboarding API moved from the web app route folder into the workspace feature package (`web/onboarding/onboarding-api.ts`, exported as `createOnboardingApi`); the app keeps only the hook that hands it the runtime client. Test to update: `onboarding-api.unit.test.ts` now imports from the package. Real e2e.
 
 ### UC-WSP-M02 Sweep expired onboarding drafts
 - Capability: M Getting started and onboarding (added by this catalog)
@@ -1402,7 +1404,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 48.4, 74; DESIGN.md sections 65, 66.
 - Acceptance: Given all four steps, Then a workspace, its departments and invitations exist and Home opens.
 - Evidence: BE commands of A01, K01, G01 · FE `onboarding-surface.tsx`, `onboarding-steps.tsx`, `onboarding-page.tsx` · Design `Final-Onboarding` · Tests `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e of the full run; retry of a step (A04).
+- State: INTEGRATING — Tests and owner check. Built: every create step (workspace, each department, each invitation, the first Board) keeps one Idempotency-Key while the same request is retried and forgets it once it succeeded or was refused for good, so a retry after a lost answer returns what the first attempt made. Real e2e of the full run.
 
 ### UC-WSP-M05 Join through an invitation and set my look and notifications
 - Capability: M Getting started and onboarding (added by this catalog)
@@ -1460,7 +1462,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 85, 33; WX-HOME-001, WX-HOME-002.
 - Acceptance: Given overdue items, Then the counts match My work.
 - Evidence: BE reads of N04, N05, M06 and Work Management feeds · FE `workspace-home-surface.tsx`, route `home.tsx` · Design `Final-Home`, `Final-M-Home` · Tests `home.mock.e2e.spec.ts`, `design-fidelity-home.mock.e2e.spec.ts`, `real-pages-guard.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; design diff; sections without producers.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: the sections that fail show their own error, and the sections without a producer (approvals, mentions, schedule) stay hidden. Real e2e; design diff.
 
 ### UC-WSP-N02 Show workspace figures to Owner and Admin (enterprise baseline)
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1502,7 +1504,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 33 to 35; DESIGN.md section 27.
 - Acceptance: Given 31 opened resources, Then 30 remain.
 - Evidence: BE `POST` and `GET .../recents`, `RecordRecentResourceCommandHandler`, `GetRecentResourcesQueryHandler` · FE `navigation.service.ts`, `use-workspace-navigation.ts` · Design `Final-Home`, `Final-Command` · Tests `WorkspaceNavigationTests`, `WorkspaceNavigationHandlerTests`, `WorkspaceNavigationIntegrationTests`, `command-palette.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Readability filter proof; real e2e.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: `GetRecentResourcesQueryHandler` already drops references the caller can no longer read (Governance Board and Page visibility sets), the record is idempotent and checks the resource is in the workspace, and 30 are kept. Proof needed: a test that a revoked Board or Page leaves the list. Real e2e.
 
 ### UC-WSP-N05 Pin and unpin resources
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1516,7 +1518,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 83, 85.
 - Acceptance: Given 50 pins, When a 51st is added, Then refused.
 - Evidence: BE `PUT`, `DELETE`, `GET .../pins`, `PinResourceCommandHandler`, `UnpinResourceCommandHandler`, `GetPinnedResourcesQueryHandler` · FE `use-workspace-navigation-mutations.ts`, sidebar · Design `Final-Home`, `BC-Shell-1440` · Tests `WorkspaceNavigationTests`, `workspace-pages.mock.e2e.spec.ts` (WX-DIR-001) · Real e2e none
-- State: INTEGRATING — Real e2e.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: the pin limit, the no-ops and the readability filter on the read are in place (`GetPinnedResourcesQueryHandler` uses the same visibility sets as recents). Real e2e.
 
 ### UC-WSP-N06 Search the workspace from the command palette
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1530,7 +1532,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 55; DESIGN.md section 26.
 - Acceptance: Given a Private Board outside the caller's reach, Then it is not found.
 - Evidence: BE `GET .../command-search`, `CommandSearchQueryHandler` · FE `command-palette-surface.tsx`, `use-command-search.ts` · Design `Final-Command`, `Final-M-Search` · Tests `CommandSearchQueryHandlerTests`, `command-palette.mock.e2e.spec.ts`, `design-fidelity-command.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Real e2e; cross-tenant negative at HTTP; design diff.
+- State: INTEGRATING — Tests and owner check. Reviewed, nothing to build: `CommandSearchQueryHandler` selects only through the Governance visibility sets and the producers' search facts, answers empty under two characters and stores nothing. Proof needed: the cross-tenant negative at HTTP. Real e2e; design diff.
 
 # 4. Product decisions applied
 

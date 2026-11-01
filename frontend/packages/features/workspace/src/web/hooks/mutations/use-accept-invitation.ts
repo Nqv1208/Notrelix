@@ -12,6 +12,7 @@ interface UseAcceptInvitationDeps {
   endpoints: InvitationsEndpoints;
 }
 
+/** Accepts one of the signed-in person's own pending invitations by its id. */
 export function createUseAcceptInvitation({
   api,
   endpoints,
@@ -23,14 +24,15 @@ export function createUseAcceptInvitation({
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: service.accept,
-      onSuccess: () => {
-        // Accept invitation changes all workspaces, so clear/invalidate workspaces
-        queryClient.invalidateQueries({
-          queryKey: workspaceQueryKeys.all(accountId),
-        });
-        queryClient.invalidateQueries({
+      mutationFn: (invitationId: string) => service.acceptById(invitationId),
+      // Whatever the answer, a lost reply included: the invitation may be answered and the person already a
+      // member, so the pending list and the person's workspaces (the rail lists them) are read again.
+      onSettled: () => {
+        void queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.pendingInvitations(accountId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
         });
       },
     });

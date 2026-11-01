@@ -42,7 +42,7 @@ public class ItemActivityContractOpenApiTests
         properties.EnumerateObject().Select(p => p.Name).Should().Contain(
             ["id", "actorId", "actorName", "action", "resourceKind", "resourceId", "createdAt", "actorAvatarUrl", "type", "kind", "change"]);
         Schemas.GetProperty(ChangeSchema).GetProperty("properties").EnumerateObject().Select(p => p.Name)
-            .Should().BeEquivalentTo(["fieldName", "from", "to", "personId", "personName", "itemKey"]);
+            .Should().BeEquivalentTo(["fieldName", "from", "to", "personId", "personName", "itemKey", "ruleName"]);
     }
 
     private static JsonElement Load([System.Runtime.CompilerServices.CallerFilePath] string sourceFile = "")

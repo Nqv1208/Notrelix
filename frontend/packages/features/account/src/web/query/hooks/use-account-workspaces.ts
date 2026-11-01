@@ -14,8 +14,8 @@ interface UseAccountWorkspacesDeps {
 }
 
 /**
- * The person's own workspaces with the way to choose the default one and to
- * leave one. The producer owns every fact: after a change the list is read
+ * The person's own workspaces with the way to choose the default one, to
+ * leave one and to bring an archived one back. The producer owns every fact: after a change the list is read
  * again. Leaving answers the list that remains, so the host can decide where
  * to go next; clearing the left workspace's scoped data and navigating are the
  * host's (workspace transition).
@@ -54,6 +54,13 @@ export function createUseAccountWorkspaces({
       },
     });
 
+    const unarchive = useMutation({
+      mutationFn: (workspaceId: string) =>
+        service.unarchiveWorkspace(workspaceId),
+      // Whatever the answer, the producer's list is the truth about what is archived now.
+      onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+    });
+
     const leave = useMutation({
       mutationFn: async (
         workspaceId: string,
@@ -73,7 +80,8 @@ export function createUseAccountWorkspaces({
       refetch: query.refetch,
       setDefault: setDefault.mutateAsync,
       leave: leave.mutateAsync,
-      isBusy: setDefault.isPending || leave.isPending,
+      unarchive: unarchive.mutateAsync,
+      isBusy: setDefault.isPending || leave.isPending || unarchive.isPending,
     };
   };
 }

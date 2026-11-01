@@ -43,9 +43,11 @@ export function mapPage(dto: PageDtoApi): Page {
 }
 
 export function mapBreadcrumb(dto: BreadcrumbDtoApi): BreadcrumbItem {
+  if (dto.unavailable || !dto.id)
+    return { id: "", title: "", icon: null, unavailable: true };
   return {
     id: dto.id,
-    title: dto.title,
+    title: dto.title ?? "",
     icon: dto.icon ?? null,
   };
 }

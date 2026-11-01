@@ -65,10 +65,10 @@ public sealed class GetTeamMembersQueryHandlerTests : WorkspaceHandlerTestBase
 
         members.Select(m => m.UserId).Should().Equal(stays);
         single.Data!.MemberCount.Should().Be(members.Count, "a removed member no longer participates");
-        listed.Data!.Single().MemberCount.Should().Be(members.Count);
+        listed.Data!.Items.Single().MemberCount.Should().Be(members.Count);
         single.Data.Version.Should().Be(team.Version).And.BeGreaterThan(1, "membership changes advance the version");
         single.Data.Status.Should().Be("Active");
-        listed.Data.Single().Version.Should().Be(team.Version);
+        listed.Data.Items.Single().Version.Should().Be(team.Version);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class GetTeamMembersQueryHandlerTests : WorkspaceHandlerTestBase
             .Handle(new GetWorkspaceTeamsQuery(TestWorkspaceId), CancellationToken.None);
 
         single.Data!.Status.Should().Be("Archived");
-        listed.Data!.Single().Status.Should().Be("Archived");
+        listed.Data!.Items.Single().Status.Should().Be("Archived");
     }
 
     [Fact]

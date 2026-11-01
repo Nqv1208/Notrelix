@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -48,8 +48,13 @@ export function useCreateResource(
   const nextAttemptKey = useAttemptKey();
   const createDoc = useMutation({
     // Called as a method: `create` reads its sibling `getDetail` via `this`.
-    mutationFn: (title: string) =>
-      pageApi.create({ title, workspaceId, spaceId: space?.id ?? null }),
+    mutationFn: (input: { title: string; idempotencyKey: string }) =>
+      pageApi.create({
+        title: input.title,
+        workspaceId,
+        spaceId: space?.id ?? null,
+        idempotencyKey: input.idempotencyKey,
+      }),
     onSettled: () =>
       queryClient.invalidateQueries({
         queryKey: docsQueryKeys.list(workspaceId),
@@ -81,11 +86,16 @@ export function useCreateResource(
     enabled: kind === "doc" && !!workspaceId,
   });
   const createFromTemplate = useMutation({
-    mutationFn: (input: { templateId: string; title: string }) =>
+    mutationFn: (input: {
+      templateId: string;
+      title: string;
+      idempotencyKey: string;
+    }) =>
       templateApi.createPage(workspaceId, {
         templateId: input.templateId,
         title: input.title,
         spaceId: space?.id ?? null,
+        idempotencyKey: input.idempotencyKey,
       }),
     onSettled: () =>
       queryClient.invalidateQueries({
@@ -93,9 +103,22 @@ export function useCreateResource(
       }),
   });
   const [error, setError] = useState<string | null>(null);
+  // One key per page creation: a resubmit of the same request (the answer was
+  // lost) replays it instead of making a second page; a changed request starts over.
+  const attempt = useRef<{ request: string; key: string } | null>(null);
+  const keyFor = useCallback(
+    (name: string, templateId?: string) => {
+      const request = `${templateId ?? ""}|${name}`;
+      if (attempt.current?.request !== request)
+        attempt.current = { request, key: nextAttemptKey() };
+      return attempt.current.key;
+    },
+    [nextAttemptKey],
+  );
 
   const open = useCallback((next: CreatableResource) => {
     setError(null);
+    attempt.current = null;
     setKind(next);
   }, []);
 
@@ -103,6 +126,7 @@ export function useCreateResource(
     (resource: CreatableResource, name: string, templateId?: string) => {
       setError(null);
       const done = (id: string | null) => {
+        attempt.current = null;
         setKind(null);
         toast.success(formatCopy(copy.toasts.created, { name }));
         if (!id) return;
@@ -135,7 +159,7 @@ export function useCreateResource(
         );
       } else if (templateId) {
         createFromTemplate.mutate(
-          { templateId, title: name },
+          { templateId, title: name, idempotencyKey: keyFor(name, templateId) },
           {
             onSuccess: (made) => {
               done(made.pageId);
@@ -151,10 +175,13 @@ export function useCreateResource(
           },
         );
       } else {
-        createDoc.mutate(name, {
-          onSuccess: (page) => done(page.id),
-          onError: failed,
-        });
+        createDoc.mutate(
+          { title: name, idempotencyKey: keyFor(name) },
+          {
+            onSuccess: (page) => done(page.id),
+            onError: failed,
+          },
+        );
       }
     },
     [
@@ -163,6 +190,7 @@ export function useCreateResource(
       createBoardFromTemplate,
       createDoc,
       createFromTemplate,
+      keyFor,
       navigate,
       nextAttemptKey,
       space,

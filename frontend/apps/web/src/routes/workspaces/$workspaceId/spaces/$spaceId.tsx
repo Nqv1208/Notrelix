@@ -728,9 +728,10 @@ export function SpacePage() {
 
   const onSave = useCallback(
     (changes: Partial<SpaceDetailsValues>) => {
+      if (!node) return;
       setSaveStatus("saving");
       mutations.updateDetails.mutate(
-        { spaceId, ...changes },
+        { spaceId, expectedVersion: node.version, ...changes },
         {
           onSuccess: () => {
             setSaveStatus("saved");
@@ -743,39 +744,47 @@ export function SpacePage() {
         },
       );
     },
-    [copy, hint, mutations.updateDetails, spaceId],
+    [copy, hint, mutations.updateDetails, node, spaceId],
   );
 
   const onArchive = useCallback(() => {
     if (!node) return;
     setArchiveRefused(false);
-    mutations.archive.mutate(spaceId, {
-      onSuccess: () =>
-        toast.success(formatCopy(copy.toasts.archived, { name: node.name })),
-      onError: (error) => {
-        const failure = toastFailure(
-          formatCopy(copy.toasts.archiveFailed, { name: node.name }),
-          error,
-          hint,
-        );
-        // WSP-022: content the member cannot see can still block it.
-        if (failure.kind === "rule") setArchiveRefused(true);
+    mutations.archive.mutate(
+      { spaceId, expectedVersion: node.version },
+      {
+        onSuccess: () =>
+          toast.success(formatCopy(copy.toasts.archived, { name: node.name })),
+        onError: (error) => {
+          const failure = toastFailure(
+            formatCopy(copy.toasts.archiveFailed, { name: node.name }),
+            error,
+            hint,
+          );
+          // WSP-022: content the member cannot see can still block it.
+          if (failure.kind === "rule") setArchiveRefused(true);
+        },
       },
-    });
+    );
   }, [copy, hint, mutations.archive, node, spaceId]);
 
   const onUnarchive = useCallback(() => {
     if (!node) return;
-    mutations.unarchive.mutate(spaceId, {
-      onSuccess: () =>
-        toast.success(formatCopy(copy.toasts.unarchived, { name: node.name })),
-      onError: (error) =>
-        toastFailure(
-          formatCopy(copy.toasts.unarchiveFailed, { name: node.name }),
-          error,
-          hint,
-        ),
-    });
+    mutations.unarchive.mutate(
+      { spaceId, expectedVersion: node.version },
+      {
+        onSuccess: () =>
+          toast.success(
+            formatCopy(copy.toasts.unarchived, { name: node.name }),
+          ),
+        onError: (error) =>
+          toastFailure(
+            formatCopy(copy.toasts.unarchiveFailed, { name: node.name }),
+            error,
+            hint,
+          ),
+      },
+    );
   }, [copy, hint, mutations.unarchive, node, spaceId]);
 
   return (

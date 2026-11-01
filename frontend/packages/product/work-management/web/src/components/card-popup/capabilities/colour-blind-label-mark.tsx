@@ -87,8 +87,19 @@ export function ColourBlindLabelMark({
   className?: string;
 }) {
   const on = useColourBlindLabels();
-  const copy = useCapabilitiesCopy();
+  // The copy is read only when a shape is drawn, so a card without the mode needs no locale provider.
   if (!on && !force) return null;
+  return <LabelShape label={label} className={className} />;
+}
+
+function LabelShape({
+  label,
+  className,
+}: {
+  label: { readonly name: string; readonly color?: string | null };
+  className?: string;
+}) {
+  const copy = useCapabilitiesCopy();
   const tone = itemLabelTone(label);
   return (
     <svg

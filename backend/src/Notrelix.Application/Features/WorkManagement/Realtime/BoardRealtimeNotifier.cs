@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Ports.Realtime;
-using Notrelix.Application.Features.WorkManagement.Public.BoardRealtime;
 
 namespace Notrelix.Application.Features.WorkManagement.Realtime;
 
@@ -48,17 +47,23 @@ public sealed class BoardRealtimeNotifier : IBoardRealtimeNotifier
         if (boardId is { } id) await NotifyBoardAsync(id, changeKind, cancellationToken);
     }
 
-    public Task NotifyBoardAsync(Guid id, string changeKind, CancellationToken cancellationToken)
+    public Task NotifyBoardAsync(Guid id, string changeKind, CancellationToken cancellationToken) =>
+        NotifyBoardAsync(
+            id, changeKind, _context.AccountId, _context.WorkspaceId, _context.UserId,
+            _context.CorrelationId, _context.CausationId, cancellationToken);
+
+    public Task NotifyBoardAsync(
+        Guid id, string changeKind, Guid? accountId, Guid? workspaceId, Guid? actorUserId,
+        Guid? correlationId, Guid? causationId, CancellationToken cancellationToken)
     {
-        var correlationId = _context.CorrelationId == Guid.Empty ? Guid.NewGuid() : _context.CorrelationId;
         var now = _time.UtcNow;
         _events.Add(new RealtimeResourceChangedV1(
             Guid.CreateVersion7(),
-            _context.AccountId,
-            _context.WorkspaceId,
-            _context.UserId,
-            correlationId,
-            _context.CausationId,
+            accountId,
+            workspaceId,
+            actorUserId,
+            correlationId is { } c && c != Guid.Empty ? c : Guid.NewGuid(),
+            causationId,
             now,
             "board",
             "Board",

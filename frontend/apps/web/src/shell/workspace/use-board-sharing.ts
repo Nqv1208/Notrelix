@@ -79,6 +79,7 @@ export function useBoardSharing(
               subjectType: write.subjectType,
               subjectId: write.subjectId,
               level: write.level,
+              expectedVersion: write.expectedVersion ?? undefined,
             };
           await api.api.post(
             endpoints.resourcePermissions.list(BOARD_KIND, boardId),

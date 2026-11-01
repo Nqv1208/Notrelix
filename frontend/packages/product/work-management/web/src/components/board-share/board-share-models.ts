@@ -246,12 +246,14 @@ export interface BoardSharingData {
     readonly email: string | null;
     readonly you: boolean;
     readonly owner: boolean;
-    /** A Guest is never above Editor; see `levelCapped`. */
+    /** A Guest is never above Viewer; see `levelCapped`. */
     readonly level: SharingLevel;
     readonly levelCapped: boolean;
     readonly source: SharingSource;
     /** The explicit grant to revoke, when there is one. */
     readonly permissionId: string | null;
+    /** That grant's version: a change of its level names it. */
+    readonly permissionVersion?: number | null;
     readonly memberRole: BoardMemberRoleName | null;
     readonly spaceRole: "Admin" | "Member" | "Viewer" | null;
     readonly teamPeople: number | null;
@@ -303,6 +305,7 @@ export interface BoardSharingWire {
         readonly levelCapped?: boolean;
         readonly source?: string | null;
         readonly permissionId?: string | null;
+        readonly permissionVersion?: number | null;
         readonly memberRole?: string | null;
         readonly spaceRole?: string | null;
         readonly teamPeople?: number | null;
@@ -388,6 +391,7 @@ export function toBoardSharingData(wire: BoardSharingWire): BoardSharingData {
         levelCapped: entry.levelCapped ?? false,
         source: source === "member" || source === "both" ? source : "grant",
         permissionId: entry.permissionId ?? null,
+        permissionVersion: entry.permissionVersion ?? null,
         memberRole:
           MEMBER_ROLES.find((role) => role === entry.memberRole) ?? null,
         spaceRole: SPACE_ROLES.find((role) => role === entry.spaceRole) ?? null,
@@ -438,6 +442,8 @@ export type SharingWrite =
       readonly subjectType: "User" | "Team";
       readonly subjectId: string;
       readonly level: SharingLevel;
+      /** The version of the grant being changed; absent for a new grant. */
+      readonly expectedVersion?: number | null;
     }
   | { readonly kind: "revoke"; readonly permissionId: string }
   | {
@@ -480,6 +486,7 @@ export function planLevelChange(
     subjectType: entry.kind === "team" ? "Team" : "User",
     subjectId: entry.id,
     level,
+    expectedVersion: entry.permissionVersion ?? null,
   };
   const role = entry.memberRole;
   if (

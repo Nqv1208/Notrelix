@@ -675,19 +675,20 @@ unless an explicit policy intentionally grants such capability.
 
 ---
 
-# 30.1. GOV-030 — A Guest's resource level is capped at Editor
+# 30.1. GOV-030 — A Guest's resource level is capped at Viewer
 
-Decided 2026-10-12 (UI mockup review). A Guest (Workspace role `guest`, WSP-026) can hold on a Board or Page:
+Decided 2026-10-12 (UI mockup review) with a cap of Editor; tightened 2026-10-31 (owner: security first, a person outside the company reads what was shared with them). A Guest (Workspace role `guest`, WSP-026) can hold on a Board or Page:
 
 ```text
-Viewer | Commenter | Editor   → effective
-Manager                      → never effective: the level is capped at Editor when evaluated
+Viewer                       → effective
+Commenter | Editor | Manager → never effective: the level is capped at Viewer when evaluated
 ```
 
-- the cap applies whatever the source of the level (direct entry, Team grant, board membership role, Space role): the effective level of a Guest is the lower of the computed level and Editor;
-- a Guest therefore never manages a Board (settings, visibility, moving, archiving, deleting, board members — also on an unplaced Workspace-visible Board), never holds `ManageBoardPermission` / `ManagePagePermission`, cannot change who has access, and cannot share the resource further;
-- a Manager-level entry given to a Guest is stored but has no effect beyond Editor; rejecting it when it is granted is not enforced yet;
-- resource access UIs show the Manager option disabled for a Guest with the reason, instead of hiding it.
+- the cap applies whatever the source of the level (direct entry, Team grant, board membership role, Space role): the effective level of a Guest is the lower of the computed level and Viewer;
+- a Guest therefore never edits, comments on or manages a Board or Page (settings, visibility, moving, archiving, deleting, board members — also on an unplaced Workspace-visible Board), never holds `ManageBoardPermission` / `ManagePagePermission`, cannot change who has access, and cannot share the resource further;
+- a resource invitation (WSP-026) is created at Viewer only; a higher level is rejected when the invitation is created (`Workspaces_Invitation_ResourceLevelAboveViewer`). A stored entry or an invitation that predates the cap is not rewritten: it grants Viewer when evaluated, and accepting an older invitation writes a Viewer entry;
+- comment for outside people may be enabled later through a catalog flag; until then it is not part of the guest level;
+- resource access UIs show every option above Viewer disabled for a Guest with the reason, instead of hiding it.
 
 ---
 
@@ -755,6 +756,8 @@ disabled
 ```
 
 A revoked/expired link must stop authorizing future access.
+
+Turning a link off is authorized on the shared resource, with the same action that creating a link on that resource needs (a Board manager may turn off a link on their board; a Page sharer on their page). It is not a workspace-administration act on a separate "share link" resource, and the link must belong to the resource the request names: a link of another resource answers the same NotFound as a link that does not exist (confirmed 2026-10-30).
 
 ---
 

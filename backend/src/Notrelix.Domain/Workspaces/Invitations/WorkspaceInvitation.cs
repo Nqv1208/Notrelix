@@ -18,6 +18,9 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     /// <summary>Initial Team/Space entries applied atomically on acceptance (WSP-026).</summary>
     public IReadOnlyList<WorkspaceInvitationInitialEntry> InitialEntries { get; private set; } = [];
 
+    /// <summary>The least time between two emails of one invitation: its creation and each resend.</summary>
+    public static readonly TimeSpan ResendCooldown = TimeSpan.FromMinutes(1);
+
     /// <summary>
     /// Set for a resource invitation (WSP-026 / GOV-030): acceptance creates or
     /// reuses a Guest membership plus this explicit entry on that one resource.
@@ -286,6 +289,16 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(
                 WorkspaceRuleCodes.Workspaces_Invitation_CannotResendNonPendingExpired,
                 "Only pending or expired invitations can be resent.");
+        }
+
+        // shortcut: the last send is read from the last change of the invitation (its creation or the
+        // latest write), so a role change also holds a resend for a minute; store the send time when
+        // that matters.
+        if (resentAt - (UpdatedAt ?? CreatedAt) < ResendCooldown)
+        {
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Invitation_ResendTooSoon,
+                "This invitation was sent less than a minute ago. Wait a moment before sending it again.");
         }
 
         Token = newTokenHash;

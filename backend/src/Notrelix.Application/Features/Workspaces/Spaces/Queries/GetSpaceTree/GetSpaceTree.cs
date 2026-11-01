@@ -26,17 +26,19 @@ public record SpaceTreeNodeDto(
     string AccessLevel);
 
 /// <summary>
-/// The Workspace's Space org tree as a flat, parent-linked list, restricted to
-/// the Spaces the caller may see (single-read Space visibility, GOV-029).
+/// The Workspace's Space org tree as a flat, parent-linked cursor page (LD-06), restricted to the Spaces
+/// the caller may see (single-read Space visibility, GOV-029). Pages run in Space id order, default 50
+/// and at most 200; the client reads every page and orders siblings by position. Pass <c>NextCursor</c>
+/// back as <c>Cursor</c> for the next page.
 /// </summary>
-public record GetSpaceTreeQuery(Guid WorkspaceId)
-    : IQuery<Result<List<SpaceTreeNodeDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
+public record GetSpaceTreeQuery(Guid WorkspaceId, string? Cursor = null, int? Limit = null)
+    : IQuery<Result<CursorPage<SpaceTreeNodeDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
-public class GetSpaceTreeQueryHandler : IRequestHandler<GetSpaceTreeQuery, Result<List<SpaceTreeNodeDto>>>
+public class GetSpaceTreeQueryHandler : IRequestHandler<GetSpaceTreeQuery, Result<CursorPage<SpaceTreeNodeDto>>>
 {
     private readonly ISpaceStore _spaces;
     private readonly IResourceVisibility _visibility;
@@ -49,23 +51,25 @@ public class GetSpaceTreeQueryHandler : IRequestHandler<GetSpaceTreeQuery, Resul
         _requestContext = requestContext;
     }
 
-    public async Task<Result<List<SpaceTreeNodeDto>>> Handle(GetSpaceTreeQuery request, CancellationToken ct)
+    public async Task<Result<CursorPage<SpaceTreeNodeDto>>> Handle(GetSpaceTreeQuery request, CancellationToken ct)
     {
         var visible = await _visibility.VisibleSpacesAsync(request.WorkspaceId, _requestContext.UserId, ct);
         if (visible.Count == 0)
-            return Result<List<SpaceTreeNodeDto>>.Success([]);
+            return Result<CursorPage<SpaceTreeNodeDto>>.Success(new CursorPage<SpaceTreeNodeDto>([], null));
 
+        var limit = request.Limit ?? SpaceIdCursor.DefaultLimit;
+        Guid? after = SpaceIdCursor.TryDecode(request.Cursor, out var cursorId) ? cursorId : null;
         var levels = visible.ToDictionary(v => v.SpaceId, v => v.Level);
-        var rows = await _spaces.ListTreeAsync(request.WorkspaceId, levels.Keys.ToList(), ct);
-        var visibleIds = rows.Select(r => r.Id).ToHashSet();
+        var rows = await _spaces.ListTreeAsync(request.WorkspaceId, levels.Keys.ToList(), after, limit + 1, ct);
 
-        var nodes = rows
-            .OrderBy(r => r.ParentSpaceId)
-            .ThenBy(r => r.Position)
-            .ThenBy(r => r.Id)
+        var hasMore = rows.Count > limit;
+        var page = hasMore ? rows.Take(limit).ToList() : rows;
+
+        // A parent the caller cannot see is never disclosed: its child reads as a root.
+        var nodes = page
             .Select(r => new SpaceTreeNodeDto(
                 r.Id,
-                r.ParentSpaceId is { } parentId && visibleIds.Contains(parentId) ? parentId : null,
+                r.ParentSpaceId is { } parentId && levels.ContainsKey(parentId) ? parentId : null,
                 r.Name,
                 r.Description,
                 r.SpaceType.ToString(),
@@ -77,6 +81,7 @@ public class GetSpaceTreeQueryHandler : IRequestHandler<GetSpaceTreeQuery, Resul
                 levels[r.Id]))
             .ToList();
 
-        return Result<List<SpaceTreeNodeDto>>.Success(nodes);
+        return Result<CursorPage<SpaceTreeNodeDto>>.Success(
+            new CursorPage<SpaceTreeNodeDto>(nodes, hasMore ? SpaceIdCursor.Encode(page[^1].Id) : null));
     }
 }

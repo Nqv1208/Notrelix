@@ -136,6 +136,12 @@ export interface KanbanBoardProps {
   onRequestCreate?: (lane: KanbanStatusLane) => void;
   /** Quick add handed over to the full form with the typed title. */
   onExpandCreate?: (lane: KanbanStatusLane, title: string) => void;
+  /** A board read in pages: reads a lane's next page; `loading` and `failed` name lanes by key (`none` for no value). */
+  lanePaging?: {
+    readonly loadMore: (lane: KanbanStatusLane) => void;
+    readonly loading: ReadonlySet<string>;
+    readonly failed: ReadonlySet<string>;
+  };
   /** The lanes collapsed when the board opens (the member's own preference). */
   initialCollapsed?: ReadonlySet<string>;
   /** The collapsed lanes changed: the container remembers them per member and view. */
@@ -204,6 +210,7 @@ export function KanbanBoard({
   onWipLimitChange,
   onRequestCreate,
   onExpandCreate,
+  lanePaging,
   initialCollapsed,
   onCollapsedChange,
 }: KanbanBoardProps) {
@@ -513,6 +520,11 @@ export function KanbanBoard({
               canDrag={canDrag}
               dropTarget={drag !== null && currentLaneKey === key}
               laneCardLimit={laneCardLimit}
+              onLoadMore={
+                lanePaging ? () => lanePaging.loadMore(lane) : undefined
+              }
+              loadingMore={lanePaging?.loading.has(key) ?? false}
+              loadFailed={lanePaging?.failed.has(key) ?? false}
               draggedCardId={drag?.cardId ?? movedId ?? undefined}
               cardActions={cardActions}
               cardSelection={cardSelection}

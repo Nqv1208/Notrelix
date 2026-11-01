@@ -46,7 +46,7 @@ public class UnarchiveBoardCommandHandlerTests : IAsyncLifetime
             context, new FakeCurrentUser { UserId = userId },
             FakeDateTimeProvider.WithFixedTime(now));
 
-        var result = await handler.Handle(new UnarchiveBoardCommand(board.Id), CancellationToken.None);
+        var result = await handler.Handle(new UnarchiveBoardCommand(board.Id, ExpectedVersion: 1), CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
@@ -65,6 +65,6 @@ public class UnarchiveBoardCommandHandlerTests : IAsyncLifetime
             FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new UnarchiveBoardCommand(Guid.NewGuid()), CancellationToken.None));
+            handler.Handle(new UnarchiveBoardCommand(Guid.NewGuid(), ExpectedVersion: 1), CancellationToken.None));
     }
 }

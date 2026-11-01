@@ -4,7 +4,9 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Queries.ListFormSubmissions;
 
-public record ListFormSubmissionsQuery(Guid FormId) : IQuery<Result<List<FormSubmissionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
+/// <param name="After">Reads the submissions that follow this one (newest first); absent reads from the first.</param>
+/// <param name="Limit">Reads at most this many; absent reads them all.</param>
+public record ListFormSubmissionsQuery(Guid FormId, TimeCursorPosition? After = null, int? Limit = null) : IQuery<Result<List<FormSubmissionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     // Responses can hold respondent data: they need edit rights on the board, not read rights.
     public PermissionAction Action => PermissionAction.UpdateItem;
@@ -22,10 +24,16 @@ public class ListFormSubmissionsQueryHandler : IRequestHandler<ListFormSubmissio
 
     public async Task<Result<List<FormSubmissionDto>>> Handle(ListFormSubmissionsQuery request, CancellationToken ct)
     {
-        var submissions = await _context.FormSubmissions
+        var live = _context.FormSubmissions
             .AsNoTracking()
-            .Where(s => s.FormId == request.FormId && s.Status != FormSubmissionStatus.Deleted)
-            .OrderByDescending(s => s.SubmittedAt)
+            .Where(s => s.FormId == request.FormId && s.Status != FormSubmissionStatus.Deleted);
+        if (request.After is { } after)
+        {
+            live = live.Where(s => s.SubmittedAt < after.At || (s.SubmittedAt == after.At && s.Id.CompareTo(after.Id) < 0));
+        }
+
+        var ordered = live.OrderByDescending(s => s.SubmittedAt).ThenByDescending(s => s.Id);
+        var submissions = await (request.Limit is { } limit ? ordered.Take(limit) : ordered)
             .Select(s => new FormSubmissionDto(
                 s.Id,
                 s.FormId,

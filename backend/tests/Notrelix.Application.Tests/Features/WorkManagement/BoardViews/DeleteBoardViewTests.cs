@@ -26,7 +26,7 @@ public class DeleteBoardViewTests : WorkManagementHandlerTestBase
             TestUserId, TestNow);
         SetupBoardViews(view);
 
-        var command = new DeleteBoardViewCommand(board.Id, view.Id);
+        var command = new DeleteBoardViewCommand(board.Id, view.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -36,7 +36,7 @@ public class DeleteBoardViewTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardViewNotFound_ThrowsNotFoundException()
     {
-        var command = new DeleteBoardViewCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var command = new DeleteBoardViewCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -52,7 +52,7 @@ public class DeleteBoardViewTests : WorkManagementHandlerTestBase
             TestUserId, TestNow);
         SetupBoardViews(view);
 
-        var command = new DeleteBoardViewCommand(board.Id, Guid.CreateVersion7());
+        var command = new DeleteBoardViewCommand(board.Id, Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

@@ -5,14 +5,22 @@ using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 
+/// <summary>
+/// Changes one member's role. Guarded by the target member's expected version, so two admins who both
+/// read the member cannot overwrite each other: the second write finds the version moved and is refused.
+/// </summary>
 public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
     Guid UserId,
-    WorkspaceRole Role
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    WorkspaceRole Role,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ChangeMemberRole;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
+    // The concurrency authority is the target WorkspaceMember; authorization stays on the Workspace.
+    ResourceRef IExpectedVersionRequest.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace-member"), UserId, WorkspaceId);
 }
 
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>

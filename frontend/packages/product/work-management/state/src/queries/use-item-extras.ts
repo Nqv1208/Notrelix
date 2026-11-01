@@ -3,7 +3,10 @@ import { workspaceQueryKey } from "@notrelix/query";
 import type { ItemLinkDto } from "../api/item-extras.api";
 import { useWorkManagementServices } from "../services";
 import { neededVersion } from "../mutations/seen-version";
-import type { ItemChildItemDto, ItemLifecycleDto } from "../api/item-extras.api";
+import type {
+  ItemChildItemDto,
+  ItemLifecycleDto,
+} from "../api/item-extras.api";
 import { wmQueryKeys } from "./keys";
 
 const childKey = (workspaceId: string, itemId: string) =>
@@ -48,7 +51,9 @@ export function useItemChildItems(
         input.done,
         neededVersion(
           queryClient
-            .getQueryData<readonly ItemChildItemDto[]>(childKey(workspaceId, itemId))
+            .getQueryData<readonly ItemChildItemDto[]>(
+              childKey(workspaceId, itemId),
+            )
             ?.find((child) => child.id === input.childId)?.version,
           input.childId,
         ),
@@ -315,8 +320,7 @@ export function useItemLifecycle(
       itemId,
     );
   const restore = useMutation({
-    mutationFn: () =>
-      itemExtras.restoreItem(itemId, lifecycleVersion()),
+    mutationFn: () => itemExtras.restoreItem(itemId, lifecycleVersion()),
     onSettled: refresh,
   });
   const reopen = useMutation({

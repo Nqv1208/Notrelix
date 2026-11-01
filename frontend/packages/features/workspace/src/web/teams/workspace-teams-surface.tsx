@@ -661,6 +661,7 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
         copy={copy}
         open={archiveRow != null}
         teamName={archiveRow?.name ?? ""}
+        workspaceName={props.frame.workspaceName}
         loss={archiveRow ? props.lossFor(archiveRow.id) : null}
         pending={archiveRow ? props.pendingIds.has(archiveRow.id) : false}
         onClose={() => setArchiveId(null)}

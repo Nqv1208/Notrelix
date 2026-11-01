@@ -66,7 +66,7 @@ public sealed class StartOAuthLinkCommandHandler
         string? codeVerifier = null;
         string? codeChallenge = null;
 
-        if (request.Provider == OAuthProvider.Google)
+        if (OAuthPkce.IsUsedBy(request.Provider))
         {
             codeVerifier = GenerateCryptographicValue();
             codeChallenge = ComputeCodeChallenge(codeVerifier);

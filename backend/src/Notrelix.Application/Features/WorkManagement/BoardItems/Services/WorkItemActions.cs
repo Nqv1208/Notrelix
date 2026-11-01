@@ -28,6 +28,7 @@ public sealed class WorkItemActions : IWorkItemActions
     private readonly IIdempotencyStore _idempotencyStore;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IDateTimeProvider _clock;
+    private readonly IBoardRealtimeNotifier? _realtime;
 
     public WorkItemActions(
         MoveBoardItemUseCase useCase,
@@ -35,8 +36,10 @@ public sealed class WorkItemActions : IWorkItemActions
         IWorkItemActionAuthorizer authorizer,
         IIdempotencyStore idempotencyStore,
         IWorkspaceAccessResolver workspaceAccess,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IBoardRealtimeNotifier? realtime = null)
     {
+        _realtime = realtime;
         _workspaceAccess = workspaceAccess;
         _clock = clock;
         _useCase = useCase;
@@ -105,6 +108,7 @@ public sealed class WorkItemActions : IWorkItemActions
             nameof(WorkItemMoveResult),
             cancellationToken);
 
+        await NotifyBoardAsync(item.BoardId, "AutomationMoveItem", execution, cancellationToken);
         return result;
     }
 
@@ -193,12 +197,13 @@ public sealed class WorkItemActions : IWorkItemActions
             throw new NotFoundException("BoardFieldOption", optionId);
         }
 
-        await DedupedAsync("work-management.public.change-status.v1", execution, $"{itemId:N}:{optionId:N}", () =>
+        var changed = await DedupedAsync("work-management.public.change-status.v1", execution, $"{itemId:N}:{optionId:N}", () =>
         {
             var value = FieldValue.Create(Notrelix.Domain.SharedKernel.JsonValue.Create(JsonSerializer.Serialize(optionId.ToString())));
             BoardItemFieldWrites.Write(item, statusField, value, statusField, execution.ExecutorUserId, _clock.UtcNow);
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }, cancellationToken);
+        if (changed) await NotifyBoardAsync(item.BoardId, "AutomationChangeStatus", execution, cancellationToken);
     }
 
     public async Task SetFieldValueAsync(
@@ -214,12 +219,13 @@ public sealed class WorkItemActions : IWorkItemActions
             ?? throw new NotFoundException("BoardField", fieldId);
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken);
 
-        await DedupedAsync("work-management.public.set-field-value.v1", execution, $"{itemId:N}:{fieldId:N}:{valueJson}", () =>
+        var changed = await DedupedAsync("work-management.public.set-field-value.v1", execution, $"{itemId:N}:{fieldId:N}:{valueJson}", () =>
         {
             var value = FieldValue.Create(Notrelix.Domain.SharedKernel.JsonValue.Create(valueJson));
             BoardItemFieldWrites.Write(item, field, value, statusField, execution.ExecutorUserId, _clock.UtcNow);
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }, cancellationToken);
+        if (changed) await NotifyBoardAsync(item.BoardId, "AutomationSetFieldValue", execution, cancellationToken);
     }
 
     public async Task AssignMemberAsync(
@@ -231,15 +237,17 @@ public sealed class WorkItemActions : IWorkItemActions
         var item = await LoadItemAsync(execution, itemId, cancellationToken);
         await EnsureWorkspaceMemberAsync(execution.WorkspaceId, userId, cancellationToken);
 
-        await DedupedAsync("work-management.public.assign-member.v1", execution, $"{itemId:N}:{userId:N}", async () =>
+        var changed = await DedupedAsync("work-management.public.assign-member.v1", execution, $"{itemId:N}:{userId:N}", async () =>
         {
             var already = await _context.BoardItemMembers
                 .AnyAsync(m => m.ItemId == item.Id && m.UserId == userId, cancellationToken);
-            if (already) return;
+            if (already) return false;
 
             _context.BoardItemMembers.Add(BoardItemMember.Create(
                 execution.AccountId, item.WorkspaceId, item.BoardId, item.Id, userId, execution.ExecutorUserId, _clock.UtcNow));
+            return true;
         }, cancellationToken);
+        if (changed) await NotifyBoardAsync(item.BoardId, "AutomationAssignMember", execution, cancellationToken);
     }
 
     public async Task<WorkItemFacts> GetItemFactsAsync(
@@ -320,8 +328,8 @@ public sealed class WorkItemActions : IWorkItemActions
     }
 
     /// <summary>One logical mutation per operation id: a replay changes nothing, a different payload conflicts.</summary>
-    private async Task DedupedAsync(
-        string operation, WorkItemActionIdentity execution, string payload, Func<Task> mutate, CancellationToken cancellationToken)
+    private async Task<bool> DedupedAsync(
+        string operation, WorkItemActionIdentity execution, string payload, Func<Task<bool>> mutate, CancellationToken cancellationToken)
     {
         var identity = new IdempotencyIdentity(
             Operation: operation,
@@ -332,14 +340,23 @@ public sealed class WorkItemActions : IWorkItemActions
         switch (begin.Status)
         {
             case IdempotencyBeginStatus.Completed:
-                return;
+                return false;
             case IdempotencyBeginStatus.PayloadMismatch:
                 throw new WorkItemOperationConflictException(execution.OperationId);
         }
 
-        await mutate();
+        var changed = await mutate();
         await _idempotencyStore.CompleteAsync(identity, "true", "bool", cancellationToken);
+        return changed;
     }
+
+    /// <summary>The viewers of the board converge on what the rule changed; a replay or a no-op sends no frame.</summary>
+    private Task NotifyBoardAsync(Guid boardId, string changeKind, WorkItemActionIdentity execution, CancellationToken cancellationToken) =>
+        _realtime is null
+            ? Task.CompletedTask
+            : _realtime.NotifyBoardAsync(
+                boardId, changeKind, execution.AccountId, execution.WorkspaceId, execution.ExecutorUserId,
+                execution.CorrelationId, execution.CausationId, cancellationToken);
 
     private static string Sha256(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));

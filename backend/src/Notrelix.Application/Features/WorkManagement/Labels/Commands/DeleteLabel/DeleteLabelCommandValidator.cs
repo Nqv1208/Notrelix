@@ -4,6 +4,7 @@ public class DeleteLabelCommandValidator : AbstractValidator<DeleteLabelCommand>
 {
     public DeleteLabelCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.LabelId)
             .NotEmpty();
     }

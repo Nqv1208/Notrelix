@@ -13,6 +13,7 @@ public static class MapCommentEndpoints
             .WithOpenApi();
 
         boardItemGroup.MapGetBoardItemComments();
+        boardItemGroup.MapGetBoardItemCommentsPage();
         boardItemGroup.MapCreateBoardItemComment();
         boardItemGroup.MapBoardItemCommentReactions();
 

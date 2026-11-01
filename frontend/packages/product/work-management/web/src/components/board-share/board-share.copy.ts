@@ -26,7 +26,7 @@ export const en = {
     comment: "See, comment, mention; files only inside comments",
     edit: "Create, edit, assign and move items",
     manage: "Board settings, who has access",
-    guestManage: "A guest can't manage the Board or share it further",
+    guestViewOnly: "A guest can only view what is shared with them",
   },
   general: {
     label: "Who can open the Board",
@@ -70,7 +70,7 @@ export const en = {
     guests: "{{count}} guests",
     guestOnly: "guest, sees only this Board",
     outside: "Outside the company",
-    levelCapped: "a guest is capped at Can edit",
+    levelCapped: "a guest is capped at Can view",
     counts:
       "{{people}} people and {{guests}} guests can open this Board. Only Board members and managers see who.",
     outsideDepartment: "outside {{space}}",
@@ -86,6 +86,12 @@ export const en = {
     label: "Permission of {{name}}",
     remove: "Remove access",
     removeHint: "{{name}} no longer sees this Board",
+    needManager: "At least one Manager is needed",
+    keepCurrent: "Current level, kept",
+    removeLast: "The only Manager of the Board can't be removed",
+    lastNote:
+      "A Board needs at least one person or team at Manager level. Make someone else a Manager first.",
+    addManager: "Add a Manager",
     makeOwner: "Make owner",
     makeOwnerHint: "{{name}} becomes an owner of this Board",
   },
@@ -132,6 +138,41 @@ export const en = {
     keepGuest: "guest **{{name}}**",
     keepAnd: " and ",
   },
+  leave: {
+    title: "Leave board",
+    private:
+      "You will no longer see “{{board}}”: it is Private and your own role is the way in.",
+    open: "You only lose your own role on “{{board}}”. You still see it through the workspace.",
+    grants:
+      "Permissions given to you on the board by name are not changed when you leave; a manager changes them in Share.",
+    openShare: "Open Share",
+    noRole:
+      "You have no role of your own on this board, so there is nothing to leave.",
+    confirm: "Leave board",
+    cancel: "Cancel",
+    left: "You left “{{board}}”.",
+    failed: "Couldn't leave the board. Nothing changed.",
+    lastManagerTitle: "Couldn't leave the board",
+    lastManagerBody:
+      "You are the only Manager of “{{board}}”. A board needs at least one Manager, so you stay. Choose another Manager, then leave.",
+    lastOwnerBody:
+      "You are the only owner of “{{board}}”. A board needs an owner, so you stay. Make someone else an owner, then leave.",
+    chooseManager: "Choose another Manager",
+  },
+  lastManager: {
+    lowerTitle: "Couldn't change the permission of {{name}}",
+    lowerBody:
+      "A Board needs at least one Manager, so the permission stays Manager. Make someone else a Manager first, then lower or remove.",
+    removeTitle: "Couldn't remove {{name}}",
+    removeBody:
+      "{{name}} is the only Manager, so the Board keeps its list. Make someone else a Manager first.",
+    teamTitle: "Couldn't change the permission of {{name}}",
+    teamBody:
+      "{{name}} is the only Manager team of the Board. A Board needs at least one person or team at Manager level. Add another Manager first.",
+    viaAdminTitle: "You manage this Board through workspace administration",
+    viaAdminBody:
+      "The workspace owner and admins can still open the Board's settings when the Board has no Manager.",
+  },
   log: {
     title: "Permission history",
     back: "Back to permissions",
@@ -174,7 +215,7 @@ export const vi: BoardShareCopy = {
     comment: "Xem, bình luận, nhắc tên; đính kèm tệp chỉ trong bình luận",
     edit: "Tạo, sửa, giao, di chuyển việc",
     manage: "Thiết lập board, ai được vào board",
-    guestManage: "Khách không được quản lý board hay chia sẻ tiếp",
+    guestViewOnly: "Khách chỉ được xem phần được chia sẻ với họ",
   },
   general: {
     label: "Ai vào được board",
@@ -217,7 +258,7 @@ export const vi: BoardShareCopy = {
     guests: "{{count}} khách",
     guestOnly: "khách, chỉ thấy board này",
     outside: "Ngoài công ty",
-    levelCapped: "khách tối đa Có thể sửa",
+    levelCapped: "khách tối đa Có thể xem",
     counts:
       "{{people}} người và {{guests}} khách mở được board này. Chỉ thành viên và người quản lý board thấy là ai.",
     outsideDepartment: "ngoài {{space}}",
@@ -233,6 +274,12 @@ export const vi: BoardShareCopy = {
     label: "Quyền của {{name}}",
     remove: "Gỡ quyền",
     removeHint: "{{name}} không còn thấy board này",
+    needManager: "Cần ít nhất một Quản lý",
+    keepCurrent: "Mức hiện tại, giữ nguyên",
+    removeLast: "Không gỡ được người Quản lý duy nhất của board",
+    lastNote:
+      "Board cần ít nhất một người hoặc nhóm ở mức Quản lý. Thêm người khác làm Quản lý trước.",
+    addManager: "Thêm Quản lý",
     makeOwner: "Giao quyền chủ board",
     makeOwnerHint: "{{name}} trở thành chủ của board này",
   },
@@ -278,6 +325,40 @@ export const vi: BoardShareCopy = {
     keepInSpace: "**{{names}}** (đã được thêm riêng)",
     keepGuest: "khách **{{name}}**",
     keepAnd: " và ",
+  },
+  leave: {
+    title: "Rời board",
+    private:
+      "Bạn sẽ không còn thấy “{{board}}”: board Riêng tư và vai trò riêng của bạn là lối vào duy nhất.",
+    open: "Bạn chỉ mất vai trò riêng của mình trên “{{board}}”. Bạn vẫn thấy board qua workspace.",
+    grants:
+      "Quyền được cấp riêng cho bạn trên board không đổi khi bạn rời; người quản lý đổi chúng ở hộp Chia sẻ.",
+    openShare: "Mở hộp Chia sẻ",
+    noRole: "Bạn không có vai trò riêng trên board này nên không có gì để rời.",
+    confirm: "Rời board",
+    cancel: "Huỷ",
+    left: "Bạn đã rời “{{board}}”.",
+    failed: "Chưa rời được board. Không có gì thay đổi.",
+    lastManagerTitle: "Chưa rời được board",
+    lastManagerBody:
+      "Bạn là người Quản lý duy nhất của “{{board}}”. Board cần ít nhất một Quản lý nên bạn vẫn ở lại. Chọn người khác làm Quản lý rồi rời board.",
+    lastOwnerBody:
+      "Bạn là chủ duy nhất của “{{board}}”. Board cần một chủ nên bạn vẫn ở lại. Chọn người khác làm chủ rồi rời board.",
+    chooseManager: "Chọn Quản lý khác",
+  },
+  lastManager: {
+    lowerTitle: "Chưa đổi được quyền của {{name}}",
+    lowerBody:
+      "Board cần ít nhất một Quản lý nên quyền vẫn là Quản lý. Thêm người khác làm Quản lý trước, rồi hạ hoặc gỡ.",
+    removeTitle: "Chưa gỡ được {{name}}",
+    removeBody:
+      "{{name}} là người Quản lý duy nhất, nên board giữ nguyên danh sách. Thêm người khác làm Quản lý trước.",
+    teamTitle: "Chưa đổi được quyền của {{name}}",
+    teamBody:
+      "{{name}} là nhóm Quản lý duy nhất của board. Board cần ít nhất một người hoặc nhóm ở mức Quản lý. Thêm Quản lý khác trước.",
+    viaAdminTitle: "Bạn quản lý board này qua Quản trị workspace",
+    viaAdminBody:
+      "Chủ sở hữu và Quản trị workspace vẫn vào được thiết lập board khi board không còn Quản lý.",
   },
   log: {
     title: "Nhật ký thay đổi quyền",

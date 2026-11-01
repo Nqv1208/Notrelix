@@ -14,7 +14,9 @@ import type {
   DocConvertView,
   DocPageCallbacks,
   DocPickerBoardView,
+  DocMovePageView,
   DocPickerPageView,
+  DocTrashConfirmView,
   DocTrashView,
 } from "./doc-page-models";
 import { useModalFocus } from "./doc-share-dialog-surface";
@@ -110,7 +112,7 @@ export function DocTrashDialogSurface({
           role="alert"
           className="m-0 px-5 pb-2 text-crumb font-semibold text-danger-text"
         >
-          {t.failed}
+          {trash.subtreeRefused ? t.subtreeRefused : t.failed}
         </p>
       ) : null}
       <div className="flex min-h-[120px] flex-col gap-1 overflow-auto px-5 pb-5">
@@ -118,6 +120,19 @@ export function DocTrashDialogSurface({
           <span role="status" className="text-compact text-meta-foreground">
             {t.loading}
           </span>
+        ) : trash.listFailed ? (
+          <div role="alert" className="flex items-center gap-2.5">
+            <span className="text-compact font-semibold text-danger-text">
+              {t.loadFailed}
+            </span>
+            <button
+              type="button"
+              onClick={() => callbacks?.onRetryTrash?.()}
+              className={OUTLINE}
+            >
+              {t.retry}
+            </button>
+          </div>
         ) : trash.pages.length === 0 ? (
           <span className="text-compact text-meta-foreground">{t.empty}</span>
         ) : (
@@ -182,6 +197,71 @@ export function DocTrashDialogSurface({
             })}
           </ul>
         )}
+        {trash.hasMore ? (
+          <button
+            type="button"
+            disabled={trash.loadingMore}
+            onClick={() => callbacks?.onLoadMoreTrash?.()}
+            className={cn(OUTLINE, "self-center")}
+          >
+            {trash.loadingMore ? t.loadingMore : t.loadMore}
+          </button>
+        ) : null}
+      </div>
+    </DialogFrame>
+  );
+}
+
+export interface DocTrashConfirmDialogSurfaceProps {
+  readonly copy: DocPageCopy;
+  readonly title: string;
+  readonly confirm: DocTrashConfirmView;
+  readonly callbacks?: DocPageCallbacks;
+}
+
+/** Asks before a page with pages under it goes to the trash: they all go with it. */
+export function DocTrashConfirmDialogSurface({
+  copy,
+  title,
+  confirm,
+  callbacks,
+}: DocTrashConfirmDialogSurfaceProps) {
+  const t = copy.trash;
+  const name = title || t.untitled;
+  return (
+    <DialogFrame
+      title={t.moveTitle}
+      closeLabel={t.close}
+      width={460}
+      onClose={callbacks?.onCloseOverlay}
+    >
+      <p className="m-0 px-5 pb-2 text-compact leading-[1.5] text-foreground">
+        {fillDocCopy(t.moveBody, { title: name, count: confirm.below })}
+      </p>
+      {confirm.failed ? (
+        <p
+          role="alert"
+          className="m-0 px-5 pb-2 text-crumb font-semibold text-danger-text"
+        >
+          {confirm.subtreeRefused ? t.subtreeRefused : t.failed}
+        </p>
+      ) : null}
+      <div className="flex justify-end gap-2 px-5 pt-2 pb-5">
+        <button
+          type="button"
+          onClick={callbacks?.onCloseOverlay}
+          className={OUTLINE}
+        >
+          {t.cancel}
+        </button>
+        <button
+          type="button"
+          disabled={confirm.busy}
+          onClick={callbacks?.onConfirmTrashPage}
+          className={DANGER}
+        >
+          {t.moveConfirm}
+        </button>
       </div>
     </DialogFrame>
   );
@@ -248,6 +328,107 @@ export function DocPagePickerDialogSurface({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
                     {page.title || p.untitled}
+                  </span>
+                  {page.detail ? (
+                    <small className="block text-metadata leading-[1.4] tracking-normal text-meta-foreground">
+                      {page.detail}
+                    </small>
+                  ) : null}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </DialogFrame>
+  );
+}
+
+export interface DocMovePageDialogSurfaceProps {
+  readonly copy: DocPageCopy;
+  readonly move: DocMovePageView;
+  readonly callbacks?: DocPageCallbacks;
+}
+
+/** Puts the open page, with the pages under it, under another page or at the top of its Space. */
+export function DocMovePageDialogSurface({
+  copy,
+  move,
+  callbacks,
+}: DocMovePageDialogSurfaceProps) {
+  const m = copy.movePage;
+  const [query, setQuery] = useState("");
+  const needle = foldText(query.trim());
+  const matches = move.pages.filter(
+    (page) => needle === "" || foldText(page.title).includes(needle),
+  );
+  const OPTION =
+    "flex min-h-11 items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2 py-1 text-left text-nav leading-[1.4] text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-60";
+  return (
+    <DialogFrame
+      title={m.title}
+      closeLabel={m.close}
+      width={480}
+      onClose={callbacks?.onCloseOverlay}
+    >
+      <div className="flex flex-col gap-2 px-5 pt-2 pb-5">
+        {move.failure ? (
+          <p
+            role="alert"
+            className="m-0 text-crumb font-semibold text-danger-text"
+          >
+            {m[move.failure]}
+          </p>
+        ) : null}
+        <input
+          type="search"
+          value={query}
+          aria-label={m.search}
+          placeholder={m.search}
+          onChange={(event) => setQuery(event.target.value)}
+          className={FIELD}
+        />
+        <div
+          role="listbox"
+          aria-label={m.title}
+          aria-busy={move.busy}
+          className="flex max-h-[320px] flex-col gap-0.5 overflow-auto"
+        >
+          {move.canTopLevel ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected="false"
+              disabled={move.busy}
+              onClick={() => callbacks?.onMovePageTo?.(null)}
+              className={OPTION}
+            >
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {m.topLevel}
+              </span>
+            </button>
+          ) : null}
+          {matches.length === 0 ? (
+            <span className="px-1 py-2 text-compact text-meta-foreground">
+              {m.none}
+            </span>
+          ) : (
+            matches.map((page) => (
+              <button
+                key={page.id}
+                type="button"
+                role="option"
+                aria-selected="false"
+                disabled={move.busy}
+                onClick={() => callbacks?.onMovePageTo?.(page.id)}
+                className={OPTION}
+              >
+                <span aria-hidden="true" className="w-5 text-center">
+                  {page.icon ?? ""}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    {page.title || m.untitled}
                   </span>
                   {page.detail ? (
                     <small className="block text-metadata leading-[1.4] tracking-normal text-meta-foreground">
@@ -417,7 +598,11 @@ export function DocConvertTaskDialogSurface({
             role="alert"
             className="m-0 text-crumb font-semibold text-danger-text"
           >
-            {c.failed}
+            {convert.failedStep === "link"
+              ? c.failedLink
+              : convert.failedStep === "line"
+                ? c.failedLine
+                : c.failed}
           </p>
         ) : null}
         <div className="flex items-center justify-end gap-2">

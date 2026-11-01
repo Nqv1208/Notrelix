@@ -150,6 +150,7 @@ export function BoardTimelineView({
     filter: noLegacyFilter,
     view: kanbanView,
     isOverdue: NEVER_OVERDUE,
+    allCards: true,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
@@ -303,7 +304,9 @@ export function BoardTimelineView({
         onError: (error: unknown) => {
           const id = `timeline-write-${card.id}`;
           if (!isStale(error)) {
-            toast.error(fill(copy.reschedule.failed, { title: card.title }), { id });
+            toast.error(fill(copy.reschedule.failed, { title: card.title }), {
+              id,
+            });
             return;
           }
           // The refetch brings the other person's version, which says who changed it.

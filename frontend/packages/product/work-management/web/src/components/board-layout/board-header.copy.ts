@@ -12,7 +12,8 @@ export const en = {
   connection: {
     reconnecting: "Reconnecting…",
     lostTitle: "Connection lost since {{time}}. Data may be out of date",
-    lostBody: "You can still read. Changes you make will fail and offer Try again.",
+    lostBody:
+      "You can still read. Changes you make will fail and offer Try again.",
     reconnect: "Reconnect",
   },
   views: {
@@ -24,6 +25,8 @@ export const en = {
   /** Heading shown while the board title is not loaded. */
   untitledBoard: "Board",
   addView: "Add view",
+  /** One notice when the address names a saved view that no longer exists. */
+  viewGone: "That view no longer exists. Showing the default view.",
   /** Marks a saved view only its creator sees. */
   privateView: "Private view",
   header: {
@@ -39,6 +42,10 @@ export const en = {
     renameBoard: "Rename board…",
     archiveBoard: "Archive board…",
     deleteBoard: "Delete board…",
+    leaveBoard: "Leave board…",
+    duplicateBoard: "Duplicate board…",
+    importItems: "Import items from a file…",
+    exportItems: "Export items…",
     /** Access chip wording by board visibility. */
     scope: {
       space: "{{space}}",
@@ -112,6 +119,7 @@ export const vi: BoardHeaderCopy = {
   },
   untitledBoard: "Board",
   addView: "Thêm chế độ xem",
+  viewGone: "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
   privateView: "Chế độ xem riêng tư",
   header: {
     settings: "Thiết lập",
@@ -126,6 +134,10 @@ export const vi: BoardHeaderCopy = {
     renameBoard: "Đổi tên board…",
     archiveBoard: "Lưu trữ board…",
     deleteBoard: "Xoá board…",
+    leaveBoard: "Rời board…",
+    duplicateBoard: "Nhân bản board…",
+    importItems: "Nhập việc từ tệp…",
+    exportItems: "Xuất việc…",
     scope: {
       space: "{{space}}",
       workspace: "Cả workspace",

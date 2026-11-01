@@ -19,6 +19,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_RestoreWindowElapsed = "WorkManagement_Board_RestoreWindowElapsed";
     public const string WorkManagement_Board_PublicLinkNotSupported = "WorkManagement_Board_PublicLinkNotSupported";
     public const string WorkManagement_Board_LastManager = "WorkManagement_Board_LastManager";
+    public const string WorkManagement_Board_MoveAddNotAffected = "WorkManagement_Board_MoveAddNotAffected";
+    public const string WorkManagement_Board_DuplicateTooManyItems = "WorkManagement_Board_DuplicateTooManyItems";
+    public const string WorkManagement_Board_MoveAddGuest = "WorkManagement_Board_MoveAddGuest";
     public const string WorkManagement_Board_ViewerHoldsGrant = "WorkManagement_Board_ViewerHoldsGrant";
     public const string WorkManagement_Board_PrivateNeedsOwner = "WorkManagement_Board_PrivateNeedsOwner";
     public const string WorkManagement_Board_LastOwner = "WorkManagement_Board_LastOwner";
@@ -135,6 +138,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Form_CannotSubmitToClosed = "WorkManagement_Form_CannotSubmitToClosed";
     public const string WorkManagement_Form_CannotAddQuestionToClosed = "WorkManagement_Form_CannotAddQuestionToClosed";
     public const string WorkManagement_Form_DuplicateQuestionKey = "WorkManagement_Form_DuplicateQuestionKey";
+    public const string WorkManagement_Form_QuestionTypeNotSupported = "WorkManagement_Form_QuestionTypeNotSupported";
+    public const string WorkManagement_Form_QuestionFieldMismatch = "WorkManagement_Form_QuestionFieldMismatch";
+    public const string WorkManagement_Form_QuestionFieldRemoved = "WorkManagement_Form_QuestionFieldRemoved";
 
     // ── FormQuestion ──────────────────────────────────────────────────────
     public const string WorkManagement_FormQuestion_InvalidConfigJson = "WorkManagement_FormQuestion_InvalidConfigJson";
@@ -151,6 +157,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FormSubmission_CannotRejectUnlessAccepted = "WorkManagement_FormSubmission_CannotRejectUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted = "WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted";
     public const string WorkManagement_FormSubmission_CannotProcessUnlessAccepted = "WorkManagement_FormSubmission_CannotProcessUnlessAccepted";
+    public const string WorkManagement_FormSubmission_AlreadyProcessed = "WorkManagement_FormSubmission_AlreadyProcessed";
     public const string WorkManagement_FormSubmission_AlreadyDeleted = "WorkManagement_FormSubmission_AlreadyDeleted";
 
     // ── Reminder ──────────────────────────────────────────────────────────

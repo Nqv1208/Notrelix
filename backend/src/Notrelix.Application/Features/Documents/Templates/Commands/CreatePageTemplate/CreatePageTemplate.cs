@@ -12,7 +12,8 @@ namespace Notrelix.Application.Features.Documents.Templates.Commands.CreatePageT
 /// do it. The template is creation input: it holds a copy of the page's title, icon and blocks, and nothing
 /// that happens to the page afterwards changes it (DCT-018).
 /// </summary>
-public record CreatePageTemplateCommand(Guid WorkspaceId, Guid PageId, string Name, string? Description) : ICommand<Result<PageTemplateDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+[IdempotencyOperation("documents.templates.create-page-template.v1")]
+public record CreatePageTemplateCommand(Guid WorkspaceId, Guid PageId, string Name, string? Description) : ICommand<Result<PageTemplateDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId, WorkspaceId);

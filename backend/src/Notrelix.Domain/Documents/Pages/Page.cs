@@ -72,25 +72,39 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new PageRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
+    public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId) =>
+        Move(newParentId, SpaceId, updatedBy, updatedAt, getParentId);
+
+    /// <summary>
+    /// Puts the page under another parent (null = a root page). A nested page follows the Space of its root
+    /// page, so Application passes the Space the new parent is in (the page's own Space when it becomes a root);
+    /// the descendants follow through <see cref="FollowRootSpace"/>. One change, one version bump. The same
+    /// place is a semantic no-op.
+    /// </summary>
+    public void Move(Guid? newParentId, Guid? newSpaceId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (Status == PageStatus.Archived)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotMoveArchived, "Cannot move an archived page.");
-        if (ParentId == newParentId) return;
+        if (ParentId == newParentId && SpaceId == newSpaceId) return;
 
         if (newParentId.HasValue)
         {
             Rules.PageTreeRules.EnsureNoCycle(Id, newParentId.Value, getParentId);
         }
+        if (newSpaceId is { } space) Guard.NotEmpty(space);
 
         var oldParentId = ParentId;
+        var oldSpaceId = SpaceId;
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ParentId = newParentId;
+        SpaceId = newSpaceId;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageMovedDomainEvent(AccountId, WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
+        if (oldSpaceId != SpaceId)
+            RaiseDomainEvent(new PageSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
     }
 
     /// <summary>
@@ -124,10 +138,20 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (spaceId is { } id) Guard.NotEmpty(id);
         if (SpaceId == spaceId) return;
 
-        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldSpaceId = SpaceId;
-        SpaceId = spaceId;
-        ApplyAuditUpdate(pending);
+        // A page in the trash is dated by the time it went there: a restore and a delete find the pages trashed
+        // together by that time, so a Space move that carries the page along must not change it.
+        if (Status == PageStatus.Archived)
+        {
+            SpaceId = spaceId;
+        }
+        else
+        {
+            var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+            SpaceId = spaceId;
+            ApplyAuditUpdate(pending);
+        }
+
         IncrementVersion();
         RaiseDomainEvent(new PageSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
     }
@@ -140,6 +164,7 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void RecordBlocksSaved(Guid savedBy, DateTimeOffset savedAt, IReadOnlyList<BlockMentionAdded> mentions)
     {
         EnsureNotDeleted();
+        Rules.PageRules.EnsureCanEdit(Status);
         Guard.NotEmpty(savedBy);
         Guard.NotNull(mentions);
         RaiseDomainEvent(new PageBlocksSavedDomainEvent(AccountId, WorkspaceId, Id, Title, savedBy, mentions, savedAt));
@@ -162,17 +187,25 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// Takes an archived (trashed) page back out of the trash. An active page is
     /// a semantic no-op (no version bump, no second event).
     /// </summary>
-    public void Unarchive(Guid restoredBy, DateTimeOffset restoredAt)
+    /// <param name="detachFromParent">
+    /// The parent is no longer an active page (trashed or deleted): the page comes back at the root of its
+    /// Space instead of under it. Application decides this from the parent's current state.
+    /// </param>
+    public void Unarchive(Guid restoredBy, DateTimeOffset restoredAt, bool detachFromParent = false)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(restoredBy);
         if (Status == PageStatus.Active) return;
 
+        var oldParentId = detachFromParent ? ParentId : null;
         var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         Status = PageStatus.Active;
+        if (oldParentId is not null) ParentId = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        if (oldParentId is not null)
+            RaiseDomainEvent(new PageMovedDomainEvent(AccountId, WorkspaceId, Id, oldParentId, null, restoredBy, restoredAt));
     }
 
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

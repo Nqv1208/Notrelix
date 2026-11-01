@@ -22,6 +22,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Invitation_PendingAlreadyExists = "Workspaces_Invitation_PendingAlreadyExists";
     public const string Workspaces_Invitation_CannotInviteAsOwner = "Workspaces_Invitation_CannotInviteAsOwner";
     public const string Workspaces_Invitation_CannotInviteAsAdmin = "Workspaces_Invitation_CannotInviteAsAdmin";
+    public const string Workspaces_Invitation_ResendTooSoon = "Workspaces_Invitation_ResendTooSoon";
     public const string Workspaces_Invitation_CannotResendNonPendingExpired = "Workspaces_Invitation_CannotResendNonPendingExpired";
     public const string Workspaces_Invitation_InitialEntriesRequireMemberOrGuest = "Workspaces_Invitation_InitialEntriesRequireMemberOrGuest";
     public const string Workspaces_Invitation_InitialEntryInvalid = "Workspaces_Invitation_InitialEntryInvalid";
@@ -29,17 +30,20 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Invitation_InitialEntryDuplicate = "Workspaces_Invitation_InitialEntryDuplicate";
     public const string Workspaces_Invitation_TooManyInitialEntries = "Workspaces_Invitation_TooManyInitialEntries";
     public const string Workspaces_Invitation_ResourceKindNotInvitable = "Workspaces_Invitation_ResourceKindNotInvitable";
-    public const string Workspaces_Invitation_ResourceLevelAboveEditor = "Workspaces_Invitation_ResourceLevelAboveEditor";
+    public const string Workspaces_Invitation_ResourceLevelAboveViewer = "Workspaces_Invitation_ResourceLevelAboveViewer";
     public const string Workspaces_Invitation_ResourceInvitationMustBeGuest = "Workspaces_Invitation_ResourceInvitationMustBeGuest";
 
     // ── Member ────────────────────────────────────────────────────────────
     public const string Workspaces_Member_CannotChangeRoleOfInactive = "Workspaces_Member_CannotChangeRoleOfInactive";
     public const string Workspaces_Member_CannotPromoteInactiveToOwner = "Workspaces_Member_CannotPromoteInactiveToOwner";
     public const string Workspaces_Member_CannotActivateRemoved = "Workspaces_Member_CannotActivateRemoved";
+    public const string Workspaces_Member_CannotRejoinNonRemoved = "Workspaces_Member_CannotRejoinNonRemoved";
     public const string Workspaces_Member_CannotActOnLastOwner = "Workspaces_Member_CannotActOnLastOwner";
     public const string Workspaces_Member_CannotDirectlyAssignOwner = "Workspaces_Member_CannotDirectlyAssignOwner";
     public const string Workspaces_Member_ActorCannotAssignRole = "Workspaces_Member_ActorCannotAssignRole";
     public const string Workspaces_Member_ActorCannotActOnMember = "Workspaces_Member_ActorCannotActOnMember";
+    public const string Workspaces_Member_NotInAccount = "Workspaces_Member_NotInAccount";
+    public const string Workspaces_Member_SeatUnavailable = "Workspaces_Member_SeatUnavailable";
     public const string Workspaces_Member_CannotSuspendRemoved = "Workspaces_Member_CannotSuspendRemoved";
     public const string Workspaces_Member_CannotEditRemovedProfile = "Workspaces_Member_CannotEditRemovedProfile";
     public const string Workspaces_Member_InvalidJobTitle = "Workspaces_Member_InvalidJobTitle";

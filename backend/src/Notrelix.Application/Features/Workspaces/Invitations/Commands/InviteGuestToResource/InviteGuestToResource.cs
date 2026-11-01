@@ -101,7 +101,7 @@ public class InviteGuestToResourceCommandHandler : IRequestHandler<InviteGuestTo
 
         // GOV-030 + WSP-026 invariants live in the Domain value object: only a
         // Board or Page, level Viewer/Commenter/Editor.
-        var grant = new WorkspaceInvitationResourceGrant(request.Kind.Value, request.ResourceId, request.Level);
+        var grant = WorkspaceInvitationResourceGrant.ForNewInvitation(request.Kind.Value, request.ResourceId, request.Level);
 
         var title = await _resourceFacts.ResolveTitleAsync(grant.ResourceKind, grant.ResourceId, workspaceId, ct);
         if (title is null)

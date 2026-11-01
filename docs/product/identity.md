@@ -300,6 +300,10 @@ A password reset, MFA/security event, account-link change, or administrative ide
 
 Do not leave stale authority active accidentally.
 
+Turning the second factor off ends every session of the person, the one that asked included (confirmed 2026-10-30); the person signs in again.
+
+Turning the second factor on is the reverse: starting the enrollment and activating it each need a single-use step-up proof of their own (a session alone may not enrol a factor, or a stolen session could lock the owner out). When the factor becomes active every other session of the person ends; the session that enrolled it stays, and the person is told how many other devices were signed out (confirmed 2026-10-30).
+
 # 21. Session claims
 
 Claims may cache identity/security hints for performance.
@@ -350,6 +354,8 @@ where applicable.
 
 An unverified enrollment must not be treated as active MFA.
 
+Starting and activating an enrollment need a step-up proof each (ID-006); a wrong code leaves the pending method and the proof alone.
+
 # 25. MFA removal
 
 Removing the last required MFA method can be blocked by security policy.
@@ -367,6 +373,10 @@ Identity owns user-authentication linking semantics.
 External linking must validate stable provider/subject identity and collision rules.
 
 An email string alone is not sufficient universal proof that two external identities should merge.
+
+# 27.1. A provider that gives no verified-email claim cannot create an account
+
+Signing in through a provider may create a new User only when the provider vouches that the email address is verified. A provider that sends no verified-email claim (Microsoft) therefore never creates an account: only an identity that is already linked to a User signs in through it, and a person without an account, or whose address belongs to another account, is refused with the provider-email-not-verified answer. Such a person registers with email and password, or links the provider from the security page, and signs in through it afterwards. The same rule holds for any provider added later (confirmed 2026-10-30).
 
 # 28. Account takeover prevention
 

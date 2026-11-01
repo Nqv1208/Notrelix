@@ -21,7 +21,8 @@ public class UpdateBoardMemberRoleTests : WorkManagementHandlerTestBase
             DbContextMock.Object,
             _currentUserMock.Object,
             DateTimeProviderMock.Object,
-            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object));
+            new BoardAccessChangeLog(new Mock<IResourceAccessChangeRecorder>().Object, new Mock<IAuditService>().Object, new Mock<ICurrentRequestContext>().Object),
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IBoardSharingSummary>().Object);
     }
 
     [Fact]
@@ -32,7 +33,7 @@ public class UpdateBoardMemberRoleTests : WorkManagementHandlerTestBase
         SetupBoards(board);
         SetupBoardMembers(member);
 
-        var command = new UpdateBoardMemberRoleCommand(board.Id, TestUserId, BoardRole.Admin);
+        var command = new UpdateBoardMemberRoleCommand(board.Id, TestUserId, BoardRole.Admin, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -42,7 +43,7 @@ public class UpdateBoardMemberRoleTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardMemberRoleCommand(Guid.CreateVersion7(), TestUserId, BoardRole.Admin);
+        var command = new UpdateBoardMemberRoleCommand(Guid.CreateVersion7(), TestUserId, BoardRole.Admin, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -54,7 +55,7 @@ public class UpdateBoardMemberRoleTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardMemberRoleCommand(board.Id, Guid.CreateVersion7(), BoardRole.Admin);
+        var command = new UpdateBoardMemberRoleCommand(board.Id, Guid.CreateVersion7(), BoardRole.Admin, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

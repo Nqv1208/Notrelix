@@ -8,6 +8,7 @@ import {
   workspaceMembersCatalog,
   workspaceSettingsCatalog,
   workspaceShellCatalog,
+  pendingInvitationsCatalog,
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
   workspaceOnboardingCatalog,
@@ -31,6 +32,7 @@ import {
   retiredBoardsCatalog,
   boardHeaderCatalog,
   boardSettingsCatalog,
+  boardLifecycleCatalog,
   boardShareCatalog,
   calendarCatalog,
   itemPageCatalog,
@@ -49,6 +51,7 @@ import {
   timelineCatalog,
 } from "@notrelix/work-management-web";
 import { routerStatesCatalog } from "../router/router-states.catalog";
+import { authGuardCatalog } from "../shell/guards/auth-guard.catalog";
 import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.catalog";
 
 /**
@@ -58,6 +61,7 @@ import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.
 export const webCatalogs: readonly MessageCatalog[] = [
   workspaceShellCatalog,
   notrelixSystemRailCatalog,
+  pendingInvitationsCatalog,
   workspaceCommandCatalog,
   workspaceHomeCatalog,
   workspaceInboxCatalog,
@@ -89,6 +93,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   retiredBoardsCatalog,
   boardHeaderCatalog,
   boardSettingsCatalog,
+  boardLifecycleCatalog,
   boardShareCatalog,
   notificationBellCatalog,
   authCatalog,
@@ -100,5 +105,6 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountNotificationsCatalog,
   accountWorkspacesCatalog,
   routerStatesCatalog,
+  authGuardCatalog,
   emailConfirmationCatalog,
 ];

@@ -9,6 +9,7 @@ import { wmQueryKeys } from "../queries/keys";
 import {
   isVersionConflict,
   reportItemConflict,
+  staleSchemaOf,
 } from "../queries/use-item-conflict";
 
 /**
@@ -110,7 +111,13 @@ export async function runCardCommand<T>({
       queryClient.setQueryData(detailKey, detailBefore);
     }
     // A stale version is refused: the open card says someone else changed it.
-    if (isVersionConflict(error)) reportItemConflict(queryClient, workspaceId, cardId);
+    if (isVersionConflict(error))
+      reportItemConflict(
+        queryClient,
+        workspaceId,
+        cardId,
+        staleSchemaOf(error),
+      );
     throw error;
   } finally {
     const left = (pending.get(boardHash) ?? 1) - 1;

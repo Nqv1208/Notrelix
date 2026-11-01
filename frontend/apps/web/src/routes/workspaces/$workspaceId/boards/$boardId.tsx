@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useLocale } from "@notrelix/i18n";
@@ -23,6 +24,11 @@ import {
   type BoardSearch,
 } from "../../../../router/schemas/board-search-schema";
 import { useRealtimeConnection } from "../../../../realtime/use-realtime-connection";
+import { BoardDuplicateDialog } from "../../../../shell/workspace/board-duplicate-dialog";
+import { BoardExportDialog } from "../../../../shell/workspace/board-export-dialog";
+import { BoardImportDialog } from "../../../../shell/workspace/board-import-dialog";
+import { useWorkspaceViewer } from "../../../../shell/workspace/use-workspace-viewer";
+import { BoardLeaveDialog } from "../../../../shell/workspace/board-leave-dialog";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
@@ -50,13 +56,42 @@ export function BoardPage() {
   const view = { type: viewType, name: viewType.toUpperCase() };
 
   const { board } = useFullBoard(boardId, workspaceId);
-  const currentUser = useCurrentUser();
   const headerCopy = useBoardHeaderCopy();
+  const goneNotice = useRef<string | null>(null);
+  // An address that names a saved view that is gone shows the default once, with one notice.
+  useEffect(() => {
+    const wanted = search.savedView;
+    if (!wanted || saved.isLoading || saved.isError) return;
+    if (saved.views.some((entry) => entry.id === wanted)) return;
+    if (goneNotice.current !== wanted) {
+      goneNotice.current = wanted;
+      toast(headerCopy.viewGone);
+    }
+    void navigate({
+      search: (prev: BoardSearch) => ({ ...prev, savedView: undefined }),
+      replace: true,
+    });
+  }, [
+    headerCopy.viewGone,
+    navigate,
+    saved.isError,
+    saved.isLoading,
+    saved.views,
+    search.savedView,
+  ]);
+  const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
   // `share` in the address opens the share dialog (the settings page's
   // "Quyền truy cập" lands here); the dialog also opens from the header.
   const [shareOpen, setShareOpen] = useState(search.share === true);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  // A guest sees a board but never takes its data out as a file.
+  const viewerRole = useWorkspaceViewer(workspaceId).role;
+  const canExport = viewerRole !== null && viewerRole !== "guest";
   const [trashOpen, setTrashOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   useEffect(() => {
@@ -67,8 +102,15 @@ export function BoardPage() {
       replace: true,
     });
   }, [navigate, search.share]);
-  const headerData = useBoardHeaderData(workspaceId, boardId, board, () =>
-    setShareOpen(true),
+  const headerData = useBoardHeaderData(
+    workspaceId,
+    boardId,
+    board,
+    () => setShareOpen(true),
+    () => setLeaveOpen(true),
+    () => setDuplicateOpen(true),
+    () => setImportOpen(true),
+    canExport ? () => setExportOpen(true) : undefined,
   );
 
   const showView = (mode: BoardSearch["view"], savedView?: string) => {
@@ -198,6 +240,43 @@ export function BoardPage() {
           boardId={boardId}
           open={trashOpen}
           onClose={() => setTrashOpen(false)}
+        />
+        <BoardImportDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          boardName={board?.title ?? ""}
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+        />
+        <BoardExportDialog
+          boardId={boardId}
+          boardName={board?.title ?? ""}
+          viewName={
+            saved.views.find((entry) => entry.id === search.savedView)?.name ??
+            headerCopy.views[search.view]
+          }
+          filter={search.filter}
+          sort={search.sort}
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+        />
+        <BoardDuplicateDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          board={board}
+          open={duplicateOpen}
+          onClose={() => setDuplicateOpen(false)}
+        />
+        <BoardLeaveDialog
+          workspaceId={workspaceId}
+          boardId={boardId}
+          board={board}
+          open={leaveOpen}
+          onClose={() => setLeaveOpen(false)}
+          onOpenShare={() => {
+            setLeaveOpen(false);
+            setShareOpen(true);
+          }}
         />
         <BoardShareDialog
           workspaceId={workspaceId}

@@ -5,6 +5,7 @@ import {
   createUseWorkspaceList,
   useWorkspaceShellCopy,
 } from "@notrelix/features-workspace/web";
+import { createUseAccountWorkspaces } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   Button,
@@ -23,8 +24,9 @@ import { CreateWorkspaceDialog } from "@/shell/workspace/create-workspace-dialog
 /**
  * Account-level landing (`/home`). The workspace shell is workspace-scoped,
  * so `/home` resolves into a workspace instead of rendering a second shell:
- * members with a workspace land on its Home; members without one get an
- * onboarding state. The duplicate home sidebar and switcher are retired.
+ * members with a workspace land on the one they chose as default (the first
+ * by name when they chose none or the choice cannot be read); members without
+ * one get an onboarding state. The duplicate home sidebar and switcher are retired.
  */
 function HomeLanding() {
   const copy = useWorkspaceShellCopy();
@@ -38,19 +40,42 @@ function HomeLanding() {
       }),
     [runtimeClient],
   );
-  const { data: workspaces, isLoading, isError, refetch } = useWorkspaceList();
+  const useAccountWorkspaces = useMemo(
+    () =>
+      createUseAccountWorkspaces({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
+    [runtimeClient],
+  );
+  const {
+    data: workspaces,
+    isLoading: listLoading,
+    isError,
+    refetch,
+  } = useWorkspaceList();
+  const account = useAccountWorkspaces();
   const [createOpen, setCreateOpen] = useState(false);
 
   const first = workspaces?.[0];
+  // The default is a hint: the person's own choice opens when it is still one they can open; a list
+  // that cannot be read must not keep them out, so a failed read falls back to the first.
+  const defaultSettled = account.workspaces !== undefined || account.isError;
+  const isLoading = listLoading || (first !== undefined && !defaultSettled);
+  const chosen = account.workspaces?.find(
+    (workspace) => workspace.isDefault && !workspace.isArchived,
+  );
+  const target =
+    workspaces?.find((workspace) => workspace.id === chosen?.id) ?? first;
   // A member with no workspace yet sets one up (the Onboarding mockup).
   if (!first && !isLoading && !isError) {
     return <Navigate to="/onboarding" replace />;
   }
-  if (first) {
+  if (target && !isLoading) {
     return (
       <Navigate
         to="/workspaces/$workspaceId"
-        params={{ workspaceId: first.id }}
+        params={{ workspaceId: target.id }}
         replace
       />
     );

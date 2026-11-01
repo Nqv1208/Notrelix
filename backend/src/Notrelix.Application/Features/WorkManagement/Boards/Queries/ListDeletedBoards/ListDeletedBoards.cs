@@ -1,9 +1,7 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.ListDeletedBoards;
 

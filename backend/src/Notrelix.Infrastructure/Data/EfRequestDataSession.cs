@@ -2,8 +2,8 @@ using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Exceptions;
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Infrastructure.Data.Concurrency;
+using Notrelix.Infrastructure.Data.Documents;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -23,6 +23,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? _orderingMetrics;
     private readonly IRequestRollbackCompensations? _compensations;
     private readonly IIdempotencyExecutionContext? _idempotency;
+    private readonly IActorLookupService? _actors;
 
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
@@ -33,8 +34,10 @@ public sealed class EfRequestDataSession : IRequestDataSession
         PipelineMetrics? metrics = null,
         Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null,
         IRequestRollbackCompensations? compensations = null,
-        IIdempotencyExecutionContext? idempotency = null)
+        IIdempotencyExecutionContext? idempotency = null,
+        IActorLookupService? actors = null)
     {
+        _actors = actors;
         _idempotency = idempotency;
         _compensations = compensations;
         _orderingMetrics = orderingMetrics;
@@ -109,7 +112,10 @@ public sealed class EfRequestDataSession : IRequestDataSession
                         string.Join(", ", concurrency.Entries.Select(entry => $"{entry.Metadata.Name}:{entry.State}")));
                     _metrics.ExpectedVersionConflicts.Add(1);
                     throw new PreconditionFailedException(
-                        "The resource was modified by another request. Reload and retry.", "common.precondition-failed");
+                        "The resource was modified by another request. Reload and retry.", "common.precondition-failed")
+                    {
+                        Extensions = await LastWriterAsync(concurrency, cancellationToken),
+                    };
                 }
                 catch (DbUpdateException exception) when (WorkOrderingConstraints.IsOrderingViolation(exception))
                 {
@@ -124,7 +130,19 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
             using var transactionCommit = PipelineActivitySource.Instance.StartActivity("data_session.commit");
             commitStarted = true;
-            await transaction.CommitAsync(cancellationToken);
+            try
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception exception) when (DocumentOrderingConstraints.IsBlockOrderingViolation(exception))
+            {
+                // Deferred check: two live blocks of one page would share a sort key. The database rolled the
+                // whole write back, so the caller reloads and retries.
+                throw new ConflictException(
+                    "The block position was taken by a concurrent change. Reload and retry.",
+                    DocumentOrderingConstraints.BlockPositionConflictCode);
+            }
+
             if (options.Access == RequestDataAccess.Transactional)
                 _outboxWakeSignal?.TrySignal();
             _logger.LogTrace("Committed data session");
@@ -135,8 +153,50 @@ public sealed class EfRequestDataSession : IRequestDataSession
         {
             _logger.LogWarning("Rolling back data session");
             await RunCompensationsAsync(commitStarted);
-            await transaction.RollbackAsync(cancellationToken);
+            try
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            catch (InvalidOperationException) when (commitStarted)
+            {
+                // The commit itself failed (a deferred constraint, for one) and the provider already ended the
+                // transaction: there is nothing to roll back, and the original failure is the one to report.
+            }
+
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Who saved the resource that won the race, and when: the last writer of the stale aggregate as the
+    /// database holds it now. The name comes through the co-member profile lookup, so a person the caller may
+    /// not see stays absent and the client says "someone else". Best effort: any failure leaves the answer plain.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, object?>> LastWriterAsync(
+        DbUpdateConcurrencyException concurrency, CancellationToken ct)
+    {
+        try
+        {
+            var entry = concurrency.Entries.FirstOrDefault(e => e.Entity is AuditableEntity);
+            if (entry is null) return new Dictionary<string, object?>();
+            var current = await entry.GetDatabaseValuesAsync(ct);
+            if (current is null) return new Dictionary<string, object?>();
+            var by = current.GetValue<Guid?>(nameof(AuditableEntity.UpdatedBy));
+            var at = current.GetValue<DateTimeOffset?>(nameof(AuditableEntity.UpdatedAt));
+            string? name = null;
+            if (by is { } actorId && _actors is not null)
+                name = (await _actors.FindManyAsync([actorId], ct)).FirstOrDefault()?.Name;
+            return new Dictionary<string, object?>
+            {
+                ["changedByName"] = name,
+                ["changedAt"] = at,
+                ["currentVersion"] = current.GetValue<long>(nameof(AggregateRoot.Version)),
+            };
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogDebug(exception, "Could not read the last writer of a stale resource");
+            return new Dictionary<string, object?>();
         }
     }
 

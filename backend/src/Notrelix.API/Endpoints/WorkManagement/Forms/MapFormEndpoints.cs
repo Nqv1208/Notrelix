@@ -30,6 +30,7 @@ public static class MapFormEndpoints
         group.MapRemoveFormQuestion();
         group.MapGetForm();
         group.MapListFormSubmissions();
+        group.MapListFormSubmissionsPage();
         group.MapSubmitForm();
 
         var submissionGroup = app

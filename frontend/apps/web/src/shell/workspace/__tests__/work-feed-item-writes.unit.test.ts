@@ -95,6 +95,7 @@ describe("bulkEach", () => {
     const result = await bulkEach(api, {
       itemIds: [a.id, b.id],
       boardIdOf: () => BOARD,
+      versionOf: (id) => store.getCard(id)?.version ?? 1,
       action: { type: "set-due", dueAt },
     });
 
@@ -113,6 +114,7 @@ describe("bulkEach", () => {
     const result = await bulkEach(api, {
       itemIds: [a.id, b.id],
       boardIdOf: () => BOARD,
+      versionOf: (id) => store.getCard(id)?.version ?? 1,
       action: { type: "set-status", bucket: "review" },
     });
 
@@ -131,6 +133,7 @@ describe("bulkEach", () => {
     const result = await bulkEach(api, {
       itemIds: [a.id, "missing-item"],
       boardIdOf: () => BOARD,
+      versionOf: (id) => store.getCard(id)?.version ?? 1,
       action: { type: "assign", assigneeId: store.getCurrentUser().id },
     });
 
@@ -149,6 +152,7 @@ describe("bulkEach", () => {
     const result = await bulkEach(api, {
       itemIds: [a.id],
       boardIdOf: () => BOARD,
+      versionOf: (id) => store.getCard(id)?.version ?? 1,
       action: { type: "unfollow" },
     });
     expect(result.results[0]?.ok).toBe(true);

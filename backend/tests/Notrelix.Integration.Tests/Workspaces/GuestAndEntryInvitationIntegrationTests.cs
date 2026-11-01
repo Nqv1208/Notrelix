@@ -31,7 +31,7 @@ namespace Notrelix.Integration.Tests.Workspaces;
 /// WSP-026 / GOV-030 evidence on real Postgres: a Workspace invitation applies
 /// its initial Team/Space entries atomically with the membership, and a
 /// resource invitation creates (or reuses) a Guest membership plus one explicit
-/// User-subject entry capped at Editor. Negative cases leave state unchanged.
+/// User-subject entry, view-only (GOV-030). Negative cases leave state unchanged.
 /// </summary>
 [Collection("Database")]
 public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
@@ -133,7 +133,8 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
             new GuestResourceAccessActionsAdapter(context),
             new Mock<IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
-                context, SystemTenant(), new Mock<IRlsSessionContext>().Object));
+                context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
+            SeatGates.AlwaysAdmit);
 
         try
         {
@@ -223,10 +224,10 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     // ── Resource invitation ────────────────────────────────────────────────
 
     [Fact]
-    public async Task ResourceInvitation_CreatesGuestMembershipAndUserSubjectEntryCappedAtEditor()
+    public async Task ResourceInvitation_CreatesGuestMembershipAndAViewerUserSubjectEntry()
     {
         var w = await SeedWorldAsync();
-        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Editor");
+        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
 
         var (result, _) = await AcceptAsync(w.UserId, token);
 
@@ -237,7 +238,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var entry = await probe.ResourcePermissions.SingleAsync(p => p.ResourceId == w.BoardId);
         entry.SubjectType.Should().Be(PermissionSubjectType.User, "ExternalEmail subjects are never created");
         entry.SubjectId.Should().Be(w.UserId);
-        entry.Level.Should().Be(PermissionLevel.Editor);
+        entry.Level.Should().Be(PermissionLevel.Viewer);
         entry.WorkspaceId.Should().Be(w.WorkspaceId);
         (await probe.TeamMembers.CountAsync(m => m.UserId == w.UserId)).Should().Be(0, "no Team entries");
         (await probe.SpaceMembers.CountAsync(m => m.SubjectId == w.UserId)).Should().Be(0, "no Space entries");
@@ -247,8 +248,10 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     public async Task ResourceInvitation_ReusesExistingMembershipAndNeverLowersAnExistingEntry()
     {
         var w = await SeedWorldAsync();
-        var first = await SeedResourceInvitationAsync(w, w.BoardId, "Editor");
+        var first = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
         (await AcceptAsync(w.UserId, first)).Result.Errors.Should().BeEmpty();
+        await using (var raise = _db.CreateOwnerContext(SystemTenant()))
+            await raise.Database.ExecuteSqlRawAsync("UPDATE governance.resource_permissions SET permission_level = 'Editor'");
         var second = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
 
         var (result, _) = await AcceptAsync(w.UserId, second);
@@ -257,7 +260,23 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId)).Should().Be(1);
         (await probe.ResourcePermissions.Where(p => p.ResourceId == w.BoardId).ToListAsync())
-            .Should().ContainSingle().Which.Level.Should().Be(PermissionLevel.Editor);
+            .Should().ContainSingle().Which.Level.Should().Be(PermissionLevel.Editor, "an existing entry is never lowered by a later invitation");
+    }
+
+    [Fact]
+    public async Task AnInvitationStoredBeforeTheViewerCap_StillWritesAViewerEntry()
+    {
+        var w = await SeedWorldAsync();
+        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
+        await using (var older = _db.CreateOwnerContext(SystemTenant()))
+            await older.Database.ExecuteSqlRawAsync("UPDATE workspace.workspace_invitations SET resource_level = 'Editor'");
+
+        var (result, _) = await AcceptAsync(w.UserId, token);
+
+        result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        (await probe.ResourcePermissions.SingleAsync(p => p.ResourceId == w.BoardId))
+            .Level.Should().Be(PermissionLevel.Viewer, "a guest never gets more than view");
     }
 
     [Fact]
@@ -279,7 +298,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     public async Task ResourceInvitation_WhenAcceptFailsAfterEntryCreated_RollsBackEntryAndMembership()
     {
         var w = await SeedWorldAsync();
-        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Commenter");
+        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
 
         var (_, threw) = await AcceptAsync(w.UserId, token, throwAfterHandler: true);
 

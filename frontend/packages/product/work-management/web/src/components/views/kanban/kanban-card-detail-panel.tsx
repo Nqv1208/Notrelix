@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { useCard, useItemConflict } from "@notrelix/work-management-state";
+import {
+  useCard,
+  useFullBoard,
+  useItemConflict,
+} from "@notrelix/work-management-state";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { usePickerActions } from "../../card-popup/pickers/use-picker-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
@@ -66,6 +70,10 @@ export function KanbanCardDetailPanel({
     },
   });
   const { refetch } = useCard(card.id, card.workspaceId);
+  const { refetch: refetchBoard } = useFullBoard(
+    card.boardId,
+    card.workspaceId,
+  );
   // A write started outside the popup's own tracking (dates, people, complete) refused as stale shows the same notice.
   const shared = useItemConflict(card.workspaceId, card.id);
   // A notice from an earlier opening of the card is not this opening's.
@@ -78,8 +86,10 @@ export function KanbanCardDetailPanel({
       status="ready"
       model={model}
       conflict={model.conflict || shared.conflict}
+      staleSchema={shared.staleSchema}
       onReloadConflict={() => {
         refetch();
+        void refetchBoard();
         model.clearConflict();
         shared.clear();
       }}

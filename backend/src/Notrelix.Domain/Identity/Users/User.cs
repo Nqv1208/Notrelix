@@ -14,6 +14,9 @@ public sealed class User : SoftDeletableAggregateRoot
 
     public string? AvatarUrl => Avatar;
 
+    /// <summary>The longest display name: what sign-up and a profile edit both accept.</summary>
+    public const int MaxNameLength = 200;
+
     /// <summary>
     /// Object-store key of the uploaded profile photo, or null when the avatar is absent or is an
     /// external address (for example one a sign-in provider supplied). When set, <see cref="Avatar"/>
@@ -43,7 +46,7 @@ public sealed class User : SoftDeletableAggregateRoot
         bool hasPasswordCredential)
     {
         Guard.NotNullOrWhiteSpace(name);
-        Guard.MaxLength(name, 100);
+        Guard.MaxLength(name, MaxNameLength);
         Guard.NotNullOrWhiteSpace(passwordHash);
 
         var emailValue = Email.Create(email);
@@ -80,7 +83,7 @@ public sealed class User : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
-        Guard.MaxLength(name, 100);
+        Guard.MaxLength(name, MaxNameLength);
 
         var trimmedName = name.Trim();
         var normalizedAvatar = avatar is null ? Avatar : avatar.Trim();

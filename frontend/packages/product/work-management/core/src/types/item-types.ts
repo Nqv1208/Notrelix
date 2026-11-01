@@ -196,6 +196,8 @@ export interface ActivityChange {
   readonly personId?: string;
   readonly personName?: string;
   readonly itemKey?: string;
+  /** The Automation rule that made the change; absent for a person's own change. */
+  readonly ruleName?: string;
 }
 
 /** The API's change: a side with no value (a first status, a label's "from") arrives as null. */

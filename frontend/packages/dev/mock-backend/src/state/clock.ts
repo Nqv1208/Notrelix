@@ -108,3 +108,10 @@ export function isoOfMs(ms: number): string {
 export function utcWeekdayOfMs(ms: number): number {
   return new Date(ms).getUTCDay();
 }
+
+/** An epoch instant moved by whole UTC calendar months (a day past the end of the month rolls over). */
+export function addUtcMonthsMs(ms: number, months: number): number {
+  const moved = new Date(ms);
+  moved.setUTCMonth(moved.getUTCMonth() + months);
+  return moved.getTime();
+}

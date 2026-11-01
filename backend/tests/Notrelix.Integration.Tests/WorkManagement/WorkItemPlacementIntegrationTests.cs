@@ -384,7 +384,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
     private async Task<Guid> AddOptionAsync(Guid fieldId, string name, Guid? previous = null, Guid? next = null) =>
         await InTransactionAsync(async context =>
             (await new AddFieldOptionCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", 1, previous, next), CancellationToken.None)).Data);
+                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", 1, previous, next), CancellationToken.None)).Data!.OptionId);
 
     private Task MoveOptionAsync(Guid fieldId, Guid optionId, Guid? previous, Guid? next) =>
         InTransactionAsync(async context =>

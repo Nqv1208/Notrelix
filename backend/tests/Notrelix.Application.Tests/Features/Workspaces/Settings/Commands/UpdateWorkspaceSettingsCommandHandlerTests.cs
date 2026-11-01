@@ -7,7 +7,7 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Settings.Commands;
 public class UpdateWorkspaceSettingsCommandHandlerTests : WorkspaceHandlerTestBase
 {
     private UpdateWorkspaceSettingsCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
     [Fact]
     public async Task Handle_WhenWorkspaceExists_UpdatesSettings()

@@ -13,7 +13,7 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
         WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "a@example.com", role,
             InvitationTokenHash.Create(Hash), 1, Guid.NewGuid(), Now, initialEntries: entries);
 
-    private static WorkspaceInvitation Resource(string level = "Editor", string kind = WorkspaceInvitationResourceGrant.BoardKind) =>
+    private static WorkspaceInvitation Resource(string level = "Viewer", string kind = WorkspaceInvitationResourceGrant.BoardKind) =>
         WorkspaceInvitation.CreateForResource(Guid.NewGuid(), Guid.NewGuid(), "a@example.com",
             new WorkspaceInvitationResourceGrant(kind, Guid.NewGuid(), level),
             InvitationTokenHash.Create(Hash), 1, Guid.NewGuid(), Now);
@@ -125,7 +125,7 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
         var invitation = LegacyAdminInvitation();
         var user = Guid.NewGuid();
 
-        invitation.Resend(InvitationTokenHash.Create(new string('b', 64)), 1, Now, TimeSpan.FromDays(7), Guid.NewGuid());
+        invitation.Resend(InvitationTokenHash.Create(new string('b', 64)), 1, Now.AddMinutes(2), TimeSpan.FromDays(7), Guid.NewGuid());
         invitation.Accept(user, Now.AddDays(1));
 
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Accepted);
@@ -158,8 +158,7 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
 
     [Theory]
     [InlineData("Viewer")]
-    [InlineData("commenter")]
-    [InlineData("Editor")]
+    [InlineData("viewer")]
     public void ResourceInvitation_IsGuestOnly_WithCanonicalLevel(string level)
     {
         var invitation = Resource(level);
@@ -167,18 +166,27 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
         invitation.Role.Should().Be(WorkspaceRole.Guest);
         invitation.IsResourceInvitation.Should().BeTrue();
         invitation.InitialEntries.Should().BeEmpty();
-        invitation.ResourceGrant!.Level.Should().BeOneOf("Viewer", "Commenter", "Editor");
+        invitation.ResourceGrant!.Level.Should().Be("Viewer");
     }
 
     [Theory]
+    [InlineData("Editor")]
+    [InlineData("Commenter")]
     [InlineData("Manager")]
     [InlineData("Owner")]
     [InlineData("None")]
     [InlineData("")]
-    public void ResourceGrant_RejectsLevelAboveEditor(string level) =>
-        FluentActions.Invoking(() => new WorkspaceInvitationResourceGrant(WorkspaceInvitationResourceGrant.BoardKind, Guid.NewGuid(), level))
+    public void NewResourceGrant_RejectsAnyLevelAboveViewer(string level) =>
+        FluentActions.Invoking(() => WorkspaceInvitationResourceGrant.ForNewInvitation(WorkspaceInvitationResourceGrant.BoardKind, Guid.NewGuid(), level))
             .Should().Throw<BusinessRuleException>()
-            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_ResourceLevelAboveEditor);
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_ResourceLevelAboveViewer);
+
+    [Theory]
+    [InlineData("Commenter")]
+    [InlineData("Editor")]
+    public void AStoredGrantFromBeforeTheCap_StillLoads(string level) =>
+        new WorkspaceInvitationResourceGrant(WorkspaceInvitationResourceGrant.BoardKind, Guid.NewGuid(), level)
+            .Level.Should().Be(level);
 
     [Theory]
     [InlineData("work-management.board-item")]

@@ -52,7 +52,9 @@ export function PeoplePanel({ onClose }: { onClose: () => void }) {
     .filter((p): p is Person => p !== undefined && fits(p));
   const others = people
     .filter((p) => !assigned.includes(p.userId) && fits(p))
-    .sort((a, b) => Number(b.userId === viewerId) - Number(a.userId === viewerId));
+    .sort(
+      (a, b) => Number(b.userId === viewerId) - Number(a.userId === viewerId),
+    );
 
   const write = (ids: string[]) => {
     if (!fields.person) return;
@@ -119,7 +121,9 @@ export function PeoplePanel({ onClose }: { onClose: () => void }) {
       />
       {given.length > 0 ? (
         <>
-          <Caption>{fillPopupCopy(t.assigned, { count: assigned.length })}</Caption>
+          <Caption>
+            {fillPopupCopy(t.assigned, { count: assigned.length })}
+          </Caption>
           <div role="list" aria-label={t.assigned.split(" ·")[0]}>
             {given.map((person) => row(person, true))}
           </div>

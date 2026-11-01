@@ -4,7 +4,7 @@ public class CreateWorkspaceCommandValidator : AbstractValidator<CreateWorkspace
 {
     public CreateWorkspaceCommandValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Description).MaximumLength(500);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.Description).MaximumLength(1024);
     }
 }

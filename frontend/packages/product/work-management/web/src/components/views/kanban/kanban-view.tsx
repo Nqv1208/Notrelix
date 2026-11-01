@@ -6,13 +6,7 @@ import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
@@ -457,6 +451,19 @@ export function KanbanView({
     () => kanban.allLanes.flatMap((lane) => lane.cards),
     [kanban.allLanes],
   );
+  // Hooks sit above the loading and error returns below, so the order never changes between renders.
+  const faceFieldDefinitions = useMemo(
+    () =>
+      kanban.filterFields
+        .filter((entry) => !entry.builtin)
+        .map((entry) => entry.field),
+    [kanban.filterFields],
+  );
+  const orderedCardIds = useMemo(
+    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
+    [kanban.lanes],
+  );
+  const picking = useKanbanSelection(orderedCardIds);
   const lanesReady = !kanban.isLoading && Boolean(board);
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -583,13 +590,6 @@ export function KanbanView({
 
   // Swimlanes: rows of a second field under the columns. The lane field can
   // never be the column field.
-  const faceFieldDefinitions = useMemo(
-    () =>
-      kanban.filterFields
-        .filter((entry) => !entry.builtin)
-        .map((entry) => entry.field),
-    [kanban.filterFields],
-  );
   const columnFields = groupableFields(kanban.filterFields).filter((field) =>
     kanban.groupByFields.some((candidate) => candidate.id === field.id),
   );
@@ -856,11 +856,6 @@ export function KanbanView({
   /** The hover and focus actions of a card, each only when the viewer may do it. */
   const personField = board ? findItemFields(board).person : undefined;
   // Picking cards: only an editor can change several items at once.
-  const orderedCardIds = useMemo(
-    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
-    [kanban.lanes],
-  );
-  const picking = useKanbanSelection(orderedCardIds);
   const cardSelection = capabilities.canEditFields
     ? picking.selection
     : undefined;
@@ -1092,6 +1087,16 @@ export function KanbanView({
                 groupTitles={kanban.groups.map((group) => group.title)}
                 groupPending={addingGroup}
                 laneCardLimit={kanbanSettings.laneCardLimit}
+                lanePaging={
+                  kanban.paging
+                    ? {
+                        loadMore: (lane) =>
+                          void kanban.loadMoreLane(lane.optionId),
+                        loading: kanban.lanePages.loading,
+                        failed: kanban.lanePages.failed,
+                      }
+                    : undefined
+                }
                 keyboardMove={kanbanSettings.keyboardMove}
                 cardActions={cardActions}
                 cardSelection={cardSelection}
@@ -1391,6 +1396,12 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          updatesMore: updates.hasNextPage
+            ? {
+                loading: updates.isFetchingNextPage,
+                onMore: () => void updates.fetchNextPage(),
+              }
+            : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,

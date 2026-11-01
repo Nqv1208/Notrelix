@@ -75,7 +75,7 @@ describe("createSavedFilterApi", () => {
     expect(id).toBe("f-9");
     expect(post).toHaveBeenCalledWith("/boards/b-1/saved-filters", {
       name: "Mới",
-      criteria: '{"filter":"o"}',
+      criteria: '{"v":2,"filter":"o"}',
       visibility: 1,
     });
   });

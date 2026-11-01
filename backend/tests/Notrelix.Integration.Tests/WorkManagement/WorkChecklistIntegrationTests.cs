@@ -132,7 +132,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         await InTransactionAsync(context => new DeleteChecklistItemCommandHandler(context, CurrentUser(), Clock())
             .Handle(new DeleteChecklistItemCommand(item, 1), CancellationToken.None));
         await InTransactionAsync(context => new DeleteChecklistCommandHandler(context, CurrentUser(), Clock())
-            .Handle(new DeleteChecklistCommand(drop), CancellationToken.None));
+            .Handle(new DeleteChecklistCommand(drop, ExpectedVersion: 1), CancellationToken.None));
 
         var dtos = await GetChecklistsAsync();
         dtos.Should().ContainSingle().Which.Id.Should().Be(keep);
@@ -164,12 +164,12 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         await Capture(context => new DeleteChecklistItemCommandHandler(context, CurrentUser(), Clock())
             .Handle(new DeleteChecklistItemCommand(todo, 1), CancellationToken.None));
         await Capture(context => new DeleteChecklistCommandHandler(context, CurrentUser(), Clock())
-            .Handle(new DeleteChecklistCommand(checklist), CancellationToken.None));
+            .Handle(new DeleteChecklistCommand(checklist, ExpectedVersion: 1), CancellationToken.None));
 
         var mapper = (IIntegrationEventMapper)new BoardItemChecklistEventMapper();
         var messages = facts.SelectMany(f => mapper.Map(f)).Select(m => m.IntegrationEvent).ToList();
         await using var db = _db.CreateOwnerContext(SystemTenant());
-        var recorder = new ItemActivityRecorder(db, NullLogger<ItemActivityRecorder>.Instance);
+        var recorder = new ItemActivityRecorder(db, NullLogger<ItemActivityRecorder>.Instance, new Moq.Mock<Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts>().Object);
         foreach (var message in messages.Concat(messages))
             await Deliver(recorder, message);
 

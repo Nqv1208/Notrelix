@@ -217,7 +217,6 @@ public class UseCaseSecurityClassificationTests
         ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
 
         // Governance — ShareLinks/Permissions
-        ["DisableShareLinkCommand"] = new("DisableShareLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
         ["GetResourcePermissionsQuery"] = new("GetResourcePermissionsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
         ["GrantResourcePermissionCommand"] = new("GrantResourcePermissionCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
         ["RevokeResourcePermissionCommand"] = new("RevokeResourcePermissionCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),

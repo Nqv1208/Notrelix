@@ -7,6 +7,7 @@ public class LogoutTests : IdentityHandlerTestBase
 {
     private LogoutCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
+        RequestContextMock.Object,
         JwtBlacklistMock.Object,
         DateTimeProviderMock.Object,
         LogoutLoggerMock.Object);

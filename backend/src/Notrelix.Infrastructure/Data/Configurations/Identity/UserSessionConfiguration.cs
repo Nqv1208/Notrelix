@@ -20,7 +20,11 @@ public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
         builder.OwnsOne(x => x.RefreshTokenHash, token =>
         {
             token.Property(t => t.Hash).HasColumnName("refresh_token_hash").IsRequired();
+            token.HasIndex(t => t.Hash).HasDatabaseName("idx_user_sessions_refresh_token_hash");
         });
+
+        builder.Property(x => x.PreviousRefreshTokenHash).HasColumnName("previous_refresh_token_hash");
+        builder.Property(x => x.RotatedAt).HasColumnName("rotated_at");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
@@ -29,5 +33,6 @@ public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_user_sessions_user_id");
         builder.HasIndex(x => x.ExpiresAt).HasDatabaseName("idx_user_sessions_expires");
+        builder.HasIndex(x => x.PreviousRefreshTokenHash).HasDatabaseName("idx_user_sessions_previous_refresh_token_hash");
     }
 }

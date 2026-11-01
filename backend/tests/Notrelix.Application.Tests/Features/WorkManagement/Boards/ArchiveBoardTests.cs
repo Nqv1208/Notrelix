@@ -24,7 +24,7 @@ public class ArchiveBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new ArchiveBoardCommand(board.Id);
+        var command = new ArchiveBoardCommand(board.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -34,7 +34,7 @@ public class ArchiveBoardTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new ArchiveBoardCommand(Guid.CreateVersion7());
+        var command = new ArchiveBoardCommand(Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -47,7 +47,7 @@ public class ArchiveBoardTests : WorkManagementHandlerTestBase
         board.Archive(TestUserId, TestNow);
         SetupBoards(board);
 
-        var command = new ArchiveBoardCommand(board.Id);
+        var command = new ArchiveBoardCommand(board.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

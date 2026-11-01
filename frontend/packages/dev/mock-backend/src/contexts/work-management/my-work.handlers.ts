@@ -5,12 +5,7 @@
  */
 import { defineMockOperation } from "../../operations/types";
 import { rollRepeatOnCompletion } from "./item-capabilities.handlers";
-import {
-  noContent,
-  notFound,
-  ok,
-  validationError,
-} from "../../transport/create-response";
+import { notFound, ok, validationError } from "../../transport/create-response";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -59,7 +54,9 @@ export const myWorkOperations = [
           "Idempotency-Key": ["The header is required."],
         });
       }
-      const version = () => ({ version: store.getCard(params.id)?.version ?? 1 });
+      const version = () => ({
+        version: store.getCard(params.id)?.version ?? 1,
+      });
       if (rollRepeatOnCompletion(store, params.id)) return ok(version());
       return store.completeCard(params.id) ? ok(version()) : notFound();
     },

@@ -63,6 +63,8 @@ describe("resolveKanbanSettings", () => {
       statusManageRoles: ["manager", "editor"],
       keyboardMove: true,
       wipLimits: {},
+      cardFieldIds: [],
+      cardHideEmpty: [],
     };
     expect(resolveKanbanSettings({})).toEqual(defaults);
     expect(

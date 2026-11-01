@@ -41,12 +41,16 @@ export function BoardConnectionNotice({
           role="status"
           className="inline-flex h-7 items-center gap-1.5 rounded-[7px] bg-warning-subtle px-2.5 text-[13px] whitespace-nowrap text-warning-text"
         >
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-4 animate-spin motion-reduce:animate-none"
+          />
           {t.reconnecting}
         </span>
       </div>
     );
-  if (state !== "offline" && state !== "failed" && state !== "closed") return null;
+  if (state !== "offline" && state !== "failed" && state !== "closed")
+    return null;
   const time = (lostAt ?? new Date()).toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",

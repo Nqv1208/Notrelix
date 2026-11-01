@@ -7,6 +7,7 @@ import {
   membersCopyFixture,
   membersDefaultScenario,
   membersErrorScenario,
+  membersFixture,
   membersInvitationsEmptyScenario,
   membersInvitationsScenario,
   membersReadOnlyScenario,
@@ -186,6 +187,81 @@ describe("WorkspaceMembersSurface", () => {
     const { props } = renderMembers(membersErrorScenario());
     fireEvent.click(screen.getByRole("button", { name: copy.error.retry }));
     expect(props.onRetryMembers).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.members:forbidden] says the list is refused and offers no retry", () => {
+    renderMembers({
+      ...membersReadOnlyScenario(),
+      members: { status: "error", reason: "forbidden" },
+    });
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.error.membersForbidden,
+    );
+    expect(screen.queryByRole("button", { name: copy.error.retry })).toBeNull();
+  });
+
+  it("FUI[workspace.members:offline] says the server was not reached and retries", () => {
+    const { props } = renderMembers({
+      ...membersReadOnlyScenario(),
+      members: { status: "error", reason: "offline" },
+    });
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.error.membersOffline,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.error.retry }));
+    expect(props.onRetryMembers).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.members:guest-own-row] shows a guest only their own row and says why", () => {
+    const own = membersFixture().find((member) => member.role === "guest")!;
+    renderMembers({
+      ...membersReadOnlyScenario(),
+      viewer: { userId: own.userId, role: "guest" },
+      members: { status: "ready", data: [own] },
+    });
+    expect(screen.getByText(copy.guestOwnRowOnly)).toBeTruthy();
+    expect(screen.queryByText(copy.readOnly)).toBeNull();
+    expect(screen.queryByText(copy.onlyYou)).toBeNull();
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(within(rowOf(own.name)).getByText(copy.you)).toBeTruthy();
+  });
+
+  it("FUI[workspace.members:only-you] tells the only member nobody else is here, and an admin how to change that", () => {
+    const [ada] = membersFixture();
+    renderMembers({
+      ...membersDefaultScenario(),
+      members: { status: "ready", data: [ada!] },
+    });
+    expect(screen.getByText(copy.onlyYouAdmin)).toBeTruthy();
+  });
+
+  it("keeps the only-you invite hint away from someone who cannot invite", () => {
+    const [grace] = membersFixture().filter(
+      (member) => member.userId === "u-grace",
+    );
+    renderMembers({
+      ...membersReadOnlyScenario(),
+      members: { status: "ready", data: [grace!] },
+    });
+    expect(screen.getByText(copy.onlyYou)).toBeTruthy();
+    expect(screen.queryByText(copy.onlyYouAdmin)).toBeNull();
+  });
+
+  it("FUI[workspace.members:job-title] shows the job title under the name, and nothing for a person without one", () => {
+    const [ada, alan] = membersFixture();
+    renderMembers({
+      ...membersDefaultScenario(),
+      members: {
+        status: "ready",
+        data: [{ ...ada!, jobTitle: "Head of engineering" }, alan!],
+      },
+    });
+    expect(
+      within(rowOf("Ada Lovelace")).getByText("Head of engineering"),
+    ).toBeTruthy();
+    expect(
+      within(rowOf("Alan Turing")).queryByText("Head of engineering"),
+    ).toBeNull();
   });
 });
 

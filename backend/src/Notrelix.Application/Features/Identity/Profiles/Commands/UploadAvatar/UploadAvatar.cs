@@ -59,8 +59,7 @@ public sealed class UploadAvatarCommandHandler : IRequestHandler<UploadAvatarCom
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null)
         {
-            return Result<ProfileAvatarDto>.Failure(new ApplicationError(
-                "identity.auth.user-not-found", "User not found.", ApplicationErrorType.NotFound));
+            return Result<ProfileAvatarDto>.Failure(SessionErrors.SessionUserMissing);
         }
 
         var head = new byte[AvatarImage.SniffLength];

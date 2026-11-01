@@ -18,8 +18,7 @@ export function usePickerActions(
   const conflict = useItemConflict(card.workspaceId, card.id);
   // A label refused as stale tells the open card that someone else changed it.
   const told = (result: Awaited<ReturnType<typeof labels.update>>) => {
-    if (!result.ok && result.reason === "conflict")
-      conflict.report();
+    if (!result.ok && result.reason === "conflict") conflict.report();
     return result.ok;
   };
   return {

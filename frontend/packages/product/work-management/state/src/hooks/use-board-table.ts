@@ -1,14 +1,48 @@
 import { useCallback, useMemo, useState } from "react";
 import {
+  findStatusField,
   hasTableColumnPreference,
+  serializeSorts,
   tableCustomFields,
   tableSortFromConfig,
+  type FieldDefinition,
   type TableDensity,
   type TableSort,
 } from "@notrelix/work-management-core";
 import { useBoardKanban, type UseBoardKanbanOptions } from "./use-board-kanban";
 import { useBoardPreference } from "../queries/use-board-preference";
 import { useBoardView } from "./use-board-view";
+import { useBoardReadNeed } from "../queries/board-read";
+
+/**
+ * The sort the server can order a page of rows by for a table sort: the built-in columns that are a field's
+ * value (title, status, due date) and a custom field. Anything else (the item key, the people, the counts)
+ * cannot be, and the table reads the whole board to sort it.
+ */
+function serverSortOf(
+  sort: TableSort,
+  fields: readonly FieldDefinition[],
+  customFieldIds: ReadonlySet<string>,
+): string | null {
+  const direction = sort.direction;
+  const level = (fieldId: string) =>
+    `${encodeURIComponent(fieldId)}.${direction}`;
+  if (customFieldIds.has(sort.key)) return level(sort.key);
+  switch (sort.key) {
+    case "title":
+      return level("$title");
+    case "status": {
+      const status = findStatusField(fields);
+      return status ? level(status.id) : null;
+    }
+    case "due": {
+      const due = fields.find((field) => field.fieldType === "date");
+      return due ? level(due.id) : null;
+    }
+    default:
+      return null;
+  }
+}
 
 /**
  * The table of a board. It reads the board the same way the Kanban does
@@ -53,6 +87,27 @@ export function useBoardTable(
       ),
     [viewConfig.sortBy, customFields],
   );
+  // The rows the server pages are ordered by what the table orders them by: the member's own sort levels, else
+  // the view's sort. Without a way to say it to the server the table reads the whole board.
+  const personalSorts = options.view?.state.sorts;
+  const readSort = useMemo(
+    () =>
+      !lanes.board || viewLoading
+        ? "" // the fields or the saved sort are not read yet: nothing to say about the sort
+        : personalSorts && personalSorts.length > 0
+          ? serializeSorts(personalSorts)
+          : serverSortOf(
+              sort,
+              lanes.board.fieldDefinitions,
+              new Set(customFields.map((field) => field.id)),
+            ),
+    [personalSorts, sort, lanes.board, viewLoading, customFields],
+  );
+  useBoardReadNeed(boardId, workspaceId, {
+    full: readSort === null,
+    filter: "",
+    sort: readSort ?? "",
+  });
   const setSort = useCallback(
     (next: TableSort) =>
       updateViewConfig({

@@ -87,7 +87,8 @@ public class GetResourceActivityQueryHandler : IRequestHandler<GetResourceActivi
                 Text(root, "fieldName"), Text(root, "from"), Text(root, "to"),
                 Guid.TryParse(Text(root, "personId"), out var personId) ? personId : null,
                 null,
-                Text(root, "itemKey"));
+                Text(root, "itemKey"),
+                Text(root, "rule"));
         }
         catch (JsonException)
         {
@@ -97,7 +98,7 @@ public class GetResourceActivityQueryHandler : IRequestHandler<GetResourceActivi
 
     private static bool IsEmpty(ActivityChangeDto change) =>
         change.FieldName is null && change.From is null && change.To is null
-        && change.PersonId is null && change.PersonName is null && change.ItemKey is null;
+        && change.PersonId is null && change.PersonName is null && change.ItemKey is null && change.RuleName is null;
 
     private static readonly ActivityChangeDto Empty = new(null, null, null, null, null, null);
 

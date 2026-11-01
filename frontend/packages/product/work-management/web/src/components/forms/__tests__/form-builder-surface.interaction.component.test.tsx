@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "@notrelix/i18n";
 import {
   fireEvent,
   renderPureUi,
@@ -49,7 +50,12 @@ function render(
     onBack: vi.fn(),
     ...overrides,
   };
-  renderPureUi(<FormBuilderSurface {...props} />);
+  renderPureUi(
+    // The date answer reads its copy from the host locale provider.
+    <I18nProvider catalogs={[]} initialLocale={locale}>
+      <FormBuilderSurface {...props} />
+    </I18nProvider>,
+  );
   return props;
 }
 

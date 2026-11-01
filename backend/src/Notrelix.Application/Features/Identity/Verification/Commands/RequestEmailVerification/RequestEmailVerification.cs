@@ -43,7 +43,7 @@ public sealed class RequestEmailVerificationCommandHandler
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
         if (user is null)
-            return Result.Failure(new ApplicationError("identity.verification.user-not-found", "User not found.", ApplicationErrorType.NotFound));
+            return Result.Failure(SessionErrors.SessionUserMissing);
 
         if (user.EmailConfirmed)
             return Result.Failure(new ApplicationError("identity.verification.already-confirmed", "Email is already confirmed.", ApplicationErrorType.Conflict));

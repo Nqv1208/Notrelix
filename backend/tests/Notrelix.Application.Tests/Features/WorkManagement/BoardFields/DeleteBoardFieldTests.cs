@@ -24,7 +24,7 @@ public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
         var field = CreateBoardField();
         SetupBoardFields(field);
 
-        var command = new DeleteBoardFieldCommand(field.BoardId, field.Id);
+        var command = new DeleteBoardFieldCommand(field.BoardId, field.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -34,7 +34,7 @@ public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_FieldNotFound_ThrowsNotFoundException()
     {
-        var command = new DeleteBoardFieldCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var command = new DeleteBoardFieldCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -48,7 +48,7 @@ public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
         var field = CreateBoardField(boardId: boardId1);
         SetupBoardFields(field);
 
-        var command = new DeleteBoardFieldCommand(boardId2, field.Id);
+        var command = new DeleteBoardFieldCommand(boardId2, field.Id, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -61,7 +61,7 @@ public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
         field.Delete(TestUserId, TestNow);
         SetupBoardFields(field);
 
-        var command = new DeleteBoardFieldCommand(field.BoardId, field.Id);
+        var command = new DeleteBoardFieldCommand(field.BoardId, field.Id, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

@@ -148,6 +148,7 @@ export function BoardCalendarView({
     filter: noLegacyFilter,
     view: kanbanView,
     isOverdue,
+    allCards: true,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;

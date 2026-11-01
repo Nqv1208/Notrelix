@@ -226,6 +226,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ItemDatesChangedActivityConsumer",
+                EventName = "work-management.board-item-dates-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-item-dates-changed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the history row for an Item's dates changing",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ItemMovedToBoardActivityConsumer",
                 EventName = "work-management.board-item-moved-to-board",
                 EventVersion = 1,

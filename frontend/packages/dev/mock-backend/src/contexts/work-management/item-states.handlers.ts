@@ -9,7 +9,6 @@
 import { defineMockOperation } from "../../operations/types";
 import {
   forbidden,
-  noContent,
   notFound,
   ok,
   validationError,

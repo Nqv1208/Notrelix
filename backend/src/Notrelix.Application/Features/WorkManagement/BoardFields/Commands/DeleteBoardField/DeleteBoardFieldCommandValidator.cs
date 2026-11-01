@@ -4,6 +4,7 @@ public class DeleteBoardFieldCommandValidator : AbstractValidator<DeleteBoardFie
 {
     public DeleteBoardFieldCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.ColumnId).NotEmpty();
     }

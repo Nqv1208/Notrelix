@@ -58,6 +58,27 @@ function slugViolation(slug: string): string | null {
   return null;
 }
 
+/** What each store made for an `Idempotency-Key`: a retry answers with the same workspace. */
+const createdUnderKey = new WeakMap<MockStore, Map<string, string>>();
+
+/** The address the producer derives from a name: its words, plus a short suffix when that is unusable or taken. */
+function deriveSlug(name: string, taken: (slug: string) => boolean): string {
+  const base = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 55)
+    .replace(/-$/, "");
+  if (!slugViolation(base) && !taken(base)) return base;
+  for (let attempt = 2; ; attempt += 1) {
+    const candidate = `${base || "workspace"}-${attempt}`;
+    if (!slugViolation(candidate) && !taken(candidate)) return candidate;
+  }
+}
+
 const slugTaken = (store: MockStore) => (slug: string) =>
   isSlugTaken(
     slug,
@@ -102,11 +123,21 @@ export const onboardingOperations = [
     },
     method: "POST",
     route: "/accounts/:accountId/workspaces",
-    async handle({ body, store }) {
+    async handle({ body, request, store }) {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      const replay = createdUnderKey.get(store)?.get(key);
+      if (replay) return created(replay);
       const name = (body?.name ?? "").trim();
-      const slug = (body?.slug ?? "").trim().toLowerCase();
+      const chosen = (body?.slug ?? "").trim().toLowerCase();
+      const slug = chosen || deriveSlug(name, slugTaken(store));
       const errors: Record<string, string[]> = {};
       if (!name) errors.name = ["Enter the company name."];
+      else if (name.length > 160)
+        errors.name = ["Use 160 characters or fewer for the name."];
       if (slugViolation(slug)) errors.slug = ["The address is not valid."];
       if (body?.size && !SIZE_BANDS.includes(body.size))
         errors.size = ["The company size is not one of the offered bands."];
@@ -116,6 +147,9 @@ export const onboardingOperations = [
         name,
         slug,
       });
+      const made = createdUnderKey.get(store) ?? new Map<string, string>();
+      made.set(key, workspace.id);
+      createdUnderKey.set(store, made);
       return created(workspace.id);
     },
   }),

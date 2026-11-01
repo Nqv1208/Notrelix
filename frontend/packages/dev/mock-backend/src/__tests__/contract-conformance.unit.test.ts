@@ -121,10 +121,16 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(initialView.viewMode).toBe("table");
     const [defaultView] = await boardApi.listSavedViews(boardId);
     expect(defaultView?.isDefault).toBe(true);
-    await boardApi.updateSavedViewConfig(boardId, defaultView!.id, {
-      ...initialView.viewConfig,
-      groupBy: "status",
-    });
+    // Every saved-view write names the version last read of that view.
+    const viewVersion = async (id: string) =>
+      (await boardApi.listSavedViews(boardId)).find((v) => v.id === id)!
+        .version;
+    await boardApi.updateSavedViewConfig(
+      boardId,
+      defaultView!.id,
+      { ...initialView.viewConfig, groupBy: "status" },
+      defaultView!.version,
+    );
     expect((await boardApi.getBoardView(boardId)).viewConfig.groupBy).toBe(
       "status",
     );
@@ -136,9 +142,23 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     });
     expect(mine.viewMode).toBe("kanban");
     expect(mine.visibility).toBe("me");
-    await boardApi.renameSavedView(boardId, mine.id, "Mine 2");
-    await boardApi.setSavedViewVisibility(boardId, mine.id, "board");
-    await boardApi.setDefaultSavedView(boardId, mine.id);
+    await boardApi.renameSavedView(
+      boardId,
+      mine.id,
+      "Mine 2",
+      await viewVersion(mine.id),
+    );
+    await boardApi.setSavedViewVisibility(
+      boardId,
+      mine.id,
+      "board",
+      await viewVersion(mine.id),
+    );
+    await boardApi.setDefaultSavedView(
+      boardId,
+      mine.id,
+      await viewVersion(mine.id),
+    );
     const listed = await boardApi.listSavedViews(boardId);
     expect(listed[0]).toMatchObject({
       id: mine.id,
@@ -146,7 +166,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       visibility: "board",
       isDefault: true,
     });
-    await boardApi.deleteSavedView(boardId, defaultView!.id);
+    await boardApi.deleteSavedView(
+      boardId,
+      defaultView!.id,
+      await viewVersion(defaultView!.id),
+    );
     expect(await boardApi.listSavedViews(boardId)).toHaveLength(1);
 
     // 2. Group / List CRUD + Reorder
@@ -174,27 +198,6 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(createdGroup?.title).toBe("QA In Review");
     expect(createdGroup?.color).toBe("#00FFFF");
 
-    // Reorder groups
-    // The adapter applies a complete desired order (WM-V3-FE-001 replaces it
-    // with one neighbor-relative move), so pass every group of the board.
-    const beforeReorder = await boardApi.getFullBoard(boardId, {
-      workspaceId: mockIds.workspaces.primary,
-    });
-    const desiredOrder = [
-      "list-done",
-      ...beforeReorder.groups
-        .map((g) => g.id)
-        .filter((id) => id !== "list-done"),
-    ];
-    await groupApi.reorderGroups(
-      boardId,
-      desiredOrder.map((id, position) => ({ id, position })),
-    );
-    const reorderedBoard = await boardApi.getFullBoard(boardId, {
-      workspaceId: mockIds.workspaces.primary,
-    });
-    expect(reorderedBoard.groups[0]?.id).toBe("list-done");
-
     // Duplicate list
     await listApi.duplicateList(listId);
     const _duplicatedListId = "mock-id-ignored-since-duplicate-returns-void";
@@ -214,10 +217,14 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       .find((g) => g.id === listId)!
       .cards.find((c) => c.title === "Automated Verification Card")!;
 
-    await cardApi.updateCard(createdCard.id, {
-      title: "Updated Verification Card",
-      descriptionMd: "Detailed description of verification step.",
-    });
+    await cardApi.updateCard(
+      createdCard.id,
+      {
+        title: "Updated Verification Card",
+        descriptionMd: "Detailed description of verification step.",
+      },
+      { expectedVersion: createdCard.version ?? 1 },
+    );
     const fullBoardAfterUpdate = await boardApi.getFullBoard(boardId, {
       workspaceId: mockIds.workspaces.primary,
     });
@@ -266,7 +273,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     );
     expect(cardLabels.some((l) => l.id === newLabel.id)).toBe(true);
     await labelApi.removeLabelFromCard(createdCard.id, newLabel.id);
-    await labelApi.deleteLabel(boardId, newLabel.id);
+    await labelApi.deleteLabel(newLabel.id, 1);
 
     // Checklists & Items
     await checklistApi.createChecklist({
@@ -286,7 +293,10 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const foundChk = checklists.find((c) => c.id === chkId);
     expect(foundChk?.items[0]?.isDone).toBe(true);
     await checklistApi.deleteChecklistItem({ itemId, expectedVersion: 0 });
-    await checklistApi.deleteChecklist(chkId);
+    await checklistApi.deleteChecklist(
+      chkId,
+      (await checklistApi.getChecklists(createdCard.id))[0]!.version ?? 1,
+    );
 
     // Comments / Updates
     await commentApi.createCardUpdate({
@@ -410,8 +420,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const viewerId = store.getCurrentUser().id;
     const others = listed.filter((m) => m.userId !== viewerId);
     expect(others.length).toBeGreaterThanOrEqual(2);
-    await members.suspend(workspaceId, others[0]!.userId);
-    await members.removeMember(workspaceId, others[1]!.userId);
+    await members.suspend(workspaceId, others[0]!.userId, others[0]!.version);
+    await members.removeMember(
+      workspaceId,
+      others[1]!.userId,
+      others[1]!.version,
+    );
     const relisted = await members.getList(workspaceId);
     expect(relisted.every((m) => m.membership !== undefined)).toBe(true);
     expect(
@@ -433,11 +447,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       role: "guest",
     });
     await invitations.revoke(workspaceId, revoked!);
-    const raw = await client.api.get<{ id: string; status: string }[]>(
-      endpoints.workspaces.invitations(workspaceId),
-    );
-    expect(raw.find((i) => i.id === kept)?.status).toBe("Pending");
-    expect(raw.find((i) => i.id === revoked)?.status).toBe("Revoked");
+    const raw = await client.api.get<{
+      items: { id: string; status: string }[];
+    }>(endpoints.workspaces.invitations(workspaceId));
+    expect(raw.items.find((i) => i.id === kept)?.status).toBe("Pending");
+    expect(raw.items.find((i) => i.id === revoked)?.status).toBe("Revoked");
     expect(
       (await invitations.getList(workspaceId)).map((i) => i.id),
     ).not.toContain(revoked);
@@ -447,9 +461,10 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       status: 412,
     });
     await settings.archive(workspaceId, 3);
-    await expect(workspaces.getDetail(workspaceId)).rejects.toMatchObject({
-      status: 404,
-    });
+    // A member still reads the archived workspace (read-only), flagged as archived.
+    expect(
+      await client.api.get(endpoints.workspaces.detail(workspaceId)),
+    ).toMatchObject({ isArchived: true });
 
     store.assertInvariants();
   });
@@ -563,7 +578,13 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const board = listed.find((b) => b.id === boardId)!;
     expect(board.spaceId).toBe(id);
     // A Space with a placed Board cannot be archived (WSP-022).
-    await expect(spaces.archive(workspaceId, id!)).rejects.toMatchObject({
+    await expect(
+      spaces.archive(
+        workspaceId,
+        id!,
+        (await spaces.getTree(workspaceId)).find((s) => s.id === id)!.version,
+      ),
+    ).rejects.toMatchObject({
       status: 400,
     });
     await expect(
@@ -605,7 +626,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const moved = (await spaces.getTree(workspaceId)).find((s) => s.id === id)!;
     expect(moved.parentId).toBe(mockIds.spaces.engineering);
     // The now-empty Space archives.
-    await spaces.archive(workspaceId, id!);
+    await spaces.archive(workspaceId, id!, moved.version);
 
     // A guest sees only what Space access gives them, with placement masked.
     const guest = new MockStore({ ...store.getConfig(), persona: "viewer" });

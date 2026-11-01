@@ -190,10 +190,12 @@ describe("Team mutations (WX-TEAM-001)", () => {
         expectedVersion: 6,
       });
     });
-    expect(api.post).toHaveBeenCalledWith("/workspaces/ws-a/teams", {
-      name: "Ops",
-      description: null,
-    });
+    // A create carries a key, so a retry of the same attempt makes one Team.
+    expect(api.post).toHaveBeenCalledWith(
+      "/workspaces/ws-a/teams",
+      { name: "Ops", description: null },
+      { idempotencyKey: expect.any(String) },
+    );
     expect(api.put).toHaveBeenCalledWith("/workspaces/ws-a/teams/t1", {
       name: "Support",
       expectedVersion: 3,

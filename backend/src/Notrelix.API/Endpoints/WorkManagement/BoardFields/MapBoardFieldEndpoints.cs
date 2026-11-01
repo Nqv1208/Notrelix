@@ -38,6 +38,7 @@ public static class MapBoardFieldEndpoints
             .WithSummary("Restore a field deleted in the last 30 days");
         group.MapResourceGet("/deleted", HandleListDeletedBoardFields)
             .WithName("WorkManagement.BoardFields.Deleted")
+            .Produces<List<DeletedBoardFieldDto>>(StatusCodes.Status200OK, "application/json")
             .WithSummary("List the fields deleted from a board in the last 30 days");
         group.MapResourcePost("/{fieldId:guid}/move", HandleMoveBoardField)
             .WithIdempotencyKey()

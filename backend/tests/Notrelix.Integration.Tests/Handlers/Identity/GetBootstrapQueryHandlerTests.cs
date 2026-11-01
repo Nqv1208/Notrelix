@@ -42,7 +42,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain("User not found");
+        result.Errors.Should().Contain("Session is invalid or expired");
     }
 
     [Fact]

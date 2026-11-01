@@ -25,7 +25,7 @@ public class DeleteChecklistTests : WorkManagementHandlerTestBase
         ((IHasDomainEvents)checklist).ClearDomainEvents();
         SetupChecklists(checklist);
 
-        await _handler.Handle(new DeleteChecklistCommand(checklist.Id), CancellationToken.None);
+        await _handler.Handle(new DeleteChecklistCommand(checklist.Id, ExpectedVersion: 1), CancellationToken.None);
 
         checklist.IsDeleted.Should().BeTrue();
         checklist.Items.Should().ContainSingle();
@@ -35,7 +35,7 @@ public class DeleteChecklistTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ChecklistNotFound_ThrowsNotFoundException()
     {
-        await _handler.Invoking(h => h.Handle(new DeleteChecklistCommand(Guid.CreateVersion7()), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new DeleteChecklistCommand(Guid.CreateVersion7(), ExpectedVersion: 1), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
 }

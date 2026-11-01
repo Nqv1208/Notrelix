@@ -102,7 +102,7 @@ public sealed class BoardAccessSummaryIntegrationTests : IAsyncLifetime
 
         var access = await GetAccessAsync(stack, guest, board);
 
-        access.MyLevel.Should().Be("editor");
+        access.MyLevel.Should().Be("viewer", "a guest is view-only (GOV-030)");
         access.MySource.Should().Be(new BoardAccessSourceDto("guest", new BoardAccessGrantorDto(stack.OwnerId, "Org Owner")));
         access.GuestCount.Should().Be(1);
         access.Sources.Should().Contain(new BoardAccessSourceCountDto("guest", null, null, 1));

@@ -21,11 +21,13 @@ export function createUseLogout({ api, endpoints, navigate }: UseLogoutDeps) {
       mutationFn: async () => {
         try {
           await authService.logout({});
-        } catch {
-          // Ignore API failures; local sign-out still proceeds.
+        } catch (error) {
+          // A 401 says the server already ended this session: signed out all the same.
+          // Any other failure leaves the session alive, so the person is not told otherwise.
+          if ((error as { status?: number }).status !== 401) throw error;
         }
       },
-      onSettled: () => {
+      onSuccess: () => {
         queryClient.clear();
         navigate({ to: "/sign-in", replace: true });
       },

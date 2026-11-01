@@ -146,6 +146,8 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,
+            global::Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
@@ -162,6 +164,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemActivity.IWorkItemActivityFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemActivityFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Automation.AutomationActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Activity.Ports.IResourceActivityReader,
             global::Notrelix.Infrastructure.Data.Collaboration.ResourceActivityReader>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,
@@ -174,12 +178,16 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,
             Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.IBoardTransferJobs, Notrelix.Infrastructure.Data.Ops.BoardTransferJobs>();
+        services.AddSingleton<Notrelix.Application.Features.WorkManagement.Transfer.ITransferProgress, Notrelix.Infrastructure.Data.Ops.TransferProgress>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemReminders,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemReminders>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemViews,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemViews>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemPageReader,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier>();
         services.AddScoped<IResourceLocator, ResourceLocator>();

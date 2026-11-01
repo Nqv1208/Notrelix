@@ -64,7 +64,7 @@ public sealed class BoardMemberRemovalCeilingTests
     public void AnEditor_CannotDemoteABoardOwner()
     {
         var facts = CallerFacts("editor") with { TargetBoardMemberRole = "Owner" };
-        var request = new UpdateBoardMemberRoleCommand(BoardId, Target, BoardRole.Observer);
+        var request = new UpdateBoardMemberRoleCommand(BoardId, Target, BoardRole.Observer, ExpectedVersion: 1);
 
         Engine.Evaluate(RequestDescriptorValidator.Create(typeof(UpdateBoardMemberRoleCommand)), Context, facts, request).Kind
             .Should().Be(AccessDecisionKind.Forbidden, "changing a Manager-level member is above the caller's level");
@@ -72,7 +72,7 @@ public sealed class BoardMemberRemovalCeilingTests
 
     private static AccessDecisionKind Remove(AccessFacts facts, Guid userId)
     {
-        var request = new RemoveBoardMemberCommand(BoardId, userId);
+        var request = new RemoveBoardMemberCommand(BoardId, userId, ExpectedVersion: 1);
         return Engine.Evaluate(RequestDescriptorValidator.Create(typeof(RemoveBoardMemberCommand)), Context, facts, request).Kind;
     }
 

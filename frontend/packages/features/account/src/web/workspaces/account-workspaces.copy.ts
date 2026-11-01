@@ -14,6 +14,12 @@ export const en = {
     "You are the only owner of this workspace. Hand the ownership to someone else before you leave.",
   create: "Create or join a workspace",
   defaultTag: "Opens by default",
+  archivedTag: "Archived",
+  archivedTitle: "Archived workspaces",
+  archivedNote:
+    "Read-only for everyone. You see these because you own or administer them.",
+  unarchive: "Unarchive",
+  unarchiveLabel: "Unarchive the workspace {{name}}",
   roles: {
     owner: "Workspace owner",
     admin: "Workspace admin",
@@ -41,6 +47,7 @@ export const en = {
   notice: {
     defaultSet: "{{name}} now opens by default.",
     left: "You left {{name}}.",
+    unarchived: "{{name}} is active again.",
   },
 };
 
@@ -57,6 +64,12 @@ export const vi: AccountWorkspacesCopy = {
     "Bạn là chủ sở hữu duy nhất của workspace này. Hãy chuyển quyền chủ sở hữu cho người khác trước khi rời.",
   create: "Tạo hoặc tham gia workspace",
   defaultTag: "Mặc định khi mở ứng dụng",
+  archivedTag: "Đã lưu trữ",
+  archivedTitle: "Workspace đã lưu trữ",
+  archivedNote:
+    "Chỉ đọc với mọi người. Bạn thấy các workspace này vì bạn là chủ sở hữu hoặc quản trị.",
+  unarchive: "Bỏ lưu trữ",
+  unarchiveLabel: "Bỏ lưu trữ workspace {{name}}",
   roles: {
     owner: "Chủ sở hữu workspace",
     admin: "Quản trị workspace",
@@ -84,6 +97,7 @@ export const vi: AccountWorkspacesCopy = {
   notice: {
     defaultSet: "{{name}} sẽ là nơi mở mặc định.",
     left: "Bạn đã rời {{name}}.",
+    unarchived: "{{name}} đã hoạt động trở lại.",
   },
 };
 

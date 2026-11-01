@@ -325,10 +325,10 @@ describe("Invitations", () => {
           `/workspaces/${id}/invitations/${inv}/resend`,
       },
     });
-    await service.changeRole("ws", "inv-9", "guest");
+    await service.changeRole("ws", "inv-9", "guest", 2);
     expect(api.patch).toHaveBeenCalledWith(
       "/workspaces/ws/invitations/inv-9/role",
-      { newRole: "Guest" },
+      { newRole: 0, expectedVersion: 2 },
     );
     await service.resend("ws", "inv-9");
     expect(api.post).toHaveBeenCalledWith(
@@ -339,10 +339,18 @@ describe("Invitations", () => {
     await expect(
       service.create("ws", { email: " a@x.io ", role: "guest" }),
     ).resolves.toBe("inv-9");
-    expect(api.post).toHaveBeenCalledWith("/workspaces/ws/members", {
-      email: "a@x.io",
-      role: "Guest",
-    });
+    expect(api.post).toHaveBeenCalledWith(
+      "/workspaces/ws/members",
+      { email: "a@x.io", role: "Guest" },
+      undefined,
+    );
+    // A retry of the same attempt reuses its key, so no second email goes out.
+    await service.create("ws", { email: "a@x.io", role: "guest" }, "attempt-1");
+    expect(api.post).toHaveBeenLastCalledWith(
+      "/workspaces/ws/members",
+      { email: "a@x.io", role: "Guest" },
+      { idempotencyKey: "attempt-1" },
+    );
     await service.revoke("ws", "inv-9");
     expect(api.delete).toHaveBeenCalledWith("/workspaces/ws/invitations/inv-9");
   });
@@ -389,6 +397,68 @@ describe("Producer adapters", () => {
     expect(members[0]!.membership).toBeUndefined();
   });
 
+  it("reads the member list a page at a time and joins the pages in order", async () => {
+    const api = {
+      get: vi
+        .fn()
+        .mockResolvedValueOnce({
+          items: [
+            { userId: "u1", name: "Ada", role: "Owner", jobTitle: "Founder" },
+            { userId: "u2", name: "Alan", role: "Member", jobTitle: "  " },
+          ],
+          nextCursor: "c1",
+        })
+        .mockResolvedValueOnce({
+          items: [{ userId: "u3", name: "Grace", role: "Guest" }],
+          nextCursor: null,
+        }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    const list = await createMembersService(api).getList("ws");
+
+    expect(api.get.mock.calls.map(([url]) => url)).toEqual([
+      "/workspaces/ws/members?limit=200",
+      "/workspaces/ws/members?limit=200&cursor=c1",
+    ]);
+    expect(list.map((member) => member.userId)).toEqual(["u1", "u2", "u3"]);
+    expect(list[0]!.jobTitle).toBe("Founder");
+    expect(list[1]!.jobTitle).toBeUndefined();
+  });
+
+  it("stops reading pages when a cursor never ends", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({
+        items: [{ userId: "u1", name: "Ada", role: "Owner" }],
+        nextCursor: "again",
+      }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    const list = await createMembersService(api).getList("ws");
+
+    expect(api.get).toHaveBeenCalledTimes(100);
+    expect(list).toHaveLength(1);
+  });
+
+  it("reads a list that has no rows as empty", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({ items: null, nextCursor: null }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    expect(await createMembersService(api).getList("ws")).toEqual([]);
+  });
+
   it("changes a role with PATCH and the producer enum value", async () => {
     const api = {
       get: vi.fn(),
@@ -398,19 +468,19 @@ describe("Producer adapters", () => {
       delete: vi.fn(),
     };
     const service = createMembersService(api);
-    await service.updateRole("ws", "u2", "admin");
+    await service.updateRole("ws", "u2", "admin", 4);
     expect(api.patch).toHaveBeenCalledWith("/workspaces/ws/members/u2", {
       role: 2,
+      expectedVersion: 4,
     });
-    await service.suspend("ws", "u2");
-    expect(api.post).toHaveBeenCalledWith(
-      "/workspaces/ws/members/u2/suspend",
-      undefined,
-    );
-    await service.activate("ws", "u2");
+    await service.suspend("ws", "u2", 4);
+    expect(api.post).toHaveBeenCalledWith("/workspaces/ws/members/u2/suspend", {
+      expectedVersion: 4,
+    });
+    await service.activate("ws", "u2", 4);
     expect(api.post).toHaveBeenCalledWith(
       "/workspaces/ws/members/u2/activate",
-      undefined,
+      { expectedVersion: 4 },
     );
   });
 
@@ -529,8 +599,19 @@ describe("Producer adapters", () => {
     const service = createWorkspaceService(api, WORKSPACE_ENDPOINTS);
     const input = { name: "Acme", slug: "acme", isPersonal: false };
     const made = await service.create("acc-1", input);
-    expect(api.post).toHaveBeenCalledWith("/accounts/acc-1/workspaces", input);
+    expect(api.post).toHaveBeenCalledWith(
+      "/accounts/acc-1/workspaces",
+      input,
+      undefined,
+    );
     expect(api.post).not.toHaveBeenCalledWith("/workspaces", expect.anything());
+    // The same attempt retried reuses its key, so one workspace is made.
+    await service.create("acc-1", input, "attempt-1");
+    expect(api.post).toHaveBeenLastCalledWith(
+      "/accounts/acc-1/workspaces",
+      input,
+      { idempotencyKey: "attempt-1" },
+    );
     expect(api.get).toHaveBeenCalledWith("/workspaces/w-new");
     expect(made).toMatchObject({ id: "w-new", name: "Acme" });
   });

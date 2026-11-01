@@ -23,7 +23,7 @@ public class SetBoardItemDueDateTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         var dueDate = new DateTime(2025, 2, 1);
 
-        var command = new SetBoardItemDueDateCommand(item.Id, dueDate, null);
+        var command = new SetBoardItemDueDateCommand(item.Id, dueDate, null, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -38,7 +38,7 @@ public class SetBoardItemDueDateTests : WorkManagementHandlerTestBase
         var startDate = new DateTime(2025, 1, 1);
         var dueDate = new DateTime(2025, 2, 1);
 
-        var command = new SetBoardItemDueDateCommand(item.Id, dueDate, startDate);
+        var command = new SetBoardItemDueDateCommand(item.Id, dueDate, startDate, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -51,7 +51,7 @@ public class SetBoardItemDueDateTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem();
         SetupBoardItems(item);
 
-        var command = new SetBoardItemDueDateCommand(item.Id, null, null);
+        var command = new SetBoardItemDueDateCommand(item.Id, null, null, ExpectedVersion: 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -61,7 +61,7 @@ public class SetBoardItemDueDateTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ItemNotFound_ThrowsNotFoundException()
     {
-        var command = new SetBoardItemDueDateCommand(Guid.CreateVersion7(), new DateTime(2025, 2, 1), null);
+        var command = new SetBoardItemDueDateCommand(Guid.CreateVersion7(), new DateTime(2025, 2, 1), null, ExpectedVersion: 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

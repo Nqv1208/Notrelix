@@ -37,7 +37,7 @@ import {
   multiValueIds,
 } from "../../card-detail/item-field-more-editors";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
-import { fillPopupCopy } from "../card-popup.copy";
+import { fillPopupCopy, type CardPopupCopy } from "../card-popup.copy";
 import { useCardPopup, useCanEdit } from "../card-popup-context";
 import { useServerDraft } from "../use-server-draft";
 import {
@@ -75,7 +75,7 @@ export function dayText(value: unknown): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
 }
 
-function parseDay(text: string): string | null {
+export function parseDay(text: string): string | null {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());
   if (!m) return null;
   const [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
@@ -90,16 +90,18 @@ function parseDay(text: string): string | null {
 }
 
 /** The month grid of the date panel: year and month steps, Monday first. */
-function MiniCalendar({
+export function MiniCalendar({
   value,
   today,
   onPick,
+  copy,
 }: {
   value: string | null;
   today: Date;
   onPick: (day: string) => void;
+  /** The popup copy; the card popup and the form page both pass theirs. */
+  copy: CardPopupCopy;
 }) {
-  const { copy } = useCardPopup();
   const t = copy.sections.chips;
   const seed = value ? new Date(`${value}T00:00:00Z`) : today;
   const [view, setView] = useState({
@@ -216,6 +218,7 @@ function DateEditor({
         icons={CLOSE_ICONS}
       />
       <MiniCalendar
+        copy={copy}
         value={parsed ?? value}
         today={now}
         onPick={(day) => setText(dayText(day))}

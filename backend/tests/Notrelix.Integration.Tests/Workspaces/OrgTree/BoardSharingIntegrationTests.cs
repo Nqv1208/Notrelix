@@ -32,7 +32,7 @@ namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 /// CTR-GAP-WM-BOARD-SHARING on PostgreSQL through the real pipeline (NRX-003, NRX-004, GOV-025, GOV-030,
 /// WSP-026): entries and names only for managers and board members, counts for everyone else who can read
 /// the Board, NotFound for everyone who cannot; entry id = user id or Team id; a Guest is identified by
-/// membership and capped at Editor; email only for Owner/Admin and never for a Guest; the log and the
+/// membership and capped at Viewer; email only for Owner/Admin and never for a Guest; the log and the
 /// Private impact only for managers; and the atomic make-private command.
 /// </summary>
 [Collection("Database")]
@@ -93,8 +93,8 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
 
         var capped = sharing.Entries.Single(e => e.Id == guest);
         capped.Kind.Should().Be("guest", "a Guest is the Workspace role, never an email domain");
-        capped.Level.Should().Be("editor");
-        capped.LevelCapped.Should().BeTrue("a stored Manager level is capped at Editor for a Guest (GOV-030)");
+        capped.Level.Should().Be("viewer");
+        capped.LevelCapped.Should().BeTrue("a stored Manager level is capped at Viewer for a Guest (GOV-030)");
         capped.ExpiresAt.Should().BeNull();
 
         var teamEntry = sharing.Entries.Single(e => e.Id == team.Id);
@@ -200,6 +200,10 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         await cross.Should().ThrowAsync<AppNotFound>("a board of another workspace is unreachable");
     }
 
+    // Every member change moves the Board's version, so a later write names the version it has now.
+    private Task<long> BoardVersionAsync(Guid board) =>
+        _host.ReadAsync(c => c.Boards.Where(x => x.Id == board).Select(x => x.Version).SingleAsync());
+
     [Fact]
     public async Task EveryAccessChange_IsLogged_ForManagersOnly_NewestFirst_WithGuestFlag()
     {
@@ -208,17 +212,21 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
         var worker = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Worker");
         var board = await _host.SeedBoardAsync(stack, "Plan");
+        // The creator holds Manager on the Board, as creating it gives; a Board always keeps one.
+        await _host.SeedResourcePermissionAsync(stack, "work-management.board", board, PermissionSubjectType.User, stack.OwnerId, PermissionLevel.Manager);
         using var asOwner = CreateProvider(stack, stack.OwnerId);
 
         await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Manager"));
         _host.Now = _host.Now.AddMinutes(1);
-        await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Viewer"));
+        // Changing a level names the version it was read at.
+        var read = (await GetAsync(stack, stack.OwnerId, board)).Entries.Single(e => e.Id == guest).PermissionVersion;
+        await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Viewer", ExpectedVersion: read));
         _host.Now = _host.Now.AddMinutes(1);
         await OrgTreeTestHost.SendIdempotentAsync(asOwner, new AddBoardMemberCommand(board, editor, BoardRole.Member));
         _host.Now = _host.Now.AddMinutes(1);
-        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new UpdateBoardMemberRoleCommand(board, editor, BoardRole.Admin));
+        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new UpdateBoardMemberRoleCommand(board, editor, BoardRole.Admin, ExpectedVersion: await BoardVersionAsync(board)));
         _host.Now = _host.Now.AddMinutes(1);
-        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new RemoveBoardMemberCommand(board, editor));
+        await OrgTreeTestHost.SendIdempotentAsync(asOwner, new RemoveBoardMemberCommand(board, editor, ExpectedVersion: await BoardVersionAsync(board)));
         _host.Now = _host.Now.AddMinutes(1);
         var permissionId = (await GetAsync(stack, stack.OwnerId, board)).Entries.Single(e => e.Id == guest).PermissionId!.Value;
         await OrgTreeTestHost.SendAsync(asOwner, new RevokeResourcePermissionCommand("work-management.board", board, permissionId));

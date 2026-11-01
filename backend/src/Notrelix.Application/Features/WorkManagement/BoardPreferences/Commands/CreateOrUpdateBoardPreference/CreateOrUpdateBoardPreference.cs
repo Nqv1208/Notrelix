@@ -7,9 +7,6 @@ namespace Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands
 public record CreateOrUpdateBoardPreferenceCommand(
     Guid BoardId,
     Guid ViewId,
-    List<FilterRule>? Filters = null,
-    List<SortRule>? Sorts = null,
-    GroupRule? Group = null,
     string? Criteria = null,
     string? Columns = null)
     : ICommand<Result>, IWriteRequest, IPersonalBoardRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
@@ -46,14 +43,6 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
 
         if (existing is not null)
         {
-            if (request.Filters is not null)
-                existing.ApplyFilter(request.Filters, now);
-
-            if (request.Sorts is not null)
-                existing.ApplySort(request.Sorts, now);
-
-            existing.ApplyGroup(request.Group, now);
-
             if (request.Criteria is not null)
                 existing.ApplyCriteria(request.Criteria, now);
 
@@ -70,14 +59,6 @@ public class CreateOrUpdateBoardPreferenceCommandHandler : IRequestHandler<Creat
             request.ViewId,
             userId,
             now);
-
-        if (request.Filters is not null)
-            preference.ApplyFilter(request.Filters, now);
-
-        if (request.Sorts is not null)
-            preference.ApplySort(request.Sorts, now);
-
-        preference.ApplyGroup(request.Group, now);
 
         if (request.Criteria is not null)
             preference.ApplyCriteria(request.Criteria, now);

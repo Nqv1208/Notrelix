@@ -80,7 +80,8 @@ public sealed class ItemFieldChangedActivityConsumer : IConsumer<BoardItemFieldV
             workspaceId, msg.ItemId, msg.BoardId,
             isStatus ? ItemActivityTypes.StatusChanged : ItemActivityTypes.FieldChanged,
             msg.EventId, msg.ActorUserId, msg.OccurredAt, title, null,
-            new Dictionary<string, string?> { ["fieldName"] = field?.Name, ["from"] = from, ["to"] = to }, ct);
+            new Dictionary<string, string?> { ["fieldName"] = field?.Name, ["from"] = from, ["to"] = to }, ct,
+            automationExecutionId: msg.CausationId);
     }
 }
 
@@ -111,7 +112,8 @@ public sealed class ItemMovedActivityConsumer : IConsumer<BoardItemMovedIntegrat
         await _recorder.RecordAsync(
             workspaceId, msg.ItemId, msg.BoardId, ItemActivityTypes.MovedToGroup, msg.EventId, msg.ActorUserId, msg.OccurredAt,
             from is not null && to is not null ? $"moved this item from {from} to {to}" : "moved this item to another group", null,
-            new Dictionary<string, string?> { ["from"] = from, ["to"] = to }, ct);
+            new Dictionary<string, string?> { ["from"] = from, ["to"] = to }, ct,
+            automationExecutionId: msg.AutomationExecutionId);
     }
 }
 
@@ -154,7 +156,8 @@ public sealed class ItemAssignedActivityConsumer : IConsumer<BoardItemMemberAssi
         return _recorder.RecordAsync(
             msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.Assigned, msg.EventId, msg.AssignedBy, msg.OccurredAt,
             msg.AssignedUserId == msg.AssignedBy ? "assigned themselves to this item" : "assigned someone to this item", null,
-            new Dictionary<string, string?> { ["personId"] = msg.AssignedUserId.ToString() }, context.CancellationToken);
+            new Dictionary<string, string?> { ["personId"] = msg.AssignedUserId.ToString() }, context.CancellationToken,
+            automationExecutionId: msg.CausationId);
     }
 }
 
@@ -208,6 +211,30 @@ public sealed class ItemLabelRemovedActivityConsumer : IConsumer<BoardItemLabelR
             msg.WorkspaceIdValue, msg.ItemId, null, ItemActivityTypes.LabelRemoved, msg.EventId, msg.RemovedBy, msg.OccurredAt,
             $"removed the label \"{label}\"", null,
             new Dictionary<string, string?> { ["to"] = label }, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable(ItemActivityOrdering.NotApplicable)]
+public sealed class ItemDatesChangedActivityConsumer : IConsumer<BoardItemDatesChangedIntegrationEvent>
+{
+    private readonly ItemActivityRecorder _recorder;
+
+    public ItemDatesChangedActivityConsumer(ItemActivityRecorder recorder) => _recorder = recorder;
+
+    private static string Words(DateTimeOffset? start, DateTimeOffset? due) =>
+        start is null && due is null
+            ? "no dates"
+            : $"{start?.UtcDateTime.ToString("yyyy-MM-dd") ?? "…"} → {due?.UtcDateTime.ToString("yyyy-MM-dd") ?? "…"}";
+
+    public Task Consume(ConsumeContext<BoardItemDatesChangedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        var from = Words(msg.PreviousStartedAt, msg.PreviousDueAt);
+        var to = Words(msg.StartedAt, msg.DueAt);
+        return _recorder.RecordAsync(
+            msg.WorkspaceIdValue, msg.ItemId, msg.BoardId, ItemActivityTypes.DatesChanged, msg.EventId, msg.ChangedBy, msg.OccurredAt,
+            "changed the dates", null,
+            new Dictionary<string, string?> { ["from"] = from, ["to"] = to }, context.CancellationToken);
     }
 }
 

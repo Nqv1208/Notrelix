@@ -12,7 +12,10 @@ describe("boardSearchSchema", () => {
     expect(boardSearchSchema.parse({ view: "calendar" }).view).toBe("calendar");
     expect(boardSearchSchema.parse({ view: "timeline" }).view).toBe("timeline");
 
-    expect(() => boardSearchSchema.parse({ view: "invalid-view" })).toThrow();
+    // An unknown layout in the address opens the default one instead of failing the page.
+    expect(boardSearchSchema.parse({ view: "invalid-view" }).view).toBe(
+      "kanban",
+    );
   });
 
   it("preserves optional filter, sort, groupBy, and item params", () => {

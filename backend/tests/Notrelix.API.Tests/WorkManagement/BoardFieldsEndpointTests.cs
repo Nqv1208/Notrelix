@@ -28,7 +28,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task UpdateField_WithValidData_ReturnsOk()
     {
         var body = new { Name = "Updated Field", Type = "Text", ExpectedVersion = 1 };
-        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/fields/{FieldId}")
+        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/fields/{FieldId}?expectedVersion=1")
         {
             Content = JsonContent(body)
         });
@@ -38,7 +38,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteField_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}");
+        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

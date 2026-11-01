@@ -3,14 +3,22 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.ChangeInvitationRole;
 
+/// <summary>
+/// Changes the role a pending invitation offers. Guarded by the invitation's expected version, so a role
+/// chosen on a stale row (the invitation was resent, changed or answered meanwhile) is refused.
+/// </summary>
 public record ChangeInvitationRoleCommand(
     Guid WorkspaceId,
     Guid InvitationId,
-    WorkspaceRole NewRole
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    WorkspaceRole NewRole,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.InviteMember;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
+    // The concurrency authority is the WorkspaceInvitation; authorization stays on the Workspace.
+    ResourceRef IExpectedVersionRequest.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace-invitation"), InvitationId, WorkspaceId);
 }
 
 public class ChangeInvitationRoleCommandHandler : IRequestHandler<ChangeInvitationRoleCommand, Result>
