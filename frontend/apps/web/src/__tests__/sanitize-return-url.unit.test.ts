@@ -31,6 +31,9 @@ describe("isSignedOutRoute", () => {
   it("keeps session-expiry navigation from rewriting public auth routes", () => {
     expect(isSignedOutRoute("/sign-in")).toBe(true);
     expect(isSignedOutRoute("/sign-up")).toBe(true);
+    expect(isSignedOutRoute("/invite")).toBe(true);
+    expect(isSignedOutRoute("/invite/abc")).toBe(true);
+    expect(isSignedOutRoute("/invitations")).toBe(false);
     expect(isSignedOutRoute("/home")).toBe(false);
   });
 });

@@ -13,6 +13,7 @@ import { ForgotPasswordPage } from "../../routes/forgot-password";
 import { VerifyEmailPage } from "../../routes/verify-email";
 import { HomePage } from "../../routes/home";
 import { InvitePage } from "../../routes/invite/$token";
+import { InviteLinkPage } from "../../routes/invite";
 import { OnboardingPage } from "../../routes/onboarding/onboarding-page";
 import { WelcomePage } from "../../routes/onboarding/welcome-page";
 import { WorkspaceLayout } from "../../routes/workspaces/$workspaceId/route";
@@ -61,6 +62,12 @@ export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/home",
   component: HomePage,
+});
+
+export const inviteLinkRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invite",
+  component: InviteLinkPage,
 });
 
 export const inviteRoute = createRoute({

@@ -10,6 +10,12 @@ export function sanitizeInternalReturnUrl(input: string): string {
   return input;
 }
 
+/** Pages a person without a session opens on purpose: a 401 there must not bounce them to sign-in. */
 export function isSignedOutRoute(pathname: string): boolean {
-  return pathname === "/sign-in" || pathname === "/sign-up";
+  return (
+    pathname === "/sign-in" ||
+    pathname === "/sign-up" ||
+    pathname === "/invite" ||
+    pathname.startsWith("/invite/")
+  );
 }

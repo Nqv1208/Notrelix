@@ -226,6 +226,7 @@ const preview = {
   email: "tuan@doitac.vn",
   name: null,
   hasAccount: false,
+  workspaceRole: null,
 };
 
 function renderInvite(service: object, nav = navigation()) {
@@ -248,6 +249,27 @@ function fillAndAccept() {
 }
 
 describe("invite flow", () => {
+  it("names the workspace and the role when the invitation is to the workspace, not a board", async () => {
+    const service = {
+      getInvite: vi.fn(async () => ({
+        ...preview,
+        workspaceRole: "member" as const,
+      })),
+    };
+    renderInvite(service);
+    expect(
+      await screen.findByText(
+        copy.invite.workspaceTitle
+          .replace("{{inviter}}", preview.inviterName)
+          .replace("{{org}}", preview.orgName),
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText(new RegExp(copy.invite.workspaceRoles.member)).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(copy.invite.seeBody)).toBeNull();
+  });
+
   it("accepts without an account and lands where the backend says", async () => {
     const service = {
       getInvite: vi.fn(async () => preview),
