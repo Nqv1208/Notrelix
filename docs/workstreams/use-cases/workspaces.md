@@ -74,7 +74,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 4. **No retry safety on creation.** `CreateWorkspace` and `InviteMember` are not idempotent requests; a double submit creates `acme` and `acme-3f9a1c`, or a second invitation attempt fails with unstable text.
 5. **Unbounded reads.** Members, invitations, Spaces, Space tree, Teams and Team members have no paging or cap, and are read in full by the shell.
 6. **Entitlement and account checks are missing or fail open.** `AddMember` now requires an active Account membership (`Workspaces_Member_NotInAccount`) and a seat (`Workspaces_Member_SeatUnavailable`) (fixed for direct add); the seat gate on acceptance is an optional dependency (`IBillingSeatGate? = null`); creation has no plan limit (WSP-004, WSP-011). Gap: seat checks on direct add and on acceptance do not serialize admissions, so two concurrent admissions can exceed the seat limit by one; a separate use case.
-7. **Invitations are readable by Guests.** Fixed: `GetWorkspaceInvitations` needs `ViewMembers`, so a Guest gets 403 (section 82). Members still see invited emails; the list stays unbounded.
+7. **Invitations are readable by Guests.** Fixed: `GetWorkspaceInvitations` needs `InviteMember` (lead decision 2026-11-02), so a Member and a Guest get 403 and only Owner and Admin see invited emails (section 82); the list is a cursor page.
 8. **Account-wide policy sits in workspace settings.** `EnforceMfa` is stored and returned but enforced nowhere (WSP-012). J04 is BLOCKED.
 9. **Offboarding is incomplete.** Removing or leaving does not clean Space and Team entries (F09); SCIM provisioning has no principal (F10 BLOCKED); Account suspension has no effect on workspaces (D06 DEFINED, decided 2026-11-01, not built).
 10. **Almost no real end-to-end proof.** Four real specs touch Workspaces (switch, members read and active-member refusal, invitee answers). Create, invite by form, leave, Space and Team flows rely on mock specs only. Twenty operations have no frontend caller (list in 1.3).
@@ -91,7 +91,7 @@ The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Mem
 | Missing expected version (Team restore) | `backend/src/Notrelix.Application/Features/Workspaces/Teams/Commands/RestoreTeam/` |
 | `AddMember` accepted any user id (fixed: Account-membership and seat checks), and has no frontend caller | `backend/src/Notrelix.Application/Features/Workspaces/Members/Commands/AddMember/AddMember.cs` |
 | Seat gate is optional and fails open | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Services/InvitationAcceptanceService.cs`, `.../Commands/AcceptInvitation/AcceptInvitation.cs` |
-| Invitation list readable by Guests (fixed: `ViewMembers`) | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Queries/GetWorkspaceInvitations/GetWorkspaceInvitations.cs` |
+| Invitation list readable by Guests and Members (fixed: `InviteMember`) | `backend/src/Notrelix.Application/Features/Workspaces/Invitations/Queries/GetWorkspaceInvitations/GetWorkspaceInvitations.cs` |
 | Unbounded reads | `Members/Queries/GetWorkspaceMembers`, `Invitations/Queries/GetWorkspaceInvitations`, `Spaces/Queries/GetWorkspaceSpaces`, `Spaces/Queries/GetSpaceTree`, `Teams/Queries/GetWorkspaceTeams` (all under `backend/src/Notrelix.Application/Features/Workspaces/`) |
 | Dead code, wrong count: query with no endpoint that counts members of every status | `backend/src/Notrelix.Application/Features/Workspaces/WorkspaceHome/Queries/GetWorkspaceDashboard/GetWorkspaceDashboard.cs` |
 | Stub: activity read returns a constant empty page | `backend/src/Notrelix.Application/Features/Workspaces/WorkspaceHome/Queries/GetWorkspaceActivity/GetWorkspaceActivity.cs` |
@@ -667,15 +667,15 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 
 ### UC-WSP-G03 List workspace invitations
 - Capability: G Invitation create
-- Actors and permission: Owner, Admin, Member (`ViewMembers`; a Guest gets 403)
+- Actors and permission: Owner, Admin (`InviteMember`; a Member and a Guest get 403)
 - Preconditions: Active membership.
 - Input: `workspaceId`.
 - Output: Rows: email, role, status (Pending, Accepted, Revoked, Expired, Declined), issuer, expiry, version. No token.
 - Main flow: 1. `GET /api/v1/workspaces/{id}/invitations`. 2. Handler lists.
-- No-op / rejection / concurrency / retry: Guest: 403 (`ViewMembers`, fixed; section 82 calls invitations sensitive). A Member still sees invited emails, because the member list's email masking is a handler role check the architecture tests forbid; hiding them needs a pipeline-level rule. The read is a cursor page (LD-06): default 50, at most 200, newest first; `limit` outside 1 to 200 or a cursor the list did not issue answers 400. A Pending invitation past its expiry is reported as Expired (LD-04); the sweep that writes the status is not built.
+- No-op / rejection / concurrency / retry: A Member and a Guest: 403 (`InviteMember`, lead decision 2026-11-02; section 82 calls invitations sensitive, so invited e-mail addresses are for the people who may invite, a pipeline-level rule and not a handler role check). The read is a cursor page (LD-06): default 50, at most 200, newest first; `limit` outside 1 to 200 or a cursor the list did not issue answers 400. A Pending invitation past its expiry is reported as Expired (LD-04); the sweep that writes the status is not built.
 - UI states: Loading, empty, success, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 14, 25, 82; WGREQ025, WGREQ032.
-- Acceptance: Given a Guest, When they list invitations, Then 403. Given an Admin, Then rows without tokens.
+- Acceptance: Given a Member or a Guest, When they list invitations, Then 403. Given an Admin, Then rows without tokens.
 - Evidence: BE `GET /api/v1/workspaces/{id}/invitations`, `GetWorkspaceInvitationsQueryHandler` · FE `use-workspace-invitations.ts`, Members surface 'pending-invitations' · Design `Final-Members` · Tests `InvitationScopeTests`, `InvitationEndpointTests`, `WorkspaceRoleBaselineIntegrationTests` (Guest 403, Admin and Member list) · FE gated by `enabled: admin` in `members.tsx` · Built: `GetWorkspaceInvitationsQuery(Cursor, Limit)` returns a `CursorPage`, rows carry `version`, expired read; `invitations.service.ts` joins the pages; mock backend pages the same way. Existing tests that read the list as an array (`WorkspaceAdministrationReadHandlerTests`, `WorkspaceAdministrationReadIntegrationTests`, `WorkspaceRoleBaselineIntegrationTests`) need updating · Real e2e workspace-invitations-manage.real.e2e.spec.ts
 - State: HARDENING — Runs on the real stack (`workspace-invitations-manage.real.e2e.spec.ts`): rows carry no token key, an Owner and a Member read them, a Guest gets 403, cursor pages cover each row once, limits 0 and 201 and a made-up cursor answer 400. Left for DONE: Owner check; the owner question (may Members see invited emails); the issuer in the row; the expiry sweep that writes Expired; design diff.
 
@@ -1575,7 +1575,7 @@ For `docs/product/workspaces.md`:
 9. Section 22.1: "Billing's seat gate is mandatory and fails closed for acceptance, direct add and activation. Direct add needs an active Account membership of the person."
 10. Section 19: add "removal and leave delete the person's Space and Team entries in the same transaction; a Team without a Lead is flagged".
 11. Section 40: either move `EnforceMfa` to its Account or Identity owner or name its enforcer.
-12. Section 48.2: state that workspace invitation lists need `ViewMembers`, and lists page by cursor (default 50, max 200).
+12. Section 48.2: state that workspace invitation lists need `InviteMember` (Owner, Admin), and lists page by cursor (default 50, max 200).
 13. Section 43.2: add the 30-day restore window for deleted Spaces and Teams.
 14. Section 81: "Workspaces serves no activity feed; Collaboration does."
 15. A new section "Bulk invitation": at most 50 emails per request, per-row results.
