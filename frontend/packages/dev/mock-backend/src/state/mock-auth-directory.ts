@@ -61,6 +61,8 @@ export interface MockGuestInvite {
   /** The workspace and board the invitation is for. */
   readonly workspaceId: string;
   readonly boardId: string;
+  /** Set for a workspace invitation (no board): the role it offers. */
+  readonly workspaceRole?: "member" | "guest";
 }
 
 const WORKSPACE_ID = "mock-workspace-primary";
@@ -81,6 +83,22 @@ const INVITES: readonly MockGuestInvite[] = [
     hasAccount: false,
     workspaceId: WORKSPACE_ID,
     boardId: BOARD_ID,
+  },
+  {
+    token: "invite-wsp-member",
+    state: "valid",
+    inviterName: "Nguyễn Thu Hà",
+    inviterInitials: "HA",
+    orgName: "Minh An Group",
+    boardTitle: "Minh An Group",
+    level: "viewer",
+    expiresOn: "2027-01-31",
+    email: "van.anh@doitac-erp.vn",
+    name: "Lê Vân Anh",
+    hasAccount: false,
+    workspaceId: WORKSPACE_ID,
+    boardId: "",
+    workspaceRole: "member",
   },
   {
     token: "invite-erp-existing",

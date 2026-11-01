@@ -69,7 +69,10 @@ test("Members changes a role and confirms removal (WX-MEM-001)", async ({
     .getByRole("alertdialog")
     .getByRole("button", { name: "Remove member" })
     .click();
-  await expect(page.locator("tbody tr")).toHaveCount(3);
+  // The member rows; a phone-width note row under a member is hidden from assistive technology.
+  await expect(page.locator("tbody tr:not([aria-hidden='true'])")).toHaveCount(
+    3,
+  );
 });
 
 test("Members keeps names readable at 320 px without page overflow (WX-QUAL-001)", async ({

@@ -61,6 +61,9 @@ export const en = {
     viewersHint:
       "A viewer can only read. Choosing a higher level changes their board role first.",
     empty: "No one has been added to this Board on their own.",
+    loading: "Reading who has access…",
+    loadError: "Couldn't read who has access to this Board.",
+    retry: "Try again",
     you: "(you)",
     owner: "Board owner",
     ownerRow: "Board owner",
@@ -249,6 +252,9 @@ export const vi: BoardShareCopy = {
     viewersHint:
       "Người xem chỉ đọc. Chọn mức cao hơn sẽ đổi vai trò trên board của họ trước.",
     empty: "Chưa có ai được thêm riêng vào board này.",
+    loading: "Đang đọc danh sách người có quyền…",
+    loadError: "Không đọc được danh sách người có quyền trên board này.",
+    retry: "Thử lại",
     you: "(bạn)",
     owner: "Chủ board",
     ownerRow: "Chủ board",
