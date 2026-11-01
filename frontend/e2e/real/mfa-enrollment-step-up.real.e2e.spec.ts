@@ -26,6 +26,15 @@ test("turning two-factor on asks for the password first, and turning it off asks
     name: "Confirm to turn on two-factor authentication",
   });
   await expect(proof).toBeVisible();
+  // Rejection: a wrong password is refused in words and nothing is started.
+  await proof.getByLabel("Current password").fill("not-the-password");
+  await proof.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(proof.getByRole("alert")).toHaveText(
+    "That password is not right.",
+  );
+  await expect(
+    page.getByRole("region", { name: "Set up the authenticator app" }),
+  ).toHaveCount(0);
   await proof.getByLabel("Current password").fill(user.password);
   await proof.getByRole("button", { name: "Confirm", exact: true }).click();
 
@@ -36,6 +45,15 @@ test("turning two-factor on asks for the password first, and turning it off asks
   const secret = /[A-Z2-7]{16,}/.exec(await setup.innerText())?.[0];
   expect(secret, "the authenticator key is shown").toBeDefined();
 
+  // Rejection: a wrong first code leaves the setup open and the factor off.
+  await setup.getByRole("textbox", { name: "Code" }).fill("000000");
+  await setup.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(setup.getByRole("alert")).toContainText(
+    "That code is not right",
+  );
+  expect(
+    (await apiRead<Summary>(page, "/auth/security/summary")).mfa.isEnabled,
+  ).toBe(false);
   await setup.getByRole("textbox", { name: "Code" }).fill(totpCode(secret!));
   await setup.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.getByText("Save your backup codes")).toBeVisible();
