@@ -58,6 +58,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<OnboardingDraftSweeper>();
         services.AddHostedService<OnboardingDraftSweepService>();
 
+        // Workspaces: purge the data of workspaces deleted more than 30 days ago (restore is over by then).
+        services.AddOptions<DeletedWorkspacePurgeOptions>()
+            .Bind(configuration.GetSection(DeletedWorkspacePurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedWorkspacePurgeOptions>, DeletedWorkspacePurgeOptionsValidator>();
+        services.AddScoped<DeletedWorkspacePurger>();
+        services.AddHostedService<DeletedWorkspacePurgeService>();
+
         // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
         services.AddOptions<DueDateNotificationOptions>()
             .Bind(configuration.GetSection(DueDateNotificationOptions.SectionName))

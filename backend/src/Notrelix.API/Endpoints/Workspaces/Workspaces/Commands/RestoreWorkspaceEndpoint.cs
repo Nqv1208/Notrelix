@@ -11,7 +11,7 @@ public static class RestoreWorkspaceEndpoint
         group.MapWorkspacePost("/restore", HandleAsync)
             .WithName("Workspaces.Workspaces.RestoreWorkspace")
             .WithTags("Workspaces.Workspaces")
-            .WithSummary("Restore a soft-deleted workspace");
+            .WithSummary("Restore a deleted workspace within 30 days (Owner only)");
         return group;
     }
 

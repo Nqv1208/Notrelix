@@ -26019,7 +26019,7 @@
           "Workspaces.Workspaces",
           "Workspaces.Workspaces"
         ],
-        "summary": "Permanently delete a workspace",
+        "summary": "Delete a workspace (Owner only). Restorable for 30 days, then purged",
         "operationId": "Workspaces.Workspaces.DeleteWorkspace",
         "parameters": [
           {
@@ -26223,7 +26223,7 @@
           "Workspaces.Workspaces",
           "Workspaces.Workspaces"
         ],
-        "summary": "Restore a soft-deleted workspace",
+        "summary": "Restore a deleted workspace within 30 days (Owner only)",
         "operationId": "Workspaces.Workspaces.RestoreWorkspace",
         "parameters": [
           {
@@ -26411,6 +26411,39 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/{accountId}/workspaces/deleted": {
+      "get": {
+        "tags": [
+          "Workspaces.Workspaces",
+          "Workspaces.Workspaces"
+        ],
+        "summary": "List the workspaces the caller owns that were deleted inside the 30-day restore window",
+        "operationId": "Workspaces.Workspaces.GetDeletedWorkspaces",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.DTOs.DeletedWorkspaceDto"
                   }
                 }
               }
@@ -35544,6 +35577,36 @@
           },
           "isArchived": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.DTOs.DeletedWorkspaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "purgeAfter": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false

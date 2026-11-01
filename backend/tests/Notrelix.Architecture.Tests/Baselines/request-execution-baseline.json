@@ -10425,6 +10425,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetDeletedWorkspaces.GetDeletedWorkspacesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetDeletedWorkspaces.GetDeletedWorkspacesQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces.GetUserWorkspacesQuery",
     "kind": "Query",
     "principalMarkers": [

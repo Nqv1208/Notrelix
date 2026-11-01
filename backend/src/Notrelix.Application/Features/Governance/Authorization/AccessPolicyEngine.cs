@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Public.Authorization;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
 
@@ -64,6 +65,18 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(
                 AccessDecisionKind.SecurityMisconfiguration,
                 $"{descriptor.RequestType.Name} is a tenant-scoped write without access facts.");
+        }
+
+        // A deleted workspace is NotFound to everyone, whatever their role and whatever the request (a Workspace or
+        // a resource inside it): deleting cuts access at once, and the answer does not tell a member from a
+        // stranger. Only its Owner reaches it, and only to restore it (the permission below is Owner-only too).
+        if (descriptor.Access.RequiresDatastoreFacts
+            && (descriptor.Scope is ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource)
+            && !facts.WorkspaceExists
+            && !(request is IWorkspaceReachesDeletedRequest
+                 && string.Equals(facts.WorkspaceMemberRole, "Owner", StringComparison.Ordinal)))
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
         }
 
         if (descriptor.Access.RequiresPermission)
@@ -207,6 +220,13 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         if (string.Equals(role, "Owner", StringComparison.Ordinal))
         {
             return AccessDecision.Allow();
+        }
+
+        // Deleting and restoring a workspace are Owner-only (owner decision 2026-11-01): no rule, grant, custom
+        // role or level can lend them, checked before any of those is read.
+        if (!isAccount && permission.Action is PermissionAction.DeleteWorkspace or PermissionAction.RestoreWorkspace)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
         var firstPriority = facts.PermissionRules.Count == 0

@@ -14,6 +14,12 @@ public sealed class Workspace :
     public bool IsPersonal { get; private set; }
     public Guid AccountId { get; private set; }
 
+    /// <summary>How long a deleted workspace can be restored; after it the purge job removes its data.</summary>
+    public static readonly TimeSpan RestoreWindow = TimeSpan.FromDays(30);
+
+    /// <summary>The instant after which a deleted workspace can no longer be restored and may be purged.</summary>
+    public DateTimeOffset? PurgeAfter => DeletedAt + RestoreWindow;
+
     private Workspace() : base() { }
 
     public static Workspace Create(Guid accountId, Guid ownerId, string name, string slug, DateTimeOffset createdAt, string? description = null, bool isPersonal = false, string? size = null, string? language = null)
@@ -158,6 +164,9 @@ public sealed class Workspace :
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
+        if (IsPersonal)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotDeletePersonal, "A personal workspace cannot be deleted.");
+
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
@@ -168,6 +177,9 @@ public sealed class Workspace :
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+
+        if (restoredAt > PurgeAfter)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_RestoreWindowExpired, "The restore window of this workspace has passed.");
 
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);

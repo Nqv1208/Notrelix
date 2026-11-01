@@ -243,6 +243,7 @@ Features/Workspaces/Workspaces/Commands/TransferOwnership/TransferOwnership.cs
 Features/Workspaces/Workspaces/Commands/UnarchiveWorkspace/UnarchiveWorkspace.cs
 Features/Workspaces/Workspaces/Commands/UpdateWorkspaceProfile/UpdateWorkspaceProfile.cs
 Features/Workspaces/Workspaces/Queries/GetAccountWorkspaces/GetAccountWorkspaces.cs
+Features/Workspaces/Workspaces/Queries/GetDeletedWorkspaces/GetDeletedWorkspaces.cs
 Features/Workspaces/Workspaces/Queries/GetUserWorkspaces/GetUserWorkspaces.cs
 Features/Workspaces/Workspaces/Queries/GetWorkspace/GetWorkspace.cs
 Features/Workspaces/Workspaces/Queries/ResolveSlug/ResolveSlug.cs

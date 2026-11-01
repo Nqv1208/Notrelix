@@ -797,6 +797,14 @@ How they work together:
   they must not build SQL or probe the catalog per call (the dynamic versions cost about 0.18 ms per row). An active
   grant is `revoked_at IS NULL AND membership_status = 'Active'`; a column of `authz.access_grants` that goes missing
   fails the apply instead of changing who has access. Any change keeps the old/new truth table at zero differences.
+- A deleted workspace is visible only to its Owner (`RlsSqlScripts/028_deleted_workspaces.sql`, owner decision
+  2026-11-01). `ops.is_workspace_owner(account, workspace)` is a bounded `SECURITY DEFINER` helper (worker scope true;
+  otherwise an active Owner membership of the person in the request). The application login's select, update and delete
+  policies on `workspace.workspaces` become the Account scope AND (`deleted_at IS NULL` OR the person owns the
+  workspace): a conjunction added to the 007 scope, so it only narrows, and the update check refuses a non-Owner who
+  tries to set `deleted_at`. The worker policy is unchanged, so the purge job still finds the row. Child content tables keep
+  their own policies; the Application refuses every request on a deleted workspace (`AccessPolicyEngine`). Deploy:
+  run `--rls-apply`; no schema migration, since `deleted_at`, `deleted_by` and `delete_reason` already exist.
 - `enter_registration_scope(user)` is refused for an id that already exists. A registration may insert exactly
   that user (and, when it carries an invitation binding, only with the invited address) and exactly the one
   account named by its first grant. Whether an address is already registered is answered by

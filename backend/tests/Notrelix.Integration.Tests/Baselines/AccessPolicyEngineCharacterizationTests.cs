@@ -867,7 +867,8 @@ public sealed class AccessPolicyEngineCharacterizationTests
         emailVerified,
         false,
         accountMemberRole,
-        false,
+        // The workspace of these facts exists: a deleted one is NotFound to everyone before any role is read.
+        true,
         workspaceMemberRole,
         resourceExists,
         resourceAudience,
