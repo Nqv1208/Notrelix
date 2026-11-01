@@ -263,6 +263,38 @@ describe.each([
     );
   });
 
+  it(`${fui("wm.board-settings:options-double-enter", locale)}sends an option once when Enter is pressed twice before the write answers (${locale})`, async () => {
+    const actions = spyActions();
+    let finish: (value: { ok: true }) => void = () => undefined;
+    actions.addOption.mockImplementation(
+      () => new Promise((resolve) => (finish = resolve)),
+    );
+    renderPage(copy, {
+      fieldId: "sf-priority",
+      actions: actions as unknown as BoardSettingsActions,
+    });
+    const panel = screen.getByRole("complementary", {
+      name: fillCopy(copy.panel.label, { name: "Mức ưu tiên" }),
+    });
+    fireEvent.click(
+      within(panel).getByRole("button", { name: copy.panel.addOption }),
+    );
+    const input = within(panel).getByLabelText(copy.panel.optionName, {
+      selector: "input[placeholder]",
+    });
+    fireEvent.change(input, { target: { value: "Chưa xác định" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(actions.addOption).toHaveBeenCalledTimes(1));
+    finish({ ok: true });
+    await waitFor(() =>
+      expect(
+        within(panel).getByRole("button", { name: copy.panel.addOption }),
+      ).toBeTruthy(),
+    );
+    expect(actions.addOption).toHaveBeenCalledTimes(1);
+  });
+
   it(`${fui("wm.board-settings:select-field", locale)}opens a field from its row and closes its panel (${locale})`, () => {
     const { props: pageProps } = renderPage(copy, { fieldId: "sf-priority" });
     fireEvent.click(

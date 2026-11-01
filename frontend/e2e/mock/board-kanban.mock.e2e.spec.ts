@@ -115,14 +115,14 @@ for (const viewport of VIEWPORTS) {
         await dragCardToLane(page, ERP_149, "Đang làm");
       } else {
         // On a phone the lanes scroll sideways; the keyboard and touch
-        // alternative to a drag is the status pill in the item sheet.
+        // alternative to a drag is the column picker in the card popup's header.
         await page.getByRole("button", { name: ERP_149, exact: true }).click();
         const sheet = page.getByRole("dialog", { name: ERP_149 });
         await sheet
-          .getByRole("button", { name: /^Trạng thái: Cần làm/ })
+          .getByRole("button", { name: "Cần làm", exact: true })
           .click();
-        await page.getByRole("menuitem", { name: "Đang làm" }).click();
-        await sheet.getByRole("button", { name: "Đóng (Esc)" }).click();
+        await page.getByRole("option", { name: "Đang làm" }).click();
+        await sheet.getByRole("button", { name: "Đóng", exact: true }).click();
       }
       await expect.poll(() => laneCounts(page)).toEqual(["5", "4", "2", "5"]);
       // The lane shows every card, so the card that arrived is already there.
@@ -146,16 +146,29 @@ for (const viewport of VIEWPORTS) {
       page,
     }) => {
       await openBoard(page);
+      // The filter is a builder: one row per condition, all of them joined by "VÀ".
       await page.getByRole("button", { name: "Lọc", exact: true }).click();
-      await page.getByRole("menuitemcheckbox", { name: "Quá hạn" }).click();
-      await page.getByRole("menuitemcheckbox", { name: "Thấp" }).click();
+      await page.getByRole("button", { name: "Thêm điều kiện" }).click();
+      await page
+        .getByRole("combobox", { name: "Trường (Điều kiện 1)" })
+        .selectOption({ label: "Quá hạn" });
+      await page.getByRole("button", { name: "Thêm điều kiện" }).click();
+      await page
+        .getByRole("combobox", { name: "Trường (Điều kiện 2)" })
+        .selectOption({ label: "Ưu tiên" });
+      await page
+        .getByRole("listbox", { name: "Giá trị (Điều kiện 2)" })
+        .getByRole("option", { name: "Thấp" })
+        .click();
       await page.keyboard.press("Escape");
 
       const bar = page
         .getByRole("status")
         .filter({ hasText: "Không có việc khớp bộ lọc" });
       await expect(bar).toContainText("16 việc của board đang bị ẩn");
-      expect(new URL(page.url()).searchParams.get("filter")).toBe("p.low~o");
+      expect(new URL(page.url()).searchParams.get("filter")).toBe(
+        "c2:and~%24overdue.is_true~mock-erp-col-priority.has_any.mock-erp-priority-low",
+      );
       await expect.poll(() => laneCounts(page)).toEqual(["0", "0", "0", "0"]);
 
       await bar.getByRole("button", { name: "Bỏ lọc" }).click();
