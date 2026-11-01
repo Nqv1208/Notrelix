@@ -184,7 +184,7 @@ export function MoveToSpaceDialog({
           }}
           className="flex min-h-0 flex-col gap-4"
         >
-          <DialogHeader>
+          <DialogHeader className="max-md:pr-11">
             <DialogTitle>
               {formatCopy(
                 subject.kind === "space"

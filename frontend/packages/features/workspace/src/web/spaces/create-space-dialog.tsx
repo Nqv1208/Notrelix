@@ -111,7 +111,7 @@ export function CreateSpaceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-          <DialogHeader>
+          <DialogHeader className="max-md:pr-11">
             <DialogTitle>
               {parent
                 ? formatCopy(copy.create.childTitle, { parent: parent.name })
