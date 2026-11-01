@@ -38,7 +38,8 @@ public static class MapBoardEndpoints
         boardGroup.MapRestoreBoard();
         boardGroup.MapUpdateBoardVisibility();
         boardGroup.MapMoveBoardToSpace();
-        boardGroup.MapBoardTransfer();
+
+        app.MapBoardTransfer();
 
         var members = app
             .MapGroup("/api/v1/boards/{boardId:guid}/members")

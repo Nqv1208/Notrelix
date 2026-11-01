@@ -36,7 +36,7 @@ public class ChecklistsEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task UpdateChecklist_WithValidData_ReturnsOk()
     {
         var body = new { Title = "Updated Checklist", ExpectedVersion = 1 };
-        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/checklists/{ChecklistId}")
+        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/checklists/{ChecklistId}?expectedVersion=1")
         {
             Content = JsonContent(body)
         });

@@ -38,7 +38,7 @@ public sealed class WorkP3ManifestArchitectureTests
     /// <summary>Modules outside P3 (Views/Forms/Approvals and other P4 surfaces).</summary>
     private static readonly HashSet<string> OutOfScopeModules = new(StringComparer.Ordinal)
     {
-        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Relations", "Templates", "Views",
+        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Relations", "Templates", "Transfer", "Views",
     };
 
     /// <summary>
@@ -152,7 +152,7 @@ public sealed class WorkP3ManifestArchitectureTests
         // Labels (Work-owned item metadata, WMREQ023)
         ["Labels.GetLabelsQuery"] = new(Disposition.Keep, "-"),
         ["Labels.CreateLabelCommand"] = new(Disposition.Keep, "-"),
-        ["Labels.UpdateLabelCommand"] = new(Disposition.Keep, "-"),
+        ["Labels.UpdateLabelCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["Labels.DeleteLabelCommand"] = new(Disposition.Keep, "-"),
         ["Labels.AddLabelToBoardItemCommand"] = new(Disposition.Keep, "-"),
         ["Labels.RemoveLabelFromBoardItemCommand"] = new(Disposition.Keep, "-"),
@@ -173,6 +173,7 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardItems/Services/MoveBoardItemUseCase.cs",
             "Notrelix.Application/Features/WorkManagement/BoardItems/Commands/DuplicateBoardItem/DuplicateBoardItem.cs",
             "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DeleteBoardGroup/DeleteBoardGroup.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
@@ -189,6 +190,7 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs",
             "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["BoardFields (board_fields: board_id)"] =
@@ -196,6 +198,7 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/CreateBoardField/CreateBoardField.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveBoardField/MoveBoardField.cs",
             "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["FieldOptions (field_options: field_id)"] =
@@ -203,6 +206,7 @@ public sealed class WorkP3ManifestArchitectureTests
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/AddFieldOption/AddFieldOption.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveFieldOption/MoveFieldOption.cs",
             "Notrelix.Application/Features/WorkManagement/Templates/Commands/CreateBoardFromTemplate/CreateBoardFromTemplate.cs",
+            "Notrelix.Application/Features/WorkManagement/Templates/Services/BoardStructureInstantiator.cs",
         ],
         ["ItemChecklists (checklists: item_id)"] =
         [
@@ -386,7 +390,7 @@ public sealed class WorkP3ManifestArchitectureTests
     private static readonly string[] WorkDbSetBaseline =
     [
         "Boards", "BoardGroups", "BoardFields", "FieldOptions", "BoardViews", "BoardViewPins", "BoardViewUserPreferences",
-        "SavedFilters", "BoardItems", "BoardItemValues", "BoardItemMembers", "BoardItemLabels", "BoardItemLinks", "Labels",
+        "SavedFilters", "BoardItems", "BoardItemValues", "BoardItemMembers", "BoardItemLabels", "BoardItemLinks", "BoardItemVotes", "BoardItemViews", "Labels",
         "BoardMembers", "BoardSubscribers", "BoardRelations", "BoardItemConnections", "MirrorValueSnapshots", "ItemDependencies",
         "TimeTrackingEntries", "RelationFieldConfigs", "Checklists", "ChecklistItems", "Forms", "FormQuestions",
         "FormSubmissions", "ApprovalRequests", "ApprovalSteps", "WorkloadAllocations", "BoardTemplates", "ItemTemplates",

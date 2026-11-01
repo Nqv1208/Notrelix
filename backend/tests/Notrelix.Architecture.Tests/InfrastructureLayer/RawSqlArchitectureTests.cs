@@ -64,6 +64,9 @@ public class RawSqlArchitectureTests
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).
         "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresBoardItemKeyAllocator.cs",
+        // Records that a member opened an Item: one throttled upsert into work.board_item_views inside the
+        // request transaction (EF cannot express the conditional ON CONFLICT update).
+        "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresBoardItemViews.cs",
         // ADR-009: transaction-scoped advisory lock (pg_advisory_xact_lock)
         // serializing one Workspace's Space hierarchy writes (create/move/rename/
         // restore) so ancestry, sibling and closure reads cannot interleave.

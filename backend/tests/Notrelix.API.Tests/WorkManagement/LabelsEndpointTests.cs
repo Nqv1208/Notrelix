@@ -34,8 +34,8 @@ public class LabelsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateLabel_WithValidData_ReturnsOk()
     {
-        var body = new { Name = "Updated Label", Color = "#00FF00" };
-        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/labels/{LabelId}")
+        var body = new { Name = "Updated Label", Color = "#00FF00", ExpectedVersion = 1 };
+        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/labels/{LabelId}?expectedVersion=1")
         {
             Content = JsonContent(body)
         });

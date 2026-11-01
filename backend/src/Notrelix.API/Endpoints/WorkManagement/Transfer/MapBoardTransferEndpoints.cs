@@ -12,8 +12,10 @@ public static class MapBoardTransferEndpoints
 {
     private const string Tag = "WorkManagement.Transfer";
 
-    public static IEndpointRouteBuilder MapBoardTransfer(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapBoardTransfer(this IEndpointRouteBuilder app)
     {
+        var group = app.MapGroup("/api/v1/boards/{boardId:guid}");
+
         group.MapResourcePost("/imports", UploadAsync)
             .WithName("WorkManagement.Imports.Upload").WithTags(Tag)
             .WithSummary("Upload a CSV or XLSX file to import items from (multipart/form-data, streamed); nothing is created yet")
@@ -68,7 +70,7 @@ public static class MapBoardTransferEndpoints
             .WithSummary("Download the caller's ready export (authorised on every call; gone after 24 hours)")
             .Produces(StatusCodes.Status200OK, contentType: "application/octet-stream")
             .ProducesProblem(StatusCodes.Status404NotFound);
-        return group;
+        return app;
     }
 
     private static IReadOnlyList<ColumnMap> Map(ImportMappingRequest body) =>

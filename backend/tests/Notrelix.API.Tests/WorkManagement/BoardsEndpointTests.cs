@@ -52,14 +52,14 @@ public class BoardsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveBoard_ReturnsNoContent()
     {
-        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/archive", null);
+        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/archive", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task UnarchiveBoard_ReturnsNoContent()
     {
-        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/unarchive", null);
+        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/unarchive", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

@@ -82,7 +82,7 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
     public async Task Handle_WithVisibility_SetsVisibility()
     {
         var command = new CreateBoardInWorkspaceCommand(
-            TestWorkspaceId, "Board", null, null, BoardVisibility.PublicLink);
+            TestWorkspaceId, "Board", null, null, BoardVisibility.Private);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

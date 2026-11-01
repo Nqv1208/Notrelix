@@ -236,11 +236,25 @@ public class BoardTests
         ((IHasDomainEvents)board).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
-        board.ChangeVisibility(BoardVisibility.PublicLink, updatedBy, DateTimeOffset.UtcNow);
+        board.ChangeVisibility(BoardVisibility.Private, updatedBy, DateTimeOffset.UtcNow);
 
-        board.Visibility.Should().Be(BoardVisibility.PublicLink);
+        board.Visibility.Should().Be(BoardVisibility.Private);
 
         board.DomainEvents.Should().ContainSingle(e => e is BoardVisibilityChangedDomainEvent);
+    }
+
+    [Fact]
+    public void ChangeVisibility_ToPublicLink_IsRefusedAndChangesNothing()
+    {
+        var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
+        var before = board.Visibility;
+        ((IHasDomainEvents)board).ClearDomainEvents();
+
+        var act = () => board.ChangeVisibility(BoardVisibility.PublicLink, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        board.Visibility.Should().Be(before);
+        board.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]

@@ -15,9 +15,6 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddF
 /// "in_progress", "review", "done"); when a caller that predates categories omits
 /// it, the option is added as "in_progress". Other field types take no category.
 /// </summary>
-/// <summary>The new option's id and the field's version after the add, so a chain of option adds names the right version.</summary>
-public record AddFieldOptionResult(Guid OptionId, long Version);
-
 [IdempotencyOperation("work-management.board-fields.add-field-option.v1")]
 public record AddFieldOptionCommand(
     Guid BoardId,
@@ -32,6 +29,9 @@ public record AddFieldOptionCommand(
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
 }
+
+/// <summary>The new option's id and the field's version after the add, so a chain of option adds names the right version.</summary>
+public record AddFieldOptionResult(Guid OptionId, long Version);
 
 public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionCommand, Result<AddFieldOptionResult>>
 {
