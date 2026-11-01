@@ -96,4 +96,91 @@ public class VerifyMfaEnrollmentTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         pending.Status.Should().Be(MfaMethodStatus.Active);
     }
+
+    [Fact]
+    public async Task AWrongCode_AnswersInvalidCode_LeavesThePendingMethod_AndKeepsTheProof()
+    {
+        var pending = Pending();
+        SetupUserMfaMethods(pending);
+
+        var result = await CreateSut().Handle(
+            new VerifyMfaEnrollmentCommand { MfaMethodId = pending.Id, Code = "000000", StepUpToken = "proof" }, CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e =>
+            e.Code == "identity.mfa.invalid-verification-code" && e.Type == ApplicationErrorType.Validation);
+        pending.Status.Should().Be(MfaMethodStatus.PendingVerification);
+        StepUpServiceMock.Verify(s => s.ConsumeAsync(
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AnotherPersonsMethodId_AndAnUnknownId_AnswerTheSameRefusal_AndNothingChanges()
+    {
+        var theirs = UserMfaMethod.Create(Guid.CreateVersion7(), MfaMethodType.AuthenticatorApp, TestNow, SecretRef.Create("theirs"));
+        SetupUserMfaMethods(theirs);
+
+        var foreign = await CreateSut().Handle(
+            new VerifyMfaEnrollmentCommand { MfaMethodId = theirs.Id, Code = Code, StepUpToken = "proof" }, CancellationToken.None);
+        var unknown = await CreateSut().Handle(
+            new VerifyMfaEnrollmentCommand { MfaMethodId = Guid.CreateVersion7(), Code = Code, StepUpToken = "proof" }, CancellationToken.None);
+
+        foreign.TypedErrors.Should().BeEquivalentTo(unknown.TypedErrors);
+        foreign.TypedErrors.Should().ContainSingle(e => e.Code == "identity.mfa.enrollment-not-found");
+        theirs.Status.Should().Be(MfaMethodStatus.PendingVerification);
+    }
+
+    [Fact]
+    public async Task VerifyingAnAlreadyActiveMethod_AnswersTheSameRefusal_SoCodesCannotBeReplayed()
+    {
+        var active = Active();
+        SetupUserMfaMethods(active);
+
+        var result = await CreateSut().Handle(
+            new VerifyMfaEnrollmentCommand { MfaMethodId = active.Id, Code = Code, StepUpToken = "proof" }, CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.mfa.enrollment-not-found");
+    }
+
+    [Fact]
+    public async Task AWrongOrSpentProof_AfterARightCode_ActivatesNothingAndIssuesNoCodes()
+    {
+        var pending = Pending();
+        SetupUserMfaMethods(pending);
+        StepUpServiceMock
+            .Setup(s => s.ConsumeAsync("spent", TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(new ApplicationError(
+                "identity.security.step-up-invalid", "Invalid.", ApplicationErrorType.Validation)));
+
+        var result = await CreateSut().Handle(
+            new VerifyMfaEnrollmentCommand { MfaMethodId = pending.Id, Code = Code, StepUpToken = "spent" }, CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.security.step-up-invalid");
+        pending.Status.Should().Be(MfaMethodStatus.PendingVerification);
+        IdentityContextMock.Object.MfaRecoveryBatches.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Activating_IssuesEightCodes_EndsOtherSessionsOnly_AndRecordsTheLines()
+    {
+        var pending = Pending();
+        var current = CreateSession();
+        var other = CreateSession();
+        SetupUserMfaMethods(pending);
+        SetupSessions(current, other);
+        RequestContextMock.Setup(c => c.SessionId).Returns(current.Id);
+        StepUpServiceMock
+            .Setup(s => s.ConsumeAsync(It.IsAny<string>(), TestUserId, current.Id, StepUpPurpose.EnrollMfa, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        var result = await CreateSut().Handle(
+            new VerifyMfaEnrollmentCommand { MfaMethodId = pending.Id, Code = Code, StepUpToken = "proof" }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.RecoveryCodes.Should().HaveCount(8);
+        result.Data.OtherSessionsEnded.Should().Be(1);
+        current.Status.Should().Be(Notrelix.Domain.Identity.Sessions.SessionStatus.Active);
+        other.Status.Should().Be(Notrelix.Domain.Identity.Sessions.SessionStatus.Revoked);
+        ActivityMock.Verify(a => a.Record(TestUserId, Notrelix.Domain.Identity.Security.SecurityActivityType.MfaEnabled, TestNow, current.Id), Times.Once);
+        ActivityMock.Verify(a => a.Record(TestUserId, Notrelix.Domain.Identity.Security.SecurityActivityType.OtherSessionsRevoked, TestNow, current.Id), Times.Once);
+    }
 }

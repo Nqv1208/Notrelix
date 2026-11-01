@@ -44,6 +44,51 @@ public class LoginTests : IdentityHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_WhenTheOnlyMfaMethodIsPending_SignsInWithoutASecondStep()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        SetupUserMfaMethods(
+            UserMfaMethod.Create(TestUserId, MfaMethodType.AuthenticatorApp, TestNow, SecretRef.Create("pending")));
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        SessionIssuerMock.Setup(s => s.IssueAsync(user, TestNow, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthResult
+            {
+                AccessToken = "access-token",
+                RefreshToken = "refresh-token",
+                ExpiresAt = TestNow.AddHours(1).UtcDateTime,
+                User = new UserDto { Id = TestUserId, Email = TestEmail, Name = "Test User", EmailConfirmed = false }
+            });
+
+        var result = await CreateSut().Handle(
+            new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.AccessToken.Should().Be("access-token");
+        ChallengeStoreMock.Verify(
+            c => c.StoreAsync(It.IsAny<string>(), It.IsAny<MfaChallengePayload>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAnMfaMethodIsActive_AsksForTheSecondStepAndIssuesNoSession()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        var active = UserMfaMethod.Create(TestUserId, MfaMethodType.AuthenticatorApp, TestNow, SecretRef.Create("s"));
+        active.Verify(TestNow);
+        SetupUserMfaMethods(active);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+
+        var result = await CreateSut().Handle(
+            new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.MfaRequired.Should().BeTrue();
+        SessionIssuerMock.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsGenericFailureAndStillVerifiesPassword()
     {
         SetupUsers();
