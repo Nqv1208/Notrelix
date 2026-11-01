@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Info, Mail } from "lucide-react";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
 import {
@@ -7,6 +7,7 @@ import {
   BUTTON_CLASS,
   FieldError,
   INPUT_CLASS,
+  LABEL_CLASS,
   LINK_BUTTON_CLASS,
 } from "./auth-parts";
 import { formatCountdown } from "./auth-sign-in-surface";
@@ -83,7 +84,7 @@ function AskStep({
         }}
       >
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="auth-reset" className="text-item-ui font-semibold">
+          <label htmlFor="auth-reset" className={LABEL_CLASS}>
             {t.label}
           </label>
           <input
@@ -116,9 +117,13 @@ function AskStep({
           {pending ? t.sending : t.send}
         </button>
       </form>
-      <p className="m-0 flex items-start gap-2.5 rounded-[10px] bg-state-hover px-3.5 py-3 text-item-small leading-normal text-muted-foreground">
-        {t.sso}
-      </p>
+      <div className="flex items-start gap-2.5 rounded-[10px] bg-state-hover px-3.5 py-3 text-[13px] leading-normal text-muted-foreground">
+        <Info
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0 text-meta-foreground"
+        />
+        <span>{t.sso}</span>
+      </div>
       <div>
         <button type="button" onClick={onBack} className={LINK_BUTTON_CLASS}>
           {t.back}
@@ -148,13 +153,21 @@ function SentStep({
       >
         <Mail className="size-6" />
       </span>
-      <AuthHeading title={t.title} />
-      <p className="m-0 text-item-prose text-muted-foreground">
-        {t.body}
-        <b className="font-semibold text-foreground">{step.email}</b>
-        {t.bodyEnd}
+      <div role="status">
+        <AuthHeading
+          title={t.title}
+          lead={
+            <>
+              {t.body}
+              <b className="font-semibold text-foreground">{step.email}</b>
+              {t.bodyEnd}
+            </>
+          }
+        />
+      </div>
+      <p className="m-0 text-item-prose leading-normal text-muted-foreground">
+        {t.spam}
       </p>
-      <p className="m-0 text-item-ui text-meta-foreground">{t.spam}</p>
       <button
         type="button"
         onClick={() => onEnterCode(step.email)}

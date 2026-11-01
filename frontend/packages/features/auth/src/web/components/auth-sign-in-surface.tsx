@@ -17,6 +17,7 @@ import {
   BUTTON_CLASS,
   FieldError,
   INPUT_CLASS,
+  LABEL_CLASS,
   LINK_BUTTON_CLASS,
   PasswordField,
 } from "./auth-parts";
@@ -194,6 +195,9 @@ function CredentialsStep({
   const lockedSeconds =
     step.kind === "password" ? (step.lockedSeconds ?? 0) : 0;
   const wrong = step.kind === "password" && step.error === "wrong";
+  // A locked attempt answers the same generic refusal as a wrong one (IAREQ014), and the
+  // artboard draws it with the lock notice under it.
+  const refused = wrong || locked;
   const passwordUnreachable =
     step.kind === "password" && step.error === "unreachable";
 
@@ -210,8 +214,8 @@ function CredentialsStep({
   }, [settledEmail]);
   // A wrong password is not kept: the field starts empty for the next try.
   useEffect(() => {
-    if (wrong && !pending) setPassword("");
-  }, [wrong, pending]);
+    if (refused && !pending) setPassword("");
+  }, [refused, pending]);
 
   const heading = isPassword
     ? { title: tp.title, lead: tp.lead }
@@ -239,96 +243,99 @@ function CredentialsStep({
           if (EMAIL_SHAPE.test(email.trim())) onContinue(email.trim());
         }}
       >
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="auth-email" className="text-item-ui font-semibold">
-            {te.label}
-          </label>
-          <div className="relative">
+        <Reveal open={!isPassword}>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="auth-email" className={LABEL_CLASS}>
+              {te.label}
+            </label>
             <input
               ref={emailRef}
               id="auth-email"
               name="email"
               type="email"
-              autoComplete="email"
+              autoComplete={isPassword ? "username" : "email"}
               value={email}
               readOnly={isPassword}
               placeholder={te.placeholder}
               aria-invalid={invalid || undefined}
               aria-describedby={invalid ? "auth-email-error" : undefined}
               onChange={(event) => setEmail(event.target.value)}
-              className={cn(INPUT_CLASS, isPassword && "pr-20")}
+              className={INPUT_CLASS}
             />
-            {isPassword ? (
-              <button
-                type="button"
-                aria-label={tp.changeLabel}
-                onClick={onChangeEmail}
-                className={cn(
-                  LINK_BUTTON_CLASS,
-                  "absolute top-1/2 right-2 -translate-y-1/2 px-2 py-1",
-                )}
+            {invalid ? (
+              <FieldError id="auth-email-error">{te.invalid}</FieldError>
+            ) : null}
+            {emailError === "unreachable" ? (
+              <FieldError>{te.unreachable}</FieldError>
+            ) : null}
+            {emailError === "mfa-required" ? (
+              <FieldError>{te.mfaRequired}</FieldError>
+            ) : null}
+            {emailError === "password-reset" ? (
+              <p
+                role="status"
+                className="m-0 text-item-small text-success-text"
               >
-                {tp.change}
-              </button>
+                {te.passwordReset}
+              </p>
+            ) : null}
+            {emailError === "session-ended" ? (
+              <p
+                role="status"
+                className="m-0 text-item-small text-muted-foreground"
+              >
+                {te.sessionEnded}
+              </p>
+            ) : null}
+            {emailError && emailError in PROVIDER_ERROR_COPY ? (
+              <FieldError>
+                {te[PROVIDER_ERROR_COPY[emailError as ProviderErrorKind]]}
+              </FieldError>
             ) : null}
           </div>
-          {invalid ? (
-            <FieldError id="auth-email-error">{te.invalid}</FieldError>
-          ) : null}
-          {emailError === "unreachable" ? (
-            <FieldError>{te.unreachable}</FieldError>
-          ) : null}
-          {emailError === "mfa-required" ? (
-            <FieldError>{te.mfaRequired}</FieldError>
-          ) : null}
-          {emailError === "password-reset" ? (
-            <p role="status" className="m-0 text-item-small text-success-text">
-              {te.passwordReset}
-            </p>
-          ) : null}
-          {emailError === "session-ended" ? (
-            <p
-              role="status"
-              className="m-0 text-item-small text-muted-foreground"
-            >
-              {te.sessionEnded}
-            </p>
-          ) : null}
-          {emailError && emailError in PROVIDER_ERROR_COPY ? (
-            <FieldError>
-              {te[PROVIDER_ERROR_COPY[emailError as ProviderErrorKind]]}
-            </FieldError>
-          ) : null}
-        </div>
+        </Reveal>
+        <Reveal open={isPassword}>
+          <WhoRow
+            email={email}
+            change={tp.change}
+            // Closed, the row is only the shape the email field fades into: it
+            // takes no accessible name, so "Email" still finds the one field.
+            changeLabel={isPassword ? tp.changeLabel : undefined}
+            onChange={onChangeEmail}
+          />
+        </Reveal>
 
         <Reveal open={isPassword}>
           <div className="flex flex-col gap-1.5 pt-4.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <label
-                htmlFor="auth-password"
-                className="text-item-ui font-semibold"
-              >
+            <div className="flex items-baseline justify-between gap-3 max-md:items-center">
+              <label htmlFor="auth-password" className={LABEL_CLASS}>
                 {tp.label}
               </label>
               <button
                 type="button"
                 onClick={onForgot}
-                className={LINK_BUTTON_CLASS}
+                className={cn(
+                  LINK_BUTTON_CLASS,
+                  "py-0 text-[13px] max-md:-my-1.5",
+                )}
               >
                 {tp.forgot}
               </button>
             </div>
             <PasswordField
               id="auth-password"
+              // Closed, the field is not editable: automation and autofill wait for the step
+              // instead of writing into a field that is about to be reset.
+              disabled={!isPassword}
               value={password}
               onChange={setPassword}
-              invalid={wrong}
-              describedBy={wrong ? "auth-password-error" : undefined}
+              invalid={refused}
+              describedBy={refused ? "auth-password-error" : undefined}
               autoComplete="current-password"
               showLabel={tp.show}
               hideLabel={tp.hide}
             />
-            {wrong ? (
+            {refused ? (
               <FieldError id="auth-password-error">{tp.wrong}</FieldError>
             ) : null}
             {passwordUnreachable ? (
@@ -341,14 +348,14 @@ function CredentialsStep({
           {locked ? (
             <div
               role="status"
-              className="mt-4.5 flex items-start gap-2.5 rounded-[10px] bg-warning-subtle px-3.5 py-3 text-item-ui text-foreground"
+              className="mt-4.5 flex items-start gap-2.5 rounded-[10px] bg-warning-subtle px-3.5 py-3 text-item-ui leading-normal text-foreground"
             >
               <Timer
                 aria-hidden="true"
                 className="mt-0.5 size-4 shrink-0 text-warning-text"
               />
               <div>
-                <b className="block font-semibold text-warning-text">
+                <b className="block font-[650] text-warning-text">
                   {fillAuthCopy(tp.lockTitle, { seconds: lockedSeconds })}
                 </b>
                 <p className="mt-0.5 mb-0">{tp.lockBody}</p>
@@ -392,10 +399,10 @@ function CredentialsStep({
 
       <div className="flex flex-col">
         <Reveal open={!isPassword}>
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4.5">
             <div
               role="separator"
-              className="flex items-center gap-3 text-crumb text-meta-foreground before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line"
+              className="flex items-center gap-3 text-crumb leading-normal text-meta-foreground before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line"
             >
               {te.or}
             </div>
@@ -447,12 +454,12 @@ function CredentialsStep({
                   : null}
               </span>
             </div>
-            <p className="m-0 text-center text-item-ui text-muted-foreground">
+            <p className="m-0 text-center text-item-ui leading-normal text-muted-foreground">
               {te.noAccount}{" "}
               <button
                 type="button"
                 onClick={onCreateWorkspace}
-                className={LINK_BUTTON_CLASS}
+                className={cn(LINK_BUTTON_CLASS, "py-0 leading-[18px]")}
               >
                 {te.createWorkspace}
               </button>
@@ -487,9 +494,9 @@ function WhoRow({
         aria-hidden="true"
         className="grid size-7 shrink-0 place-items-center rounded-full bg-state-hover-strong text-muted-foreground"
       >
-        <Mail className="size-3.5" />
+        <Mail className="size-4" />
       </span>
-      <span className="min-w-0 flex-1 truncate text-item-ui font-medium">
+      <span className="min-w-0 flex-1 truncate text-[14px] leading-normal font-medium">
         {email}
       </span>
       {onChange ? (
@@ -497,7 +504,7 @@ function WhoRow({
           type="button"
           aria-label={changeLabel}
           onClick={onChange}
-          className={cn(LINK_BUTTON_CLASS, "px-2 py-1")}
+          className={cn(LINK_BUTTON_CLASS, "px-2 py-1 max-md:-my-2")}
         >
           {change}
         </button>
@@ -532,8 +539,10 @@ function SsoStep({
           {org.initials}
         </span>
         <div>
-          <b className="block text-item-prose font-semibold">{org.name}</b>
-          <small className="block text-crumb text-meta-foreground">
+          <b className="block text-item-prose leading-normal font-semibold">
+            {org.name}
+          </b>
+          <small className="block text-crumb leading-normal text-meta-foreground">
             {fillAuthCopy(t.orgLine, values)}
           </small>
         </div>
@@ -546,7 +555,7 @@ function SsoStep({
         onClick={onSso}
         className={BUTTON_CLASS.primary}
       >
-        <span className="grid size-5 place-items-center rounded-[3px] bg-background">
+        <span className="grid size-4.5 place-items-center rounded-[3px] bg-background">
           <MicrosoftMark className="size-3.5" />
         </span>
         {pending
@@ -670,7 +679,7 @@ function OtpStep({
       >
         {step.backup ? (
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="auth-backup" className="text-item-ui font-semibold">
+            <label htmlFor="auth-backup" className={LABEL_CLASS}>
               {t.backupLegend}
             </label>
             <input
@@ -691,9 +700,7 @@ function OtpStep({
           </div>
         ) : (
           <fieldset className="m-0 min-w-0 border-0 p-0">
-            <legend className="mb-2 p-0 text-item-ui font-semibold">
-              {t.legend}
-            </legend>
+            <legend className={cn(LABEL_CLASS, "mb-2 p-0")}>{t.legend}</legend>
             <div className="flex gap-2.5">
               {digits.map((digit, index) => (
                 <span key={index} className="contents">
@@ -717,12 +724,12 @@ function OtpStep({
                     onKeyDown={(event) => onKeyDown(index, event)}
                     onPaste={(event) => onPaste(index, event)}
                     onFocus={(event) => event.target.select()}
-                    className="box-border h-14.5 w-13 rounded-[10px] border border-input bg-popover p-0 text-center font-mono text-greeting text-foreground outline-none focus:border-focus-ring focus:ring-[3px] focus:ring-brand-subtle aria-invalid:border-danger-text"
+                    className="box-border h-14.5 w-13 min-w-0 rounded-[10px] border border-input bg-popover p-0 text-center font-mono text-[24px] font-medium text-foreground outline-none focus:border-focus-ring focus:ring-[3px] focus:ring-brand-subtle aria-invalid:border-danger-text"
                   />
                 </span>
               ))}
             </div>
-            <p className="mt-1.5 mb-0 text-item-note text-meta-foreground">
+            <p className="mt-2 mb-0 text-[12.5px] leading-normal text-meta-foreground">
               {t.hint}
             </p>
           </fieldset>

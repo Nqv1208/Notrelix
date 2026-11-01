@@ -25,8 +25,7 @@ async function inspect(page: Page, label: string, phone: boolean) {
     const small = await page.evaluate(() =>
       Array.from(
         document.querySelectorAll<HTMLElement>(
-          // The show-password eye is the shared 36 px control of the drawn sign-in artboard.
-          "main button:not([disabled]):not([aria-pressed]), main input",
+          "main button:not([disabled]), main input",
         ),
       )
         .filter((el) => el.offsetParent !== null)
