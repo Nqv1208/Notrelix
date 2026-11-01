@@ -157,6 +157,9 @@ test("the owner reads the people of a workspace, a guest is refused the list but
 interface Invitation {
   readonly email: string;
 }
+interface InvitationsPage {
+  readonly items: readonly Invitation[];
+}
 
 test("inviting a person who is already an active member is refused, says so in the dialog and sends nothing", async ({
   page,
@@ -167,11 +170,11 @@ test("inviting a person who is already an active member is refused, says so in t
   const member = realUsers.workspaceOwner.email;
   const invitationsOf = async () =>
     (
-      await apiRead<Invitation[]>(
+      await apiRead<InvitationsPage>(
         page,
         `/workspaces/${workspace.id}/invitations`,
       )
-    ).filter((invitation) => invitation.email === member);
+    ).items.filter((invitation) => invitation.email === member);
   const before = (await invitationsOf()).length;
 
   // The producer answers 409 with its own code and creates nothing.
