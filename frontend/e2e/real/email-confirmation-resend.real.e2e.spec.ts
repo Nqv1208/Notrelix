@@ -10,6 +10,8 @@ const tokenOf = (link: string) =>
 test("asking for the confirmation link again waits before the next ask; only the newest link confirms; the answer does not tell a known address from an unknown one", async ({
   page,
 }) => {
+  // The first test after a cold stack start waits on the development log for each mail.
+  test.setTimeout(90_000);
   const person = await registerPerson(page, "resend");
   const first = (await devMails(person.email, CONFIRMATION_LINK)).at(-1)!;
 
