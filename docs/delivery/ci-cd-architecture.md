@@ -225,7 +225,37 @@ The validator is standalone (`python3 scripts/ci/validate-infra.py`) and does no
 
 ## 13. Source-control topology
 
-`main` is the canonical trunk and release branch. `develop` remains an accepted PR base only during the current migration and is not an architectural dependency.
+```text
+feature/* --PR--> develop --PR--> main --cut--> release/X.Y --tag--> vX.Y.Z-rc.N ... vX.Y.Z
+```
+
+- `develop` is the integration branch: feature PRs land here, squash-merged, behind `CI gate`.
+- `main` is the canonical trunk. It receives `develop` (merge commit) and is always green.
+- `release/X.Y` is cut from `main` when every use case in that version's scope is DONE (`docs/workstreams/use-cases/README.md` §7). It takes fixes only, never capability. A fix lands on `main` first and is cherry-picked into the release branch, so `main` never lacks a fix the release has. The branch is kept until the next minor version ships.
+- Tags live on the release branch: `vX.Y.Z-rc.N` goes to staging for the lead's acceptance, `vX.Y.Z` is the released version. A hotfix is fixed on `main`, cherry-picked, and tagged `vX.Y.Z+1`.
+
+### 13.1 Version numbers
+
+One Semantic Version for the whole product, because the API, web and operator hosts ship together.
+
+- `0.Y.Z` before customers use the product: `Y` grows with each version that adds use cases, `Z` with fix-only releases.
+- `1.0.0` is general availability. After it, MAJOR grows only for a breaking public contract (`NRX-008`).
+- The REST contract version (`/v1`) is separate and does not follow the product version.
+
+### 13.2 Release readiness
+
+A version is released when, on its release branch:
+
+1. every use case in its scope is DONE, including the lead's acceptance (`docs/workstreams/use-cases/README.md` §7);
+2. no open defect leaks data across tenants or permissions, loses data, or loses concurrent writes;
+3. `CI gate` is green, the real end-to-end suite is green, and migrations upgrade from the previous released version;
+4. the `rc` tag ran on staging and the lead accepted it, then the final tag is set. The owner tests released versions as a user; what they find is filed as a defect, not as a release gate.
+
+A use case outside the scope never blocks a release; it moves to a later version.
+
+### 13.3 Transition
+
+Continuous delivery is frozen (§1). The release path (`release.yml`, `promote-release.yml`, `deploy.yml`) still builds candidates from `main` and verifies `--source-ref refs/heads/main`. It moves to release tags when delivery is reactivated; until then a release is the tagged commit on `release/X.Y`.
 
 ## 14. Architectural invariants
 
