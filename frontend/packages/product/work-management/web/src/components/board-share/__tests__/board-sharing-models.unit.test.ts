@@ -297,6 +297,7 @@ describe("planLevelChange", () => {
         subjectType: "Team",
         subjectId: "t-kt",
         level: "editor",
+        expectedVersion: null,
       },
     ]);
     expect(planLevelChange(data.entries[2]!, "viewer")).toEqual([
@@ -305,6 +306,20 @@ describe("planLevelChange", () => {
         subjectType: "User",
         subjectId: "u-linh",
         level: "viewer",
+        expectedVersion: null,
+      },
+    ]);
+  });
+
+  it("carries the version of the grant it changes", () => {
+    const held = { ...data.entries[2]!, permissionVersion: 4 };
+    expect(planLevelChange(held, "editor")).toEqual([
+      {
+        kind: "grant",
+        subjectType: "User",
+        subjectId: "u-linh",
+        level: "editor",
+        expectedVersion: 4,
       },
     ]);
   });
@@ -338,6 +353,7 @@ describe("planLevelChange", () => {
         subjectType: "User",
         subjectId: "u-m",
         level: "commenter",
+        expectedVersion: null,
       },
     ]);
     const both = { ...member, source: "both" as const, permissionId: "perm-m" };
@@ -348,6 +364,7 @@ describe("planLevelChange", () => {
         subjectType: "User",
         subjectId: "u-m",
         level: "viewer",
+        expectedVersion: null,
       },
     ]);
   });
@@ -359,6 +376,7 @@ describe("planLevelChange", () => {
         subjectType: "User",
         subjectId: "u-tuan",
         level: "manager",
+        expectedVersion: null,
       },
     ]);
     expect(planLevelChange(data.entries[0]!, "viewer")).toEqual([]);

@@ -1086,7 +1086,10 @@ export interface paths {
         /** Get permissions for a resource */
         get: operations["Governance.ResourcePermissions.Get"];
         put?: never;
-        /** Grant a permission to a resource */
+        /**
+         * Grant a permission to a resource
+         * @description Grants a level to a subject. A subject that already holds the level is a no-op; changing the level of an existing grant must name its version (ExpectedVersion), and a stale or missing version answers 412.
+         */
         post: operations["Governance.ResourcePermissions.Grant"];
         delete?: never;
         options?: never;
@@ -1138,7 +1141,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Disable a share link */
+        /**
+         * Disable a share link
+         * @description Authorized on the shared resource named by the route with the action that creating a link there needs, so a Board manager may turn off a link on their board. A link that does not belong to that resource answers NotFound; a link already off answers 204 and changes nothing.
+         */
         delete: operations["Governance.ShareLinks.Disable"];
         options?: never;
         head?: never;
@@ -1374,7 +1380,7 @@ export interface paths {
         };
         /**
          * Start OAuth login flow
-         * @description Redirects user to the OAuth provider's authorization endpoint.
+         * @description Redirects the browser to the OAuth provider's authorization endpoint. An unknown, disabled or unconfigured provider redirects to the sign-in page with error=identity.oauth.provider-unavailable instead; no redirect to a provider is made.
          */
         get: operations["Identity.Auth.OAuth.Start"];
         put?: never;
@@ -1394,7 +1400,7 @@ export interface paths {
         };
         /**
          * Complete OAuth login callback
-         * @description Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.
+         * @description Handles the OAuth provider callback, validates state, exchanges code, checks the provider ID token, and sets auth cookies. Every failure redirects to the sign-in page with one normalized error code: identity.oauth.failed, state-invalid, denied, email-unverified, email-in-use, mfa-required or provider-unavailable.
          */
         get: operations["Identity.Auth.OAuth.Callback"];
         put?: never;
@@ -1653,7 +1659,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start MFA authenticator app enrollment */
+        /**
+         * Start MFA authenticator app enrollment
+         * @description Requires a single-use step-up proof for the EnrollMfa purpose. Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409 and the proof is kept.
+         */
         post: operations["Identity.Mfa.StartEnrollment"];
         delete?: never;
         options?: never;
@@ -1670,7 +1679,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify MFA enrollment code and activate the authenticator */
+        /**
+         * Verify MFA enrollment code and activate the authenticator
+         * @description Requires a single-use step-up proof for the EnrollMfa purpose. A wrong code leaves the method pending and the proof unspent. When the factor becomes active every other session of the person ends and the answer says how many; the current session stays. The recovery codes in the answer are shown once and never readable again.
+         */
         post: operations["Identity.Mfa.VerifyEnrollment"];
         delete?: never;
         options?: never;
@@ -1685,7 +1697,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get MFA status for the authenticated user */
+        /**
+         * Get MFA status for the authenticated user
+         * @description The caller's own status only: whether a factor is on, its method and how many recovery codes are left. Never a secret or a code.
+         */
         get: operations["Identity.Mfa.Status"];
         put?: never;
         post?: never;
@@ -1706,7 +1721,7 @@ export interface paths {
         put?: never;
         /**
          * Invalidate existing recovery codes and issue a fresh batch
-         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.
+         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose. The codes in the answer are shown once and never readable again; a retry makes another batch and voids this one.
          */
         post: operations["Identity.Mfa.RegenerateRecoveryCodes"];
         delete?: never;
@@ -1726,7 +1741,7 @@ export interface paths {
         put?: never;
         /**
          * Disable MFA and revoke all active sessions
-         * @description Requires a single-use step-up proof for the DisableMfa purpose.
+         * @description Requires a single-use step-up proof for the DisableMfa purpose. Disabling an already-off factor answers 200 and changes nothing.
          */
         post: operations["Identity.Mfa.Disable"];
         delete?: never;
@@ -1761,7 +1776,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Update the current user's email address */
+        /**
+         * Update the current user's email address
+         * @description Requires a single-use step-up proof for the ChangeSecurityIdentity purpose when the address changes.
+         */
         post: operations["Identity.Profile.UpdateEmail"];
         delete?: never;
         options?: never;
@@ -1982,7 +2000,7 @@ export interface paths {
         put?: never;
         /**
          * Revoke all other sessions
-         * @description Revokes every active session of the current user except the session that issued the request.
+         * @description Revokes every active session of the current user except the session that issued the request. Requires a single-use step-up proof for the RevokeOtherSessions purpose; with no other active session nothing changes and the proof is not consumed.
          */
         post: operations["Identity.Sessions.RevokeOthers"];
         delete?: never;
@@ -5740,6 +5758,8 @@ export interface components {
             /** Format: uuid */
             subjectId?: string;
             level?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
             /** Format: date-time */
             expiresAt?: string | null;
         };
@@ -6429,6 +6449,12 @@ export interface components {
             password?: string | null;
             name?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
+            stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
         };
@@ -6436,6 +6462,7 @@ export interface components {
             /** Format: uuid */
             mfaMethodId?: string;
             code?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Queries.IdentifySignInRequest": {
             email?: string | null;
@@ -6931,6 +6958,8 @@ export interface components {
             isRevoked?: boolean;
             /** Format: date-time */
             revokedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -6996,6 +7025,13 @@ export interface components {
             provider?: string | null;
             providerLabel?: string | null;
         };
+        "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
+            /** Format: uuid */
+            mfaMethodId?: string;
+            recoveryCodes?: string[] | null;
+            /** Format: int32 */
+            otherSessionsEnded?: number;
+        };
         "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult": {
             /** Format: uuid */
             mfaMethodId?: string;
@@ -7016,6 +7052,7 @@ export interface components {
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
             email?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
             emailConfirmed?: boolean;
@@ -7064,16 +7101,17 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
         };
-        /**
-         * Format: int32
-         * @enum {integer}
-         */
-        "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": 0 | 1 | 2;
+        /** @enum {string} */
+        "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": "MfaChallenge" | "Password" | "OAuth";
         "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult": {
             requiredFactor?: components["schemas"]["Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor"];
             challengeToken?: string | null;
             /** Format: date-time */
             expiresAt?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult": {
+            /** Format: int32 */
+            revokedCount?: number;
         };
         "Notrelix.Application.Features.Identity.Sessions.DTOs.SessionInfoDto": {
             /** Format: uuid */
@@ -7657,6 +7695,8 @@ export interface components {
             source?: string | null;
             /** Format: uuid */
             permissionId?: string | null;
+            /** Format: int64 */
+            permissionVersion?: number | null;
             memberRole?: string | null;
             spaceRole?: string | null;
             outsideSpace?: boolean;
@@ -10725,6 +10765,15 @@ export interface operations {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"];
                 };
             };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
         };
     };
     "Governance.ResourcePermissions.Revoke": {
@@ -11348,15 +11397,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
-                };
-            };
             /** @description Too Many Requests */
             429: {
                 headers: {
@@ -11442,6 +11482,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
         };
     };
     "Identity.Auth.ResendEmailVerification": {
@@ -11511,6 +11560,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12030,7 +12088,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -12059,8 +12121,35 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12089,7 +12178,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult"];
                 };
             };
             /** @description Bad Request */
@@ -12103,6 +12192,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12141,6 +12239,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12190,8 +12297,26 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12241,6 +12366,15 @@ export interface operations {
             };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12334,6 +12468,15 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12914,17 +13057,50 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };

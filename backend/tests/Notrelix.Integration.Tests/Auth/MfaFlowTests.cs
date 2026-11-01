@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Email;
@@ -94,6 +95,17 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Count().Should().Be(1);
         }
+    }
+
+    [Fact]
+    public async Task StartEnrollment_WithoutStepUpProof_IsRefusedAndCreatesNothing()
+    {
+        var enrollment = await _services.SendStartEnrollment(_user.Id, withProof: false);
+
+        enrollment.Succeeded.Should().BeFalse();
+        enrollment.TypedErrors.Should().Contain(e => e.Code == "identity.security.step-up-required");
+        await using var context = _fixture.CreatePostgresOwnerContext();
+        context.UserMfaMethods.Count(m => m.UserId == _user.Id).Should().Be(0);
     }
 
     [Fact]
@@ -796,6 +808,8 @@ public sealed class MfaFlowTests : IAsyncLifetime
         private readonly MfaRecoveryCodeGenerator _recoveryGenerator;
         private readonly IMfaChallengeStore _challengeStore;
         private readonly IStepUpProofStore _proofStore;
+        private readonly IDistributedCache _distributedCache;
+        private readonly IConnectionMultiplexer _multiplexer;
         private readonly Mock<IDateTimeProvider> _time;
         private readonly Mock<IJwtBlacklistService> _jwtBlacklist;
         private readonly Mock<IJwtService> _jwt;
@@ -817,6 +831,8 @@ public sealed class MfaFlowTests : IAsyncLifetime
                 Configuration = _fixture.RedisConnectionString,
                 InstanceName = "Notrelix_",
             });
+            _distributedCache = distributedCache;
+            _multiplexer = multiplexer;
             _challengeStore = new MfaChallengeStore(new RedisCacheService(distributedCache, multiplexer));
             _proofStore = new StepUpProofStore(new RedisCacheService(distributedCache, multiplexer));
 
@@ -844,31 +860,52 @@ public sealed class MfaFlowTests : IAsyncLifetime
             return ctx;
         }
 
-        private ISecurityStepUpService StepUp(ApplicationDbContext context) =>
-            new SecurityStepUpService(
-                context, _challengeStore, _proofStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
-                new Mock<IPasswordHasher>().Object, _time.Object, Mock.Of<ILoginThrottle>());
+        private IMfaCodeVerifier CodeVerifier(ApplicationDbContext context) =>
+            new MfaCodeVerifier(context, _totp, _recoveryGenerator, new MfaCodeUseGuard(new RedisCacheService(_distributedCache, _multiplexer)));
+
+        private ISecurityStepUpService StepUp(ApplicationDbContext context, bool passwordMatches = false)
+        {
+            var hasher = new Mock<IPasswordHasher>();
+            hasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(passwordMatches);
+            return new SecurityStepUpService(
+                context, _challengeStore, _proofStore, CodeVerifier(context),
+                hasher.Object, _time.Object, Mock.Of<ILoginThrottle>());
+        }
+
+        /// <summary>A single-use EnrollMfa proof for a person who has no factor yet: their password, once.</summary>
+        private async Task<string> EnrollProofAsync(ApplicationDbContext context, Guid userId, Guid sessionId)
+        {
+            var proof = await StepUp(context, passwordMatches: true).CompletePasswordAsync(
+                userId, sessionId, StepUpPurpose.EnrollMfa, "Password1!", CancellationToken.None);
+            proof.Succeeded.Should().BeTrue($"enrol proof should be issued: {string.Join(", ", proof.Errors)}");
+            return proof.Data!.ProofToken;
+        }
 
         private IAuthSessionIssuer SessionIssuer(ApplicationDbContext context) =>
             new AuthSessionIssuer(_jwt.Object, context, _time.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
 
-        public async Task<Result<MfaEnrollmentStartResult>> SendStartEnrollment(Guid userId)
+        public async Task<Result<MfaEnrollmentStartResult>> SendStartEnrollment(Guid userId, bool withProof = true)
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
+            var sessionId = Guid.CreateVersion7();
             var handler = new StartMfaEnrollmentCommandHandler(
-                context, Actor(userId).Object, _totp, _time.Object, NullLogger<StartMfaEnrollmentCommandHandler>.Instance);
-            var result = await handler.Handle(new StartMfaEnrollmentCommand(), CancellationToken.None);
+                context, Actor(userId, sessionId).Object, _totp, StepUp(context), _time.Object, NullLogger<StartMfaEnrollmentCommandHandler>.Instance);
+            var proof = withProof ? await EnrollProofAsync(context, userId, sessionId) : string.Empty;
+            var result = await handler.Handle(new StartMfaEnrollmentCommand { StepUpToken = proof }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;
         }
 
-        public async Task<Result<MfaEnrollmentVerifyResult>> SendVerifyEnrollment(Guid userId, Guid methodId, string code)
+        public async Task<Result<MfaEnrollmentActivationResult>> SendVerifyEnrollment(Guid userId, Guid methodId, string code)
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
+            var sessionId = Guid.CreateVersion7();
             var handler = new VerifyMfaEnrollmentCommandHandler(
-                context, Actor(userId).Object, _totp, _recoveryGenerator, _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
+                context, Actor(userId, sessionId).Object, _totp, _recoveryGenerator, StepUp(context), _jwtBlacklist.Object, _time.Object,
+                Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
                 NullLogger<VerifyMfaEnrollmentCommandHandler>.Instance);
-            var result = await handler.Handle(new VerifyMfaEnrollmentCommand { MfaMethodId = methodId, Code = code }, CancellationToken.None);
+            var proof = await EnrollProofAsync(context, userId, sessionId);
+            var result = await handler.Handle(new VerifyMfaEnrollmentCommand { MfaMethodId = methodId, Code = code, StepUpToken = proof }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;
         }
@@ -956,7 +993,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new CompleteMfaChallengeCommandHandler(
-                context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                context, _challengeStore, CodeVerifier(context),
                 Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), SessionIssuer(context), _time.Object,
                 NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
             var result = await handler.Handle(new CompleteMfaChallengeCommand { ChallengeToken = token, Code = code }, CancellationToken.None);

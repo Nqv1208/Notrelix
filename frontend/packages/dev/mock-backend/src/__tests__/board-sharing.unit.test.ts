@@ -120,6 +120,7 @@ describe("Board sharing in the mock world (WorkManagement.Boards.GetSharing)", (
       subjectType: "Team",
       subjectId: "mock-team-erp-accounting",
       level: "editor",
+      expectedVersion: 1,
     });
     const after = boardSharing(store, BOARD, true)!;
     expect(after.entries![1]!.level).toBe("editor");
@@ -130,12 +131,29 @@ describe("Board sharing in the mock world (WorkManagement.Boards.GetSharing)", (
     });
   });
 
+  it("refuses a level change that names a stale version, and changes nothing", async () => {
+    const { client, store } = setup();
+    await expect(
+      grant(client, {
+        subjectType: "Team",
+        subjectId: "mock-team-erp-accounting",
+        level: "editor",
+        expectedVersion: 7,
+      }),
+    ).rejects.toMatchObject({
+      status: 412,
+      code: "governance.permission.version-conflict",
+    });
+    expect(boardSharing(store, BOARD, true)!.entries![1]!.level).toBe("viewer");
+  });
+
   it("caps a Guest at Viewer and shows it, instead of refusing a higher level", async () => {
     const { client, store } = setup();
     await grant(client, {
       subjectType: "User",
       subjectId: "mock-user-erp-tuan",
       level: "manager",
+      expectedVersion: 1,
     });
     const guest = boardSharing(store, BOARD, true)!.entries!.find(
       (entry) => entry.kind === "guest",

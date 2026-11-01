@@ -111,6 +111,14 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         if (!verified)
         {
             await _throttle.RecordFailureAsync(LoginThrottleScope.StepUpMfa, subject, ct);
+
+            // The last allowed try failed: the challenge dies now, so no later code can use it.
+            if (attempt.Attempts >= MfaPolicy.ChallengeMaxAttempts)
+            {
+                await _challengeStore.ConsumeAsync(challengeToken, ct);
+                return InvalidProofResult();
+            }
+
             return Result<StepUpProofResult>.Failure(new ApplicationError(
                 "identity.security.step-up-invalid-code",
                 "Invalid step-up verification code.",

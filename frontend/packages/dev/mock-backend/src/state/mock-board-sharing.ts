@@ -37,6 +37,8 @@ const LEVEL_RANK: Record<ShareLevel, number> = {
 export interface MockShareEntry {
   /** The grant id (`permissionId`) of an entry held by grant. */
   id: string;
+  /** The grant's version; a change of its level bumps it. */
+  version?: number;
   kind: "person" | "team";
   userId: string | null;
   teamId: string | null;
@@ -274,6 +276,7 @@ export function boardSharing(
       level: item.level,
       addedAt: item.addedAt,
       permissionId: item.grantLevel === null ? null : item.id,
+      permissionVersion: item.grantLevel === null ? null : (item.version ?? 1),
       memberRole: item.memberRole,
       source:
         item.grantLevel !== null && item.memberRole !== null

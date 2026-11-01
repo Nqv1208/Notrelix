@@ -4386,6 +4386,7 @@
           "Governance.ResourcePermissions"
         ],
         "summary": "Grant a permission to a resource",
+        "description": "Grants a level to a subject. A subject that already holds the level is a no-op; changing the level of an existing grant must name its version (ExpectedVersion), and a stale or missing version answers 412.",
         "operationId": "Governance.ResourcePermissions.Grant",
         "parameters": [
           {
@@ -4423,6 +4424,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Notrelix.Application.Features.Governance.DTOs.ResourcePermissionDto"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -4562,6 +4573,7 @@
           "Governance.ShareLinks"
         ],
         "summary": "Disable a share link",
+        "description": "Authorized on the shared resource named by the route with the action that creating a link there needs, so a Board manager may turn off a link on their board. A link that does not belong to that resource answers NotFound; a link already off answers 204 and changes nothing.",
         "operationId": "Governance.ShareLinks.Disable",
         "parameters": [
           {
@@ -5280,7 +5292,7 @@
           "Identity.Auth"
         ],
         "summary": "Start OAuth login flow",
-        "description": "Redirects user to the OAuth provider's authorization endpoint.",
+        "description": "Redirects the browser to the OAuth provider's authorization endpoint. An unknown, disabled or unconfigured provider redirects to the sign-in page with error=identity.oauth.provider-unavailable instead; no redirect to a provider is made.",
         "operationId": "Identity.Auth.OAuth.Start",
         "parameters": [
           {
@@ -5309,16 +5321,6 @@
           "302": {
             "description": "Found"
           },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
-                }
-              }
-            }
-          },
           "429": {
             "description": "Too Many Requests",
             "content": {
@@ -5339,7 +5341,7 @@
           "Identity.Auth"
         ],
         "summary": "Complete OAuth login callback",
-        "description": "Handles the OAuth provider callback, validates state, exchanges code, and sets auth cookies.",
+        "description": "Handles the OAuth provider callback, validates state, exchanges code, checks the provider ID token, and sets auth cookies. Every failure redirects to the sign-in page with one normalized error code: identity.oauth.failed, state-invalid, denied, email-unverified, email-in-use, mfa-required or provider-unavailable.",
         "operationId": "Identity.Auth.OAuth.Callback",
         "parameters": [
           {
@@ -5439,6 +5441,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5510,6 +5522,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6243,7 +6265,18 @@
           "Identity.Mfa"
         ],
         "summary": "Start MFA authenticator app enrollment",
+        "description": "Requires a single-use step-up proof for the EnrollMfa purpose. Creates a pending authenticator method (replacing an earlier pending one) and returns its secret and setup URI once. The method is not active MFA until verified; an account that already has an active factor is refused with 409 and the proof is kept.",
         "operationId": "Identity.Mfa.StartEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -6275,8 +6308,38 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6303,6 +6366,7 @@
           "Identity.Mfa"
         ],
         "summary": "Verify MFA enrollment code and activate the authenticator",
+        "description": "Requires a single-use step-up proof for the EnrollMfa purpose. A wrong code leaves the method pending and the proof unspent. When the factor becomes active every other session of the person ends and the answer says how many; the current session stays. The recovery codes in the answer are shown once and never readable again.",
         "operationId": "Identity.Mfa.VerifyEnrollment",
         "requestBody": {
           "content": {
@@ -6320,7 +6384,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentVerifyResult"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult"
                 }
               }
             }
@@ -6337,6 +6401,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6373,6 +6447,7 @@
           "Identity.Mfa"
         ],
         "summary": "Get MFA status for the authenticated user",
+        "description": "The caller's own status only: whether a factor is on, its method and how many recovery codes are left. Never a secret or a code.",
         "operationId": "Identity.Mfa.Status",
         "responses": {
           "200": {
@@ -6387,6 +6462,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6413,7 +6498,7 @@
           "Identity.Mfa"
         ],
         "summary": "Invalidate existing recovery codes and issue a fresh batch",
-        "description": "Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.",
+        "description": "Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose. The codes in the answer are shown once and never readable again; a retry makes another batch and voids this one.",
         "operationId": "Identity.Mfa.RegenerateRecoveryCodes",
         "requestBody": {
           "content": {
@@ -6456,8 +6541,28 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6484,7 +6589,7 @@
           "Identity.Mfa"
         ],
         "summary": "Disable MFA and revoke all active sessions",
-        "description": "Requires a single-use step-up proof for the DisableMfa purpose.",
+        "description": "Requires a single-use step-up proof for the DisableMfa purpose. Disabling an already-off factor answers 200 and changes nothing.",
         "operationId": "Identity.Mfa.Disable",
         "requestBody": {
           "content": {
@@ -6522,6 +6627,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6608,6 +6723,7 @@
           "Identity.Profile"
         ],
         "summary": "Update the current user's email address",
+        "description": "Requires a single-use step-up proof for the ChangeSecurityIdentity purpose when the address changes.",
         "operationId": "Identity.Profile.UpdateEmail",
         "requestBody": {
           "content": {
@@ -6652,6 +6768,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7472,14 +7598,61 @@
           "Identity.Sessions"
         ],
         "summary": "Revoke all other sessions",
-        "description": "Revokes every active session of the current user except the session that issued the request.",
+        "description": "Revokes every active session of the current user except the session that issued the request. Requires a single-use step-up proof for the RevokeOtherSessions purpose; with no other active session nothing changes and the proof is not consumed.",
         "operationId": "Identity.Sessions.RevokeOthers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23344,6 +23517,11 @@
             "type": "string",
             "nullable": true
           },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
           "expiresAt": {
             "type": "string",
             "format": "date-time",
@@ -25422,6 +25600,26 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
         "type": "object",
         "properties": {
@@ -25440,6 +25638,10 @@
             "format": "uuid"
           },
           "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "stepUpToken": {
             "type": "string",
             "nullable": true
           }
@@ -26920,6 +27122,10 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -27143,6 +27349,27 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
+        "type": "object",
+        "properties": {
+          "mfaMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recoveryCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "otherSessionsEnded": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult": {
         "type": "object",
         "properties": {
@@ -27202,6 +27429,10 @@
         "type": "object",
         "properties": {
           "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "stepUpToken": {
             "type": "string",
             "nullable": true
           }
@@ -27354,12 +27585,11 @@
       },
       "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequiredFactor": {
         "enum": [
-          0,
-          1,
-          2
+          "MfaChallenge",
+          "Password",
+          "OAuth"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "Notrelix.Application.Features.Identity.Security.DTOs.StepUpRequirementResult": {
         "type": "object",
@@ -27375,6 +27605,16 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions.RevokeOtherSessionsResult": {
+        "type": "object",
+        "properties": {
+          "revokedCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -29049,6 +29289,11 @@
           "permissionId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "permissionVersion": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           },
           "memberRole": {

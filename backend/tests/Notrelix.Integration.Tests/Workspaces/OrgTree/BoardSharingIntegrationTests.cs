@@ -212,7 +212,9 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
 
         await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Manager"));
         _host.Now = _host.Now.AddMinutes(1);
-        await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Viewer"));
+        // Changing a level names the version it was read at.
+        var read = (await GetAsync(stack, stack.OwnerId, board)).Entries.Single(e => e.Id == guest).PermissionVersion;
+        await OrgTreeTestHost.SendAsync(asOwner, new GrantResourcePermissionCommand("work-management.board", board, "User", guest, "Viewer", ExpectedVersion: read));
         _host.Now = _host.Now.AddMinutes(1);
         await OrgTreeTestHost.SendIdempotentAsync(asOwner, new AddBoardMemberCommand(board, editor, BoardRole.Member));
         _host.Now = _host.Now.AddMinutes(1);

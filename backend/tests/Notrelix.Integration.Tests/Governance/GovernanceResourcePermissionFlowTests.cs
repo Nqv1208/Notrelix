@@ -35,6 +35,8 @@ using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
+using Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
+using Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
@@ -49,6 +51,7 @@ using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Governance.ShareLinks;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -1531,6 +1534,158 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "no comment may persist for the denied cross-workspace reference");
     }
 
+    // ── share links: authorization follows the resource in the route ──────────
+
+    private const string BoardKind = "work-management.board";
+
+    [Fact]
+    public async Task DisableShareLink_OfAnotherBoard_IsNotFound_AndTheLinkStaysActive()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var otherBoardId = await SeedBoardAsync(accountId, workspaceId, ownerId);
+        var linkOfOtherBoard = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, otherBoardId, ownerId);
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+        var act = () => SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, linkOfOtherBoard));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a link of another resource answers the same NotFound as a link that does not exist");
+        (await ShareLinkStatusAsync(linkOfOtherBoard)).Should().Be(ShareLinkStatus.Active);
+    }
+
+    [Fact]
+    public async Task DisableShareLink_NamingTheWrongResourceType_IsNotFound_AndTheLinkStaysActive()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var linkOfBoard = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.Pages.Add(Page.Create(accountId, workspaceId, "Share page", ownerId, DateTimeOffset.UtcNow));
+            await seed.SaveChangesAsync();
+        }
+        Guid pageId;
+        await using (var read = _db.CreateOwnerContext(SystemTenant()))
+        {
+            pageId = await read.Pages.Where(p => p.WorkspaceId == workspaceId).Select(p => p.Id).SingleAsync();
+        }
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+
+        // The caller may share the page, but the link belongs to the board: the guard must answer NotFound.
+        var onAnotherPage = () => SendAsync<Result>(provider, new DisableShareLinkCommand("documents.page", pageId, linkOfBoard));
+        await onAnotherPage.Should().ThrowAsync<AppNotFound>();
+
+        // The link's own resource id under the other resource type names a resource that does not exist.
+        var sameIdOtherType = () => SendAsync<Result>(provider, new DisableShareLinkCommand("documents.page", boardId, linkOfBoard));
+        await sameIdOtherType.Should().ThrowAsync<AppNotFound>();
+
+        (await ShareLinkStatusAsync(linkOfBoard)).Should().Be(ShareLinkStatus.Active);
+    }
+
+    [Fact]
+    public async Task DisableShareLink_ByAViewerOfTheBoard_IsDenied_AndTheLinkStaysActive()
+    {
+        var (accountId, ownerId, workspaceId, boardId, memberId) = await SeedBoardStackAsync();
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        await using (var restrict = _db.CreateOwnerContext(SystemTenant()))
+        {
+            var board = await restrict.Boards.SingleAsync(b => b.Id == boardId);
+            board.ChangeVisibility(BoardVisibility.Private, ownerId, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(boardId, memberId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
+
+        using var provider = CreateProvider(accountId, memberId, workspaceId);
+        var act = () => SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        await act.Should().ThrowAsync<AppForbidden>("a Viewer of the board cannot turn off its share links");
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Active);
+    }
+
+    [Fact]
+    public async Task DisableShareLink_StillWorks_WhileWorkspaceShareLinksAreOff()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+        await SetWorkspaceShareLinksAsync(workspaceId, ownerId, allow: false);
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+        var result = await SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        result.Succeeded.Should().BeTrue("turning a link off must never need the links to be allowed");
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Disabled);
+    }
+
+    [Fact]
+    public async Task CreateShareLink_IsRefused_WhileWorkspaceShareLinksAreOff_AndWritesNothing()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        await SetWorkspaceShareLinksAsync(workspaceId, ownerId, allow: false);
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+        var act = () => SendAsync<Result<CreateShareLinkResponse>>(provider,
+            new CreateShareLinkCommand(BoardKind, boardId, "Viewer"));
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be("ShareLinksTurnedOff");
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        (await verify.ShareLinks.IgnoreQueryFilters().AnyAsync(l => l.ResourceId == boardId)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CreateShareLink_Succeeds_WhileWorkspaceShareLinksAreOn()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        await SetWorkspaceShareLinksAsync(workspaceId, ownerId, allow: true);
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+        var result = await SendAsync<Result<CreateShareLinkResponse>>(provider,
+            new CreateShareLinkCommand(BoardKind, boardId, "Viewer"));
+
+        result.Succeeded.Should().BeTrue();
+        (await ShareLinkStatusAsync(result.Data.ShareLink.Id)).Should().Be(ShareLinkStatus.Active);
+    }
+
+    private async Task<Guid> SeedBoardAsync(Guid accountId, Guid workspaceId, Guid ownerId)
+    {
+        var board = Board.Create(accountId, workspaceId, ownerId, "Other Board", null, DateTimeOffset.UtcNow);
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.Boards.Add(board);
+        await seed.SaveChangesAsync();
+        return board.Id;
+    }
+
+    private async Task<Guid> SeedShareLinkAsync(Guid accountId, Guid workspaceId, string kind, Guid resourceId, Guid createdBy)
+    {
+        var link = ShareLink.Create(
+            accountId, workspaceId, ResourceKind.Create(kind), resourceId,
+            ShareLinkTokenHash.Create(Guid.NewGuid().ToString("N")), ShareLinkAccessMode.WorkspaceOnly,
+            createdBy, DateTimeOffset.UtcNow);
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.ShareLinks.Add(link);
+        await seed.SaveChangesAsync();
+        return link.Id;
+    }
+
+    private async Task<ShareLinkStatus> ShareLinkStatusAsync(Guid linkId)
+    {
+        await using var read = _db.CreateOwnerContext(SystemTenant());
+        return await read.ShareLinks.IgnoreQueryFilters().Where(l => l.Id == linkId).Select(l => l.Status).SingleAsync();
+    }
+
+    private async Task SetWorkspaceShareLinksAsync(Guid workspaceId, Guid actorId, bool allow)
+    {
+        await using var write = _db.CreateOwnerContext(SystemTenant());
+        var workspace = await write.Workspaces.SingleAsync(w => w.Id == workspaceId);
+        workspace.UpdateSettings(WorkspaceSettings.Create(allowPublicSharing: allow), actorId, DateTimeOffset.UtcNow);
+        await write.SaveChangesAsync();
+        (await write.Workspaces.AsNoTracking().Where(w => w.Id == workspaceId)
+            .Select(w => w.Settings.AllowPublicSharing).SingleAsync()).Should().Be(allow);
+    }
+
     // ── composition -----------------------------------------------------------
 
     private static async Task<T> SendAsync<T>(ServiceProvider provider, object request)
@@ -1631,6 +1786,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>(),
                 new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
+        services.AddSingleton(new Mock<IClientMetadata>().Object);
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessChangeRecorder, Notrelix.Application.Features.Governance.AccessChanges.ResourceAccessChangeRecorder>();
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
@@ -1681,6 +1837,12 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<GetResourcePermissionsQuery, Result<List<ResourcePermissionDto>>>,
             GetResourcePermissionsQueryHandler>();
+        services.AddScoped<
+            IRequestHandler<DisableShareLinkCommand, Result>,
+            DisableShareLinkCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>,
+            CreateShareLinkCommandHandler>();
         services.AddScoped<
             IRequestHandler<CreatePageCommand, Result<Guid>>,
             CreatePageCommandHandler>();

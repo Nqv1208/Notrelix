@@ -18,6 +18,12 @@ public interface IMfaTotpService
     /// </summary>
     bool VerifyCode(string base32Secret, string code, DateTimeOffset now);
 
+    /// <summary>
+    /// The RFC 6238 time step the code belongs to (within the allowed window), or <c>null</c> when it
+    /// matches none. A caller that must accept a code once claims this step.
+    /// </summary>
+    long? FindMatchingTimeStep(string base32Secret, string code, DateTimeOffset now);
+
     /// <summary>Protects the raw base32 secret for storage at rest.</summary>
     string ProtectSecret(string base32Secret);
 

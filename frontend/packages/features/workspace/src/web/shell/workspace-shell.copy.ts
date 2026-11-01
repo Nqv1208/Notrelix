@@ -100,6 +100,9 @@ export const en = {
     shortcuts: "Keyboard shortcuts",
     signOut: "Sign out",
     signingOut: "Signing out…",
+    signOutFailed: "We couldn't sign you out",
+    signOutFailedHint:
+      "You are still signed in on this device. Check your connection and try again.",
     unknown: "Signed-in member",
   },
   topbar: {
@@ -271,6 +274,9 @@ export const vi: WorkspaceShellCopy = {
     shortcuts: "Phím tắt",
     signOut: "Đăng xuất",
     signingOut: "Đang đăng xuất…",
+    signOutFailed: "Chưa đăng xuất được",
+    signOutFailedHint:
+      "Bạn vẫn đang đăng nhập trên thiết bị này. Hãy kiểm tra kết nối rồi thử lại.",
     unknown: "Thành viên đã đăng nhập",
   },
   topbar: {

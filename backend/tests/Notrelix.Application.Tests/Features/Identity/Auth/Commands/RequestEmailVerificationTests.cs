@@ -48,6 +48,6 @@ public class RequestEmailVerificationTests : IdentityHandlerTestBase
         var result = await sut.Handle(new RequestEmailVerificationCommand(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("User not found"));
+        result.Errors.Should().Contain(e => e.Contains("Session is invalid or expired"));
     }
 }

@@ -24,10 +24,11 @@ export {
   type AccountProfileSurfaceProps,
   type AccountProfileValues,
 } from "./profile/account-profile-surface";
-export type {
-  AccountFormatters,
-  AccountSaveStatus,
-  AccountSection,
+export {
+  pluralCopy,
+  type AccountFormatters,
+  type AccountSaveStatus,
+  type AccountSection,
 } from "./shared/account-surface-model";
 export { accountNavCatalog } from "./nav/account-nav.catalog";
 export { accountNavCopy, type AccountNavCopy } from "./nav/account-nav.copy";

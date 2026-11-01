@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AccountSecuritySurface,
   createUseProfile,
   createUseSecurity,
   passwordChangeFailureOf,
+  pluralCopy,
   useAccountSecurityCopy,
   type AccountSecurityData,
   type AccountPasswordSubmission,
@@ -13,6 +15,7 @@ import {
   type StepUpPurpose,
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { clearApplicationCache } from "@/composition/application-lifecycle";
 import { useRouteWorkspaceName, useToast } from "./use-account-pages";
 
 /** The seconds a throttled step must wait (429 `retryAfterSeconds`), or `null`. */
@@ -27,33 +30,48 @@ function waitOf(error: unknown): number | null {
 }
 
 type Step =
-  | { kind: "enroll"; methodId: string; secret: string; otpAuthUri: string }
+  | {
+      kind: "enroll";
+      methodId: string;
+      secret: string;
+      otpAuthUri: string;
+      /** The activation spends a proof of its own, bought with the same answer as the start. */
+      verifyProof: string;
+    }
   | {
       kind: "stepUp";
-      purpose: "disable" | "renew";
+      purpose: "enroll" | "disable" | "renew" | "others";
       factor: "code" | "password";
       challengeToken: string | null;
     }
-  | { kind: "codes"; codes: readonly string[] }
+  | { kind: "codes"; codes: readonly string[]; othersEnded?: number }
   | { kind: "password" }
-  | { kind: "passwordChanged" };
+  | { kind: "passwordChanged" }
+  | { kind: "twoFactorOff" }
+  | { kind: "signOutThis" };
 
-const PURPOSE: Record<"disable" | "renew", StepUpPurpose> = {
+const PURPOSE: Record<
+  "enroll" | "disable" | "renew" | "others",
+  StepUpPurpose
+> = {
+  enroll: "EnrollMfa",
   disable: "DisableMfa",
   renew: "RegenerateRecoveryCodes",
+  others: "RevokeOtherSessions",
 };
 
 export function AccountSecurityPage() {
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountSecurityCopy();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const workspaceName = useRouteWorkspaceName();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
   const [notice, showNotice] = useToast();
   const [step, setStep] = useState<Step | null>(null);
   const [stepError, setStepError] = useState<{
-    error: "wrong" | "wait" | "failed";
+    error: "wrong" | "wait" | "failed" | "expired";
     wait?: number;
   } | null>(null);
   const [passwordError, setPasswordError] = useState<{
@@ -135,55 +153,68 @@ export function AccountSecurityPage() {
     ],
   );
 
-  const run = useCallback(
-    async (action: () => Promise<unknown>, message: string) => {
-      setBusy(true);
+  const signOutThisDevice = useCallback(async () => {
+    // The session is over: drop what it read, so the sign-in page is not sent back here.
+    clearApplicationCache(queryClient, { sessionEnded: true });
+    await navigate({ to: "/sign-in", replace: true });
+  }, [navigate, queryClient]);
+
+  const signOut = useCallback(
+    async (sessionId: string) => {
       setActionError(false);
+      // The device in hand ends the session at once: ask first.
+      if (activeSessions.find((s) => s.id === sessionId)?.isCurrent) {
+        setStep({ kind: "signOutThis" });
+        return;
+      }
+      setBusy(true);
       try {
-        await action();
+        await service.revokeSession(sessionId);
         await invalidate();
-        showNotice(message);
-      } catch {
-        setActionError(true);
+        showNotice(copy.sessions.signedOut);
+      } catch (error) {
+        // Not found: that device is already gone (ended elsewhere); show the list as it is.
+        if ((error as { status?: number }).status === 404) {
+          await invalidate();
+          showNotice(copy.sessions.gone);
+        } else setActionError(true);
       } finally {
         setBusy(false);
       }
     },
-    [invalidate, showNotice],
+    [
+      activeSessions,
+      copy.sessions.gone,
+      copy.sessions.signedOut,
+      invalidate,
+      service,
+      showNotice,
+    ],
   );
 
-  const signOutThisDevice = useCallback(async () => {
-    // The backend allows ending the current session: the device is signed out.
-    await navigate({ to: "/sign-in", replace: true });
-  }, [navigate]);
+  const confirmSignOutThis = useCallback(async () => {
+    const currentId = activeSessions.find((s) => s.isCurrent)?.id;
+    if (!currentId) {
+      setStep(null);
+      return;
+    }
+    setBusy(true);
+    setActionError(false);
+    try {
+      await service.revokeSession(currentId);
+      await signOutThisDevice();
+    } catch {
+      setActionError(true);
+      setBusy(false);
+    }
+  }, [activeSessions, service, signOutThisDevice]);
 
-  const signOut = useCallback(
-    async (sessionId: string) => {
-      const current = activeSessions.find((s) => s.id === sessionId)?.isCurrent;
-      if (current) {
-        setBusy(true);
-        try {
-          await service.revokeSession(sessionId);
-          await signOutThisDevice();
-        } catch {
-          setActionError(true);
-          setBusy(false);
-        }
-        return;
-      }
-      await run(
-        () => service.revokeSession(sessionId),
-        copy.sessions.signedOut,
-      );
-    },
-    [activeSessions, copy.sessions.signedOut, run, service, signOutThisDevice],
-  );
-
-  // Turning two-factor on starts the enrollment; off asks for proof first.
+  // Turning two-factor on or off asks for proof first.
   const beginStepUp = useCallback(
-    async (purpose: "disable" | "renew") => {
+    async (purpose: "enroll" | "disable" | "renew" | "others") => {
       setActionError(false);
       setStepError(null);
+      setBusy(true);
       try {
         const requirement = await service.getStepUpRequirement(
           PURPOSE[purpose],
@@ -196,6 +227,8 @@ export function AccountSecurityPage() {
         });
       } catch {
         setActionError(true);
+      } finally {
+        setBusy(false);
       }
     },
     [service],
@@ -203,20 +236,11 @@ export function AccountSecurityPage() {
 
   const setTwoFactor = useCallback(
     async (enabled: boolean) => {
-      if (!enabled) {
-        await beginStepUp("disable");
-        return;
-      }
-      setActionError(false);
-      setStepError(null);
-      try {
-        const enrollment = await service.startTwoFactor();
-        setStep({ kind: "enroll", ...enrollment });
-      } catch {
-        setActionError(true);
-      }
+      // The proof comes first; the enrollment starts once it is in hand (`finishStepUp`).
+      // One start at a time: the buttons wait while the proof is asked for.
+      await beginStepUp(enabled ? "enroll" : "disable");
     },
-    [beginStepUp, service],
+    [beginStepUp],
   );
 
   const fail = (error: unknown, wrongStatus: boolean) => {
@@ -235,30 +259,70 @@ export function AccountSecurityPage() {
     async (
       proof: Promise<string>,
       current: Extract<Step, { kind: "stepUp" }>,
+      /** Turning two-factor on spends two proofs (start, then activation): this buys the second. */
+      spare?: () => Promise<string>,
     ) => {
       setBusy(true);
       setStepError(null);
+      // Once the proof is in hand a refusal is the action's, never "that code is wrong".
+      let proved = false;
       try {
         const token = await proof;
-        if (current.purpose === "disable") {
+        const verifyProof = spare ? await spare() : "";
+        proved = true;
+        if (current.purpose === "enroll") {
+          const enrollment = await service.startTwoFactor(token);
+          setStep({ kind: "enroll", ...enrollment, verifyProof });
+        } else if (current.purpose === "disable") {
           await service.disableTwoFactor(token);
+          // The producer ended every session, this one too: nothing more can be read here.
+          setStep({ kind: "twoFactorOff" });
+        } else if (current.purpose === "others") {
+          const count = await service.revokeOtherSessions(token);
           setStep(null);
           await invalidate();
-          showNotice(copy.twoFactor.turnedOff);
+          showNotice(
+            count > 0
+              ? pluralCopy(
+                  {
+                    one: copy.others.doneCount_one,
+                    other: copy.others.doneCount_other,
+                  },
+                  count,
+                )
+              : copy.others.nobody,
+          );
         } else {
           setStep({
             kind: "codes",
             codes: await service.regenerateRecoveryCodes(token),
           });
           await invalidate();
+          showNotice(copy.twoFactor.renewed);
         }
       } catch (error) {
-        fail(error, true);
+        // The proof or the challenge is gone (out of tries, too old): open a fresh one for the same step.
+        if (
+          (error as { code?: string }).code ===
+          "identity.security.step-up-invalid"
+        ) {
+          await beginStepUp(current.purpose);
+          setStepError({ error: "expired" });
+        } else fail(error, !proved);
       } finally {
         setBusy(false);
       }
     },
-    [copy.twoFactor.turnedOff, invalidate, service, showNotice],
+    [
+      beginStepUp,
+      copy.others.doneCount_one,
+      copy.others.doneCount_other,
+      copy.others.nobody,
+      copy.twoFactor.renewed,
+      invalidate,
+      service,
+      showNotice,
+    ],
   );
 
   const submitCode = useCallback(
@@ -268,12 +332,28 @@ export function AccountSecurityPage() {
         setBusy(true);
         setStepError(null);
         try {
-          const codes = await service.verifyTwoFactor(step.methodId, code);
-          setStep({ kind: "codes", codes });
+          // Authenticator apps group the digits ("123 456"); the producer wants six.
+          const activation = await service.verifyTwoFactor(
+            step.methodId,
+            code.replace(/\s+/g, ""),
+            step.verifyProof,
+          );
+          setStep({
+            kind: "codes",
+            codes: activation.recoveryCodes,
+            othersEnded: activation.otherSessionsEnded,
+          });
           await invalidate();
           showNotice(copy.twoFactor.turnedOn);
         } catch (error) {
-          fail(error, true);
+          // The activation's proof is gone (too old): ask again, then start a fresh enrollment.
+          if (
+            (error as { code?: string }).code ===
+            "identity.security.step-up-invalid"
+          ) {
+            await beginStepUp("enroll");
+            setStepError({ error: "expired" });
+          } else fail(error, true);
         } finally {
           setBusy(false);
         }
@@ -290,6 +370,7 @@ export function AccountSecurityPage() {
         );
     },
     [
+      beginStepUp,
       copy.twoFactor.turnedOn,
       finishStepUp,
       invalidate,
@@ -301,11 +382,14 @@ export function AccountSecurityPage() {
 
   const submitPassword = useCallback(
     async (password: string) => {
-      if (step?.kind === "stepUp")
-        await finishStepUp(
-          service.completeStepUpWithPassword(PURPOSE[step.purpose], password),
-          step,
-        );
+      if (step?.kind !== "stepUp") return;
+      const proofFor = () =>
+        service.completeStepUpWithPassword(PURPOSE[step.purpose], password);
+      await finishStepUp(
+        proofFor(),
+        step,
+        step.purpose === "enroll" ? proofFor : undefined,
+      );
     },
     [finishStepUp, service, step],
   );
@@ -372,7 +456,13 @@ export function AccountSecurityPage() {
 
   const flow = useMemo<AccountSecurityFlow | null>(() => {
     if (!step) return null;
-    if (step.kind === "codes" || step.kind === "passwordChanged") return step;
+    if (
+      step.kind === "codes" ||
+      step.kind === "passwordChanged" ||
+      step.kind === "twoFactorOff" ||
+      step.kind === "signOutThis"
+    )
+      return step;
     if (step.kind === "password")
       return {
         kind: "password",
@@ -433,9 +523,8 @@ export function AccountSecurityPage() {
       onLoadMoreActivity={() => void loadMoreActivity()}
       onRenewBackupCodes={() => void beginStepUp("renew")}
       onSignOut={(id) => void signOut(id)}
-      onSignOutOthers={() =>
-        void run(() => service.revokeOtherSessions(), copy.others.done)
-      }
+      onSignOutOthers={() => void beginStepUp("others")}
+      onConfirmSignOutThis={() => void confirmSignOutThis()}
       onRetry={() => {
         void summary.refetch();
         void sessions.refetch();

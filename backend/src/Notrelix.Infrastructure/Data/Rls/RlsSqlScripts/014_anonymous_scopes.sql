@@ -483,7 +483,7 @@ SELECT ops.create_policy(
 -- own-row policy. The function returns the derived user id (NULL when nothing matches; nothing is entered
 -- then).
 --   email               p_credential = normalized email address
---   refresh-token       p_credential = refresh token digest        (session of that digest)
+--   refresh-token       p_credential = refresh token digest        (session of that digest, current or just replaced)
 --   email-verification  p_credential = token digest + hash version (token of that digest)
 --   oauth-identity      p_credential = provider || chr(31) || provider subject (linked sign-in identity)
 CREATE OR REPLACE FUNCTION ops.enter_credential_scope(p_kind text, p_credential text, p_hash_version integer)
@@ -507,7 +507,8 @@ BEGIN
     ELSIF p_kind = 'refresh-token' THEN
         SELECT s.user_id INTO v_user
           FROM identity.user_sessions s
-         WHERE s.refresh_token_hash = p_credential;
+         WHERE s.refresh_token_hash = p_credential
+            OR s.previous_refresh_token_hash = p_credential;
     ELSIF p_kind = 'email-verification' THEN
         SELECT t.user_id INTO v_user
           FROM identity.email_verification_tokens t

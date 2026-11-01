@@ -16,6 +16,7 @@ import type {
   StepUpFactor,
   StepUpPurpose,
   StepUpRequirement,
+  TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
 } from "../types/account";
@@ -314,14 +315,19 @@ export function toActivityPage(wire: ActivityPageWire): AccountActivityPage {
   return { items, nextCursor: wire.nextCursor ?? null };
 }
 
-const FACTORS: readonly StepUpFactor[] = ["mfa", "password", "oauth"];
+/** The producer names the factor (`StepUpRequiredFactor`, serialized as a string). */
+const FACTORS: Readonly<Record<string, StepUpFactor>> = {
+  MfaChallenge: "mfa",
+  Password: "password",
+  OAuth: "oauth",
+};
 
 export function toStepUpRequirement(wire: {
-  readonly requiredFactor?: number;
+  readonly requiredFactor?: string;
   readonly challengeToken?: string | null;
 }): StepUpRequirement {
   return {
-    factor: FACTORS[wire.requiredFactor ?? 1] ?? "password",
+    factor: FACTORS[wire.requiredFactor ?? ""] ?? "password",
     challengeToken: wire.challengeToken ?? null,
   };
 }
@@ -484,16 +490,23 @@ export function createAccountService(
       await api.post<void>(endpoints.auth.sessionRevoke(sessionId), {}, QUIET);
     },
 
-    async revokeOtherSessions(): Promise<void> {
-      await api.post<void>(endpoints.auth.sessionsRevokeOthers, {}, QUIET);
+    /** Needs a `RevokeOtherSessions` proof; answers how many other devices were signed out. */
+    async revokeOtherSessions(stepUpToken: string): Promise<number> {
+      const wire = await api.post<{ revokedCount?: number } | null>(
+        endpoints.auth.sessionsRevokeOthers,
+        { stepUpToken },
+        QUIET,
+      );
+      return wire?.revokedCount ?? 0;
     },
 
-    async startTwoFactor(): Promise<TwoFactorEnrollment> {
+    /** Needs an `EnrollMfa` proof (single use). */
+    async startTwoFactor(stepUpToken: string): Promise<TwoFactorEnrollment> {
       const wire = await api.post<{
         mfaMethodId?: string;
         secret?: string | null;
         otpAuthUri?: string | null;
-      }>(endpoints.auth.mfaEnrollmentStart, {}, QUIET);
+      }>(endpoints.auth.mfaEnrollmentStart, { stepUpToken }, QUIET);
       return {
         methodId: wire.mfaMethodId ?? "",
         secret: wire.secret ?? "",
@@ -501,17 +514,27 @@ export function createAccountService(
       };
     },
 
-    /** Activates the authenticator; the recovery codes are shown once. */
+    /**
+     * Activates the authenticator with its own `EnrollMfa` proof (single use); the
+     * recovery codes are shown once, and every other device was signed out.
+     */
     async verifyTwoFactor(
       methodId: string,
       code: string,
-    ): Promise<readonly string[]> {
-      const wire = await api.post<{ recoveryCodes?: string[] | null }>(
+      stepUpToken: string,
+    ): Promise<TwoFactorActivation> {
+      const wire = await api.post<{
+        recoveryCodes?: string[] | null;
+        otherSessionsEnded?: number;
+      }>(
         endpoints.auth.mfaEnrollmentVerify,
-        { mfaMethodId: methodId, code },
+        { mfaMethodId: methodId, code, stepUpToken },
         QUIET,
       );
-      return wire.recoveryCodes ?? [];
+      return {
+        recoveryCodes: wire.recoveryCodes ?? [],
+        otherSessionsEnded: wire.otherSessionsEnded ?? 0,
+      };
     },
 
     async getStepUpRequirement(

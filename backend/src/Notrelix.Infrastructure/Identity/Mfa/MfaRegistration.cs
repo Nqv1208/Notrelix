@@ -13,6 +13,7 @@ public static class MfaRegistration
         services.AddScoped<IMfaChallengeStore, MfaChallengeStore>();
         services.AddScoped<IMfaTotpService, MfaTotpService>();
         services.AddScoped<IMfaRecoveryCodeGenerator, MfaRecoveryCodeGenerator>();
+        services.AddScoped<IMfaCodeUseGuard, MfaCodeUseGuard>();
 
         return services;
     }

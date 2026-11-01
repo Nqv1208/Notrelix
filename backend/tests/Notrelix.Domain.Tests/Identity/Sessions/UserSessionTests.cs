@@ -152,16 +152,17 @@ public class UserSessionTests
     }
 
     [Fact]
-    public void UpdateRefreshToken_ShouldRotateTokenAndRaiseEvent()
+    public void Rotate_ShouldRotateTokenAndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
         ((IHasDomainEvents)session).ClearDomainEvents();
 
         var newToken = RefreshTokenHash.Create("new-token");
-        session.UpdateRefreshToken(newToken, now.AddDays(1));
+        session.Rotate(newToken, now.AddDays(1));
 
         session.RefreshTokenHash.Should().Be(newToken);
+        session.PreviousRefreshTokenHash.Should().Be(ValidTokenHash.Hash);
         session.DomainEvents.Should().ContainSingle(e => e is UserSessionRefreshTokenRotatedDomainEvent);
         var evt = (UserSessionRefreshTokenRotatedDomainEvent)session.DomainEvents.Single(e => e is UserSessionRefreshTokenRotatedDomainEvent);
         evt.SessionId.Should().Be(session.Id);

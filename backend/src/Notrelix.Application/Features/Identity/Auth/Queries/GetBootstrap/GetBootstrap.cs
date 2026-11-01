@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
@@ -25,7 +26,7 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
         var projection = await _bootstrapReadPort.GetAsync(_currentUser.UserId, cancellationToken);
 
         if (projection is null)
-            return Result<BootstrapResult>.Failure("User not found");
+            return Result<BootstrapResult>.Failure(SessionErrors.SessionUserMissing);
 
         return Result<BootstrapResult>.Success(new BootstrapResult
         {

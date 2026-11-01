@@ -6,6 +6,9 @@ public sealed class UserSession : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public RefreshTokenHash RefreshTokenHash { get; private set; } = null!;
+    /// <summary>The credential the last rotation replaced; only its digest, only for the grace window and replay detection.</summary>
+    public string? PreviousRefreshTokenHash { get; private set; }
+    public DateTimeOffset? RotatedAt { get; private set; }
     public SessionStatus Status { get; private set; }
     public string? IpAddress { get; private set; }
     public string? UserAgent { get; private set; }
@@ -47,7 +50,13 @@ public sealed class UserSession : AggregateRoot
         return session;
     }
 
-    public void UpdateRefreshToken(RefreshTokenHash newTokenHash, DateTimeOffset updatedAt)
+    /// <summary>
+    /// Swaps in the next refresh credential and keeps the one it replaces for the rotation grace window,
+    /// so a lost response can be retried and a later replay of the old credential can be told from a
+    /// retry. The session lives on idle for <see cref="SessionLifetimePolicy.IdleLifetime"/> after this
+    /// call, never past <see cref="SessionLifetimePolicy.AbsoluteLifetime"/> after it was created.
+    /// </summary>
+    public void Rotate(RefreshTokenHash newTokenHash, DateTimeOffset now)
     {
         Guard.NotNull(newTokenHash);
 
@@ -56,12 +65,30 @@ public sealed class UserSession : AggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
         }
 
-        var pending = PrepareAuditUpdate(UserId, updatedAt);
+        var expiresAt = SessionLifetimePolicy.ExpiryAfterRefresh(CreatedAt, now);
+        if (expiresAt <= now)
+        {
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_ExpirationMustBeAfterCreation, "Session expiration time must be after creation time.");
+        }
+
+        var pending = PrepareAuditUpdate(UserId, now);
+        PreviousRefreshTokenHash = RefreshTokenHash.Hash;
         RefreshTokenHash = newTokenHash;
+        RotatedAt = now;
+        ExpiresAt = expiresAt;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
+        RaiseDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, now));
     }
+
+    /// <summary>
+    /// True when <paramref name="presentedHash"/> is the credential this session just replaced and the
+    /// grace window has not closed: a retry, not a replay.
+    /// </summary>
+    public bool IsWithinRotationGrace(string presentedHash, DateTimeOffset now) =>
+        PreviousRefreshTokenHash == presentedHash
+        && RotatedAt is { } rotatedAt
+        && now - rotatedAt <= SessionLifetimePolicy.RotationGrace;
 
     public void Revoke(DateTimeOffset revokedAt, string? reason = null)
     {

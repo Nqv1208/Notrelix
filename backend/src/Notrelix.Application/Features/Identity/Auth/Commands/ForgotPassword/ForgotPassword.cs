@@ -44,7 +44,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
 
         if (isLimited)
         {
-            return Result.Failure(new ApplicationError("identity.auth.rate-limited", "Too many requests. Please try again later.", ApplicationErrorType.BusinessRule));
+            return Result.Failure(new ApplicationError("identity.auth.rate-limited", "Too many requests. Please try again later.", ApplicationErrorType.TooManyRequests));
         }
 
         if (_credentialScope is not null)
@@ -69,8 +69,9 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         }
         catch (Exception ex)
         {
+            // The answer must not differ between a known and an unknown account: a failed send is
+            // logged and answered with the same success as an unknown email.
             _logger.LogError(ex, "Failed to send forgot password email");
-            return Result.Failure(new ApplicationError("identity.auth.email-send-failed", "Failed to send email. Please try again.", ApplicationErrorType.BusinessRule));
         }
 
         return Result.Success();

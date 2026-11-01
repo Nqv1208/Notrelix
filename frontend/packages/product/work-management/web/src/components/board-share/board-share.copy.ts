@@ -92,6 +92,8 @@ export const en = {
     copied: "Link copied.",
     copyFailed: "Couldn't copy the link.",
     writeFailed: "Couldn't change the permission.",
+    writeConflict:
+      "Someone else changed this access first. The list is up to date; try again.",
     done: "Done",
   },
   privateConfirm: {
@@ -224,6 +226,8 @@ export const vi: BoardShareCopy = {
     copied: "Đã sao chép liên kết.",
     copyFailed: "Chưa sao chép được liên kết.",
     writeFailed: "Chưa đổi được quyền.",
+    writeConflict:
+      "Người khác đã đổi quyền này trước. Danh sách đã được cập nhật, hãy thử lại.",
     done: "Xong",
   },
   privateConfirm: {

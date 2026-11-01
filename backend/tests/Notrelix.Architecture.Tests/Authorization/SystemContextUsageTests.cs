@@ -32,6 +32,7 @@ public class SystemContextUsageTests
         "RestoreForm.cs",
         "RestoreApprovalRequest.cs",
         "RestoreSavedFilter.cs",
+        "RevokeResourcePermissionCommand.cs",
         "RestorePageVersion.cs",
         "PageSubtreeStore.cs",
         "TenantBootstrapStore.cs",

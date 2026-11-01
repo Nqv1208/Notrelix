@@ -22,6 +22,7 @@ export type {
   StepUpFactor,
   StepUpPurpose,
   StepUpRequirement,
+  TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
 } from "./types/account";

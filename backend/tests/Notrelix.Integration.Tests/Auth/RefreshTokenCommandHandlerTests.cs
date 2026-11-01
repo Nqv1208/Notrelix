@@ -1,4 +1,7 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
+using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Integration.Tests.Containers;
@@ -24,6 +27,15 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private static RefreshTokenCommandHandler CreateHandler(IIdentityDbContext context, IJwtService jwtService, IDateTimeProvider dateTimeProvider)
+    {
+        var ledger = new Mock<IRefreshRotationLedger>();
+        ledger.Setup(l => l.TryClaimAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        return new RefreshTokenCommandHandler(
+            context, jwtService, new Mock<IJwtBlacklistService>().Object, ledger.Object,
+            new Mock<ISecurityActivityRecorder>().Object, dateTimeProvider);
+    }
+
     [Fact]
     public async Task Handle_WhenSessionNotFound_ShouldReturnFailure()
     {
@@ -32,7 +44,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
+        var handler = CreateHandler(context, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RefreshTokenCommand
         {
@@ -62,7 +74,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
+        var handler = CreateHandler(context, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RefreshTokenCommand
         {
@@ -74,12 +86,11 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
         result.Data!.AccessToken.Should().Be("new-access-token");
         result.Data!.RefreshToken.Should().Be("new-refresh-token");
 
-        // Old session should be revoked
-        var old = await context.Sessions.FirstAsync(s => s.RefreshTokenHash.Hash == RefreshTokenHash.Create(oldRefreshToken).Hash);
-        old.Status.Should().Be(SessionStatus.Revoked);
-
-        // New session should exist
-        (await context.Sessions.ToListAsync()).Should().HaveCount(2);
-        (await context.Sessions.AnyAsync(s => s.RefreshTokenHash.Hash == RefreshTokenHash.Create("new-refresh-token").Hash)).Should().BeTrue();
+        // The session keeps its id and stays active; its credential is replaced and the old one is remembered.
+        var rotated = await context.Sessions.SingleAsync();
+        rotated.Id.Should().Be(session.Id);
+        rotated.Status.Should().Be(SessionStatus.Active);
+        rotated.RefreshTokenHash.Hash.Should().Be(RefreshTokenHash.Create("new-refresh-token").Hash);
+        rotated.PreviousRefreshTokenHash.Should().Be(RefreshTokenHash.Create(oldRefreshToken).Hash);
     }
 }
