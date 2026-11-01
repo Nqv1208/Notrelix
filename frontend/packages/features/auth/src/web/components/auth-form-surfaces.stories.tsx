@@ -8,6 +8,7 @@ import {
   authRegisterDefaultScenario,
   authRegisterErrorScenario,
   authRegisterPendingScenario,
+  authResetScenario,
   authSignInScenario,
   authSsoStep,
   authVerifyEmailScenario,
@@ -15,6 +16,7 @@ import {
 import { authCopy } from "../copy/auth.copy";
 import { AuthForgotSurface } from "./auth-forgot-surface";
 import { AuthInviteSurface } from "./auth-invite-surface";
+import { AuthResetSurface } from "./auth-reset-surface";
 import { AuthShell } from "./auth-shell";
 import { AuthSignInSurface } from "./auth-sign-in-surface";
 import { AuthVerifyEmailSurface } from "./auth-verify-email-surface";
@@ -230,6 +232,33 @@ export const ForgotSentReady: Story = {
     </Page>
   ),
   tags: ["fui-surface--auth.forgot", "fui-state--Success"],
+};
+
+export const ResetForm: Story = {
+  render: () => (
+    <Page>
+      <AuthResetSurface {...authResetScenario()} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.reset", "fui-state--Default"],
+};
+
+export const ResetPending: Story = {
+  render: () => (
+    <Page>
+      <AuthResetSurface {...authResetScenario({ pending: true })} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.reset", "fui-state--Loading"],
+};
+
+export const ResetRefused: Story = {
+  render: () => (
+    <Page>
+      <AuthResetSurface {...authResetScenario({ error: "rejected" })} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.reset", "fui-state--Error"],
 };
 
 export const VerifyEmailWaiting: Story = {

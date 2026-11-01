@@ -116,12 +116,12 @@ A use case is DONE only when all of these hold on the same commit (`docs/deliver
 
 The design canvas holding the artboards is the owner's claude.ai artifact `18L4jUXGfdXh7Wn9YQvA2x`. Artboard ids in the catalog refer to it.
 
-## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01; Accounts, Workspaces, Documents, Collaboration and Work Management adjusted again 2026-11-01 for decisions 3 and 7 and the Work Management index fixes)
+## 8. System assessment (2026-10-30, develop at `cc416f805`; Identity, Workspaces, Documents, Governance and Work Management re-counted 2026-11-01; Accounts, Workspaces, Documents, Collaboration and Work Management adjusted again 2026-11-01 for decisions 3 and 7 and the Work Management index fixes; Identity counted again 2026-11-02 after the 0.1.0 sign-in, session and second-step real specs)
 
 | Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|
 | Accounts | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
-| Identity | 61 | 6 | 11 | 25 | 7 | 8 | 4 |
+| Identity | 61 | 6 | 10 | 12 | 21 | 8 | 4 |
 | Workspaces | 91 | 6 | 13 | 45 | 25 | 0 | 2 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 0 | 6 |
 | Work Management | 171 | 10 | 1 | 13 | 145 | 1 | 1 |
@@ -132,9 +132,9 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Billing | 99 | 56 | 27 | 8 | 7 | 0 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 0 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
-| **Total** | **959** | **196** | **205** | **228** | **295** | **9** | **26** |
+| **Total** | **959** | **196** | **204** | **215** | **309** | **9** | **26** |
 
-Nine use cases are DONE: Identity C03, D02, H01, J03, K04, K05 and Work Management A24, each accepted 2026-11-01 by an acceptance agent that did not build it, and Identity H02 and K03, which that agent rejected on one line each (a concurrent activation, the missing provider step-up screen) and the fix lane accepted again after closing those lines; the lead reviews the Evidence lines of H02 and K03 at merge (see their State lines).
+Nine use cases are DONE: Identity C03, D02, H01, J03, K04, K05 and Work Management A24, each accepted 2026-11-01 by an acceptance agent that did not build it, and Identity H02 and K03, which that agent rejected on one line each (a concurrent activation, the missing provider step-up screen) and the fix lane accepted again after closing those lines; an independent acceptance agent confirmed H02 and K03 on all five lines on 2026-11-02 at `6ac912d0c` (see their State lines). The same run kept Work Management B36, B09, C07, A16 and B28 and sixteen Workspaces use cases at HARDENING, each with its gaps in the State line.
 
 Patterns that repeat across contexts, each detailed with file paths in the context files:
 
