@@ -379,6 +379,73 @@ test("a member assigns and clears an assignee in the table, and an assignment th
   ).toEqual([]);
 });
 
+test("a due date before the item's start date is refused: the picker names why under the calendar, focus moves to it and nothing is saved", async ({
+  page,
+}) => {
+  const s = await scene(page, "Row due range");
+  const row = await openRow(page, s);
+
+  // The page offers every day, the person picks one, and before that write reaches the server another member sets
+  // a start date after it. The held write names the version just written, so the refusal is the range and not a
+  // lost race.
+  await row
+    .getByRole("button", { name: `Change due date of ${s.item.itemKey}` })
+    .click();
+  let release!: (version: number) => void;
+  const released = new Promise<number>((resolve) => (release = resolve));
+  await page.route(
+    new RegExp(`/board-items/${s.item.id}(\\?|$)`),
+    async (route) => {
+      const request = route.request();
+      if (request.method() !== "PATCH") return route.continue();
+      const version = await released;
+      const body = request.postDataJSON() as Record<string, unknown>;
+      return route.continue({
+        postData: JSON.stringify({ ...body, expectedVersion: version }),
+      });
+    },
+  );
+  const refused = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      response.url().includes(`/board-items/${s.item.id}`) &&
+      response.status() !== 403,
+  );
+  await pickADay(page);
+  const start = await apiWrite(page, "PATCH", `/board-items/${s.item.id}`, {
+    startDate: "2027-06-15T00:00:00Z",
+    expectedVersion: s.item.version,
+  });
+  expect(start.status).toBeLessThan(300);
+  const current = await apiRead<ItemRead>(page, `/board-items/${s.item.id}`);
+  release(current.version);
+  expect((await refused).status()).toBe(400);
+
+  const alert = page.getByRole("alert").filter({ hasText: "before the start" });
+  await expect(alert).toBeVisible();
+  await expect(alert).toBeFocused();
+  await expect(page.getByRole("grid")).toBeVisible();
+  expect(
+    (await apiRead<ItemRead>(page, `/board-items/${s.item.id}`)).dueAt,
+  ).toBeNull();
+  expect(
+    (await apiRead<ItemRead>(page, `/board-items/${s.item.id}`)).version,
+  ).toBe(current.version);
+
+  // A page that has read the start date offers no day before it.
+  await page.reload();
+  await page
+    .getByRole("searchbox", { name: "Search the table" })
+    .fill(s.unique);
+  await page
+    .locator(`[data-row-id="${s.item.id}"]`)
+    .getByRole("button", { name: `Change due date of ${s.item.itemKey}` })
+    .click();
+  const days = page.getByRole("grid").getByRole("button");
+  await expect(days.first()).toBeDisabled();
+  await expect(days.nth(20)).toBeEnabled();
+});
+
 test("a member sets and clears a due date in the table, and a due date that lost the race is refused and names who won", async ({
   browser,
   page,
@@ -405,7 +472,7 @@ test("a member sets and clears a due date in the table, and a due date that lost
   after = await apiRead<ItemRead>(page, `/board-items/${s.item.id}`);
   expect(after.dueAt).toBeNull();
 
-  // An inverted range never reaches the table (it sets one date), so the server's own refusal is proved here.
+  // The server refuses an inverted range sent in one write; the table's own path to it is the next test.
   const inverted = await apiWrite(page, "PATCH", `/board-items/${s.item.id}`, {
     startDate: "2026-12-10T00:00:00Z",
     dueDate: "2026-12-01T00:00:00Z",

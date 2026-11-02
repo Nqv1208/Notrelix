@@ -41,6 +41,8 @@ export interface TableRowModel {
   readonly due: { readonly kind: TableDueKind; readonly text: string };
   /** The due instant as the board gives it; null when none. */
   readonly dueAt: string | null;
+  /** The start instant as the board gives it; null when none. */
+  readonly startAt: string | null;
   readonly priority: "urgent" | "high" | "medium" | "low" | null;
   readonly label: {
     readonly name: string;
@@ -197,6 +199,7 @@ export function buildTableRow(
       : null,
     due: dueModel,
     dueAt: dueIso ?? null,
+    startAt: card.startDate ?? null,
     priority: card.priority ?? null,
     label: label?.name
       ? { name: label.name, tone: itemLabelTone(label) }

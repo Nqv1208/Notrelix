@@ -6,6 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
  * the table keeps inside the page and axe finds nothing serious, and a status write refused as a lost race tells
  * the person who won in a toast that stays inside the viewport. The refusal needs the server started with
  * `VITE_MOCK_FAULTS=/board-items/mock-erp-item-149/status=409`; the layout runs in the default world.
+ * The Cột menu (UC-WM-I02) is one of the lists: inside the viewport, 44 px rows at 390 and no serious axe violation.
  * `WM_SHOTS_DIR` writes a screenshot of each state for review.
  */
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -78,6 +79,8 @@ for (const [width, height] of [
         ["assignee-list", /Đổi người phụ trách của ERP-149/],
         ["due-calendar", /Đổi hạn của ERP-149/],
         ["priority-menu", /Đổi ưu tiên của ERP-149/],
+        // The Cột menu (UC-WM-I02): its rows scroll, so the scroll region must be reachable by keyboard.
+        ["columns-menu", /^Cột \d+\/\d+$/],
       ];
       for (const [shot, name] of pickers) {
         const trigger = page.getByRole("button", { name });
@@ -98,7 +101,7 @@ for (const [width, height] of [
           const targets = open
             .first()
             .locator(
-              "[role=option], [role=menuitem], button:not([aria-hidden])",
+              "[role=option], [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], button:not([aria-hidden])",
             );
           const count = await targets.count();
           expect(count, `${shot} targets`).toBeGreaterThan(0);
@@ -120,7 +123,9 @@ for (const [width, height] of [
         expect(
           await seriousViolations(
             page,
-            shot === "priority-menu" ? ["aria-hidden-focus"] : [],
+            shot === "priority-menu" || shot === "columns-menu"
+              ? ["aria-hidden-focus"]
+              : [],
           ),
           shot,
         ).toEqual([]);

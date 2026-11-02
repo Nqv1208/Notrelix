@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   apiRead,
   apiWrite,
@@ -9,15 +9,8 @@ import {
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-/**
- * The card popup's column picker on the real stack. The board is grouped by Status, so the picker is the
- * Status: picking a lane writes the Status (the same write a drag between lanes makes), the picker is busy
- * while the write is out, and the card is in the new lane after a reload. A member who may not edit sees the
- * column as a label.
- */
-test("a member moves a card to another column from its popup and the move survives a reload", async ({
-  page,
-}) => {
+/** A new card of Engineering Tasks that starts in a real lane, made as the Workspace 3 admin. */
+async function scene(page: Page) {
   await signIn(page, realUsers.workspaceAdmin);
   const { workspace, board } = await openBoard(
     page,
@@ -59,6 +52,19 @@ test("a member moves a card to another column from its popup and the move surviv
   );
   expect(started.status, JSON.stringify(started.data)).toBeLessThan(300);
 
+  return { workspace, board, itemId, status };
+}
+
+/**
+ * The card popup's column picker on the real stack. The board is grouped by Status, so the picker is the
+ * Status: picking a lane writes the Status (the same write a drag between lanes makes), the picker is busy
+ * while the write is out, and the card is in the new lane after a reload. A member who may not edit sees the
+ * column as a label.
+ */
+test("a member moves a card to another column from its popup and the move survives a reload", async ({
+  page,
+}) => {
+  const { workspace, board, itemId } = await scene(page);
   await page.goto(
     `/workspaces/${workspace.id}/boards/${board.id}?item=${itemId}`,
   );
@@ -90,4 +96,104 @@ test("a member moves a card to another column from its popup and the move surviv
   await expect(
     page.getByRole("dialog").locator('button[aria-haspopup="listbox"]').first(),
   ).toContainText(target);
+});
+
+test("a move that lost the race is refused, the card keeps its column, and a viewer sees the column as a label", async ({
+  browser,
+  page,
+}) => {
+  const { workspace, board, itemId } = await scene(page);
+  const url = `/workspaces/${workspace.id}/boards/${board.id}?item=${itemId}`;
+  await page.goto(url);
+  const picker = page
+    .getByRole("dialog")
+    .locator('button[aria-haspopup="listbox"]')
+    .first();
+  await expect(picker).toBeVisible();
+  const before = (await picker.innerText()).trim();
+  const read = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${itemId}`,
+  );
+
+  // Someone else saves the card first; the popup still holds the version it read.
+  const other = await browser.newContext();
+  const writer = await other.newPage();
+  await signIn(writer, realUsers.workspaceOwner);
+  const touched = await apiWrite(writer, "PATCH", `/board-items/${itemId}`, {
+    title: `Touched ${Date.now().toString(36)}`,
+    expectedVersion: read.version,
+  });
+  expect(touched.status).toBeLessThan(300);
+  await other.close();
+  await page.route(
+    new RegExp(`/board-items/${itemId}/status`),
+    async (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      return route.continue({
+        postData: JSON.stringify({ ...body, expectedVersion: read.version }),
+      });
+    },
+  );
+
+  await picker.click();
+  const list = page.getByRole("listbox", { name: "Move to column" });
+  const options = await list.getByRole("option").allInnerTexts();
+  const target = options.find((name) => name.trim() !== before)!.trim();
+  const refused = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      response.url().includes(`/board-items/${itemId}/status`),
+  );
+  await list.getByRole("option", { name: target, exact: true }).click();
+  expect((await refused).status()).toBe(412);
+  await expect(picker).toHaveAttribute("aria-busy", "false");
+  await expect(picker).toContainText(before);
+  await page.reload();
+  await expect(
+    page.getByRole("dialog").locator('button[aria-haspopup="listbox"]').first(),
+  ).toContainText(before);
+  const kept = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${itemId}`,
+  );
+  expect(kept.version).toBe(read.version + 1);
+
+  // A viewer of the board sees the column as a label, with the notice that says why, and no picker to open.
+  const guestContext = await browser.newContext();
+  const guest = await guestContext.newPage();
+  await signIn(guest, realUsers.workspaceGuest);
+  const me = await apiRead<{ id: string }>(guest, "/auth/me");
+  const grant = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/resources/work-management.board/${board.id}/permissions`,
+    { subjectType: "User", subjectId: me.id, level: "Viewer" },
+  );
+  expect(grant.status).toBeLessThan(300);
+  try {
+    await guest.goto(url);
+    const popup = guest.getByRole("dialog");
+    await expect(popup).toBeVisible();
+    await expect(
+      popup.getByText(before, { exact: true }).first(),
+    ).toBeVisible();
+    await expect(popup.locator('button[aria-haspopup="listbox"]')).toHaveCount(
+      0,
+    );
+    await expect(popup.getByText("You can only view this card")).toBeVisible();
+  } finally {
+    // Leave the board as found: the grant would break the next spec.
+    const rows = await apiRead<{ id: string; subjectId: string }[]>(
+      page,
+      `/resources/work-management.board/${board.id}/permissions`,
+    );
+    for (const row of rows.filter((entry) => entry.subjectId === me.id))
+      await apiWrite(
+        page,
+        "DELETE",
+        `/resources/work-management.board/${board.id}/permissions/${row.id}`,
+      );
+    await guestContext.close();
+  }
 });
