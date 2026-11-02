@@ -151,7 +151,7 @@ test.describe("Board table interaction (owner)", () => {
     expect((await header.boundingBox())!.y).toBeCloseTo(headerY, 0);
   });
 
-  test("dragging a header edge resizes the column and the width is saved with the view", async ({
+  test("dragging a header edge resizes the column and the width is kept as the person's own preference", async ({
     page,
   }) => {
     await openTable(page);
@@ -176,9 +176,10 @@ test.describe("Board table interaction (owner)", () => {
     expect(await widthOf(titleCell)).toBeCloseTo(380, 0);
     await page.mouse.up();
     await expect(handle).toHaveAttribute("aria-valuenow", "380");
-    // The mock backend answers inside the page and keeps views in memory per
-    // page load, so a reload cannot show persistence. The saved width is read
-    // back from the view by leaving the table and returning to it.
+    // The width is the person's own (their view preference), never the shared view's. The mock
+    // backend answers inside the page and keeps its state per page load, so a reload cannot show
+    // persistence: the width is read back by leaving the table and returning to it. This board has
+    // no saved view yet, so the width is held for the open board (see use-board-preference).
     await page.getByRole("tab", { name: "Kanban" }).click();
     await expect(page.getByRole("tab", { name: "Kanban" })).toHaveAttribute(
       "aria-selected",

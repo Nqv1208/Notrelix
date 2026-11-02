@@ -311,6 +311,9 @@ export interface TaskDetailCallbacks {
   readonly onSelectTab: (tab: CardDetailTab) => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;
-  /** Moves the item to another board group ("Chuyển nhóm"). */
-  readonly onMoveToGroup?: (cardId: string, groupId: string) => void;
+  /** Moves the item to another board group ("Chuyển nhóm"); the promise lets the popup show the move's state. */
+  readonly onMoveToGroup?: (
+    cardId: string,
+    groupId: string,
+  ) => void | Promise<unknown>;
 }

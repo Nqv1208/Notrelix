@@ -770,7 +770,7 @@ export function MainTableView({
       .sort((a, b) => a.position - b.position)
       .at(-1);
     noteTitle(cardId);
-    table.moveCard.mutate({
+    return table.moveCard.mutateAsync({
       cardId,
       listId: groupId,
       position: generatePosition(last?.position, undefined),
@@ -1107,6 +1107,7 @@ export function MainTableView({
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}
+          groupField={table.groupByField}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}
           onCopyLink={handleCopyLink}
