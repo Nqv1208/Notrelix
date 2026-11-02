@@ -42,9 +42,9 @@ export function AuthShell({
         />
       </aside>
       <main className="flex min-w-0 flex-1 flex-col bg-popover px-5 pt-7 pb-6 leading-normal sm:px-12">
-        <div className="mb-6 flex items-center gap-2.5 lg:hidden">
+        <div className="mb-6 -ml-0.5 flex items-center gap-2 lg:hidden">
           <NotrelixLogoMark className="size-7" aria-hidden="true" />
-          <b className="text-dialog-title font-bold tracking-tight">
+          <b className="text-[17px] leading-[1.45] font-bold tracking-[-0.01em]">
             {t.brand}
           </b>
         </div>
