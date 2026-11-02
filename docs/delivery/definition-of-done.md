@@ -41,6 +41,8 @@ It does not prescribe every implementation task.
 
 `change-classification.md` decides which obligations apply.
 
+`product-delivery-lifecycle.md` owns when a catalog use case is DONE (four lines, evidence, who merges) and how a version is accepted; this document applies to the change that sets it.
+
 Quality documents decide the proof standard.
 
 Release/migration/operations documents own specialized procedures.

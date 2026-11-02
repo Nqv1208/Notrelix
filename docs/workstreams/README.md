@@ -62,6 +62,8 @@ docs/workstreams/
 ├── README.md
 ├── capability-delivery-map.md
 ├── cross-team-dependencies.md
+├── product-roadmap.md
+├── backend-roadmap.md   (superseded by product-roadmap.md; history only)
 ├── use-cases/
 │   ├── README.md
 │   └── <context>.md
@@ -488,6 +490,12 @@ For cross-team dependencies:
 
 ```text
 ./cross-team-dependencies.md
+```
+
+For the release plan (which release holds each use case, journeys, order):
+
+```text
+./product-roadmap.md
 ```
 
 For team execution:

@@ -992,6 +992,33 @@ export function KanbanView({
         onMoveToBoard: capabilities.canMoveCard
           ? removal.requestMove
           : undefined,
+        // The same one write the drop and the popup picker run; a refusal reports itself through the write hook.
+        move: lanePicker
+          ? {
+              lanes: kanban.allLanes.flatMap((lane) =>
+                lane.optionId
+                  ? [
+                      {
+                        id: lane.optionId,
+                        title: laneName(lane, laneCopy, isStatusGrouping),
+                        category: lane.category,
+                        color: lane.color,
+                      },
+                    ]
+                  : [],
+              ),
+              currentLaneId: (card) =>
+                lanesByCard.get(card.id)?.optionId ?? null,
+              onMove: (card, optionId) => {
+                lanePicker.move(card.id, optionId, "bottom").catch(() => {
+                  // The write hook has already shown the failure and rolled the card back.
+                });
+              },
+              disabledReason: capabilities.canMoveCard
+                ? undefined
+                : cardCopy.moveDenied,
+            }
+          : undefined,
       }
     : undefined;
 

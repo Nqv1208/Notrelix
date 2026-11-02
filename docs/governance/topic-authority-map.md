@@ -2456,6 +2456,53 @@ docs/decisions/
 
 ---
 
+## DEL-LIFECYCLE — Product delivery lifecycle and acceptance
+
+**Canonical owner**
+
+```text
+docs/delivery/product-delivery-lifecycle.md
+```
+
+**Scope**
+
+```text
+roles and decisions
+use-case DONE standard and evidence
+lane model
+release stages
+release readiness
+owner acceptance of a version
+defect severity
+commit and pull request content
+```
+
+**Primary evidence**
+
+```text
+use-case catalog states
+release candidates and acceptance journeys
+CI gate
+pull requests
+```
+
+**Not owned**
+
+```text
+release scope and order  → docs/workstreams/product-roadmap.md (plan)
+branch/tag mechanics     → docs/delivery/ci-cd-architecture.md
+deployment and rollout   → docs/delivery/release-and-rollout.md
+per-change completion    → docs/delivery/definition-of-done.md
+```
+
+**Decision registry**
+
+```text
+none by default
+```
+
+---
+
 # 13. Operations registry
 
 ## OPS-OBSERVABILITY — Observability
@@ -3394,6 +3441,7 @@ Before changing this registry:
 | DEL-MIGRATION | Change impact/migration | `docs/delivery/migration-policy.md` |
 | DEL-DOD | Definition of done | `docs/delivery/definition-of-done.md` |
 | DEL-ROLLOUT | Release/rollout/recovery | `docs/delivery/release-and-rollout.md` |
+| DEL-LIFECYCLE | Product delivery lifecycle/acceptance | `docs/delivery/product-delivery-lifecycle.md` |
 | OPS-OBSERVABILITY | Observability | `docs/operations/observability.md` |
 | OPS-INCIDENT | Incident readiness | `docs/operations/incident-readiness.md` |
 | OPS-RECOVERY | Recovery/data safety | `docs/operations/recovery-and-data-safety.md` |
