@@ -20,5 +20,4 @@ public sealed record BootstrapWorkspaceProjection(
     Guid Id,
     string Name,
     string Slug,
-    string Role,
     Guid AccountId);
