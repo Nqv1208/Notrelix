@@ -6,12 +6,12 @@ import { BUTTON_CLASS } from "../board-settings/board-settings-parts";
 import type { FormsCopy } from "./forms.copy";
 
 const CHIP =
-  "inline-flex h-5 shrink-0 items-center rounded-[6px] px-[7px] text-metadata font-semibold whitespace-nowrap";
+  "inline-flex h-5 shrink-0 items-center rounded-[6px] px-[7px] text-micro font-semibold whitespace-nowrap";
 
 const STATUS_CHIP: Readonly<Record<FormStatus, string>> = {
-  published: "bg-success-subtle text-success-text",
-  draft: "bg-warning-subtle text-warning-text",
-  closed: "bg-state-hover-strong text-muted-foreground",
+  published: "bg-label-green text-label-green-foreground",
+  draft: "bg-label-report text-label-report-foreground",
+  closed: "bg-label-doc text-label-doc-foreground",
 };
 
 /** The status of a form as a chip. */

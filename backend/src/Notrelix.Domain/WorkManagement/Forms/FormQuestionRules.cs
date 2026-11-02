@@ -6,9 +6,12 @@ namespace Notrelix.Domain.WorkManagement.Forms;
 public static class FormQuestionRules
 {
     /// <summary>File and signature questions wait until uploads are decided (D70).</summary>
+    public static bool IsSupported(FormQuestionType type) =>
+        type is not (FormQuestionType.FileUpload or FormQuestionType.Signature);
+
     public static void EnsureSupported(FormQuestionType type)
     {
-        if (type is FormQuestionType.FileUpload or FormQuestionType.Signature)
+        if (!IsSupported(type))
             throw new BusinessRuleException(
                 WorkManagementRuleCodes.WorkManagement_Form_QuestionTypeNotSupported,
                 "File and signature questions are not available yet.");

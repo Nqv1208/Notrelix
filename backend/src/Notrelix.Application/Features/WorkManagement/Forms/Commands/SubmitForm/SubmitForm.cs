@@ -70,7 +70,10 @@ public static class FormAnswerValidator
         IReadOnlyDictionary<Guid, HashSet<string>> optionIdsByField)
     {
         var failures = new List<ValidationFailure>();
-        var byKey = questions.ToDictionary(q => q.QuestionKey, StringComparer.OrdinalIgnoreCase);
+        // A question of a type that cannot be answered yet (old data; new ones are refused) is hidden from the
+        // person who fills the form: it neither blocks the form as required nor takes an answer.
+        var byKey = questions.Where(q => FormQuestionRules.IsSupported(q.QuestionType))
+            .ToDictionary(q => q.QuestionKey, StringComparer.OrdinalIgnoreCase);
 
         foreach (var key in answers.Keys.Where(k => !byKey.ContainsKey(k)))
             failures.Add(new ValidationFailure(key, "Unknown question."));
