@@ -204,7 +204,7 @@ export function SortableRow({
       }}
       aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
       aria-label={handleLabel}
-      className="grid size-7 cursor-grab place-items-center rounded-[6px] border-0 bg-transparent p-0 text-meta-foreground opacity-70 outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+      className="grid size-7 max-md:size-11 cursor-grab place-items-center rounded-[6px] border-0 bg-transparent p-0 text-meta-foreground opacity-70 outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
     >
       <GripVertical aria-hidden="true" className="size-3.5" />
     </button>

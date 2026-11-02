@@ -9,6 +9,8 @@ import {
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
+const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
+
 test("a member archives an item from its card, sees it archived and restores it", async ({
   page,
 }) => {
@@ -49,7 +51,7 @@ test("a member archives an item from its card, sees it archived and restores it"
   // An archived item still opens from its address and offers Unarchive.
   await page.goto(card);
   await expect(
-    page.getByRole("dialog").getByText("This card is archived"),
+    page.getByRole("dialog").getByText("User 4 archived this card"),
   ).toBeVisible();
   await page.getByRole("button", { name: "Card actions" }).click();
   const restored = page.waitForResponse(
@@ -141,6 +143,24 @@ test("archiving an item with two sub-items asks first, takes all three off the b
     `/board-items/${parentId}`,
   );
   expect(archivedItem.isArchived).toBe(true);
+  // A write that carries no CSRF token is refused for that before the item is even looked at.
+  const unprotected = await page.request.fetch(
+    `${apiUrl}/board-items/${parentId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Idempotency-Key": crypto.randomUUID(),
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({
+        descriptionMd: "Edited while archived",
+        expectedVersion: archivedItem.version,
+      }),
+    },
+  );
+  expect(unprotected.status()).toBe(403);
+  expect(await unprotected.text()).toContain("csrf-validation-failed");
+
   const edit = await apiWrite<unknown>(
     page,
     "PATCH",

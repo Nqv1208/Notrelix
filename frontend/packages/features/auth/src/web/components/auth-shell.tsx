@@ -30,10 +30,10 @@ export function AuthShell({
         className="relative hidden flex-[0_0_44%] flex-col overflow-hidden border-r border-line bg-muted px-13 py-10 text-foreground lg:flex lg:max-w-[44%]"
       >
         <div className="relative z-10 flex items-center gap-3">
-          <NotrelixLogoMark className="h-auto w-9" aria-hidden="true" />
-          <b className="text-sheet-title font-bold tracking-tight">{t.brand}</b>
+          <NotrelixLogoMark className="size-9" aria-hidden="true" />
+          <b className="text-brand-name">{t.brand}</b>
         </div>
-        <p className="relative z-10 mt-28 max-w-115 text-display leading-tight font-semibold tracking-tight">
+        <p className="relative z-10 mt-28 max-w-115 text-brand-promise">
           {t.promise}
         </p>
         <NotrelixLogoMark
@@ -42,11 +42,9 @@ export function AuthShell({
         />
       </aside>
       <main className="flex min-w-0 flex-1 flex-col bg-popover px-5 pt-7 pb-6 leading-normal sm:px-12">
-        <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-          <NotrelixLogoMark className="h-7 w-auto" aria-hidden="true" />
-          <b className="text-dialog-title font-bold tracking-tight">
-            {t.brand}
-          </b>
+        <div className="mb-6 -ml-0.5 flex items-center gap-2 lg:hidden">
+          <NotrelixLogoMark className="size-7" aria-hidden="true" />
+          <b className="text-brand-name-compact">{t.brand}</b>
         </div>
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="flex w-full max-w-100 flex-col gap-4.5">

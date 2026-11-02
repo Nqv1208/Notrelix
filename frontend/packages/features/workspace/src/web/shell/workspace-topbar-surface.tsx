@@ -52,7 +52,7 @@ export function WorkspaceTopbarSurface({
         size="icon-sm"
         aria-label={copy.topbar.openNavigation}
         onClick={toggleSidebar}
-        className="text-icon"
+        className="text-icon max-md:size-touch"
       >
         <PanelLeft aria-hidden="true" />
       </Button>
@@ -113,7 +113,7 @@ export function WorkspaceTopbarSurface({
         size="icon-sm"
         onClick={onOpenCommand}
         aria-label={copy.topbar.commandLabel}
-        className="text-icon md:hidden"
+        className="size-touch text-icon md:hidden"
       >
         <Search aria-hidden="true" />
       </Button>
@@ -126,7 +126,7 @@ export function WorkspaceTopbarSurface({
         onClick={onToggleTheme}
         aria-label={themeLabel}
         title={themeLabel}
-        className="text-icon"
+        className="text-icon max-md:size-touch"
       >
         {appearance === "dark" ? (
           <Sun aria-hidden="true" />

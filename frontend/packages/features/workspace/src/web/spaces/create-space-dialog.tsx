@@ -111,7 +111,7 @@ export function CreateSpaceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-          <DialogHeader>
+          <DialogHeader className="max-md:pr-11">
             <DialogTitle>
               {parent
                 ? formatCopy(copy.create.childTitle, { parent: parent.name })
@@ -136,6 +136,7 @@ export function CreateSpaceDialog({
               aria-invalid={message ? true : undefined}
               aria-describedby={message ? nameErrorId : undefined}
               onChange={(event) => setName(event.target.value)}
+              className="max-md:h-touch"
             />
             {message ? (
               <FieldError id={nameErrorId}>{message}</FieldError>
@@ -149,7 +150,7 @@ export function CreateSpaceDialog({
             >
               <SelectTrigger
                 id={typeId}
-                className="w-full"
+                className="w-full max-md:h-touch!"
                 aria-describedby={typeHelpId}
               >
                 <SelectValue />
@@ -220,10 +221,11 @@ export function CreateSpaceDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="max-md:h-touch"
             >
               {copy.create.cancel}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="max-md:h-touch">
               {pending ? copy.create.submitting : copy.create.submit}
             </Button>
           </DialogFooter>

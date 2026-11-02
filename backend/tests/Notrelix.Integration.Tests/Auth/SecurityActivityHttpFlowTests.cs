@@ -275,7 +275,6 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
         var lockedBody = await locked.Content.ReadAsStringAsync();
         lockedBody.Should().NotContainEquivalentOf("attemptsLeft").And.NotContainEquivalentOf("remaining");
 
-        await Task.Delay(TimeSpan.FromSeconds(1.2)); // token iat has second precision
         string code;
         using (var scope = factory.Services.CreateScope())
         {
@@ -291,13 +290,48 @@ public sealed class SecurityActivityHttpFlowTests : IAsyncLifetime
         // Old access token (cookie of the first client) is rejected, like after change-password.
         (await client.GetAsync("/api/v1/auth/security/activity")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-        // The account lock is gone: the new password signs in at once from the same client IP.
-        // The user watermark compares at second precision (token iat <= revoked-before is rejected, as
-        // after change-password), so a token minted within the same second as the reset is rejected too.
-        await Task.Delay(TimeSpan.FromSeconds(1.2));
+        // The account lock is gone: the new password signs in at once from the same client IP, and the
+        // token is honoured although it is minted within the same second as the reset.
         using var fresh = factory.CreateClient();
         (await LoginAsync(fresh, AliceEmail, newPassword)).StatusCode.Should().Be(HttpStatusCode.OK);
         Types(await ActivityAsync(fresh)).Should().Contain("PasswordReset");
+    }
+
+    [Fact]
+    public async Task PasswordReset_AcceptsEveryTokenIssuedAfterIt_AndStillRefusesTheOneIssuedBefore()
+    {
+        using var factory = CreateFactory();
+        using var before = factory.CreateClient();
+        (await LoginAsync(before, AliceEmail, Password)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        string code;
+        using (var scope = factory.Services.CreateScope())
+        {
+            code = await scope.ServiceProvider.GetRequiredService<IOtpService>()
+                .GenerateAsync("forgot-password", AliceEmail);
+        }
+
+        const string newPassword = "Brand-New-Passw0rd!";
+        using var resetter = factory.CreateClient();
+        (await resetter.PostAsJsonAsync("/api/v1/auth/reset-password", new { email = AliceEmail, code, newPassword }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // The whole-second iat of a token minted ~300 ms after the reset used to be rejected about a third
+        // of the time; the millisecond claim makes every one of them valid.
+        var failures = 0;
+        for (var i = 0; i < 20; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+            using var after = factory.CreateClient();
+            (await LoginAsync(after, AliceEmail, newPassword)).StatusCode.Should().Be(HttpStatusCode.OK);
+            if ((await after.GetAsync("/api/v1/auth/me")).StatusCode != HttpStatusCode.OK)
+            {
+                failures++;
+            }
+        }
+
+        failures.Should().Be(0, "a token issued after the reset must never be refused");
+        (await before.GetAsync("/api/v1/auth/me")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

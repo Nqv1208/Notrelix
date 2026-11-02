@@ -93,7 +93,8 @@ test.describe("Board table interaction (owner)", () => {
     expect(rest[3]).toBeLessThan(0.35);
 
     // The cells keep their x positions: the edge sits over the row, not in it.
-    const checkbox = target.getByRole("checkbox");
+    // The row's selection box (a boolean field of the row is a checkbox too).
+    const checkbox = target.getByRole("checkbox", { name: /^Chọn ERP-151/ });
     const checkboxX = (await checkbox.boundingBox())!.x;
 
     await target.hover();
@@ -116,12 +117,13 @@ test.describe("Board table interaction (owner)", () => {
   test("no column is docked: every column scrolls sideways together", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1000, height: 800 });
+    // The desktop grid (1280 and up): the tablet drawing pins the title column on purpose.
+    await page.setViewportSize({ width: 1300, height: 800 });
     await openTable(page);
     const scroll = page.locator("[data-table-scroll]");
     const target = row(page, "ERP-151");
     const tracked = [
-      target.getByRole("checkbox"),
+      target.getByRole("checkbox", { name: /^Chọn ERP-151/ }),
       target.getByRole("cell").nth(1),
       target.getByRole("cell").nth(2),
       page.getByRole("columnheader").nth(0),
@@ -150,7 +152,7 @@ test.describe("Board table interaction (owner)", () => {
     expect((await header.boundingBox())!.y).toBeCloseTo(headerY, 0);
   });
 
-  test("dragging a header edge resizes the column and the width is saved with the view", async ({
+  test("dragging a header edge resizes the column and the width is kept as the person's own preference", async ({
     page,
   }) => {
     await openTable(page);
@@ -175,15 +177,16 @@ test.describe("Board table interaction (owner)", () => {
     expect(await widthOf(titleCell)).toBeCloseTo(380, 0);
     await page.mouse.up();
     await expect(handle).toHaveAttribute("aria-valuenow", "380");
-    // The mock backend answers inside the page and keeps views in memory per
-    // page load, so a reload cannot show persistence. The saved width is read
-    // back from the view by leaving the table and returning to it.
+    // The width is the person's own (their view preference), never the shared view's. The mock
+    // backend answers inside the page and keeps its state per page load, so a reload cannot show
+    // persistence: the width is read back by leaving the table and returning to it. This board has
+    // no saved view yet, so the width is held for the open board (see use-board-preference).
     await page.getByRole("tab", { name: "Kanban" }).click();
     await expect(page.getByRole("tab", { name: "Kanban" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    await page.getByRole("tab", { name: "Table" }).click();
+    await page.getByRole("tab", { name: "Bảng" }).click();
     await expect(
       page.getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" }),
     ).toHaveAttribute("aria-valuenow", "380");

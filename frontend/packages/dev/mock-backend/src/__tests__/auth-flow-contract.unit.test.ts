@@ -40,6 +40,25 @@ describe("identify", () => {
   });
 });
 
+describe("resend the confirmation link", () => {
+  it("answers 200 for a known and an unknown address alike, and 400 on a bad email", async () => {
+    const { call } = world();
+    const known = await call("POST", "/auth/email-verification/resend", {
+      email: "ai@example.com",
+    });
+    const unknown = await call("POST", "/auth/email-verification/resend", {
+      email: "khong-co@example.org",
+    });
+    expect(known.status).toBe(200);
+    expect(unknown).toEqual(known);
+    const bad = await call("POST", "/auth/email-verification/resend", {
+      email: "x",
+    });
+    expect(bad.status).toBe(400);
+    expect(bad.body?.errorCode).toBe("validation.failed");
+  });
+});
+
 describe("provider sign-in", () => {
   it("opens the session on the backend's start route", async () => {
     const { call, store } = world();

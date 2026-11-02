@@ -116,15 +116,6 @@ export function useItemApprovals(itemId: string, workspaceId: string) {
     enabled: Boolean(itemId),
     staleTime: 15_000,
   });
-  const request = useMutation({
-    mutationFn: (input: { approverUserId: string; note: string | null }) =>
-      itemExtras.requestApproval(itemId, input.approverUserId, input.note),
-    onSettled: () => {
-      void queryClient.invalidateQueries({
-        queryKey: approvalsKey(workspaceId, itemId),
-      });
-    },
-  });
   const refresh = () => {
     void queryClient.invalidateQueries({
       queryKey: approvalsKey(workspaceId, itemId),
@@ -137,6 +128,11 @@ export function useItemApprovals(itemId: string, workspaceId: string) {
       queryKey: workspaceQueryKey(workspaceId, "workspace-feed"),
     });
   };
+  const request = useMutation({
+    mutationFn: (input: { approverUserId: string; note: string | null }) =>
+      itemExtras.requestApproval(itemId, input.approverUserId, input.note),
+    onSettled: refresh,
+  });
   const decide = useMutation({
     mutationFn: (input: {
       requestId: string;
@@ -163,8 +159,15 @@ export function useItemApprovals(itemId: string, workspaceId: string) {
   });
   return {
     approvals: query.data,
+    /** The first read is out; the block shows its skeleton. */
+    loading: query.isLoading,
+    /** The read failed and there is nothing to show instead; `reload` reads again. */
+    loadFailed: query.isError && query.data === undefined,
+    reload: () => void query.refetch(),
     request: request.mutate,
     requesting: request.isPending,
+    /** A decision or a cancel is on its way. */
+    answering: decide.isPending || cancel.isPending,
     /** The named approver approves or rejects, with an optional comment. */
     decide: decide.mutate,
     /** The requester withdraws a pending request. */

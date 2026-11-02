@@ -3,6 +3,7 @@ import { en as pickersEn, vi as pickersVi } from "./copy/pickers.copy";
 import { en as sectionsEn, vi as sectionsVi } from "./copy/sections.copy";
 import { en as createEn, vi as createVi } from "./copy/create.copy";
 import { en as relatedEn, vi as relatedVi } from "./copy/related.copy";
+import { en as approvalEn, vi as approvalVi } from "./copy/approval.copy";
 
 /**
  * Copy of the card popup, vi and en, registered as the `card-popup` catalog.
@@ -16,6 +17,7 @@ export const en = {
   sections: sectionsEn,
   create: createEn,
   related: relatedEn,
+  approval: approvalEn,
 };
 
 export type CardPopupCopy = typeof en;
@@ -27,6 +29,7 @@ export const vi: CardPopupCopy = {
   sections: sectionsVi,
   create: createVi,
   related: relatedVi,
+  approval: approvalVi,
 };
 
 /** Fills `{{name}}` placeholders. */

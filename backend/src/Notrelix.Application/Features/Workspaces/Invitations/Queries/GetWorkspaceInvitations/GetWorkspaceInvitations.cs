@@ -10,7 +10,8 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorksp
 /// <summary>
 /// The Workspace's invitations as a cursor page (LD-06): newest first, id on ties, default 50 and at most
 /// 200 per page. A stored Pending invitation past its expiry is reported as Expired (LD-04). Pass
-/// <c>NextCursor</c> back as <c>Cursor</c> for the next page.
+/// <c>NextCursor</c> back as <c>Cursor</c> for the next page. The rows carry invited e-mail addresses, so only
+/// the people who may invite (Owner, Admin) read them: a Member or Guest is Forbidden (lead decision 2026-11-02).
 /// </summary>
 public record GetWorkspaceInvitationsQuery(Guid WorkspaceId, string? Cursor = null, int? Limit = null) : IQuery<Result<CursorPage<WorkspaceInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
@@ -18,7 +19,7 @@ public record GetWorkspaceInvitationsQuery(Guid WorkspaceId, string? Cursor = nu
     public const int MaxLimit = 200;
 
     Guid IWorkspaceRequest.WorkspaceId => WorkspaceId;
-    PermissionAction IRequirePermission.Action => PermissionAction.ViewMembers;
+    PermissionAction IRequirePermission.Action => PermissionAction.InviteMember;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

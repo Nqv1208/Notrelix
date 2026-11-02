@@ -53,6 +53,7 @@ export function useBoardSharing(
     staleTime: 10_000,
     retry: false,
   });
+  const { refetch } = query;
   // The Board's access, record and lists read the same facts: read them again.
   const refresh = useCallback(async () => {
     await client.invalidateQueries({
@@ -138,6 +139,12 @@ export function useBoardSharing(
   return useMemo(
     () => ({
       data: query.data ?? null,
+      /** The read is on its way / failed; `reload` reads it again. */
+      loading: query.isLoading,
+      failed: query.isError && !query.data,
+      reload: () => {
+        void refetch();
+      },
       changeLevel: async (entryId: string, level: SharingLevel) => {
         const entry = entryOf(entryId);
         if (entry) await runAll(planLevelChange(entry, level));
@@ -181,6 +188,16 @@ export function useBoardSharing(
         }
       },
     }),
-    [api, boardId, entryOf, query.data, refresh, runAll],
+    [
+      api,
+      boardId,
+      entryOf,
+      query.data,
+      query.isLoading,
+      query.isError,
+      refetch,
+      refresh,
+      runAll,
+    ],
   );
 }

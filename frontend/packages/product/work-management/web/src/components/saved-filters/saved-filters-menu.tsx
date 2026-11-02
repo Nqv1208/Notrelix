@@ -296,7 +296,9 @@ function SavedFiltersList({
           ) : (
             <span className={compact ? "sr-only" : undefined}>{t.trigger}</span>
           )}
-          <ChevronDown className="size-3.5" aria-hidden="true" />
+          {compact && !applied ? null : (
+            <ChevronDown className="size-3.5" aria-hidden="true" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent

@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { ArrowRight, Calendar, Flag, Trash2, User, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import {
+  ArrowRight,
+  Calendar,
+  Flag,
+  Trash2,
+  TriangleAlert,
+  User,
+  X,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,11 +35,13 @@ import { PickRow, type TableEditorMember } from "./table-cell-editors";
 import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
-const BAR_CLASS =
-  "absolute bottom-5.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar";
+const BAR_BASE =
+  "z-20 mx-auto flex w-fit items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
+
+const BAR_CLASS = `absolute inset-x-3 bottom-5.5 max-md:bottom-3 ${BAR_BASE}`;
 
 const BAR_BUTTON_CLASS =
-  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-compact font-medium text-inverse-foreground hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
+  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-compact font-medium text-inverse-foreground max-xl:h-11 max-xl:rounded-[10px] hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
 
 export interface TableBulkBarProps {
   copy: MainTableCopy;
@@ -43,6 +53,8 @@ export interface TableBulkBarProps {
    */
   limit?: { readonly max: number; readonly available: number };
   statusOptions: readonly TableStatusOption[];
+  /** The bar sits in a flex column the surface anchors to the bottom (under the failure banner), not on its own. */
+  stacked?: boolean;
   /** The viewer may change status and due date. */
   canEdit: boolean;
   /** The viewer may archive items. */
@@ -75,6 +87,29 @@ export interface TableBulkBarProps {
   };
 }
 
+/** A bar action the person may not use: it stays reachable by keyboard and says why, instead of going silent. */
+function ReadOnlyButton({
+  label,
+  reason,
+  children,
+}: {
+  label: string;
+  reason: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-disabled="true"
+      title={reason}
+      aria-label={`${label}: ${reason}`}
+      className={cn(BAR_BUTTON_CLASS, "opacity-50")}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
  * The bar over the bottom edge of the table while rows are selected: the
  * count, then Trạng thái, Giao cho, Đặt hạn, Chuyển board, Lưu trữ and close.
@@ -85,6 +120,7 @@ export function TableBulkBar({
   copy,
   count,
   limit,
+  stacked = false,
   statusOptions,
   canEdit,
   canArchive,
@@ -114,9 +150,11 @@ export function TableBulkBar({
       role="toolbar"
       aria-label={fillTableCopy(b.label, { count })}
       data-table-bulk-bar=""
-      className={BAR_CLASS}
+      className={
+        stacked ? cn("pointer-events-auto max-w-full", BAR_BASE) : BAR_CLASS
+      }
     >
-      <b className="mr-2 text-dense-body font-semibold">
+      <b className="mr-2 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {over && limit
           ? fillTableCopy(b.overLimit, { count, max: limit.max })
           : fillTableCopy(b.selected, { count })}
@@ -129,30 +167,38 @@ export function TableBulkBar({
           {fillTableCopy(b.capped, { max: limit.max, rest: left })}
         </span>
       ) : null}
+      {!canEdit ? (
+        <span className="mr-2 text-compact text-inverse-foreground/70 max-md:basis-full max-md:whitespace-normal">
+          {b.readOnly}
+        </span>
+      ) : null}
       <fieldset disabled={over} className="m-0 contents border-0 p-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              disabled={!canEdit}
-              className={BAR_BUTTON_CLASS}
-            >
-              <StatusDot category="in_progress" />
-              {b.status}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top" className="w-48">
-            {statusOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.id}
-                onSelect={() => onStatus(option.id)}
-              >
-                <StatusDot category={option.category} />
-                {option.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canEdit ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className={BAR_BUTTON_CLASS}>
+                <StatusDot category="in_progress" />
+                {b.status}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-48">
+              {statusOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.id}
+                  onSelect={() => onStatus(option.id)}
+                >
+                  <StatusDot category={option.category} />
+                  {option.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <ReadOnlyButton label={b.status} reason={b.readOnly}>
+            <StatusDot category="in_progress" />
+            {b.status}
+          </ReadOnlyButton>
+        )}
 
         {priority && canEdit ? (
           <DropdownMenu>
@@ -223,71 +269,71 @@ export function TableBulkBar({
             </PopoverContent>
           </Popover>
         ) : (
-          <button
-            type="button"
-            aria-disabled="true"
-            title={b.unavailable}
-            aria-label={`${b.assign}: ${b.unavailable}`}
-            className={BAR_BUTTON_CLASS}
+          <ReadOnlyButton
+            label={b.assign}
+            reason={canEdit ? b.unavailable : b.readOnly}
           >
             <User className="size-4" aria-hidden="true" />
             {b.assign}
-          </button>
+          </ReadOnlyButton>
         )}
 
-        <Popover open={dueOpen} onOpenChange={setDueOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              disabled={!canEdit}
-              className={BAR_BUTTON_CLASS}
+        {canEdit ? (
+          <Popover open={dueOpen} onOpenChange={setDueOpen}>
+            <PopoverTrigger asChild>
+              <button type="button" className={BAR_BUTTON_CLASS}>
+                <Calendar className="size-4" aria-hidden="true" />
+                {b.due}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              side="top"
+              aria-label={b.due}
+              className="w-60 gap-2 rounded-[10px] border border-line-strong bg-popover p-3 shadow-pop ring-0 dark:bg-card"
             >
-              <Calendar className="size-4" aria-hidden="true" />
-              {b.due}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            side="top"
-            aria-label={b.due}
-            className="w-60 gap-2 rounded-[10px] border border-line-strong bg-popover p-3 shadow-pop ring-0 dark:bg-card"
-          >
-            <label className="flex flex-col gap-1 text-compact text-foreground">
-              {b.dueLabel}
-              <input
-                type="date"
-                value={day}
-                onChange={(event) => setDay(event.target.value)}
-                className="h-8 rounded-[7px] border border-line-strong bg-background px-2 text-compact text-foreground"
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="h-8 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium text-foreground hover:bg-state-hover-strong dark:bg-card"
-                onClick={() => {
-                  setDueOpen(false);
-                  setDay("");
-                  onDue(null);
-                }}
-              >
-                {b.dueClear}
-              </button>
-              <button
-                type="button"
-                disabled={day === ""}
-                className="h-8 cursor-pointer rounded-[7px] bg-primary px-3 text-compact font-semibold text-primary-foreground disabled:cursor-default disabled:opacity-50"
-                onClick={() => {
-                  setDueOpen(false);
-                  onDue(day);
-                  setDay("");
-                }}
-              >
-                {b.dueApply}
-              </button>
-            </div>
-          </PopoverContent>
-        </Popover>
+              <label className="flex flex-col gap-1 text-compact text-foreground">
+                {b.dueLabel}
+                <input
+                  type="date"
+                  value={day}
+                  onChange={(event) => setDay(event.target.value)}
+                  className="h-8 rounded-[7px] border border-line-strong bg-background px-2 max-md:h-11 text-compact text-foreground"
+                />
+              </label>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="h-8 cursor-pointer rounded-[7px] max-md:h-11 border border-line-strong bg-popover px-3 text-compact font-medium text-foreground hover:bg-state-hover-strong dark:bg-card"
+                  onClick={() => {
+                    setDueOpen(false);
+                    setDay("");
+                    onDue(null);
+                  }}
+                >
+                  {b.dueClear}
+                </button>
+                <button
+                  type="button"
+                  disabled={day === ""}
+                  className="h-8 cursor-pointer rounded-[7px] max-md:h-11 bg-primary px-3 text-compact font-semibold text-primary-foreground disabled:cursor-default disabled:opacity-50"
+                  onClick={() => {
+                    setDueOpen(false);
+                    onDue(day);
+                    setDay("");
+                  }}
+                >
+                  {b.dueApply}
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <ReadOnlyButton label={b.due} reason={b.readOnly}>
+            <Calendar className="size-4" aria-hidden="true" />
+            {b.due}
+          </ReadOnlyButton>
+        )}
 
         {move && canEdit ? (
           <Popover open={moveOpen} onOpenChange={setMoveOpen}>
@@ -327,19 +373,19 @@ export function TableBulkBar({
             </PopoverContent>
           </Popover>
         ) : (
-          <button
-            type="button"
-            aria-disabled="true"
-            title={b.unavailable}
-            aria-label={`${b.move}: ${b.unavailable}`}
-            className={BAR_BUTTON_CLASS}
+          <ReadOnlyButton
+            label={b.move}
+            reason={canEdit ? b.unavailable : b.readOnly}
           >
             <ArrowRight className="size-4" aria-hidden="true" />
             {b.move}
-          </button>
+          </ReadOnlyButton>
         )}
 
-        <span aria-hidden="true" className="mx-1 h-4.5 w-px bg-white/18" />
+        <span
+          aria-hidden="true"
+          className="mx-1 h-4.5 w-px bg-white/18 max-xl:h-6 max-md:hidden"
+        />
 
         <button
           type="button"
@@ -392,10 +438,60 @@ export function TableBulkBar({
         type="button"
         aria-label={b.clear}
         onClick={onClear}
-        className={BAR_BUTTON_CLASS}
+        className={cn(
+          BAR_BUTTON_CLASS,
+          "max-xl:min-w-11 max-xl:justify-center",
+        )}
       >
         <X className="size-4" aria-hidden="true" />
       </button>
+    </div>
+  );
+}
+
+/**
+ * A refused or lost bulk change, in the page under the table (BC-Bulk `bk-err`): it names the
+ * first item the server refused and says nothing changed and the selection stays. "Thử lại"
+ * sends the same change again; while the outcome is unknown the request keeps its idempotency
+ * key and versions, so the server never applies it twice.
+ */
+export function TableBulkFailure({
+  copy,
+  count,
+  detail,
+  onRetry,
+}: {
+  copy: MainTableCopy;
+  count: number;
+  detail: string;
+  onRetry: () => void;
+}) {
+  const b = copy.bulk;
+  return (
+    <div
+      role="alert"
+      data-table-bulk-failure=""
+      className="box-border flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-compact leading-[1.4] text-danger-text max-md:flex-wrap"
+    >
+      <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <span className="flex min-w-0 flex-1 flex-col gap-px">
+        <b className="font-semibold text-foreground">
+          {pluralTableCopy(
+            { one: b.failedTitle_one, other: b.failedTitle_other },
+            count,
+          )}
+        </b>
+        <span>{detail}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5 max-md:w-full">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="inline-flex h-11 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-popover px-3.5 text-compact font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring max-md:flex-1 dark:bg-card"
+        >
+          {b.retry}
+        </button>
+      </span>
     </div>
   );
 }
@@ -421,7 +517,7 @@ export function TableArchivedNotice({
       data-table-archived=""
       className={BAR_CLASS}
     >
-      <b className="mr-2 text-dense-body font-semibold">
+      <b className="mr-2 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {pluralTableCopy({ one: a.done_one, other: a.done_other }, count)}
       </b>
       {onUndo ? (

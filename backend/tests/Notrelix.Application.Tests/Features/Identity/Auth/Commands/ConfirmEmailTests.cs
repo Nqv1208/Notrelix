@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail;
 using Notrelix.Application.Common.Tokens;
+using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 
@@ -30,11 +31,11 @@ public class ConfirmEmailTests : IdentityHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_WhenTokenExpired_ReturnsFailure()
+    public async Task Handle_WhenActiveTokenIsPastExpiry_AnswersTheExpiredCode()
     {
         var user = CreateUser(emailConfirmed: false);
         var token = CreateEmailVerificationToken(normalizedEmail: user.NormalizedEmail);
-        token.Expire(TestNow.AddDays(2));
+        DateTimeProviderMock.Setup(c => c.UtcNow).Returns(token.ExpiresAt.AddMinutes(1));
         SetupUsers(user);
         SetupEmailVerificationTokens(token);
 
@@ -45,7 +46,29 @@ public class ConfirmEmailTests : IdentityHandlerTestBase
         var result = await sut.Handle(new ConfirmEmailCommand("expired-token"), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("expired"));
+        result.TypedErrors.Should().ContainSingle()
+            .Which.Code.Should().Be(ConfirmEmailCommandHandler.TokenExpiredCode);
+        result.Errors.Should().ContainSingle().Which.Should().Be("Verification token has expired.");
+    }
+
+    [Fact]
+    public async Task Handle_WhenTokenWasAlreadyUsed_AnswersTheGenericRefusal()
+    {
+        var user = CreateUser(emailConfirmed: false);
+        var token = CreateEmailVerificationToken(normalizedEmail: user.NormalizedEmail);
+        token.MarkUsed(TestNow);
+        SetupUsers(user);
+        SetupEmailVerificationTokens(token);
+
+        OneTimeTokenServiceMock.Setup(o => o.ParseAndHash("used-token", TokenPurpose.EmailVerification))
+            .Returns(new ParsedOneTimeToken(token.TokenHash.Value, token.HashVersion));
+
+        var sut = CreateSut();
+        var result = await sut.Handle(new ConfirmEmailCommand("used-token"), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().BeEmpty("a used link must not read as an expired one");
+        result.Errors.Should().ContainSingle().Which.Should().Be("Invalid or expired verification token.");
     }
 
     [Fact]
@@ -62,6 +85,42 @@ public class ConfirmEmailTests : IdentityHandlerTestBase
         var result = await sut.Handle(new ConfirmEmailCommand("bad-token"), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().BeEmpty();
+        result.Errors.Should().ContainSingle().Which.Should().Be("Invalid or expired verification token.");
+    }
+    [Fact]
+    public async Task Handle_WhenAnActiveTokenIsPastItsExpiry_FailsConfirmsNothingAndExpiresIt()
+    {
+        var user = CreateUser(emailConfirmed: false);
+        var token = CreateEmailVerificationToken(normalizedEmail: user.NormalizedEmail);
+        SetupUsers(user);
+        SetupEmailVerificationTokens(token);
+        DateTimeProviderMock.Setup(c => c.UtcNow).Returns(TestNow.AddDays(2));
+        OneTimeTokenServiceMock.Setup(o => o.ParseAndHash("late-token", TokenPurpose.EmailVerification))
+            .Returns(new ParsedOneTimeToken(token.TokenHash.Value, token.HashVersion));
+
+        var result = await CreateSut().Handle(new ConfirmEmailCommand("late-token"), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        user.EmailConfirmed.Should().BeFalse();
+        token.Status.Should().Be(UserTokenStatus.Expired);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheTokenWasAlreadyUsed_FailsAsAnUnknownOneDoesAndChangesNothing()
+    {
+        var user = CreateUser(emailConfirmed: false);
+        var token = CreateEmailVerificationToken(normalizedEmail: user.NormalizedEmail);
+        token.MarkUsed(TestNow);
+        SetupUsers(user);
+        SetupEmailVerificationTokens(token);
+        OneTimeTokenServiceMock.Setup(o => o.ParseAndHash("used-token", TokenPurpose.EmailVerification))
+            .Returns(new ParsedOneTimeToken(token.TokenHash.Value, token.HashVersion));
+
+        var result = await CreateSut().Handle(new ConfirmEmailCommand("used-token"), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Invalid or expired"));
+        user.EmailConfirmed.Should().BeFalse();
     }
 }

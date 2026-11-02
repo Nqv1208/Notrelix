@@ -114,6 +114,28 @@ function summariseReactions(
   }));
 }
 
+/** The comments of an item as the comment routes answer them. */
+function commentDtos(store: MockStore, cardId: string): CommentDtoApi[] {
+  const me = store.getCurrentUser().id;
+  return store.getCardComments(cardId).map((cmt) => {
+    const user = store.getUser(cmt.userId);
+    return {
+      id: cmt.id,
+      cardId: cmt.cardId,
+      userId: cmt.userId,
+      userName: user?.name ?? "User",
+      userAvatar: user?.avatarUrl ?? null,
+      contentMd: cmt.contentMd,
+      createdAt: cmt.createdAt,
+      updatedAt: cmt.updatedAt ?? null,
+      isEdited: Boolean(cmt.updatedAt),
+      attachmentIds: cmt.attachmentIds ?? [],
+      parentCommentId: cmt.parentId ?? null,
+      reactions: summariseReactions(cmt.reactions ?? [], me, store),
+    };
+  });
+}
+
 /** The pages linked to each item, per store. */
 const pageLinks = new WeakMap<MockStore, Map<string, Set<string>>>();
 function linksOf(store: MockStore, itemId: string): Set<string> {
@@ -589,6 +611,8 @@ export const cardsOperations = [
         expectedVersion?: number;
         previousSiblingId?: string | null;
         nextSiblingId?: string | null;
+        laneFieldId?: string | null;
+        laneOptionId?: string | null;
       };
       if (!data.groupId)
         return badRequest({ groupId: ["The group is required."] });
@@ -601,11 +625,33 @@ export const cardsOperations = [
       if (!item) return notFound("Card not found");
       // MoveItem: editors and managers only.
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      // A drop in a lane names the lane's field and option: refused before anything moves, so both or neither.
+      const lane =
+        data.laneFieldId || data.laneOptionId
+          ? store
+              .getColumns(item.boardId)
+              .find((column) => column.id === data.laneFieldId)
+          : undefined;
+      if (
+        (data.laneFieldId || data.laneOptionId) &&
+        (!lane ||
+          (lane.fieldType !== "status" && lane.fieldType !== "select") ||
+          !lane.options?.some((option) => option.id === data.laneOptionId))
+      )
+        return badRequest({
+          laneOptionId: ["Not an option of the lane's field."],
+        });
       const moved = store.moveItem(params.id, data.groupId, {
         expectedVersion: data.expectedVersion,
         previousSiblingId: data.previousSiblingId ?? null,
         nextSiblingId: data.nextSiblingId ?? null,
       });
+      if (moved.result === "ok" && lane && data.laneOptionId) {
+        if (lane.fieldType === "status") {
+          if (!rollRepeatOnCompletion(store, params.id, data.laneOptionId))
+            store.updateItemStatus(params.id, data.laneOptionId);
+        } else store.updateFieldValue(params.id, lane.id, data.laneOptionId);
+      }
       switch (moved.result) {
         case "not-found":
           return notFound("Card not found");
@@ -624,7 +670,7 @@ export const cardsOperations = [
             position: String(moved.card.position),
             memberIds: moved.card.assigneeUserIds ?? [],
             labelIds: [],
-            version: moved.version,
+            version: store.getCard(moved.card.id)?.version ?? moved.version,
           });
       }
     },
@@ -1694,29 +1740,32 @@ export const cardsOperations = [
     method: "GET",
     route: "/board-items/:cardId/comments",
     async handle({ params, store }) {
-      const c = store.getCard(params.cardId);
-      if (!c) return notFound("Card not found");
-      const comments = store.getCardComments(params.cardId);
-      const me = store.getCurrentUser().id;
-      return ok<CommentDtoApi[]>(
-        comments.map((cmt) => {
-          const user = store.getUser(cmt.userId);
-          return {
-            id: cmt.id,
-            cardId: cmt.cardId,
-            userId: cmt.userId,
-            userName: user?.name ?? "User",
-            userAvatar: user?.avatarUrl ?? null,
-            contentMd: cmt.contentMd,
-            createdAt: cmt.createdAt,
-            updatedAt: cmt.updatedAt ?? null,
-            isEdited: Boolean(cmt.updatedAt),
-            attachmentIds: cmt.attachmentIds ?? [],
-            parentCommentId: cmt.parentId ?? null,
-            reactions: summariseReactions(cmt.reactions ?? [], me, store),
-          };
-        }),
-      );
+      if (!store.getCard(params.cardId)) return notFound("Card not found");
+      return ok<CommentDtoApi[]>(commentDtos(store, params.cardId));
+    },
+  }),
+
+  // ─── GET /board-items/:cardId/comments/page ─────────────────────────────────────
+
+  // The popup reads comments in pages; the mock's thread is short, so one page holds it all.
+  defineMockOperation<
+    { cardId: string },
+    never,
+    { items: CommentDtoApi[]; nextCursor: string | null }
+  >({
+    id: "comments.page",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.GetBoardItemCommentsPage",
+    },
+    method: "GET",
+    route: "/board-items/:cardId/comments/page",
+    async handle({ params, store }) {
+      if (!store.getCard(params.cardId)) return notFound("Card not found");
+      return ok({
+        items: commentDtos(store, params.cardId),
+        nextCursor: null,
+      });
     },
   }),
 

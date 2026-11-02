@@ -26,6 +26,13 @@ export const en = {
     emailNotConfirmed:
       "Confirm your email first. We sent you a link when you signed up; open it, then press Continue again.",
     resendConfirmation: "Send the link again",
+    resendSending: "Sending…",
+    resendSent: "A new link is on its way. Only the newest one works.",
+    resendWait: "Send again in {{time}}",
+    resendLimited:
+      "Too many requests for this email. Try again in a little while.",
+    resendFailed:
+      "Could not send the link. Check the connection and try again.",
     steps: {
       workspace: "Create workspace",
       departments: "Departments",
@@ -348,6 +355,13 @@ export const vi: OnboardingCopy = {
     emailNotConfirmed:
       "Hãy xác nhận email trước. Chúng tôi đã gửi liên kết khi bạn đăng ký; mở liên kết đó rồi bấm Tiếp tục lại.",
     resendConfirmation: "Gửi lại liên kết",
+    resendSending: "Đang gửi…",
+    resendSent:
+      "Liên kết mới đang được gửi. Chỉ liên kết mới nhất còn dùng được.",
+    resendWait: "Gửi lại sau {{time}}",
+    resendLimited:
+      "Đã yêu cầu quá nhiều lần cho email này. Bạn thử lại sau ít phút.",
+    resendFailed: "Chưa gửi được liên kết. Kiểm tra mạng rồi thử lại.",
     steps: {
       workspace: "Tạo workspace",
       departments: "Phòng ban",

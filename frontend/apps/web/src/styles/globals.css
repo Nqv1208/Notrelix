@@ -174,6 +174,26 @@
   --text-account-title--line-height: var(--type-account-title-line-height);
   --text-account-title--font-weight: var(--type-account-title-weight);
   --text-account-title--letter-spacing: var(--type-account-title-tracking);
+  --text-brand-name: var(--type-brand-name-size);
+  --text-brand-name--line-height: var(--type-brand-name-line-height);
+  --text-brand-name--font-weight: var(--type-brand-name-weight);
+  --text-brand-name--letter-spacing: var(--type-brand-name-tracking);
+  --text-brand-name-compact: var(--type-brand-name-compact-size);
+  --text-brand-name-compact--line-height: var(
+    --type-brand-name-compact-line-height
+  );
+  --text-brand-name-compact--font-weight: var(--type-brand-name-compact-weight);
+  --text-brand-name-compact--letter-spacing: var(
+    --type-brand-name-compact-tracking
+  );
+  --text-card-title: var(--type-card-title-size);
+  --text-card-title--line-height: var(--type-card-title-line-height);
+  --text-card-title--font-weight: var(--type-card-title-weight);
+  --text-card-title--letter-spacing: var(--type-card-title-tracking);
+  --text-brand-promise: var(--type-brand-promise-size);
+  --text-brand-promise--line-height: var(--type-brand-promise-line-height);
+  --text-brand-promise--font-weight: var(--type-brand-promise-weight);
+  --text-brand-promise--letter-spacing: var(--type-brand-promise-tracking);
   --text-greeting: var(--type-greeting-size);
   --text-greeting--line-height: var(--type-greeting-line-height);
   --text-greeting--font-weight: var(--type-greeting-weight);
@@ -499,6 +519,9 @@
   --color-table-header: var(--table-header);
   --color-table-group: var(--table-group);
   --color-table-selected: var(--table-selected);
+
+  /* Touch target (size-touch, min-h-touch, min-w-touch): the 44 px minimum of a control on a phone. */
+  --spacing-touch: var(--size-touch-target);
 
   /* Shape. */
   --radius-sm: calc(var(--radius) - 4px);

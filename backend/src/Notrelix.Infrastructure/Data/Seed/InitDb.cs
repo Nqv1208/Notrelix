@@ -221,6 +221,7 @@ internal static class InitDb
 
         var workspaces = new List<Workspace>(targets.WorkspaceCount);
         var defaultUserIds = users.Take(3).Select(u => u.Id).ToHashSet();
+        var workspaceUserIds = new HashSet<Guid>();
 
         for (int i = 0; i < targets.WorkspaceCount; i++)
         {
@@ -239,10 +240,12 @@ internal static class InitDb
                 account.Id, ws.Id, owner.Id, WorkspaceRole.Owner, owner.Id, Epoch.AddDays(i)));
 
             var addedUserIds = new HashSet<Guid> { owner.Id };
+            workspaceUserIds.Add(owner.Id);
 
             foreach (var uid in defaultUserIds)
             {
                 if (!addedUserIds.Add(uid)) continue;
+                workspaceUserIds.Add(uid);
                 var member = WorkspaceMember.Create(
                     account.Id, ws.Id, uid, WorkspaceRole.Member, owner.Id, Epoch.AddDays(i));
                 context.WorkspaceMembers.Add(member);
@@ -253,6 +256,7 @@ internal static class InitDb
             {
                 var mid = users[(i + m + 1) % users.Count].Id;
                 if (!addedUserIds.Add(mid)) continue;
+                workspaceUserIds.Add(mid);
                 var role = m == 0 ? WorkspaceRole.Admin
                     : m == 1 ? WorkspaceRole.Member
                     : WorkspaceRole.Guest;
@@ -260,6 +264,19 @@ internal static class InitDb
                     account.Id, ws.Id, mid, role, owner.Id, Epoch.AddDays(i));
                 context.WorkspaceMembers.Add(member);
             }
+        }
+
+        // Joining a workspace always goes through the Account (accepting an invitation ensures the Account
+        // membership), so every seeded workspace member is an Account Member too. Without it a seeded Owner
+        // fails every Account-scoped read, such as the Recently deleted list.
+        var accountMemberIds = await context.AccountMembers
+            .Where(m => m.AccountId == account.Id)
+            .Select(m => m.UserId)
+            .ToListAsync(ct);
+        foreach (var userId in workspaceUserIds.Except(accountMemberIds))
+        {
+            context.AccountMembers.Add(AccountMember.Create(
+                account.Id, userId, AccountRole.Member, users[0].Id, Epoch));
         }
 
         context.Workspaces.AddRange(workspaces);

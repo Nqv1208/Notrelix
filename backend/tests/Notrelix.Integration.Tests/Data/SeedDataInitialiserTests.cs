@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Testing.Application.Fakes;
 
@@ -62,6 +63,25 @@ public class SeedDataInitialiserTests : IAsyncLifetime
         (await context.Labels.CountAsync()).Should().Be(60);
         (await context.BoardItems.CountAsync()).Should().Be(400);
         (await context.Comments.CountAsync()).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Small_profile_makes_every_workspace_member_an_account_member()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateOwnerContext(tenant);
+
+        await CreateInitialiser(context).SeedAsync();
+
+        // Joining a workspace goes through the Account, so a seeded Owner or Member without an Account membership
+        // would fail every Account-scoped read (the Recently deleted list answered Forbidden for the Owner of Workspace 3).
+        var accountMembers = await context.AccountMembers.Where(m => m.Status == AccountMemberStatus.Active)
+            .Select(m => new { m.AccountId, m.UserId }).ToListAsync();
+        var workspaceMembers = await context.WorkspaceMembers.IgnoreQueryFilters()
+            .Select(m => new { m.AccountId, m.UserId }).Distinct().ToListAsync();
+        workspaceMembers.Should().NotBeEmpty();
+        workspaceMembers.Should().OnlyContain(m => accountMembers.Contains(m));
     }
 
     [Fact]

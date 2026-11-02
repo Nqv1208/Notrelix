@@ -61,6 +61,8 @@ export interface AccountEndpoints {
     stepUpRequirement: string;
     stepUpCompleteMfa: string;
     stepUpCompletePassword: string;
+    stepUpClaimProvider: string;
+    oauthStepUpStart: (provider: string) => string;
     sessions: string;
     sessionRevoke: (sessionId: string) => string;
     sessionsRevokeOthers: string;
@@ -604,6 +606,34 @@ export function createAccountService(
       return toStepUpRequirement(
         await api.post(endpoints.auth.stepUpRequirement, { purpose }, QUIET),
       );
+    },
+
+    /**
+     * Where the browser goes to confirm with a linked provider (a path under the API base). The
+     * provider's page and the way back are the backend's: it keeps the proof in an httpOnly cookie
+     * and returns to `returnUrl` (an internal path), adding `stepUpResult=failed` when it could not.
+     */
+    providerStepUpPath(
+      provider: string,
+      purpose: StepUpPurpose,
+      returnUrl: string,
+    ): string {
+      return `${endpoints.auth.oauthStepUpStart(provider)}?purpose=${encodeURIComponent(purpose)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+    },
+
+    /** Reads, once, the proof(s) the provider re-authentication left; enrollment gets a second for its activation. */
+    async claimProviderStepUp(): Promise<{
+      proof: string;
+      spare: string;
+    }> {
+      const wire = await api.post<{
+        proofToken?: string | null;
+        spareProofToken?: string | null;
+      }>(endpoints.auth.stepUpClaimProvider, {}, QUIET);
+      return {
+        proof: wire.proofToken ?? "",
+        spare: wire.spareProofToken ?? "",
+      };
     },
 
     /** The single-use proof of a second-factor answer. */

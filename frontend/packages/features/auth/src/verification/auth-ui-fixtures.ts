@@ -1,5 +1,6 @@
 import type { AuthRegisterFormSurfaceProps } from "../web/components/auth-form-surfaces";
 import type { AuthForgotSurfaceProps } from "../web/components/auth-forgot-surface";
+import type { AuthResetSurfaceProps } from "../web/components/auth-reset-surface";
 import type {
   AuthInvite,
   AuthInviteSurfaceProps,
@@ -58,8 +59,22 @@ export function authForgotScenario(
     step: { kind: "ask" },
     onSend: noop,
     onResend: noop,
+    onEnterCode: noop,
     onBack: noop,
     onOtherEmail: noop,
+    ...overrides,
+  };
+}
+
+export function authResetScenario(
+  overrides: Partial<AuthResetSurfaceProps> = {},
+): AuthResetSurfaceProps {
+  return {
+    copy: authCopy("vi"),
+    initialEmail: AUTH_PERSONAL_EMAIL,
+    onSubmit: noop,
+    onSendAgain: noop,
+    onBack: noop,
     ...overrides,
   };
 }

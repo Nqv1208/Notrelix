@@ -107,6 +107,12 @@ function invalidProof(
       );
 }
 
+/** The path the browser lands on after a provider re-authentication; `failed` is how the backend says it could not. */
+const providerLanding = (returnUrl: string, failed: boolean) =>
+  failed
+    ? `${returnUrl}${returnUrl.includes("?") ? "&" : "?"}stepUpResult=failed`
+    : returnUrl;
+
 export const accountSecurityOperations = [
   defineMockOperation({
     id: "account.security.summary",
@@ -117,7 +123,7 @@ export const accountSecurityOperations = [
       const security = securityOf(store);
       return ok({
         serverTime: store.getClock().isoNow(),
-        hasPasswordCredential: true,
+        hasPasswordCredential: security.signInProvider === null,
         passwordChangedAt: security.passwordChangedAt,
         mfa: {
           isEnabled: security.twoFactorEnabled,
@@ -128,7 +134,9 @@ export const accountSecurityOperations = [
         activeSessionCount: security.sessions.filter(
           (s) => s.status === "Active",
         ).length,
-        linkedProviders: [],
+        linkedProviders: security.signInProvider
+          ? [security.signInProvider]
+          : [],
       });
     },
   }),
@@ -339,12 +347,70 @@ export const accountSecurityOperations = [
         return identityProblem(400, "common.validation", "Unknown purpose.");
       const security = securityOf(store);
       return ok({
-        requiredFactor: security.twoFactorEnabled ? "MfaChallenge" : "Password",
+        requiredFactor: security.twoFactorEnabled
+          ? "MfaChallenge"
+          : security.signInProvider
+            ? "OAuth"
+            : "Password",
         challengeToken: security.twoFactorEnabled
           ? "mock-step-up-challenge"
           : null,
         expiresAt: store.getClock().offsetMinutes(5),
       });
+    },
+  }),
+
+  defineMockOperation<{ provider: string }, never, unknown>({
+    id: "account.security.oauthStepUpStart",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.OAuth.StepUpStart",
+    },
+    method: "GET",
+    route: "/auth/oauth/:provider/step-up/start",
+    async handle({ params, query, store }) {
+      // The real call redirects the browser to the provider and back; the mock plays the round trip
+      // and says where the backend's redirect lands (`redirectTo`): the page that asked.
+      const returnUrl = query.returnUrl?.startsWith("/")
+        ? query.returnUrl
+        : "/";
+      const security = securityOf(store);
+      const linked =
+        security.signInProvider?.toLowerCase() ===
+        params.provider.toLowerCase();
+      if (!linked || !PURPOSES.includes(query.purpose ?? ""))
+        return ok({ redirectTo: providerLanding(returnUrl, true) });
+      // Turning two-factor on spends two proofs: one re-authentication buys both.
+      security.providerProofs = [
+        issueProof(security, query.purpose!),
+        ...(query.purpose === "EnrollMfa"
+          ? [issueProof(security, query.purpose)]
+          : []),
+      ];
+      return ok({ redirectTo: providerLanding(returnUrl, false) });
+    },
+  }),
+
+  defineMockOperation({
+    id: "account.security.stepUpClaimProvider",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Security.StepUpClaimProvider",
+    },
+    method: "POST",
+    route: "/auth/security/step-up/claim-provider",
+    async handle({ store }) {
+      const security = securityOf(store);
+      const held = security.providerProofs;
+      // One claim reads the cookie and deletes it.
+      security.providerProofs = null;
+      if (!held?.[0])
+        return identityProblem(
+          400,
+          "identity.security.step-up-invalid",
+          "Step-up verification is invalid or expired.",
+        );
+      return ok({ proofToken: held[0], spareProofToken: held[1] ?? null });
     },
   }),
 

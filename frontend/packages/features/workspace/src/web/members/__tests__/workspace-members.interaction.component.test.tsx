@@ -352,10 +352,11 @@ describe("WorkspaceMembersSurface invitations", () => {
     const { props } = renderMembers(membersInvitationsScenario());
     expect(screen.getByText("minh.tran@example.com")).toBeTruthy();
     expect(
-      within(rowOf("old.contact@example.com")).getByText(
+      // The column on a desktop and the line under the address on a phone.
+      within(rowOf("old.contact@example.com")).getAllByText(
         copy.invitations.expired,
-      ),
-    ).toBeTruthy();
+      ).length,
+    ).toBe(2);
     expect(screen.queryByText("joined@example.com")).toBeNull();
     expect(
       (

@@ -71,8 +71,56 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
   };
 }
 
-function fakeServices(access: BoardAccess) {
-  let board = erpBoardScenario();
+/** The board with the Person, Due date and Priority fields the cell editors write through. */
+function withItemFields(board: FullBoardResponse): FullBoardResponse {
+  const base = {
+    boardId: board.board.id,
+    position: 90,
+    isHidden: false,
+    isSystemField: true,
+  };
+  return {
+    ...board,
+    board: {
+      ...board.board,
+      members: [
+        { userId: "u-quan", name: "Trần Minh Quân", initials: "TQ" },
+        ...board.board.members,
+      ],
+      fieldDefinitions: [
+        ...board.board.fieldDefinitions,
+        {
+          ...base,
+          id: "field-person",
+          name: "Phụ trách",
+          fieldType: "person",
+          options: [],
+        },
+        {
+          ...base,
+          id: "field-due-date",
+          name: "Hạn",
+          fieldType: "date",
+          options: [],
+        },
+        {
+          ...base,
+          id: "field-priority",
+          name: "Ưu tiên",
+          fieldType: "select",
+          options: [
+            { id: "p-urgent", label: "Khẩn", color: "red", position: "a" },
+          ],
+        },
+      ],
+    },
+  } as FullBoardResponse;
+}
+
+function fakeServices(access: BoardAccess, itemFields = false) {
+  let board = itemFields
+    ? withItemFields(erpBoardScenario())
+    : erpBoardScenario();
   let saved: SavedBoardView = {
     id: "view-1",
     name: "Table",
@@ -243,8 +291,9 @@ function RoutedView({
 function renderTable(
   access: BoardAccess,
   props: Parameters<typeof RoutedView>[0] = {},
+  itemFields = false,
 ) {
-  const fake = fakeServices(access);
+  const fake = fakeServices(access, itemFields);
   const view = renderPureUi(
     <Providers services={fake.services}>
       <RoutedView {...props} />
@@ -323,6 +372,121 @@ describe("MainTableView on the ERP board", () => {
     await waitFor(() => expect(rowsOf("Cần làm")).toBe(6));
   });
 
+  const lostRace = (by: string | null) =>
+    Object.assign(new Error("stale"), {
+      status: 412,
+      kind: "conflict",
+      details: by ? { changedByName: by } : {},
+    });
+
+  it("names who changed the item first when the status write lost the race, and the row shows theirs", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateStatus.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn. Thay đổi của bạn chưa được lưu và hàng đang hiện bản của họ.",
+    );
+    await waitFor(() => expect(rowsOf("Cần làm")).toBe(6));
+  });
+
+  it("says someone changed the item first when the server names no one", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateStatus.mockRejectedValueOnce(lostRace(null));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(String(toast.error.mock.calls[0]?.[0])).toMatch(/^Có người vừa sửa/);
+  });
+
+  const renameErp149 = async (title: string) => {
+    await ready();
+    const cell = within(row("ERP-149")!).getByRole("button", {
+      name: /Viết tài liệu quy trình/,
+    });
+    fireEvent.doubleClick(cell);
+    const input = screen.getByRole("textbox", { name: "Sửa tên ERP-149" });
+    fireEvent.change(input, { target: { value: title } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  };
+
+  it("tells the person when a rename lost the race and names who won", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await renameErp149("Tên của tôi");
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(
+      /^Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn/,
+    );
+  });
+
+  it("tells the person when a rename is refused for another reason, and the old title stays", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(new Error("forbidden"));
+    await renameErp149("Tên của tôi");
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toBe(
+      "Không lưu được thay đổi của “Viết tài liệu quy trình nhập hoá đơn đầu vào”.",
+    );
+    expect(
+      within(row("ERP-149")!).getByRole("button", {
+        name: /Viết tài liệu quy trình/,
+      }),
+    ).toBeTruthy();
+  });
+
+  it("tells the person when a due date lost the race and names who won", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi hạn của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("grid").querySelectorAll("button")[15]!);
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(
+      /^Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn/,
+    );
+  });
+
+  it("tells the person when an assignee or a priority lost the race and names who won", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValue(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    fireEvent.keyDown(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi ưu tiên của ERP-149",
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getAllByRole("menuitem")[0]!);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    for (const call of toast.error.mock.calls)
+      expect(call[0]).toMatch(/^Lê Hoàng Phúc vừa sửa “Viết tài liệu/);
+  });
+
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("archives selected rows after the undo window, not before", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -354,6 +518,7 @@ describe("MainTableView on the ERP board", () => {
         [erpItemId("ERP-142")]: expect.any(Number),
         [erpItemId("ERP-146")]: expect.any(Number),
       },
+      { idempotencyKey: expect.any(String) },
     );
     expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull();
   }, 20_000);
@@ -435,10 +600,64 @@ describe("MainTableView on the ERP board", () => {
       target: { value: "2026-11-03" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls.at(-1)?.[0]).toContain(
-      "Chưa có gì bị thay đổi",
+    const banner = await screen.findByRole("alert");
+    expect(banner.textContent).toContain("Không áp dụng được cho việc này");
+    expect(banner.textContent).toContain("Chưa có gì bị thay đổi");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  // The popover closes on Apply, so a second press is the same pick made again.
+  async function applyDueDate() {
+    if (!screen.queryByLabelText("Hạn"))
+      fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.change(screen.getByLabelText("Hạn"), {
+      target: { value: "2026-11-03" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+  }
+
+  it("keeps one idempotency key when Apply is pressed again after a lost answer", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.bulkUpdate.mockRejectedValueOnce(new Error("network down"));
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    await applyDueDate();
+    const banner = await screen.findByRole("alert");
+    fireEvent.click(within(banner).getByRole("button", { name: "Thử lại" }));
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    const [first, second] = cards.bulkUpdate.mock.calls.map(
+      (call) =>
+        call as unknown as [
+          string,
+          string[],
+          unknown,
+          unknown,
+          { idempotencyKey: string },
+        ],
     );
+    expect(first?.[4].idempotencyKey).toBeTruthy();
+    expect(second?.[4].idempotencyKey).toBe(first?.[4].idempotencyKey);
+    // The retry is the same operation: the same versions go with it.
+    expect(second?.[3]).toEqual(first?.[3]);
+  });
+
+  it("starts a new operation when the server answered the first one", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.bulkUpdate.mockRejectedValueOnce(
+      Object.assign(new Error("An item was changed by someone else."), {
+        status: 412,
+      }),
+    );
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    await applyDueDate();
+    await screen.findByRole("alert");
+    await applyDueDate();
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    const keys = cards.bulkUpdate.mock.calls.map(
+      (call) => (call as unknown as unknown[])[4] as { idempotencyKey: string },
+    );
+    expect(keys[1]?.idempotencyKey).not.toBe(keys[0]?.idempotencyKey);
   });
 
   it("names the first item the server refuses and keeps the selection", async () => {
@@ -455,8 +674,7 @@ describe("MainTableView on the ERP board", () => {
       target: { value: "2026-11-03" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    const message = String(toast.error.mock.calls.at(-1)?.[0]);
+    const message = (await screen.findByRole("alert")).textContent ?? "";
     expect(message).toContain("chưa có gì bị thay đổi");
     expect(message).toContain("Cấu hình quyền truy cập theo phòng ban");
     // The pick stays so the person can retry or change it.

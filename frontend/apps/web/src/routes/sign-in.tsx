@@ -20,6 +20,7 @@ export function SignInPage() {
         initialEmail={search.get("email") ?? ""}
         providerError={search.get("error")}
         sessionEnded={search.get("reason") === "session-ended"}
+        passwordReset={search.get("reason") === "password-reset"}
         initialStep={search.get("step") === "mfa" ? "mfa" : null}
       />
     </AuthLayout>

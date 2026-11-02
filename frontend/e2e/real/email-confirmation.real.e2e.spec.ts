@@ -1,24 +1,9 @@
-import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { CONFIRMATION_LINK, devMails } from "./support/dev-mail";
 
-const backendContainer = "notrelix-fe-real-e2e-backend";
-
-/** No mail provider runs on a developer machine: the development backend logs the message text. */
 async function confirmationLinkFor(email: string): Promise<string> {
-  const pattern = new RegExp(
-    `Development email to ${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: .*?(http\\S*/verify-email#token=\\S+)`,
-  );
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const logs = execFileSync("docker", ["logs", backendContainer], {
-      encoding: "utf8",
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    const match = pattern.exec(logs);
-    if (match) return match[1];
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  throw new Error(`no confirmation email was logged for ${email}`);
+  return (await devMails(email, CONFIRMATION_LINK)).at(-1)!;
 }
 
 test("a new member confirms the email from the link and then creates the workspace", async ({
@@ -37,9 +22,12 @@ test("a new member confirms the email from the link and then creates the workspa
   await page.locator("#confirmPassword").fill(password);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: /Create account/ }).click();
-  await expect(page).toHaveURL(/\/onboarding/);
+  // Registering opens the app: the personal workspace once its provisioning has run (UC-WSP-A02, an
+  // event consumer, so eventual), the onboarding page while the list is still empty. Either is right.
+  await expect(page).toHaveURL(/\/(workspaces\/[^/]+|onboarding)/);
 
-  // The address is not confirmed yet: creating the workspace is refused and the page says why.
+  // The address is not confirmed yet: creating a further workspace is refused and the page says why.
+  await page.goto("/onboarding");
   await page.getByLabel("Company name").fill(`Confirm ${suffix}`);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Confirm your email");

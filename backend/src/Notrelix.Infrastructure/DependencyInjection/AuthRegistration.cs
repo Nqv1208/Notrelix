@@ -52,10 +52,10 @@ public static class AuthRegistration
         return services;
     }
 
-    private static DateTimeOffset? ParseIssuedAt(string? value)
-        => long.TryParse(value, out var epochSeconds)
-            ? DateTimeOffset.FromUnixTimeSeconds(epochSeconds)
-            : null;
+    private static DateTimeOffset? ReadIssuedAt(ClaimsPrincipal? principal)
+        => AccessTokenRevocationEvaluator.ResolveIssuedAt(
+            principal?.FindFirst(JwtRegisteredClaimNames.Iat)?.Value,
+            principal?.FindFirst(JwtClaimNames.IssuedAtMilliseconds)?.Value);
 
     private static bool TryReadBearerToken(string authorization, out string rawToken)
     {
@@ -162,7 +162,7 @@ public static class AuthRegistration
                         {
                             var revokedBefore = await blacklist.GetUserRevokedBeforeAsync(userId);
                             if (AccessTokenRevocationEvaluator.ShouldReject(
-                                    ParseIssuedAt(context.Principal?.FindFirst(JwtRegisteredClaimNames.Iat)?.Value),
+                                    ReadIssuedAt(context.Principal),
                                     revokedBefore))
                             {
                                 context.Fail("User access has been revoked");
@@ -174,7 +174,7 @@ public static class AuthRegistration
                         {
                             var sessionRevokedBefore = await blacklist.GetSessionRevokedBeforeAsync(sessionId);
                             if (AccessTokenRevocationEvaluator.ShouldReject(
-                                    ParseIssuedAt(context.Principal?.FindFirst(JwtRegisteredClaimNames.Iat)?.Value),
+                                    ReadIssuedAt(context.Principal),
                                     sessionRevokedBefore))
                             {
                                 context.Fail("Session access has been revoked");

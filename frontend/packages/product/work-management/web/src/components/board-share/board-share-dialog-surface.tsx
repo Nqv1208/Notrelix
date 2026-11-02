@@ -29,6 +29,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
+  Skeleton,
 } from "@notrelix/ui-web";
 import {
   fillBoardShareCopy as fill,
@@ -73,11 +74,11 @@ const MARK_TONE: Record<string, string> = {
 
 const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 const BTN =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong aria-disabled:cursor-default dark:bg-card";
+  "inline-flex h-8 max-md:h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong aria-disabled:cursor-default dark:bg-card";
 const BTN_PRIMARY =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 aria-disabled:cursor-default aria-disabled:opacity-60";
+  "inline-flex h-8 max-md:h-11 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 aria-disabled:cursor-default aria-disabled:opacity-60";
 const LEVEL =
-  "box-border inline-flex h-[38px] items-center gap-1.5 rounded-[9px] border border-line-strong bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground aria-disabled:cursor-default dark:bg-card";
+  "box-border inline-flex h-[38px] items-center gap-1.5 rounded-[9px] max-md:h-11 border border-line-strong bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground aria-disabled:cursor-default dark:bg-card";
 
 /** Rows shown before "Show n more": the mockup list is 248 px, five rows. */
 const VISIBLE_ROWS = 5;
@@ -160,6 +161,12 @@ export interface BoardShareDialogSurfaceProps {
     /** The refusal offers "Add a Manager": it focuses the add field at Manager level. */
     readonly addManager?: boolean;
   } | null;
+  /**
+   * The Board's sharing read: `loading` while it is on its way, `error` when it failed (the list is then not
+   * drawn and the dialog offers `onRetryPeople`); absent once it has answered.
+   */
+  readonly peopleState?: "loading" | "error";
+  readonly onRetryPeople?: () => void;
   readonly initialView?: "share" | "private" | "log";
   readonly initialLevelMenu?: string | null;
 }
@@ -196,7 +203,7 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
       aria-label={label}
       onClick={props.onClose}
       className={cn(
-        "ml-auto grid size-8 shrink-0 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
+        "ml-auto grid size-8 max-md:size-11 shrink-0 place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
         FOCUS,
       )}
     >
@@ -219,15 +226,20 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
             ?.querySelector<HTMLElement>("[data-f='ib']")
             ?.focus();
         }}
-        className="top-[56px] box-border flex w-[640px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-visible rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
+        className="top-[56px] box-border flex w-[640px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-visible rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card max-md:top-[88px] max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:rounded-t-[14px] max-md:rounded-b-none max-md:data-open:zoom-in-100 max-md:data-open:slide-in-from-bottom-10 max-md:sm:max-w-none"
       >
         <div
+          data-f="grab"
+          aria-hidden="true"
+          className="mx-auto mt-1.5 mb-0.5 hidden h-[5px] w-9 shrink-0 rounded-[3px] bg-line-strong max-md:block"
+        />
+        <div
           data-f="dh"
-          className="flex items-center gap-2.5 px-5 pt-[18px] pb-1"
+          className="flex items-center gap-2.5 px-5 pt-[18px] pb-1 max-md:h-[52px] max-md:shrink-0 max-md:py-0 max-md:pr-2 max-md:pl-5"
         >
           <DialogTitle
             data-f="dt"
-            className="m-0 text-dialog-title leading-[1.45] font-[650] text-foreground"
+            className="m-0 text-dialog-title leading-[1.45] font-[650] text-foreground max-md:text-[17px]"
           >
             {screen === "private" ? copy.privateConfirm.title : title}
           </DialogTitle>
@@ -235,7 +247,7 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
         </div>
         <DialogDescription
           data-f="dsub"
-          className="m-0 flex items-center gap-1.5 px-5 text-compact leading-[1.45] text-meta-foreground"
+          className="m-0 flex items-center gap-1.5 px-5 text-compact leading-[1.45] text-meta-foreground max-md:sr-only"
         >
           {view.space ? (
             <span
@@ -308,6 +320,8 @@ function ShareBody({
   notice,
   managerToken,
   addManager,
+  peopleState,
+  onRetryPeople,
 }: BodyProps & {
   menuFor: string | null;
   setMenuFor: (id: string | null) => void;
@@ -326,7 +340,10 @@ function ShareBody({
   const viewerRows = view.rows.filter((row) => row.viewer === true);
   return (
     <>
-      <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+      <div
+        data-f="db"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto max-md:px-4 max-md:pt-1.5"
+      >
         {notice ? (
           <ShareNotice notice={notice} copy={copy} onAddManager={addManager} />
         ) : null}
@@ -338,11 +355,11 @@ function ShareBody({
             managerToken={managerToken}
           />
         ) : (
-          <div data-f="add" className="flex gap-2">
+          <div data-f="add" className="flex gap-2 max-md:flex-wrap">
             <label
               data-f="in"
               title={copy.add.unavailable}
-              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
+              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:box-border max-md:h-[50px] max-md:basis-full max-md:rounded-[12px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
             >
               <UserPlus
                 aria-hidden="true"
@@ -377,7 +394,10 @@ function ShareBody({
               type="button"
               aria-disabled="true"
               title={copy.add.unavailable}
-              className={cn(BTN_PRIMARY, "h-[38px] aria-disabled:opacity-100")}
+              className={cn(
+                BTN_PRIMARY,
+                "h-[38px] max-md:h-11 aria-disabled:opacity-100",
+              )}
             >
               {copy.add.invite}
             </button>
@@ -470,7 +490,7 @@ function ShareBody({
                   : undefined
               }
               className={cn(
-                "ml-auto box-border inline-flex h-[30px] items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
                 FOCUS,
               )}
             >
@@ -484,7 +504,46 @@ function ShareBody({
           </div>
         </div>
 
-        {view.hiddenCounts ? (
+        {peopleState === "loading" ? (
+          <div
+            role="status"
+            aria-label={copy.people.loading}
+            aria-busy="true"
+            className="flex flex-col gap-2"
+          >
+            <Skeleton className="h-3 w-48" />
+            {[0, 1, 2].map((row) => (
+              <div
+                key={row}
+                className="flex min-h-[50px] items-center gap-[11px]"
+              >
+                <Skeleton className="size-[30px] shrink-0 rounded-full" />
+                <span className="flex flex-1 flex-col gap-1.5">
+                  <Skeleton className="h-3.5 w-1/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </span>
+                <Skeleton className="h-[30px] w-20 rounded-[9px]" />
+              </div>
+            ))}
+            <span className="sr-only">{copy.people.loading}</span>
+          </div>
+        ) : peopleState === "error" ? (
+          <div
+            data-f="perror"
+            className="flex items-center gap-3 rounded-[10px] border border-line bg-background p-3 text-compact leading-normal text-muted-foreground max-md:flex-wrap"
+          >
+            <p role="alert" className="m-0 min-w-0 flex-1">
+              {copy.people.loadError}
+            </p>
+            <button
+              type="button"
+              onClick={onRetryPeople}
+              className={cn(BTN, FOCUS)}
+            >
+              {copy.people.retry}
+            </button>
+          </div>
+        ) : view.hiddenCounts ? (
           <p
             data-f="pcounts"
             className="m-0 text-compact leading-[1.45] text-meta-foreground"
@@ -675,7 +734,7 @@ function ShareBody({
             type="button"
             onClick={() => setScreen("log")}
             className={cn(
-              "rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground hover:underline",
+              "rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center",
               FOCUS,
             )}
           >
@@ -757,10 +816,10 @@ function AddPeople({
     }
   };
   return (
-    <div data-f="add" className="relative flex gap-2">
+    <div data-f="add" className="relative flex gap-2 max-md:flex-wrap">
       <label
         data-f="in"
-        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
+        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:box-border max-md:h-[50px] max-md:basis-full max-md:rounded-[12px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
       >
         <UserPlus
           aria-hidden="true"
@@ -843,7 +902,7 @@ function AddPeople({
         <ul
           role="listbox"
           aria-label={copy.add.levelList}
-          className="absolute top-[44px] right-[92px] z-10 m-0 flex w-[180px] list-none flex-col rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
+          className="absolute top-[44px] right-[92px] z-10 max-md:top-[100px] m-0 flex w-[180px] list-none flex-col rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
         >
           {LEVELS.map((option) => (
             <li key={option} role="option" aria-selected={option === level}>
@@ -878,7 +937,7 @@ function AddPeople({
         onClick={() => void invite()}
         className={cn(
           BTN_PRIMARY,
-          "h-[38px] disabled:cursor-default disabled:opacity-60",
+          "h-[38px] max-md:h-11 disabled:cursor-default disabled:opacity-60",
           FOCUS,
         )}
       >
@@ -993,7 +1052,7 @@ function PersonRow({
       <span data-f="who" className="min-w-0 flex-1">
         <b
           data-f="wname"
-          className="block truncate text-nav leading-[1.45] font-semibold text-foreground"
+          className="block truncate text-nav leading-[1.45] font-semibold text-foreground max-md:overflow-visible max-md:whitespace-normal max-md:break-words"
         >
           {row.name}
           {row.isYou ? (
@@ -1003,7 +1062,7 @@ function PersonRow({
             <span
               data-f="badge"
               className={cn(
-                "ml-1.5 rounded-[4px] px-1.5 py-px align-[1px] text-key leading-[1.45] font-semibold",
+                "ml-1.5 rounded-[4px] px-1.5 py-px align-[1px] text-key leading-[1.45] font-semibold whitespace-nowrap",
                 row.badge === "outside"
                   ? "bg-danger-subtle text-danger-text"
                   : "bg-warning-subtle text-warning-text",
@@ -1054,7 +1113,7 @@ function PersonRow({
               })}
               onClick={editable ? () => setMenu(!menuOpen) : undefined}
               className={cn(
-                "box-border inline-flex h-[30px] items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                "box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
                 menuOpen && "border-primary ring-2 ring-state-selected",
                 FOCUS,
               )}
@@ -1383,7 +1442,10 @@ function PrivateBody({
     general.kind === "space" ? general.name : view.workspaceName;
   return (
     <>
-      <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+      <div
+        data-f="db"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto max-md:px-4 max-md:pt-1.5"
+      >
         <div
           data-f="lbl"
           id="share-ga"
@@ -1616,7 +1678,10 @@ function LogBody({ copy, log, onClose, setScreen }: BodyProps) {
   const l = copy.log;
   return (
     <>
-      <div data-f="db" className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+      <div
+        data-f="db"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto max-md:px-4 max-md:pt-1.5"
+      >
         <div data-f="lh2" className="flex items-center gap-2">
           <button
             data-f="ib"

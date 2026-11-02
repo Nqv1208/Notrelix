@@ -134,7 +134,7 @@ export function ViewPanel({
   return (
     <aside
       aria-label={fillCopy(t.label, { name: view.name })}
-      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover"
+      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover max-md:absolute max-md:inset-0 max-md:z-10 max-md:w-full max-md:border-l-0"
     >
       <div className="flex items-center gap-2.5 border-b border-line px-[18px] py-3.5">
         <TypeMark

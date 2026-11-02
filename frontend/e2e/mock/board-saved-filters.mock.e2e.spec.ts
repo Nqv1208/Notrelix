@@ -64,7 +64,10 @@ test.describe("Board saved filters (owner)", () => {
 
     await page.getByRole("button", { name: "Bộ lọc đã lưu" }).click();
     await page.getByRole("button", { name: `Áp dụng bộ lọc ${NAME}` }).click();
-    await expect(page).toHaveURL(/filter=p\.urgent/);
+    // The legacy `p.urgent` address is read into the condition model and written back in its form.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("filter"))
+      .toBe("c2:and~mock-erp-col-priority.has_any.mock-erp-priority-urgent");
     // The layout is still the board's own: no other view was opened or made.
     await expect(page).toHaveURL(/view=table/);
   });

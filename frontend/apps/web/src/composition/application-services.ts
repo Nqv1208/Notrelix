@@ -23,6 +23,7 @@ export interface WebApplicationServices {
 
 export interface CreateWebApplicationServicesOptions {
   readonly navigateToSignedOut: () => void;
+  readonly onSignedOutRoute?: () => boolean;
 }
 
 export type WebApplicationServicesOptions = CreateWebApplicationServicesOptions;
@@ -41,6 +42,7 @@ export function createWebApplicationServices(
     realtime: runtime.realtime,
     sessionEvents: runtime.sessionEvents,
     navigateToSignedOut: options.navigateToSignedOut,
+    onSignedOutRoute: options.onSignedOutRoute,
   });
 
   const searchApi: SearchApi = {

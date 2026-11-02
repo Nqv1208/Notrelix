@@ -555,3 +555,40 @@ describe("getting started on Home", () => {
     ).toBe(true);
   });
 });
+
+describe("onboarding: the email is not confirmed yet", () => {
+  it("FUI[workspace.setup-flow:workspace] offers the link again, says it went out, waits before the next and says when asking is refused", () => {
+    const onResendConfirmation = vi.fn();
+    const render = (resend: {
+      status: "idle" | "sending" | "sent" | "limited" | "failed";
+      secondsLeft: number;
+    }) => (
+      <OnboardingSurface
+        {...onboardingScenario({
+          error: "emailNotConfirmed",
+          onResendConfirmation,
+          resend,
+        })}
+      />
+    );
+    const { rerender } = renderPureUi(
+      render({ status: "idle", secondsLeft: 0 }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.frame.resendConfirmation }),
+    );
+    expect(onResendConfirmation).toHaveBeenCalledTimes(1);
+
+    // Sent: the notice stays, says so, and the button counts down.
+    rerender(render({ status: "sent", secondsLeft: 59 }));
+    expect(screen.getByText(copy.frame.emailNotConfirmed)).toBeTruthy();
+    expect(screen.getByText(copy.frame.resendSent)).toBeTruthy();
+    const waiting = screen.getByRole("button", { name: /Gửi lại sau 0:59/ });
+    expect(waiting.hasAttribute("disabled")).toBe(true);
+
+    rerender(render({ status: "limited", secondsLeft: 0 }));
+    expect(screen.getByText(copy.frame.resendLimited)).toBeTruthy();
+    rerender(render({ status: "failed", secondsLeft: 0 }));
+    expect(screen.getByText(copy.frame.resendFailed)).toBeTruthy();
+  });
+});

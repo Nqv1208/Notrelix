@@ -88,10 +88,18 @@ export function WorkspaceScopeStateSurface({
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="flex-row justify-center gap-2">
-          <Button variant={forbidden ? "outline" : "default"} onClick={onRetry}>
+          <Button
+            variant={forbidden ? "outline" : "default"}
+            className="max-md:h-touch!"
+            onClick={onRetry}
+          >
             {copy.scope.retry}
           </Button>
-          <Button variant={forbidden ? "default" : "outline"} asChild>
+          <Button
+            variant={forbidden ? "default" : "outline"}
+            className="max-md:h-touch!"
+            asChild
+          >
             <a
               href={exitHref}
               onClick={(event) => {

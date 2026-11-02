@@ -116,7 +116,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
         </PageLink>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 max-md:flex-col">
         {status === "forbidden" ? (
           <DeniedCard {...props} />
         ) : status === "loading" || (status === "ready" && !settings) ? (
@@ -284,7 +284,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
 
   const linkClass = (on: boolean) =>
     cn(
-      "flex h-[34px] w-full cursor-pointer items-center gap-[9px] rounded-[7px] border-0 bg-transparent px-2.5 text-left text-nav font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring [&_svg]:size-4 [&_svg]:shrink-0",
+      "flex h-[34px] w-full cursor-pointer items-center gap-[9px] rounded-[7px] border-0 bg-transparent px-2.5 text-left text-nav font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-11 max-md:w-auto max-md:shrink-0 [&_svg]:size-4 [&_svg]:shrink-0",
       on &&
         "bg-popover font-semibold text-foreground shadow-[0_0_0_1px_var(--line)]",
     );
@@ -369,7 +369,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     <>
       <nav
         aria-label={t.aria}
-        className="flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4"
+        className="flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4 max-md:w-full max-md:flex-row max-md:overflow-x-auto max-md:border-r-0 max-md:border-b max-md:py-1.5"
       >
         {menu.map((key) => {
           const Icon = SECTION_ICON[key];
@@ -387,7 +387,10 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
             </button>
           );
         })}
-        <div aria-hidden="true" className="mx-1.5 my-2 h-px bg-line" />
+        <div
+          aria-hidden="true"
+          className="mx-1.5 my-2 h-px bg-line max-md:hidden"
+        />
         <button
           type="button"
           onClick={props.onOpenAccess}

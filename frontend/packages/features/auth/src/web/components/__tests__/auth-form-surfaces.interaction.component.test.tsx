@@ -6,6 +6,7 @@ import {
   authForgotScenario,
   authInviteScenario,
   authRegisterDefaultScenario,
+  authResetScenario,
   authSignInScenario,
   authSsoStep,
   authVerifyEmailScenario,
@@ -16,11 +17,13 @@ import { fillAuthCopy } from "../../copy/fill-auth-copy";
 import { AuthForgotSurface } from "../auth-forgot-surface";
 import { AuthInviteSurface } from "../auth-invite-surface";
 import { AuthRegisterFormSurface } from "../auth-form-surfaces";
+import { AuthResetSurface } from "../auth-reset-surface";
 import { AuthShell } from "../auth-shell";
 import { AuthSignInSurface } from "../auth-sign-in-surface";
 import { AuthVerifyEmailSurface } from "../auth-verify-email-surface";
 
 const copy = authCopy("vi");
+const NEW_PASSWORD = `Pw-${"a".repeat(12)}`;
 
 describe("auth sign-in surface", () => {
   it("FUI[auth.sign-in:email] asks for the email, rejects a malformed one and continues with a good one", () => {
@@ -105,6 +108,40 @@ describe("auth sign-in surface", () => {
     expect(onChangeEmail).toHaveBeenCalledTimes(1);
     expect(onForgot).toHaveBeenCalledTimes(1);
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[auth.sign-in:email] keeps the closed password field disabled, so nothing is typed into it before its step", () => {
+    renderPureUi(<AuthSignInSurface {...authSignInScenario()} />);
+    const field = screen.getByLabelText(
+      copy.password.label,
+    ) as HTMLInputElement;
+    expect(field.disabled).toBe(true);
+  });
+
+  it("FUI[auth.sign-in:locked] answers a locked attempt with the generic refusal and the lock notice", () => {
+    renderPureUi(
+      <AuthSignInSurface
+        {...authSignInScenario({
+          step: {
+            kind: "password",
+            email: AUTH_PERSONAL_EMAIL,
+            error: null,
+            lockedSeconds: 48,
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.password.wrong,
+    );
+    expect(
+      (
+        screen.getByLabelText(copy.password.label) as HTMLInputElement
+      ).getAttribute("aria-invalid"),
+    ).toBe("true");
+    expect(screen.getByRole("status").textContent).toContain(
+      fillAuthCopy(copy.password.lockTitle, { seconds: 48 }),
+    );
   });
 
   it("FUI[auth.sign-in:wrong] says the password is wrong and never counts tries", () => {
@@ -250,6 +287,20 @@ describe("auth forgot-password surface", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
+  it("FUI[auth.forgot:sent] sends the person on to the code with the email", () => {
+    const onEnterCode = vi.fn();
+    renderPureUi(
+      <AuthForgotSurface
+        {...authForgotScenario({
+          step: { kind: "sent", email: AUTH_PERSONAL_EMAIL, resendSeconds: 42 },
+          onEnterCode,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.sent.enterCode }));
+    expect(onEnterCode).toHaveBeenCalledWith(AUTH_PERSONAL_EMAIL);
+  });
+
   it("FUI[auth.forgot:sent] never says whether the email has an account, waits before sending again and then lets it", () => {
     const onResend = vi.fn();
     const { rerender } = renderPureUi(
@@ -279,6 +330,36 @@ describe("auth forgot-password surface", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: copy.sent.resend }));
     expect(onResend).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("auth forgot-password surface, request limit", () => {
+  it("FUI[auth.forgot:limited] says the limit was reached on the ask step and on the sent step, and keeps the person where they are", () => {
+    const { rerender } = renderPureUi(
+      <AuthForgotSurface
+        {...authForgotScenario({ step: { kind: "ask", error: "limited" } })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.forgot.limited,
+    );
+    expect(screen.getByLabelText(copy.forgot.label)).toBeTruthy();
+    rerender(
+      <AuthForgotSurface
+        {...authForgotScenario({
+          step: {
+            kind: "sent",
+            email: AUTH_PERSONAL_EMAIL,
+            resendSeconds: 0,
+            error: "limited",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(copy.sent.limited);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      copy.sent.title,
+    );
   });
 });
 
@@ -343,6 +424,34 @@ describe("auth verify-email surface", () => {
   });
 });
 
+describe("auth verify email: sending again", () => {
+  it("FUI[auth.verify-email:resend] waits with the time left after a new link went out, and says when asking is refused", () => {
+    const { rerender } = renderPureUi(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({
+          step: { kind: "failed" },
+          sent: true,
+          resendSeconds: 42,
+        })}
+      />,
+    );
+    const wait = screen.getByRole("button", { name: /dùng được sau 42 giây/ });
+    expect(wait.hasAttribute("disabled")).toBe(true);
+    expect(wait.textContent).toContain("0:42");
+    rerender(
+      <AuthVerifyEmailSurface
+        {...authVerifyEmailScenario({
+          step: { kind: "failed" },
+          error: "limited",
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.verifyEmail.limited,
+    );
+  });
+});
+
 describe("auth invite surface", () => {
   it("FUI[auth.invite:accept] shows who invited, the guest level and its end, keeps the email fixed and checks the name and password", () => {
     const onAccept = vi.fn();
@@ -382,6 +491,33 @@ describe("auth invite surface", () => {
       name: "Đặng Minh Tuấn",
       password: "mot-mat-khau-du-dai",
     });
+  });
+
+  it("FUI[auth.invite:phone] opens as a card without a form; Chấp nhận shows the name and the password, and the same press then creates the account", () => {
+    const width = window.innerWidth;
+    window.innerWidth = 390;
+    try {
+      const onAccept = vi.fn();
+      renderPureUi(<AuthInviteSurface {...authInviteScenario({ onAccept })} />);
+      expect(screen.queryByLabelText(copy.invite.passwordLabel)).toBeNull();
+      expect(screen.getByText("tuan@doitac-erp.vn")).toBeTruthy();
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.invite.mobile.accept }),
+      );
+      expect(onAccept).not.toHaveBeenCalled();
+      fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
+        target: { value: "mot-mat-khau-du-dai" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.invite.mobile.accept }),
+      );
+      expect(onAccept).toHaveBeenCalledWith({
+        name: "Đặng Minh Tuấn",
+        password: "mot-mat-khau-du-dai",
+      });
+    } finally {
+      window.innerWidth = width;
+    }
   });
 
   it("FUI[auth.invite:decline] declines, or signs in to accept with an existing account", () => {
@@ -480,5 +616,51 @@ describe("auth register surface", () => {
       email: "ada@notrelix.dev",
       password: "very-secure",
     });
+  });
+});
+
+describe("auth reset surface", () => {
+  it("FUI[auth.reset:form] checks the three fields before it sends and sends them trimmed", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(<AuthResetSurface {...authResetScenario({ onSubmit })} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.submit }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(copy.reset.invalidCode)).toBeTruthy();
+    expect(screen.getByText(copy.reset.shortPassword)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(copy.reset.codeLabel), {
+      target: { value: "12ab34 5678" },
+    });
+    fireEvent.change(screen.getByLabelText(copy.reset.passwordLabel), {
+      target: { value: NEW_PASSWORD },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.submit }));
+    // Only digits are kept, at most six.
+    expect(onSubmit).toHaveBeenCalledWith({
+      email: AUTH_PERSONAL_EMAIL,
+      code: "123456",
+      newPassword: NEW_PASSWORD,
+    });
+  });
+
+  it("FUI[auth.reset:refused] says the same thing for a wrong, used or expired code and offers a new one", () => {
+    const onSendAgain = vi.fn();
+    renderPureUi(
+      <AuthResetSurface
+        {...authResetScenario({ error: "rejected", onSendAgain })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.reset.rejected,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.reset.sendAgain }));
+    expect(onSendAgain).toHaveBeenCalledWith(AUTH_PERSONAL_EMAIL);
+  });
+
+  it("FUI[auth.reset:pending] locks the button while the change is on its way", () => {
+    renderPureUi(
+      <AuthResetSurface {...authResetScenario({ pending: true })} />,
+    );
+    const button = screen.getByRole("button", { name: copy.reset.submitting });
+    expect(button.hasAttribute("disabled")).toBe(true);
   });
 });

@@ -11,6 +11,12 @@ namespace Notrelix.Application.Common.Security.Auth
         /// <summary>Upper bound of the cookie lifetime, whatever the challenge lifetime is.</summary>
         static readonly TimeSpan MfaChallengeCookieMaxLifetime = TimeSpan.FromMinutes(5);
 
+        /// <summary>Cookie that carries a provider step-up proof across the OAuth redirect (never in a URL).</summary>
+        const string StepUpProofCookieName = "stepUpProof";
+
+        /// <summary>Only the step-up endpoints receive the proof cookie.</summary>
+        const string StepUpProofCookiePath = "/api/v1/auth/security/step-up";
+
         void SetTokenCookie(string accesToken, string refreshToken);
         void DeleteTokenCookie();
 
@@ -23,5 +29,15 @@ namespace Notrelix.Application.Common.Security.Auth
         string? GetMfaChallengeCookie();
 
         void DeleteMfaChallengeCookie();
+
+        /// <summary>
+        /// Holds the proof(s) a provider re-authentication granted, in a httpOnly, path-scoped, SameSite=Lax
+        /// cookie that lives no longer than the proof itself. One claim reads it and deletes it.
+        /// </summary>
+        void SetStepUpProofCookie(string value, DateTimeOffset proofExpiresAt);
+
+        string? GetStepUpProofCookie();
+
+        void DeleteStepUpProofCookie();
     }
 }

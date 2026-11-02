@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   AccountSecuritySurface,
   createUseProfile,
@@ -16,7 +16,11 @@ import {
 } from "@notrelix/features-account";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { clearApplicationCache } from "@/composition/application-lifecycle";
-import { useRouteWorkspaceName, useToast } from "./use-account-pages";
+import {
+  useRouteWorkspaceId,
+  useRouteWorkspaceName,
+  useToast,
+} from "./use-account-pages";
 
 /** The seconds a throttled step must wait (429 `retryAfterSeconds`), or `null`. */
 function waitOf(error: unknown): number | null {
@@ -41,7 +45,9 @@ type Step =
   | {
       kind: "stepUp";
       purpose: "enroll" | "disable" | "renew" | "others";
-      factor: "code" | "password";
+      factor: "code" | "password" | "provider";
+      /** `provider`: the linked providers the person can confirm with. */
+      providers?: readonly string[];
       challengeToken: string | null;
     }
   | { kind: "codes"; codes: readonly string[]; othersEnded?: number }
@@ -60,8 +66,18 @@ const PURPOSE: Record<
   others: "RevokeOtherSessions",
 };
 
+type StepPurpose = "enroll" | "disable" | "renew" | "others";
+
+const isStepPurpose = (value: unknown): value is StepPurpose =>
+  typeof value === "string" && value in PURPOSE;
+
 export function AccountSecurityPage() {
-  const { api: runtimeClient } = useAppRuntime();
+  const { api: runtimeClient, env } = useAppRuntime();
+  const workspaceId = useRouteWorkspaceId();
+  const search = useSearch({ strict: false }) as {
+    stepUp?: unknown;
+    stepUpResult?: unknown;
+  };
   const copy = useAccountSecurityCopy();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -222,7 +238,16 @@ export function AccountSecurityPage() {
         setStep({
           kind: "stepUp",
           purpose,
-          factor: requirement.factor === "mfa" ? "code" : "password",
+          factor:
+            requirement.factor === "mfa"
+              ? "code"
+              : requirement.factor === "oauth"
+                ? "provider"
+                : "password",
+          providers:
+            requirement.factor === "oauth"
+              ? (summary.data?.linkedProviders ?? [])
+              : undefined,
           challengeToken: requirement.challengeToken,
         });
       } catch {
@@ -231,7 +256,7 @@ export function AccountSecurityPage() {
         setBusy(false);
       }
     },
-    [service],
+    [service, summary.data?.linkedProviders],
   );
 
   const setTwoFactor = useCallback(
@@ -394,6 +419,91 @@ export function AccountSecurityPage() {
     [finishStepUp, service, step],
   );
 
+  // The person confirms with the provider they signed in with: the browser leaves for it and comes
+  // back to this page with `stepUp=<purpose>`, the backend's proof waiting in its httpOnly cookie.
+  const startProviderStepUp = useCallback(
+    (provider: string) => {
+      if (step?.kind !== "stepUp") return;
+      const path = service.providerStepUpPath(
+        provider,
+        PURPOSE[step.purpose],
+        `/workspaces/${workspaceId}/account/security?stepUp=${step.purpose}`,
+      );
+      if (!env.mockApi) {
+        window.location.assign(`${env.apiUrl}${path}`);
+        return;
+      }
+      // No browser leaves in the mock world: the mock plays the round trip and says where the redirect lands.
+      void runtimeClient.api
+        .get<{ redirectTo?: string }>(path, {
+          skipAuthRefresh: true,
+          skipGlobalErrorToast: true,
+        })
+        .then((answer) => {
+          const landing = new URL(
+            answer.redirectTo ?? "/",
+            window.location.origin,
+          );
+          void navigate({
+            to: landing.pathname,
+            search: Object.fromEntries(landing.searchParams),
+            replace: true,
+          } as unknown as Parameters<typeof navigate>[0]);
+        })
+        .catch(() => setStepError({ error: "failed" }));
+    },
+    [env, navigate, runtimeClient.api, service, step, workspaceId],
+  );
+
+  // Back from the provider: spend the proof it left on the action that asked for it.
+  const resumed = useRef(false);
+  const resumePurpose = isStepPurpose(search.stepUp) ? search.stepUp : null;
+  useEffect(() => {
+    // The marker is stripped once read, so the next return (the mock world stays in the page) resumes again.
+    if (resumePurpose === null) resumed.current = false;
+    if (resumed.current || resumePurpose === null || !summary.data) return;
+    resumed.current = true;
+    const failed = search.stepUpResult === "failed";
+    // The marker is read once: a reload must not spend (or ask for) another proof.
+    void navigate({
+      to: ".",
+      search: {},
+      replace: true,
+    } as Parameters<typeof navigate>[0]);
+    const current: Extract<Step, { kind: "stepUp" }> = {
+      kind: "stepUp",
+      purpose: resumePurpose,
+      factor: "provider",
+      providers: summary.data.linkedProviders,
+      challengeToken: null,
+    };
+    const fromProvider = async () => {
+      if (failed) throw new Error("provider-failed");
+      return service.claimProviderStepUp();
+    };
+    setBusy(true);
+    void fromProvider()
+      .then(({ proof, spare }) =>
+        finishStepUp(
+          Promise.resolve(proof),
+          current,
+          resumePurpose === "enroll" ? () => Promise.resolve(spare) : undefined,
+        ),
+      )
+      .catch(() => {
+        setStep(current);
+        setStepError({ error: "failed" });
+      })
+      .finally(() => setBusy(false));
+  }, [
+    finishStepUp,
+    navigate,
+    resumePurpose,
+    search.stepUpResult,
+    service,
+    summary.data,
+  ]);
+
   const startPasswordChange = useCallback(() => {
     setActionError(false);
     setStepError(null);
@@ -483,6 +593,7 @@ export function AccountSecurityPage() {
           kind: "stepUp",
           purpose: step.purpose,
           factor: step.factor,
+          providers: step.providers,
           error,
           wait: stepError?.wait,
         };
@@ -515,6 +626,7 @@ export function AccountSecurityPage() {
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}
       onSubmitCode={(code) => void submitCode(code)}
       onSubmitPassword={(password) => void submitPassword(password)}
+      onStartProviderStepUp={startProviderStepUp}
       onCloseFlow={() => {
         setStep(null);
         setStepError(null);

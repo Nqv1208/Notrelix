@@ -29,6 +29,7 @@ export const AUTH_FLOW_PATHS = {
   oauthStart: (provider: string) =>
     `/auth/oauth/${encodeURIComponent(provider)}/start`,
   forgotPassword: "/auth/forgot-password",
+  resetPassword: "/auth/reset-password",
   confirmEmail: "/auth/email-verification/confirm",
   resendEmailVerification: "/auth/email-verification/resend",
   invitationPreview: "/invitations/preview",
@@ -138,6 +139,8 @@ export interface InvitePreview {
   readonly name: string | null;
   /** The email already has a Notrelix account. */
   readonly hasAccount: boolean;
+  /** The role a workspace invitation offers; null for a guest invitation to one board. */
+  readonly workspaceRole: "member" | "guest" | null;
 }
 
 export interface InviteAcceptResult {
@@ -198,6 +201,15 @@ function levelOf(wire: string | null | undefined): InvitePreview["level"] {
   return level === "editor" || level === "commenter" ? level : "viewer";
 }
 
+/** A workspace invitation names no resource and offers a role; a board invitation names its board. */
+function workspaceRoleOf(
+  wire: InvitationPreviewWire,
+): InvitePreview["workspaceRole"] {
+  if (wire.resourceKind) return null;
+  const role = wire.role?.toLowerCase();
+  return role === "member" || role === "guest" ? role : null;
+}
+
 /** The one place the invitation preview is read into the page's model. */
 export function toInvitePreview(wire: InvitationPreviewWire): InvitePreview {
   const state =
@@ -215,6 +227,7 @@ export function toInvitePreview(wire: InvitationPreviewWire): InvitePreview {
     email: wire.email ?? null,
     name: null,
     hasAccount: wire.hasAccount ?? false,
+    workspaceRole: workspaceRoleOf(wire),
   };
 }
 
@@ -291,6 +304,13 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
     },
     forgotPassword(email: string) {
       return api.post<void>(AUTH_FLOW_PATHS.forgotPassword, { email }, QUIET);
+    },
+    /**
+     * `Identity.Auth.ResetPassword`: a wrong, used or expired code answers the same 400;
+     * five wrong codes answer `identity.auth.too-many-attempts`.
+     */
+    resetPassword(value: { email: string; code: string; newPassword: string }) {
+      return api.post<void>(AUTH_FLOW_PATHS.resetPassword, value, QUIET);
     },
     /** `Identity.Auth.ConfirmEmail`: a token that is used up or expired answers 400. */
     confirmEmail(token: string) {

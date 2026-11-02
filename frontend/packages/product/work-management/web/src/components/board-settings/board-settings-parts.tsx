@@ -31,7 +31,7 @@ import type {
 
 /** 32 px button (mockup `.btn`). */
 const BTN =
-  "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[7px] border px-3 text-item-small font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0";
+  "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[7px] border px-3 max-md:h-11 text-item-small font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0";
 
 export const BUTTON_CLASS = {
   outline: cn(
@@ -66,15 +66,15 @@ export const BUTTON_CLASS = {
 
 /** Text input and select (mockup `.inp`). */
 export const INPUT_CLASS =
-  "box-border flex h-[34px] w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-item-ui text-foreground outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger disabled:cursor-not-allowed disabled:bg-background disabled:text-meta-foreground";
+  "box-border flex h-[34px] max-md:h-11 w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-item-ui text-foreground outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger disabled:cursor-not-allowed disabled:bg-background disabled:text-meta-foreground";
 
 export const TEXTAREA_CLASS = cn(
   INPUT_CLASS,
-  "block h-auto min-h-14 resize-y py-[7px] leading-[1.45]",
+  "block h-auto max-md:h-auto min-h-14 resize-y py-[7px] leading-[1.45]",
 );
 
 export const ICON_BUTTON_CLASS =
-  "grid size-7.5 shrink-0 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-40 [&_svg]:size-3.5 [&_svg]:shrink-0";
+  "grid size-7.5 max-md:size-11 shrink-0 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-40 [&_svg]:size-3.5 [&_svg]:shrink-0";
 
 export const FIELD_LABEL_CLASS =
   "text-crumb font-semibold text-muted-foreground";
@@ -160,7 +160,7 @@ export function SectionLine({
   note?: ReactNode;
 }) {
   return (
-    <div className="mt-[18px] mb-1.5 flex items-center gap-2 text-crumb font-semibold text-meta-foreground">
+    <div className="mt-[18px] mb-1.5 flex flex-wrap items-center gap-x-2 text-crumb font-semibold text-meta-foreground">
       {title}
       {count !== undefined ? (
         <span className="font-medium">{count}</span>
@@ -183,8 +183,8 @@ export function SectionHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-3.5 flex items-start gap-3">
-      <div>
+    <div className="mb-3.5 flex items-start gap-3 max-md:flex-wrap">
+      <div className="max-md:min-w-0 max-md:basis-full">
         <h2 id={id} className="m-0 text-[17px] leading-[1.45] font-[650]">
           {title}
         </h2>

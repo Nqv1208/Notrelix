@@ -185,6 +185,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Security.StepUpClaimProvider",
+    operationId: "Identity.Security.StepUpClaimProvider",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.OAuth.StepUpStart",
+    operationId: "Identity.Auth.OAuth.StepUpStart",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Mfa.Disable",
     operationId: "Identity.Mfa.Disable",
     mutation: true,
@@ -1314,6 +1334,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
     capability: "Identity.Mfa.VerifyChallenge",
     operationId: "Identity.Mfa.VerifyChallenge",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Auth.ResendEmailVerification",
+    operationId: "Identity.Auth.ResendEmailVerification",
     mutation: true,
   },
   {
@@ -3228,6 +3258,28 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerFile: "frontend/packages/product/work-management/state/src/api/",
     classification: "CANONICAL_MOCKED",
     operationId: "Collaboration.Comments.GetBoardItemComments",
+    method: "GET", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "Collaboration.Comments.GetBoardItemCommentsPage",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/packages/product/work-management/state/src/api/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "Collaboration.Comments.GetBoardItemCommentsPage",
+    method: "GET", // dummy
+    pathTemplate: "/api/v1/",
+    mutation: false,
+  },
+  {
+    context: "Work Management",
+    capability: "WorkManagement.Boards.GetMoveImpact",
+    consumerSymbol: "TODO",
+    consumerFile: "frontend/apps/web/src/shell/workspace/",
+    classification: "CANONICAL_MOCKED",
+    operationId: "WorkManagement.Boards.GetMoveImpact",
     method: "GET", // dummy
     pathTemplate: "/api/v1/",
     mutation: false,

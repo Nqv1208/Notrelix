@@ -14,6 +14,11 @@
         "reason": "Session/session-storage provider that renders no standalone visual surface."
       },
       {
+        "path": "src/web/containers/reset-flow.tsx",
+        "category": "container",
+        "reason": "Container sending the code and the new password and mapping each refusal, composing AuthResetSurface."
+      },
+      {
         "path": "src/web/components/google-mark.tsx",
         "category": "nonvisual-composition",
         "reason": "Vendor brand mark (Google G, fixed brand colours) rendered inside the sign-in and register surfaces; covered by their stories and exempt from the token gate through VENDOR_MARK_FILES."
@@ -511,6 +516,68 @@
         },
         {
           "id": "resend",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "auth.reset",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-reset-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--reset-form",
+          "state": "Default",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--reset-pending",
+          "state": "Loading",
+          "visualTargets": []
+        },
+        {
+          "id": "auth-auth-form-surfaces--reset-refused",
+          "state": "Error",
+          "visualTargets": []
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A change sends the person to sign-in; the surface has no success view.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The surface holds three fixed fields and fixed copy.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to a signed-out form.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "purity"],
+      "interactionCases": [
+        {
+          "id": "form",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "refused",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]

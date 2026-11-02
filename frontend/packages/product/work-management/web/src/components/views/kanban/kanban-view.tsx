@@ -47,6 +47,7 @@ import {
   type BoardGroup,
   type Card,
   type CardDetail,
+  type FieldDefinition,
   type KanbanStatusLane,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
@@ -66,9 +67,17 @@ import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
+import { approvalFailure } from "../../card-popup/approval/approval-model";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
-import type { KanbanLaneDrop } from "./kanban-dnd";
+import {
+  arrangeKanbanLanes,
+  getKanbanDrop,
+  kanbanLaneKey,
+  moveCardInArrangement,
+  type KanbanLaneDrop,
+} from "./kanban-dnd";
+import type { CardPopupLanePicker } from "../../card-popup/card-popup-context";
 import { emptyKanbanFilter, isKanbanCardOverdue } from "./kanban-filter";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 import { KanbanSkeleton } from "./kanban-skeleton";
@@ -566,7 +575,6 @@ export function KanbanView({
           lane: {
             fieldDefinitionId: kanban.groupByField.id,
             optionId: drop.optionId,
-            viaStatusEndpoint: isStatusGrouping,
           },
           placement: {
             listId: drop.listId,
@@ -835,7 +843,7 @@ export function KanbanView({
       .at(-1);
     noteOrigin(cardId);
     // "Chuyển nhóm" appends the item to the end of the chosen group.
-    kanban.moveCard.mutate({
+    return kanban.moveCard.mutateAsync({
       cardId,
       listId: groupId,
       position: generatePosition(last?.position, undefined),
@@ -843,6 +851,84 @@ export function KanbanView({
       nextSiblingId: null,
     });
   };
+
+  /**
+   * The popup's column picker: the lanes' counts and limits, and a move to a lane at its top or bottom,
+   * read like a drag (`getKanbanDrop`) so the same writes run.
+   */
+  const lanePicker: CardPopupLanePicker | undefined = kanban.groupByField
+    ? {
+        counts: Object.fromEntries(
+          kanban.allLanes.flatMap((lane) =>
+            lane.optionId ? [[lane.optionId, lane.total]] : [],
+          ),
+        ),
+        wipLimits: kanbanSettings.wipLimits,
+        placeableLanes: (cardId) => {
+          const lanes = kanban.allLanes;
+          const listId = lanes
+            .flatMap((lane) => lane.cards)
+            .find((card) => card.id === cardId)?.listId;
+          return lanes.flatMap((lane) =>
+            lane.optionId &&
+            lane.cards.some(
+              (card) => card.id !== cardId && card.listId === listId,
+            )
+              ? [lane.optionId]
+              : [],
+          );
+        },
+        move: (cardId, optionId, position) => {
+          const field = kanban.groupByField!;
+          const lanes = kanban.allLanes;
+          const drop = getKanbanDrop({
+            lanes,
+            arrangement: moveCardInArrangement(
+              arrangeKanbanLanes(lanes),
+              cardId,
+              kanbanLaneKey(optionId),
+              position === "top" ? 0 : Number.MAX_SAFE_INTEGER,
+            ),
+            cardId,
+            groups: kanban.groups,
+          });
+          noteOrigin(cardId);
+          if (drop?.kind === "place")
+            return kanban.dropItemInLane.mutateAsync({
+              cardId,
+              lane: {
+                fieldDefinitionId: field.id,
+                optionId,
+              },
+              placement: {
+                listId: drop.listId,
+                position: drop.position,
+                previousSiblingId: drop.previousSiblingId,
+                nextSiblingId: drop.nextSiblingId,
+              },
+            });
+          if (drop?.kind === "reorder")
+            return kanban.moveCard.mutateAsync({
+              cardId,
+              listId: drop.listId,
+              position: drop.position,
+              previousSiblingId: drop.previousSiblingId,
+              nextSiblingId: drop.nextSiblingId,
+            });
+          // Only the lane's value changes (its natural place), or the card is not in the lanes shown.
+          return isStatusGrouping
+            ? kanban.updateStatus.mutateAsync({
+                cardId,
+                statusOptionId: optionId,
+              })
+            : kanban.updateFieldValue.mutateAsync({
+                cardId,
+                fieldDefinitionId: field.id,
+                value: optionId,
+              });
+        },
+      }
+    : undefined;
 
   const handleCopyLink = (cardId: string) => {
     const link = buildCardLink(window.location, cardId);
@@ -1226,12 +1312,14 @@ export function KanbanView({
             cardId={selectedItemId}
             capabilities={capabilities}
             groups={sheetGroups}
+            groupField={kanban.groupByField}
             linkCandidates={linkCandidates}
             onClose={handleClosePanel}
             onRestoreFocus={restoreFocus}
             onCopyLink={handleCopyLink}
             onMoveToGroup={handleMoveToGroup}
             onUpdateFieldValue={handleSheetFieldValue}
+            lanePicker={lanePicker}
             onDuplicate={removal.requestDuplicate}
           />
         ) : null}
@@ -1251,11 +1339,15 @@ export interface SelectedItemProps {
   onClose: () => void;
   onRestoreFocus: (cardId: string) => void;
   onCopyLink: (cardId: string) => void;
-  onMoveToGroup: (cardId: string, groupId: string) => void;
+  onMoveToGroup: (cardId: string, groupId: string) => void | Promise<unknown>;
+  /** The Select or Status field the view lays its columns by: the popup's column picker changes it. */
+  groupField?: FieldDefinition;
   onUpdateFieldValue: (
     payload: UpdateFieldValueInput,
   ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
+  /** The column picker's counts, limits and positioned move; absent: it moves to the end of a lane as a field write. */
+  lanePicker?: CardPopupLanePicker;
 }
 
 /**
@@ -1341,12 +1433,14 @@ function KanbanSelectedItemReady({
   card,
   capabilities: boardCapabilitiesOfViewer,
   groups,
+  groupField,
   linkCandidates,
   onClose,
   onCloseAutoFocus,
   onCopyLink,
   onMoveToGroup,
   onUpdateFieldValue,
+  lanePicker,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
@@ -1398,6 +1492,8 @@ function KanbanSelectedItemReady({
         card={card}
         capabilities={capabilities}
         groups={groups}
+        groupField={groupField}
+        lanePicker={lanePicker}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
           files: files.data ?? card.files,
@@ -1440,14 +1536,36 @@ function KanbanSelectedItemReady({
               null,
             decisionNote: approval.decisionNote,
             requestedByUserId: approval.requestedByUserId,
+            requestedByName:
+              directory?.people.find(
+                (person) => person.userId === approval.requestedByUserId,
+              )?.name ??
+              board.members.find(
+                (member) => member.userId === approval.requestedByUserId,
+              )?.name ??
+              null,
+            note: approval.note,
+            requestedAt: approval.requestedAt,
+            decidedAt: approval.decidedAt,
           })),
-          approvalAnswerError: approvals.answerError !== null,
+          approvalAnswering: approvals.answering,
+          approvalsLoading: approvals.loading,
+          approvalsFailed: approvals.loadFailed,
+          approvalAnswerError: approvalFailure(approvals.answerError),
+          approvalError: approvals.error
+            ? approvalFailure(approvals.error) === "conflict"
+              ? "alreadyAsked"
+              : "failed"
+            : null,
         }}
         callbacks={{
           onClose,
           onAddLink: (itemId, relation) =>
             itemLinks.addLink({ itemId, relation }),
           onRemoveLink: (linkId) => itemLinks.removeLink(linkId),
+          onReloadApprovals: approvals.reload,
+          onRequestApproval: (approverUserId) =>
+            approvals.request({ approverUserId, note: null }),
           onDecideApproval: (requestId, decision, comment) =>
             approvals.decide({ requestId, decision, comment }),
           onCancelApproval: (requestId) => approvals.cancel(requestId),

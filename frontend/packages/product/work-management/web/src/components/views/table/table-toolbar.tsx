@@ -1,49 +1,16 @@
 import type { ReactNode } from "react";
-import { Columns3, Plus, Search, X } from "lucide-react";
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@notrelix/ui-web";
+import { Plus, Search, Undo2, X } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
 import type {
   FieldDefinition,
   TableDensity,
   TableSort,
 } from "@notrelix/work-management-core";
-import {
-  kanbanPillClass,
-  kanbanPrimaryButtonClass,
-} from "../kanban/kanban-chrome";
+import { kanbanPrimaryButtonClass } from "../kanban/kanban-chrome";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
-import {
-  allTableColumns,
-  moveColumnId,
-  visibleTableColumns,
-} from "./table-columns";
+import { TableColumnsMenu, type TableColumnState } from "./table-columns-menu";
 
-/** The member's own columns and what they can do with them. */
-export interface TableColumnState {
-  /** The member has hidden, ordered or resized columns of their own. */
-  personal: boolean;
-  /** An editor may make them the shared view's; a viewer sees why not. */
-  canSaveToView: boolean;
-  savingToView: boolean;
-  onSaveToView: () => void;
-  /** Drops the member's columns: the shared view's show again. */
-  onReset: () => void;
-  /** The last save of the member's columns failed; the screen keeps them. */
-  saveFailed: boolean;
-  onRetrySave: () => void;
-  /** The shared view refused the member's columns. */
-  saveToViewFailed: boolean;
-}
+export type { TableColumnState };
 
 export interface MainTableToolbarProps {
   copy: MainTableCopy;
@@ -124,16 +91,6 @@ export function MainTableToolbar({
   onAddItem,
 }: MainTableToolbarProps) {
   const t = copy.toolbar;
-  const columnName = (column: ReturnType<typeof allTableColumns>[number]) =>
-    column.field?.name ?? copy.columns[column.id as keyof typeof copy.columns];
-  const shownColumns = visibleTableColumns(
-    hiddenColumnIds,
-    customFields,
-    columnOrder,
-  ).length;
-  // The menu lists the columns in their display order.
-  const orderedColumns = visibleTableColumns([], customFields, columnOrder);
-
   return (
     <div
       data-table-toolbar=""
@@ -161,144 +118,38 @@ export function MainTableToolbar({
       ) : null}
       {viewBar}
 
-      <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
+      {columnState?.personal ? (
+        <button
+          type="button"
+          aria-label={t.columns.indicator}
+          title={t.columns.indicator}
+          onClick={columnState.onReset}
+          className="relative grid size-8 flex-none cursor-pointer place-items-center rounded-[7px] border border-transparent bg-state-selected p-0 text-state-selected-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:size-11"
+        >
+          <Undo2 className="size-4" aria-hidden="true" />
+          <span
+            aria-hidden="true"
+            className="absolute top-1 right-1 size-2 rounded-full bg-primary ring-2 ring-state-selected"
+          />
+        </button>
+      ) : null}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className={kanbanPillClass}>
-            <Columns3 className="size-4" aria-hidden="true" />
-            {t.columns.label}{" "}
-            <b className="font-semibold leading-[1.45] text-foreground">
-              {shownColumns}/{orderedColumns.length}
-            </b>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-            {t.columns.heading}
-          </DropdownMenuLabel>
-          {orderedColumns.map((column) => (
-            <DropdownMenuCheckboxItem
-              key={column.id}
-              checked={column.locked || !hiddenColumnIds.includes(column.id)}
-              disabled={column.locked}
-              aria-keyshortcuts={
-                column.locked ? undefined : "Alt+ArrowUp Alt+ArrowDown"
-              }
-              onCheckedChange={(checked) =>
-                onColumnVisibleChange(column.id, Boolean(checked))
-              }
-              onSelect={(event) => event.preventDefault()}
-              onKeyDown={(event) => {
-                // Alt+Up / Alt+Down move the column; the order is saved in the view.
-                if (
-                  !event.altKey ||
-                  (event.key !== "ArrowUp" && event.key !== "ArrowDown")
-                )
-                  return;
-                event.preventDefault();
-                const ids = orderedColumns
-                  .filter((entry) => entry.id !== "key" && entry.id !== "title")
-                  .map((entry) => entry.id);
-                const next = moveColumnId(
-                  ids,
-                  column.id,
-                  event.key === "ArrowUp" ? -1 : 1,
-                );
-                if (next) onColumnOrderChange?.(next);
-              }}
-            >
-              {columnName(column)}
-            </DropdownMenuCheckboxItem>
-          ))}
-          <p className="m-0 px-2 pt-1.5 pb-1 text-crumb text-meta-foreground">
-            {t.columns.reorderHint}
-          </p>
-          {columnState ? (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-                {t.columns.personal}
-              </DropdownMenuLabel>
-              {columnState.saveFailed ? (
-                <p
-                  role="alert"
-                  className="m-0 flex items-center gap-1.5 px-2 pb-1 text-crumb text-destructive"
-                >
-                  <span className="min-w-0 flex-1">{t.columns.saveFailed}</span>
-                  <button
-                    type="button"
-                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-state-selected-foreground underline focus-visible:outline-2 focus-visible:outline-ring"
-                    onClick={columnState.onRetrySave}
-                  >
-                    {t.columns.retry}
-                  </button>
-                </p>
-              ) : null}
-              <DropdownMenuItem
-                disabled={
-                  !columnState.canSaveToView ||
-                  !columnState.personal ||
-                  columnState.savingToView
-                }
-                onSelect={(event) => {
-                  event.preventDefault();
-                  columnState.onSaveToView();
-                }}
-              >
-                {columnState.savingToView
-                  ? t.columns.saving
-                  : t.columns.saveToView}
-              </DropdownMenuItem>
-              {!columnState.canSaveToView ? (
-                <p className="m-0 px-2 pb-1 text-crumb text-meta-foreground">
-                  {t.columns.saveToViewViewer}
-                </p>
-              ) : !columnState.personal ? (
-                <p className="m-0 px-2 pb-1 text-crumb text-meta-foreground">
-                  {t.columns.saveToViewIdle}
-                </p>
-              ) : null}
-              {columnState.saveToViewFailed ? (
-                <p
-                  role="alert"
-                  className="m-0 px-2 pb-1 text-crumb text-destructive"
-                >
-                  {t.columns.saveToViewFailed}
-                </p>
-              ) : null}
-              {columnState.personal ? (
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    columnState.onReset();
-                  }}
-                >
-                  {t.columns.reset}
-                </DropdownMenuItem>
-              ) : null}
-            </>
-          ) : null}
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-            {t.columns.density}
-          </DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={density}
-            onValueChange={(value) => {
-              if (value === "comfortable" || value === "compact")
-                if (value !== density) onDensityChange(value);
-            }}
-          >
-            <DropdownMenuRadioItem value="comfortable">
-              {t.columns.comfortable}
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="compact">
-              {t.columns.compact}
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <span
+        aria-hidden="true"
+        className="mx-1 h-5 w-px bg-border max-md:hidden"
+      />
+
+      <TableColumnsMenu
+        copy={copy}
+        customFields={customFields}
+        columnOrder={columnOrder}
+        onColumnOrderChange={onColumnOrderChange}
+        columnState={columnState}
+        hiddenColumnIds={hiddenColumnIds}
+        onColumnVisibleChange={onColumnVisibleChange}
+        density={density}
+        onDensityChange={onDensityChange}
+      />
 
       <span className="flex-1" />
 

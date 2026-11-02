@@ -38,6 +38,12 @@ export {
 } from "./components/auth-invite-surface";
 export { SignInFlow } from "./containers/sign-in-flow";
 export { ForgotFlow } from "./containers/forgot-flow";
+export { ResetFlow } from "./containers/reset-flow";
+export {
+  AuthResetSurface,
+  type AuthResetError,
+  type AuthResetSurfaceProps,
+} from "./components/auth-reset-surface";
 export { InviteFlow } from "./containers/invite-flow";
 export { VerifyEmailFlow } from "./containers/verify-email-flow";
 export {

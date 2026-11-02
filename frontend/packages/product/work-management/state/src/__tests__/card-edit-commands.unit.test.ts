@@ -219,4 +219,96 @@ describe("sheet edits reach the item detail the sheet reads", () => {
     release();
     await pending;
   });
+
+  describe("a repeat after an answer that never came", () => {
+    const edit = (
+      queryClient: QueryClient,
+      updateCard: ReturnType<typeof vi.fn>,
+      title = "Việc mới",
+    ) =>
+      runUpdateCardCommand(
+        queryClient,
+        { updateCard },
+        {
+          workspaceId: "ws-1",
+          boardId: "b-1",
+          cardId: "i-1",
+          patch: { title },
+        },
+      );
+    const sentWith = (updateCard: ReturnType<typeof vi.fn>, call: number) =>
+      updateCard.mock.calls[call]![2] as {
+        idempotencyKey: string;
+        expectedVersion: number;
+      };
+
+    it("keeps the key and the version, even when the read has moved on", async () => {
+      const { queryClient, boardKey } = seeded();
+      const updateCard = vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+        .mockResolvedValueOnce(undefined);
+
+      await expect(edit(queryClient, updateCard)).rejects.toThrow("fetch");
+      // The server applied the first write: the next read shows the next version.
+      queryClient.setQueryData<FullBoardResponse>(boardKey, (board) => ({
+        ...board!,
+        groups: board!.groups.map((group) => ({
+          ...group,
+          cards: group.cards.map((card) => ({ ...card, version: 4 })),
+        })),
+      }));
+      await edit(queryClient, updateCard);
+
+      expect(sentWith(updateCard, 1).idempotencyKey).toBe(
+        sentWith(updateCard, 0).idempotencyKey,
+      );
+      expect(sentWith(updateCard, 1).expectedVersion).toBe(3);
+    });
+
+    it("keeps the key after a gateway failure too", async () => {
+      const { queryClient } = seeded();
+      const updateCard = vi
+        .fn()
+        .mockRejectedValueOnce({ status: 502 })
+        .mockResolvedValueOnce(undefined);
+
+      await expect(edit(queryClient, updateCard)).rejects.toBeDefined();
+      await edit(queryClient, updateCard);
+
+      expect(sentWith(updateCard, 1).idempotencyKey).toBe(
+        sentWith(updateCard, 0).idempotencyKey,
+      );
+    });
+
+    it("starts a new submission after an answer, or for a different change", async () => {
+      const { queryClient } = seeded();
+      const updateCard = vi
+        .fn()
+        .mockRejectedValueOnce({ status: 412 })
+        .mockResolvedValue(undefined);
+
+      await expect(edit(queryClient, updateCard)).rejects.toBeDefined();
+      await edit(queryClient, updateCard);
+      await edit(queryClient, updateCard, "Việc khác");
+
+      const keys = [0, 1, 2].map((i) => sentWith(updateCard, i).idempotencyKey);
+      expect(new Set(keys).size).toBe(3);
+    });
+
+    it("a different change after a lost answer starts a new submission", async () => {
+      const { queryClient } = seeded();
+      const updateCard = vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+        .mockResolvedValue(undefined);
+
+      await expect(edit(queryClient, updateCard)).rejects.toThrow("fetch");
+      await edit(queryClient, updateCard, "Việc khác");
+
+      expect(sentWith(updateCard, 1).idempotencyKey).not.toBe(
+        sentWith(updateCard, 0).idempotencyKey,
+      );
+    });
+  });
 });

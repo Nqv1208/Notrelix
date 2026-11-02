@@ -228,16 +228,24 @@ test.describe("rail pinned (nav=hien-day)", () => {
   }) => {
     const nav = rail(page);
     const tiles = nav.locator(":scope > button");
-    const add = await box(tiles.nth(3));
+    // A person with pending invitations has one more tile after Add (undrawn: the artboard's
+    // account has none): a workspace-sized tile (64 x 71) that the divider then follows.
+    const invitations = nav.locator(":scope > button", { hasText: "Lời mời" });
+    const extra = await invitations.count();
+    expect(extra).toBeLessThanOrEqual(1);
+    if (extra === 1) {
+      await expectBox(invitations, { x: 6, width: 64, height: 71 });
+    }
+    const last = await box(tiles.nth(3 + extra));
     const divider = nav.locator(":scope > span[aria-hidden]").first();
     await expectBox(divider, {
       x: 20,
-      y: add.y + add.height + 4 + 6,
+      y: last.y + last.height + 4 + 6,
       width: 36,
       height: 1,
     });
-    const inbox = tiles.nth(4);
-    const search = tiles.nth(5);
+    const inbox = tiles.nth(4 + extra);
+    const search = tiles.nth(5 + extra);
     await expectBox(inbox, { x: 6, width: 64, height: 51 });
     await expectBox(search, { x: 6, width: 64, height: 51 });
     const inboxBox = await box(inbox);

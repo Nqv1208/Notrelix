@@ -310,7 +310,12 @@ const COMMENTS: Entry[] = [
   { name: "cpBox", at: "#workspace-main #item-page-activity > section div.mt-3 > div", from: "#workspace-main #item-page-activity > section div.mt-3", box: [42, 0, 666, 108], keys: "xywh", style: { bg: "rgb(255, 255, 255)", r: "10px" } }, // .composer .in
 ];
 
-test.describe("Item page geometry (Final-Detail, 1440x900)", () => {
+// RETIRED SURFACE: an item has no page of its own any more (f2897fe9e, "item link opens the board
+// with the card popup"): its address redirects to the board with the popup open, so there is no
+// `#workspace-main aside` to measure and Final-Detail is no longer a built screen. These blocks stay
+// listed as skipped until the lead either retires the artboard or assigns the popup an artboard to
+// re-measure against; they are not deleted so the numbers stay available for that re-measure.
+test.describe.skip("Item page geometry (Final-Detail, 1440x900)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
   test.skip(
     persona !== "owner" || scenario !== "default",
@@ -357,7 +362,8 @@ test.describe("Item page geometry (Final-Detail, 1440x900)", () => {
   });
 });
 
-test.describe("Item page geometry, read-only (Final-Detail chi-xem)", () => {
+test.describe
+  .skip("Item page geometry, read-only (Final-Detail chi-xem)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
   test.skip(
     persona !== "commenter",

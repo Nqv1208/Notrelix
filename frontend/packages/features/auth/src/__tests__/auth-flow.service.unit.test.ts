@@ -141,7 +141,19 @@ describe("auth flow adapter: invitation preview", () => {
       email: "tuan@doitac.vn",
       name: null,
       hasAccount: false,
+      workspaceRole: null,
     });
+  });
+
+  it("reads the role of a workspace invitation, which names no resource", async () => {
+    const { service } = setup({
+      ...wire,
+      role: "Member",
+      resourceKind: null,
+      resourceTitle: null,
+      resourceLevel: null,
+    });
+    expect((await service.getInvite("t")).workspaceRole).toBe("member");
   });
 
   it("names the workspace when the invitation is not for a resource and defaults to viewer", async () => {

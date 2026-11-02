@@ -55,4 +55,62 @@ public class LogoutTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task Handle_WhenTheRefreshCookieIsAnotherPersons_NeverEndsTheirSession()
+    {
+        var theirs = CreateSession(userId: Guid.CreateVersion7(), rawRefreshToken: "their-cookie");
+        SetupSessions(theirs);
+
+        var result = await CreateSut().Handle(new LogoutCommand { RefreshToken = "their-cookie" }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        theirs.Status.Should().Be(SessionStatus.Active);
+    }
+
+    [Fact]
+    public async Task Handle_EndsThisDeviceOnly_AnotherOwnSessionStaysActive()
+    {
+        var thisDevice = CreateSession(rawRefreshToken: TestRefreshToken);
+        var otherDevice = CreateSession(rawRefreshToken: "other-device-cookie");
+        SetupSessions(thisDevice, otherDevice);
+        RequestContextMock.Setup(c => c.SessionId).Returns(thisDevice.Id);
+
+        await CreateSut().Handle(new LogoutCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        thisDevice.Status.Should().Be(SessionStatus.Revoked);
+        otherDevice.Status.Should().Be(SessionStatus.Active);
+        JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(otherDevice.Id, It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WithoutARefreshCookie_TheSessionTheAccessCredentialNamesStillEnds()
+    {
+        var session = CreateSession();
+        SetupSessions(session);
+        RequestContextMock.Setup(c => c.SessionId).Returns(session.Id);
+
+        var result = await CreateSut().Handle(new LogoutCommand { RefreshToken = "" }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        session.Status.Should().Be(SessionStatus.Revoked);
+        JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(session.Id, TestNow, It.IsAny<TimeSpan>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ASecondSignOut_FindsNothingActive_AndNeverRevivesTheSession()
+    {
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        session.Revoke(TestNow);
+        var revokedAt = session.RevokedAt;
+        DateTimeProviderMock.Setup(c => c.UtcNow).Returns(TestNow.AddMinutes(5));
+        SetupSessions(session);
+
+        var result = await CreateSut().Handle(new LogoutCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        session.Status.Should().Be(SessionStatus.Revoked);
+        session.RevokedAt.Should().Be(revokedAt);
+        ActivityMock.Verify(a => a.Record(It.IsAny<Guid>(), It.IsAny<Notrelix.Domain.Identity.Security.SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
+    }
 }

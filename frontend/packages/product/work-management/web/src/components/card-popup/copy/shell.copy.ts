@@ -8,6 +8,20 @@ export const en = {
   groupPickerCreate: "Add to column",
   noLane: "No status",
   groupFull: "Column limit reached",
+  noLaneField: "No {{field}}",
+  groupPickerGroup: "Move card to another group",
+  groupMenuTitleGroup: "Move to group",
+  groupNoteGroup:
+    "Moving is saved at once. The card goes to the end of the group.",
+  moveFailed: {
+    title: "Could not move the card",
+    body: "It stays where it was on the board.",
+    offline:
+      "You are offline. The card stays where it was; try again when you are back online.",
+    forbidden:
+      "You no longer have the right to move this card. Nothing changed.",
+    retry: "Try again",
+  },
   complete: "Mark complete",
   reopen: "Reopen",
   titleLabel: "Card title",
@@ -43,6 +57,9 @@ export const en = {
   },
   groupMenuTitle: "Move to column",
   groupFullNote: "At the limit",
+  groupPosition: "Position in the column",
+  positionTop: "Top of the column",
+  positionBottom: "Bottom of the column",
   groupNote:
     "Moving is saved at once. A column over its limit still takes the card.",
   labels: "Labels",
@@ -127,6 +144,17 @@ export const vi: ShellCopy = {
   groupPickerCreate: "Thêm vào cột",
   noLane: "Không có trạng thái",
   groupFull: "Cột đã đủ giới hạn",
+  noLaneField: "Chưa có {{field}}",
+  groupPickerGroup: "Chuyển thẻ sang nhóm khác",
+  groupMenuTitleGroup: "Chuyển nhóm",
+  groupNoteGroup: "Chuyển nhóm là lưu ngay. Thẻ nằm cuối nhóm.",
+  moveFailed: {
+    title: "Không chuyển được thẻ",
+    body: "Thẻ vẫn ở chỗ cũ trên board.",
+    offline: "Bạn đang ngoại tuyến. Thẻ vẫn ở chỗ cũ; thử lại khi có mạng.",
+    forbidden: "Bạn không còn quyền chuyển thẻ này. Không có gì thay đổi.",
+    retry: "Thử lại",
+  },
   complete: "Đánh dấu hoàn thành",
   reopen: "Mở lại thẻ",
   titleLabel: "Tên thẻ",
@@ -162,6 +190,9 @@ export const vi: ShellCopy = {
   },
   groupMenuTitle: "Chuyển sang cột",
   groupFullNote: "Đã đủ giới hạn",
+  groupPosition: "Vị trí trong cột",
+  positionTop: "Đầu cột",
+  positionBottom: "Cuối cột",
   groupNote:
     "Chuyển cột là lưu ngay. Cột vượt giới hạn vẫn nhận thẻ, chỉ cảnh báo.",
   labels: "Nhãn",

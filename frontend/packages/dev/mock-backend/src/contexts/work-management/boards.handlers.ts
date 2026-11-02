@@ -826,6 +826,48 @@ export const boardsOperations = [
     },
   }),
 
+  // ─── GET /boards/:boardId/move-impact ──────────────────────────────────────
+
+  // The mock world has one access model per Board, so a move never gains or strands anyone: the answer
+  // says the move is allowed and names the target Space (`unchanged` when the Board is already there).
+  defineMockOperation<{ boardId: string }, never, Record<string, unknown>>({
+    id: "boards.moveImpact",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.GetMoveImpact",
+    },
+    method: "GET",
+    route: "/boards/:boardId/move-impact",
+    async handle({ params, store, request }) {
+      const board = store.getBoard(params.boardId);
+      if (!board || !store.isCurrentMemberOf(board.workspaceId))
+        return notFound();
+      const target =
+        new URL(request.url).searchParams.get("targetSpaceId") ?? null;
+      const denied = targetSpaceDenied(store, board.workspaceId, target);
+      if (denied) return denied;
+      return ok({
+        boardId: board.id,
+        targetSpaceId: target,
+        targetSpaceName: target ? store.spaces.getSpace(target)?.name : null,
+        unchanged: (board.spaceId ?? null) === target,
+        losingCount: 0,
+        gainingCount: 0,
+        everyoneGains: false,
+        everyoneLoses: false,
+        targetPeople: 0,
+        stranded: [],
+        strandedCount: 0,
+        strandedItems: 0,
+        strandedOverdue: 0,
+        keptNames: [],
+        keptCount: 0,
+        keptTeamCount: 0,
+        boardVersion: board.version ?? 0,
+      });
+    },
+  }),
+
   // ─── GET /boards/:id/view ─────────────────────────────────────────────────
 
   defineMockOperation<{ id: string }, never, BoardViewDtoApi>({

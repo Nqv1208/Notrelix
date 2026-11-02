@@ -61,7 +61,7 @@ test.describe("Card face and table columns (owner)", () => {
     ).toHaveCount(0);
     await page.getByRole("button", { name: /^Cột \d+\/\d+/ }).click();
     for (const name of ["Checklist", "Bình luận", "Tệp"]) {
-      await page.getByRole("menuitemcheckbox", { name }).click();
+      await page.getByRole("checkbox", { name }).click();
     }
     await page.keyboard.press("Escape");
     for (const name of ["Checklist", "Bình luận", "Tệp"]) {

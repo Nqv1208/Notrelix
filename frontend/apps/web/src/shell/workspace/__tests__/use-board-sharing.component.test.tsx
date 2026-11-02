@@ -33,13 +33,20 @@ afterEach(() => {
   host = null;
 });
 
-function renderSharing() {
+function renderSharing(options: { failFirstRead?: boolean } = {}) {
   const store = new MockStore({ ...defaultConfig });
   const requests: string[] = [];
   const mockFetch = createMockFetch(store);
+  let failures = options.failFirstRead ? 1 : 0;
   runtime.api = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
-    fetchImpl: (input, init) => {
+    fetchImpl: async (input, init) => {
+      const path = new URL(String(input instanceof Request ? input.url : input))
+        .pathname;
+      if (failures > 0 && path.endsWith(`/boards/${BOARD}/sharing`)) {
+        failures -= 1;
+        return new Response(null, { status: 500 });
+      }
       requests.push(
         `${init?.method ?? "GET"} ${new URL(String(input instanceof Request ? input.url : input)).pathname}`,
       );
@@ -75,6 +82,23 @@ async function settled(check: () => boolean) {
 }
 
 describe("useBoardSharing", () => {
+  it("is loading until the read answers, then ready", async () => {
+    const { result } = renderSharing();
+    expect(result.current.loading).toBe(true);
+    await settled(() => result.current.data !== null);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.failed).toBe(false);
+  });
+
+  it("reports a failed read and recovers when it is read again", async () => {
+    const { result } = renderSharing({ failFirstRead: true });
+    await settled(() => result.current.failed);
+    expect(result.current.data).toBeNull();
+    act(() => result.current.reload());
+    await settled(() => result.current.data !== null);
+    expect(result.current.failed).toBe(false);
+  });
+
   it("reads the Board's sharing from the producer and maps it", async () => {
     const { result } = renderSharing();
     await settled(() => result.current.data !== null);

@@ -102,7 +102,7 @@ public sealed class StartOAuthStepUpCommandHandler
 
         var expiresAt = _dateTimeProvider.UtcNow.AddMinutes(10);
         var stepUpState = new OAuthLoginState(
-            state, nonce, codeVerifier, request.Provider, request.ReturnUrl, expiresAt,
+            state, nonce, codeVerifier, request.Provider, SafeReturnPath.OrNull(request.ReturnUrl), expiresAt,
             OAuthFlowKind.StepUp, userId, sessionId,
             StepUpPurposeMapping.ToChallengePurpose(request.Purpose));
 

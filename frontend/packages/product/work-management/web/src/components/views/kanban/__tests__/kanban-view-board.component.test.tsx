@@ -21,6 +21,7 @@ import {
 } from "@notrelix/work-management-state";
 import {
   ERP_PRIORITY_FIELD_ID,
+  ERP_STATUS_FIELD_ID,
   ERP_STATUS_OPTION_IDS,
   erpBoardScenario,
   erpCommenterAccess,
@@ -117,7 +118,17 @@ function fakeServices(
       board = applyItemStatus(board, id, optionId) ?? board;
     }),
     createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
-    moveCard: vi.fn(async () => undefined),
+    // A card dropped in a lane is one command: the server keeps the lane's option with the place, or refuses both.
+    moveCard: vi.fn(async (move: { cardId: string; laneOptionId?: string }) => {
+      if (move.laneOptionId) {
+        const answer = overrides.updateStatus?.(move.cardId, move.laneOptionId);
+        if (answer) await answer;
+        else
+          board =
+            applyItemStatus(board, move.cardId, move.laneOptionId) ?? board;
+      }
+      return { version: 2 };
+    }),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),
@@ -370,12 +381,39 @@ describe("KanbanView on the ERP board", () => {
         hidden: true,
       }),
     ).toBeTruthy();
-    expect(cards.updateStatus).toHaveBeenCalledWith(
-      erpItemId("ERP-149"),
-      ERP_STATUS_OPTION_IDS.doing,
-      expect.any(Number),
+    expect(cards.updateStatus).not.toHaveBeenCalled();
+    expect(cards.moveCard).toHaveBeenCalledTimes(1);
+    expect(cards.moveCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cardId: erpItemId("ERP-149"),
+        expectedVersion: expect.any(Number),
+        laneFieldId: ERP_STATUS_FIELD_ID,
+        laneOptionId: ERP_STATUS_OPTION_IDS.doing,
+      }),
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
+  }, 20_000);
+
+  // The server orders a group, not a column: the select names a place where another column holds a card of the group
+  // (this fixture has one group; the mock e2e covers a board where no column does).
+  it("draws the position select of the column picker when another column holds a card of the group", async () => {
+    renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-151") });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán",
+    });
+    const pill = await waitFor(
+      () => {
+        const button = within(dialog).getByTitle("Chuyển thẻ sang cột khác");
+        expect(button.getAttribute("aria-disabled")).not.toBe("true");
+        return button;
+      },
+      { timeout: 8000 },
+    );
+    fireEvent.click(pill);
+    await screen.findByRole("listbox", { name: "Chuyển sang cột" });
+    expect(
+      screen.getByRole("combobox", { name: "Vị trí trong cột" }),
+    ).toBeTruthy();
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.

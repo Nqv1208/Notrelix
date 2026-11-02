@@ -99,5 +99,55 @@ namespace Notrelix.Infrastructure.Auth.Cookies
                     Path = ICookieService.MfaChallengeCookiePath,
                 });
         }
+
+        public void SetStepUpProofCookie(string value, DateTimeOffset proofExpiresAt)
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+
+            var lifetime = proofExpiresAt - DateTimeOffset.UtcNow;
+            if (lifetime <= TimeSpan.Zero)
+            {
+                DeleteStepUpProofCookie();
+                return;
+            }
+
+            context.Response.Cookies.Append(
+                ICookieService.StepUpProofCookieName,
+                value,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.StepUpProofCookiePath,
+                    MaxAge = lifetime,
+                    Expires = DateTimeOffset.UtcNow.Add(lifetime),
+                    IsEssential = true,
+                });
+        }
+
+        public string? GetStepUpProofCookie()
+        {
+            var context = _httpContextAccessor.HttpContext;
+            return context is not null
+                && context.Request.Cookies.TryGetValue(ICookieService.StepUpProofCookieName, out var value)
+                && !string.IsNullOrWhiteSpace(value)
+                    ? value
+                    : null;
+        }
+
+        public void DeleteStepUpProofCookie()
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+            context.Response.Cookies.Delete(
+                ICookieService.StepUpProofCookieName,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.StepUpProofCookiePath,
+                });
+        }
     }
 }

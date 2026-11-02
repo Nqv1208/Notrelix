@@ -98,8 +98,8 @@ function CommentEntry({
               key={reply.id}
               update={reply}
               names={names}
-              canReply={false}
-              onReply={() => undefined}
+              canReply={canReply}
+              onReply={() => setReplying(true)}
             />
           ))}
           {more > 0 ? (
@@ -224,7 +224,7 @@ function Bubble({
                 {t.delete}
               </button>
             ) : null}
-            {!edit.editing && canReply && !update.parentId ? (
+            {!edit.editing && canReply ? (
               <button type="button" className={TEXT_ACTION} onClick={onReply}>
                 {t.reply}
               </button>

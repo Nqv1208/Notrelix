@@ -858,6 +858,8 @@ export const workspaceOperations = [
     route: "/workspaces/:workspaceId/invitations",
     async handle({ params, store, request }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      // Invited addresses are for the people who may invite: a Member or Guest is refused (UC-WSP-G03).
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
       // A cursor page like the producer's (LD-06): default 50, at most 200, newest first.
       const requested = Number(
         request.searchParams.get("limit") ?? MEMBERS_DEFAULT_LIMIT,

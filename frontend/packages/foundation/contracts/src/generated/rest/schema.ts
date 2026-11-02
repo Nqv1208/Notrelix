@@ -1756,7 +1756,7 @@ export interface paths {
         };
         /**
          * Complete OAuth step-up callback
-         * @description Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof.
+         * @description Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof. The proof travels in a short-lived httpOnly cookie read once by POST /security/step-up/claim-provider, never in the URL; the browser returns to the internal path given at start (stepUpResult=failed is appended on failure).
          */
         get: operations["Identity.Auth.OAuth.StepUpCallback"];
         put?: never;
@@ -2106,6 +2106,26 @@ export interface paths {
          * @description Verifies the current password and issues a single-use step-up proof.
          */
         post: operations["Identity.Security.StepUpCompletePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/security/step-up/claim-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim the proof a provider re-authentication granted
+         * @description Reads the httpOnly proof cookie that GET /oauth/{provider}/step-up/callback set, deletes it and returns the single-use proof(s) once. Without the cookie it answers 400 identity.security.step-up-invalid. The proof stays bound to its user, session and purpose and is checked when it is spent.
+         */
+        post: operations["Identity.Security.StepUpClaimProvider"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6999,6 +7019,10 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+            /** Format: uuid */
+            laneFieldId?: string | null;
+            /** Format: uuid */
+            laneOptionId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemToBoardRequest": {
             /** Format: uuid */
@@ -8438,6 +8462,10 @@ export interface components {
             /** Format: int32 */
             activeSessionCount?: number;
             linkedProviders?: string[] | null;
+        };
+        "Notrelix.Application.Features.Identity.Security.DTOs.ProviderStepUpClaimResult": {
+            proofToken?: string | null;
+            spareProofToken?: string | null;
         };
         "Notrelix.Application.Features.Identity.Security.DTOs.StepUpProofResult": {
             proofToken?: string | null;
@@ -15086,6 +15114,53 @@ export interface operations {
             };
         };
     };
+    "Identity.Security.StepUpClaimProvider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Security.DTOs.ProviderStepUpClaimResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Identity.Sessions.List": {
         parameters: {
             query?: never;
@@ -17390,7 +17465,10 @@ export interface operations {
     "WorkManagement.BoardItems.Update": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 itemId: string;
             };
@@ -17405,11 +17483,27 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

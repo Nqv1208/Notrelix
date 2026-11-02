@@ -71,3 +71,29 @@ test("the invited person sets a name and the look and starts", async ({
   await page.getByRole("button", { name: "Bắt đầu" }).click();
   await expect(page).not.toHaveURL(/\/welcome\//);
 });
+
+test("on a phone every footer button and the exit are 44 px targets", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, "/onboarding");
+  await page.getByLabel("Tên công ty").fill("Công ty CP Thực phẩm Sao Mai");
+  await expect(page.getByText(/còn trống/).first()).toBeVisible();
+  const heightOf = async (name: string | RegExp) =>
+    Math.round(
+      (await page.getByRole("button", { name }).first().boundingBox())!.height,
+    );
+  expect(await heightOf("Tiếp tục")).toBe(44);
+  expect(await heightOf("Lưu và thoát")).toBe(44);
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: /^Tạo \d+ phòng ban/ }),
+  ).toBeVisible();
+  expect(await heightOf(/^Tạo \d+ phòng ban/)).toBe(44);
+  expect(await heightOf("Quay lại")).toBe(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
+});

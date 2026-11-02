@@ -8,18 +8,21 @@ import {
 } from "react";
 import { ArrowUp } from "lucide-react";
 import { BULK_ITEM_LIMIT } from "@notrelix/work-management-core";
-import { Button } from "@notrelix/ui-web";
+import { Button, cn } from "@notrelix/ui-web";
 import { fillTableCopy } from "./main-table.copy";
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
   TableBulkBar,
+  TableBulkFailure,
   type TableBulkBarProps,
 } from "./table-bulk-bar";
 import { groupAccent } from "./table-chrome";
 import {
   clampColumnWidth,
   tableGridTemplate,
+  TABLET_SELECT_WIDTH,
+  tabletTableColumns,
   visibleTableColumns,
   type TableColumnWidths,
 } from "./table-columns";
@@ -42,6 +45,8 @@ import type { TableFieldEditing } from "./table-field-cell";
 import { TableRow } from "./table-row";
 import { TableEmpty, TableFooter, TableNoResults } from "./table-states";
 import { MainTableToolbar, type MainTableToolbarProps } from "./table-toolbar";
+import { TableLayoutProvider, type TableLayout } from "./table-layout";
+import { TablePhoneList } from "./table-phone-list";
 
 /** Row heights of the two densities (the mockup `--row-h`). */
 const ROW_HEIGHT = { comfortable: "40px", compact: "32px" } as const;
@@ -125,6 +130,8 @@ export interface MainTableSurfaceProps {
   onCreateItem: (groupId: string, title: string) => void;
   onClearFilter: () => void;
   onShowDone: () => void;
+  /** A refused or lost bulk change: the banner under the table with "Thử lại"; absent = none. */
+  bulkFailure?: { detail: string; onRetry: () => void } | null;
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
@@ -151,6 +158,11 @@ export interface MainTableSurfaceProps {
   renderSubItems?: (rowId: string) => React.ReactNode;
   /** Opens the status list of a row when the table first renders (stories, tests). */
   initialEditing?: { rowId: string; highlightStatusId?: string | null };
+  /**
+   * The drawing for the viewport (`useViewportTableLayout`): the desktop grid, the tablet grid or the phone
+   * card list. Desktop when absent.
+   */
+  layout?: TableLayout;
 }
 
 /**
@@ -162,7 +174,15 @@ export interface MainTableSurfaceProps {
  * Keyboard: arrow keys, Home and End move between rows, Enter or Space opens
  * the focused row's item, X selects it and Escape clears the selection.
  */
-export function MainTableSurface({
+export function MainTableSurface(props: MainTableSurfaceProps) {
+  return (
+    <TableLayoutProvider value={props.layout ?? "desktop"}>
+      <MainTableSurfaceBody {...props} />
+    </TableLayoutProvider>
+  );
+}
+
+function MainTableSurfaceBody({
   renderSubItems,
   toolbar,
   boardTitle,
@@ -200,6 +220,7 @@ export function MainTableSurface({
   onCreateItem,
   onClearFilter,
   onShowDone,
+  bulkFailure,
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
@@ -209,13 +230,19 @@ export function MainTableSurface({
   bulkMove,
   rowActions,
   initialEditing,
+  layout = "desktop",
 }: MainTableSurfaceProps) {
   const { copy } = toolbar;
-  const columns = visibleTableColumns(
+  const tablet = layout === "tablet";
+  const phone = layout === "phone";
+  const desktopColumns = visibleTableColumns(
     toolbar.hiddenColumnIds,
     toolbar.customFields,
     toolbar.columnOrder,
   );
+  const columns = tablet
+    ? tabletTableColumns(desktopColumns, (toolbar.columnOrder ?? []).length > 0)
+    : desktopColumns;
   const [editingId, setEditingId] = useState<string | null>(
     initialEditing?.rowId ?? null,
   );
@@ -380,7 +407,11 @@ export function MainTableSurface({
     "--table-row-height": ROW_HEIGHT[toolbar.density],
   } as CSSProperties;
   const gridStyle = {
-    "--table-grid": tableGridTemplate(columns, widths),
+    "--table-grid": tableGridTemplate(
+      columns,
+      widths,
+      tablet ? TABLET_SELECT_WIDTH : undefined,
+    ),
   } as CSSProperties;
   // Every row of every group, loaded or not, is counted: a screen reader says "row 51 of 400" at the edge of
   // the window, not "row 1 of 50".
@@ -447,9 +478,34 @@ export function MainTableSurface({
           const el = event.currentTarget;
           setDeep(el.scrollTop > el.clientHeight * 2);
         }}
-        className="mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card"
+        className={cn(
+          "mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
+          tablet && "@container rounded-[14px]",
+          // The phone cards sit on the page, not in a frame.
+          phone &&
+            "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",
+        )}
       >
+        {phone ? (
+          <TablePhoneList
+            copy={copy}
+            groups={groups}
+            statusOptions={statusOptions}
+            collapsedGroupIds={collapsedGroupIds}
+            canEdit={canEdit}
+            editors={editors}
+            rowActions={rowActions}
+            noResults={noResults}
+            noResultsAssignee={noResultsAssignee}
+            hideDone={toolbar.hideDone}
+            onClearFilter={onClearFilter}
+            onGroupToggle={onGroupToggle}
+            onOpenItem={onOpenItem}
+            onStatusChange={onStatusChange}
+          />
+        ) : null}
         <div
+          hidden={phone}
           role="table"
           aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
           aria-rowcount={paging ? rowCount : undefined}
@@ -480,6 +536,17 @@ export function MainTableSurface({
                   group={group}
                   collapsed={collapsed}
                   onToggle={() => onGroupToggle(group.id)}
+                  onAdd={
+                    canCreate
+                      ? () => {
+                          if (collapsed) onGroupToggle(group.id);
+                          setAddRequest((current) => ({
+                            groupId: group.id,
+                            count: current.count + 1,
+                          }));
+                        }
+                      : undefined
+                  }
                   menu={groupMenu?.(group)}
                   boardNote={
                     paging && groupIndex === 0
@@ -665,22 +732,41 @@ export function MainTableSurface({
       ) : null}
 
       {selectedCount > 0 ? (
-        <TableBulkBar
-          copy={copy}
-          count={selectedCount}
-          limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
-          statusOptions={statusOptions}
-          canEdit={canEdit}
-          canArchive={canArchive}
-          onStatus={onBulkStatus}
-          onDue={onBulkDue}
-          onArchive={onBulkArchive}
-          onDelete={onBulkDelete}
-          priority={bulkPriority}
-          onClear={onClearSelection}
-          assign={bulkAssign}
-          move={bulkMove}
-        />
+        // The banner and the bar share one bottom anchor, so the bar never covers the banner (BC-Bulk bk-err).
+        <div
+          data-table-bulk-stack=""
+          className="pointer-events-none absolute inset-x-3 bottom-5.5 z-20 flex flex-col items-center gap-6 max-md:bottom-3"
+        >
+          {bulkFailure ? (
+            <div className="w-full px-1 sm:px-3">
+              <div className="pointer-events-auto rounded-[10px] bg-background shadow-bar">
+                <TableBulkFailure
+                  copy={copy}
+                  count={selectedCount}
+                  detail={bulkFailure.detail}
+                  onRetry={bulkFailure.onRetry}
+                />
+              </div>
+            </div>
+          ) : null}
+          <TableBulkBar
+            copy={copy}
+            count={selectedCount}
+            limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
+            stacked
+            statusOptions={statusOptions}
+            canEdit={canEdit}
+            canArchive={canArchive}
+            onStatus={onBulkStatus}
+            onDue={onBulkDue}
+            onArchive={onBulkArchive}
+            onDelete={onBulkDelete}
+            priority={bulkPriority}
+            onClear={onClearSelection}
+            assign={bulkAssign}
+            move={bulkMove}
+          />
+        </div>
       ) : archivedNotice ? (
         <TableArchivedNotice
           copy={copy}

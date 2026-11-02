@@ -104,7 +104,7 @@ export function NotificationBellSurface({
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 text-muted-foreground"
+          className="relative h-9 w-9 text-muted-foreground max-md:size-touch"
           aria-label={bellName}
           title={copy.bell}
         >

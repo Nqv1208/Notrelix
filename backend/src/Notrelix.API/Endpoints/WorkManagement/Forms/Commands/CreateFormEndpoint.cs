@@ -22,7 +22,7 @@ public static class CreateFormEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateFormCommand(boardId, body.Title), cancellationToken);
+        var result = await sender.Send(new CreateFormCommand(boardId, body.Title, Description: body.Description), cancellationToken);
         return result.ToCreatedResult();
     }
 }

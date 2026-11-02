@@ -32,7 +32,7 @@ export function InboxBell({ unreadCount, onOpen }: InboxBellProps) {
     <Button
       variant="ghost"
       size="icon"
-      className="relative h-9 w-9 text-muted-foreground"
+      className="relative h-9 w-9 text-muted-foreground max-md:size-touch"
       aria-label={name}
       title={copy.bell}
       onClick={onOpen}

@@ -21,6 +21,8 @@ using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Caching;
@@ -95,6 +97,138 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Count().Should().Be(1);
         }
+    }
+
+    [Fact]
+    public async Task ParallelActivations_OfOnePendingMethod_OneWins_AndOnlyOneRecoveryBatchExists()
+    {
+        await SeedSecuritySettingsAsync();
+        var enrollment = await _services.SendStartEnrollment(_user.Id);
+        var code = ComputeTotpCode(enrollment.Data!.Secret, DateTimeOffset.UtcNow);
+
+        // Two sessions, two valid proofs, the same code; both read 'pending' before either commits.
+        var outcomes = await _services.SendVerifyEnrollmentsInParallel(
+            _user.Id, (enrollment.Data.MfaMethodId, code), (enrollment.Data.MfaMethodId, code));
+
+        AssertOneWinnerOneCleanLoser(outcomes);
+        await AssertOneActiveFactorAndOneBatchAsync();
+    }
+
+    [Fact]
+    public async Task ParallelActivations_OfTwoPendingMethods_OneWins_AndTheDatabaseKeepsOneActiveFactor()
+    {
+        await SeedSecuritySettingsAsync();
+        // Two Starts in flight at once leave two pending methods (a sequential Start disables the older one).
+        var first = await _services.SendStartEnrollment(_user.Id);
+        var code = ComputeTotpCode(first.Data!.Secret, DateTimeOffset.UtcNow);
+        Guid secondId;
+        await using (var seed = _fixture.CreatePostgresOwnerContext())
+        {
+            var pending = seed.UserMfaMethods.Single(m => m.Id == first.Data.MfaMethodId);
+            var second = UserMfaMethod.Create(_user.Id, MfaMethodType.AuthenticatorApp, DateTimeOffset.UtcNow, pending.SecretRef);
+            seed.UserMfaMethods.Add(second);
+            await seed.SaveChangesAsync();
+            secondId = second.Id;
+        }
+
+        var outcomes = await _services.SendVerifyEnrollmentsInParallel(
+            _user.Id, (first.Data.MfaMethodId, code), (secondId, code));
+
+        AssertOneWinnerOneCleanLoser(outcomes);
+        await AssertOneActiveFactorAndOneBatchAsync();
+    }
+
+    [Fact]
+    public async Task TheDatabase_RefusesASecondActiveFactorOfTheSameKind_ForOnePerson()
+    {
+        Guid otherUserId;
+        await using (var seed = _fixture.CreatePostgresOwnerContext())
+        {
+            var other = User.Create("other-mfa@example.com", "Other", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
+            seed.Users.Add(other);
+            await seed.SaveChangesAsync();
+            otherUserId = other.Id;
+        }
+
+        UserMfaMethod ActiveFor(Guid userId)
+        {
+            var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, DateTimeOffset.UtcNow, SecretRef.Create("protected"));
+            method.Verify(DateTimeOffset.UtcNow);
+            return method;
+        }
+
+        await using (var first = _fixture.CreatePostgresOwnerContext())
+        {
+            first.UserMfaMethods.AddRange(ActiveFor(_user.Id), ActiveFor(otherUserId));
+            await first.SaveChangesAsync();
+        }
+
+        await using var second = _fixture.CreatePostgresOwnerContext();
+        second.UserMfaMethods.Add(ActiveFor(_user.Id));
+        var refused = await FluentActions.Awaiting(() => second.SaveChangesAsync())
+            .Should().ThrowAsync<Microsoft.EntityFrameworkCore.DbUpdateException>();
+        refused.Which.InnerException!.Message.Should().Contain("ux_user_mfa_methods_active_per_type");
+    }
+
+    // A settings row that already exists (a person who turned the factor off before) must not be what serialises the race.
+    private async Task SeedSecuritySettingsAsync()
+    {
+        await using var seed = _fixture.CreatePostgresOwnerContext();
+        seed.UserSecuritySettings.Add(UserSecuritySettings.Create(_user.Id, DateTimeOffset.UtcNow));
+        await seed.SaveChangesAsync();
+    }
+
+    // The loser fails at commit with a database conflict: the data session answers it as 412 (stale version)
+    // or ExceptionMappingBehavior as 409 (unique index), never a 500; its whole transaction is rolled back.
+    private static void AssertOneWinnerOneCleanLoser(
+        (Result<MfaEnrollmentActivationResult>? Result, Exception? Error)[] outcomes)
+    {
+        outcomes.Count(o => o.Error is null && o.Result!.Succeeded).Should().Be(1);
+        outcomes.Single(o => o.Error is not null).Error.Should().BeAssignableTo<Microsoft.EntityFrameworkCore.DbUpdateException>();
+    }
+
+    private async Task AssertOneActiveFactorAndOneBatchAsync()
+    {
+        await using var context = _fixture.CreatePostgresOwnerContext();
+        context.UserMfaMethods.Count(m => m.UserId == _user.Id && m.Status == MfaMethodStatus.Active).Should().Be(1);
+        context.MfaRecoveryBatches.Count(b => b.UserId == _user.Id).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ProviderStepUpProofs_AreBoundToUserSessionAndPurpose_AndSpendOnce()
+    {
+        var sessionId = Guid.CreateVersion7();
+        const StepUpPurpose purpose = StepUpPurpose.EnrollMfa;
+
+        // One re-authentication buys two different proofs for enrolment (the start and the activation).
+        var start = await _services.GrantProviderProof(_user.Id, sessionId, purpose);
+        var activation = await _services.GrantProviderProof(_user.Id, sessionId, purpose);
+        start.Should().NotBe(activation);
+
+        // Another session, another purpose or another person spends nothing.
+        var otherSession = await _services.GrantProviderProof(_user.Id, sessionId, purpose);
+        (await _services.SpendProof(otherSession, _user.Id, Guid.CreateVersion7(), purpose)).Succeeded.Should().BeFalse();
+        var otherPurpose = await _services.GrantProviderProof(_user.Id, sessionId, StepUpPurpose.RevokeOtherSessions);
+        (await _services.SpendProof(otherPurpose, _user.Id, sessionId, purpose)).Succeeded.Should().BeFalse();
+        var otherPerson = await _services.GrantProviderProof(_user.Id, sessionId, purpose);
+        (await _services.SpendProof(otherPerson, Guid.CreateVersion7(), sessionId, purpose)).Succeeded.Should().BeFalse();
+
+        // The right caller spends each once, and a replay is refused.
+        (await _services.SpendProof(start, _user.Id, sessionId, purpose)).Succeeded.Should().BeTrue();
+        (await _services.SpendProof(start, _user.Id, sessionId, purpose)).Succeeded.Should().BeFalse();
+        (await _services.SpendProof(activation, _user.Id, sessionId, purpose)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ProviderStepUpProof_IsSpentByExactlyOneOfManyParallelCallers()
+    {
+        var sessionId = Guid.CreateVersion7();
+        var proof = await _services.GrantProviderProof(_user.Id, sessionId, StepUpPurpose.RevokeOtherSessions);
+
+        var spent = await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => _services.SpendProof(proof, _user.Id, sessionId, StepUpPurpose.RevokeOtherSessions)));
+
+        spent.Count(r => r.Succeeded).Should().Be(1);
     }
 
     [Fact]
@@ -908,6 +1042,56 @@ public sealed class MfaFlowTests : IAsyncLifetime
             var result = await handler.Handle(new VerifyMfaEnrollmentCommand { MfaMethodId = methodId, Code = code, StepUpToken = proof }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;
+        }
+
+        /// <summary>
+        /// Every attempt runs its own handler, session and proof, and all of them have read the method before any commits.
+        /// </summary>
+        public async Task<(Result<MfaEnrollmentActivationResult>? Result, Exception? Error)[]> SendVerifyEnrollmentsInParallel(
+            Guid userId, params (Guid MethodId, string Code)[] attempts)
+        {
+            var allRead = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var arrived = 0;
+
+            async Task<(Result<MfaEnrollmentActivationResult>?, Exception?)> One((Guid MethodId, string Code) attempt)
+            {
+                await using var context = _fixture.CreatePostgresOwnerContext();
+                var sessionId = Guid.CreateVersion7();
+                var handler = new VerifyMfaEnrollmentCommandHandler(
+                    context, Actor(userId, sessionId).Object, _totp, _recoveryGenerator, StepUp(context), _jwtBlacklist.Object, _time.Object,
+                    Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
+                    NullLogger<VerifyMfaEnrollmentCommandHandler>.Instance);
+                var proof = await EnrollProofAsync(context, userId, sessionId);
+                var result = await handler.Handle(
+                    new VerifyMfaEnrollmentCommand { MfaMethodId = attempt.MethodId, Code = attempt.Code, StepUpToken = proof }, CancellationToken.None);
+                if (Interlocked.Increment(ref arrived) == attempts.Length) allRead.SetResult();
+                await allRead.Task;
+                try
+                {
+                    await context.SaveChangesAsync();
+                    return (result, null);
+                }
+                catch (Exception ex)
+                {
+                    return (null, ex);
+                }
+            }
+
+            return await Task.WhenAll(attempts.Select(a => Task.Run(() => One(a))));
+        }
+
+        public async Task<string> GrantProviderProof(Guid userId, Guid sessionId, StepUpPurpose purpose)
+        {
+            await using var context = _fixture.CreatePostgresOwnerContext();
+            var proof = await StepUp(context).GrantOAuthProofAsync(userId, sessionId, purpose, CancellationToken.None);
+            proof.Succeeded.Should().BeTrue();
+            return proof.Data!.ProofToken;
+        }
+
+        public async Task<Result> SpendProof(string proofToken, Guid userId, Guid sessionId, StepUpPurpose purpose)
+        {
+            await using var context = _fixture.CreatePostgresOwnerContext();
+            return await StepUp(context).ConsumeAsync(proofToken, userId, sessionId, purpose, CancellationToken.None);
         }
 
         public async Task<Result<MfaEnrollmentVerifyResult>> SendRegenerateRecoveryCodes(Guid userId, Guid sessionId, string stepUpToken)

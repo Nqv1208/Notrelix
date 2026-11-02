@@ -9,6 +9,7 @@ import {
 import { pageButtonClass, tablePanelClass } from "./table-chrome";
 import { TableGroupMenu, type TableGroupMenuModel } from "./table-group-menu";
 import { formatTableCount, type TableGroupModel } from "./table-model";
+import { useTableLayout } from "./table-layout";
 import { StatusDot } from "./table-parts";
 
 /** The group header: toggle, status dot, name, count and the overdue note. */
@@ -19,16 +20,20 @@ export function TableGroupHeader({
   onToggle,
   menu,
   boardNote,
+  onAdd,
 }: {
   copy: MainTableCopy;
   group: TableGroupModel;
   collapsed: boolean;
   onToggle: () => void;
+  /** The tablet header's "+": opens the group's add field; absent when the viewer cannot add. */
+  onAdd?: () => void;
   /** Move and delete of the group's option; absent = the viewer cannot, or the group is not an option. */
   menu?: TableGroupMenuModel;
   /** What the first group says of the whole board ("Board có 5.000 việc"); absent on the others. */
   boardNote?: string;
 }) {
+  const tablet = useTableLayout() === "tablet";
   // A group read in pages counts the rows that pass the filter, loaded or not; a filtered one says of how many.
   const count =
     group.filteredTotal === undefined
@@ -39,6 +44,76 @@ export function TableGroupHeader({
             total: formatTableCount(group.total),
           })
         : formatTableCount(group.filteredTotal);
+  const overdue =
+    group.overdueCount > 0
+      ? pluralTableCopy(
+          { one: copy.group.overdue_one, other: copy.group.overdue_other },
+          group.overdueCount,
+        )
+      : null;
+  if (tablet)
+    // `Final-T-Table`: one 44 px toggle holds the chevron, dot, name and count; "+" adds to the group.
+    return (
+      <div
+        role="row"
+        className="flex h-11 items-center border-b border-line-strong bg-popover dark:bg-card"
+      >
+        <span
+          role="cell"
+          className="sticky left-0 inline-flex h-10.75 items-center gap-0.5 pl-0.5"
+        >
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            aria-label={fillTableCopy(
+              collapsed ? copy.group.expand : copy.group.collapse,
+              { name: group.name },
+            )}
+            onClick={onToggle}
+            className="inline-flex h-10.75 cursor-pointer items-center gap-2 rounded-[10px] border-0 bg-transparent pr-3 pl-2.5 text-[15px] font-semibold text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <ChevronDown
+              className={cn(
+                "size-4 text-meta-foreground",
+                collapsed && "-rotate-90",
+              )}
+              aria-hidden="true"
+            />
+            <StatusDot category={group.category} />
+            {group.name}
+            <span className="inline-grid h-6 min-w-6 place-items-center rounded-full bg-state-hover-strong px-1.75 text-crumb font-semibold text-muted-foreground">
+              {count}
+            </span>
+            {overdue ? (
+              <span className="text-compact font-semibold text-danger-text">
+                · {overdue}
+              </span>
+            ) : null}
+          </button>
+          {onAdd ? (
+            <button
+              type="button"
+              aria-label={fillTableCopy(copy.group.addTo, { name: group.name })}
+              onClick={onAdd}
+              className="grid size-11 cursor-pointer place-items-center rounded-[10px] border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+            </button>
+          ) : null}
+          {menu ? (
+            <TableGroupMenu copy={copy} name={group.name} menu={menu} />
+          ) : null}
+        </span>
+        {boardNote ? (
+          <span
+            role="cell"
+            className="ml-auto pr-3 text-compact font-medium text-meta-foreground"
+          >
+            {boardNote}
+          </span>
+        ) : null}
+      </div>
+    );
   return (
     <div
       role="row"
@@ -233,6 +308,9 @@ export function TableAddRow({
     onCreate(trimmed);
     setTitle("");
   };
+  // The tablet drawing has no "Thêm vào" row: the header's "+" opens the field.
+  const tablet = useTableLayout() === "tablet";
+  if (tablet && !open) return null;
 
   return (
     <div

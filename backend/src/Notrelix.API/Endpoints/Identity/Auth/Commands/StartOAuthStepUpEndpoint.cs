@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using Notrelix.API.Extensions;
+using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthStepUp;
 
@@ -24,7 +26,8 @@ public static class StartOAuthStepUpEndpoint
         string provider,
         string? purpose,
         string? returnUrl,
-        ISender sender)
+        ISender sender,
+        IOptions<OAuthRedirectOptions> redirectOptions)
     {
         if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider))
         {
@@ -47,7 +50,12 @@ public static class StartOAuthStepUpEndpoint
 
         if (!result.Succeeded || result.Data is null)
         {
-            return result.ToApiResult();
+            // A browser navigation: a refusal returns the person to the page that asked, not to a JSON body.
+            var returnTo = Notrelix.Application.Features.Identity.OAuth.SafeReturnPath.OrNull(returnUrl);
+            return returnTo is null
+                ? result.ToApiResult()
+                : Results.Redirect(CompleteOAuthStepUpEndpoint.FrontendPage(
+                    redirectOptions.Value, $"{returnTo}{(returnTo.Contains('?') ? '&' : '?')}stepUpResult=failed"));
         }
 
         return Results.Redirect(result.Data.AuthorizationUrl);

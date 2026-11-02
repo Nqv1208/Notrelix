@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 // The seeded development accounts (`InitDb`): the admin is a Member of
 // Workspace 2, user5 is a Guest of it.
@@ -37,12 +37,8 @@ export async function signIn(
   await page.goto("/sign-in");
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Email").fill(user.email);
-  // The password step re-renders when the identify answer arrives and would drop what was typed.
-  const identified = page.waitForResponse((response) =>
-    response.url().includes("/auth/identify"),
-  );
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await identified;
+  // The password field is disabled until its step opens, so the fill waits for it.
   await page.locator("#auth-password").fill(user.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   // The first sign-in after the backend starts is slow (cold start).
@@ -150,24 +146,42 @@ export async function apiWrite<T = unknown>(
   method: "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
+  idempotencyKey: string = crypto.randomUUID(),
 ): Promise<{ status: number; data: T | null }> {
-  const csrf = (await (
-    await page.request.get(`${apiUrl}/auth/csrf`)
-  ).json()) as { token: string };
-  const response = await page.request.fetch(`${apiUrl}${path}`, {
-    method,
-    headers: {
-      "X-CSRF-Token": csrf.token,
-      "Idempotency-Key": crypto.randomUUID(),
-      "Content-Type": "application/json",
-    },
-    data: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const text = await response.text();
-  return {
-    status: response.status(),
-    data: text ? (JSON.parse(text) as T) : null,
-  };
+  // Every `/auth/csrf` answer rotates the token cookie, and the open page shares the cookie jar with
+  // `page.request`: when the page fetches its own token between this read and the write below, the
+  // pair no longer matches and the server refuses with `csrf-validation-failed` (CSRF is checked
+  // before anything else, as it must be). A refusal of that kind is retried with a fresh token; any
+  // other answer is returned as it came.
+  for (let attempt = 1; ; attempt += 1) {
+    const csrf = (await (
+      await page.request.get(`${apiUrl}/auth/csrf`)
+    ).json()) as { token: string };
+    const response = await page.request.fetch(`${apiUrl}${path}`, {
+      method,
+      headers: {
+        "X-CSRF-Token": csrf.token,
+        "Idempotency-Key": idempotencyKey,
+        "Content-Type": "application/json",
+      },
+      data: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await response.text();
+    if (
+      response.status() === 403 &&
+      text.includes("csrf-validation-failed") &&
+      attempt < 3
+    ) {
+      test
+        .info()
+        .annotations.push({ type: "csrf-token-rotated", description: path });
+      continue;
+    }
+    return {
+      status: response.status(),
+      data: text ? (JSON.parse(text) as T) : null,
+    };
+  }
 }
 
 /** A read through the API as the signed-in member. */

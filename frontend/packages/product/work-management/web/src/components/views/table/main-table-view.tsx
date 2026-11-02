@@ -18,6 +18,8 @@ import {
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
+  changedByNameOf,
+  isVersionConflict,
   type KanbanWriteFailure,
   type BulkItemChange,
 } from "@notrelix/work-management-state";
@@ -57,6 +59,7 @@ import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
+import { useViewportTableLayout } from "./table-layout";
 import type { TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import {
@@ -110,9 +113,22 @@ function listForNewItem(
   return [...groups].sort((a, b) => a.position - b.position)[0]?.id;
 }
 
-/** "YYYY-MM-DD" as an instant at 17:00 of that local day. */
-function dueInstant(day: string): string {
-  return new Date(`${day}T17:00:00`).toISOString();
+/** The server refused the write for the due day coming before the start day. */
+function isRefusedRange(error: unknown, hasStart: boolean): boolean {
+  const e = error as {
+    status?: unknown;
+    kind?: unknown;
+    ruleCode?: unknown;
+  } | null;
+  return (
+    e?.ruleCode === "WorkManagement_Item_DueDateMustBeAfterStartDate" ||
+    (hasStart && (e?.status === 400 || e?.kind === "validation"))
+  );
+}
+
+/** "YYYY-MM-DD" as an instant at `time` ("HH:MM", 17:00 by default) of that local day. */
+function dueInstant(day: string, time = "17:00"): string {
+  return new Date(`${day}T${time}:00`).toISOString();
 }
 
 /**
@@ -194,6 +210,22 @@ export function MainTableView({
     (failure: KanbanWriteFailure) => {
       const title =
         failure.title ?? titles.current.get(failure.cardId ?? "") ?? "";
+      // Lost to someone else's change: the board is read again, so the row now shows theirs; name who.
+      if (failure.conflict) {
+        toast.error(
+          fillTableCopy(copy.failed.conflict, {
+            actor:
+              changedByNameOf(failure.error) ??
+              failure.conflict.card.updatedByName ??
+              copy.failed.someone,
+            title,
+          }),
+          {
+            id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+          },
+        );
+        return;
+      }
       const message =
         failure.kind === "create"
           ? copy.failed.create
@@ -215,6 +247,22 @@ export function MainTableView({
     onWriteError,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
+  // A title or due-date write that failed: the row is already back; say if someone else got there first.
+  const reportCardWriteFailure = (error: unknown, cardId: string) => {
+    const title = titles.current.get(cardId) ?? "";
+    toast.error(
+      isVersionConflict(error)
+        ? fillTableCopy(copy.failed.conflict, {
+            actor:
+              changedByNameOf(error) ??
+              table.lastEditorOf(cardId) ??
+              copy.failed.someone,
+            title,
+          })
+        : fillTableCopy(copy.failed.save, { title }),
+      { id: `table-write-${cardId}-${++toastAttempt.current}` },
+    );
+  };
   const addOption = useAddFieldOption(boardId, workspaceId);
   const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   const { addGroup, isPending: addingGroup } = useAddGroup(
@@ -265,6 +313,11 @@ export function MainTableView({
     },
   });
   const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
+  const [bulkFailure, setBulkFailure] = useState<{
+    picked: string;
+    change: BulkItemChange;
+    detail: string;
+  } | null>(null);
   const bulkMutate = bulkUpdate.mutate;
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
     onError: (_error, { cardId }) =>
@@ -277,6 +330,7 @@ export function MainTableView({
   });
   const workspaceBoards = useWorkspaceBoards(workspaceId);
   const isNarrow = useIsMobile();
+  const layout = useViewportTableLayout();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
 
   const { board } = table;
@@ -588,7 +642,9 @@ export function MainTableView({
   // Status, due date and assignee of the selected rows: one request, all or none.
   const bulkWrite = (change: BulkItemChange) => {
     for (const id of selectedList) noteTitle(id);
-    // The selection is spent only once the server took the change; a refusal keeps it and names the item.
+    const picked = [...selectedList].sort().join();
+    setBulkFailure(null);
+    // The selection is spent only once the server took the change; a refusal keeps it, names the item and offers a retry.
     bulkMutate(
       { itemIds: selectedList, change },
       {
@@ -596,16 +652,22 @@ export function MainTableView({
         onError: (error) => {
           const failed = bulkFailedItemId(error);
           const title = failed ? titles.current.get(failed) : undefined;
-          toast.error(
-            title
+          setBulkFailure({
+            picked,
+            change,
+            detail: title
               ? fillTableCopy(copy.failed.bulkItem, { title })
               : copy.failed.bulk,
-            { id: `table-bulk-${++toastAttempt.current}` },
-          );
+          });
         },
       },
     );
   };
+  // The banner belongs to the pick it refused: another pick drops it.
+  const failure =
+    bulkFailure && bulkFailure.picked === [...selectedList].sort().join()
+      ? bulkFailure
+      : null;
 
   const itemFields = findItemFields(board);
   const members = board.members.map((member) => ({
@@ -622,12 +684,27 @@ export function MainTableView({
       value: userId ? [userId] : [],
     });
   };
-  const writeDue = (cardId: string, day: string | null) => {
+  const writeDue = async (
+    cardId: string,
+    day: string | null,
+    time?: string,
+  ) => {
     noteTitle(cardId);
-    updateCard.mutate({
-      cardId,
-      patch: { dueDate: day ? dueInstant(day) : null },
-    });
+    try {
+      await updateCard.mutateAsync({
+        cardId,
+        patch: { dueDate: day ? dueInstant(day, time) : null },
+      });
+      return true;
+    } catch (error) {
+      // A due day before the start is said in the picker, not as a generic toast.
+      const hasStart = allCards.some(
+        (candidate) => candidate.id === cardId && candidate.startDate,
+      );
+      if (isRefusedRange(error, hasStart)) return false;
+      reportCardWriteFailure(error, cardId);
+      return true;
+    }
   };
   const editors: TableEditors | undefined = itemFields.person
     ? {
@@ -736,7 +813,7 @@ export function MainTableView({
       .sort((a, b) => a.position - b.position)
       .at(-1);
     noteTitle(cardId);
-    table.moveCard.mutate({
+    return table.moveCard.mutateAsync({
       cardId,
       listId: groupId,
       position: generatePosition(last?.position, undefined),
@@ -770,6 +847,7 @@ export function MainTableView({
         aria-hidden={boardCovered || undefined}
       >
         <MainTableSurface
+          layout={layout}
           onNoGroup={noGroupNotice.noGroup}
           renderSubItems={(rowId) => (
             <TableSubItems
@@ -817,6 +895,7 @@ export function MainTableView({
                     groupBy={view.state.group?.fieldId ?? null}
                     canEdit={capabilities.canEditFields}
                     onApply={view.applyCriteria}
+                    compact
                     {...save}
                   />
                 )}
@@ -834,6 +913,8 @@ export function MainTableView({
               saveFailed: table.columnsSaveFailed,
               onRetrySave: table.retryColumnsSave,
               saveToViewFailed: table.saveColumnsToViewFailed,
+              saveToViewConflict: table.saveColumnsToViewConflict,
+              savedToView: table.columnsSavedToView,
             },
             hiddenColumnIds: table.hiddenColumnIds,
             onColumnVisibleChange: table.setColumnVisible,
@@ -895,7 +976,12 @@ export function MainTableView({
             capabilities.canEditFields
               ? (cardId, title) => {
                   noteTitle(cardId);
-                  updateCard.mutate({ cardId, patch: { title } });
+                  updateCard.mutate(
+                    { cardId, patch: { title } },
+                    {
+                      onError: (error) => reportCardWriteFailure(error, cardId),
+                    },
+                  );
                 }
               : undefined
           }
@@ -965,6 +1051,14 @@ export function MainTableView({
             setShowDone(true);
           }}
           onShowDone={() => setShowDone(true)}
+          bulkFailure={
+            failure
+              ? {
+                  detail: failure.detail,
+                  onRetry: () => bulkWrite(failure.change),
+                }
+              : null
+          }
           onBulkStatus={(optionId) =>
             bulkWrite({ type: "set-status", statusOptionId: optionId })
           }
@@ -1067,6 +1161,7 @@ export function MainTableView({
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}
+          groupField={table.groupByField}
           onClose={() => onSelectedItemChange?.(undefined, { replace: true })}
           onRestoreFocus={restoreFocus}
           onCopyLink={handleCopyLink}

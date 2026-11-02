@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mail, MailCheck, MailWarning } from "lucide-react";
+import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
 import {
   AuthHeading,
@@ -8,6 +9,7 @@ import {
   INPUT_CLASS,
   LINK_BUTTON_CLASS,
 } from "./auth-parts";
+import { formatCountdown } from "./auth-sign-in-surface";
 
 /**
  * Email confirmation: the page the link in the email opens. It confirms the
@@ -17,7 +19,7 @@ import {
 export type AuthVerifyEmailStep =
   | { readonly kind: "confirming" }
   | { readonly kind: "done" }
-  | { readonly kind: "failed" }
+  | { readonly kind: "failed"; readonly expired?: boolean }
   | { readonly kind: "waiting" };
 
 export interface AuthVerifyEmailSurfaceProps {
@@ -27,7 +29,9 @@ export interface AuthVerifyEmailSurfaceProps {
   readonly initialEmail?: string;
   /** A new link went out. */
   readonly sent?: boolean;
-  readonly error?: "invalid" | "unreachable" | null;
+  readonly error?: "invalid" | "unreachable" | "limited" | null;
+  /** Seconds before another link can be sent; 0 or absent = it can be sent now. */
+  readonly resendSeconds?: number;
   readonly onResend: (email: string) => void;
   readonly onContinue: () => void;
   readonly onBack: () => void;
@@ -75,6 +79,7 @@ function ResendStep({
   initialEmail = "",
   sent,
   error,
+  resendSeconds = 0,
   onResend,
   onBack,
 }: AuthVerifyEmailSurfaceProps) {
@@ -84,6 +89,7 @@ function ResendStep({
   const invalid =
     error === "invalid" || (tried && !EMAIL_SHAPE.test(email.trim()));
   const failed = step.kind === "failed";
+  const expired = failed && step.expired === true;
   return (
     <>
       <span
@@ -101,8 +107,10 @@ function ResendStep({
         )}
       </span>
       <AuthHeading
-        title={failed ? t.failedTitle : t.waitingTitle}
-        lead={failed ? t.failedLead : t.waitingLead}
+        title={
+          expired ? t.expiredTitle : failed ? t.failedTitle : t.waitingTitle
+        }
+        lead={expired ? t.expiredLead : failed ? t.failedLead : t.waitingLead}
       />
       <form
         noValidate
@@ -135,6 +143,7 @@ function ResendStep({
           {error === "unreachable" ? (
             <FieldError>{t.unreachable}</FieldError>
           ) : null}
+          {error === "limited" ? <FieldError>{t.limited}</FieldError> : null}
           {sent ? (
             <p role="status" className="m-0 text-item-small text-success-text">
               {t.sentNotice}
@@ -143,10 +152,27 @@ function ResendStep({
         </div>
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || resendSeconds > 0}
+          aria-label={
+            resendSeconds > 0
+              ? `${t.send}${fillAuthCopy(t.sendWaitLabel, { seconds: resendSeconds })}`
+              : undefined
+          }
           className={BUTTON_CLASS.primary}
         >
-          {pending ? t.sending : t.send}
+          {pending ? (
+            t.sending
+          ) : resendSeconds > 0 ? (
+            <>
+              {t.send}
+              <span aria-hidden="true">·</span>
+              <span aria-hidden="true" className="font-mono">
+                {formatCountdown(resendSeconds)}
+              </span>
+            </>
+          ) : (
+            t.send
+          )}
         </button>
       </form>
       <div>

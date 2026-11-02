@@ -292,3 +292,74 @@ test("Tab order reaches every control of the security page and its prompt", asyn
     "Tab reaches the this-device sign-out",
   ).toBe(true);
 });
+
+/**
+ * UC-IDN-K03/K06: a person who signs in with Google has no password, so step-up is the provider,
+ * never a password prompt they cannot satisfy. By keyboard, with axe, at both widths in both themes.
+ */
+for (const view of VIEWS) {
+  for (const dark of [false, true]) {
+    test(`a person with no password confirms with the provider, ${view.name} ${dark ? "dark" : "light"}`, async ({
+      page,
+    }) => {
+      const phone = view.width < 500;
+      await page.setViewportSize({ width: view.width, height: view.height });
+      await page.addInitScript(
+        ({ key, mode }) => {
+          try {
+            window.localStorage.setItem(key, mode);
+          } catch {
+            // Private mode: defaults apply.
+          }
+        },
+        { key: THEME_KEY, mode: dark ? "dark" : "light" },
+      );
+      await page.goto("/sign-in");
+      await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
+      await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+      const goTo = (path: string) =>
+        page.evaluate((target) => {
+          history.pushState({}, "", target);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }, path);
+      // A client-side move keeps the mock world (a reload would reset it).
+      await goTo(security);
+      await expect(
+        page.getByRole("heading", { level: 2, name: "Bảo mật" }),
+      ).toBeVisible();
+
+      await page
+        .getByRole("button", { name: "Bật xác thực hai yếu tố" })
+        .press("Enter");
+      const prompt = page.getByRole("region", {
+        name: "Xác nhận để bật xác thực hai yếu tố",
+      });
+      await expect(prompt).toBeVisible();
+      // No field to type into: the way on is the provider, with the safe first action focused.
+      await expect(prompt.getByRole("textbox")).toHaveCount(0);
+      await expect(page.locator('input[type="password"]')).toHaveCount(0);
+      await expect(
+        prompt.getByRole("button", { name: "Xác nhận bằng Google" }),
+      ).toBeFocused();
+      await inspect(page, "provider-prompt", phone);
+
+      // The provider round trip comes back to the page and goes straight on to the setup.
+      await page.keyboard.press("Enter");
+      await expect(
+        page.getByRole("img", { name: "Mã QR cho ứng dụng xác thực" }),
+      ).toBeVisible();
+      await expect(page).toHaveURL(/\/account\/security$/);
+      await inspect(page, "provider-enroll-qr", phone);
+
+      // The provider refused: the page says so and offers the provider again.
+      await goTo(`${security}?stepUp=others&stepUpResult=failed`);
+      await expect(page.getByRole("alert")).toContainText(
+        "Chưa xác nhận được bạn với Google",
+      );
+      await expect(
+        page.getByRole("button", { name: "Xác nhận bằng Google" }),
+      ).toBeVisible();
+      await inspect(page, "provider-failed", phone);
+    });
+  }
+}

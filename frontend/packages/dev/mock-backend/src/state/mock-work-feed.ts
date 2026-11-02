@@ -432,6 +432,23 @@ export class MockWorkFeedState {
       });
     }
 
+    // A request between two other people: the member is neither the requester nor the approver
+    // of it, so the item shows the observer's view of the approval block.
+    const training = erp("ERP-147");
+    if (exists(training)) {
+      this.requestedApprovals.push({
+        id: `item-approval:${training}:0`,
+        itemId: training,
+        requestedById: ERP_PEOPLE.MQ.id,
+        approverId: ERP_PEOPLE.HP.id,
+        note: null,
+        requestedAt: todayAt(store, 9, 40),
+        status: "Pending",
+        decidedAt: null,
+        decisionNote: null,
+      });
+    }
+
     const hung = erp("ERP-144");
     if (exists(hung)) {
       this.waiting.push({

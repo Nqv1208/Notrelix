@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   findStatusField,
   hasTableColumnPreference,
@@ -12,6 +12,7 @@ import {
 import { useBoardKanban, type UseBoardKanbanOptions } from "./use-board-kanban";
 import { useBoardPreference } from "../queries/use-board-preference";
 import { useBoardView } from "./use-board-view";
+import { isVersionConflict } from "../queries/use-item-conflict";
 import { useBoardReadNeed } from "../queries/board-read";
 
 /**
@@ -166,11 +167,21 @@ export function useBoardTable(
   const resetColumns = useCallback(() => saveColumns({}), [saveColumns]);
   const [savingToView, setSavingToView] = useState(false);
   const [saveToViewFailed, setSaveToViewFailed] = useState(false);
+  // Someone else saved the shared view first: saving again overwrites their change.
+  const [saveToViewConflict, setSaveToViewConflict] = useState(false);
+  const [savedToView, setSavedToView] = useState(false);
+  useEffect(() => {
+    if (!savedToView) return;
+    const timer = setTimeout(() => setSavedToView(false), 4000);
+    return () => clearTimeout(timer);
+  }, [savedToView]);
   // The shared view takes the member's columns first; theirs are dropped only
   // once that write went through, so a refused write loses nothing.
   const saveColumnsToView = useCallback(() => {
     setSavingToView(true);
     setSaveToViewFailed(false);
+    setSaveToViewConflict(false);
+    setSavedToView(false);
     updateViewConfig(
       {
         hiddenFields: [...hiddenColumnIds],
@@ -180,11 +191,13 @@ export function useBoardTable(
       {
         onSuccess: () => {
           setSavingToView(false);
+          setSavedToView(true);
           saveColumns({});
         },
-        onError: () => {
+        onError: (error) => {
           setSavingToView(false);
-          setSaveToViewFailed(true);
+          if (isVersionConflict(error)) setSaveToViewConflict(true);
+          else setSaveToViewFailed(true);
         },
       },
     );
@@ -217,6 +230,8 @@ export function useBoardTable(
     saveColumnsToView,
     savingColumnsToView: savingToView,
     saveColumnsToViewFailed: saveToViewFailed,
+    saveColumnsToViewConflict: saveToViewConflict,
+    columnsSavedToView: savedToView,
     columnsSaveFailed: preference.columnsFailed,
     retryColumnsSave: preference.retryColumns,
   };

@@ -30,14 +30,14 @@ describe("how an email signs in", () => {
 });
 
 describe("password sign-in", () => {
-  it("counts wrong passwords, throttles on the fifth for a minute and opens again", () => {
+  it("counts wrong passwords, throttles on the tenth for 15 minutes and opens again", () => {
     const { auth, advance } = directory();
-    const outcomes = Array.from({ length: 5 }, () =>
+    const outcomes = Array.from({ length: 10 }, () =>
       auth.login(MOCK_AUTH.personalEmail, "sai"),
     );
-    expect(outcomes.slice(0, 4)).toEqual(Array(4).fill({ kind: "invalid" }));
+    expect(outcomes.slice(0, 9)).toEqual(Array(9).fill({ kind: "invalid" }));
     // No answer says how many tries are left.
-    expect(outcomes[4]).toEqual({
+    expect(outcomes[9]).toEqual({
       kind: "locked",
       retryAfterSeconds: MOCK_AUTH.lockSeconds,
     });
@@ -113,6 +113,13 @@ describe("guest invitations", () => {
     expect(auth.acceptInvite("invite-erp-guest")).toBe("already");
     expect(auth.invite("invite-erp-guest")?.state).toBe("used");
     expect(auth.acceptInvite("invite-erp-expired")).toBe("gone");
+  });
+
+  it("has a workspace invitation that offers a role and names no board", () => {
+    const { auth } = directory();
+    const invite = auth.invite("invite-wsp-member");
+    expect(invite?.state).toBe("valid");
+    expect(invite?.workspaceRole).toBe("member");
   });
 
   it("a declined invitation cannot be accepted afterwards", () => {

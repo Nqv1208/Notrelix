@@ -308,7 +308,10 @@ function PanelPopoverDesktop({
   className,
   children,
   restoreFocus = true,
+  label,
 }: {
+  /** The panel's name for assistive technology (the sheet's title on a phone). */
+  label?: string;
   trigger: ReactNode;
   /** A control elsewhere that opened the panel; it opens under it instead of under `trigger`. */
   anchor?: HTMLElement | null;
@@ -335,6 +338,7 @@ function PanelPopoverDesktop({
         }
         side={side}
         sideOffset={4}
+        aria-label={label}
         style={{ width }}
         collisionPadding={12}
         tabIndex={-1}
@@ -380,7 +384,7 @@ export function PanelPopover(
 ) {
   const phone = useMediaQuery("(max-width: 767px)");
   if (!phone) return <PanelPopoverDesktop {...props} />;
-  const { trigger, open, onOpenChange, children } = props;
+  const { trigger, open, onOpenChange, children, label } = props;
   return (
     <>
       <Popover open={false} onOpenChange={onOpenChange}>
@@ -402,7 +406,7 @@ export function PanelPopover(
           }}
           className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 pt-2 pb-6 text-[14px] text-popover-foreground"
         >
-          <SheetTitle className="sr-only" />
+          <SheetTitle className="sr-only">{label}</SheetTitle>
           <div
             aria-hidden="true"
             className="mx-auto mb-2 h-1 w-10 rounded-[2px] bg-line-strong"

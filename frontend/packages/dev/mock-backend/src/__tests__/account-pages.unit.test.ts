@@ -497,3 +497,66 @@ describe("profile photo", () => {
     expect(await api.delete("/profile/avatar")).toEqual({ avatarUrl: null });
   });
 });
+
+describe("a person who signs in with a provider (the mock's Google account)", () => {
+  async function signedInWithGoogle() {
+    const { store, api } = client();
+    await api.get("/auth/oauth/google/start");
+    return { store, api };
+  }
+
+  it("has no password, no second factor, and is asked to confirm with the provider", async () => {
+    const { api } = await signedInWithGoogle();
+    expect(await api.get("/auth/security/summary")).toMatchObject({
+      hasPasswordCredential: false,
+      mfa: { isEnabled: false },
+      linkedProviders: ["Google"],
+    });
+    expect(
+      await api.post("/auth/security/step-up/requirement", {
+        purpose: "EnrollMfa",
+      }),
+    ).toMatchObject({ requiredFactor: "OAuth", challengeToken: null });
+  });
+
+  it("gets one proof from the provider, two for turning two-factor on, and claims them once", async () => {
+    const { api } = await signedInWithGoogle();
+    const start = (purpose: string, provider = "Google") =>
+      api.get(
+        `/auth/oauth/${provider}/step-up/start?purpose=${purpose}&returnUrl=${encodeURIComponent("/x?stepUp=y")}`,
+      ) as Promise<{ redirectTo: string }>;
+
+    expect((await start("RevokeOtherSessions")).redirectTo).toBe("/x?stepUp=y");
+    expect(
+      await api.post("/auth/security/step-up/claim-provider", {}),
+    ).toMatchObject({ spareProofToken: null });
+    // The cookie is read once.
+    await expect(
+      api.post("/auth/security/step-up/claim-provider", {}),
+    ).rejects.toMatchObject({ code: "identity.security.step-up-invalid" });
+
+    await start("EnrollMfa");
+    const both = (await api.post(
+      "/auth/security/step-up/claim-provider",
+      {},
+    )) as { proofToken: string; spareProofToken: string };
+    expect(both.proofToken).not.toBe(both.spareProofToken);
+    // A proof of the provider buys the start of the enrolment.
+    expect(
+      await api.post("/auth/mfa/enrollment/start", {
+        stepUpToken: both.proofToken,
+      }),
+    ).toMatchObject({ mfaMethodId: expect.any(String) });
+  });
+
+  it("returns to the page with the failure marker for a provider that is not the person's", async () => {
+    const { api } = await signedInWithGoogle();
+    const answer = (await api.get(
+      `/auth/oauth/Microsoft/step-up/start?purpose=EnrollMfa&returnUrl=${encodeURIComponent("/x?stepUp=enroll")}`,
+    )) as { redirectTo: string };
+    expect(answer.redirectTo).toBe("/x?stepUp=enroll&stepUpResult=failed");
+    await expect(
+      api.post("/auth/security/step-up/claim-provider", {}),
+    ).rejects.toMatchObject({ code: "identity.security.step-up-invalid" });
+  });
+});

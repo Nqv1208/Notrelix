@@ -36,6 +36,8 @@ export const IDENTITY_ERROR = {
   oauthEmailUnverified: "identity.oauth.email-unverified",
   /** The provider's verified email belongs to an account that is not linked to it. */
   oauthEmailInUse: "identity.oauth.email-in-use",
+  /** A confirmation link that was valid and has run out (an unknown or used one answers no code). */
+  emailVerificationExpired: "identity.email-verification.token-expired",
 } as const;
 
 /** The API's volume limit (HTTP 429): the answer carries how long to wait. */

@@ -87,10 +87,12 @@ describe("buildTableRow", () => {
     expect(row({ dueAt: "2026-10-10T10:00:00.000Z" }).due).toEqual({
       kind: "overdue",
       text: "Quá hạn 2 ngày",
+      date: "10/10",
     });
     expect(row({ dueAt: "2026-10-12T10:00:00.000Z" }).due).toEqual({
       kind: "today",
       text: "Hôm nay",
+      date: "12/10",
     });
     expect(row({ dueAt: "2026-10-18T10:00:00.000Z" }).due).toEqual({
       kind: "date",
