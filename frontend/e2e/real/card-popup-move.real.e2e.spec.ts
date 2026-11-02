@@ -175,13 +175,13 @@ test("a move that lost the race is refused, the card keeps its column, and a vie
     await guest.goto(url);
     const popup = guest.getByRole("dialog");
     await expect(popup).toBeVisible();
-    await expect(popup.getByText(before, { exact: true }).first()).toBeVisible();
+    await expect(
+      popup.getByText(before, { exact: true }).first(),
+    ).toBeVisible();
     await expect(popup.locator('button[aria-haspopup="listbox"]')).toHaveCount(
       0,
     );
-    await expect(
-      popup.getByText("You can only view this card"),
-    ).toBeVisible();
+    await expect(popup.getByText("You can only view this card")).toBeVisible();
   } finally {
     // Leave the board as found: the grant would break the next spec.
     const rows = await apiRead<{ id: string; subjectId: string }[]>(

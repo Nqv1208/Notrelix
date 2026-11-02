@@ -43,7 +43,9 @@ async function boxes(
   await page.goto(`${BOARD}?view=table`);
   await expect(page.getByRole("rowgroup").first()).toBeVisible();
   if (state === "status-list") {
-    await page.getByRole("button", { name: "Đổi trạng thái của ERP-144" }).click();
+    await page
+      .getByRole("button", { name: "Đổi trạng thái của ERP-144" })
+      .click();
     await expect(page.getByRole("listbox")).toBeVisible();
   }
   if (state === "selected") {
@@ -66,8 +68,20 @@ for (const state of ["default", "status-list", "selected"] as const) {
   test(`dark keeps every box of the table surface where light has it: ${state}`, async ({
     browser,
   }) => {
-    const light = await boxes(await (await browser.newContext({ timezoneId: "Asia/Ho_Chi_Minh" })).newPage(), false, state);
-    const dark = await boxes(await (await browser.newContext({ timezoneId: "Asia/Ho_Chi_Minh" })).newPage(), true, state);
+    const light = await boxes(
+      await (
+        await browser.newContext({ timezoneId: "Asia/Ho_Chi_Minh" })
+      ).newPage(),
+      false,
+      state,
+    );
+    const dark = await boxes(
+      await (
+        await browser.newContext({ timezoneId: "Asia/Ho_Chi_Minh" })
+      ).newPage(),
+      true,
+      state,
+    );
     expect(dark.length, "elements").toBe(light.length);
     expect(light.length).toBeGreaterThan(100);
     light.forEach((box, index) => {

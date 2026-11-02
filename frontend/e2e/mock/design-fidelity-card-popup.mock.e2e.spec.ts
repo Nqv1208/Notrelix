@@ -269,8 +269,8 @@ test.describe("archive confirmation (BC-Actions), 1440 px", () => {
     await p.buttons.nth(1).click();
     const alert = dialog.getByRole("alert");
     await expect(alert).toBeVisible();
-      // The buttons grow from the busy 32 px to the error 36 px: measure once they have settled.
-      await page.waitForTimeout(700);
+    // The buttons grow from the busy 32 px to the error 36 px: measure once they have settled.
+    await page.waitForTimeout(700);
     const box1 = await box(alert, dialog);
     near(box1.x, 21, "alert x");
     near(box1.w, 398, "alert width");
@@ -519,9 +519,9 @@ test.describe("move picker of the popup, 390 px", () => {
     test.skip(faults !== "" || latency === "slow", "Default world");
     await open(page, `${BOARD}?item=mock-erp-item-144`);
     await page.locator('button[aria-haspopup="listbox"]').first().click();
-    const options = page.getByRole("listbox", { name: "Chuyển thẻ sang cột khác" }).or(
-      page.getByRole("listbox").first(),
-    );
+    const options = page
+      .getByRole("listbox", { name: "Chuyển thẻ sang cột khác" })
+      .or(page.getByRole("listbox").first());
     await expect(options.first()).toBeVisible();
     await page.waitForTimeout(300);
     const items = options.first().getByRole("option");
@@ -530,7 +530,9 @@ test.describe("move picker of the popup, 390 px", () => {
     for (let index = 0; index < count; index += 1) {
       const b = (await items.nth(index).boundingBox())!;
       expect(b.height, `option ${index}`).toBeGreaterThanOrEqual(43.5);
-      expect(b.x + b.width, `option ${index} right edge`).toBeLessThanOrEqual(390);
+      expect(b.x + b.width, `option ${index} right edge`).toBeLessThanOrEqual(
+        390,
+      );
     }
   });
 });
