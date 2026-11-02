@@ -135,6 +135,16 @@ async function openMenu(page: Page, id = CARD) {
   return { menu, more };
 }
 
+/** At 390 the ⋯ button is always on the card and a tap opens the move sheet directly. */
+async function openSheet(page: Page, id = CARD) {
+  const more = cardOf(page, id).getByRole("button", { name: "Thêm tuỳ chọn" });
+  await more.click();
+  const sheet = page.getByRole("dialog", { name: /^Kiểm thử phân hệ công nợ/ });
+  await expect(sheet).toBeVisible();
+  await page.waitForTimeout(400);
+  return { sheet, more };
+}
+
 /** The "Chuyển sang" item (not "Chuyển sang board khác…"). */
 const moveItem = (scope: Page | Locator) =>
   scope.getByRole("menuitem", { name: /^Chuyển sang (?!board)/ });
@@ -265,13 +275,7 @@ for (const dark of [false, true]) {
   }) => {
     await open(page, 390, dark);
     const c = COLORS[mode];
-    const { menu } = await openMenu(page);
-    await moveItem(menu).click();
-    const sheet = page.getByRole("dialog", {
-      name: /^Kiểm thử phân hệ công nợ/,
-    });
-    await expect(sheet).toBeVisible();
-    await page.waitForTimeout(400);
+    const { sheet } = await openSheet(page);
     const sb = await sheet.boundingBox();
     near(sb!.width, 390, "sheet width");
     const ss = await style(sheet);
@@ -409,16 +413,12 @@ test("390: Escape closes the sheet and returns focus to the ⋯ button, a row mo
   page,
 }) => {
   await open(page, 390, false);
-  const { menu, more } = await openMenu(page);
-  await moveItem(menu).click();
-  const sheet = page.getByRole("dialog", { name: /^Kiểm thử phân hệ công nợ/ });
-  await expect(sheet).toBeVisible();
+  const { sheet, more } = await openSheet(page);
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
   await expect(more).toBeFocused();
 
-  await openMenu(page);
-  await moveItem(page).click();
+  await openSheet(page);
   await page.getByRole("radio", { name: /^Chờ duyệt/ }).click();
   await expect(sheet).toHaveCount(0);
   await expect(
@@ -426,4 +426,80 @@ test("390: Escape closes the sheet and returns focus to the ⋯ button, a row mo
       .getByRole("region", { name: "Chờ duyệt", exact: true })
       .locator(`[data-card-id="${CARD}"]`),
   ).toHaveCount(1);
+});
+
+for (const dark of [false, true]) {
+  const mode = dark ? "dark" : "light";
+  test(`390 ${mode}: the ⋯ button is always on the card, 44 px, as drawn in the board frame`, async ({
+    page,
+  }) => {
+    await open(page, 390, dark);
+    const c = COLORS[mode];
+    const card = cardOf(page);
+    // No hover and no focus: the button is there.
+    const more = card.getByRole("button", { name: "Thêm tuỳ chọn" });
+    await expect(more).toBeVisible();
+    expect(
+      await more.evaluate((node) => {
+        const host = node.closest("[data-card-quick-actions]")!;
+        return [
+          getComputedStyle(host).opacity,
+          getComputedStyle(host).pointerEvents,
+        ];
+      }),
+    ).toEqual(["1", "auto"]);
+    const cb = await card.boundingBox();
+    const mb = await box(more, card);
+    // `Final-M-Board` state `kanban`: 44 x 44, 5 px from the card's right edge and 1 px from its top, 12 px radius.
+    expectBox(mb, { x: cb!.width - 49, y: 1, w: 44, h: 44 }, "more button");
+    const ms = await style(more);
+    expect(ms.r).toBe("12px");
+    expectColor(ms.c, [...c.meta], "more colour");
+    expectBox(
+      await box(more.locator("svg"), more),
+      { x: 12, y: 12, w: 20, h: 20 },
+      "more icon",
+    );
+    // The card's own top row (label, key) stops short of it.
+    const key = card.getByText("ERP-144", { exact: true });
+    const kb = await box(key, card);
+    expect(kb.x + kb.w).toBeLessThanOrEqual(mb.x);
+    // The hover-only actions are not offered on a phone.
+    await expect(
+      card.getByRole("button", { name: "Giao cho tôi" }),
+    ).toHaveCount(0);
+  });
+}
+
+test.describe("touch", () => {
+  test.use({ hasTouch: true });
+
+  test("390: a tap on ⋯ opens the move sheet and a tap on a column moves the card", async ({
+    page,
+  }) => {
+    await open(page, 390, false);
+    const more = cardOf(page).getByRole("button", { name: "Thêm tuỳ chọn" });
+    await more.tap();
+    const sheet = page.getByRole("dialog", {
+      name: /^Kiểm thử phân hệ công nợ/,
+    });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("radio", { name: /^Chờ duyệt/ }).tap();
+    await expect(sheet).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("region", { name: "Chờ duyệt", exact: true })
+        .locator(`[data-card-id="${CARD}"]`),
+    ).toHaveCount(1);
+  });
+
+  test("1180: on a coarse pointer the ⋯ button is always on the card and a tap opens the menu", async ({
+    page,
+  }) => {
+    await open(page, 1180, false);
+    const more = cardOf(page).getByRole("button", { name: "Thêm tuỳ chọn" });
+    await expect(more).toBeVisible();
+    await more.tap();
+    await expect(moveItem(page)).toBeVisible();
+  });
 });

@@ -91,19 +91,15 @@ function CurrentName({ move, card }: { move: KanbanCardMove; card: Card }) {
   );
 }
 
-/** The item of the options menu; at 390 it opens the sheet, otherwise the submenu of columns. */
+/** The item of the options menu: the current column and a submenu of the columns. */
 export function CardMoveMenuItem({
   card,
   move,
   copy,
-  phone,
-  onOpenSheet,
 }: {
   card: Card;
   move: KanbanCardMove;
   copy: KanbanCardCopy;
-  phone: boolean;
-  onOpenSheet: () => void;
 }) {
   if (move.disabledReason)
     return (
@@ -120,17 +116,6 @@ export function CardMoveMenuItem({
           {move.disabledReason}
         </p>
       </>
-    );
-  if (phone)
-    return (
-      <DropdownMenuItem
-        className={MENU_ITEM_CLASS}
-        onSelect={() => onOpenSheet()}
-      >
-        <MoveIcon />
-        {copy.moveTo}
-        <CurrentName move={move} card={card} />
-      </DropdownMenuItem>
     );
   const currentId = move.currentLaneId(card);
   return (
@@ -185,10 +170,17 @@ export function CardMoveSheet({
   open,
   onOpenChange,
   returnFocus,
+  rows,
 }: {
   card: Card;
   move: KanbanCardMove;
   copy: KanbanCardCopy;
+  /** The menu's other actions, listed under the columns. */
+  rows: readonly {
+    label: string;
+    run: () => void;
+    destructive?: boolean;
+  }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** The control that opened the menu: it takes the focus back when the sheet closes. */
@@ -285,6 +277,27 @@ export function CardMoveSheet({
             );
           })}
         </div>
+        {rows.length > 0 ? (
+          <>
+            <div role="separator" className="mx-5 my-1.5 h-px bg-line" />
+            {rows.map((row) => (
+              <button
+                key={row.label}
+                type="button"
+                onClick={() => {
+                  onOpenChange(false);
+                  row.run();
+                }}
+                className={cn(
+                  "flex min-h-[52px] w-full items-center border-0 bg-transparent px-5 text-left text-[15px] font-medium hover:bg-state-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary",
+                  row.destructive ? "text-destructive" : "text-foreground",
+                )}
+              >
+                {row.label}
+              </button>
+            ))}
+          </>
+        ) : null}
       </SheetContent>
     </Sheet>
   );
