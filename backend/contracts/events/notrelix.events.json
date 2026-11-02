@@ -2581,6 +2581,92 @@
       ]
     },
     {
+      "name": "identity.registration-attempted-on-existing-account",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Identity.RegistrationAttemptedOnExistingAccountIntegrationEventV1",
+      "producerContext": "Identity",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "None",
+        "carriesAccountId": false,
+        "carriesWorkspaceId": false
+      },
+      "serializedProperties": [
+        {
+          "name": "email",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [
+        {
+          "property": "email",
+          "purpose": "Address the notice goes to: the owner of the account the registration attempt named.",
+          "justification": "SendRegistrationNoticeEmailConsumer queues the notice; the address is the delivery target itself and cannot be derived from stable IDs by a downstream context."
+        }
+      ],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "SendRegistrationNoticeEmailConsumer",
+          "context": "Identity",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
       "name": "identity.registration-completed",
       "version": 1,
       "clrType": "Notrelix.Application.Events.Identity.IdentityRegistrationCompletedIntegrationEventV1",

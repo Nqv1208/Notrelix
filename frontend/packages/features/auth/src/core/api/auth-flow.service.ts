@@ -24,6 +24,7 @@ export interface AuthFlowApiClient {
 export const AUTH_FLOW_PATHS = {
   identify: "/auth/identify",
   login: "/auth/login",
+  register: "/auth/register",
   mfaVerify: "/auth/mfa/verify",
   /** The browser is sent here (a redirect), never called with XHR. */
   oauthStart: (provider: string) =>
@@ -268,6 +269,14 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
             },
           }
         : { method: "password", sso: null };
+    },
+    /**
+     * Registers a person. The answer is the same for a new address and for one
+     * that already has an account (nothing in it says which) and opens no
+     * session: the person confirms the email and signs in.
+     */
+    async register(data: { name: string; email: string; password: string }) {
+      await api.post<void>(AUTH_FLOW_PATHS.register, data, QUIET);
     },
     async login(data: { email: string; password: string }) {
       return toLoginResult(

@@ -20,8 +20,7 @@ evidence:
   - docs/quality/engineering-quality-standard.md
   - docs/quality/security-quality-standard.md
   - docs/quality/performance-and-scalability.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - release-model-change
   - rollout-strategy-change
@@ -692,9 +691,7 @@ A release is not certified by historical green CI for another SHA.
 
 # 83. CI evidence
 
-Current CI may produce final backend/frontend gate success for exact SHA.
-
-Deployment pipeline can consume that evidence.
+`ci.yml` produces `CI gate` success for an exact SHA. The release path is dormant (TRANSITION): `release.yml` waits for a `Notrelix CI` run containing a `release-candidate` job that `ci.yml` does not have, so it consumes no evidence until that input returns.
 
 # 84. DEL-REL-038 — Release does not bypass required gates by manual deployment
 

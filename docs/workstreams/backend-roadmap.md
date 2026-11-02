@@ -22,7 +22,7 @@ evidence:
   - docs/architecture/events-realtime-and-delivery-boundary.md
   - docs/architecture/capability-extraction-strategy.md
   - docs/delivery/team-ownership.md
-  - docs/workstreams/capability-map.md
+  - docs/workstreams/capability-delivery-map.md
   - docs/workstreams/cross-team-dependencies.md
   - docs/workstreams/teams/platform-foundation.md
   - docs/workstreams/teams/identity-accounts.md

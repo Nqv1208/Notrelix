@@ -413,7 +413,7 @@ Do not infer product durability from AOF being enabled.
 
 Broker transports durable async work according to Platform.
 
-Current local/base evidence includes optional RabbitMQ, but the canonical dependency role is provider-neutral enough to permit change through architecture review.
+Local development starts RabbitMQ only under the `messaging` profile; staging and production require it. The canonical dependency role is the canonical dependency role is provider-neutral enough to permit change through architecture review.
 
 ---
 
@@ -802,25 +802,21 @@ where tooling supports it.
 
 ---
 
-# 82. Current Compose caveat
+# 82. Release deployment
 
-Current staging/production Compose files use `build:` during `up --build`.
-
-This is current executable packaging evidence, not proof that build-on-production is the desired final immutable-promotion architecture.
+Staging and production are deployed by `release.yml`, `promote-release.yml` and `deploy.yml`. They pin images by digest from `delivery/images.lock.toml` and add the generated release overlay with `--no-build`. The `build:` entries in the staging/production Compose files serve development use only. The release path is dormant until `ci.yml` produces the release-candidate input `release.yml` waits for.
 
 ---
 
 # 83. INFRA-RUN-040 — Build-on-target is not normalized as canonical release strategy
 
-The target remains:
+The invariant stays:
 
 ```text
 tested source/artifact provenance
 → immutable/reproducible release identity
 → promoted deployment
 ```
-
-A future CI/CD pipeline may replace current Compose build-on-host mechanics.
 
 ---
 

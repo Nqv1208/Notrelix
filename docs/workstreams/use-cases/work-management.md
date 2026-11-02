@@ -30,7 +30,7 @@ review_on:
 
 # Use cases: Work Management
 
-Product meaning: [work-management](../../product/work-management.md). Team: [work-management](../teams/work-management.md). Execution packs: [spec](../executions/work-management/work-management.spec.md), [tests](../executions/work-management/work-management.tests.md), [certification](../executions/work-management/work-management.certification.md), [plan](../executions/work-management/work-management.plan.md) and the P4A [views spec](../executions/work-management-views/work-management-views.spec.md). Delivery context: [capability delivery map](../capability-delivery-map.md), [cross-team dependencies](../cross-team-dependencies.md).
+Product meaning: [work-management](../../product/work-management.md). Team: [work-management](../teams/work-management.md). Execution packs: [spec](../executions/work-management/work-management.spec.md), [tests](../executions/work-management/work-management.tests.md), certification (removed; see git history), plan (removed; see git history) and the P4A views spec (removed; see git history). Delivery context: [capability delivery map](../capability-delivery-map.md), [cross-team dependencies](../cross-team-dependencies.md).
 
 Requirement ids cited below are `WMREQ001` to `WMREQ156` of the transactional core pack. The views pack has no requirement ids, so it is cited as "views pack section n". Product decisions are cited as `D28` to `D75` (owner decision items 28 to 75), `D76.n`, `D77.n`, `D78.n` (owner decision items 76 to 78) and `Q1` to `Q13` (Board core answers); each is written out in part 4. `LDn` are lead decisions of this catalog, also in part 4.
 

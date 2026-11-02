@@ -42,7 +42,7 @@ review_on:
 
 # Use cases: Collaboration
 
-Product authority: [collaboration.md](../../product/collaboration.md). Team spec: [documents-collaboration.md](../teams/documents-collaboration.md). Execution pack: [spec](../executions/documents-collaboration/documents-collaboration.spec.md), [tests](../executions/documents-collaboration/documents-collaboration.tests.md), [certification](../executions/documents-collaboration/documents-collaboration.certification.md). Router and acceptance standard: [README.md](README.md). Target-specific behaviour: [work-management.md](work-management.md) (items) and [documents.md](documents.md) (pages).
+Product authority: [collaboration.md](../../product/collaboration.md). Team spec: [documents-collaboration.md](../teams/documents-collaboration.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history). Router and acceptance standard: [README.md](README.md). Target-specific behaviour: [work-management.md](work-management.md) (items) and [documents.md](documents.md) (pages).
 
 Dates: this catalog was written on 2026-10-30. No use case has a recorded owner check, a 1-px design diff or an axe record, so none is DONE. The certification pack of the execution lists every Collaboration milestone as NOT_EVALUATED.
 

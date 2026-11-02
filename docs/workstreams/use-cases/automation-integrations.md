@@ -22,7 +22,7 @@ review_on:
 
 # Use cases: Automation and Integrations
 
-This file follows [README.md](README.md). It holds two contexts, each with its own capability letters: Automation (code AUT) and Integrations (code INT). Product meaning stays in [automation.md](../../product/automation.md) and [integrations.md](../../product/integrations.md). The capability grouping comes from [the team spec](../teams/automation-integrations.md). Requirement ids (AIREQ...) belong to [the execution spec](../executions/automation-integrations/automation-integrations.spec.md); the certified evidence is in [the certification](../executions/automation-integrations/automation-integrations.certification.md) and [the test plan](../executions/automation-integrations/automation-integrations.tests.md).
+This file follows [README.md](README.md). It holds two contexts, each with its own capability letters: Automation (code AUT) and Integrations (code INT). Product meaning stays in [automation.md](../../product/automation.md) and [integrations.md](../../product/integrations.md). The capability grouping comes from [the team spec](../teams/automation-integrations.md). Requirement ids (AIREQ...) belong to the execution spec (removed; see git history); the certified evidence is in the certification (removed; see git history) and the test plan (removed; see git history).
 
 Test path shorthand used in Evidence lines:
 

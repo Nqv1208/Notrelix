@@ -40,7 +40,7 @@ It lets a team, a reviewer or a coding agent build and accept a capability witho
 This catalog sits at the workstream level (`docs/workstreams/README.md` §2).
 
 - Product meaning stays in `docs/product/<context>.md`. A use case links the rule it exercises; it does not redefine it.
-- Normative requirement IDs of an execution pack (`docs/workstreams/executions/<stream>/<stream>.spec.md`) are cited, not restated.
+- Requirement IDs of `docs/workstreams/executions/work-management/work-management.spec.md` (the only retained execution spec) are cited, not restated.
 - When a use case needs behaviour the product docs do not decide, the file records the product decision and lists it under "Canonical updates required", so the owning product doc absorbs it.
 - Source, tests and CI remain the proof of current behaviour.
 

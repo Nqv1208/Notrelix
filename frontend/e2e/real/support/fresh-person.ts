@@ -10,7 +10,11 @@ export interface FreshPerson {
   readonly password: string;
 }
 
-/** A new person registered through the API: the page's session is theirs. */
+/**
+ * A new person registered through the API and signed in: registering answers
+ * the same neutral 200 for any address and opens no session, so the sign-in is
+ * a second call. The page's session is theirs.
+ */
 export async function registerPerson(
   page: Page,
   label: string,
@@ -23,6 +27,11 @@ export async function registerPerson(
     name: `Casey ${label}`,
   });
   expect(registered.status, "register").toBeLessThan(300);
+  const session = await apiWrite(page, "POST", "/auth/login", {
+    email,
+    password,
+  });
+  expect(session.status, "sign in the new person").toBeLessThan(300);
   return { email, password };
 }
 

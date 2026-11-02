@@ -18,11 +18,11 @@ evidence:
   - PRODUCT.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/identity.md
-  - docs/product/contexts/workspaces.md
-  - docs/product/contexts/governance.md
-  - docs/product/contexts/work-management.md
-  - docs/product/contexts/documents.md
+  - docs/product/identity.md
+  - docs/product/workspaces.md
+  - docs/product/governance.md
+  - docs/product/work-management.md
+  - docs/product/documents.md
   - docs/architecture/events-realtime-and-delivery-boundary.md
   - docs/architecture/data-ownership-and-consistency.md
   - backend/src/Notrelix.Domain/Collaboration/
@@ -931,14 +931,14 @@ Stop rather than guess if:
 PRODUCT.md
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/identity.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/work-management.md
-docs/product/contexts/documents.md
-docs/product/contexts/automation.md
-docs/product/contexts/integrations.md
-docs/product/contexts/analytics.md
+docs/product/identity.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/work-management.md
+docs/product/documents.md
+docs/product/automation.md
+docs/product/integrations.md
+docs/product/analytics.md
 docs/architecture/events-realtime-and-delivery-boundary.md
 docs/architecture/data-ownership-and-consistency.md
 docs/architecture/contract-boundaries.md
