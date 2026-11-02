@@ -47,6 +47,7 @@ import {
   type BoardGroup,
   type Card,
   type CardDetail,
+  type FieldDefinition,
   type KanbanStatusLane,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
@@ -836,7 +837,7 @@ export function KanbanView({
       .at(-1);
     noteOrigin(cardId);
     // "Chuyển nhóm" appends the item to the end of the chosen group.
-    kanban.moveCard.mutate({
+    return kanban.moveCard.mutateAsync({
       cardId,
       listId: groupId,
       position: generatePosition(last?.position, undefined),
@@ -1227,6 +1228,7 @@ export function KanbanView({
             cardId={selectedItemId}
             capabilities={capabilities}
             groups={sheetGroups}
+            groupField={kanban.groupByField}
             linkCandidates={linkCandidates}
             onClose={handleClosePanel}
             onRestoreFocus={restoreFocus}
@@ -1252,7 +1254,9 @@ export interface SelectedItemProps {
   onClose: () => void;
   onRestoreFocus: (cardId: string) => void;
   onCopyLink: (cardId: string) => void;
-  onMoveToGroup: (cardId: string, groupId: string) => void;
+  onMoveToGroup: (cardId: string, groupId: string) => void | Promise<unknown>;
+  /** The Select or Status field the view lays its columns by: the popup's column picker changes it. */
+  groupField?: FieldDefinition;
   onUpdateFieldValue: (
     payload: UpdateFieldValueInput,
   ) => void | Promise<unknown>;
@@ -1342,6 +1346,7 @@ function KanbanSelectedItemReady({
   card,
   capabilities: boardCapabilitiesOfViewer,
   groups,
+  groupField,
   linkCandidates,
   onClose,
   onCloseAutoFocus,
@@ -1399,6 +1404,7 @@ function KanbanSelectedItemReady({
         card={card}
         capabilities={capabilities}
         groups={groups}
+        groupField={groupField}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
           files: files.data ?? card.files,

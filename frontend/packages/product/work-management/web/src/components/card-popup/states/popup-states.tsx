@@ -1,6 +1,6 @@
 import { AlertCircle, Info, RefreshCw, TriangleAlert } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { useCardPopup } from "../card-popup-context";
+import { MOVE_SAVE_KEY, useCardPopup } from "../card-popup-context";
 import { fillPopupCopy } from "../card-popup.copy";
 import { PanelBtn } from "../popup-ui";
 import { useCardPopupCopy } from "../use-card-popup-copy";
@@ -230,7 +230,8 @@ export function PopupBanners({
   staleSchema?: { fieldName: string; byName: string | null } | null;
   onReload?: () => void;
 }) {
-  const { card, copy, readOnly, fieldConflicts } = useCardPopup();
+  const { card, copy, readOnly, fieldConflicts, saves } = useCardPopup();
+  const move = saves[MOVE_SAVE_KEY];
   const t = copy.shell;
   return (
     <>
@@ -254,6 +255,27 @@ export function PopupBanners({
           </div>
         </Banner>
       ))}
+      {move?.status === "error" ? (
+        <Banner
+          tone="warn"
+          title={t.moveFailed.title}
+          body={
+            move.reason === "forbidden"
+              ? t.moveFailed.forbidden
+              : move.reason === "network"
+                ? t.moveFailed.offline
+                : t.moveFailed.body
+          }
+        >
+          {move.reason === "forbidden" ? null : (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <PanelBtn small onClick={move.retry}>
+                {t.moveFailed.retry}
+              </PanelBtn>
+            </div>
+          )}
+        </Banner>
+      ) : null}
       {staleSchema ? (
         <Banner
           tone="warn"

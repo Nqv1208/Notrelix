@@ -1,16 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * Replies and reactions on the item page's comments: a reply under its
- * comment, a reply to a reply landing in the same top-level thread, the
- * thread folding past three replies, emoji toggled on and off, and a viewer
- * who reads the chips but cannot react. The owner checks run for the default
- * persona, the viewer check with VITE_MOCK_PERSONA=viewer.
+ * Replies and reactions on the card popup's comments: a reply under its comment, a reply to a reply landing in the same
+ * top-level thread (one level deep), the thread folding past three replies when the card is
+ * opened again, emoji toggled on and off, and a viewer who reads the chips but cannot react. The owner checks
+ * run for the default persona, the viewer check with VITE_MOCK_PERSONA=viewer.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const ITEM =
-  "/workspaces/mock-workspace-primary/boards/mock-board-erp/items/mock-erp-item-142?tab=comments";
+  "/workspaces/mock-workspace-primary/boards/mock-board-erp?item=mock-erp-item-142";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -71,10 +70,11 @@ test.describe("owner", () => {
     for (const text of ["Third", "Fourth", "Fifth"]) {
       await reply(page, topReply.first(), text);
     }
-    // A sent reply opens the thread; coming back to the tab folds it again.
-    const tabs = page.getByRole("navigation", { name: "Filter activity" });
-    await tabs.getByRole("link", { name: /^History/ }).click();
-    await tabs.getByRole("link", { name: /^Comments/ }).click();
+    await expect(replies(page)).toHaveCount(1);
+    // A sent reply opens the thread; opening the card again folds it past three.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator('button[data-card-id="mock-erp-item-142"]').click();
     await expect(replies(page).getByText("Third")).toBeVisible();
     await expect(replies(page).getByText("Fourth")).toHaveCount(0);
     await page.getByRole("button", { name: "Show 2 more replies" }).click();
