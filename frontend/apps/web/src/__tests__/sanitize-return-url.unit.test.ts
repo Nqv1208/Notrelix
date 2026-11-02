@@ -33,6 +33,14 @@ describe("isSignedOutRoute", () => {
     expect(isSignedOutRoute("/sign-up")).toBe(true);
     expect(isSignedOutRoute("/invite")).toBe(true);
     expect(isSignedOutRoute("/invite/abc")).toBe(true);
+    expect(isSignedOutRoute("/forgot-password")).toBe(true);
+    expect(isSignedOutRoute("/reset-password")).toBe(true);
+    expect(isSignedOutRoute("/verify-email")).toBe(true);
+    expect(isSignedOutRoute("/auth/callback")).toBe(true);
+    expect(isSignedOutRoute("/sign-in-evil")).toBe(false);
+    expect(isSignedOutRoute("/reset-password-evil")).toBe(false);
+    expect(isSignedOutRoute("/auth")).toBe(false);
+    expect(isSignedOutRoute("/workspaces/1/invite")).toBe(false);
     expect(isSignedOutRoute("/invitations")).toBe(false);
     expect(isSignedOutRoute("/home")).toBe(false);
   });

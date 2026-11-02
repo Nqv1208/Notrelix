@@ -14,7 +14,7 @@ import type { ApiRequestOptions } from "@notrelix/contracts";
 import { findBoardCard } from "../cache/card-restore";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
-import { runCardCommand } from "./card-command";
+import { outcomeUnknown, runCardCommand } from "./card-command";
 import { UnknownItemVersionError } from "./use-move-card";
 
 interface CardUpdater {
@@ -23,6 +23,26 @@ interface CardUpdater {
     patch: UpdateCardInput,
     options?: ApiRequestOptions & { readonly expectedVersion?: number },
   ): Promise<void>;
+}
+
+/** An edit sent without an answer: a repeat of it must send the same key and version. */
+interface UnknownOutcome {
+  readonly signature: string;
+  readonly idempotencyKey: string;
+  readonly expectedVersion: number;
+}
+
+const unknownByClient = new WeakMap<QueryClient, Map<string, UnknownOutcome>>();
+
+function unknownOutcomes(
+  queryClient: QueryClient,
+): Map<string, UnknownOutcome> {
+  let unknown = unknownByClient.get(queryClient);
+  if (!unknown) {
+    unknown = new Map();
+    unknownByClient.set(queryClient, unknown);
+  }
+  return unknown;
 }
 
 /** A card with the patch applied (title, description, priority, dates). */
@@ -76,18 +96,27 @@ export function runUpdateCardCommand(
     patch: UpdateCardInput;
   },
 ): Promise<void> {
+  // A repeat of an edit whose answer never came is the same operation: it keeps
+  // its idempotency key and version, so the server replays the first result
+  // instead of refusing the moved version as stale.
+  const signature = JSON.stringify(patch);
+  const unknown = unknownOutcomes(queryClient);
+  const kept = unknown.get(cardId);
   // The write is based on the item version the member last read.
-  const expectedVersion = (
-    findBoardCard(
-      queryClient.getQueryData<FullBoardResponse>(
-        wmQueryKeys.fullBoard(workspaceId, boardId),
-      ),
-      cardId,
-    ) ??
-    queryClient.getQueryData<CardDetail>(
-      wmQueryKeys.cardDetail(workspaceId, cardId),
-    )
-  )?.version;
+  const expectedVersion =
+    kept?.signature === signature
+      ? kept.expectedVersion
+      : (
+          findBoardCard(
+            queryClient.getQueryData<FullBoardResponse>(
+              wmQueryKeys.fullBoard(workspaceId, boardId),
+            ),
+            cardId,
+          ) ??
+          queryClient.getQueryData<CardDetail>(
+            wmQueryKeys.cardDetail(workspaceId, cardId),
+          )
+        )?.version;
   if (!expectedVersion || expectedVersion <= 0) {
     return Promise.reject(new UnknownItemVersionError(cardId));
   }
@@ -102,8 +131,33 @@ export function runUpdateCardCommand(
         applyCardPatch(card, patch),
       ) ?? current,
     applyDetail: (detail) => applyCardPatch(detail, patch),
-    send: (context) =>
-      cards.updateCard(cardId, patch, { ...context, expectedVersion }),
+    send: (context) => {
+      const idempotencyKey =
+        kept?.signature === signature
+          ? kept.idempotencyKey
+          : context.idempotencyKey;
+      return cards
+        .updateCard(cardId, patch, {
+          ...context,
+          idempotencyKey,
+          expectedVersion,
+        })
+        .then(
+          () => {
+            unknown.delete(cardId);
+          },
+          (error: unknown) => {
+            if (outcomeUnknown(error))
+              unknown.set(cardId, {
+                signature,
+                idempotencyKey,
+                expectedVersion,
+              });
+            else unknown.delete(cardId);
+            throw error;
+          },
+        );
+    },
   });
 }
 

@@ -4,6 +4,7 @@ import {
   getDefaultClassNames,
   type DayButton,
 } from "react-day-picker";
+import { vi as viLocale } from "react-day-picker/locale";
 
 import { cn } from "../../lib/cn";
 import { Button, buttonVariants } from "./button";
@@ -31,7 +32,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "p-3 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(8)] bg-background group/calendar [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+        "p-3 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(8)] max-md:[--cell-size:--spacing(11)] bg-background group/calendar [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className,
@@ -55,12 +56,12 @@ function Calendar({
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "size-(--cell-size) max-md:size-11 aria-disabled:opacity-50 p-0 select-none",
           defaultClassNames.button_previous,
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "size-(--cell-size) max-md:size-11 aria-disabled:opacity-50 p-0 select-none",
           defaultClassNames.button_next,
         ),
         month_caption: cn(
@@ -218,4 +219,9 @@ function CalendarDayButton({
   );
 }
 
-export { Calendar, CalendarDayButton };
+/** The picker's month and weekday names for an app locale: Vietnamese for "vi", the library's English otherwise. */
+function calendarLocale(locale: string) {
+  return locale === "vi" ? viLocale : undefined;
+}
+
+export { Calendar, CalendarDayButton, calendarLocale };

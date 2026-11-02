@@ -300,6 +300,16 @@
   --type-brand-name-weight: 700;
   --type-brand-name-tracking: -0.01em;
   --type-brand-name-family: var(--font-family-sans);
+  --type-brand-name-compact-size: var(--type-scale-17);
+  --type-brand-name-compact-line-height: 1.540625rem;
+  --type-brand-name-compact-weight: 700;
+  --type-brand-name-compact-tracking: -0.01em;
+  --type-brand-name-compact-family: var(--font-family-sans);
+  --type-card-title-size: var(--type-scale-md);
+  --type-card-title-line-height: 1.45rem;
+  --type-card-title-weight: 650;
+  --type-card-title-tracking: 0em;
+  --type-card-title-family: var(--font-family-sans);
   --type-brand-promise-size: var(--type-scale-4xl);
   --type-brand-promise-line-height: 2.56rem;
   --type-brand-promise-weight: 650;

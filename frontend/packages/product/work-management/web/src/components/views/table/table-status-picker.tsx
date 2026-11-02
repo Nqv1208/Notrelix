@@ -111,7 +111,7 @@ export function TableStatusPicker({
                 onMouseEnter={() => setHighlightId(option.id)}
                 onClick={() => onSelect(option.id)}
                 className={cn(
-                  "flex h-8 cursor-pointer items-center gap-2 rounded-[7px] px-2 text-compact text-foreground",
+                  "flex h-8 max-md:h-11 cursor-pointer items-center gap-2 rounded-[7px] px-2 text-compact text-foreground",
                   option.id === highlighted?.id &&
                     "bg-state-hover-strong font-semibold",
                 )}

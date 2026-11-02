@@ -117,7 +117,7 @@ function Cell({
     <div
       role="cell"
       className={cn(
-        "relative box-border flex h-(--table-row-height) min-w-0 items-center gap-[7px] overflow-hidden border-b border-border px-2.5 whitespace-nowrap",
+        "relative box-border flex h-(--table-row-height) max-md:h-11 min-w-0 items-center gap-[7px] overflow-hidden border-b border-border px-2.5 whitespace-nowrap",
         selected
           ? "bg-row-selected"
           : cn(tablePanelClass, "group-hover/row:bg-state-hover"),
@@ -279,7 +279,7 @@ export function TableRow({
                 aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
                 title={row.title}
                 data-row-open=""
-                className="min-w-0 truncate text-left text-nav font-medium text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                className="min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
               >
                 {row.title}
               </button>
@@ -296,7 +296,9 @@ export function TableRow({
             aria-expanded={editing}
             aria-label={fillTableCopy(copy.row.changeStatus, { key: keyLabel })}
             className={cn(
-              "inline-flex h-6 items-center gap-1.5 rounded-full border-0 px-[9px] text-crumb font-semibold text-foreground",
+              "relative inline-flex h-6 items-center gap-1.5 rounded-full border-0 px-[9px] text-crumb font-semibold text-foreground",
+              // A phone target is 44 px: the pill stays 24 px tall and its hit area reaches the row edges.
+              "max-md:after:absolute max-md:after:-inset-y-2.5 max-md:after:inset-x-0 max-md:after:content-['']",
               status ? STATUS_TINT_CLASS[status.category] : "bg-state-hover",
               editing && "ring-2 ring-primary",
               canEdit ? "cursor-pointer" : "cursor-default",

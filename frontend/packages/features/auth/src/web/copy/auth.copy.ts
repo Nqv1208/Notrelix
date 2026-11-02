@@ -224,6 +224,15 @@ export const en = {
     passwordShort: "Use at least {{count}} characters.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    mobile: {
+      accept: "Accept",
+      yourAccess: "Your access",
+      boardOnlyTitle: "This board only",
+      boardOnlyBody:
+        "You do not see the other boards, departments or members of {{org}}.",
+      sentTo:
+        "The invitation was sent to {{email}}. You have no access until you accept.",
+    },
     declined: {
       title: "You declined the invitation",
       body: "Nothing was added to your account. If this was a mistake, ask {{inviter}} to send a new invitation.",
@@ -456,6 +465,15 @@ export const vi: AuthCopy = {
     nameRequired: "Nhập họ và tên của bạn.",
     passwordShort: "Dùng ít nhất {{count}} ký tự.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    mobile: {
+      accept: "Chấp nhận",
+      yourAccess: "Quyền của bạn",
+      boardOnlyTitle: "Chỉ board này",
+      boardOnlyBody:
+        "Bạn không thấy board, phòng ban hay thành viên khác của {{org}}.",
+      sentTo:
+        "Lời mời gửi tới {{email}}. Bạn chưa có quyền gì cho tới khi chấp nhận.",
+    },
     declined: {
       title: "Bạn đã từ chối lời mời",
       body: "Chưa có gì được thêm vào tài khoản của bạn. Nếu bấm nhầm, nhờ {{inviter}} gửi lại một lời mời mới.",

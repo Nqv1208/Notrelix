@@ -493,6 +493,33 @@ describe("auth invite surface", () => {
     });
   });
 
+  it("FUI[auth.invite:phone] opens as a card without a form; Chấp nhận shows the name and the password, and the same press then creates the account", () => {
+    const width = window.innerWidth;
+    window.innerWidth = 390;
+    try {
+      const onAccept = vi.fn();
+      renderPureUi(<AuthInviteSurface {...authInviteScenario({ onAccept })} />);
+      expect(screen.queryByLabelText(copy.invite.passwordLabel)).toBeNull();
+      expect(screen.getByText("tuan@doitac-erp.vn")).toBeTruthy();
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.invite.mobile.accept }),
+      );
+      expect(onAccept).not.toHaveBeenCalled();
+      fireEvent.change(screen.getByLabelText(copy.invite.passwordLabel), {
+        target: { value: "mot-mat-khau-du-dai" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.invite.mobile.accept }),
+      );
+      expect(onAccept).toHaveBeenCalledWith({
+        name: "Đặng Minh Tuấn",
+        password: "mot-mat-khau-du-dai",
+      });
+    } finally {
+      window.innerWidth = width;
+    }
+  });
+
   it("FUI[auth.invite:decline] declines, or signs in to accept with an existing account", () => {
     const onDecline = vi.fn();
     const onSignIn = vi.fn();

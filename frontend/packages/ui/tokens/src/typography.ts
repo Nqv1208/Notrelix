@@ -489,6 +489,22 @@ export const textRoles = {
     letterSpacing: "-0.01em",
     family: "sans",
   },
+  /** Product name beside the logo in the phone top bar (Final-M-Auth `.logo-sm`, 17px / 700, line 1.45). */
+  "brand-name-compact": {
+    size: "17",
+    lineHeight: 1.540625,
+    weight: weights.bold,
+    letterSpacing: "-0.01em",
+    family: "sans",
+  },
+  /** Title of the board card on the phone invitation (Final-M-Auth `.bcard-h b`, 16px / 650, line 1.45). */
+  "card-title": {
+    size: "md",
+    lineHeight: 1.45,
+    weight: 650,
+    letterSpacing: "0em",
+    family: "sans",
+  },
   /** Promise on the sign-in brand panel (Final-Auth `.promise`, 32px / 650, line 1.28). */
   "brand-promise": {
     size: "4xl",
