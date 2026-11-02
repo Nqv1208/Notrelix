@@ -3,6 +3,7 @@ import { useLocale } from "@notrelix/i18n";
 import { createUsePendingInvitations } from "../query/hooks/use-pending-invitations";
 import { createUseAcceptInvitation } from "../hooks/mutations/use-accept-invitation";
 import { createUseDeclineInvitation } from "../hooks/mutations/use-decline-invitation";
+import { describeWorkspaceFailure } from "../../core";
 import type {
   AcceptedInvitation,
   InvitationsEndpoints,
@@ -20,12 +21,18 @@ interface PendingInvitationsMenuProps {
   onAccepted?: (accepted: AcceptedInvitation) => void;
 }
 
-/** What a refused answer carries: the HTTP status and the producer's reason. */
+/**
+ * What a refused answer carries: the HTTP status and the producer's reason. A refusal such as a full plan
+ * arrives as a 400 whose `detail` is the generic validation title and whose reason is in the field errors.
+ */
 function refusalOf(error: unknown): { status?: number; message: string } {
   const e = error as { status?: number; message?: unknown } | null;
+  const reason = Object.values(
+    describeWorkspaceFailure(error).fieldErrors,
+  ).flat()[0];
   return {
     status: e?.status,
-    message: typeof e?.message === "string" ? e.message : "",
+    message: reason ?? (typeof e?.message === "string" ? e.message : ""),
   };
 }
 

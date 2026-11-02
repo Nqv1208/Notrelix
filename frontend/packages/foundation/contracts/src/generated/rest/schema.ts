@@ -9639,6 +9639,8 @@ export interface components {
             initialEntries?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            invitedBy?: string;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
             kind?: string | null;
