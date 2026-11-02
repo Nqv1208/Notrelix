@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import { useCardPopup, useCanEdit } from "./card-popup-context";
 import { useServerDraft } from "./use-server-draft";
 
@@ -80,6 +81,7 @@ export function PopupTitleRow() {
         type="text"
         value={draft}
         readOnly={!canEdit}
+        maxLength={ITEM_TITLE_MAX_LENGTH}
         aria-label={t.titleLabel}
         aria-invalid={invalid || undefined}
         placeholder={t.titlePlaceholder}

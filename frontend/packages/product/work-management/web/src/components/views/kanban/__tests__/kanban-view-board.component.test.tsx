@@ -21,6 +21,7 @@ import {
 } from "@notrelix/work-management-state";
 import {
   ERP_PRIORITY_FIELD_ID,
+  ERP_STATUS_FIELD_ID,
   ERP_STATUS_OPTION_IDS,
   erpBoardScenario,
   erpCommenterAccess,
@@ -117,7 +118,17 @@ function fakeServices(
       board = applyItemStatus(board, id, optionId) ?? board;
     }),
     createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
-    moveCard: vi.fn(async () => ({ version: 2 })),
+    // A card dropped in a lane is one command: the server keeps the lane's option with the place, or refuses both.
+    moveCard: vi.fn(async (move: { cardId: string; laneOptionId?: string }) => {
+      if (move.laneOptionId) {
+        const answer = overrides.updateStatus?.(move.cardId, move.laneOptionId);
+        if (answer) await answer;
+        else
+          board =
+            applyItemStatus(board, move.cardId, move.laneOptionId) ?? board;
+      }
+      return { version: 2 };
+    }),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),
@@ -370,10 +381,15 @@ describe("KanbanView on the ERP board", () => {
         hidden: true,
       }),
     ).toBeTruthy();
-    expect(cards.updateStatus).toHaveBeenCalledWith(
-      erpItemId("ERP-149"),
-      ERP_STATUS_OPTION_IDS.doing,
-      expect.any(Number),
+    expect(cards.updateStatus).not.toHaveBeenCalled();
+    expect(cards.moveCard).toHaveBeenCalledTimes(1);
+    expect(cards.moveCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cardId: erpItemId("ERP-149"),
+        expectedVersion: expect.any(Number),
+        laneFieldId: ERP_STATUS_FIELD_ID,
+        laneOptionId: ERP_STATUS_OPTION_IDS.doing,
+      }),
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   }, 20_000);

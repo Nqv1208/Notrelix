@@ -1,5 +1,10 @@
-import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import {
+  audit,
+  prepare,
+  viewports,
+  WORKSPACE,
+} from "./support/acceptance-audit";
 
 /**
  * Acceptance line 3 for the Workspaces screens the canvas does not draw (roster, invitations, join page states,
@@ -10,18 +15,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
-const shots = process.env.WSP_SHOTS;
-const THEME_KEY = "notrelix-theme-mode";
-const WORKSPACE = "/workspaces/mock-workspace-primary";
 
-const viewports = [
-  { width: 1440, height: 900 },
-  { width: 1024, height: 768 },
-  { width: 390, height: 844 },
-] as const;
-
-const INTERACTIVE =
-  'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [role="tab"], [role="combobox"], [role="menuitem"], [role="radio"], [role="checkbox"], [role="switch"]';
+// A cold dev server compiles the first page it serves: longer than the default 30 seconds.
+test.setTimeout(60_000);
 
 test.beforeEach(() => {
   test.skip(
@@ -29,106 +25,6 @@ test.beforeEach(() => {
     "Needs the default world and a workspace owner",
   );
 });
-
-async function prepare(
-  page: Page,
-  viewport: (typeof viewports)[number],
-  dark: boolean,
-) {
-  await page.setViewportSize(viewport);
-  await page.addInitScript(
-    ({ theme, mode }) => {
-      try {
-        window.localStorage.setItem("notrelix-locale", "en");
-        window.localStorage.setItem(theme, mode);
-      } catch {
-        // Private mode: the defaults apply.
-      }
-    },
-    { theme: THEME_KEY, mode: dark ? "dark" : "light" },
-  );
-}
-
-/** The visible controls under `scope` whose smaller side is under 44 px or that end beyond the viewport. */
-async function undersized(scope: Locator) {
-  return scope.evaluate((root, selector) => {
-    const found: string[] = [];
-    for (const element of Array.from(root.querySelectorAll(selector))) {
-      // A radio or checkbox inside a label is operated through the whole label row.
-      const isChoice =
-        element.matches('input[type="radio"], input[type="checkbox"]') ||
-        ["radio", "checkbox"].includes(element.getAttribute("role") ?? "");
-      const target = (isChoice && element.closest("label")) || element;
-      const box = target.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      if (box.width === 0 || box.height === 0) continue;
-      if (style.visibility === "hidden" || style.display === "none") continue;
-      if (element.closest(".sr-only, [aria-hidden='true']")) continue;
-      if (box.right > window.innerWidth + 1) {
-        found.push(
-          `${element.tagName.toLowerCase()} "${element.getAttribute("aria-label") ?? (element.textContent ?? "").trim().slice(0, 30)}" ends at ${Math.round(box.right)} of ${window.innerWidth}`,
-        );
-        continue;
-      }
-      if (Math.min(box.width, box.height) >= 43.5) continue;
-      const label =
-        element.getAttribute("aria-label") ??
-        (element.textContent ?? "").trim().slice(0, 40) ??
-        element.tagName;
-      found.push(
-        `${element.tagName.toLowerCase()} "${label}" ${Math.round(box.width)}x${Math.round(box.height)}`,
-      );
-    }
-    return found;
-  }, INTERACTIVE);
-}
-
-async function audit(
-  page: Page,
-  name: string,
-  viewport: (typeof viewports)[number],
-  dark: boolean,
-  scope: Locator,
-) {
-  // Pages fade in on load; axe must read the settled colours.
-  await page.waitForTimeout(900);
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  expect
-    .soft(overflow, `${name}: page scrolls sideways`)
-    .toBeLessThanOrEqual(0);
-  if (viewport.width === 390) {
-    expect
-      .soft(await undersized(scope), `${name}: targets under 44 px`)
-      .toEqual([]);
-  }
-  const results = await new AxeBuilder({ page }).analyze();
-  expect
-    .soft(
-      results.violations
-        .filter((violation) =>
-          ["serious", "critical"].includes(violation.impact ?? ""),
-        )
-        .map(
-          (violation) =>
-            `${violation.id}: ${violation.nodes
-              .map(
-                (node) =>
-                  `${node.target.join(" ")} ${node.failureSummary?.split("\n")[1] ?? ""}`,
-              )
-              .join(" | ")}`,
-        ),
-      `${name}: axe`,
-    )
-    .toEqual([]);
-  if (shots) {
-    await page.screenshot({
-      path: `${shots}/${name}-${viewport.width}-${dark ? "dark" : "light"}.png`,
-      fullPage: true,
-    });
-  }
-}
 
 for (const viewport of viewports) {
   for (const dark of [false, true]) {
@@ -227,6 +123,52 @@ for (const viewport of viewports) {
       });
     }
 
+    test(`invitee flyout with two waiting, then empty, ${mode}`, async ({
+      page,
+    }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      // The rail is pinned on a desktop and opens from the workspace chip on a tablet and a phone.
+      const trigger = page.getByRole("button", {
+        name: "Pending workspace invitations",
+      });
+      if (!(await trigger.isVisible())) {
+        if (viewport.width < 768) {
+          await page
+            .getByRole("button", { name: "Show or hide navigation" })
+            .first()
+            .click();
+        }
+        await page
+          .getByRole("button", { name: /open the Notrelix system rail/ })
+          .first()
+          .click();
+      }
+      await trigger.click();
+      const flyout = page.locator("[data-rail-flyout]");
+      await expect(flyout).toBeVisible();
+      await expect(flyout.getByText("Studio Sao Mai")).toBeVisible();
+      // The card itself stays inside the screen (on a phone it opens beside the 76 px rail).
+      const card = await flyout.boundingBox();
+      expect(
+        card!.x + card!.width,
+        "flyout ends inside the viewport",
+      ).toBeLessThanOrEqual(viewport.width);
+      await audit(page, "invitee-flyout", viewport, dark, flyout);
+
+      // Declining both leaves the empty state; the decline leaves the row at once and the buttons of the other wait.
+      for (const workspace of ["Studio Sao Mai", "Kế toán Minh An"]) {
+        await flyout
+          .getByRole("button", {
+            name: `Decline the invitation to ${workspace}`,
+          })
+          .click();
+        await expect(flyout.getByText(workspace)).toHaveCount(0);
+      }
+      await expect(flyout.getByText("No pending invitations")).toBeVisible();
+      await audit(page, "invitee-flyout-empty", viewport, dark, flyout);
+    });
+
     test(`workspace not found, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto("/workspaces/no-such-workspace");
@@ -240,6 +182,32 @@ for (const viewport of viewports) {
         dark,
         page.locator("body"),
       );
+    });
+
+    test(`Space tree with a department open, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      if (viewport.width < 768) {
+        await page
+          .getByRole("button", { name: "Show or hide navigation" })
+          .first()
+          .click();
+      }
+      const nav = page.getByRole("navigation", {
+        name: "Workspace navigation",
+      });
+      const tree = nav.getByRole("tree", { name: "Departments" });
+      await expect(tree.getByRole("treeitem").first()).toBeVisible();
+      // Open the first department that has anything under it (its Boards and sub-Spaces list in place).
+      const expandable = tree.locator(
+        '[role="treeitem"][aria-expanded="false"]',
+      );
+      await expandable.first().focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(
+        tree.locator('[role="treeitem"][aria-expanded="true"]'),
+      ).toHaveCount(1);
+      await audit(page, "space-tree", viewport, dark, nav);
     });
 
     test(`Space create dialog, ${mode}`, async ({ page }) => {
@@ -275,3 +243,92 @@ for (const viewport of viewports) {
     });
   }
 }
+
+test("invitee flyout: the keyboard opens it, reaches Accept and Decline, and Escape closes it", async ({
+  page,
+}) => {
+  await prepare(page, viewports[0], false);
+  await page.goto(WORKSPACE);
+  const trigger = page.getByRole("button", {
+    name: "Pending workspace invitations",
+  });
+  const chip = page
+    .getByRole("button", { name: /open the Notrelix system rail/ })
+    .first();
+  await chip.focus();
+  await page.keyboard.press("Enter");
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const flyout = page.locator("[data-rail-flyout]");
+  await expect(flyout).toBeVisible();
+  // Focus moves into the flyout on its first button (Accept of the first row); Tab reaches its Decline.
+  await expect(
+    flyout.getByRole("button", { name: /^Accept the invitation to / }).first(),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
+    flyout.getByRole("button", { name: /^Decline the invitation to / }).first(),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(flyout).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("roster: the keyboard filters, opens a row menu, reaches Remove and Escape returns to the row", async ({
+  page,
+}) => {
+  await prepare(page, viewports[0], false);
+  await page.goto(`${WORKSPACE}/members`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Members" }),
+  ).toBeVisible();
+  const filter = page.getByRole("searchbox", {
+    name: "Filter members by name",
+  });
+  await filter.focus();
+  await page.keyboard.type("alex");
+  await expect(page.getByRole("row", { name: /^Alex Rivera/ })).toHaveCount(1);
+  await expect(page.getByRole("row", { name: /^Jordan Lee/ })).toHaveCount(0);
+  const actions = page.getByRole("button", { name: /^Actions for Alex/ });
+  await actions.focus();
+  await page.keyboard.press("Enter");
+  const remove = page.getByRole("menuitem", { name: "Remove from workspace" });
+  await expect(remove).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Escape");
+  await expect(remove).toBeHidden();
+  await expect(actions).toBeFocused();
+});
+
+test("placement: the keyboard opens the dialog, Escape cancels it, and a picked Space takes the move", async ({
+  page,
+}) => {
+  await prepare(page, viewports[0], false);
+  await page.goto(`${WORKSPACE}/library`);
+  const move = page
+    .getByRole("button", { name: /^Move .* to a Space$/ })
+    .first();
+  await move.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: /to a Space$/ });
+  await expect(dialog).toBeVisible();
+  // Escape cancels and focus returns to the button that opened it.
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(move).toBeFocused();
+
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeVisible();
+  const target = dialog
+    .getByRole("radio")
+    .and(dialog.locator(":not([disabled])"))
+    .first();
+  await target.focus();
+  await page.keyboard.press("Space");
+  const submit = dialog.getByRole("button", { name: "Move here" });
+  await expect(submit).toBeEnabled();
+  await submit.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText(/ was moved\./)).toBeVisible();
+  await expect(dialog).toBeHidden();
+});

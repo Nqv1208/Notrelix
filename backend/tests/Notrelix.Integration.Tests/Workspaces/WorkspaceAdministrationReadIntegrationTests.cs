@@ -281,6 +281,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
             (revoked, "Revoked", false),
             (expired, "Expired", false),
         });
+        invitations.Should().OnlyContain(i => i.InvitedBy == stack.OwnerId, "each row names who issued it");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

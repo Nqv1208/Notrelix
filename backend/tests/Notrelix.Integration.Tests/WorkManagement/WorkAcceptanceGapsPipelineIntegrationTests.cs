@@ -20,7 +20,6 @@ using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 using PreconditionFailed = Notrelix.Application.Common.Exceptions.PreconditionFailedException;
 
@@ -98,8 +97,7 @@ public sealed class WorkAcceptanceGapsPipelineIntegrationTests : IAsyncLifetime
         {
             using var provider = _host.CreateProvider(account, user);
             var act = () => OrgTreeTestHost.SendAsync(provider, new ArchiveBoardItemCommand(items[0], version));
-            await act.Should().ThrowAsync<Exception>()
-                .Where(e => e is AppForbidden || e is AppNotFound, "a person with no role in the Workspace never reaches the item");
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         }
 
         (await ItemAsync(items[0])).IsArchived.Should().BeFalse();
@@ -209,7 +207,7 @@ public sealed class WorkAcceptanceGapsPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ApprovalList_OfAPrivateBoard_IsNotFoundToAMemberWhoCannotReadIt_AndDeniedOutsideTheWorkspace()
+    public async Task ApprovalList_OfAPrivateBoard_IsNotFoundToAMemberWhoCannotReadIt_AndToAnyoneOutsideTheWorkspace()
     {
         var (stack, boardId, items) = await SeedBoardWithItemsAsync(1, BoardVisibility.Private);
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
@@ -227,7 +225,7 @@ public sealed class WorkAcceptanceGapsPipelineIntegrationTests : IAsyncLifetime
         {
             using var provider = _host.CreateProvider(account, user);
             var act = () => OrgTreeTestHost.SendAsync(provider, new ListApprovalRequestsQuery(boardId));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing board gets, never Forbidden");
         }
     }
 

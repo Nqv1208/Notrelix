@@ -1005,6 +1005,49 @@ describe("MainTableSurface title edit in place", () => {
     expect(titleOf("ERP-142").textContent).toMatch(/Chuyển dữ liệu/);
   });
 
+  it("limits the typed title to what the server takes", () => {
+    render();
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    const input = screen.getByRole("textbox", {
+      name: "Sửa tên ERP-142",
+    }) as HTMLInputElement;
+    expect(input.maxLength).toBe(500);
+  });
+
+  it("a refused title is told under the editor, the typed text stays and Escape drops it", async () => {
+    const { onRename } = render();
+    onRename.mockResolvedValueOnce(false);
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    const input = screen.getByRole("textbox", {
+      name: "Sửa tên ERP-142",
+    }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Tên bị từ chối" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    const note = await screen.findByRole("alert");
+    expect(note.textContent).toBe(
+      "Tên tối đa 500 ký tự. Rút ngắn rồi nhấn Enter.",
+    );
+    const kept = screen.getByRole("textbox", {
+      name: "Sửa tên ERP-142",
+    }) as HTMLInputElement;
+    expect(kept.value).toBe("Tên bị từ chối");
+    expect(kept.getAttribute("aria-invalid")).toBe("true");
+
+    // Leaving the field does not retry the refused text; changing it does.
+    fireEvent.blur(kept);
+    expect(onRename).toHaveBeenCalledTimes(1);
+    fireEvent.change(kept, { target: { value: "Tên ngắn hơn" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.keyDown(kept, { key: "Enter" });
+    expect(onRename).toHaveBeenCalledTimes(2);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("textbox", { name: "Sửa tên ERP-142" }),
+      ).toBeNull(),
+    );
+  });
+
   it("offers no edit without the right to rename", () => {
     renderTable(erpTableReadOnlyProps());
     fireEvent.doubleClick(titleOf("ERP-142"));

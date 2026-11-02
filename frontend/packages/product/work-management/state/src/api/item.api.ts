@@ -207,6 +207,9 @@ export function createCardApi(client: NotrelixClient) {
         expectedVersion: number;
         previousSiblingId: string | null;
         nextSiblingId: string | null;
+        /** A card dropped in a lane: the lane's field and option, written with the place in one change. */
+        laneFieldId?: string;
+        laneOptionId?: string;
       },
       options?: ApiRequestOptions,
     ): Promise<{ version?: number }> {
@@ -215,6 +218,9 @@ export function createCardApi(client: NotrelixClient) {
         expectedVersion: move.expectedVersion,
         previousSiblingId: move.previousSiblingId,
         nextSiblingId: move.nextSiblingId,
+        ...(move.laneFieldId && move.laneOptionId
+          ? { laneFieldId: move.laneFieldId, laneOptionId: move.laneOptionId }
+          : {}),
       };
       const moved = await api.post<MoveItemResponse | null | undefined>(
         endpoints.boardItems.move(move.cardId),

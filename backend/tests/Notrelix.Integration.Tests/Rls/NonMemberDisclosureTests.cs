@@ -134,6 +134,19 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         yield return ("comments of an item", HttpMethod.Get, $"/api/v1/board-items/{itemId}/comments", $"/api/v1/board-items/{Guid.NewGuid()}/comments", null);
     }
 
+    // Every Workspaces read a person outside the Workspace can try: the roster, their own membership, the
+    // invitations, the Space tree and the Space list. An existing Workspace answers like a made-up one.
+    private async Task AssertWorkspaceReadsIdenticalAsync(User who, string because)
+    {
+        foreach (var route in new[] { "members", "members/me", "invitations", "spaces/tree", "spaces" })
+        {
+            var found = await AsAsync(who, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/{route}");
+            var made = await AsAsync(who, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/{route}");
+            made.Status.Should().Be(HttpStatusCode.NotFound, $"{route}: a made-up workspace is NotFound");
+            found.Should().Be(made, $"{route}: {because}");
+        }
+    }
+
     private async Task AssertIdenticalAsync(User who, string because, Guid itemId, Guid formId)
     {
         foreach (var (name, method, existing, missing, json) in Routes(itemId, formId))
@@ -156,10 +169,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         madeComment.Status.Should().Be(HttpStatusCode.NotFound);
         comment.Should().Be(madeComment, "an existing comment answers like a made-up one");
 
-        var members = await AsAsync(_sameAccountOutsider, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_sameAccountOutsider, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers, "an existing workspace answers like a made-up one on the member route");
+        await AssertWorkspaceReadsIdenticalAsync(_sameAccountOutsider, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]
@@ -167,10 +177,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_b.User, "a person of another account learns nothing", _itemId, _formId);
 
-        var members = await AsAsync(_b.User, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_b.User, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers);
+        await AssertWorkspaceReadsIdenticalAsync(_b.User, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]
@@ -178,10 +185,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_accountAdmin, "an Account admin who is not in the Workspace learns nothing", _itemId, _formId);
 
-        var members = await AsAsync(_accountAdmin, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_accountAdmin, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers);
+        await AssertWorkspaceReadsIdenticalAsync(_accountAdmin, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]
@@ -189,10 +193,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_suspended, "a suspended member holds no access and learns nothing", _itemId, _formId);
 
-        var members = await AsAsync(_suspended, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_suspended, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers);
+        await AssertWorkspaceReadsIdenticalAsync(_suspended, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]

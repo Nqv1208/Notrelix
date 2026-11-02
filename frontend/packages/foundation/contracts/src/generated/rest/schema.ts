@@ -7022,6 +7022,10 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+            /** Format: uuid */
+            laneFieldId?: string | null;
+            /** Format: uuid */
+            laneOptionId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemToBoardRequest": {
             /** Format: uuid */
@@ -9638,6 +9642,8 @@ export interface components {
             initialEntries?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            invitedBy?: string;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
             kind?: string | null;
