@@ -75,6 +75,8 @@ const ROLE_CLASS: Record<keyof typeof textRoles, string> = {
   "list-title": "text-list-title",
   "account-title": "text-account-title",
   "brand-name": "text-brand-name",
+  "brand-name-compact": "text-brand-name-compact",
+  "card-title": "text-card-title",
   "brand-promise": "text-brand-promise",
   "empty-title": "text-empty-title",
   "item-title": "text-item-title",

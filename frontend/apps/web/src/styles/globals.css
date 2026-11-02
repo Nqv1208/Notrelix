@@ -178,6 +178,18 @@
   --text-brand-name--line-height: var(--type-brand-name-line-height);
   --text-brand-name--font-weight: var(--type-brand-name-weight);
   --text-brand-name--letter-spacing: var(--type-brand-name-tracking);
+  --text-brand-name-compact: var(--type-brand-name-compact-size);
+  --text-brand-name-compact--line-height: var(
+    --type-brand-name-compact-line-height
+  );
+  --text-brand-name-compact--font-weight: var(--type-brand-name-compact-weight);
+  --text-brand-name-compact--letter-spacing: var(
+    --type-brand-name-compact-tracking
+  );
+  --text-card-title: var(--type-card-title-size);
+  --text-card-title--line-height: var(--type-card-title-line-height);
+  --text-card-title--font-weight: var(--type-card-title-weight);
+  --text-card-title--letter-spacing: var(--type-card-title-tracking);
   --text-brand-promise: var(--type-brand-promise-size);
   --text-brand-promise--line-height: var(--type-brand-promise-line-height);
   --text-brand-promise--font-weight: var(--type-brand-promise-weight);

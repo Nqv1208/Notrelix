@@ -794,6 +794,17 @@ describe("Home, My work and Inbox type roles", () => {
     expect(promise.letterSpacing).toBe("-0.02em");
   });
 
+  it("sizes the phone invitation as Final-M-Auth (brand name 17px / 700 line 1.45, card title 16px / 650 line 1.45)", () => {
+    const name = textRoles["brand-name-compact"];
+    expect(fontSizeDense[name.size as keyof typeof fontSizeDense]).toBe(1.0625);
+    expect(name.lineHeight * 16).toBeCloseTo(24.65, 5);
+    expect(name.weight).toBe(700);
+    expect(name.letterSpacing).toBe("-0.01em");
+    const card = textRoles["card-title"];
+    expect(card.lineHeight * 16).toBeCloseTo(23.2, 5);
+    expect(card.weight).toBe(650);
+  });
+
   it("sizes the empty-page title as Final-MyWork's `.emp` h2 (19px / 650, line 1.45)", () => {
     const role = textRoles["empty-title"];
     expect(fontSizeDense[role.size as keyof typeof fontSizeDense]).toBe(1.1875);
@@ -827,6 +838,8 @@ describe("Home, My work and Inbox type roles", () => {
       "empty-title",
       "account-title",
       "brand-name",
+      "brand-name-compact",
+      "card-title",
       "brand-promise",
     ]) {
       expect(globals, role).toContain(
