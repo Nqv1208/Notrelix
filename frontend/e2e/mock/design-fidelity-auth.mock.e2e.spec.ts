@@ -164,6 +164,41 @@ for (const dark of [false, true]) {
       COLOUR = dark ? PALETTE.dark : PALETTE.light;
     });
 
+    test(`brand panel: logo, name and promise, ${mode}`, async ({ page }) => {
+      await open(page, "/sign-in", dark);
+      await expect(heading(page)).toBeVisible();
+      await page.waitForTimeout(700);
+      const panel = page.locator("aside");
+      // The mark is drawn in a 36 x 36 box at the panel's 52 / 40 padding.
+      await expectBox("logo", panel.locator("svg").first(), {
+        x: 52,
+        y: 40,
+        width: 36,
+        height: 36,
+      });
+      const name = panel.locator("b");
+      await expectBox("name", name, {
+        x: 100,
+        y: 42.25,
+        width: 83.2,
+        height: 31.5,
+      });
+      expect(await style(name, "font-size")).toBe("21px");
+      expect(await style(name, "font-weight")).toBe("700");
+      expect(await colour(name, "color")).toBe(COLOUR.ink);
+      const promise = panel.locator("p");
+      await expectBox("promise", promise, {
+        x: 52,
+        y: 188,
+        width: 460,
+        height: 122.9,
+      });
+      expect(await style(promise, "font-size")).toBe("32px");
+      expect(await style(promise, "font-weight")).toBe("650");
+      expect(await style(promise, "letter-spacing")).toBe("-0.64px");
+      expect(await colour(promise, "color")).toBe(COLOUR.ink);
+    });
+
     test(`email: the first step, ${mode}`, async ({ page }) => {
       await open(page, "/sign-in", dark);
       await expect(heading(page)).toBeVisible();
@@ -482,6 +517,13 @@ for (const dark of [false, true]) {
         "spam",
         page.locator("main p").filter({ hasText: "thư rác" }),
         { y: 458.3, width: 400, height: 43.5 },
+        above,
+      );
+      // The reset code's own button: 44 px, 18 px under the spam note.
+      await expectBox(
+        "enter the code",
+        link(page, "Nhập mã"),
+        { x: 836.8, y: 519.8, width: 400, height: 44 },
         above,
       );
       const resend = page.getByRole("button", { name: /^Gửi lại/ });

@@ -133,7 +133,7 @@ export function WorkspaceStep({
           />
           <span
             aria-hidden="true"
-            className="inline-flex h-10 shrink-0 items-center rounded-r-[8px] border border-l-0 border-input bg-state-hover px-3 text-body text-muted-foreground"
+            className="inline-flex h-10 max-md:h-touch shrink-0 items-center rounded-r-[8px] border border-l-0 border-input bg-state-hover px-3 text-body text-muted-foreground"
           >
             {t.suffix}
           </span>

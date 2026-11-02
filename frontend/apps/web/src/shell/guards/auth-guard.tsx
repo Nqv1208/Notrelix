@@ -60,13 +60,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return (
       <div
         role="alert"
-        className="h-screen w-screen flex items-center justify-center bg-background"
+        className="h-screen w-screen flex items-center justify-center bg-background p-4"
       >
         <ErrorState
           title={copy.unavailable.title}
           description={copy.unavailable.description}
           action={
-            <Button type="button" onClick={retry}>
+            <Button type="button" className="max-md:h-touch!" onClick={retry}>
               {copy.unavailable.retry}
             </Button>
           }

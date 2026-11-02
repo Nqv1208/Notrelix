@@ -290,7 +290,7 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
             <button
               type="button"
               aria-disabled="true"
-              className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3.5 text-body font-medium text-foreground opacity-70"
+              className="inline-flex h-10 max-md:h-touch items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3.5 text-body font-medium text-foreground opacity-70"
             >
               <Upload aria-hidden="true" className="size-4" />
               {t.upload}

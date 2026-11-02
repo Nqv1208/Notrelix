@@ -333,6 +333,36 @@ describe("auth forgot-password surface", () => {
   });
 });
 
+describe("auth forgot-password surface, request limit", () => {
+  it("FUI[auth.forgot:limited] says the limit was reached on the ask step and on the sent step, and keeps the person where they are", () => {
+    const { rerender } = renderPureUi(
+      <AuthForgotSurface
+        {...authForgotScenario({ step: { kind: "ask", error: "limited" } })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.forgot.limited,
+    );
+    expect(screen.getByLabelText(copy.forgot.label)).toBeTruthy();
+    rerender(
+      <AuthForgotSurface
+        {...authForgotScenario({
+          step: {
+            kind: "sent",
+            email: AUTH_PERSONAL_EMAIL,
+            resendSeconds: 0,
+            error: "limited",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(copy.sent.limited);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      copy.sent.title,
+    );
+  });
+});
+
 describe("auth verify-email surface", () => {
   it("FUI[auth.verify-email:confirm] says it is confirming, then that the email is confirmed and continues", () => {
     const onContinue = vi.fn();
