@@ -25,18 +25,19 @@ export async function prepare(
   page: Page,
   viewport: (typeof viewports)[number],
   dark: boolean,
+  locale: "en" | "vi" = "en",
 ) {
   await page.setViewportSize(viewport);
   await page.addInitScript(
-    ({ theme, mode }) => {
+    ({ theme, mode, language }) => {
       try {
-        window.localStorage.setItem("notrelix-locale", "en");
+        window.localStorage.setItem("notrelix-locale", language);
         window.localStorage.setItem(theme, mode);
       } catch {
         // Private mode: the defaults apply.
       }
     },
-    { theme: THEME_KEY, mode: dark ? "dark" : "light" },
+    { theme: THEME_KEY, mode: dark ? "dark" : "light", language: locale },
   );
 }
 
@@ -49,7 +50,12 @@ async function undersized(scope: Locator) {
       const isChoice =
         element.matches('input[type="radio"], input[type="checkbox"]') ||
         ["radio", "checkbox"].includes(element.getAttribute("role") ?? "");
-      const target = (isChoice && element.closest("label")) || element;
+      // A switch is operated through its labelled row: the label toggles it.
+      const isSwitch = element.getAttribute("role") === "switch";
+      const target =
+        (isChoice && element.closest("label")) ||
+        (isSwitch && element.closest("[data-slot='field']")) ||
+        element;
       const box = target.getBoundingClientRect();
       const style = getComputedStyle(element);
       if (box.width === 0 || box.height === 0) continue;

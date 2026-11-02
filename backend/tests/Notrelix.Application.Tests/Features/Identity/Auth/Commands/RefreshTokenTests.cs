@@ -198,6 +198,27 @@ public class RefreshTokenTests : IdentityHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_WhenTheChainIsNinetyOneDaysOld_RefusesEvenThoughEveryRefreshWasInsideTheIdleWindow()
+    {
+        // A person who refreshed every 20 days since sign-in (never idle for 30) still ends at 90 days.
+        var signedInAt = TestNow.AddDays(-91);
+        var session = UserSession.Create(TestUserId, RefreshTokenHash.Create(TestRefreshToken), signedInAt.AddDays(30), signedInAt);
+        for (var day = 20; day <= 80; day += 20)
+            session.Rotate(RefreshTokenHash.Create($"hop-{day}"), signedInAt.AddDays(day));
+        session.Rotate(RefreshTokenHash.Create(TestRefreshToken), signedInAt.AddDays(89));
+        session.ExpiresAt.Should().Be(signedInAt.Add(SessionLifetimePolicy.AbsoluteLifetime));
+        SetupUsers(CreateUser());
+        SetupSessions(session);
+
+        var result = await CreateSut().Handle(new RefreshTokenCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("invalid or expired"));
+        session.RefreshTokenHash.Should().Be(RefreshTokenHash.Create(TestRefreshToken));
+        _ledger.Verify(l => l.TryClaimAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_WhenAReplacedCredentialComesBackAfterTheGraceWindow_EndsTheSessionAndAnswersTheGenericRefusal()
     {
         var user = CreateUser();

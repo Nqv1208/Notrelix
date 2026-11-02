@@ -23,6 +23,30 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
+    [Theory]
+    [InlineData("spaces", "limit=0")]
+    [InlineData("spaces", "limit=201")]
+    [InlineData("spaces", "cursor=not-a-cursor")]
+    [InlineData("spaces/tree", "limit=0")]
+    [InlineData("spaces/tree", "limit=201")]
+    [InlineData("spaces/tree", "cursor=not-a-cursor")]
+    public async Task ListSpacesAndTree_WithAPageThatIsNotValid_ReturnsBadRequest(string path, string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/{path}?{query}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("limit=1")]
+    [InlineData("limit=200")]
+    public async Task ListSpaces_WithAPageInRange_IsNotRefusedAsBadRequest(string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/spaces?{query}");
+
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+    }
+
     [Fact]
     public async Task CreateSpace_WithValidData_ReturnsSuccess()
     {
