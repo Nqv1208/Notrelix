@@ -9,7 +9,8 @@ public record CreateFormCommand(
     string Title,
     BoardVisibility? Visibility = null,
     string? SettingsJson = null,
-    string? SubmitterPolicyJson = null)
+    string? SubmitterPolicyJson = null,
+    string? Description = null)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     // A form extends the Board schema (Editor), not Board management.
@@ -58,10 +59,20 @@ public class CreateFormCommandHandler : IRequestHandler<CreateFormCommand, Resul
             _requestContext.UserId,
             now,
             request.Visibility ?? BoardVisibility.PublicLink,
-            request.SettingsJson,
+            SettingsWithDescription(request),
             request.SubmitterPolicyJson);
 
         _context.Forms.Add(form);
         return Result<Guid>.Success(form.Id);
+    }
+
+    // The description lives in the settings object, as UpdateFormDetails keeps it.
+    private static string? SettingsWithDescription(CreateFormCommand request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Description)) return request.SettingsJson;
+        var settings = System.Text.Json.Nodes.JsonNode.Parse(string.IsNullOrWhiteSpace(request.SettingsJson) ? "{}" : request.SettingsJson)?.AsObject()
+            ?? new System.Text.Json.Nodes.JsonObject();
+        settings["description"] = request.Description.Trim();
+        return settings.ToJsonString();
     }
 }

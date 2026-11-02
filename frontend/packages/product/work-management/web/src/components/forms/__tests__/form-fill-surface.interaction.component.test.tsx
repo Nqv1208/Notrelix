@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
 import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
+import type { FormQuestion } from "@notrelix/work-management-core";
 import {
   BOARD_FIELDS,
   formFixture,
@@ -190,5 +191,99 @@ describe.each(["vi", "en"] as const)("form fill page (%s)", (locale) => {
       ),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: /⌘|Ctrl/ })).toBeNull();
+  });
+
+  const FILE_QUESTION: FormQuestion = {
+    id: "q-file",
+    key: "attachment",
+    label: "Ảnh chụp màn hình",
+    type: "file",
+    required: true,
+    fieldId: null,
+    position: "a9",
+    placeholder: null,
+    helpText: null,
+    maxLength: null,
+    minValue: null,
+    maxValue: null,
+    options: [],
+  } as unknown as FormQuestion;
+  const withFileQuestion = () => {
+    const base = formFixture({ status: "published" });
+    return { ...base, questions: [...base.questions, FILE_QUESTION] };
+  };
+
+  it(`hides a question type that cannot be answered yet from the filler and never requires it (${locale})`, async () => {
+    const props = render(locale, { form: withFileQuestion() });
+    expect(screen.queryByText(FILE_QUESTION.label)).toBeNull();
+    expect(screen.queryByText(/chưa hỗ trợ|not supported/)).toBeNull();
+    fireEvent.change(box(/Bạn cần gì/), {
+      target: { value: "Cấp thêm chuột không dây" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: /Mức độ ưu tiên/ }), {
+      target: { value: "p-high" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: f.submit }));
+    await waitFor(() => expect(props.onSubmit).toHaveBeenCalled());
+    const sent = vi.mocked(props.onSubmit).mock.calls[0]![0];
+    expect(Object.keys(sent)).not.toContain("attachment");
+  });
+
+  it(`tells the manager which questions the people who fill the form do not see (${locale})`, () => {
+    render(locale, { form: withFileQuestion(), canManage: true });
+    expect(
+      screen.getByRole("status", {
+        name: "",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        fillFormsCopy(f.hiddenQuestions, {
+          count: 1,
+          names: FILE_QUESTION.label,
+        }),
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText(FILE_QUESTION.label)).toBeNull();
+  });
+
+  it(`says the board is archived and offers no form (${locale})`, () => {
+    render(locale, { archived: true });
+    expect(screen.getByRole("heading", { name: f.archivedTitle })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: f.submit })).toBeNull();
+  });
+
+  it(`says a refused send for lost access was not sent, and keeps the answers (${locale})`, async () => {
+    const onSubmit = vi.fn(
+      async () => ({ ok: false, reason: "forbidden" }) as const,
+    );
+    render(locale, { onSubmit });
+    fireEvent.change(box(/Bạn cần gì/), { target: { value: "Cấp chuột" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /Mức độ ưu tiên/ }), {
+      target: { value: "p-high" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: f.submit }));
+    await screen.findByText(f.forbiddenError);
+    expect((box(/Bạn cần gì/) as HTMLTextAreaElement).value).toBe("Cấp chuột");
+  });
+
+  it(`says it is offline when the send fails without a connection, and retries with the same attempt (${locale})`, async () => {
+    const online = vi.spyOn(window.navigator, "onLine", "get");
+    online.mockReturnValue(false);
+    const onSubmit = vi.fn(
+      async (_answers: Readonly<Record<string, unknown>>, _key: string) =>
+        ({ ok: false, reason: "failed" }) as const,
+    );
+    render(locale, { onSubmit });
+    fireEvent.change(box(/Bạn cần gì/), { target: { value: "Cấp chuột" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /Mức độ ưu tiên/ }), {
+      target: { value: "p-high" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: f.submit }));
+    await screen.findByText(f.offlineError);
+    fireEvent.click(screen.getByRole("button", { name: copy.common.retry }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+    expect(onSubmit.mock.calls[1]![1]).toBe(onSubmit.mock.calls[0]![1]);
+    online.mockRestore();
   });
 });

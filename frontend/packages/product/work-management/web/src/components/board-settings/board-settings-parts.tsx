@@ -70,7 +70,7 @@ export const INPUT_CLASS =
 
 export const TEXTAREA_CLASS = cn(
   INPUT_CLASS,
-  "block h-auto min-h-14 resize-y py-[7px] leading-[1.45]",
+  "block h-auto max-md:h-auto min-h-14 resize-y py-[7px] leading-[1.45]",
 );
 
 export const ICON_BUTTON_CLASS =

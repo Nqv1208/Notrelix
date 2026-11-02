@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ChevronLeft,
   CircleCheck,
+  Info,
   Lock,
   TriangleAlert,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
 import { useCardPopupCopy } from "../card-popup/use-card-popup-copy";
 import { fillFormsCopy, type FormsCopy } from "./forms.copy";
 import {
+  isAnswerable,
   questionOptions,
   validateAnswers,
   type FormBoardField,
@@ -48,6 +50,10 @@ export interface FormFillSurfaceProps {
   readonly canSubmit?: boolean;
   /** The manager's preview: same page, the button does nothing. */
   readonly preview?: boolean;
+  /** The board is archived: the form takes no responses. */
+  readonly archived?: boolean;
+  /** The person manages the form: they are told which questions the people who fill it do not see. */
+  readonly canManage?: boolean;
   readonly onBack: () => void;
   readonly onHome?: () => void;
   readonly onReload: () => void;
@@ -88,7 +94,7 @@ export function FormFillSurface(props: FormFillSurfaceProps) {
   if (status === "error")
     return (
       <Frame {...props}>
-        <div className="rounded-xl border border-line bg-popover p-4">
+        <div className="rounded-[12px] border border-line bg-popover p-4">
           <FormAlert
             message={f.loadError}
             onRetry={props.onReload}
@@ -143,6 +149,17 @@ export function FormFillSurface(props: FormFillSurfaceProps) {
         />
       </Frame>
     );
+  if (!props.preview && props.archived)
+    return (
+      <Frame {...props}>
+        <Notice
+          title={f.archivedTitle}
+          body={f.archivedBody}
+          action={props.onBack}
+          actionLabel={f.toBoard}
+        />
+      </Frame>
+    );
   return (
     <Frame {...props}>
       <FillForm key={form.id} {...props} form={form} />
@@ -163,7 +180,7 @@ function Frame({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background text-foreground">
       <main
         aria-label={form?.title ?? copy.common.back}
-        className="mx-auto flex w-full max-w-[620px] flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8"
+        className="mx-auto flex w-full max-w-[668px] flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8"
       >
         {preview ? null : (
           <nav
@@ -176,7 +193,7 @@ function Frame({
               aria-label={fillFormsCopy(copy.fill.crumbBoard, {
                 board: boardTitle,
               })}
-              className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground hover:underline"
+              className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 font-medium max-md:min-h-11 text-brand-subtle-foreground hover:underline"
             >
               <ChevronLeft aria-hidden="true" className="size-3.5" />
               {boardTitle}
@@ -216,11 +233,11 @@ function Notice({
   return (
     <section
       role={tone === "danger" ? "alert" : "status"}
-      className="flex flex-col items-start gap-3 rounded-xl border border-line bg-popover p-5"
+      className="flex flex-col items-start gap-3 rounded-[12px] border border-line bg-popover p-5"
     >
       <span
         aria-hidden="true"
-        className="grid size-10 place-items-center rounded-xl border border-line bg-background text-muted-foreground"
+        className="grid size-10 place-items-center rounded-[12px] border border-line bg-background text-muted-foreground"
       >
         <Lock className="size-4" />
       </span>
@@ -241,10 +258,14 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
   const [errors, setErrors] = useState<FormAnswerErrors>({});
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
-  const [failure, setFailure] = useState<"network" | "closed" | null>(null);
+  const [failure, setFailure] = useState<
+    "network" | "offline" | "forbidden" | "closed" | null
+  >(null);
   const [copiedAnswers, setCopiedAnswers] = useState(false);
   const attempt = useRef<string | null>(null);
-  const questions = form.questions;
+  // What cannot be answered yet is hidden from the filler and never required of them; the manager is told.
+  const questions = form.questions.filter(isAnswerable);
+  const hidden = form.questions.filter((q) => !isAnswerable(q));
   const idOf = (q: FormQuestion) => `${idBase}-${q.id}`;
 
   function set(key: string, value: unknown) {
@@ -283,6 +304,10 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
       setErrors(mapped);
       attempt.current = null;
     } else if (result.reason === "conflict") setFailure("closed");
+    else if (result.reason === "forbidden" || result.reason === "missing")
+      setFailure("forbidden");
+    else if (typeof navigator !== "undefined" && navigator.onLine === false)
+      setFailure("offline");
     else setFailure("network");
   }
 
@@ -294,7 +319,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
     return (
       <section
         role="status"
-        className="flex flex-col items-start gap-3 rounded-xl border border-line bg-popover p-5"
+        className="flex flex-col items-start gap-3 rounded-[12px] border border-line bg-popover p-5"
       >
         <CircleCheck aria-hidden="true" className="size-6 text-success-text" />
         <h1 className="m-0 text-[19px] leading-[1.35] font-[650]">
@@ -347,12 +372,26 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
           </button>
         </div>
       ) : null}
+      {props.canManage && hidden.length > 0 ? (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-[10px] bg-warning-subtle px-3.5 py-2.5 text-item-small text-foreground"
+        >
+          <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+          <span>
+            {fillFormsCopy(f.hiddenQuestions, {
+              count: hidden.length,
+              names: hidden.map((q) => q.label).join(", "),
+            })}
+          </span>
+        </div>
+      ) : null}
       <form
         onSubmit={(event) => void submit(event)}
         noValidate
-        className="flex flex-col gap-4 rounded-xl border border-line bg-popover p-5 sm:p-6"
+        className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 sm:p-7"
       >
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em]">
             {form.title}
           </h1>
@@ -362,28 +401,6 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
             </p>
           ) : null}
         </div>
-
-        {errorQuestions.length > 0 ? (
-          <div
-            role="alert"
-            className="rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-item-small text-danger-text"
-          >
-            <b>{f.summary}</b>{" "}
-            {fillFormsCopy(f.summaryCount, { count: errorQuestions.length })}{" "}
-            {errorQuestions.map((q, index) => (
-              <span key={q.id}>
-                <button
-                  type="button"
-                  onClick={() => focusQuestion(q)}
-                  className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-danger-text underline"
-                >
-                  {q.label}
-                </button>
-                {index < errorQuestions.length - 1 ? ", " : "."}
-              </span>
-            ))}
-          </div>
-        ) : null}
 
         {failure === "closed" ? (
           <div
@@ -431,9 +448,41 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
           />
         ))}
 
-        {failure === "network" ? (
+        {errorQuestions.length > 0 ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[12px] bg-danger-subtle p-3.25 text-item-small text-danger-text"
+          >
+            <TriangleAlert
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0"
+            />
+            <span className="flex-1">
+              <b>{f.summary}</b>{" "}
+              {fillFormsCopy(f.summaryCount, { count: errorQuestions.length })}{" "}
+              {errorQuestions.map((q, index) => (
+                <span key={q.id}>
+                  <button
+                    type="button"
+                    onClick={() => focusQuestion(q)}
+                    className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-danger-text underline"
+                  >
+                    {q.label}
+                  </button>
+                  {index < errorQuestions.length - 1 ? ", " : "."}
+                </span>
+              ))}
+            </span>
+          </div>
+        ) : null}
+
+        {failure === "forbidden" ? (
+          <FormAlert message={f.forbiddenError} />
+        ) : null}
+
+        {failure === "network" || failure === "offline" ? (
           <FormAlert
-            message={f.networkError}
+            message={failure === "offline" ? f.offlineError : f.networkError}
             onRetry={() =>
               void submit({ preventDefault() {} } as React.FormEvent)
             }
@@ -441,13 +490,13 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
           />
         ) : null}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <button
             type="submit"
             disabled={sending || preview || failure === "closed"}
             className={cn(
               BUTTON_CLASS.primary,
-              "h-11 w-full justify-center text-item-ui sm:h-10 sm:w-auto sm:self-start sm:px-[18px]",
+              "h-11 w-full justify-center text-label font-semibold sm:h-10 sm:w-auto sm:self-start sm:px-[18px]",
             )}
           >
             {sending ? f.sending : f.submit}
@@ -514,7 +563,7 @@ function Question({
           maxLength={q.maxLength ?? 2000}
           placeholder={q.placeholder ?? undefined}
           onChange={(e) => onChange(e.target.value)}
-          className={TEXTAREA_CLASS}
+          className={cn(TEXTAREA_CLASS, "h-21")}
         />
       );
       break;
@@ -607,10 +656,6 @@ function Question({
         </label>
       );
       break;
-    case "file":
-    case "signature":
-      control = <p className={cn(HINT_CLASS, "m-0")}>{f.unsupported}</p>;
-      break;
     default:
       control = (
         <input
@@ -632,7 +677,7 @@ function Question({
       <label
         id={`${id}-l`}
         htmlFor={q.type === "multiselect" ? undefined : id}
-        className={FIELD_LABEL_CLASS}
+        className={cn(FIELD_LABEL_CLASS, "text-item-small text-foreground")}
       >
         {q.label}
         {q.required ? (
