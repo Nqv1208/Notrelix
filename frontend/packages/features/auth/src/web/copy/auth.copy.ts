@@ -170,6 +170,9 @@ export const en = {
     failedTitle: "This link no longer works",
     failedLead:
       "It may have been used already or it has expired. Enter your email and we send a new one.",
+    expiredTitle: "This link has expired",
+    expiredLead:
+      "A confirmation link works for a limited time. Enter your email and we send a new one.",
     waitingTitle: "Confirm your email",
     waitingLead:
       "We sent a link to your email. Open it to finish setting up your account.",
@@ -401,6 +404,9 @@ export const vi: AuthCopy = {
     failedTitle: "Liên kết này không còn dùng được",
     failedLead:
       "Liên kết có thể đã được dùng hoặc đã hết hạn. Nhập email để chúng tôi gửi liên kết mới.",
+    expiredTitle: "Liên kết này đã hết hạn",
+    expiredLead:
+      "Liên kết xác nhận chỉ dùng được trong một thời gian. Nhập email để chúng tôi gửi liên kết mới.",
     waitingTitle: "Xác nhận email của bạn",
     waitingLead:
       "Chúng tôi đã gửi một liên kết tới email của bạn. Mở liên kết để hoàn tất tài khoản.",

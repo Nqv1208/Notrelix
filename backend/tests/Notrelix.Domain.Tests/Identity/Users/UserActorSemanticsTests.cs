@@ -90,6 +90,21 @@ public class UserActorSemanticsTests
     }
 
     [Fact]
+    public void ConfirmEmail_WhenAlreadyConfirmed_IsANoOpWithoutVersionBumpOrEvent()
+    {
+        var user = CreateUser();
+        user.ConfirmEmail(null, Now);
+        var version = user.Version;
+        var eventsBefore = user.DomainEvents.Count;
+
+        user.ConfirmEmail(Guid.NewGuid(), Now.AddMinutes(1));
+
+        user.Version.Should().Be(version);
+        user.DomainEvents.Should().HaveCount(eventsBefore);
+        user.EmailConfirmedAt.Should().Be(Now);
+    }
+
+    [Fact]
     public void LinkOAuthAccount_ShouldSetUpdatedByToActor()
     {
         var user = CreateUser();

@@ -170,6 +170,25 @@ for (const viewport of viewports) {
       await audit(page, "roster-confirm", viewport, dark, confirm);
     });
 
+    test(`role-lowering confirmation, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(`${WORKSPACE}/members`);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Members" }),
+      ).toBeVisible();
+      await page
+        .getByRole("combobox", { name: /^Role for .*\(Admin\)/ })
+        .first()
+        .click();
+      await page
+        .getByRole("option", { name: /^Member/ })
+        .first()
+        .click();
+      const confirm = page.getByRole("alertdialog");
+      await expect(confirm).toBeVisible();
+      await audit(page, "roster-lower-role", viewport, dark, confirm);
+    });
+
     test(`invitations with two waiting, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto(`${WORKSPACE}/members?tab=invitations`);

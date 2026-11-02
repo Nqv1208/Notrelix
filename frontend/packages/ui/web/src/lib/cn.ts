@@ -44,6 +44,8 @@ export const TEXT_ROLES = [
   "greeting",
   "list-title",
   "account-title",
+  "brand-name",
+  "brand-promise",
   "empty-title",
   "dialog-title",
   "doc-title",

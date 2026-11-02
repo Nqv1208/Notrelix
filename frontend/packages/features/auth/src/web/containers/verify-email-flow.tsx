@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { isThrottled, readFlowError, type AuthFlowService } from "../../core";
+import {
+  IDENTITY_ERROR,
+  isThrottled,
+  readFlowError,
+  type AuthFlowService,
+} from "../../core";
 import { useAuthCopy } from "../copy/use-auth-copy";
 import {
   AuthVerifyEmailSurface,
@@ -72,7 +77,14 @@ export function VerifyEmailFlow({
   const confirm = useMutation({
     mutationFn: (value: string) => confirmOnce(service, value),
     onSuccess: () => setStep({ kind: "done" }),
-    onError: () => setStep({ kind: "failed" }),
+    // Only a link that was valid and ran out says so; an unknown or used one shows the dead-link state.
+    onError: (failure) =>
+      setStep({
+        kind: "failed",
+        expired:
+          readFlowError(failure).code ===
+          IDENTITY_ERROR.emailVerificationExpired,
+      }),
   });
   // The token is single use: a second call (a re-render, strict mode) would fail the first.
   const spent = useRef(false);

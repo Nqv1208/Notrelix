@@ -18,6 +18,7 @@ public class JwtService : IJwtService
 
     public string GenerateAccessToken(User user, Guid? sessionId = null)
     {
+        var issuedAt = DateTimeOffset.UtcNow;
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
@@ -25,7 +26,8 @@ public class JwtService : IJwtService
             new(JwtRegisteredClaimNames.Name, user.Name),
             new("email_confirmed", user.EmailConfirmed ? "true" : "false"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            new(JwtRegisteredClaimNames.Iat, issuedAt.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new(JwtClaimNames.IssuedAtMilliseconds, issuedAt.ToUnixTimeMilliseconds().ToString(), ClaimValueTypes.Integer64)
         };
 
         if (sessionId.HasValue)

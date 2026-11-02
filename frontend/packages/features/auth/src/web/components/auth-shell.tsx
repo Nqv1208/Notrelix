@@ -30,10 +30,10 @@ export function AuthShell({
         className="relative hidden flex-[0_0_44%] flex-col overflow-hidden border-r border-line bg-muted px-13 py-10 text-foreground lg:flex lg:max-w-[44%]"
       >
         <div className="relative z-10 flex items-center gap-3">
-          <NotrelixLogoMark className="h-auto w-9" aria-hidden="true" />
-          <b className="text-sheet-title font-bold tracking-tight">{t.brand}</b>
+          <NotrelixLogoMark className="size-9" aria-hidden="true" />
+          <b className="text-brand-name">{t.brand}</b>
         </div>
-        <p className="relative z-10 mt-28 max-w-115 text-display leading-tight font-semibold tracking-tight">
+        <p className="relative z-10 mt-28 max-w-115 text-brand-promise">
           {t.promise}
         </p>
         <NotrelixLogoMark

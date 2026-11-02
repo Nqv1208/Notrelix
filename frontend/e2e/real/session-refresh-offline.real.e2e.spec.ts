@@ -39,3 +39,27 @@ test("a network drop during the refresh keeps the session and the retry opens it
   });
   await expect(page).not.toHaveURL(/\/sign-in/);
 });
+
+test("on a phone the retry button is a 44 px target and the page does not scroll sideways", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, realUsers.admin);
+  const access = (await page.context().cookies()).find((cookie) =>
+    /access/i.test(cookie.name),
+  );
+  await page.context().clearCookies({ name: access!.name });
+
+  await page.route(/\/auth\/refresh/, (route) => route.abort("failed"));
+  await page.reload();
+  const retry = page
+    .getByRole("alert")
+    .getByRole("button", { name: /retry|try again/i });
+  await expect(retry).toBeVisible({ timeout: 20_000 });
+  expect((await retry.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
+});
