@@ -1412,7 +1412,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Register a new account */
+        /**
+         * Register a new account
+         * @description Answers 200 with no body for a new and for an existing address alike, and sets no session: a new person confirms the email from the mail and signs in; the owner of an existing address gets a notice mail. Nothing in the answer says whether the address was registered.
+         */
         post: operations["Identity.Auth.Register"];
         delete?: never;
         options?: never;
@@ -9639,6 +9642,8 @@ export interface components {
             initialEntries?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            invitedBy?: string;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationEntryDto": {
             kind?: string | null;
@@ -13244,21 +13249,10 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["Notrelix.API.Contracts.Identity.AuthSessionResponse"];
-                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
-                };
-            };
-            /** @description Conflict */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };

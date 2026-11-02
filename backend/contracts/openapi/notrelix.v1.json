@@ -5588,6 +5588,7 @@
           "Identity.Auth"
         ],
         "summary": "Register a new account",
+        "description": "Answers 200 with no body for a new and for an existing address alike, and sets no session: a new person confirms the email from the mail and signs in; the owner of an existing address gets a notice mail. Nothing in the answer says whether the address was registered.",
         "operationId": "Identity.Auth.Register",
         "requestBody": {
           "content": {
@@ -5601,27 +5602,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
-                }
-              }
-            }
+            "description": "OK"
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -35842,6 +35826,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "invitedBy": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false

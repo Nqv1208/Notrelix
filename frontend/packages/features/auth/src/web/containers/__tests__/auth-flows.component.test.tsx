@@ -8,6 +8,7 @@ import { authCopy } from "../../copy/auth.copy";
 import type { AuthFlowService } from "../../../core";
 import type { AuthFlowNavigation } from "../flow-navigation";
 import { InviteFlow } from "../invite-flow";
+import { RegisterFlow } from "../register-flow";
 import { ResetFlow } from "../reset-flow";
 import { VerifyEmailFlow } from "../verify-email-flow";
 import { SignInFlow } from "../sign-in-flow";
@@ -590,5 +591,91 @@ describe("verify email flow: the single-use link", () => {
       }),
     ).toBeTruthy();
     expect(screen.queryByText(copy.verifyEmail.expiredTitle)).toBeNull();
+  });
+});
+
+describe("register flow", () => {
+  const fillAndSubmit = () => {
+    const type = (label: string, value: string) =>
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    type(copy.register.firstName, "Ada");
+    type(copy.register.lastName, "Lovelace");
+    type(copy.register.email, "ada@notrelix.dev");
+    type(copy.register.password, NEW_PASSWORD);
+    fireEvent.click(screen.getByLabelText(/Tôi đồng ý/));
+    fireEvent.click(screen.getByRole("button", { name: copy.register.submit }));
+  };
+  const renderFlow = (service: object, nav = navigation()) =>
+    renderPureUi(
+      <Providers>
+        <RegisterFlow service={asService(service)} navigation={nav} />
+      </Providers>,
+    );
+
+  it("sends the joined name, the email and the password, then shows one neutral step and opens no session", async () => {
+    const register = vi.fn().mockResolvedValue(undefined);
+    const nav = navigation();
+    renderFlow({ register }, nav);
+    fillAndSubmit();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: copy.register.sentTitle }),
+      ).toBeTruthy(),
+    );
+    expect(register).toHaveBeenCalledWith({
+      name: "Ada Lovelace",
+      email: "ada@notrelix.dev",
+      password: NEW_PASSWORD,
+    });
+    // Nothing navigates by itself: no session was opened.
+    expect(nav.navigate).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.register.sentSignIn }),
+    );
+    expect(nav.navigate).toHaveBeenCalledWith({ to: "/sign-in" });
+  });
+
+  it("reads a 429 as a limit and stays on the form", async () => {
+    const register = vi.fn().mockRejectedValue({ status: 429, kind: "http" });
+    renderFlow({ register });
+    fillAndSubmit();
+    await waitFor(() =>
+      expect(screen.getByText(copy.register.limited)).toBeTruthy(),
+    );
+  });
+
+  it("reads a network failure as unreachable and keeps the form", async () => {
+    const register = vi.fn().mockRejectedValue({ kind: "network" });
+    renderFlow({ register });
+    fillAndSubmit();
+    await waitFor(() =>
+      expect(screen.getByText(copy.register.unreachable)).toBeTruthy(),
+    );
+  });
+
+  it("shows the server's word on a field", async () => {
+    const register = vi.fn().mockRejectedValue({
+      status: 400,
+      kind: "http",
+      validationErrors: { Password: ["Password is too common."] },
+    });
+    renderFlow({ register });
+    fillAndSubmit();
+    await waitFor(() =>
+      expect(screen.getByText("Password is too common.")).toBeTruthy(),
+    );
+  });
+
+  it("'use another email' starts a form with empty fields", async () => {
+    const register = vi.fn().mockResolvedValue(undefined);
+    renderFlow({ register });
+    fillAndSubmit();
+    await waitFor(() => screen.getByRole("status"));
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.register.sentOther }),
+    );
+    expect(
+      (screen.getByLabelText(copy.register.email) as HTMLInputElement).value,
+    ).toBe("");
   });
 });

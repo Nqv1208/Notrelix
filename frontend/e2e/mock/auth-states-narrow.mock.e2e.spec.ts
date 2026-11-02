@@ -3,8 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
- * The sign-in states at 1440, 1024, 390 and 320 px in light and dark (UC-IDN-B05, B06, B07, B09,
- * I01, I02, J01): no sideways scroll, every control a 44 px target on a phone (the show-password
+ * The sign-in and register states at 1440, 1024, 390 and 320 px in light and dark (UC-IDN-B03, B05,
+ * B06, B07, B09, I01, I02, J01): no sideways scroll, every control a 44 px target on a phone (the show-password
  * eye and the link rows included), axe clean. Screenshots go to the test output; the reviewer
  * sets AUTH_SHOTS_DIR to keep the images of a passing run and opens each one.
  */
@@ -113,6 +113,78 @@ for (const view of VIEWS) {
       await expect(page.locator("#auth-reset")).toBeVisible();
       await step("forgot");
       await page.locator("#auth-reset").fill(MOCK_AUTH.personalEmail);
+      await submit.click();
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Kiểm tra email của bạn" }),
+      ).toBeVisible();
+      await step("sent");
+    });
+
+    test(`register states are clean, ${view.name} ${mode}`, async ({
+      page,
+    }, testInfo) => {
+      // Six measured steps with axe each, the first one on a cold dev server.
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width: view.width, height: view.height });
+      await page.addInitScript(
+        ({ key, theme }) => {
+          try {
+            window.localStorage.setItem("notrelix-locale", "vi");
+            window.localStorage.setItem(key, theme);
+          } catch {
+            // Private mode: defaults apply.
+          }
+        },
+        { key: THEME_KEY, theme: mode },
+      );
+      const step = async (name: string) => {
+        await inspect(page, `${name} ${view.name} ${mode}`, view.width);
+        const file = `register-${name}-${view.name}-${mode}`;
+        await testInfo.attach(file, {
+          body: await page.screenshot({ fullPage: true }),
+          contentType: "image/png",
+        });
+        const dir = process.env.AUTH_SHOTS_DIR;
+        if (dir)
+          await page.screenshot({ path: `${dir}/${file}.png`, fullPage: true });
+      };
+      const submit = page.locator("form button[type=submit]");
+      const password = `Pw-${"a".repeat(10)}`;
+
+      await page.goto("/sign-up");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await step("form");
+
+      // Every field missing: each names what is wrong.
+      await submit.click();
+      await expect(page.getByRole("alert").first()).toBeVisible();
+      await step("invalid");
+
+      // The server's limit and an unreachable server keep the person on the form.
+      await page.getByLabel("Tên", { exact: true }).fill("Hà");
+      await page.getByLabel("Họ", { exact: true }).fill("Nguyễn");
+      await page
+        .getByLabel("Email công việc")
+        .fill(MOCK_AUTH.registerLimitedEmail);
+      await page.locator("#auth-register-password").fill(password);
+      await page.getByLabel(/Tôi đồng ý/).check();
+      await submit.click();
+      await expect(
+        page.getByText("Bạn thử quá nhiều lần. Thử lại sau ít phút."),
+      ).toBeVisible();
+      await step("limited");
+      await page
+        .getByLabel("Email công việc")
+        .fill(MOCK_AUTH.registerDownEmail);
+      await submit.click();
+      await expect(
+        page.getByText(
+          "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+        ),
+      ).toBeVisible();
+      await step("unreachable");
+
+      await page.getByLabel("Email công việc").fill("ha.nguyen@example.com");
       await submit.click();
       await expect(
         page.getByRole("heading", { level: 1, name: "Kiểm tra email của bạn" }),

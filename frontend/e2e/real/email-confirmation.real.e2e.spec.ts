@@ -9,6 +9,8 @@ async function confirmationLinkFor(email: string): Promise<string> {
 test("a new member confirms the email from the link and then creates the workspace", async ({
   page,
 }) => {
+  // The mail log is read from the backend container after the outbox delivers: allow for it.
+  test.setTimeout(90_000);
   const suffix = randomUUID().slice(0, 8);
   const email = `confirm-${suffix}@example.com`;
   const password = `Pw-${randomUUID()}`;
@@ -18,13 +20,23 @@ test("a new member confirms the email from the link and then creates the workspa
   await page.getByLabel("First name").fill("Casey");
   await page.getByLabel("Last name").fill("Confirm");
   await page.getByLabel("Work email").fill(email);
-  await page.locator("#password").fill(password);
-  await page.locator("#confirmPassword").fill(password);
-  await page.getByRole("checkbox").check();
+  await page.locator("#auth-register-password").fill(password);
+  await page.getByLabel(/I agree to the/).check();
   await page.getByRole("button", { name: /Create account/ }).click();
-  // Registering opens the app: the personal workspace once its provisioning has run (UC-WSP-A02, an
+  // Registering opens no session: the page says to check the email, and the person signs in.
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Check your email" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Go to sign-in" }).click();
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.locator("#auth-password").fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  // Signing in opens the app: the personal workspace once its provisioning has run (UC-WSP-A02, an
   // event consumer, so eventual), the onboarding page while the list is still empty. Either is right.
-  await expect(page).toHaveURL(/\/(workspaces\/[^/]+|onboarding)/);
+  await expect(page).toHaveURL(/\/(workspaces\/[^/]+|onboarding)/, {
+    timeout: 20_000,
+  });
 
   // The address is not confirmed yet: creating a further workspace is refused and the page says why.
   await page.goto("/onboarding");
