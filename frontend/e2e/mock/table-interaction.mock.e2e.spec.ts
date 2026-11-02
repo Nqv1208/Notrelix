@@ -117,7 +117,8 @@ test.describe("Board table interaction (owner)", () => {
   test("no column is docked: every column scrolls sideways together", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1000, height: 800 });
+    // The desktop grid (1280 and up): the tablet drawing pins the title column on purpose.
+    await page.setViewportSize({ width: 1300, height: 800 });
     await openTable(page);
     const scroll = page.locator("[data-table-scroll]");
     const target = row(page, "ERP-151");

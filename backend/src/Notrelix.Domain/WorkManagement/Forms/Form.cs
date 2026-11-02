@@ -168,6 +168,8 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(question);
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotAddQuestionToClosed, "Cannot change a question of a closed form.");
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         if (!question.UpdateQuestion(label, isRequired, position, config, boardFieldId)) return;

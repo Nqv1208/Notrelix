@@ -23,7 +23,6 @@ using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
-using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 
 namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
@@ -192,7 +191,7 @@ public sealed class BoardSharingIntegrationTests : IAsyncLifetime
         using (var asOutsider = CreateProvider(stack, outsider))
         {
             var act = () => OrgTreeTestHost.SendAsync(asOutsider, new GetBoardSharingQuery(shared));
-            await act.Should().ThrowAsync<AppForbidden>();
+            await act.Should().ThrowAsync<AppNotFound>("a person outside the workspace gets the identical NotFound, not Forbidden");
         }
 
         using var asOwner = CreateProvider(stack, stack.OwnerId);

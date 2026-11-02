@@ -132,21 +132,24 @@ test.describe("Board forms (owner)", () => {
     ).toContainText("→ Tiêu đề việc");
 
     await page.getByRole("button", { name: "Tạo việc từ phản hồi" }).click();
-    const dialog = page.getByRole("dialog", { name: "Tạo việc từ phản hồi" });
+    // The ordinary create-item dialog: it is named by the item it will create, prefilled from the answers.
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("textbox", { name: "Tên thẻ" })).toHaveValue(
+      "Làm mới tên máy kế toán Đà Nẵng",
+    );
+    await expect(dialog.getByRole("region", { name: "Mô tả" })).toContainText(
+      /tên cũ còn nằm trong domain/,
+    );
+    // The same validation as the ordinary dialog: with no name nothing is created and nothing typed is lost.
+    await dialog.getByRole("textbox", { name: "Tên thẻ" }).fill("");
     await expect(
-      dialog.getByRole("textbox", { name: /Tên công việc/ }),
-    ).toHaveValue("Làm mới tên máy kế toán Đà Nẵng");
-    // The same validation as the ordinary dialog, and nothing typed is lost.
-    await dialog.getByRole("textbox", { name: /Tên công việc/ }).fill("");
-    await dialog.getByRole("button", { name: "Tạo công việc" }).click();
-    await expect(
-      dialog.getByText("Hãy đặt tên cho công việc để tiếp tục"),
-    ).toBeVisible();
-    await expect(dialog.getByRole("textbox", { name: /^Mô tả/ })).toHaveValue(
+      dialog.getByRole("button", { name: "Tạo công việc" }),
+    ).toHaveAttribute("aria-disabled", "true");
+    await expect(dialog.getByRole("region", { name: "Mô tả" })).toContainText(
       /tên cũ còn nằm trong domain/,
     );
     await dialog
-      .getByRole("textbox", { name: /Tên công việc/ })
+      .getByRole("textbox", { name: "Tên thẻ" })
       .fill("Đổi tên máy kế toán Đà Nẵng");
     await dialog.getByRole("button", { name: "Tạo công việc" }).click();
 

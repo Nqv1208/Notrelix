@@ -6,7 +6,10 @@ import { expect, test, type Page } from "@playwright/test";
  * the table keeps inside the page and axe finds nothing serious, and a status write refused as a lost race tells
  * the person who won in a toast that stays inside the viewport. The refusal needs the server started with
  * `VITE_MOCK_FAULTS=/board-items/mock-erp-item-149/status=409`; the layout runs in the default world.
+ * The Cột menu (UC-WM-I02) is one of the lists: inside the viewport, 44 px rows at 390 and no serious axe violation.
  * `WM_SHOTS_DIR` writes a screenshot of each state for review.
+ * At 390 px the table is the phone card list (`Final-M-Board`): a row's writes are in the sheet its "…" opens, so
+ * the status, assignee, due and priority lists are the sheet's views and the row holds two 44 px targets.
  */
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -36,7 +39,11 @@ async function open(page: Page, width: number, height: number, dark: boolean) {
     dark ? "dark" : "light",
   );
   await page.goto(TABLE);
-  await expect(page.getByRole("rowgroup", { name: "Cần làm" })).toBeVisible();
+  await expect(
+    width < 768
+      ? page.locator("[data-slot=table-phone-list]")
+      : page.getByRole("rowgroup", { name: "Cần làm" }),
+  ).toBeVisible();
   await page.waitForTimeout(500);
 }
 
@@ -73,18 +80,82 @@ for (const [width, height] of [
       expect(await seriousViolations(page)).toEqual([]);
 
       // Each list a write starts from opens inside the viewport and has no serious axe violation.
-      const pickers: [string, RegExp | string][] = [
-        ["status-list", "Đổi trạng thái của ERP-149"],
-        ["assignee-list", /Đổi người phụ trách của ERP-149/],
-        ["due-calendar", /Đổi hạn của ERP-149/],
-        ["priority-menu", /Đổi ưu tiên của ERP-149/],
+      const phone = width < 768;
+      // At 390 px a row's lists are views of the sheet its "…" opens.
+      const sheetRow = (view: RegExp) => async () => {
+        await page
+          .getByRole("button", { name: "Thao tác khác cho ERP-149" })
+          .click();
+        await page
+          .getByRole("dialog")
+          .getByRole("button", { name: view })
+          .click();
+      };
+      const pickers: [string, () => Promise<void>][] = [
+        [
+          "status-list",
+          phone
+            ? async () => {
+                await page
+                  .getByRole("button", { name: "Thao tác khác cho ERP-149" })
+                  .click();
+              }
+            : async () => {
+                await page
+                  .getByRole("button", { name: "Đổi trạng thái của ERP-149" })
+                  .click();
+              },
+        ],
+        [
+          "assignee-list",
+          phone
+            ? sheetRow(/^Giao cho…/)
+            : async () => {
+                await page
+                  .getByRole("button", {
+                    name: /Đổi người phụ trách của ERP-149/,
+                  })
+                  .click();
+              },
+        ],
+        [
+          "due-calendar",
+          phone
+            ? sheetRow(/^Đổi hạn…/)
+            : async () => {
+                await page
+                  .getByRole("button", { name: /Đổi hạn của ERP-149/ })
+                  .click();
+              },
+        ],
+        [
+          "priority-menu",
+          phone
+            ? sheetRow(/^Đặt ưu tiên…/)
+            : async () => {
+                await page
+                  .getByRole("button", { name: /Đổi ưu tiên của ERP-149/ })
+                  .click();
+              },
+        ],
+        // The Cột menu (UC-WM-I02): its rows scroll, so the scroll region must be reachable by keyboard.
+        [
+          "columns-menu",
+          async () => {
+            const trigger = page.getByRole("button", {
+              name: /^Cột \d+\/\d+$/,
+            });
+            await trigger.scrollIntoViewIfNeeded();
+            await trigger.click();
+          },
+        ],
       ];
-      for (const [shot, name] of pickers) {
-        const trigger = page.getByRole("button", { name });
-        await trigger.scrollIntoViewIfNeeded();
-        await trigger.click();
+      for (const [shot, start] of pickers) {
+        await start();
         const open = page.locator(
-          "[role=listbox], [role=menu], [data-slot=popover-content]",
+          phone && shot !== "columns-menu"
+            ? "[role=dialog]"
+            : "[role=listbox], [role=menu], [data-slot=popover-content]",
         );
         await expect(open.first()).toBeVisible();
         await page.waitForTimeout(300);
@@ -98,7 +169,7 @@ for (const [width, height] of [
           const targets = open
             .first()
             .locator(
-              "[role=option], [role=menuitem], button:not([aria-hidden])",
+              "[role=option], [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], button:not([aria-hidden]), select",
             );
           const count = await targets.count();
           expect(count, `${shot} targets`).toBeGreaterThan(0);
@@ -120,7 +191,9 @@ for (const [width, height] of [
         expect(
           await seriousViolations(
             page,
-            shot === "priority-menu" ? ["aria-hidden-focus"] : [],
+            shot === "priority-menu" || shot === "columns-menu"
+              ? ["aria-hidden-focus"]
+              : [],
           ),
           shot,
         ).toEqual([]);
@@ -137,10 +210,20 @@ for (const [width, height] of [
         "Needs the status 409 fault",
       );
       await open(page, width, height, dark);
-      await page
-        .getByRole("button", { name: "Đổi trạng thái của ERP-149" })
-        .click();
-      await page.getByRole("option", { name: /Đang làm/ }).click();
+      if (width < 768) {
+        await page
+          .getByRole("button", { name: "Thao tác khác cho ERP-149" })
+          .click();
+        await page
+          .getByRole("dialog")
+          .getByRole("button", { name: /^Đang làm/ })
+          .click();
+      } else {
+        await page
+          .getByRole("button", { name: "Đổi trạng thái của ERP-149" })
+          .click();
+        await page.getByRole("option", { name: /Đang làm/ }).click();
+      }
       const toast = page.getByText(/vừa sửa “[^”]*” trước bạn/);
       await expect(toast).toBeVisible();
       await expect(toast).toContainText("Thay đổi của bạn chưa được lưu");
@@ -156,8 +239,12 @@ for (const [width, height] of [
       expect(await seriousViolations(page)).toEqual([]);
       // The row is back in its group.
       await expect(
-        page
-          .getByRole("rowgroup", { name: "Cần làm" })
+        (width < 768
+          ? page
+              .locator("[data-slot=table-phone-list] section")
+              .filter({ has: page.getByRole("heading", { name: /^Cần làm/ }) })
+          : page.getByRole("rowgroup", { name: "Cần làm" })
+        )
           .locator("[data-row-id]")
           .filter({ hasText: "ERP-149" }),
       ).toHaveCount(1);
@@ -171,36 +258,28 @@ for (const dark of [false, true]) {
   }) => {
     test.skip(faults !== "", "Default world");
     await open(page, 390, 844, dark);
-    const row = page.locator('[data-row-id="mock-erp-item-149"]');
+    const row = page.locator(
+      '[data-slot=table-phone-list] [data-row-id="mock-erp-item-149"]',
+    );
     await expect(row).toBeVisible();
     const rowBox = (await row.boundingBox())!;
     expect(rowBox.height).toBeGreaterThanOrEqual(43.5);
 
     // A control's target is its box plus its hit area: the point 21 px above and below its centre still reaches it.
-    const reach = async (
-      name: string | RegExp,
-      role: "button" | "checkbox",
-    ) => {
-      const control = row.getByRole(role, { name }).first();
+    // The phone row holds the check circle, the title and the "…" that opens the sheet with every write.
+    for (const name of ["Đánh dấu xong ERP-149", "Thao tác khác cho ERP-149"]) {
+      const control = row.getByRole("button", { name });
       await control.scrollIntoViewIfNeeded();
       const box = (await control.boundingBox())!;
-      const x = box.x + box.width / 2;
-      for (const dy of [-21, 21]) {
-        const hit = await page.evaluate(
-          ([px, py]) =>
-            document.elementFromPoint(px!, py!)?.closest("button") !== null,
-          [x, box.y + box.height / 2 + dy],
-        );
-        expect(hit, `${String(name)} at ${dy}`).toBe(true);
-      }
-    };
-    await reach("Chọn ERP-149", "checkbox");
-    await reach("Đổi trạng thái của ERP-149", "button");
-    for (const name of [
-      /Đổi người phụ trách của ERP-149/,
-      /Đổi hạn của ERP-149/,
-    ]) {
-      const box = (await row.getByRole("button", { name }).boundingBox())!;
+      expect(box.width, name).toBeGreaterThanOrEqual(43.5);
+      expect(box.height, name).toBeGreaterThanOrEqual(43.5);
+    }
+    await row
+      .getByRole("button", { name: "Thao tác khác cho ERP-149" })
+      .click();
+    const sheet = page.getByRole("dialog");
+    for (const name of [/^Giao cho…/, /^Đổi hạn…/, /^Đặt ưu tiên…/]) {
+      const box = (await sheet.getByRole("button", { name }).boundingBox())!;
       expect(box.height, String(name)).toBeGreaterThanOrEqual(43.5);
     }
   });

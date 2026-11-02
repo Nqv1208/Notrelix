@@ -1,5 +1,5 @@
-import { useId, useState, type ReactElement } from "react";
-import { Trash2 } from "lucide-react";
+import { Fragment, useId, useState, type ReactElement } from "react";
+import { ChevronLeft, SquareCheck, Trash2, TriangleAlert } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -157,7 +157,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
   if (status === "missing" || !form)
     return (
       <Shell>
-        <p className="m-0 rounded-xl border border-line bg-popover p-4 text-item-ui text-muted-foreground">
+        <p className="m-0 rounded-[12px] border border-line bg-popover p-4 text-item-ui text-muted-foreground">
           {status === "error" ? copy.common.loadError : t.gone}
         </p>
       </Shell>
@@ -177,14 +177,15 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
     <Shell>
       <section
         aria-label={t.aria}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-popover"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-line bg-popover"
       >
         <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
           <button
             type="button"
             onClick={props.onBack}
-            className={cn(BUTTON_CLASS.ghost, "h-7 px-1.5")}
+            className={cn(BUTTON_CLASS.ghost, "h-8 px-2 max-md:h-11")}
           >
+            <ChevronLeft aria-hidden="true" />
             {props.backLabel ?? copy.common.back}
           </button>
           <h1
@@ -198,7 +199,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
         <div
           role="tablist"
           aria-label={t.tabsAria}
-          className="flex gap-1 border-b border-line px-3"
+          className="flex gap-0.5 border-b border-line px-4"
         >
           {TABS.map((tab) => (
             <button
@@ -209,7 +210,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
               aria-selected={props.tab === tab}
               onClick={() => props.onTab(tab)}
               className={cn(
-                "inline-flex h-[34px] cursor-pointer items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-3 text-item-small font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                "inline-flex h-[34px] max-md:h-11 cursor-pointer items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-3 text-item-small font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                 props.tab === tab &&
                   "border-primary font-semibold text-foreground",
               )}
@@ -217,7 +218,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
               {t.tabs[tab]}
               <small
                 className={cn(
-                  "text-metadata font-semibold text-meta-foreground",
+                  "text-micro font-semibold text-meta-foreground",
                   props.tab === tab && "text-brand-subtle-foreground",
                 )}
               >
@@ -249,7 +250,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
           <div
             role="tabpanel"
             aria-labelledby={`inbox-tab-${props.tab}`}
-            className="flex max-h-[46vh] min-w-0 flex-col overflow-auto border-b border-line md:max-h-none md:w-[340px] md:shrink-0 md:border-r md:border-b-0"
+            className="flex max-h-[46vh] min-w-0 flex-col overflow-auto border-b border-line md:max-h-none md:w-[340px] md:shrink-0 xl:w-[421px] md:border-r md:border-b-0"
           >
             {status === "loading" ? (
               <div
@@ -283,7 +284,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
             )}
           </div>
 
-          <div className="min-w-0 flex-1 overflow-auto p-4 sm:p-5">
+          <div className="min-w-0 flex-1 overflow-auto p-4">
             {selected ? (
               <ResponseDetail {...props} form={form} response={selected} />
             ) : (
@@ -338,7 +339,13 @@ function ResponseList(
   function onKeyDown(event: React.KeyboardEvent) {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
-    const index = items.findIndex((s) => s.id === props.selectedId);
+    // The move starts from the row that has the focus, else from the selected one.
+    const focused = (event.target as HTMLElement)
+      .closest("[role=option]")
+      ?.id.replace("inbox-row-", "");
+    const index = items.findIndex(
+      (s) => s.id === (focused ?? props.selectedId),
+    );
     const next =
       items[
         Math.min(
@@ -356,7 +363,7 @@ function ResponseList(
       role="listbox"
       aria-label={copy.inbox.listAria}
       onKeyDown={onKeyDown}
-      className="m-0 flex list-none flex-col gap-1.5 p-3"
+      className="m-0 flex list-none flex-col p-0"
     >
       {items.map((s, index) => {
         const on = s.id === props.selectedId;
@@ -372,42 +379,37 @@ function ResponseList(
               }
               onClick={() => props.onSelect(s.id)}
               className={cn(
-                "flex w-full cursor-pointer flex-col gap-0.5 rounded-[10px] border bg-popover px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-                on
-                  ? "border-primary bg-brand-subtle/50 shadow-[0_0_0_1px_var(--primary)]"
-                  : "border-line",
+                "grid min-h-[58px] w-full cursor-pointer grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-x-2.5 border-0 border-b border-line px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset",
+                on ? "bg-row-selected" : "bg-transparent",
               )}
             >
-              <span className="flex items-center gap-2">
-                {unread ? (
-                  <span
-                    aria-hidden="true"
-                    className="size-2 shrink-0 rounded-full bg-primary"
-                  />
-                ) : null}
-                <b
-                  title={titleOf(s, copy)}
-                  className={cn(
-                    "min-w-0 flex-1 truncate text-item-ui",
-                    unread ? "font-[650]" : "font-medium",
-                  )}
-                >
-                  {titleOf(s, copy)}
-                </b>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "row-span-2 size-2 shrink-0 rounded-full",
+                  unread && "bg-primary",
+                )}
+              />
+              <b
+                title={titleOf(s, copy)}
+                className={cn(
+                  "min-w-0 truncate text-item-ui",
+                  unread ? "font-[650]" : "font-medium",
+                )}
+              >
+                {titleOf(s, copy)}
+              </b>
+              <span className="row-span-2 text-metadata text-meta-foreground">
+                {whenShort(
+                  s.submittedAt,
+                  props.now,
+                  props.locale,
+                  props.timeZone,
+                  copy.inbox.yesterday,
+                )}
               </span>
-              <span className="flex items-center gap-2 text-metadata text-meta-foreground">
-                <span className="min-w-0 flex-1 truncate">
-                  {personName(s, props)}
-                </span>
-                <span>
-                  {whenShort(
-                    s.submittedAt,
-                    props.now,
-                    props.locale,
-                    props.timeZone,
-                    copy.inbox.yesterday,
-                  )}
-                </span>
+              <span className="min-w-0 truncate text-metadata text-meta-foreground">
+                {personName(s, props)}
               </span>
             </button>
           </li>
@@ -451,30 +453,35 @@ function ResponseDetail(
   return (
     <article
       aria-label={t.detailAria}
-      className="flex max-w-[760px] flex-col gap-4"
+      className="flex flex-col gap-7 rounded-[12px] border border-line bg-popover p-5"
     >
-      <header className="flex flex-col gap-1">
-        <h2 className="m-0 text-[19px] leading-[1.35] font-[650]">
-          {titleOf(response, copy)}
-        </h2>
-        <div className="flex flex-wrap items-center gap-2 text-item-small text-meta-foreground">
-          <span>
+      <header className="flex items-start gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h2 className="m-0 text-[16px] leading-[1.45] font-[650]">
+            {titleOf(response, copy)}
+          </h2>
+          <span className="text-metadata leading-[1.45] text-meta-foreground">
             {by} · {sentAt}
           </span>
-          <Chip tone={response.status === "new" ? "brand" : "neutral"}>
-            {t.status[response.status]}
-          </Chip>
         </div>
+        <Chip tone={response.status === "new" ? "brand" : "neutral"}>
+          {t.status[response.status]}
+        </Chip>
       </header>
 
-      <dl className="m-0 flex flex-col gap-3.5">
+      <dl className="m-0 grid grid-cols-1 gap-x-3 gap-y-2 text-item-small md:grid-cols-[130px_minmax(0,1fr)]">
         {form.questions.map((q) => {
           const target = targetName(q, props.fields, copy);
           const text = answerText(q, response.answers[q.key], props.fields);
           return (
-            <div key={q.id} className="flex flex-col gap-1">
-              <dt className="flex flex-wrap items-center gap-2 text-crumb font-semibold text-muted-foreground">
-                {q.label}
+            <Fragment key={q.id}>
+              <dt className="text-meta-foreground">{q.label}</dt>
+              <dd className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 break-words whitespace-pre-wrap">
+                {text === "" ? (
+                  <span className="text-meta-foreground">{t.noAnswer}</span>
+                ) : (
+                  text
+                )}
                 {target ? (
                   <Chip tone="brand">
                     {fillFormsCopy(t.mapsTo, { field: target })}
@@ -482,15 +489,8 @@ function ResponseDetail(
                 ) : (
                   <Chip tone="neutral">{t.notMapped}</Chip>
                 )}
-              </dt>
-              <dd className="m-0 text-item-ui break-words whitespace-pre-wrap">
-                {text === "" ? (
-                  <span className="text-meta-foreground">{t.noAnswer}</span>
-                ) : (
-                  text
-                )}
               </dd>
-            </div>
+            </Fragment>
           );
         })}
       </dl>
@@ -551,6 +551,7 @@ function ResponseDetail(
               onClick={() => props.onCreateItem(response)}
               className={BUTTON_CLASS.primary}
             >
+              <SquareCheck aria-hidden="true" />
               {t.createItem}
             </button>,
           )}
@@ -569,6 +570,7 @@ function ResponseDetail(
               onClick={() => void props.onSpam(response)}
               className={BUTTON_CLASS.outline}
             >
+              <TriangleAlert aria-hidden="true" />
               {t.spamAction}
             </button>,
           )}

@@ -55,13 +55,13 @@ public sealed class CreatePageTargetPolicyMatrixTests
     }
 
     [Fact]
-    public void NonMember_IsForbidden()
+    public void NonMember_IsNotFound()
     {
         var decision = Evaluate(
             new CreatePageCommand(Guid.NewGuid(), "Outsider Page", null),
             Facts(workspaceRole: null));
 
-        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        decision.Kind.Should().Be(AccessDecisionKind.NotFound);
     }
 
     [Fact]

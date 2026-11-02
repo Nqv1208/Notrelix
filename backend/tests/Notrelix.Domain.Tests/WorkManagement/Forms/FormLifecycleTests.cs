@@ -122,4 +122,30 @@ public class FormLifecycleTests
         var act = () => form.EnsureAcceptsSubmissions();
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void Form_UpdateQuestion_WhenClosed_ShouldThrowAndChangeNothing()
+    {
+        var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
+        var question = FormQuestion.Create(Guid.NewGuid(), WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0"));
+        form.AddQuestion(question, Actor, Now);
+        form.Close(Actor, Now);
+        var version = form.Version;
+
+        var act = () => form.UpdateQuestion(question, "Renamed", true, question.Position, question.Config, null, Actor, Now);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*closed*");
+        question.Label.Should().Be("Q1");
+        form.Version.Should().Be(version);
+    }
+
+    [Theory]
+    [InlineData(FormQuestionType.FileUpload, false)]
+    [InlineData(FormQuestionType.Signature, false)]
+    [InlineData(FormQuestionType.ShortText, true)]
+    [InlineData(FormQuestionType.Select, true)]
+    public void FormQuestionRules_OnlyFileAndSignatureCannotBeAnsweredYet(FormQuestionType type, bool supported)
+    {
+        FormQuestionRules.IsSupported(type).Should().Be(supported);
+    }
 }

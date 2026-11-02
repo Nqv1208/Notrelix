@@ -191,7 +191,12 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         var role = isAccount ? facts.AccountMemberRole : facts.WorkspaceMemberRole;
         if (role is null)
         {
-            return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            // A person with no membership in the Workspace gets the identical NotFound for a Workspace or a
+            // resource inside it, whether or not it exists, so the answer does not reveal what exists (NRX-004).
+            // An Account-scoped request keeps Forbidden: the Account comes from the caller's own session.
+            return isAccount
+                ? AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.")
+                : AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
         }
 
         // Resource lifecycle comes before every authority fast-path: a missing or
