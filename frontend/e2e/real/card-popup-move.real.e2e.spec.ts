@@ -41,6 +41,23 @@ test("a member moves a card to another column from its popup and the move surviv
   );
   expect(created.status).toBeLessThan(300);
   const itemId = created.data!.id;
+  // A new card has no Status and "No status" is not a column to pick, so it starts in a real one.
+  const status = (
+    await apiRead<{
+      columns: { id: string; fieldType: string; options?: { id: string }[] }[];
+    }>(page, `/boards/${board.id}/full`)
+  ).columns.find((column) => column.fieldType.toLowerCase() === "status")!;
+  const seen = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${itemId}`,
+  );
+  const started = await apiWrite(
+    page,
+    "PATCH",
+    `/board-items/${itemId}/status`,
+    { status: status.options![0]!.id, expectedVersion: seen.version },
+  );
+  expect(started.status, JSON.stringify(started.data)).toBeLessThan(300);
 
   await page.goto(
     `/workspaces/${workspace.id}/boards/${board.id}?item=${itemId}`,
