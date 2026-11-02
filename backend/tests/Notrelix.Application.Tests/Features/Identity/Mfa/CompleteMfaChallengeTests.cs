@@ -119,6 +119,31 @@ public class CompleteMfaChallengeTests : IdentityHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_WhenTheChallengeExpiredInTheStore_IsRefusedLikeAnUnknownOneAndVerifiesNothing()
+    {
+        _store.Setup(s => s.PeekAsync(Token, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_challenge with { ExpiresAt = TestNow.AddSeconds(-1) });
+
+        var result = await CreateSut().Handle(Command("123456"), CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e => e.Code == CompleteMfaChallengeErrors.ChallengeInvalidCode);
+        _verifier.Verify(v => v.VerifyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        _issuer.Verify(i => i.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheAccountWasSuspendedAfterThePasswordStep_RefusesAndOpensNothing()
+    {
+        SetupUsers(CreateUser(status: UserStatus.Suspended));
+
+        var result = await CreateSut().Handle(Command("123456"), CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.mfa.account-inactive");
+        _verifier.Verify(v => v.VerifyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        _issuer.Verify(i => i.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_WhenTheChallengeIsForAStepUp_LoginRefusesItWithTheSameAnswerAsAnExpiredOne()
     {
         _store.Setup(s => s.PeekAsync(Token, It.IsAny<CancellationToken>()))
