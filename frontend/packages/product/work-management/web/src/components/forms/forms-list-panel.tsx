@@ -27,6 +27,8 @@ export interface BoardFormsPanelProps {
   readonly onDelete: (form: FormListRow) => Promise<FormWriteResult>;
   readonly onOpenBuilder: (formId: string) => void;
   readonly onOpenResponses: (formId: string) => void;
+  /** The board is archived: its forms stay readable and every write is refused. */
+  readonly archived?: boolean;
   /** Copies the member link of the form; resolves false when the browser refused. */
   readonly onCopyLink: (formId: string) => Promise<boolean>;
 }
@@ -51,7 +53,13 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
   const [failed, setFailed] = useState<{
     id: string;
     action: RowAction;
+    reason?: Extract<FormWriteResult, { ok: false }>["reason"];
   } | null>(null);
+  const [pending, setPending] = useState<{
+    id: string;
+    action: RowAction;
+  } | null>(null);
+  const archived = props.archived === true;
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const nameId = useId();
   const open = forms.filter((form) => form.status === "published").length;
@@ -75,10 +83,13 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
     action: RowAction,
     send: () => Promise<FormWriteResult>,
   ) {
+    if (pending) return;
     setFailed(null);
+    setPending({ id: row.id, action });
     const result = await send();
+    setPending(null);
     if (result.ok) setConfirmId(null);
-    else setFailed({ id: row.id, action });
+    else setFailed({ id: row.id, action, reason: result.reason });
   }
 
   async function copyLink(formId: string) {
@@ -109,6 +120,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
             <button
               type="button"
               aria-expanded={adding}
+              disabled={archived}
               onClick={() => {
                 setAdding(true);
                 setNameError(false);
@@ -121,13 +133,22 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
           }
         />
 
+        {archived ? (
+          <p
+            role="status"
+            className="mb-3 rounded-[10px] bg-warning-subtle px-3.5 py-2.5 text-item-small text-foreground"
+          >
+            {t.archivedNote}
+          </p>
+        ) : null}
+
         {adding ? (
           <form
             onSubmit={create}
             onKeyDown={(event) => {
               if (event.key === "Escape") setAdding(false);
             }}
-            className="mb-3 flex flex-col gap-2.5 rounded-xl border border-line bg-popover p-3.5"
+            className="mb-3 flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5"
           >
             <div className="flex gap-2">
               <input
@@ -186,7 +207,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
             ))}
           </div>
         ) : status === "error" ? (
-          <div className="rounded-xl border border-line bg-popover p-3.5">
+          <div className="rounded-[12px] border border-line bg-popover p-3.5">
             <FormAlert
               message={t.loadError}
               onRetry={props.onReload}
@@ -201,7 +222,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
             </span>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-line bg-popover">
+          <div className="overflow-hidden rounded-[12px] border border-line bg-popover">
             <div className="hidden min-h-[34px] grid-cols-[minmax(0,1fr)_110px_120px_290px] items-center gap-2.5 bg-background px-3.5 text-metadata font-semibold text-meta-foreground @[640px]:grid">
               <span>{t.colForm}</span>
               <span>{t.colStatus}</span>
@@ -217,7 +238,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                   <div
                     className={cn(
                       "grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 px-3.5 py-2 @[640px]:grid-cols-[minmax(0,1fr)_110px_120px_290px] @[640px]:py-0",
-                      form.status === "draft" && "bg-brand-subtle/40",
+                      form.status === "draft" && "bg-row-selected",
                     )}
                   >
                     <span className="flex min-w-0 flex-col">
@@ -228,7 +249,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                           name: form.title,
                         })}
                         onClick={() => props.onOpenBuilder(form.id)}
-                        className="cursor-pointer truncate border-0 bg-transparent p-0 text-left text-item-ui font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
+                        className="cursor-pointer truncate border-0 bg-transparent p-0 text-left max-md:min-h-11 text-item-ui font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
                       >
                         {form.title}
                       </button>
@@ -236,7 +257,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                         {metaLine(form, copy, props.locale)}
                       </span>
                     </span>
-                    <span className="justify-self-end @[640px]:justify-self-start">
+                    <span className="flex justify-self-end @[640px]:justify-self-start">
                       <FormStatusChip status={form.status} copy={copy} />
                     </span>
                     {form.status === "draft" ? (
@@ -257,7 +278,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                         onClick={() => props.onOpenResponses(form.id)}
                         className={cn(
                           HINT_CLASS,
-                          "col-span-2 w-fit cursor-pointer border-0 bg-transparent p-0 text-left outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring @[640px]:col-span-1",
+                          "col-span-2 w-fit cursor-pointer border-0 bg-transparent p-0 text-left max-md:min-h-11 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring @[640px]:col-span-1",
                         )}
                       >
                         {responsesText(form, copy)}
@@ -280,6 +301,12 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                       {form.status === "published" ? (
                         <button
                           type="button"
+                          disabled={archived || pending !== null}
+                          aria-busy={
+                            (pending?.id === form.id &&
+                              pending.action === "close") ||
+                            undefined
+                          }
                           onClick={() =>
                             void run(form, "close", () =>
                               props.onClose(form.id),
@@ -296,6 +323,12 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                       {form.status === "draft" ? (
                         <button
                           type="button"
+                          disabled={archived || pending !== null}
+                          aria-busy={
+                            (pending?.id === form.id &&
+                              pending.action === "publish") ||
+                            undefined
+                          }
                           onClick={() =>
                             void run(form, "publish", () =>
                               props.onPublish(form.id),
@@ -314,6 +347,7 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                         aria-label={fillFormsCopy(t.removeAria, {
                           name: form.title,
                         })}
+                        disabled={archived || pending !== null}
                         onClick={() => setConfirmId(form.id)}
                         className={ICON_BUTTON_CLASS}
                       >
@@ -325,13 +359,17 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                     <div className="px-3.5 pb-2.5">
                       <FormAlert
                         message={
-                          failed.action === "close"
-                            ? t.closeFailed
-                            : failed.action === "remove"
-                              ? t.removeFailed
-                              : form.questionCount === 0
-                                ? t.noQuestions
-                                : t.publishFailed
+                          failed.reason === "conflict"
+                            ? t.conflictRow
+                            : failed.reason === "forbidden"
+                              ? t.forbiddenRow
+                              : failed.action === "close"
+                                ? t.closeFailed
+                                : failed.action === "remove"
+                                  ? t.removeFailed
+                                  : form.questionCount === 0
+                                    ? t.noQuestions
+                                    : t.publishFailed
                         }
                         onRetry={() => {
                           if (failed.action === "close")
@@ -367,17 +405,30 @@ export function FormsListPanel(props: BoardFormsPanelProps) {
                         <button
                           type="button"
                           autoFocus
+                          disabled={pending !== null}
                           onClick={() => setConfirmId(null)}
-                          className={cn(BUTTON_CLASS.outline, "h-7")}
+                          className={cn(
+                            BUTTON_CLASS.outline,
+                            "h-7 px-2.5 text-crumb",
+                          )}
                         >
                           {copy.common.keep}
                         </button>
                         <button
                           type="button"
+                          disabled={pending !== null}
+                          aria-busy={
+                            (pending?.id === form.id &&
+                              pending.action === "remove") ||
+                            undefined
+                          }
                           onClick={() =>
                             void run(form, "remove", () => props.onDelete(form))
                           }
-                          className={cn(BUTTON_CLASS.danger, "h-7")}
+                          className={cn(
+                            BUTTON_CLASS.danger,
+                            "h-7 border-danger-text bg-danger-text px-2.5 text-crumb text-primary-foreground",
+                          )}
                         >
                           {t.remove}
                         </button>

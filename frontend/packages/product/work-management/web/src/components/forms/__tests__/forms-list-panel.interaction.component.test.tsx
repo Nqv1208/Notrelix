@@ -127,6 +127,14 @@ describe.each(["vi", "en"] as const)("forms list (%s)", (locale) => {
     const props = render(locale);
     fireEvent.click(screen.getByRole("button", { name: copy.list.publish }));
     expect(props.onPublish).toHaveBeenCalledWith("f-2");
+    // One write at a time: the other rows wait until the first one settles.
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("button", { name: copy.list.closeForm })
+          .hasAttribute("disabled"),
+      ).toBe(false),
+    );
     fireEvent.click(screen.getByRole("button", { name: copy.list.closeForm }));
     expect(props.onClose).toHaveBeenCalledWith("f-1");
     fireEvent.click(screen.getByRole("button", { name: copy.list.copyLink }));
@@ -174,6 +182,71 @@ describe.each(["vi", "en"] as const)("forms list (%s)", (locale) => {
         expect.objectContaining({ id: "f-3" }),
       ),
     );
+  });
+
+  it(`is read-only on an archived board: it says why and offers no write (${locale})`, () => {
+    render(locale, { archived: true });
+    expect(screen.getByText(copy.list.archivedNote)).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: copy.list.create })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole("button", { name: copy.list.publish })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole("button", { name: copy.list.closeForm })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    // The forms and their responses stay readable.
+    expect(screen.getByText("Yêu cầu hỗ trợ IT")).toBeTruthy();
+  });
+
+  it(`names a stale write as someone else's change and tries again on the new version (${locale})`, async () => {
+    const onClose = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, reason: "conflict" })
+      .mockResolvedValueOnce({ ok: true });
+    render(locale, { onClose });
+    fireEvent.click(screen.getByRole("button", { name: copy.list.closeForm }));
+    await screen.findByText(copy.list.conflictRow);
+    fireEvent.click(screen.getByRole("button", { name: copy.common.retry }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.queryByText(copy.list.conflictRow)).toBeNull(),
+    );
+  });
+
+  it(`says a write refused for lost access was refused for that (${locale})`, async () => {
+    render(locale, {
+      onPublish: vi.fn(
+        async () => ({ ok: false, reason: "forbidden" }) as const,
+      ),
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.list.publish }));
+    await screen.findByText(copy.list.forbiddenRow);
+  });
+
+  it(`holds every other row while one write is in flight (${locale})`, async () => {
+    let settle: (value: { ok: true }) => void = () => {};
+    const onClose = vi.fn(
+      () => new Promise<{ ok: true }>((resolve) => (settle = resolve)),
+    );
+    render(locale, { onClose });
+    const close = screen.getByRole("button", { name: copy.list.closeForm });
+    fireEvent.click(close);
+    await waitFor(() => expect(close.getAttribute("aria-busy")).toBe("true"));
+    expect(
+      screen
+        .getByRole("button", { name: copy.list.publish })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    settle({ ok: true });
+    await waitFor(() => expect(close.hasAttribute("disabled")).toBe(false));
   });
 });
 

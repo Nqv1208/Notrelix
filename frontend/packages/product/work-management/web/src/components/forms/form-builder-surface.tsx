@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
+  ChevronDown,
+  ChevronUp,
   ChevronLeft,
+  Eye,
   GripVertical,
   Info,
   Plus,
@@ -65,6 +66,8 @@ export interface FormBuilderSurfaceProps {
   /** "09:42": when the form was last saved. */
   readonly savedAt?: string;
   readonly preview: boolean;
+  /** The board is archived: the form stays readable and nothing on it changes. */
+  readonly archived?: boolean;
   readonly onPreview: (on: boolean) => void;
   /** The member link, shown once the form is published. */
   readonly linkUrl: string;
@@ -153,7 +156,7 @@ export function FormBuilderSurface(props: FormBuilderSurfaceProps) {
   if (status === "error")
     return (
       <Page>
-        <div className="rounded-xl border border-line bg-popover p-4">
+        <div className="rounded-[12px] border border-line bg-popover p-4">
           <FormAlert
             message={b.loadError}
             onRetry={props.onReload}
@@ -165,7 +168,7 @@ export function FormBuilderSurface(props: FormBuilderSurfaceProps) {
   if (status === "missing" || !form)
     return (
       <Page>
-        <p className="m-0 rounded-xl border border-line bg-popover p-4 text-item-ui text-muted-foreground">
+        <p className="m-0 rounded-[12px] border border-line bg-popover p-4 text-item-ui text-muted-foreground">
           {copy.common.noAccess}
         </p>
       </Page>
@@ -180,6 +183,7 @@ export function FormBuilderSurface(props: FormBuilderSurfaceProps) {
         boardTitle={props.boardTitle}
         todayLabel={props.todayLabel}
         preview
+        canManage
         onBack={() => props.onPreview(false)}
         onReload={props.onReload}
         onSubmit={async () => ({ ok: false, reason: "failed" })}
@@ -201,6 +205,9 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
   const b = copy.builder;
   const baseId = useId();
   const closed = form.status === "closed";
+  const archived = props.archived === true;
+  // A closed form and a form on an archived board are both read-only.
+  const frozen = closed || archived;
   const questions = form.questions;
   const selected = questions.find((q) => q.id === props.selectedId) ?? null;
   const duplicates = duplicateFieldMappings(questions);
@@ -302,7 +309,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
   }
 
   async function saveDetails() {
-    if (closed) return;
+    if (frozen) return;
     if (title.trim() === "") return setTitleError(true);
     setTitleError(false);
     if (title.trim() === form.title && description === form.description) return;
@@ -391,7 +398,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
       <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 lg:flex-row lg:items-start lg:px-6">
         <section
           aria-label={b.aria}
-          className="min-w-0 flex-1 overflow-hidden rounded-xl border border-line bg-popover"
+          className="min-w-0 flex-1 overflow-hidden rounded-[12px] border border-line bg-popover"
         >
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line px-4 py-3.5 sm:px-5 xl:flex-nowrap">
             <button
@@ -409,7 +416,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
             <div className="min-w-[160px] flex-1 sm:max-w-[300px]">
               <input
                 value={title}
-                disabled={closed}
+                disabled={frozen}
                 maxLength={200}
                 aria-label={b.titleLabel}
                 aria-invalid={titleError || undefined}
@@ -422,7 +429,12 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
               />
             </div>
             <FormStatusChip status={form.status} copy={copy} />
-            <span className={cn(HINT_CLASS, "min-w-0 flex-1 truncate")}>
+            <span
+              className={cn(
+                HINT_CLASS,
+                "min-w-0 flex-1 truncate max-md:basis-full",
+              )}
+            >
               {props.savedAt
                 ? fillFormsCopy(b.savedAt, { time: props.savedAt })
                 : ""}
@@ -432,12 +444,13 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
               onClick={() => props.onPreview(true)}
               className={BUTTON_CLASS.outline}
             >
+              <Eye aria-hidden="true" />
               {b.preview}
             </button>
             {form.status === "draft" ? (
               <button
                 type="button"
-                disabled={blocked || conflict !== null}
+                disabled={blocked || conflict !== null || archived}
                 onClick={() => void publish()}
                 className={BUTTON_CLASS.primary}
               >
@@ -447,6 +460,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
             {form.status === "published" ? (
               <button
                 type="button"
+                disabled={archived}
                 onClick={() => {
                   void props.onClose().then((r) => {
                     if (!r.ok)
@@ -506,7 +520,10 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                   readOnly
                   value={props.linkUrl}
                   aria-label={b.linkLabel}
-                  className={cn(INPUT_CLASS, "min-w-0 flex-[2]")}
+                  className={cn(
+                    INPUT_CLASS,
+                    "min-w-0 flex-[2] max-md:basis-full",
+                  )}
                 />
                 <button
                   type="button"
@@ -517,10 +534,10 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                 </button>
               </div>
             ) : null}
-            {closed ? (
+            {frozen ? (
               <div className="flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground">
                 <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                <span>{b.closedNote}</span>
+                <span>{archived ? b.archivedNote : b.closedNote}</span>
               </div>
             ) : null}
             {problem?.kind === "stale" ? (
@@ -563,7 +580,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
               <textarea
                 id={`${baseId}-d`}
                 value={description}
-                disabled={closed}
+                disabled={frozen}
                 maxLength={2000}
                 onChange={(e) => setDescription(e.target.value)}
                 onBlur={() => void saveDetails()}
@@ -574,16 +591,16 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
             <div className="flex items-center gap-2">
               <h2 className="m-0 flex-1 text-[16px] font-[650]">
                 {b.questions}{" "}
-                <span className="font-medium text-meta-foreground">
+                <span className="text-metadata font-medium text-meta-foreground">
                   {fillFormsCopy(b.questionsCount, { count: questions.length })}
                 </span>
               </h2>
-              {closed ? null : (
+              {frozen ? null : (
                 <button
                   type="button"
                   aria-expanded={adding}
                   onClick={() => setAdding((on) => !on)}
-                  className={cn(BUTTON_CLASS.outline, "h-7")}
+                  className={cn(BUTTON_CLASS.outline, "h-7 px-2.5 text-crumb")}
                 >
                   <Plus aria-hidden="true" />
                   {b.addQuestion}
@@ -639,7 +656,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                       selected={q.id === props.selectedId}
                       duplicate={duplicateIds.has(q.id)}
                       differs={differs(q) ? cn_.differs : null}
-                      readOnly={closed}
+                      readOnly={frozen}
                       dragging={dragId === q.id}
                       target={targetName(q, fields, copy)}
                       onSelect={() =>
@@ -686,7 +703,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
             n={questions.findIndex((q) => q.id === selected.id) + 1}
             fields={fields}
             questions={questions}
-            readOnly={closed}
+            readOnly={frozen}
             onSave={async (changes) => {
               const send = () => props.onUpdateQuestion(selected, changes);
               return settle(await send(), send, minesOf(selected, changes));
@@ -704,7 +721,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
         ) : (
           <aside
             aria-label={b.panel}
-            className="hidden w-[380px] shrink-0 rounded-xl border border-dashed border-line-strong p-5 text-item-small text-meta-foreground lg:block"
+            className="hidden w-[380px] shrink-0 rounded-[12px] border border-dashed border-line-strong p-5 text-item-small text-meta-foreground lg:block"
           >
             {b.pickHere}
           </aside>
@@ -854,9 +871,9 @@ function QuestionRow({
         onDrop();
       }}
       className={cn(
-        "grid grid-cols-[22px_28px_minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] border bg-popover px-3 py-2.5",
+        "grid min-h-[59px] grid-cols-[22px_28px_minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] border bg-popover px-3 py-2.5",
         selected
-          ? "border-primary bg-brand-subtle/50 shadow-[0_0_0_1px_var(--primary)]"
+          ? "border-primary bg-row-selected shadow-[0_0_0_1px_var(--primary)]"
           : "border-line",
         dragging && "rotate-[-0.4deg] border-primary shadow-popover",
       )}
@@ -868,7 +885,7 @@ function QuestionRow({
       >
         <GripVertical className="size-4" />
       </span>
-      <span className="grid size-6 place-items-center rounded-md bg-state-hover-strong text-crumb font-semibold text-muted-foreground">
+      <span className="grid size-6 place-items-center rounded-[6px] bg-state-hover-strong text-metadata font-semibold text-muted-foreground">
         {n}
       </span>
       <button
@@ -876,7 +893,7 @@ function QuestionRow({
         onClick={onSelect}
         aria-pressed={selected}
         title={name}
-        className="flex min-w-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="flex min-w-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left outline-none max-md:min-h-11 max-md:justify-center focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         <b className="truncate text-item-ui font-semibold">{name}</b>
         <small className="truncate text-metadata text-meta-foreground">
@@ -901,7 +918,7 @@ function QuestionRow({
               onClick={() => !first && onMove(n - 2)}
               className={ICON_BUTTON_CLASS}
             >
-              <ArrowUp aria-hidden="true" />
+              <ChevronUp aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -910,7 +927,7 @@ function QuestionRow({
               onClick={() => !last && onMove(n)}
               className={ICON_BUTTON_CLASS}
             >
-              <ArrowDown aria-hidden="true" />
+              <ChevronDown aria-hidden="true" />
             </button>
           </>
         )}
@@ -1002,7 +1019,7 @@ function QuestionPanel({
   return (
     <aside
       aria-label={b.panel}
-      className="flex w-full shrink-0 flex-col gap-3.5 rounded-xl border border-line bg-popover p-[18px] lg:w-[380px]"
+      className="flex w-full shrink-0 flex-col gap-3.5 rounded-[12px] border border-line bg-popover p-[18px] lg:w-[380px]"
     >
       <div className="flex items-center gap-2">
         <h2 className="m-0 flex-1 text-[16px] font-[650]">
@@ -1140,7 +1157,7 @@ function QuestionPanel({
           disabled={readOnly}
           onClick={() => void save({ required: !q.required })}
           className={cn(
-            "relative h-5 w-[34px] shrink-0 cursor-pointer rounded-full border-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+            "relative box-border h-5 w-[34px] shrink-0 cursor-pointer rounded-full border-0 outline-none max-md:box-content max-md:border-y-12 max-md:border-solid max-md:border-transparent max-md:bg-clip-content focus-visible:ring-2 focus-visible:ring-focus-ring",
             q.required ? "bg-primary" : "bg-line-strong",
           )}
         >
@@ -1152,7 +1169,7 @@ function QuestionPanel({
             )}
           />
         </button>
-        <span className="text-item-ui">{b.requiredSwitch}</span>
+        <span className="text-item-small">{b.requiredSwitch}</span>
       </div>
 
       {q.type === "text" ||
@@ -1296,7 +1313,7 @@ function QuestionPanel({
                       }}
                       className={ICON_BUTTON_CLASS}
                     >
-                      <ArrowUp aria-hidden="true" />
+                      <ChevronUp aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -1315,7 +1332,7 @@ function QuestionPanel({
                       }}
                       className={ICON_BUTTON_CLASS}
                     >
-                      <ArrowDown aria-hidden="true" />
+                      <ChevronDown aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -1384,7 +1401,10 @@ function QuestionPanel({
           <button
             type="button"
             onClick={() => setConfirm(true)}
-            className={cn(BUTTON_CLASS.ghostDanger, "h-7")}
+            className={cn(
+              BUTTON_CLASS.ghostDanger,
+              "h-7 border-line-strong bg-popover px-2.5 text-crumb",
+            )}
           >
             {b.removeQuestion}
           </button>

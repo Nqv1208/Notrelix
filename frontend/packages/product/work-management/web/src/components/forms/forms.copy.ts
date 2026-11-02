@@ -66,6 +66,11 @@ export const vi = {
       "Chưa tải được danh sách biểu mẫu. Các thiết lập khác của board vẫn dùng được.",
     closeFailed: "Chưa đóng được biểu mẫu. Trạng thái vẫn là Đang nhận.",
     publishFailed: "Chưa xuất bản được biểu mẫu. Trạng thái vẫn là Bản nháp.",
+    conflictRow:
+      "Người khác vừa thay đổi biểu mẫu này. Danh sách đã tải bản mới nhất; hãy xem lại rồi thử lại.",
+    forbiddenRow: "Bạn không còn quyền thay đổi biểu mẫu này.",
+    archivedNote:
+      "Board đã lưu trữ nên các biểu mẫu chỉ đọc. Bỏ lưu trữ board để tạo, xuất bản, đóng hoặc xóa biểu mẫu.",
     removeFailed: "Chưa xoá được biểu mẫu. Biểu mẫu vẫn còn trong danh sách.",
     gone: "Biểu mẫu này đã được xoá hoặc bạn không còn thấy nó. Danh sách đã được làm mới.",
     noQuestions: "Chưa xuất bản được: biểu mẫu cần ít nhất một câu hỏi.",
@@ -149,6 +154,8 @@ export const vi = {
     mappedOptions:
       "Lựa chọn lấy từ trường {{field}} của board ({{options}}). Sửa ở Thiết lập board › Trường; ở đây không thêm bớt được.",
     // States.
+    archivedNote:
+      "Board đã lưu trữ nên biểu mẫu chỉ đọc. Bỏ lưu trữ board để sửa biểu mẫu.",
     closedNote:
       'Biểu mẫu đã đóng. Người điền thấy thông báo "đã đóng". Không thêm hay sửa câu hỏi được.',
     publishedTitle: "Biểu mẫu đang nhận phản hồi",
@@ -244,7 +251,15 @@ export const vi = {
     errMin: "Nhỏ nhất là {{min}}.",
     errMax: "Lớn nhất là {{max}}.",
     errServer: "Câu trả lời này chưa hợp lệ.",
-    unsupported: "Câu hỏi này chưa hỗ trợ trên trang điền.",
+    hiddenQuestions:
+      "{{count}} câu hỏi thuộc loại chưa hỗ trợ nên người điền biểu mẫu không thấy: {{names}}. Xóa chúng hoặc thay bằng loại khác.",
+    archivedTitle: "Board đã lưu trữ",
+    archivedBody:
+      "Biểu mẫu này chưa nhận phản hồi khi board còn lưu trữ. Hãy liên hệ người quản lý board.",
+    forbiddenError:
+      "Bạn không còn quyền gửi biểu mẫu này nên chưa gửi được. Câu trả lời vẫn còn trên trang này.",
+    offlineError:
+      "Bạn đang ngoại tuyến nên chưa gửi được. Câu trả lời vẫn còn trên trang này; hãy gửi lại khi có mạng.",
     thanks: "Đã gửi yêu cầu",
     thanksBody:
       'Người chỉnh sửa board sẽ xem "{{title}}" và xử lý thành việc trên board {{board}}. Bạn sẽ nhận thông báo khi có người nhận.',
@@ -435,6 +450,11 @@ export const en: FormsCopy = {
       "The forms could not be loaded. The other board settings still work.",
     closeFailed: "The form could not be closed. It is still Accepting.",
     publishFailed: "The form could not be published. It is still a draft.",
+    conflictRow:
+      "Someone else just changed this form. The list now shows the latest version; check it and try again.",
+    forbiddenRow: "You can no longer change this form.",
+    archivedNote:
+      "The board is archived, so its forms are read-only. Unarchive the board to create, publish, close or delete forms.",
     removeFailed: "The form could not be deleted. It is still in the list.",
     gone: "This form was deleted or you can no longer see it. The list was refreshed.",
     noQuestions: "Cannot publish yet: the form needs at least one question.",
@@ -518,6 +538,8 @@ export const en: FormsCopy = {
     optionsHint: "Up to {{max}} choices; every choice needs a name.",
     mappedOptions:
       "The choices come from the board's {{field}} field ({{options}}). Edit them in Board settings › Fields; they cannot be added or removed here.",
+    archivedNote:
+      "The board is archived, so the form is read-only. Unarchive the board to edit it.",
     closedNote:
       'The form is closed. People filling it see "closed". Questions cannot be added or edited.',
     publishedTitle: "The form is accepting responses",
@@ -615,7 +637,15 @@ export const en: FormsCopy = {
     errMin: "At least {{min}}.",
     errMax: "At most {{max}}.",
     errServer: "This answer is not valid.",
-    unsupported: "This question type is not supported on the fill page yet.",
+    hiddenQuestions:
+      "{{count}} questions are of a type that is not supported yet, so the people who fill this form do not see them: {{names}}. Remove them or replace them with another type.",
+    archivedTitle: "The board is archived",
+    archivedBody:
+      "This form takes no responses while its board is archived. Contact a board manager.",
+    forbiddenError:
+      "You can no longer send this form, so it was not sent. Your answers are still on this page.",
+    offlineError:
+      "You are offline, so it was not sent. Your answers are still on this page; send again when you are back online.",
     thanks: "Request sent",
     thanksBody:
       'Someone who can edit the board will review "{{title}}" and turn it into an item on the {{board}} board. You get a notification when someone picks it up.',

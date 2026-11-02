@@ -74,13 +74,13 @@ public sealed class RealtimeSubscriptionAuthorizationTests
     }
 
     [Fact]
-    public async Task Member_whose_role_fact_disappeared_after_bootstrap_is_denied_by_policy()
+    public async Task Member_whose_role_fact_disappeared_after_bootstrap_is_hidden_as_not_found()
     {
         var fixture = WorkspaceFixture(canAccess: true, role: null);
 
         var act = () => fixture.Run(new AuthorizeWorkspaceRealtimeSubscriptionQuery(WorkspaceId));
 
-        await act.Should().ThrowAsync<ForbiddenException>();
+        await act.Should().ThrowAsync<NotFoundException>();
         fixture.HandlerCalls.Should().Be(0);
     }
 
@@ -121,14 +121,14 @@ public sealed class RealtimeSubscriptionAuthorizationTests
     }
 
     [Fact]
-    public async Task Board_without_workspace_membership_is_denied()
+    public async Task Board_without_workspace_membership_is_hidden_as_not_found()
     {
         var boardId = Guid.NewGuid();
         var fixture = BoardFixture(boardId, locatedIn: (AccountId, WorkspaceId), role: null, resourceExists: true);
 
         var act = () => fixture.Run(new AuthorizeBoardRealtimeSubscriptionQuery(boardId));
 
-        await act.Should().ThrowAsync<ForbiddenException>();
+        await act.Should().ThrowAsync<NotFoundException>();
         fixture.HandlerCalls.Should().Be(0);
     }
 

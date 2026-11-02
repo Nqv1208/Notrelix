@@ -255,3 +255,8 @@ export function boardFormFields(
       : [];
   });
 }
+
+/** File and signature questions cannot be answered yet: the person who fills the form never sees them. */
+export function isAnswerable(question: FormQuestion): boolean {
+  return question.type !== "file" && question.type !== "signature";
+}
