@@ -62,8 +62,20 @@ export function useBoardFormsPanel(
   const { locale } = useLocale();
   const list = useBoardForms(boardId, workspaceId);
   const writes = useFormWrites(boardId, workspaceId);
+  const { board } = useFullBoard(boardId, workspaceId);
+  // A stale write leaves the list as it was (the builder shows what changed); the list has no such view, so it
+  // reads the form again and the person tries again on the version it now holds.
+  const settled = async (
+    formId: string,
+    send: Promise<FormWriteResult>,
+  ): Promise<FormWriteResult> => {
+    const result = await send;
+    if (!result.ok && result.reason === "conflict") await writes.reload(formId);
+    return result;
+  };
 
   return {
+    archived: board?.isArchived === true,
     copy,
     locale,
     status: list.isError ? "error" : list.isLoading ? "loading" : "ready",
@@ -74,10 +86,10 @@ export function useBoardFormsPanel(
       if (result.ok && result.id) nav.onOpenBuilder(result.id);
       return result;
     },
-    onPublish: writes.publish,
-    onClose: writes.close,
+    onPublish: (formId) => settled(formId, writes.publish(formId)),
+    onClose: (formId) => settled(formId, writes.close(formId)),
     onDelete: async (form) => {
-      const result = await writes.remove(form.id);
+      const result = await settled(form.id, writes.remove(form.id));
       if (result.ok)
         toast(fillFormsCopy(copy.list.removed, { name: form.title }), {
           duration: UNDO_MS,
@@ -182,6 +194,7 @@ export function FormBuilderPage({
           : undefined
       }
       preview={preview}
+      archived={board?.isArchived === true}
       onPreview={onPreview}
       linkUrl={formLink(workspaceId, boardId, formId)}
       todayLabel={todayLabel(locale)}
@@ -261,6 +274,8 @@ export function FormFillPage({
       boardTitle={board?.title ?? ""}
       user={user}
       todayLabel={todayLabel(locale)}
+      archived={board?.isArchived === true}
+      canManage={level === "manager"}
       canSubmit={
         level === undefined
           ? undefined

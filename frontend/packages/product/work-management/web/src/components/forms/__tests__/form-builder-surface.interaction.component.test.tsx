@@ -293,6 +293,24 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
     ).toBe(true);
   });
 
+  it(`is read-only on an archived board: says why, locks the name, the questions and publishing (${locale})`, () => {
+    render(locale, {
+      form: formFixture({ status: "draft" }),
+      selectedId: "q-title",
+      archived: true,
+    });
+    expect(screen.getByText(b.archivedNote)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: b.addQuestion })).toBeNull();
+    expect(
+      (screen.getByRole("textbox", { name: b.titleLabel }) as HTMLInputElement)
+        .disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: b.publish }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
   it(`${fui("states", locale)}shows loading, a load error with retry, and no access without naming the form (${locale})`, () => {
     render(locale, { status: "loading", form: null });
     expect(
