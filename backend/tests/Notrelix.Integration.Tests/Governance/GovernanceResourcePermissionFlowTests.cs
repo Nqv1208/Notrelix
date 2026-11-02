@@ -727,7 +727,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateComment_OnPage_Outsider_IsForbidden()
+    public async Task CreateComment_OnPage_Outsider_IsNotFound()
     {
         var (accountId, _, _, pageId, _) = await SeedPageStackAsync();
         var outsider = Guid.NewGuid();
@@ -736,7 +736,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForPage(pageId, "Hello page", null));
 
-        await act.Should().ThrowAsync<AppForbidden>("page-scoped actions are denied for non-members");
+        await act.Should().ThrowAsync<AppNotFound>("a non-member gets the identical NotFound for a page, so the answer does not tell them it exists");
     }
 
     [Fact]
@@ -913,7 +913,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateComment_OnBoardItem_Outsider_IsDenied()
+    public async Task CreateComment_OnBoardItem_Outsider_IsNotFound()
     {
         var (accountId, _, _, boardId, _) = await SeedBoardStackAsync();
         var itemId = await ResolveBoardItemIdAsync(boardId);
@@ -923,8 +923,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
 
-        await act.Should().ThrowAsync<AppForbidden>(
-            "board-item comments are not granted to non-members; the canonical pipeline denies them");
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a non-member gets the identical NotFound, so the answer does not tell them the item exists");
     }
 
     [Fact]
@@ -1211,7 +1211,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeletePage_Outsider_IsForbidden()
+    public async Task DeletePage_Outsider_IsNotFound()
     {
         var (accountId, _, _, _, _) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
@@ -1220,8 +1220,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         using var provider = CreateProvider(accountId, outsider);
         var act = () => SendAsync<Result>(provider, new DeletePageCommand(pageId));
 
-        await act.Should().ThrowAsync<AppForbidden>(
-            "the canonical pipeline denies non-members before any page mutation");
+        await act.Should().ThrowAsync<AppNotFound>(
+            "the canonical pipeline hides the page from non-members before any page mutation");
     }
 
     [Fact]
@@ -1514,19 +1514,19 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateComment_SameAccount_CrossWorkspace_WithoutTargetAuthority_IsForbidden()
+    public async Task CreateComment_SameAccount_CrossWorkspace_WithoutTargetAuthority_IsNotFound()
     {
         var (accountId, w1, _, w2ItemId, w2MemberId) = await SeedTwoWorkspacesOneAccountAsync();
 
-        // An outsider to W2 (same account) is denied by the canonical W2
-        // policy — same account never auto-allows.
+        // An outsider to W2 (same account) is refused by the canonical W2
+        // policy with the identical NotFound — same account never auto-allows.
         var outsider = Guid.NewGuid();
         using var provider = CreateProvider(accountId, outsider, w1);
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(w2ItemId, "Outsider comment", null));
 
-        await act.Should().ThrowAsync<AppForbidden>(
-            "same-account membership does not imply W2 authority");
+        await act.Should().ThrowAsync<AppNotFound>(
+            "same-account membership does not imply W2 authority, and the answer does not reveal the item");
 
         await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()

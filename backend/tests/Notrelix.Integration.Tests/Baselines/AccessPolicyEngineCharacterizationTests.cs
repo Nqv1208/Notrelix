@@ -104,7 +104,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
             Facts(workspaceMemberRole: null),
             PermissionRequest(PermissionAction.ViewWorkspace, null));
 
-        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        decision.Kind.Should().Be(AccessDecisionKind.NotFound);
     }
 
     [Fact]
