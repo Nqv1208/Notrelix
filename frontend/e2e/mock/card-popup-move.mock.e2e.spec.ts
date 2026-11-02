@@ -46,11 +46,12 @@ test.describe("owner", () => {
     const popup = page.getByRole("dialog");
     await popup.getByRole("button", { name: "Đang làm" }).first().click();
     const list = page.getByRole("listbox", { name: "Chuyển sang cột" });
+    // Each row ends with the column's count.
     await expect(list.getByRole("option")).toHaveText([
-      "Cần làm",
-      "Đang làm",
-      "Chờ duyệt",
-      "Hoàn thành",
+      /^Cần làm\s*6$/,
+      /^Đang làm\s*3$/,
+      /^Chờ duyệt\s*2$/,
+      /^Hoàn thành\s*5$/,
     ]);
     await expect(
       list.getByRole("option", { name: "Đang làm" }),
@@ -60,6 +61,8 @@ test.describe("owner", () => {
       popup.getByRole("button", { name: "Hoàn thành" }).first(),
     ).toBeVisible();
 
+    // The picker has its own "Đóng" while it is open: close the popup once the picker is gone.
+    await expect(list).toHaveCount(0);
     await popup.getByRole("button", { name: "Đóng" }).click();
     await expect(popup).toHaveCount(0);
     const card = (lane: string) =>

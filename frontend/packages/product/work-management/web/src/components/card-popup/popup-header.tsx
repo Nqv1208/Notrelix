@@ -101,6 +101,12 @@ function GroupPicker() {
     : card.listId;
   const current = lanes.find((lane) => lane.id === currentId);
   const saving = saves[MOVE_SAVE_KEY]?.status === "saving";
+  // Top and bottom only mean something in a column that holds a card of the item's own group.
+  const positionable =
+    lanePicker !== undefined &&
+    lanePicker
+      .placeableLanes(card.id)
+      .some((laneId) => laneId !== currentId);
   const canMove =
     readOnly === null && (mode === "create" || capabilities.canMoveCard);
   const move = (laneId: string) => {
@@ -231,7 +237,7 @@ function GroupPicker() {
           );
         })}
       </div>
-      {lanePicker ? (
+      {positionable ? (
         <>
           <label
             htmlFor={positionId}

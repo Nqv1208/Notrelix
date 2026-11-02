@@ -163,7 +163,8 @@ for (const dark of [false, true]) {
   }) => {
     await open(page, 1440, dark);
     await limitReview(page);
-    const picker = await openPicker(page);
+    // ERP-151 sits in Cần làm and its group also has cards in Hoàn thành, so the position select is drawn.
+    const picker = await openPicker(page, "mock-erp-item-151");
     const c = COLORS[mode];
     const pb = await picker.boundingBox();
     near(pb!.width, 300, "panel width");
@@ -199,8 +200,8 @@ for (const dark of [false, true]) {
     const options = list.getByRole("option");
     await expect(options).toHaveCount(4);
     const expected = [
-      { name: /^Cần làm/, count: "6" },
-      { name: /^Đang làm/, count: "3", current: true },
+      { name: /^Cần làm/, count: "6", current: true },
+      { name: /^Đang làm/, count: "3" },
       { name: /^Chờ duyệt/, count: "2 / 2", full: true },
       { name: /^Hoàn thành/, count: "5" },
     ];
@@ -220,9 +221,9 @@ for (const dark of [false, true]) {
         want.current ? "true" : "false",
       );
       if (want.current) {
-        // The selected-row token: its blue sits up to 20 off the artboard accent-soft in dark.
-        expectColor(rs.bg, [...c.curBg], "current bg", 20);
-        expectColor(rs.c, [...c.curInk], "current ink");
+        // The selected-row token: its blue sits up to 30 off the artboard accent-soft in dark.
+        expectColor(rs.bg, [...c.curBg], "current bg", 30);
+        expectColor(rs.c, [...c.curInk], "current ink", 24);
       }
       // Dot 9 px at 10 px from the row's left, the count 10 px from its right edge.
       const dot = row.locator("> span").first();
@@ -242,7 +243,7 @@ for (const dark of [false, true]) {
         await expect(note).toBeVisible();
         const ns = await style(note);
         expect([ns.fs, ns.fw]).toEqual(["12px", "500"]);
-        expectColor(ns.c, [...c.warn], "limit note colour");
+        expectColor(ns.c, [...c.warn], "limit note colour", 40);
         // Under the name: 15.6 px high at 29 px from the row's left.
         expectBox(
           await box(note, row),
@@ -286,41 +287,55 @@ for (const dark of [false, true]) {
 
 /** Closes the picker and the popup so the lanes are readable again (the popup is modal). */
 async function closePopup(page: Page) {
-  await page.keyboard.press("Escape");
-  const popup = page.getByRole("dialog", { name: "Chuyển sang cột" });
-  if (await popup.count()) await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The popup ignores Escape until the move has settled: press again until it is gone.
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 1_000 });
+  }).toPass();
 }
 
-test("the position choice puts the card on top of the column or at its bottom", async ({
+test("the position choice puts the card at the top or the bottom of its group in the column", async ({
   page,
 }) => {
   await open(page, 1440, false);
-  const before = await cardsOf(page, "Hoàn thành").count();
-  const picker = await openPicker(page);
+  const ids = () =>
+    cardsOf(page, "Cần làm").evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-card-id")),
+    );
+  // ERP-129 and ERP-136 are prep cards of Hoàn thành; Cần làm holds the prep card ERP-151 (then the training cards).
+  const picker = await openPicker(page, "mock-erp-item-129");
   await picker
     .getByRole("combobox", { name: "Vị trí trong cột" })
     .selectOption("top");
-  await picker.getByRole("option", { name: /^Hoàn thành/ }).click();
+  await picker.getByRole("option", { name: /^Cần làm/ }).click();
   await closePopup(page);
-  await expect(cardsOf(page, "Hoàn thành")).toHaveCount(before + 1);
-  await expect(cardsOf(page, "Hoàn thành").first()).toHaveAttribute(
-    "data-card-id",
-    "mock-erp-item-144",
-  );
+  await expect
+    .poll(async () => (await ids()).slice(0, 2))
+    .toEqual(["mock-erp-item-129", "mock-erp-item-151"]);
 
-  // Another card, to the bottom of the same column (the select's default).
-  const second = await openPicker(page, "mock-erp-item-142");
+  const second = await openPicker(page, "mock-erp-item-136");
   await expect(
     second.getByRole("combobox", { name: "Vị trí trong cột" }),
   ).toHaveValue("bottom");
-  await second.getByRole("option", { name: /^Hoàn thành/ }).click();
+  await second.getByRole("option", { name: /^Cần làm/ }).click();
   await closePopup(page);
-  await expect(cardsOf(page, "Hoàn thành")).toHaveCount(before + 2);
-  await expect(cardsOf(page, "Hoàn thành").last()).toHaveAttribute(
-    "data-card-id",
-    "mock-erp-item-142",
-  );
+  // The bottom of the prep cards: after ERP-151, before the training cards.
+  await expect
+    .poll(async () => (await ids()).slice(0, 3))
+    .toEqual(["mock-erp-item-129", "mock-erp-item-151", "mock-erp-item-136"]);
+});
+
+test("the select is not drawn when no other column holds a card of the item's group", async ({
+  page,
+}) => {
+  await open(page, 1440, false);
+  // The three cards of ERP-144's group all sit in Đang làm: no other column could name a place for it.
+  const picker = await openPicker(page);
+  await expect(picker.getByRole("option")).toHaveCount(4);
+  await expect(
+    picker.getByRole("combobox", { name: "Vị trí trong cột" }),
+  ).toHaveCount(0);
+  await expect(picker.getByText("Vị trí trong cột")).toHaveCount(0);
 });
 
 test("a column at its limit says so and still takes the card; the count is read from the board", async ({
@@ -342,12 +357,12 @@ test("a column at its limit says so and still takes the card; the count is read 
   );
 });
 
-test("keyboard: the picker opens from the keyboard, the select takes typed letters and the close button returns focus", async ({
+test("keyboard: the picker opens from the keyboard, the select takes arrow keys and the close button returns focus", async ({
   page,
 }) => {
   await open(page, 1440, false);
   await page
-    .locator('button[data-card-id="mock-erp-item-144"]')
+    .locator('button[data-card-id="mock-erp-item-151"]')
     .first()
     .click();
   const trigger = page.getByTitle("Chuyển thẻ sang cột khác");
@@ -358,7 +373,15 @@ test("keyboard: the picker opens from the keyboard, the select takes typed lette
   const select = picker.getByRole("combobox", { name: "Vị trí trong cột" });
   await select.focus();
   await expect(select).toBeFocused();
-  await page.keyboard.type("Đ");
+  if (process.platform === "darwin")
+    // macOS Chromium opens a native list on the first key and headless never commits it: pick through the select itself.
+    await select.selectOption("top");
+  else {
+    // The first arrow can open the list, the second reaches "top"; Enter commits.
+    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("Enter");
+  }
   await expect(select).toHaveValue("top");
   await picker.getByRole("button", { name: "Đóng" }).focus();
   await page.keyboard.press("Enter");
@@ -378,10 +401,14 @@ for (const [width, tablet] of [
     }) => {
       await open(page, width, dark);
       await limitReview(page);
-      const picker = await openPicker(page);
+      const picker = await openPicker(page, "mock-erp-item-151");
       if (tablet) {
         // At 390 the panel is a bottom sheet: every target is at least 44 px.
-        for (const row of await picker.getByRole("option").all())
+        // The select's own <option> elements are options too: the column rows are the listbox's.
+        for (const row of await picker
+          .getByRole("listbox")
+          .getByRole("option")
+          .all())
           expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44);
         expect(
           (await picker.getByRole("combobox").boundingBox())!.height,

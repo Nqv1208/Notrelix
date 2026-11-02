@@ -83,6 +83,11 @@ export interface CardPopupLanePicker {
   readonly counts: Readonly<Record<string, number>>;
   /** The warning limit of the columns that have one, by option id. */
   readonly wipLimits: Readonly<Record<string, number>>;
+  /**
+   * The columns that hold another card of this card's own board group. The server orders a group, not a column,
+   * so top and bottom name a place only in these; elsewhere the card takes its natural place.
+   */
+  readonly placeableLanes: (cardId: string) => readonly string[];
   /** Moves the card to the top or the bottom of a column; the promise tracks the save. */
   readonly move: (
     cardId: string,

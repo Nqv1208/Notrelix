@@ -114,9 +114,8 @@ async function open(page: Page, width: number, dark: boolean) {
     dark ? "dark" : "light",
   );
   await page.goto(TABLE);
-  await expect(page.getByRole("rowgroup", { name: "Cần làm" })).toBeVisible({
-    timeout: 30_000,
-  });
+  // The phone draws a list, not row groups: the toolbar is what every width shares.
+  await expect(columnsButton(page)).toBeVisible({ timeout: 30_000 });
   await page.waitForTimeout(400);
 }
 
@@ -426,12 +425,11 @@ test.describe("owner world", () => {
     await expect(status).toHaveAttribute("aria-checked", "true");
     await page.keyboard.press("Alt+ArrowDown");
     await expect(status).toBeFocused();
-    const after = await names();
     const i = before.indexOf("Trạng thái");
-    expect(after[i + 1]).toBe("Trạng thái");
-    expect(after[i]).toBe(before[i + 1]);
+    await expect.poll(async () => (await names())[i + 1]).toBe("Trạng thái");
+    expect((await names())[i]).toBe(before[i + 1]);
     await page.keyboard.press("Alt+ArrowUp");
-    expect(await names()).toEqual(before);
+    await expect.poll(names).toEqual(before);
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);
     await expect(columnsButton(page)).toBeFocused();

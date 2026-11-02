@@ -865,6 +865,20 @@ export function KanbanView({
           ),
         ),
         wipLimits: kanbanSettings.wipLimits,
+        placeableLanes: (cardId) => {
+          const lanes = kanban.allLanes;
+          const listId = lanes
+            .flatMap((lane) => lane.cards)
+            .find((card) => card.id === cardId)?.listId;
+          return lanes.flatMap((lane) =>
+            lane.optionId &&
+            lane.cards.some(
+              (card) => card.id !== cardId && card.listId === listId,
+            )
+              ? [lane.optionId]
+              : [],
+          );
+        },
         move: (cardId, optionId, position) => {
           const field = kanban.groupByField!;
           const lanes = kanban.allLanes;
