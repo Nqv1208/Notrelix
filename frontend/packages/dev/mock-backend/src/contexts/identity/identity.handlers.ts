@@ -77,7 +77,6 @@ export const identityOperations = [
             id: workspace.id,
             name: workspace.name,
             slug: workspace.slug,
-            role: "Member",
             accountId,
           })),
         personalWorkspace: personal

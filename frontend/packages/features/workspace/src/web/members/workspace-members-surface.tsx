@@ -211,8 +211,14 @@ function MemberRow({
 
   return (
     <>
-      <tr className="border-t border-border first:border-t-0 hover:bg-state-hover">
-        <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle">
+      <tr
+        role="row"
+        className="border-t border-border first:border-t-0 hover:bg-state-hover max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-2 max-sm:px-4 max-sm:py-2"
+      >
+        <td
+          role="cell"
+          className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle max-sm:col-start-1 max-sm:row-start-1 max-sm:min-w-0 max-sm:max-w-none max-sm:px-0"
+        >
           <span className="flex min-w-0 items-center gap-3">
             <IdentityMark
               name={member.name}
@@ -251,7 +257,10 @@ function MemberRow({
             </span>
           </span>
         </td>
-        <td className="px-2 py-2.5 align-middle whitespace-nowrap">
+        <td
+          role="cell"
+          className="px-2 py-2.5 align-middle whitespace-nowrap max-sm:col-start-1 max-sm:row-start-2 max-sm:px-0 max-sm:pt-0 max-sm:pb-1"
+        >
           {caps.assignableRoles.length > 0 ? (
             <Select
               value={member.role}
@@ -266,7 +275,7 @@ function MemberRow({
             >
               <SelectTrigger
                 size="sm"
-                className="w-24 focus-visible:ring-focus-ring max-md:h-touch! sm:w-36"
+                className="w-24 focus-visible:ring-focus-ring max-md:h-touch! max-sm:w-full max-sm:max-w-56 sm:w-36"
                 aria-label={formatCopy(
                   pending ? copy.roleUpdating : copy.roleSelect,
                   { name: member.name },
@@ -295,12 +304,18 @@ function MemberRow({
             </span>
           )}
         </td>
-        <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground md:table-cell">
+        <td
+          role="cell"
+          className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground md:table-cell"
+        >
           {member.joinedAt
             ? formatters.date(member.joinedAt, DATE_FORMAT)
             : "—"}
         </td>
-        <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap sm:table-cell">
+        <td
+          role="cell"
+          className="hidden px-2 py-2.5 align-middle whitespace-nowrap sm:table-cell"
+        >
           {member.membership === "suspended" ? (
             <Badge
               variant="outline"
@@ -322,7 +337,10 @@ function MemberRow({
             </span>
           )}
         </td>
-        <td className="w-12 px-2 py-2.5 text-right align-middle">
+        <td
+          role="cell"
+          className="w-12 px-2 py-2.5 text-right align-middle max-sm:col-start-2 max-sm:row-span-2 max-sm:row-start-1 max-sm:w-auto max-sm:px-0"
+        >
           {pending ? (
             <span className="inline-flex size-8 items-center justify-center">
               <Spinner aria-hidden="true" />
@@ -675,39 +693,46 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
             </p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border bg-surface-panel">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-border">
+              <table
+                role="table"
+                className="w-full border-collapse text-left max-sm:block"
+              >
+                <thead role="rowgroup" className="max-sm:sr-only">
+                  <tr role="row" className="border-b border-border">
                     <th
+                      role="columnheader"
                       scope="col"
                       className="h-9 px-4 text-metadata font-medium text-muted-foreground"
                     >
                       {copy.columns.member}
                     </th>
                     <th
+                      role="columnheader"
                       scope="col"
                       className="h-9 px-2 text-metadata font-medium text-muted-foreground"
                     >
                       {copy.columns.role}
                     </th>
                     <th
+                      role="columnheader"
                       scope="col"
                       className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground md:table-cell"
                     >
                       {copy.columns.joined}
                     </th>
                     <th
+                      role="columnheader"
                       scope="col"
                       className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground sm:table-cell"
                     >
                       {copy.columns.status}
                     </th>
-                    <th scope="col" className="h-9 px-2">
+                    <th role="columnheader" scope="col" className="h-9 px-2">
                       <span className="sr-only">{copy.columns.actions}</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup" className="max-sm:block">
                   {shownMembers.map((member) => (
                     <MemberRow
                       key={member.userId}

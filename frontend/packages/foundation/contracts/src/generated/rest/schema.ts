@@ -8380,7 +8380,6 @@ export interface components {
             id: string;
             name: string | null;
             slug: string | null;
-            role: string | null;
             /** Format: uuid */
             accountId: string;
         };
