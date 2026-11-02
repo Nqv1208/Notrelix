@@ -62,6 +62,8 @@ Start by identifying the **kind of question** you are trying to answer.
 | How must a breaking change migrate? | `docs/delivery/migration-policy.md` |
 | How is documentation authority governed? | `docs/governance/documentation-authority.md` |
 | What is the live delivery state of a use case? | `docs/workstreams/use-cases/<context>.md` (non-normative evidence) |
+| When is a use case DONE and how is a release accepted? | `docs/delivery/product-delivery-lifecycle.md` |
+| Which release holds a use case? | `docs/workstreams/product-roadmap.md` (plan) |
 
 ---
 
@@ -1800,6 +1802,22 @@ Also read migration/operations docs.
 
 ---
 
+## 11.5 Use-case acceptance, release scope, release acceptance
+
+Read:
+
+```text
+docs/delivery/product-delivery-lifecycle.md
+```
+
+For what each release holds and in what order (a plan, not authority):
+
+```text
+docs/workstreams/product-roadmap.md
+```
+
+---
+
 # 12. Operations routing
 
 ---
@@ -2948,6 +2966,7 @@ Use this as the fastest high-level lookup after understanding the authority mode
 | Migration/change impact | `docs/delivery/migration-policy.md` |
 | Definition of done | `docs/delivery/definition-of-done.md` |
 | Release/rollout | `docs/delivery/release-and-rollout.md` |
+| Product delivery lifecycle/acceptance | `docs/delivery/product-delivery-lifecycle.md` |
 | Observability | `docs/operations/observability.md` |
 | Incident readiness | `docs/operations/incident-readiness.md` |
 | Recovery/data safety | `docs/operations/recovery-and-data-safety.md` |
