@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { findClippedText } from "./support/text-clipping";
 import {
   audit,
   prepare,
@@ -66,6 +67,58 @@ for (const viewport of viewports) {
       await expect(confirm).toBeVisible();
       await audit(page, "roster-confirm", viewport, dark, confirm);
     });
+
+    // Vietnamese is the product default and its labels are the longest: the same audit at 390 px with the labels
+    // the people actually read, found by structure because the English accessible names do not apply.
+    if (viewport.width === 390) {
+      test(`roster in Vietnamese, ${mode}`, async ({ page }) => {
+        await prepare(page, viewport, dark, "vi");
+        await page.goto(`${WORKSPACE}/members`);
+        await expect(
+          page.getByRole("heading", { level: 1, name: "Thành viên" }),
+        ).toBeVisible();
+        await expect(page.getByRole("combobox").first()).toBeVisible();
+        await audit(page, "roster-vi", viewport, dark, page.locator("main"));
+        // No role is cut ("Quản t…") and no name runs past two lines.
+        expect(
+          await findClippedText(page, "main table", ".sr-only"),
+          "roster-vi: clipped text",
+        ).toEqual([]);
+        const tall = await page
+          .locator("main tbody tr td:first-child")
+          .evaluateAll((cells) =>
+            cells
+              .filter((cell) => cell.getBoundingClientRect().height > 80)
+              .map((cell) => (cell.textContent ?? "").slice(0, 30)),
+          );
+        expect(tall, "roster-vi: a member cell taller than 80 px").toEqual([]);
+        await page
+          .locator('main tbody tr button[aria-haspopup="menu"]')
+          .first()
+          .click();
+        await expect(page.getByRole("menuitem").first()).toBeVisible();
+        await audit(
+          page,
+          "roster-menu-vi",
+          viewport,
+          dark,
+          page.locator("main"),
+        );
+      });
+
+      test(`invitations in Vietnamese, ${mode}`, async ({ page }) => {
+        await prepare(page, viewport, dark, "vi");
+        await page.goto(`${WORKSPACE}/members?tab=invitations`);
+        await expect(page.getByRole("form")).toBeVisible();
+        await audit(
+          page,
+          "invitations-vi",
+          viewport,
+          dark,
+          page.locator("main"),
+        );
+      });
+    }
 
     test(`role-lowering confirmation, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);

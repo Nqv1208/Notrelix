@@ -25,18 +25,19 @@ export async function prepare(
   page: Page,
   viewport: (typeof viewports)[number],
   dark: boolean,
+  locale: "en" | "vi" = "en",
 ) {
   await page.setViewportSize(viewport);
   await page.addInitScript(
-    ({ theme, mode }) => {
+    ({ theme, mode, language }) => {
       try {
-        window.localStorage.setItem("notrelix-locale", "en");
+        window.localStorage.setItem("notrelix-locale", language);
         window.localStorage.setItem(theme, mode);
       } catch {
         // Private mode: the defaults apply.
       }
     },
-    { theme: THEME_KEY, mode: dark ? "dark" : "light" },
+    { theme: THEME_KEY, mode: dark ? "dark" : "light", language: locale },
   );
 }
 
