@@ -288,6 +288,32 @@ for (const viewport of viewports) {
       );
     });
 
+    test(`Space tree with a department open, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      if (viewport.width < 768) {
+        await page
+          .getByRole("button", { name: "Show or hide navigation" })
+          .first()
+          .click();
+      }
+      const nav = page.getByRole("navigation", {
+        name: "Workspace navigation",
+      });
+      const tree = nav.getByRole("tree", { name: "Departments" });
+      await expect(tree.getByRole("treeitem").first()).toBeVisible();
+      // Open the first department that has anything under it (its Boards and sub-Spaces list in place).
+      const expandable = tree.locator(
+        '[role="treeitem"][aria-expanded="false"]',
+      );
+      await expandable.first().focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(
+        tree.locator('[role="treeitem"][aria-expanded="true"]'),
+      ).toHaveCount(1);
+      await audit(page, "space-tree", viewport, dark, nav);
+    });
+
     test(`Space create dialog, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto(WORKSPACE);
