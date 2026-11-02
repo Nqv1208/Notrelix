@@ -253,6 +253,8 @@ Email verification token lifecycle is separate from User identity lifecycle.
 
 Verified email is evidence about an address, not proof of arbitrary Account/Workspace ownership.
 
+Accepted policy (2026-11-02): registration answers the same neutral reply for a new address and for an address that already has an account, and opens no session. A new address gets its User, its personal Account and a confirmation message; the person confirms the email and signs in. The owner of an existing address gets a notice message that someone tried to register, and nothing changes. At most three notices are sent per address per hour; past that the answer stays the same and no message is sent. Nothing in the answer (status, body, cookies) says whether the address was registered.
+
 # 15. One-time tokens
 
 One-time security tokens MUST fail after successful consumption or expiry.
