@@ -746,7 +746,7 @@ function ShareBody({
               data-f="logl"
               type="button"
               aria-disabled="true"
-              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground"
+              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground max-md:inline-flex max-md:min-h-11 max-md:items-center"
             >
               {copy.footer.log}
             </button>

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import http from "node:http";
 import { randomBytes } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -486,6 +487,84 @@ test("a manager shares a board and a page with a person, changes the level on th
     expect((await apiWrite(page, "DELETE", removal)).status).toBeLessThan(300);
     expect((await probe(s.guest.page, read)).status).toBe(404);
   }
+
+  await s.close();
+});
+
+/** The Redis of this e2e stack only; the stack's compose project owns it. */
+const redisContainer = "notrelix-fe-real-e2e-redis";
+
+test("with Redis down every authenticated request is refused with a retryable 503 that changes nothing, the app offers a retry, and all recovers when Redis is back", async ({
+  browser,
+  page,
+}) => {
+  const s = await scene(browser, page);
+  await page.goto(`/workspaces/${s.workspace.id}/boards/${s.board.id}`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: s.board.title }),
+  ).toBeVisible();
+  const csrf = (await (
+    await page.request.get(`${apiUrl}/auth/csrf`)
+  ).json()) as { token: string };
+  const item = `/board-items/${s.itemId}`;
+  const seen = await apiRead<{ version: number; title: string }>(page, item);
+  const boardBefore = JSON.stringify(
+    await apiRead(page, `/boards/${s.board.id}/full`),
+  );
+
+  execFileSync("docker", ["stop", redisContainer], { stdio: "pipe" });
+  try {
+    // Revocation cannot be checked, so the request is refused (never let through) and says to retry.
+    const read = await page.request.get(`${apiUrl}${item}`);
+    expect(read.status()).toBe(503);
+    expect(read.headers()["retry-after"]).toBeTruthy();
+    expect(await read.json()).toMatchObject({
+      status: 503,
+      errorCode: "auth.revocation_unavailable",
+    });
+    const write = await page.request.fetch(`${apiUrl}${item}`, {
+      method: "PATCH",
+      headers: {
+        "X-CSRF-Token": csrf.token,
+        "Idempotency-Key": crypto.randomUUID(),
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({
+        title: `Down ${s.unique}`,
+        expectedVersion: seen.version,
+      }),
+    });
+    expect(write.status()).toBe(503);
+
+    // The app keeps the person signed in and offers a retry instead of a sign-in page or a blank screen.
+    await page.reload();
+    await expect(page.getByRole("alert")).toContainText(
+      "Could not check your session",
+    );
+    expect(new URL(page.url()).pathname).toContain(s.board.id);
+  } finally {
+    execFileSync("docker", ["start", redisContainer], { stdio: "pipe" });
+  }
+
+  await expect
+    .poll(async () => (await page.request.get(`${apiUrl}${item}`)).status(), {
+      timeout: 90_000,
+      intervals: [1_000],
+    })
+    .toBe(200);
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: s.board.title }),
+  ).toBeVisible();
+
+  // The refused write changed nothing.
+  expect(await apiRead(page, item)).toMatchObject({
+    version: seen.version,
+    title: seen.title,
+  });
+  expect(
+    JSON.stringify(await apiRead(page, `/boards/${s.board.id}/full`)),
+  ).toBe(boardBefore);
 
   await s.close();
 });
