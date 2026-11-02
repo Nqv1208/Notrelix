@@ -42,9 +42,9 @@ export interface ArchiveImpact {
 const lineClass = "flex items-start gap-2.5";
 const iconClass = "size-4 shrink-0";
 // The mockup's `.btn.l`: 13 px, 7 px radius, 14 px side padding; 44 px and 14 px type on a
-// phone. While the write is out both buttons go flat grey rather than faded.
+// phone. While the write is out both buttons go flat grey at once (no colour transition, so a measure never catches one half way).
 const buttonClass =
-  "rounded-[7px] px-3.5 text-compact leading-[1.45] max-sm:h-11 max-sm:text-sm disabled:border-line-strong disabled:bg-state-hover-strong disabled:font-medium disabled:text-meta-foreground disabled:opacity-100 dark:disabled:border-line-strong dark:disabled:bg-state-hover-strong";
+  "rounded-[7px] px-3.5 text-compact leading-[1.45] max-sm:h-11 max-sm:text-sm disabled:border-line-strong disabled:bg-state-hover-strong disabled:font-medium disabled:text-meta-foreground disabled:opacity-100 disabled:transition-none dark:disabled:border-line-strong dark:disabled:bg-state-hover-strong";
 const cancelClass =
   "border-line-strong bg-popover font-medium shadow-none dark:border-line-strong dark:bg-card";
 

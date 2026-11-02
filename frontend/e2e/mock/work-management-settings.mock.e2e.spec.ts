@@ -167,10 +167,19 @@ test.describe("comments", () => {
     // The popup lists the actions under the comment instead of in a menu over the Kanban.
     await page.goto(`${ROADMAP}?view=kanban&item=card-main-0001`);
     const sheet = page.getByRole("dialog", { name: "Ship mock runtime" });
-    await expect(sheet.getByRole("button", { name: "Delete" })).toBeVisible();
-    await sheet.getByRole("button", { name: "Edit", exact: true }).click();
-    await expect(sheet.getByRole("button", { name: "Save" })).toBeVisible();
-    await expect(sheet.getByRole("button", { name: "Cancel" })).toBeVisible();
+    // The description has its own Edit, and the popup's other parts have Delete: the comment's are read in the comments column.
+    const comments = sheet.getByRole("complementary");
+    await expect(
+      comments.getByRole("button", { name: "Delete", exact: true }).first(),
+    ).toBeVisible();
+    await comments
+      .getByRole("button", { name: "Edit", exact: true })
+      .first()
+      .click();
+    await expect(comments.getByRole("button", { name: "Save" })).toBeVisible();
+    await expect(
+      comments.getByRole("button", { name: "Cancel" }),
+    ).toBeVisible();
   });
 });
 

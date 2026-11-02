@@ -4,7 +4,11 @@ import {
   useFullBoard,
   useItemConflict,
 } from "@notrelix/work-management-state";
-import type { Board, CardDetail } from "@notrelix/work-management-core";
+import type {
+  Board,
+  CardDetail,
+  FieldDefinition,
+} from "@notrelix/work-management-core";
 import { usePickerActions } from "../../card-popup/pickers/use-picker-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { useCardPopupModel } from "../../card-popup/use-card-popup-model";
@@ -33,6 +37,8 @@ interface KanbanCardDetailPanelProps {
   /** Injected clock; read once on open when omitted. */
   now?: Date;
   groups?: readonly ItemSheetGroup[];
+  /** The field the view lays its columns by; the popup's column picker changes it. */
+  groupField?: FieldDefinition;
   slots?: CardPopupSlots;
 }
 
@@ -50,6 +56,7 @@ export function KanbanCardDetailPanel({
   capabilities,
   now,
   groups,
+  groupField,
   slots,
 }: KanbanCardDetailPanelProps) {
   const [openedAt] = useState(() => new Date());
@@ -62,12 +69,10 @@ export function KanbanCardDetailPanel({
     data: detailData,
     callbacks,
     groups,
+    groupField,
     now: now ?? openedAt,
     slots,
-    actions: {
-      moveToGroup: (groupId) => callbacks.onMoveToGroup?.(card.id, groupId),
-      ...pickerActions,
-    },
+    actions: pickerActions,
   });
   const { refetch } = useCard(card.id, card.workspaceId);
   const { refetch: refetchBoard } = useFullBoard(
