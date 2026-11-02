@@ -28,9 +28,13 @@ public sealed class MoveBoardItemUseCase
         Guid newGroupId,
         WorkPlacementIntent placement,
         Guid executorUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        LaneValueWrite? lane = null)
     {
-        var item = await _context.BoardItems
+        // The lane's value is written on the same item in the same transaction: its values are loaded for that.
+        IQueryable<BoardItem> items = _context.BoardItems;
+        if (lane is not null) items = items.Include(i => i.FieldValues);
+        var item = await items
             .FirstOrDefaultAsync(item => item.Id == itemId, cancellationToken);
 
         if (item == null)
@@ -58,6 +62,9 @@ public sealed class MoveBoardItemUseCase
 
         var groupBefore = item.GroupId;
         item.MoveToGroup(BoardGroupRef.From(group), position, executorUserId, now);
+
+        if (lane is not null)
+            await WriteLaneValueAsync(item, lane, executorUserId, now, cancellationToken);
 
         // Its sub-items follow it, keeping their place under it.
         if (groupBefore != group.Id)
@@ -90,7 +97,29 @@ public sealed class MoveBoardItemUseCase
                 item.Version),
             item.Version);
     }
+
+    // A card dropped in a lane takes the lane's option and the place in one change: Status through the
+    // status rules (completion follows the option's category), any other Select as an ordinary value.
+    private async Task WriteLaneValueAsync(BoardItem item, LaneValueWrite lane, Guid executorUserId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var field = await _context.BoardFields
+            .Include(f => f.Options)
+            .FirstOrDefaultAsync(f => f.Id == lane.FieldId && f.BoardId == item.BoardId, cancellationToken);
+        if (field == null)
+            throw new NotFoundException("BoardField", lane.FieldId);
+        if (field.Type is not (FieldType.Select or FieldType.Status))
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue,
+                $"The field '{field.Name}' has no options to move an item into.");
+
+        var value = FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(lane.OptionId.ToString())));
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken);
+        BoardItemFieldWrites.Write(item, field, value, statusField, executorUserId, now);
+    }
 }
+
+/// <summary>The option a card takes in a board field when it is dropped in that field's lane.</summary>
+public sealed record LaneValueWrite(Guid FieldId, Guid OptionId);
 
 /// <summary>
 /// Producer-internal move outcome: the shared slim response plus the aggregate

@@ -7019,6 +7019,10 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+            /** Format: uuid */
+            laneFieldId?: string | null;
+            /** Format: uuid */
+            laneOptionId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemToBoardRequest": {
             /** Format: uuid */
