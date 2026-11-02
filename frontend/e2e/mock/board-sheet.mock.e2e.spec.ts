@@ -1,10 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * The ERP board's Kanban header, lanes and item side sheet as Final-Board draws
- * them, on the mock world: every card of a lane (six in Cần làm, five in the
- * Done lane) with no "Xem thêm" before 20, the department crumb, and the sheet's child items, follow chip,
- * comments with the recorded changes among them, and the composer.
+ * The ERP board's Kanban header and lanes as Final-Board draws them, and the card popup of an item, on the
+ * mock world: every card of a lane (six in Cần làm, five in the Done lane) with no "Xem thêm" before 20, the
+ * department crumb, and the popup's sub-items, vote chip, comments with the recorded changes among them,
+ * the composer, and the column picker that moves the card.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -22,9 +22,13 @@ async function open(page: Page, query = "") {
     }
   });
   await page.goto(`${BOARD}${query}`);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Triển khai ERP Q4" }),
-  ).toBeVisible();
+  // An open popup is modal: the page behind it leaves the accessibility tree, so the heading is read without it.
+  if (query.includes("item="))
+    await expect(page.getByRole("dialog")).toBeVisible();
+  else
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Triển khai ERP Q4" }),
+    ).toBeVisible();
 }
 
 test.describe("Board header, lanes and item sheet (owner)", () => {
@@ -58,52 +62,81 @@ test.describe("Board header, lanes and item sheet (owner)", () => {
     ).toBeVisible();
   });
 
-  test("the sheet shows the child progress and lists the child items", async ({
+  test("the popup lists the child items with their state", async ({ page }) => {
+    await open(page, "?item=mock-erp-item-142");
+    const section = page
+      .getByRole("dialog")
+      .getByRole("region", { name: "Liên kết và phụ thuộc" });
+    await expect(section.getByText("Việc con", { exact: true })).toBeVisible();
+    const state = (key: string) =>
+      section.getByText(key, { exact: true }).locator("..");
+    for (const key of ["ERP-142.1", "ERP-142.2", "ERP-142.3"])
+      await expect(state(key)).toContainText("Hoàn thành");
+    for (const key of ["ERP-142.4", "ERP-142.5"])
+      await expect(state(key)).toContainText("Chưa xong");
+  });
+
+  test("the popup names the card and its vote chip flips and counts", async ({
     page,
   }) => {
     await open(page, "?item=mock-erp-item-142");
-    const sheet = page.getByRole("dialog");
-    await expect(sheet.getByText("3/5")).toBeVisible();
-    await expect(sheet.getByRole("checkbox").first()).toBeVisible();
-  });
-
-  test("the sheet offers the follow chip and flips it", async ({ page }) => {
-    await open(page, "?item=mock-erp-item-142");
-    const sheet = page.getByRole("dialog");
-    await expect(sheet.getByText("ERP-142", { exact: true })).toBeVisible();
-    const chip = sheet.locator('[data-f="follow"]');
-    await expect(chip).toBeVisible();
-    const before = await chip.getAttribute("aria-pressed");
-    await chip.click();
-    await expect(chip).not.toHaveAttribute("aria-pressed", before ?? "");
+    const popup = page.getByRole("dialog");
+    await expect(popup.getByText("ERP-142", { exact: true })).toBeVisible();
+    const vote = popup.getByRole("button", {
+      name: /^(Bình chọn|Đã bình chọn)$/,
+    });
+    await expect(vote).toHaveAttribute("aria-pressed", "false");
+    await expect(
+      popup.getByRole("button", { name: "0 người đã bình chọn" }),
+    ).toBeVisible();
+    await vote.click();
+    await expect(vote).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      popup.getByRole("button", { name: "1 người đã bình chọn" }),
+    ).toBeVisible();
+    await vote.click();
+    await expect(vote).toHaveAttribute("aria-pressed", "false");
+    await expect(
+      popup.getByRole("button", { name: "0 người đã bình chọn" }),
+    ).toBeVisible();
   });
 
   test("comments show the recorded change among them and the composer posts", async ({
     page,
   }) => {
     await open(page, "?item=mock-erp-item-142");
-    const sheet = page.getByRole("dialog");
+    const popup = page.getByRole("dialog");
+    await popup.getByRole("button", { name: "Hiện chi tiết" }).click();
     await expect(
-      sheet
-        .locator('[data-f="event"]')
-        .filter({ hasText: "đổi Hạn chót từ 08/10 sang 10/10" }),
-    ).toContainText("Trần Minh Quân đổi Hạn chót từ 08/10 sang 10/10");
-    await sheet
-      .getByRole("textbox", { name: /Viết bình luận/ })
+      popup.getByText("Trần Minh Quân đổi Hạn chót").first(),
+    ).toBeVisible();
+    await expect(
+      popup.getByText("Em lùi hạn sang 10/10", { exact: false }),
+    ).toBeVisible();
+    await popup.getByRole("button", { name: "Viết bình luận…" }).click();
+    await popup
+      .getByRole("textbox", { name: "Viết bình luận" })
       .fill("Em đã đối chiếu xong, gửi chị Linh xem lại.");
-    await page.keyboard.press("Control+Enter");
+    await popup.getByRole("button", { name: "Bình luận", exact: true }).click();
     await expect(
-      sheet.getByText("Em đã đối chiếu xong, gửi chị Linh xem lại."),
+      popup.getByText("Em đã đối chiếu xong, gửi chị Linh xem lại."),
     ).toBeVisible();
   });
 
-  test("a Status change is recorded in the history", async ({ page }) => {
+  test("a Status change from the column picker is recorded in the history", async ({
+    page,
+  }) => {
     await open(page, "?item=mock-erp-item-142");
-    const sheet = page.getByRole("dialog");
-    await sheet.getByRole("button", { name: /^Trạng thái: Đang làm/ }).click();
-    await page.getByRole("menuitem", { name: "Chờ duyệt" }).click();
-    await expect(sheet.locator('[data-f="event"]').last()).toContainText(
-      "đổi trạng thái từ Đang làm sang Chờ duyệt",
-    );
+    const popup = page.getByRole("dialog");
+    await popup.getByRole("button", { name: "Đang làm" }).first().click();
+    await page.getByRole("option", { name: "Chờ duyệt" }).click();
+    await expect(
+      popup.getByRole("button", { name: "Chờ duyệt" }).first(),
+    ).toBeVisible();
+    await popup.getByRole("button", { name: "Hiện chi tiết" }).click();
+    await expect(
+      popup.getByText("Trần Minh Quân đổi Trạng thái").first(),
+    ).toBeVisible();
+    await expect(popup.getByText("từ Đang làm sang Chờ duyệt")).toBeVisible();
   });
 });
