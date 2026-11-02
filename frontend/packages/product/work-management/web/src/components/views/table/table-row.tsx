@@ -410,6 +410,7 @@ export function TableRow({
               <DueEditor
                 copy={copy}
                 dueAt={row.dueAt}
+                startAt={row.startAt}
                 label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
                 onPick={(day) => editors.onDue(row.id, day)}
               >
