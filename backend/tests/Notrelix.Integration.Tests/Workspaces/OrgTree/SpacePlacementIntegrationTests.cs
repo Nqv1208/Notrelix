@@ -190,6 +190,34 @@ public sealed class SpacePlacementIntegrationTests : IAsyncLifetime
         listed.SpaceId.Should().BeNull();
     }
 
+    [Fact]
+    public async Task ASpaceOfAnotherWorkspace_IsRefusedWithTheNotFoundOfAMadeUpSpace_ForBoardsAndPages()
+    {
+        var s = await SeedAsync();
+        var other = await _host.SeedWorkspaceAsync();
+        var foreignSpace = await _host.SeedSpaceAsync(other, "Foreign", SpaceVisibility.Workspace, other.OwnerId);
+        var madeUp = Guid.CreateVersion7();
+        using var owner = _host.CreateProvider(s.Stack.AccountId, s.Stack.OwnerId);
+        var board = await _host.SeedBoardAsync(s.Stack, "Mine");
+        var page = await OrgTreeTestHost.QueryAsync(owner, new CreatePageCommand(s.Stack.WorkspaceId, "Mine", null, null));
+
+        static string WithoutId(string message) => System.Text.RegularExpressions.Regex.Replace(message, "[0-9a-fA-F-]{32,36}", "<id>");
+        async Task AssertSameNotFound(Func<Guid, Task> place)
+        {
+            var foreign = (await ((Func<Task>)(() => place(foreignSpace))).Should().ThrowAsync<AppNotFound>()).Which;
+            var unknown = (await ((Func<Task>)(() => place(madeUp))).Should().ThrowAsync<AppNotFound>()).Which;
+            WithoutId(foreign.Message).Should().Be(WithoutId(unknown.Message));
+        }
+
+        await AssertSameNotFound(space => CreateBoardAsync(owner, s.Stack, "Elsewhere", space));
+        await AssertSameNotFound(space => MoveBoardAsync(owner, board, space, null));
+        await AssertSameNotFound(space => OrgTreeTestHost.QueryAsync(owner, new CreatePageCommand(s.Stack.WorkspaceId, "Elsewhere", null, space)));
+        await AssertSameNotFound(async space => await OrgTreeTestHost.SendAsync(owner, new MovePageToSpaceCommand(page, space, await VersionOfPageAsync(page))));
+
+        (await SpaceOfBoardAsync(board)).Should().BeNull("a refused move leaves the board where it was");
+        (await SpaceOfPageAsync(page)).Should().BeNull();
+    }
+
     // ── Pages ─────────────────────────────────────────────────────────────
 
     [Fact]
